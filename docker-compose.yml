@@ -1,10 +1,10 @@
 version: "3"
 services:
-  hmpps-template-kotlin:
+  hmpps-prisoner-from-nomis-migration:
     build:
       context: .
     network_mode: "host"
-    container_name: hmpps-template-kotlin
+    container_name: hmpps-prisoner-from-nomis-migration
     ports:
       - "8081:8080"
     healthcheck:

@@ -1,1 +1,1 @@
-rootProject.name = "hmpps-template-kotlin"
+rootProject.name = "hmpps-prisoner-from-nomis-migration"

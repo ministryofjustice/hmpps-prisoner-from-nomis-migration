@@ -1,6 +1,6 @@
 {
   "role": {
-    "name": "hmpps-template-kotlin"
+    "name": "hmpps-prisoner-from-nomis-migration"
   },
   "customDimensions": {
     "service.version": "${BUILD_NUMBER}"
