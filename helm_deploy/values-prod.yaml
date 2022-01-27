@@ -1,0 +1,15 @@
+---
+# Per environment values which override defaults in hmpps-prisoner-to-nomis-update/values.yaml
+
+generic-service:
+  replicaCount: 4
+
+  ingress:
+    host: prisoner-nomis-migration.hmpps.service.justice.gov.uk
+    contextColour: green
+
+  env:
+    APPLICATIONINSIGHTS_CONFIGURATION_FILE: applicationinsights.json
+
+generic-prometheus-alerts:
+  alertSeverity: digital-prison-service
