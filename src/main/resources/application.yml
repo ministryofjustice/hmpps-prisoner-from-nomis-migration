@@ -17,6 +17,27 @@ spring:
     group:
       test:
         - "stdout"
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${api.base.url.oauth}/.well-known/jwks.json
+
+      client:
+        registration:
+          nomis-api:
+            provider: hmpps-auth
+            client-id: ${nomis.prisoner.api.client.id}
+            client-secret: ${nomis.prisoner.api.secret}
+            authorization-grant-type: client_credentials
+          visits-api:
+            provider: hmpps-auth
+            client-id: ${visits.client.id}
+            client-secret: ${visits.client.secret}
+            authorization-grant-type: client_credentials
+        provider:
+          hmpps-auth:
+            token-uri: ${api.base.url.oauth}/oauth/token
 
 server:
   port: 8080

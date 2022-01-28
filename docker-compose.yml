@@ -13,5 +13,48 @@ services:
       - SERVER_PORT=8080
       - SPRING_PROFILES_ACTIVE=dev
 
+  hmpps-auth:
+    image: quay.io/hmpps/hmpps-auth:latest
+    networks:
+      - hmpps
+    container_name: hmpps-auth
+    ports:
+      - "8090:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/auth/health"]
+    environment:
+      - SERVER_PORT=8080
+      - SPRING_PROFILES_ACTIVE=dev
+
+  hmpps-nomis-prisoner-api:
+    image: quay.io/hmpps/hmpps-nomis-prisoner-api:latest
+    networks:
+      - hmpps
+    container_name: hmpps-nomis-prisoner-api
+    ports:
+      - "8082:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+    environment:
+      - SERVER_PORT=8080
+      - SPRING_PROFILES_ACTIVE=dev
+
+  localstack:
+    image: localstack/localstack:0.12.10
+    networks:
+      - hmpps
+    container_name: localstack
+    ports:
+      - "4566-4597:4566-4597"
+      - 8999:8080
+    environment:
+      - SERVICES=sqs
+      - DEBUG=${DEBUG- }
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - DEFAULT_REGION=eu-west-2
+    volumes:
+      - "${TMPDIR:-/tmp/localstack}:/tmp/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
 networks:
   hmpps:
