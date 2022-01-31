@@ -1,40 +1,75 @@
-# hmpps-template-kotlin
+[![CircleCI](https://circleci.com/gh/ministryofjustice/hmpps-prisoner-from-nomis-migration/tree/main.svg?style=svg)](https://circleci.com/gh/ministryofjustice/hmpps-prisoner-from-nomis-migration)
+[![Docker Repository on Quay](https://quay.io/repository/hmpps/hmpps-prisoner-from-nomis-migration/status "Docker Repository on Quay")](https://quay.io/repository/hmpps/hmpps-prisoner-from-nomis-migration)
+[![Runbook](https://img.shields.io/badge/runbook-view-172B4D.svg?logo=confluence)](https://dsdmoj.atlassian.net/wiki/spaces/NOM/pages/1739325587/DPS+Runbook)
+[![API docs](https://img.shields.io/badge/API_docs_-view-85EA2D.svg?logo=swagger)](https://prisoner-nomis-migration-dev.hmpps.service.justice.gov.uk/swagger-ui.html)
 
-This is a skeleton project from which to create new kotlin projects from.
+# hmpps-prisoner-from-nomis-migration
 
-# Instructions
+**Handles the migration of data related to prisoners in NOMIS to the new services**
 
-If this is a HMPPS project then the project will be created as part of bootstrapping - 
-see https://github.com/ministryofjustice/dps-project-bootstrap.
+**Currently one service is supported: Visit a Prisoner Service**
 
-## Creating a CloudPlatform namespace
+The purpose of this service to bulk update a new service with data from NOMIS. This will handle the reading of data, possibly transformation of that data and pushing data 
+to the new service.
+Since migration is a typically a process that takes many hours, this service relies heavily on SQS messaging to guarantee that the migration is completed, where any transient errors are
+automatically retried. Any persistent errors can be inspected and are retained in a SQS dead letter queue.
 
-When deploying to a new namespace, you may wish to use this template kotlin project namespace as the basis for your new namespace:
+## Running locally
 
-<https://github.com/ministryofjustice/cloud-platform-environments/tree/main/namespaces/live.cloud-platform.service.justice.gov.uk/hmpps-template-kotlin>
+For running locally against docker instances of the following services:
+- hmpps-auth
+- hmpps-nomis-prisoner-api
+- localstack
+- run this application independently e.g. in IntelliJ
 
-Copy this folder, update all the existing namespace references, and submit a PR to the CloudPlatform team. Further instructions from the CloudPlatform team can be found here: <https://user-guide.cloud-platform.service.justice.gov.uk/#cloud-platform-user-guide>
+`docker compose up hmpps-auth hmpps-nomis-prisoner-api localstack`
 
-## Renaming from HMPPS Template Kotlin - github Actions
+or
 
-Once the new repository is deployed. Navigate to the repository in github, and select the `Actions` tab.
-Click the link to `Enable Actions on this repository`.
+`docker-compose up hmpps-auth hmpps-nomis-prisoner-api localstack`
 
-Find the Action workflow named: `rename-project-create-pr` and click `Run workflow`.  This workflow will
-execute the `rename-project.bash` and create Pull Request for you to review.  Review the PR and merge.
+Running all services including this service
 
-Note: ideally this workflow would run automatically however due to a recent change github Actions are not
-enabled by default on newly created repos. There is no way to enable Actions other then to click the button in the UI.
-If this situation changes we will update this project so that the workflow is triggered during the bootstrap project.
-Further reading: <https://github.community/t/workflow-isnt-enabled-in-repos-generated-from-template/136421>
+`docker compose up`
 
-## Manually renaming from HMPPS Template Kotlin
+or
 
-Run the `rename-project.bash` and create a PR.
+`docker-compose up`
 
-The `rename-project.bash` script takes a single argument - the name of the project and calculates from it:
-* The main class name (project name converted to pascal case) 
-* The project description (class name with spaces between the words)
-* The main package name (project name with hyphens removed)
+## Running locally against T3 test services
 
-It then performs a search and replace and directory renames so the project is ready to be used.
+Though it is possible to run this service against both the test services deployed in the cloud **and** the SQS queue in AWS this is not recommended while the deployed version of this service is running in the Cloud Platform since there is no guarantee this local instance will read an incoming HMPPS domain event since other pods are also reading from the same queue.
+
+However, if you do wish to do that the steps would be:
+- Set all environment variables to match those in [values-dev.yaml](/helm_deploy/values-dev.yaml) e.g. `API_BASE_URL_OAUTH=https://sign-in-dev.hmpps.service.justice.gov.uk/auth`
+- Set additional environment variables for personal **client credentials** you have that have the correct roles required to access the remotes services, the env names can be found in [values.yaml](helm_deploy/hmpps-prisoner-from-nomis-migration/values.yaml)
+- Set additional environment variables for the SQS Queue secrets that can be found in the `hmpps-prisoner-from-nomis-migration-dev` namespace, again the env names can be found in [values.yaml](helm_deploy/hmpps-prisoner-from-nomis-migration/values.yaml)
+
+A better hybrid solution which gives better control messaging would be similar to above but using the `dev` profile and therefore localstack.
+
+The first 2 of the 3 steps is required but instead of step 3
+
+- `docker-compose up localstack` or `docker compose up localstack` (there is also docker-compose-localstack.yaml with just localstack defined )
+
+Then run any of the `bash` scripts at the root of this project to send events to the local topic
+
+## Mock services
+
+There a circumstances where you want to run this service end to end but without the consuming service being available, for example the consuming service
+has not be written yet. To emulate the publishing service we may provide a mock, for instance MockVisitsResource which consumes migrated data.
+Details of the configuration follows:
+
+
+### Runbook
+
+#### Queue Dead letter queue maintenance
+
+Since this services uses the HMPPS SQS library with defaults this has all the default endpoints for queue maintenance as documented in the [SQS library](https://github.com/ministryofjustice/hmpps-spring-boot-sqs/blob/main/README.md).
+
+For purging queues the queue name can be found in the [health check](https://prisoner-nomis-migration.hmpps.service.justice.gov.uk/health) and the required role is the default `ROLE_QUEUE_ADMIN`.
+
+
+
+### Architecture
+
+Architecture decision records start [here](doc/architecture/decisions/0001-use-adr.md)

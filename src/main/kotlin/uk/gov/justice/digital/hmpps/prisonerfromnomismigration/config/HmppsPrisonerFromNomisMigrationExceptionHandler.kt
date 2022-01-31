@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.hmppsprisonerfromnomismigration.config
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config
 
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus

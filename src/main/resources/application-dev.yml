@@ -1,0 +1,9 @@
+server:
+  shutdown: immediate
+
+api.base.url:
+  nomis: http://localhost:8081
+  oauth: http://localhost:8090/auth
+  # Set to ourselves until new service is ready
+  visits: http://localhost:8080
+
