@@ -44,9 +44,9 @@ generic-service:
     sqs-migration-queue:
       HMPPS_SQS_QUEUES_MIGRATION_QUEUE_ACCESS_KEY_ID: "access_key_id"
       HMPPS_SQS_QUEUES_MIGRATION_QUEUE_SECRET_ACCESS_KEY: "secret_access_key"
-      HMPPS_SQS_QUEUES_MIGRATION_QUEUE_NAME: "sqs_queue_name"
+      HMPPS_SQS_QUEUES_MIGRATION_QUEUE_NAME: "sqs_name"
     sqs-migration-dlq:
-      HMPPS_SQS_QUEUES_MIGRATION_DLQ_NAME: "sqs_queue_name"
+      HMPPS_SQS_QUEUES_MIGRATION_DLQ_NAME: "sqs_name"
       HMPPS_SQS_QUEUES_MIGRATION_DLQ_ACCESS_KEY_ID: "access_key_id"
       HMPPS_SQS_QUEUES_MIGRATION_DLQ_SECRET_ACCESS_KEY: "secret_access_key"
 
