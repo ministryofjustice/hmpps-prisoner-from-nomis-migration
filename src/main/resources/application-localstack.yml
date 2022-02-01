@@ -2,5 +2,5 @@ hmpps.sqs:
   provider: localstack
   queues:
     migration:
-      queueName: migration_queue
-      dlqName: migration_dlq
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
