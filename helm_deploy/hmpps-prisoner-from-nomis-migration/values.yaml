@@ -11,6 +11,13 @@ generic-service:
 
   ingress:
     enabled: true
+    annotations:
+      nginx.ingress.kubernetes.io/configuration-snippet: |
+        server_tokens off;
+        location /queue-admin/retry-all-dlqs {
+          deny all;
+          return 401;
+        }
     host: app-hostname.local    # override per environment
     tlsSecretName: prisoner-from-nomis-cert
 
@@ -34,6 +41,14 @@ generic-service:
       NOMIS_PRISONER_API_SECRET: "NOMIS_PRISONER_API_SECRET"
       VISITS_CLIENT_ID: "VISITS_CLIENT_ID"
       VISITS_CLIENT_SECRET: "VISITS_CLIENT_SECRET"
+    sqs-migration-queue:
+      HMPPS_SQS_QUEUES_MIGRATION_QUEUE_ACCESS_KEY_ID: "access_key_id"
+      HMPPS_SQS_QUEUES_MIGRATION_QUEUE_SECRET_ACCESS_KEY: "secret_access_key"
+      HMPPS_SQS_QUEUES_MIGRATION_QUEUE_NAME: "sqs_queue_name"
+    sqs-migration-dlq:
+      HMPPS_SQS_QUEUES_MIGRATION_DLQ_NAME: "sqs_queue_name"
+      HMPPS_SQS_QUEUES_MIGRATION_DLQ_ACCESS_KEY_ID: "access_key_id"
+      HMPPS_SQS_QUEUES_MIGRATION_DLQ_SECRET_ACCESS_KEY: "secret_access_key"
 
   allowlist:
     office: "217.33.148.210/32"

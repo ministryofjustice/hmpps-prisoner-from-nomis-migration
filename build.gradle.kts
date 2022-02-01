@@ -12,6 +12,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-security")
   implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
   implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
+  implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:1.0.5")
 
   implementation("org.springdoc:springdoc-openapi-ui:1.6.5")
   implementation("org.springdoc:springdoc-openapi-kotlin:1.6.5")
@@ -20,6 +21,7 @@ dependencies {
   testImplementation("io.swagger.parser.v3:swagger-parser:2.0.29")
 
   testImplementation("com.github.tomakehurst:wiremock-standalone:2.27.2")
+  testImplementation("org.testcontainers:localstack:1.16.3")
 }
 
 java {
