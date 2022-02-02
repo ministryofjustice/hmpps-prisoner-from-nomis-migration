@@ -15,10 +15,10 @@ class VisitsMigrationService(private val queueMigrationService: MigrationQueueSe
   }
 
   fun migrateVisits(migrationFilter: VisitsMigrationFilter): MigrationContext<VisitsMigrationFilter> =
-    MigrationContext(batchId = generateBatchId(), filter = migrationFilter).apply {
+    MigrationContext(migrationId = generateBatchId(), filter = migrationFilter).apply {
       queueMigrationService.sendMessage(MIGRATE_VISITS, this)
     }
 
   fun migrateVisitsByPage(context: MigrationContext<VisitsMigrationFilter>) =
-    log.info("Will calculate visit pages to migrate for batchId: ${context.batchId} with filter ${context.filter}")
+    log.info("Will calculate visit pages to migrate for migrationId: ${context.migrationId} with filter ${context.filter}")
 }

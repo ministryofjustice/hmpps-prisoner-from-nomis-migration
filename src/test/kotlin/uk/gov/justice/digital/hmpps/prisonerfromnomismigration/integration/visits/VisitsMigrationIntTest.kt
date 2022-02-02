@@ -72,7 +72,7 @@ class VisitsMigrationIntTest : IntegrationTestBase() {
       verify(visitsMigrationService).migrateVisitsByPage(
         check {
           assertThat(it.filter.prisonIds).containsExactly("MDI", "BXI")
-          assertThat(it.batchId).isNotNull()
+          assertThat(it.migrationId).isNotNull()
         }
       )
     }

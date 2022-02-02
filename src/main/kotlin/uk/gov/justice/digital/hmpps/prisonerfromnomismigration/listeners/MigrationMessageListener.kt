@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners
 
+import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -9,7 +10,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationCon
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationFilter
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationService
 
 @Service
@@ -31,17 +31,14 @@ class MigrationMessageListener(
     }
   }
 
-  open class MigrationMessage<T>(
+  class MigrationMessage<T>(
     val type: Messages,
-    open val context: MigrationContext<T>
+    val context: MigrationContext<T>
   )
 
-  private inline fun <reified T> String.fromJson(): T = objectMapper.readValue(this, T::class.java)
+  private inline fun <reified T> String.fromJson(): T =
+    objectMapper.readValue(this, object : TypeReference<T>() {})
 }
 
-// TODO: should be to improve this - I am having to sublcass rather then use generic, but not sure why yet ??
-private fun context(message: VisitsMigrationMessage): MigrationContext<VisitsMigrationFilter> = message.context
-class VisitsMigrationMessage(
-  type: Messages,
-  override val context: MigrationContext<VisitsMigrationFilter>
-) : MigrationMessage<VisitsMigrationFilter>(type = type, context = context)
+private inline fun <reified T> context(message: MigrationMessage<T>): MigrationContext<T> =
+  message.context

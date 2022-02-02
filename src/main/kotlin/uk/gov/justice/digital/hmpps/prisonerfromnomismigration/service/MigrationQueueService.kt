@@ -24,7 +24,11 @@ class MigrationQueueService(
     val result =
       migrationSqsClient.sendMessage(SendMessageRequest(migrationQueueUrl, MigrationMessage(message, context).toJson()))
 
-    telemetryClient.trackEvent(message.name, mapOf("messageId" to result.messageId, "batchId" to context.batchId), null)
+    telemetryClient.trackEvent(
+      message.name,
+      mapOf("messageId" to result.messageId, "migrationId" to context.migrationId),
+      null
+    )
   }
 
   private fun Any.toJson() = objectMapper.writeValueAsString(this)
