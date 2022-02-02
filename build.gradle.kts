@@ -18,6 +18,7 @@ dependencies {
   implementation("org.springdoc:springdoc-openapi-kotlin:1.6.5")
   implementation("org.springdoc:springdoc-openapi-data-rest:1.6.5")
 
+  testImplementation("org.mockito:mockito-inline:4.2.0")
   testImplementation("io.swagger.parser.v3:swagger-parser:2.0.29")
   testImplementation("io.jsonwebtoken:jjwt:0.9.1")
   testImplementation("com.github.tomakehurst:wiremock-standalone:2.27.2")

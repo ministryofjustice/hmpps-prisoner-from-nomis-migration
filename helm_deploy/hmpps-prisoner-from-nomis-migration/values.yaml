@@ -19,6 +19,7 @@ generic-service:
           return 401;
         }
     host: app-hostname.local    # override per environment
+    contextColour: green
     tlsSecretName: prisoner-from-nomis-cert
 
   # Environment variables to load into the deployment
