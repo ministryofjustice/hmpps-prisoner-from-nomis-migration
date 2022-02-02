@@ -1,10 +1,13 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners
 
+import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.jms.annotation.JmsListener
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationService
@@ -22,16 +25,20 @@ class MigrationMessageListener(
   @JmsListener(destination = "migration", containerFactory = "hmppsQueueContainerFactoryProxy")
   fun onMessage(message: String) {
     log.debug("Received message {}", message)
-    val migrationMessage: MigrationMessage = message.fromJson()
+    val migrationMessage: MigrationMessage<*> = message.fromJson()
     when (migrationMessage.type) {
-      MIGRATE_VISITS -> visitsMigrationService.migrateVisitsByPage()
+      MIGRATE_VISITS -> visitsMigrationService.migrateVisitsByPage(context(message.fromJson()))
     }
   }
 
-  data class MigrationMessage(
+  class MigrationMessage<T>(
     val type: Messages,
-    val body: Any? = null
+    val context: MigrationContext<T>
   )
 
-  private inline fun <reified T> String.fromJson(): T = objectMapper.readValue(this, T::class.java)
+  private inline fun <reified T> String.fromJson(): T =
+    objectMapper.readValue(this, object : TypeReference<T>() {})
 }
+
+private inline fun <reified T> context(message: MigrationMessage<T>): MigrationContext<T> =
+  message.context

@@ -4,6 +4,7 @@ import com.amazonaws.services.sqs.model.SendMessageRequest
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener.MigrationMessage
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
@@ -19,11 +20,15 @@ class MigrationQueueService(
   private val migrationSqsClient by lazy { migrationQueue.sqsClient }
   private val migrationQueueUrl by lazy { migrationQueue.queueUrl }
 
-  fun sendMessage(message: Messages, body: Any? = null) {
+  fun sendMessage(message: Messages, context: MigrationContext<*>) {
     val result =
-      migrationSqsClient.sendMessage(SendMessageRequest(migrationQueueUrl, MigrationMessage(message, body).toJson()))
+      migrationSqsClient.sendMessage(SendMessageRequest(migrationQueueUrl, MigrationMessage(message, context).toJson()))
 
-    telemetryClient.trackEvent(message.name, mapOf("messageId" to result.messageId), null)
+    telemetryClient.trackEvent(
+      message.name,
+      mapOf("messageId" to result.messageId, "migrationId" to context.migrationId),
+      null
+    )
   }
 
   private fun Any.toJson() = objectMapper.writeValueAsString(this)
