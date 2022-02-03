@@ -14,6 +14,9 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
   implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:1.0.5")
 
+  // only required and used for M1 Macs to remove annoying DNS message
+  runtimeOnly("io.netty:netty-resolver-dns-native-macos:4.1.72.Final:osx-aarch_64")
+
   implementation("org.springdoc:springdoc-openapi-ui:1.6.5")
   implementation("org.springdoc:springdoc-openapi-kotlin:1.6.5")
   implementation("org.springdoc:springdoc-openapi-data-rest:1.6.5")

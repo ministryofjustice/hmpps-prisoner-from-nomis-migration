@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.visits
 
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.within
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilCallTo
@@ -16,6 +17,9 @@ import org.springframework.web.reactive.function.BodyInserter
 import org.springframework.web.reactive.function.BodyInserters
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 
 class VisitsMigrationIntTest : IntegrationTestBase() {
   @SpyBean
@@ -45,6 +49,8 @@ class VisitsMigrationIntTest : IntegrationTestBase() {
 
     @Test
     internal fun `will start processing pages of visits`() {
+      nomisApi.stubGetVisitsInitialCount(23_045)
+
       webTestClient.post().uri("/migrate/visits")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
         .header("Content-Type", "application/json")
@@ -55,7 +61,13 @@ class VisitsMigrationIntTest : IntegrationTestBase() {
               "prisonIds": [
                 "MDI",
                 "BXI"
-              ]
+              ],
+              "visitTypes": [
+                "SCON",
+                "OFFI"
+              ],
+              "fromDateTime": "2020-01-01T01:30:00",
+              "toDateTime": "2020-01-02T23:30:00"
             }
             """.trimIndent()
           )
@@ -67,12 +79,19 @@ class VisitsMigrationIntTest : IntegrationTestBase() {
       verify(visitsMigrationService).migrateVisits(
         check {
           assertThat(it.prisonIds).containsExactly("MDI", "BXI")
+          assertThat(it.visitTypes).containsExactly("SCON", "OFFI")
+          assertThat(it.fromDateTime).isEqualTo(LocalDateTime.parse("2020-01-01T01:30:00"))
+          assertThat(it.toDateTime).isEqualTo(LocalDateTime.parse("2020-01-02T23:30:00"))
         }
       )
       verify(visitsMigrationService).migrateVisitsByPage(
         check {
           assertThat(it.filter.prisonIds).containsExactly("MDI", "BXI")
-          assertThat(it.migrationId).isNotNull()
+          assertThat(it.filter.visitTypes).containsExactly("SCON", "OFFI")
+          assertThat(it.filter.fromDateTime).isEqualTo(LocalDateTime.parse("2020-01-01T01:30:00"))
+          assertThat(it.filter.toDateTime).isEqualTo(LocalDateTime.parse("2020-01-02T23:30:00"))
+          assertThat(LocalDateTime.parse(it.migrationId)).isCloseTo(LocalDateTime.now(), within(10, ChronoUnit.SECONDS))
+          assertThat(it.estimatedCount).isEqualTo(23_045)
         }
       )
     }
