@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.visi
 
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.within
+import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilCallTo
@@ -19,6 +20,7 @@ import org.springframework.web.reactive.function.BodyInserters
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
+import java.time.Duration
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
@@ -76,7 +78,7 @@ class VisitsMigrationIntTest : IntegrationTestBase() {
         .exchange()
         .expectStatus().isAccepted
 
-      await untilCallTo { Mockito.mockingDetails(visitsMigrationService).invocations.size } matches { it == (2 + 23) }
+      await atMost Duration.ofSeconds(30) untilCallTo { Mockito.mockingDetails(visitsMigrationService).invocations.size } matches { it == (2 + 23) }
       verify(visitsMigrationService).migrateVisits(
         check {
           assertThat(it.prisonIds).containsExactly("MDI", "BXI")
