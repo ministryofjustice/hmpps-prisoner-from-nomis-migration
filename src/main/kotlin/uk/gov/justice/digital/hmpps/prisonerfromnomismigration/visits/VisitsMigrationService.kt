@@ -6,10 +6,12 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatchId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISIT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_BY_PAGE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VisitId
 
 @Service
 class VisitsMigrationService(
@@ -40,7 +42,7 @@ class VisitsMigrationService(
     }
   }
 
-  fun migrateVisitsByPage(context: MigrationContext<VisitsMigrationFilter>) {
+  fun divideVisitsByPage(context: MigrationContext<VisitsMigrationFilter>) {
     (1..context.estimatedCount step pageSize).asSequence()
       .map {
         MigrationContext(
@@ -53,8 +55,22 @@ class VisitsMigrationService(
       }
   }
 
-  fun migrateVisitsForPage(context: MigrationContext<VisitsPage>) {
-    log.info("Will calculate visit for page ${context.body.pageNumber} to migrate for migrationId: ${context.migrationId} with filter ${context.body.filter}")
+  fun migrateVisitsForPage(context: MigrationContext<VisitsPage>) = nomisApiService.getVisits(
+    prisonIds = context.body.filter.prisonIds,
+    visitTypes = context.body.filter.visitTypes,
+    fromDateTime = context.body.filter.fromDateTime,
+    toDateTime = context.body.filter.toDateTime,
+    pageNumber = context.body.pageNumber,
+    pageSize = context.body.pageSize
+  ).content.map {
+    MigrationContext(
+      context = context,
+      body = it
+    )
+  }.forEach { queueService.sendMessage(MIGRATE_VISIT, it) }
+
+  fun migrateVisit(context: MigrationContext<VisitId>) {
+    log.info("Migrating visit {}", context.body.visitId)
   }
 }
 

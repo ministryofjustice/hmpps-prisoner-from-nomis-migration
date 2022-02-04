@@ -10,4 +10,6 @@ api.base.url:
   oauth: http://localhost:8090/auth
   visits: http://localhost:8082
 
-
+visits:
+  page:
+    size: 10

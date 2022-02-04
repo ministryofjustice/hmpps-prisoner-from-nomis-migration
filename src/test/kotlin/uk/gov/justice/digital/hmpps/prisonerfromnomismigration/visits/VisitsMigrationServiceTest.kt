@@ -19,6 +19,7 @@ import org.mockito.kotlin.whenever
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISIT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_BY_PAGE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
@@ -103,7 +104,7 @@ internal class VisitsMigrationServiceTest {
 
     @Test
     internal fun `will send a page message for every page (200) of visits `() {
-      service.migrateVisitsByPage(
+      service.divideVisitsByPage(
         MigrationContext(
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
           body =
@@ -124,7 +125,7 @@ internal class VisitsMigrationServiceTest {
 
     @Test
     internal fun `each page with have the filter and context attached`() {
-      service.migrateVisitsByPage(
+      service.divideVisitsByPage(
         MigrationContext(
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
           body =
@@ -154,7 +155,7 @@ internal class VisitsMigrationServiceTest {
     internal fun `each page will contain page number and page size`() {
       val context: KArgumentCaptor<MigrationContext<VisitsPage>> = argumentCaptor()
 
-      service.migrateVisitsByPage(
+      service.divideVisitsByPage(
         MigrationContext(
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
           body =
@@ -189,10 +190,122 @@ internal class VisitsMigrationServiceTest {
       assertThat(lastPage.body.pageSize).isEqualTo(200)
     }
   }
+
+  @Nested
+  @DisplayName("migrateVisitsForPage")
+  inner class MigrateVisitsForPage {
+    @BeforeEach
+    internal fun setUp() {
+      whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any())).thenReturn(
+        pages(15)
+      )
+    }
+
+    @Test
+    internal fun `will pass filter through to get total count along with a tiny page count`() {
+      service.migrateVisitsForPage(
+        MigrationContext(
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = VisitsPage(
+            filter = VisitsMigrationFilter(
+              prisonIds = listOf("LEI", "BXI"),
+              visitTypes = listOf("SCON"),
+              fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
+              toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
+            ),
+            pageNumber = 13,
+            pageSize = 15
+          )
+        )
+      )
+
+      verify(nomisApiService).getVisits(
+        listOf("LEI", "BXI"),
+        listOf("SCON"),
+        LocalDateTime.parse("2020-01-01T00:00:00"),
+        LocalDateTime.parse("2020-01-02T23:00:00"),
+        13,
+        15
+      )
+    }
+
+    @Test
+    internal fun `will send MIGRATE_VISIT with context for each visit`() {
+      service.migrateVisitsForPage(
+        MigrationContext(
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = VisitsPage(
+            filter = VisitsMigrationFilter(
+              prisonIds = listOf("LEI", "BXI"),
+              visitTypes = listOf("SCON"),
+              fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
+              toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
+            ),
+            pageNumber = 13,
+            pageSize = 15
+          )
+        )
+      )
+
+      verify(queueService, times(15)).sendMessage(
+        eq(MIGRATE_VISIT),
+        check<MigrationContext<VisitsMigrationFilter>> {
+          assertThat(it.estimatedCount).isEqualTo(100_200)
+          assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
+        }
+      )
+    }
+
+    @Test
+    internal fun `will send MIGRATE_VISIT with visitId for each visit`() {
+
+      val context: KArgumentCaptor<MigrationContext<VisitId>> = argumentCaptor()
+
+      whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any())).thenReturn(
+        pages(
+          15,
+          startId = 1000
+        )
+      )
+
+      service.migrateVisitsForPage(
+        MigrationContext(
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = VisitsPage(
+            filter = VisitsMigrationFilter(
+              prisonIds = listOf("LEI", "BXI"),
+              visitTypes = listOf("SCON"),
+              fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
+              toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
+            ),
+            pageNumber = 13,
+            pageSize = 15
+          )
+        )
+      )
+
+      verify(queueService, times(15)).sendMessage(
+        eq(MIGRATE_VISIT),
+        context.capture()
+      )
+      val allContexts: List<MigrationContext<VisitId>> = context.allValues
+
+      val (firstPage, secondPage, thirdPage) = allContexts
+      val lastPage = allContexts.last()
+
+      assertThat(firstPage.body.visitId).isEqualTo(1000)
+      assertThat(secondPage.body.visitId).isEqualTo(1001)
+      assertThat(thirdPage.body.visitId).isEqualTo(1002)
+      assertThat(lastPage.body.visitId).isEqualTo(1014)
+    }
+  }
 }
 
-fun pages(total: Long): PageImpl<VisitId> = PageImpl<VisitId>(
-  (1..total).map { VisitId(it) },
+fun pages(total: Long, startId: Long = 1): PageImpl<VisitId> = PageImpl<VisitId>(
+  (startId..total - 1 + startId).map { VisitId(it) },
   Pageable.ofSize(10),
   total
 )
