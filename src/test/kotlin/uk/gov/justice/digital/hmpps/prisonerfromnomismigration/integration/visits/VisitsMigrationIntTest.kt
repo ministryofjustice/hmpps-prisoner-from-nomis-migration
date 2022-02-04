@@ -2,7 +2,6 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.visi
 
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.within
-import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilCallTo
@@ -20,7 +19,6 @@ import org.springframework.web.reactive.function.BodyInserters
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
-import java.time.Duration
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
@@ -78,13 +76,7 @@ class VisitsMigrationIntTest : IntegrationTestBase() {
         .exchange()
         .expectStatus().isAccepted
 
-      await atMost Duration.ofSeconds(30) untilCallTo {
-        Mockito.mockingDetails(visitsMigrationService).invocations.size.also {
-          println(
-            "number of invocations is currently $it"
-          )
-        }
-      } matches { it == (2 + 23) }
+      await untilCallTo { Mockito.mockingDetails(visitsMigrationService).invocations.size } matches { it == (2 + 24) }
       verify(visitsMigrationService).migrateVisits(
         check {
           assertThat(it.prisonIds).containsExactly("MDI", "BXI")
@@ -103,7 +95,7 @@ class VisitsMigrationIntTest : IntegrationTestBase() {
           assertThat(it.estimatedCount).isEqualTo(23_045)
         }
       )
-      verify(visitsMigrationService, times(23)).migrateVisitsForPage(
+      verify(visitsMigrationService, times(24)).migrateVisitsForPage(
         check {
           assertThat(it.body.filter.prisonIds).containsExactly("MDI", "BXI")
           assertThat(it.body.filter.visitTypes).containsExactly("SCON", "OFFI")
@@ -112,7 +104,7 @@ class VisitsMigrationIntTest : IntegrationTestBase() {
           assertThat(LocalDateTime.parse(it.migrationId)).isCloseTo(LocalDateTime.now(), within(10, ChronoUnit.SECONDS))
           assertThat(it.estimatedCount).isEqualTo(23_045)
           assertThat(it.body.pageSize).isEqualTo(1_000)
-          assertThat(it.body.pageNumber).isBetween(0, 22)
+          assertThat(it.body.pageNumber).isBetween(0, 23)
         }
       )
     }
