@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISIT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_BY_PAGE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationService
@@ -28,8 +29,9 @@ class MigrationMessageListener(
     log.debug("Received message {}", message)
     val migrationMessage: MigrationMessage<*> = message.fromJson()
     when (migrationMessage.type) {
-      MIGRATE_VISITS -> visitsMigrationService.migrateVisitsByPage(context(message.fromJson()))
+      MIGRATE_VISITS -> visitsMigrationService.divideVisitsByPage(context(message.fromJson()))
       MIGRATE_VISITS_BY_PAGE -> visitsMigrationService.migrateVisitsForPage(context(message.fromJson()))
+      MIGRATE_VISIT -> visitsMigrationService.migrateVisit(context(message.fromJson()))
     }
   }
 

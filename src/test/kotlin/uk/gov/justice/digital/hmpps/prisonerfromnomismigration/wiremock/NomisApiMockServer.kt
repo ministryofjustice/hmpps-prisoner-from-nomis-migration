@@ -57,6 +57,10 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
       )
     )
   }
+
+  fun stubMultipleGetVisitsCounts(totalElements: Long, pageSize: Long) {
+    TODO("Not yet implemented")
+  }
 }
 
 private fun visitPagedResponse(totalElements: Long = 10, visitIds: List<Long> = listOf(1, 2, 3)): String {

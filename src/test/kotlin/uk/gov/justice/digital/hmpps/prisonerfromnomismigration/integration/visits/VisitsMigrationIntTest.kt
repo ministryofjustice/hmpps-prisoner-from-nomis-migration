@@ -51,6 +51,7 @@ class VisitsMigrationIntTest : IntegrationTestBase() {
     @Test
     internal fun `will start processing pages of visits`() {
       nomisApi.stubGetVisitsInitialCount(23_045)
+      nomisApi.stubMultipleGetVisitsCounts(totalElements = 23_045, pageSize = 10_000)
 
       webTestClient.post().uri("/migrate/visits")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
@@ -85,7 +86,7 @@ class VisitsMigrationIntTest : IntegrationTestBase() {
           assertThat(it.toDateTime).isEqualTo(LocalDateTime.parse("2020-01-02T23:30:00"))
         }
       )
-      verify(visitsMigrationService).migrateVisitsByPage(
+      verify(visitsMigrationService).divideVisitsByPage(
         check {
           assertThat(it.body.prisonIds).containsExactly("MDI", "BXI")
           assertThat(it.body.visitTypes).containsExactly("SCON", "OFFI")

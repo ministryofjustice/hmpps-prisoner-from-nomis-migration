@@ -19,8 +19,8 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     visitTypes: List<String>,
     fromDateTime: LocalDateTime?,
     toDateTime: LocalDateTime?,
-    pageNumber: Int,
-    pageSize: Int,
+    pageNumber: Long,
+    pageSize: Long,
   ): PageImpl<VisitId> =
     webClient.get()
       .uri {
