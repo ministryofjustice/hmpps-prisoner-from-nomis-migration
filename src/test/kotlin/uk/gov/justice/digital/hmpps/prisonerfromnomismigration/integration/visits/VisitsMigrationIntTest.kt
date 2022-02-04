@@ -78,7 +78,13 @@ class VisitsMigrationIntTest : IntegrationTestBase() {
         .exchange()
         .expectStatus().isAccepted
 
-      await atMost Duration.ofSeconds(30) untilCallTo { Mockito.mockingDetails(visitsMigrationService).invocations.size } matches { it == (2 + 23) }
+      await atMost Duration.ofSeconds(30) untilCallTo {
+        Mockito.mockingDetails(visitsMigrationService).invocations.size.also {
+          println(
+            "number of invocations is currently $it"
+          )
+        }
+      } matches { it == (2 + 23) }
       verify(visitsMigrationService).migrateVisits(
         check {
           assertThat(it.prisonIds).containsExactly("MDI", "BXI")
