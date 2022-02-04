@@ -29,7 +29,7 @@ internal class NomisApiServiceTest : IntegrationTestBase() {
     internal fun setUp() {
       nomisApi.stubFor(
         get(
-          urlPathEqualTo("/visits")
+          urlPathEqualTo("/visits/ids")
         ).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -51,7 +51,7 @@ internal class NomisApiServiceTest : IntegrationTestBase() {
       )
       nomisApi.verify(
         getRequestedFor(
-          urlPathEqualTo("/visits")
+          urlPathEqualTo("/visits/ids")
         )
           .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE"))
       )
@@ -69,7 +69,7 @@ internal class NomisApiServiceTest : IntegrationTestBase() {
       )
       nomisApi.verify(
         getRequestedFor(
-          urlEqualTo("/visits?prisonIds=MDI&prisonIds=BXI&visitTypes=SCON&visitTypes=OFFI&fromDateTime=2020-01-01T01:30&toDateTime=2020-01-02T23:30&page=23&size=10")
+          urlEqualTo("/visits/ids?prisonIds=MDI&prisonIds=BXI&visitTypes=SCON&visitTypes=OFFI&fromDateTime=2020-01-01T01:30&toDateTime=2020-01-02T23:30&page=23&size=10")
         )
       )
     }
@@ -86,7 +86,7 @@ internal class NomisApiServiceTest : IntegrationTestBase() {
       )
       nomisApi.verify(
         getRequestedFor(
-          urlEqualTo("/visits?prisonIds&visitTypes&fromDateTime&toDateTime&page=23&size=10")
+          urlEqualTo("/visits/ids?prisonIds&visitTypes&fromDateTime&toDateTime&page=23&size=10")
         )
       )
     }
@@ -95,7 +95,7 @@ internal class NomisApiServiceTest : IntegrationTestBase() {
     internal fun `will return paging info along with the visit ids`() {
       nomisApi.stubFor(
         get(
-          urlPathEqualTo("/visits")
+          urlPathEqualTo("/visits/ids")
         ).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
