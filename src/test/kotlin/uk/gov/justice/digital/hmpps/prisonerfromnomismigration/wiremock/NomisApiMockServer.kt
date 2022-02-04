@@ -1,14 +1,16 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 
 import com.github.tomakehurst.wiremock.WireMockServer
-import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
+import java.lang.Long.min
 
 class NomisApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
   companion object {
@@ -37,9 +39,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubHealthPing(status: Int) {
     stubFor(
       get("/health/ping").willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withBody(if (status == 200) "pong" else "some error")
+        aResponse().withHeader("Content-Type", "application/json").withBody(if (status == 200) "pong" else "some error")
           .withStatus(status)
       )
     )
@@ -48,22 +48,51 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubGetVisitsInitialCount(totalElements: Long) {
     NomisApiExtension.nomisApi.stubFor(
       get(
-        WireMock.urlPathEqualTo("/visits/ids")
-      ).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-          .withBody(visitPagedResponse(totalElements = totalElements))
+        urlPathEqualTo("/visits/ids")
       )
+        .withQueryParam("page", equalTo("0"))
+        .withQueryParam("size", equalTo("1"))
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+            .withBody(visitPagedResponse(totalElements = totalElements))
+        )
     )
   }
 
   fun stubMultipleGetVisitsCounts(totalElements: Long, pageSize: Long) {
-    TODO("Not yet implemented")
+    // for each page create a response for each VisitId starting from 1 up to `totalElements`
+
+    val pages = (totalElements / pageSize) + 1
+    (0..pages).forEach { page ->
+      val startVisitId = (page * pageSize) + 1
+      val endVisitId = min((page * pageSize) + pageSize, totalElements)
+      NomisApiExtension.nomisApi.stubFor(
+        get(
+          urlPathEqualTo("/visits/ids")
+        )
+          .withQueryParam("page", equalTo(page.toString()))
+          .willReturn(
+            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+              .withBody(
+                visitPagedResponse(
+                  totalElements = totalElements,
+                  visitIds = (startVisitId..endVisitId).map { it },
+                  pageNumber = page,
+                  pageSize = pageSize
+                ),
+              )
+          )
+      )
+    }
   }
 }
 
-private fun visitPagedResponse(totalElements: Long = 10, visitIds: List<Long> = listOf(1, 2, 3)): String {
+private fun visitPagedResponse(
+  totalElements: Long = 10,
+  visitIds: List<Long> = listOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+  pageSize: Long = 10,
+  pageNumber: Long = 0,
+): String {
   val content = visitIds.map { """{ "visitId": $it }""" }.joinToString { it }
   return """
 {
@@ -77,23 +106,23 @@ private fun visitPagedResponse(totalElements: Long = 10, visitIds: List<Long> = 
             "unsorted": false
         },
         "offset": 0,
-        "pageSize": 10,
-        "pageNumber": 23,
+        "pageSize": $pageSize,
+        "pageNumber": $pageNumber,
         "paged": true,
         "unpaged": false
     },
     "last": false,
-    "totalPages": 4190,
+    "totalPages": ${totalElements / pageSize + 1},
     "totalElements": $totalElements,
-    "size": 10,
-    "number": 23,
+    "size": $pageSize,
+    "number": $pageNumber,
     "sort": {
         "empty": false,
         "sorted": true,
         "unsorted": false
     },
     "first": true,
-    "numberOfElements": 10,
+    "numberOfElements": ${visitIds.size},
     "empty": false
 }                
       

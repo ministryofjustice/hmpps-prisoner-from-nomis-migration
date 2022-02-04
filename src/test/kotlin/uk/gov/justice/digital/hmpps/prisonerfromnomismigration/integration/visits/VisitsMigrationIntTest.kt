@@ -1,7 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.visits
 
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.within
+import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilCallTo
@@ -9,6 +9,8 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
+import org.mockito.kotlin.KArgumentCaptor
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.check
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -16,11 +18,13 @@ import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.http.ReactiveHttpOutputMessage
 import org.springframework.web.reactive.function.BodyInserter
 import org.springframework.web.reactive.function.BodyInserters
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.IntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VisitId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
+import java.time.Duration
 import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit
 
 class VisitsMigrationIntTest : IntegrationTestBase() {
   @SpyBean
@@ -50,8 +54,8 @@ class VisitsMigrationIntTest : IntegrationTestBase() {
 
     @Test
     internal fun `will start processing pages of visits`() {
-      nomisApi.stubGetVisitsInitialCount(23_045)
-      nomisApi.stubMultipleGetVisitsCounts(totalElements = 23_045, pageSize = 10_000)
+      nomisApi.stubGetVisitsInitialCount(86)
+      nomisApi.stubMultipleGetVisitsCounts(totalElements = 86, pageSize = 10)
 
       webTestClient.post().uri("/migrate/visits")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
@@ -77,7 +81,7 @@ class VisitsMigrationIntTest : IntegrationTestBase() {
         .exchange()
         .expectStatus().isAccepted
 
-      await untilCallTo { Mockito.mockingDetails(visitsMigrationService).invocations.size } matches { it == (2 + 24) }
+      await atMost Duration.ofMinutes(1) untilCallTo { Mockito.mockingDetails(visitsMigrationService).invocations.size } matches { it == (2 + 9 + 86) }
       verify(visitsMigrationService).migrateVisits(
         check {
           assertThat(it.prisonIds).containsExactly("MDI", "BXI")
@@ -92,22 +96,28 @@ class VisitsMigrationIntTest : IntegrationTestBase() {
           assertThat(it.body.visitTypes).containsExactly("SCON", "OFFI")
           assertThat(it.body.fromDateTime).isEqualTo(LocalDateTime.parse("2020-01-01T01:30:00"))
           assertThat(it.body.toDateTime).isEqualTo(LocalDateTime.parse("2020-01-02T23:30:00"))
-          assertThat(LocalDateTime.parse(it.migrationId)).isCloseTo(LocalDateTime.now(), within(10, ChronoUnit.SECONDS))
-          assertThat(it.estimatedCount).isEqualTo(23_045)
+          assertThat(LocalDateTime.parse(it.migrationId)).isNotNull
+          assertThat(it.estimatedCount).isEqualTo(86)
         }
       )
-      verify(visitsMigrationService, times(24)).migrateVisitsForPage(
+      verify(visitsMigrationService, times(9)).migrateVisitsForPage(
         check {
           assertThat(it.body.filter.prisonIds).containsExactly("MDI", "BXI")
           assertThat(it.body.filter.visitTypes).containsExactly("SCON", "OFFI")
           assertThat(it.body.filter.fromDateTime).isEqualTo(LocalDateTime.parse("2020-01-01T01:30:00"))
           assertThat(it.body.filter.toDateTime).isEqualTo(LocalDateTime.parse("2020-01-02T23:30:00"))
-          assertThat(LocalDateTime.parse(it.migrationId)).isCloseTo(LocalDateTime.now(), within(10, ChronoUnit.SECONDS))
-          assertThat(it.estimatedCount).isEqualTo(23_045)
-          assertThat(it.body.pageSize).isEqualTo(1_000)
-          assertThat(it.body.pageNumber).isBetween(0, 23)
+          assertThat(LocalDateTime.parse(it.migrationId)).isNotNull
+          assertThat(it.estimatedCount).isEqualTo(86)
+          assertThat(it.body.pageSize).isEqualTo(10)
+          assertThat(it.body.pageNumber).isBetween(0, 8)
         }
       )
+
+      val context: KArgumentCaptor<MigrationContext<VisitId>> = argumentCaptor()
+      val visitIdsUpTo86 = (1L..86L).map { it }.toTypedArray()
+
+      verify(visitsMigrationService, times(86)).migrateVisit(context.capture())
+      assertThat(context.allValues.map { it.body.visitId }).containsExactly(*visitIdsUpTo86)
     }
   }
 }
