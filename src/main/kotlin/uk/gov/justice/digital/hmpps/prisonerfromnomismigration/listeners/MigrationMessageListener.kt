@@ -10,6 +10,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationCon
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_BY_PAGE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationService
 
 @Service
@@ -28,6 +29,7 @@ class MigrationMessageListener(
     val migrationMessage: MigrationMessage<*> = message.fromJson()
     when (migrationMessage.type) {
       MIGRATE_VISITS -> visitsMigrationService.migrateVisitsByPage(context(message.fromJson()))
+      MIGRATE_VISITS_BY_PAGE -> visitsMigrationService.migrateVisitsForPage(context(message.fromJson()))
     }
   }
 
