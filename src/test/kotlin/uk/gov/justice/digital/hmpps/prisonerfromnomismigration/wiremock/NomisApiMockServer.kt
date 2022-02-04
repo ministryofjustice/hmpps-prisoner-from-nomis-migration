@@ -48,7 +48,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubGetVisitsInitialCount(totalElements: Long) {
     NomisApiExtension.nomisApi.stubFor(
       get(
-        WireMock.urlPathEqualTo("/visits")
+        WireMock.urlPathEqualTo("/visits/ids")
       ).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
