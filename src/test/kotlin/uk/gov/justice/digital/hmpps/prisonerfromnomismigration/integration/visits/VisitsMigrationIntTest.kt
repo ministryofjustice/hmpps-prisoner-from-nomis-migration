@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.check
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.http.ReactiveHttpOutputMessage
@@ -75,7 +76,7 @@ class VisitsMigrationIntTest : IntegrationTestBase() {
         .exchange()
         .expectStatus().isAccepted
 
-      await untilCallTo { Mockito.mockingDetails(visitsMigrationService).invocations.size } matches { it == 2 }
+      await untilCallTo { Mockito.mockingDetails(visitsMigrationService).invocations.size } matches { it == (2 + 23) }
       verify(visitsMigrationService).migrateVisits(
         check {
           assertThat(it.prisonIds).containsExactly("MDI", "BXI")
@@ -86,12 +87,24 @@ class VisitsMigrationIntTest : IntegrationTestBase() {
       )
       verify(visitsMigrationService).migrateVisitsByPage(
         check {
-          assertThat(it.filter.prisonIds).containsExactly("MDI", "BXI")
-          assertThat(it.filter.visitTypes).containsExactly("SCON", "OFFI")
-          assertThat(it.filter.fromDateTime).isEqualTo(LocalDateTime.parse("2020-01-01T01:30:00"))
-          assertThat(it.filter.toDateTime).isEqualTo(LocalDateTime.parse("2020-01-02T23:30:00"))
+          assertThat(it.body.prisonIds).containsExactly("MDI", "BXI")
+          assertThat(it.body.visitTypes).containsExactly("SCON", "OFFI")
+          assertThat(it.body.fromDateTime).isEqualTo(LocalDateTime.parse("2020-01-01T01:30:00"))
+          assertThat(it.body.toDateTime).isEqualTo(LocalDateTime.parse("2020-01-02T23:30:00"))
           assertThat(LocalDateTime.parse(it.migrationId)).isCloseTo(LocalDateTime.now(), within(10, ChronoUnit.SECONDS))
           assertThat(it.estimatedCount).isEqualTo(23_045)
+        }
+      )
+      verify(visitsMigrationService, times(23)).migrateVisitsForPage(
+        check {
+          assertThat(it.body.filter.prisonIds).containsExactly("MDI", "BXI")
+          assertThat(it.body.filter.visitTypes).containsExactly("SCON", "OFFI")
+          assertThat(it.body.filter.fromDateTime).isEqualTo(LocalDateTime.parse("2020-01-01T01:30:00"))
+          assertThat(it.body.filter.toDateTime).isEqualTo(LocalDateTime.parse("2020-01-02T23:30:00"))
+          assertThat(LocalDateTime.parse(it.migrationId)).isCloseTo(LocalDateTime.now(), within(10, ChronoUnit.SECONDS))
+          assertThat(it.estimatedCount).isEqualTo(23_045)
+          assertThat(it.body.pageSize).isEqualTo(1_000)
+          assertThat(it.body.pageNumber).isBetween(0, 22)
         }
       )
     }
