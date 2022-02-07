@@ -1,7 +1,7 @@
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
-  name: {{ include "app.fullname" . }}-queue-housekeeping
+  name: {{ include "app.fullname" . }}-dlq-retry
   labels:
     {{- include "app.labels" . | nindent 4 }}
 spec:
