@@ -25,6 +25,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_BY_PAGE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisCodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisVisit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisVisitor
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VisitId
 import java.time.LocalDateTime
 
@@ -316,6 +319,42 @@ internal class VisitsMigrationServiceTest {
     @BeforeEach
     internal fun setUp() {
       whenever(visitMappingService.findNomisVisitMapping(any())).thenReturn(null)
+      whenever(nomisApiService.getVisit(any())).thenReturn(
+        NomisVisit(
+          offenderNo = "A1234AA",
+          visitId = 1234,
+          startDateTime = LocalDateTime.parse("2020-01-01T10:00:00"),
+          endDateTime = LocalDateTime.parse("2020-01-02T12:00:00"),
+          agencyInternalLocation = NomisCodeDescription("OFF_VIS", "MDI-VISITS-OFF_VIS"),
+          prisonId = "BXI",
+          visitors = listOf(
+            NomisVisitor(
+              personId = 4729570,
+              leadVisitor = true,
+            ),
+            NomisVisitor(
+              personId = 4729580,
+              leadVisitor = false,
+            )
+          ),
+          visitType = NomisCodeDescription("SCON", "Social Contact"),
+          visitStatus = NomisCodeDescription("SCH", "Scheduled"),
+          commentText = "This is a comment",
+        )
+      )
+    }
+
+    @Test
+    internal fun `will retrieve visit from NOMIS`() {
+      service.migrateVisit(
+        MigrationContext(
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = VisitId(123)
+        )
+      )
+
+      verify(nomisApiService).getVisit(123)
     }
 
     @Nested

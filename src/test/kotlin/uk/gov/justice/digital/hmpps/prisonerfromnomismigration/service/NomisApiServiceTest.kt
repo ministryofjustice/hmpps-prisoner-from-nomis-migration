@@ -6,13 +6,16 @@ import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
+import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.net.HttpURLConnection
@@ -248,5 +251,112 @@ internal class NomisApiServiceTest {
 }                
       
     """.trimIndent()
+  }
+
+  @Nested
+  @DisplayName("getVisit")
+  inner class GetVisit {
+    @BeforeEach
+    internal fun setUp() {
+      nomisApi.stubFor(
+        get(
+          urlPathMatching("/visits/[0-9]+")
+        ).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpURLConnection.HTTP_OK)
+            .withBody(
+              """
+              {
+              "visitId": 10309617,
+              "offenderNo": "A7948DY",
+              "startDateTime": "2021-10-25T09:00:00",
+              "endDateTime": "2021-10-25T11:45:00",
+              "prisonId": "MDI",
+              "visitors": [
+                    {
+                        "personId": 4729570,
+                        "leadVisitor": true
+                    },
+                    {
+                        "personId": 4729580,
+                        "leadVisitor": false
+                    }
+                ],
+                "visitType": {
+                    "code": "SCON",
+                    "description": "Social Contact"
+                },
+                "visitStatus": {
+                    "code": "SCH",
+                    "description": "Scheduled"
+                },
+                "agencyInternalLocation": {
+                    "code": "OFF_VIS",
+                    "description": "MDI-VISITS-OFF_VIS"
+                },
+                "commentText": "Not sure if this is the right place to be"
+              }
+              """.trimIndent()
+            )
+        )
+      )
+    }
+
+    @Test
+    internal fun `will supply authentication token`() {
+      nomisService.getVisit(
+        nomisVisitId = 10309617,
+      )
+      nomisApi.verify(
+        getRequestedFor(
+          urlPathEqualTo("/visits/10309617")
+        )
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE"))
+      )
+    }
+
+    @Test
+    internal fun `will return visit data`() {
+      val visit = nomisService.getVisit(
+        nomisVisitId = 10309617,
+      )
+
+      assertThat(visit.visitId).isEqualTo(10309617)
+      assertThat(visit.visitors).extracting<Long>(NomisVisitor::personId).containsExactly(4729570, 4729580)
+      assertThat(visit.commentText).isEqualTo("Not sure if this is the right place to be")
+      assertThat(visit.startDateTime).isEqualTo(LocalDateTime.parse("2021-10-25T09:00:00"))
+      assertThat(visit.endDateTime).isEqualTo(LocalDateTime.parse("2021-10-25T11:45:00"))
+      assertThat(visit.offenderNo).isEqualTo("A7948DY")
+      assertThat(visit.agencyInternalLocation?.code).isEqualTo("OFF_VIS")
+      assertThat(visit.visitStatus.code).isEqualTo("SCH")
+      assertThat(visit.visitType.code).isEqualTo("SCON")
+    }
+
+    @Nested
+    @DisplayName("when visit does not exist in NOMIS")
+    inner class WhenNotFound {
+      @BeforeEach
+      internal fun setUp() {
+        nomisApi.stubFor(
+          get(
+            urlPathMatching("/visits/[0-9]+")
+          ).willReturn(
+            aResponse()
+              .withHeader("Content-Type", "application/json")
+              .withStatus(HttpURLConnection.HTTP_NOT_FOUND)
+          )
+        )
+      }
+
+      @Test
+      internal fun `will throw an exception`() {
+        assertThatThrownBy {
+          nomisService.getVisit(
+            nomisVisitId = 10309617,
+          )
+        }.isInstanceOf(WebClientResponseException.NotFound::class.java)
+      }
+    }
   }
 }
