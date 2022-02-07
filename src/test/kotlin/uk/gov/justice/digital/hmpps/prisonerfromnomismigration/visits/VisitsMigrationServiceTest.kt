@@ -13,6 +13,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -31,7 +32,13 @@ import java.time.LocalDateTime
 internal class VisitsMigrationServiceTest {
   private val nomisApiService: NomisApiService = mock()
   private val queueService: MigrationQueueService = mock()
-  val service = VisitsMigrationService(nomisApiService = nomisApiService, queueService = queueService, pageSize = 200)
+  private val visitMappingService: VisitMappingService = mock()
+  val service = VisitsMigrationService(
+    nomisApiService = nomisApiService,
+    queueService = queueService,
+    visitMappingService = visitMappingService,
+    pageSize = 200
+  )
 
   @Nested
   @DisplayName("migrateVisits")
@@ -300,6 +307,43 @@ internal class VisitsMigrationServiceTest {
       assertThat(secondPage.body.visitId).isEqualTo(1001)
       assertThat(thirdPage.body.visitId).isEqualTo(1002)
       assertThat(lastPage.body.visitId).isEqualTo(1014)
+    }
+  }
+
+  @Nested
+  @DisplayName("migrateVisit")
+  inner class MigrateVisit {
+    @BeforeEach
+    internal fun setUp() {
+      whenever(visitMappingService.findNomisVisitMapping(any())).thenReturn(null)
+    }
+
+    @Nested
+    inner class WhenMigratedAlready {
+      @BeforeEach
+      internal fun setUp() {
+        whenever(visitMappingService.findNomisVisitMapping(any())).thenReturn(
+          VisitNomisMapping(
+            nomisId = 123,
+            vsipId = "456",
+            label = "2020-01-01T00:00:00",
+            mappingType = "MIGRATED"
+          )
+        )
+      }
+
+      @Test
+      internal fun `will do nothing`() {
+        service.migrateVisit(
+          MigrationContext(
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitId(123)
+          )
+        )
+
+        verify(visitMappingService, never()).createNomisVisitMapping(any(), any(), any())
+      }
     }
   }
 }

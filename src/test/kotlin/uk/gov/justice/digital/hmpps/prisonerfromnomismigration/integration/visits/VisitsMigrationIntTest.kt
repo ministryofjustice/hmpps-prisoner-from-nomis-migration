@@ -23,6 +23,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VisitId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitMappingApiExtension.Companion.visitMappingApi
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -56,6 +57,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
     internal fun `will start processing pages of visits`() {
       nomisApi.stubGetVisitsInitialCount(86)
       nomisApi.stubMultipleGetVisitsCounts(totalElements = 86, pageSize = 10)
+      visitMappingApi.stubNomisVisitNotFound()
 
       webTestClient.post().uri("/migrate/visits")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
