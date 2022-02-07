@@ -19,14 +19,16 @@ automatically retried. Any persistent errors can be inspected and are retained i
 For running locally against docker instances of the following services:
 - hmpps-auth
 - hmpps-nomis-prisoner-api
+- visit-scheduler
+- hmpps-nomis-visits-mapping-service
 - localstack
 - run this application independently e.g. in IntelliJ
 
-`docker compose up hmpps-auth hmpps-nomis-prisoner-api localstack`
+`docker compose up --scale hmpps-prisoner-from-nomis-migration=0`
 
 or
 
-`docker-compose up hmpps-auth hmpps-nomis-prisoner-api localstack`
+`docker-compose up  --scale hmpps-prisoner-from-nomis-migration=0`
 
 Running all services including this service
 

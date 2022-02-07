@@ -19,14 +19,14 @@ import org.springframework.http.ReactiveHttpOutputMessage
 import org.springframework.web.reactive.function.BodyInserter
 import org.springframework.web.reactive.function.BodyInserters
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.IntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VisitId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.Duration
 import java.time.LocalDateTime
 
-class VisitsMigrationIntTest : IntegrationTestBase() {
+class VisitsMigrationIntTest : SqsIntegrationTestBase() {
   @SpyBean
   private lateinit var visitsMigrationService: VisitsMigrationService
 

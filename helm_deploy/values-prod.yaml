@@ -13,6 +13,7 @@ generic-service:
     API_BASE_URL_NOMIS: https://nomis-prisoner.aks-live-1.studio-hosting.service.justice.gov.uk
     # Set to sync until new service is ready
     API_BASE_URL_VISITS: https://prisoner-to-nomis-update.hmpps.service.justice.gov.uk
+    API_BASE_URL_VISIT_MAPPING: https://nomis-visits-mapping.hmpps.service.justice.gov.uk
 
 generic-prometheus-alerts:
   alertSeverity: digital-prison-service

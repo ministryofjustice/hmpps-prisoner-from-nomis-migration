@@ -12,12 +12,15 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.IntegrationTestBase
+import org.springframework.context.annotation.Import
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.net.HttpURLConnection
 import java.time.LocalDateTime
 
-internal class NomisApiServiceTest : IntegrationTestBase() {
+@SpringAPIServiceTest
+@Import(NomisApiService::class)
+internal class NomisApiServiceTest {
 
   @Autowired
   private lateinit var nomisService: NomisApiService

@@ -2,8 +2,9 @@ server:
   shutdown: immediate
 
 api.base.url:
-  nomis: http://localhost:8081
+  nomis: http://localhost:8082
   oauth: http://localhost:8090/auth
   # Set to ourselves until new service is ready
-  visits: http://localhost:8080
+  visits: http://localhost:8083
+  visit.mapping: http://localhost:8084
 

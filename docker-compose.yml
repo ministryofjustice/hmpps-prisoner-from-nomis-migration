@@ -39,6 +39,34 @@ services:
       - SERVER_PORT=8080
       - SPRING_PROFILES_ACTIVE=dev
 
+  hmpps-visits-api:
+    # For now use migration as a fake visits API
+    image: quay.io/hmpps/hmpps-prisoner-to-nomis-update:latest
+    networks:
+      - hmpps
+    container_name: hmpps-visits-api
+    ports:
+      - "8083:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+    environment:
+      - SERVER_PORT=8080
+      - SPRING_PROFILES_ACTIVE=dev
+
+
+  hmpps-nomis-visit-mapping-api:
+    image: quay.io/hmpps/hmpps-nomis-visits-mapping-service:latest
+    networks:
+      - hmpps
+    container_name: hmpps-nomis-visit-mapping-api
+    ports:
+      - "8084:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+    environment:
+      - SERVER_PORT=8080
+      - SPRING_PROFILES_ACTIVE=dev
+
   localstack:
     image: localstack/localstack:0.12.10
     networks:

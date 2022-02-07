@@ -38,6 +38,11 @@ spring:
             client-id: ${visits.client.id}
             client-secret: ${visits.client.secret}
             authorization-grant-type: client_credentials
+          visit-mapping-api:
+            provider: hmpps-auth
+            client-id: ${visit.nomis.api.client.id}
+            client-secret: ${visit.nomis.api.secret}
+            authorization-grant-type: client_credentials
         provider:
           hmpps-auth:
             token-uri: ${api.base.url.oauth}/oauth/token
