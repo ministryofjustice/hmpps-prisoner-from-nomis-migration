@@ -17,6 +17,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VisitId
 class VisitsMigrationService(
   private val queueService: MigrationQueueService,
   private val nomisApiService: NomisApiService,
+  private val visitMappingService: VisitMappingService,
   @Value("\${visits.page.size:1000}") private val pageSize: Long
 ) {
   private companion object {
@@ -69,9 +70,15 @@ class VisitsMigrationService(
     )
   }.forEach { queueService.sendMessage(MIGRATE_VISIT, it) }
 
-  fun migrateVisit(context: MigrationContext<VisitId>) {
-    log.info("Migrating visit {}", context.body.visitId)
-  }
+  fun migrateVisit(context: MigrationContext<VisitId>) =
+    visitMappingService.findNomisVisitMapping(context.body.visitId)
+      ?.run {
+        log.error("Will not migrate visit since it is migrated already, NOMIS id is ${context.body.visitId}, VSIP id is ${this.vsipId} as part migration ${this.label ?: "NONE"} (${this.mappingType})")
+      }
+      ?: run {
+        log.info("Migrating visit {}", context.body.visitId)
+        //  TODO: Do the actual migration
+      }
 }
 
 data class VisitsPage(val filter: VisitsMigrationFilter, val pageNumber: Long, val pageSize: Long)
