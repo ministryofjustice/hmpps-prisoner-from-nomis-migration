@@ -2,15 +2,16 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.heal
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.IntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.HmppsAuthApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitMappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsApiExtension
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.function.Consumer
 
-class HealthCheckTest : IntegrationTestBase() {
+class HealthCheckTest : SqsIntegrationTestBase() {
 
   @Test
   fun `Health page reports ok`() {
@@ -88,5 +89,6 @@ class HealthCheckTest : IntegrationTestBase() {
     HmppsAuthApiExtension.hmppsAuth.stubHealthPing(status)
     NomisApiExtension.nomisApi.stubHealthPing(status)
     VisitsApiExtension.visitsApi.stubHealthPing(status)
+    VisitMappingApiExtension.visitMappingApi.stubHealthPing(status)
   }
 }

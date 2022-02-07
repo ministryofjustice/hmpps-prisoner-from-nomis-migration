@@ -11,12 +11,22 @@ import org.springframework.web.reactive.function.client.WebClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.health.HealthCheck
 
 @Configuration
-class VisitsConfiguration(@Value("\${api.base.url.visits}") val baseUrl: String) {
+class VisitsConfiguration(
+  @Value("\${api.base.url.visits}") val visitsApiBaseUri: String,
+  @Value("\${api.base.url.visit.mapping}") val visitMappingApiBaseUri: String,
+) {
 
   @Bean
   fun visitsApiHealthWebClient(): WebClient {
     return WebClient.builder()
-      .baseUrl(baseUrl)
+      .baseUrl(visitsApiBaseUri)
+      .build()
+  }
+
+  @Bean
+  fun visitMappingApiHealthWebClient(): WebClient {
+    return WebClient.builder()
+      .baseUrl(visitMappingApiBaseUri)
       .build()
   }
 
@@ -26,7 +36,18 @@ class VisitsConfiguration(@Value("\${api.base.url.visits}") val baseUrl: String)
     oauth2Client.setDefaultClientRegistrationId("visits-api")
 
     return WebClient.builder()
-      .baseUrl(baseUrl)
+      .baseUrl(visitsApiBaseUri)
+      .apply(oauth2Client.oauth2Configuration())
+      .build()
+  }
+
+  @Bean
+  fun visitMappingApiWebClient(authorizedClientManager: OAuth2AuthorizedClientManager): WebClient {
+    val oauth2Client = ServletOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager)
+    oauth2Client.setDefaultClientRegistrationId("visit-mapping-api")
+
+    return WebClient.builder()
+      .baseUrl(visitMappingApiBaseUri)
       .apply(oauth2Client.oauth2Configuration())
       .build()
   }
@@ -34,4 +55,8 @@ class VisitsConfiguration(@Value("\${api.base.url.visits}") val baseUrl: String)
   @Component("visitsApi")
   class VisitsApiHealth
   constructor(@Qualifier("visitsApiHealthWebClient") webClient: WebClient) : HealthCheck(webClient)
+
+  @Component("visitMappingApi")
+  class VisitMappingApiHealth
+  constructor(@Qualifier("visitMappingApiHealthWebClient") webClient: WebClient) : HealthCheck(webClient)
 }
