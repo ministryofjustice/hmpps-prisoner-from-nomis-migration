@@ -36,10 +36,40 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       .retrieve()
       .bodyToMono(typeReference<RestResponsePage<VisitId>>())
       .block()!!
+
+  fun getVisit(
+    nomisVisitId: Long,
+  ): NomisVisit =
+    webClient.get()
+      .uri("/visits/{nomisVisitId}", nomisVisitId)
+      .retrieve()
+      .bodyToMono(NomisVisit::class.java)
+      .block()!!
 }
 
 data class VisitId(
   val visitId: Long
+)
+
+data class NomisVisitor(
+  val personId: Long,
+  val leadVisitor: Boolean
+)
+
+data class NomisCodeDescription(val code: String, val description: String)
+
+data class NomisVisit(
+  val visitId: Long,
+  val offenderNo: String,
+  val startDateTime: LocalDateTime,
+  val endDateTime: LocalDateTime,
+  val prisonId: String,
+  val visitors: List<NomisVisitor>,
+  val visitType: NomisCodeDescription,
+  val visitStatus: NomisCodeDescription,
+  val agencyInternalLocation: NomisCodeDescription? = null,
+  val commentText: String? = null,
+  val visitorConcernText: String? = null,
 )
 
 class RestResponsePage<T> @JsonCreator(mode = JsonCreator.Mode.PROPERTIES) constructor(

@@ -57,6 +57,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
     internal fun `will start processing pages of visits`() {
       nomisApi.stubGetVisitsInitialCount(86)
       nomisApi.stubMultipleGetVisitsCounts(totalElements = 86, pageSize = 10)
+      nomisApi.stubMultipleGetVisits(totalElements = 86)
       visitMappingApi.stubNomisVisitNotFound()
 
       webTestClient.post().uri("/migrate/visits")

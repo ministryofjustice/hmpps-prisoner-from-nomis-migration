@@ -76,8 +76,11 @@ class VisitsMigrationService(
         log.error("Will not migrate visit since it is migrated already, NOMIS id is ${context.body.visitId}, VSIP id is ${this.vsipId} as part migration ${this.label ?: "NONE"} (${this.mappingType})")
       }
       ?: run {
-        log.info("Migrating visit {}", context.body.visitId)
-        //  TODO: Do the actual migration
+        val nomisVisit = nomisApiService.getVisit(context.body.visitId)
+        log.info("Migrating visit {}", nomisVisit)
+        // TODO - call mapping service to get visit room
+        // TODO - call VSIP to migrate visit
+        // TODO - call mapping service to add mapping
       }
 }
 

@@ -10,6 +10,7 @@ import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.lang.Long.min
 
 class NomisApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
@@ -46,7 +47,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubGetVisitsInitialCount(totalElements: Long) {
-    NomisApiExtension.nomisApi.stubFor(
+    nomisApi.stubFor(
       get(
         urlPathEqualTo("/visits/ids")
       )
@@ -66,7 +67,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     (0..pages).forEach { page ->
       val startVisitId = (page * pageSize) + 1
       val endVisitId = min((page * pageSize) + pageSize, totalElements)
-      NomisApiExtension.nomisApi.stubFor(
+      nomisApi.stubFor(
         get(
           urlPathEqualTo("/visits/ids")
         )
@@ -85,7 +86,54 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
       )
     }
   }
+
+  fun stubMultipleGetVisits(totalElements: Long) {
+    (1..totalElements).forEach {
+      nomisApi.stubFor(
+        get(
+          urlPathEqualTo("/visits/$it")
+        )
+          .willReturn(
+            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+              .withBody(visitResponse(it))
+          )
+      )
+    }
+  }
 }
+
+private fun visitResponse(visitId: Long) = """
+              {
+              "visitId": $visitId,
+              "offenderNo": "A7948DY",
+              "startDateTime": "2021-10-25T09:00:00",
+              "endDateTime": "2021-10-25T11:45:00",
+              "prisonId": "MDI",
+              "visitors": [
+                    {
+                        "personId": 4729570,
+                        "leadVisitor": true
+                    },
+                    {
+                        "personId": 4729580,
+                        "leadVisitor": false
+                    }
+                ],
+                "visitType": {
+                    "code": "SCON",
+                    "description": "Social Contact"
+                },
+                "visitStatus": {
+                    "code": "SCH",
+                    "description": "Scheduled"
+                },
+                "agencyInternalLocation": {
+                    "code": "OFF_VIS",
+                    "description": "MDI-VISITS-OFF_VIS"
+                },
+                "commentText": "Not sure if this is the right place to be"
+              }
+            """
 
 private fun visitPagedResponse(
   totalElements: Long = 10,
