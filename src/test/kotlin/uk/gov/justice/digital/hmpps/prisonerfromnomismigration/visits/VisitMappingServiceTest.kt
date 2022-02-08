@@ -124,4 +124,63 @@ internal class VisitMappingServiceTest {
       )
     }
   }
+
+  @Nested
+  @DisplayName("findRoomMapping")
+  inner class FindRoomMapping {
+
+    @Test
+    internal fun `will return null when not found`() {
+      visitMappingApi.stubFor(
+        get(urlPathMatching("/prison/.+?/room/nomisRoomId/.+?")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NOT_FOUND.value())
+            .withBody("""{"message":"Not found"}""")
+        )
+      )
+
+      assertThat(visitMappingService.findRoomMapping("HB7SOC", "HEI")).isNull()
+    }
+
+    @Test
+    internal fun `will return the mapping when found`() {
+      visitMappingApi.stubFor(
+        get(urlPathMatching("/prison/.+?/room/nomisRoomId/.+?")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(
+              """
+              {
+                "vsipRoomId": "1234",
+                "isOpen": true
+              }
+              """.trimIndent()
+            )
+        )
+      )
+
+      val mapping = visitMappingService.findRoomMapping("HB7SOC", "HEI")
+      assertThat(mapping).isNotNull
+      assertThat(mapping!!.vsipRoomId).isEqualTo("1234")
+      assertThat(mapping.isOpen).isEqualTo(true)
+    }
+
+    @Test
+    internal fun `will throw exception for any other error`() {
+      visitMappingApi.stubFor(
+        get(urlPathMatching("/prison/.+?/room/nomisRoomId/.+?")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
+            .withBody("""{"message":"Tea"}""")
+        )
+      )
+
+      assertThatThrownBy {
+        visitMappingService.findRoomMapping("HB7SOC", "HEI")
+      }.isInstanceOf(WebClientResponseException.InternalServerError::class.java)
+    }
+  }
 }

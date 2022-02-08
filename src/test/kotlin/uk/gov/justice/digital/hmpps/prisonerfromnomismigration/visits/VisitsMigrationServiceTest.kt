@@ -342,6 +342,12 @@ internal class VisitsMigrationServiceTest {
           commentText = "This is a comment",
         )
       )
+      whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+        RoomMapping(
+          vsipRoomId = "VSIP-ROOM-ID",
+          isOpen = true
+        )
+      )
     }
 
     @Test
@@ -355,6 +361,26 @@ internal class VisitsMigrationServiceTest {
       )
 
       verify(nomisApiService).getVisit(123)
+    }
+
+    @Test
+    internal fun `will retrieve room for NOMIS room id`() {
+      whenever(nomisApiService.getVisit(any())).thenReturn(
+        aVisit(
+          agencyInternalLocation = NomisCodeDescription("OFF_VIS", "MDI-VISITS-OFF_VIS"),
+          prisonId = "BXI"
+        )
+      )
+
+      service.migrateVisit(
+        MigrationContext(
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = VisitId(123)
+        )
+      )
+
+      verify(visitMappingService).findRoomMapping(prisonId = "BXI", agencyInternalLocationCode = "OFF_VIS")
     }
 
     @Nested
@@ -392,3 +418,29 @@ fun pages(total: Long, startId: Long = 1): PageImpl<VisitId> = PageImpl<VisitId>
   Pageable.ofSize(10),
   total
 )
+
+fun aVisit(
+  prisonId: String = "BXI",
+  agencyInternalLocation: NomisCodeDescription = NomisCodeDescription("OFF_VIS", "MDI-VISITS-OFF_VIS")
+) =
+  NomisVisit(
+    offenderNo = "A1234AA",
+    visitId = 1234,
+    startDateTime = LocalDateTime.parse("2020-01-01T10:00:00"),
+    endDateTime = LocalDateTime.parse("2020-01-02T12:00:00"),
+    agencyInternalLocation = agencyInternalLocation,
+    prisonId = prisonId,
+    visitors = listOf(
+      NomisVisitor(
+        personId = 4729570,
+        leadVisitor = true,
+      ),
+      NomisVisitor(
+        personId = 4729580,
+        leadVisitor = false,
+      )
+    ),
+    visitType = NomisCodeDescription("SCON", "Social Contact"),
+    visitStatus = NomisCodeDescription("SCH", "Scheduled"),
+    commentText = "This is a comment",
+  )
