@@ -34,6 +34,19 @@ class VisitMappingService(@Qualifier("visitMappingApiWebClient") private val web
       .bodyToMono(Unit::class.java)
       .block()
   }
+
+  fun findRoomMapping(agencyInternalLocationCode: String, prisonId: String): RoomMapping? {
+    return webClient.get()
+      .uri("/prison/{prisonId}/room/nomisRoomId/{agencyInternalLocationCode}", prisonId, agencyInternalLocationCode)
+      .retrieve()
+      .bodyToMono(RoomMapping::class.java)
+      .onErrorResume(WebClientResponseException.NotFound::class.java) {
+        Mono.empty()
+      }
+      .block()
+  }
 }
 
 data class VisitNomisMapping(val nomisId: Long, val vsipId: String, val label: String?, val mappingType: String)
+
+data class RoomMapping(val vsipRoomId: String, val isOpen: Boolean)

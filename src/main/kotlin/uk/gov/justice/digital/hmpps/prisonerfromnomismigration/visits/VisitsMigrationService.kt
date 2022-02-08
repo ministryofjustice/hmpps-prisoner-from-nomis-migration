@@ -78,7 +78,13 @@ class VisitsMigrationService(
       ?: run {
         val nomisVisit = nomisApiService.getVisit(context.body.visitId)
         log.info("Migrating visit {}", nomisVisit)
-        // TODO - call mapping service to get visit room
+        val room = nomisVisit.agencyInternalLocation?.let {
+          visitMappingService.findRoomMapping(
+            agencyInternalLocationCode = nomisVisit.agencyInternalLocation.code,
+            prisonId = nomisVisit.prisonId
+          )
+        }
+        log.info("Visit room {}", room ?: "NONE")
         // TODO - call VSIP to migrate visit
         // TODO - call mapping service to add mapping
       }
