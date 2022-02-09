@@ -37,7 +37,7 @@ class VisitMappingService(@Qualifier("visitMappingApiWebClient") private val web
 
   fun findRoomMapping(agencyInternalLocationCode: String, prisonId: String): RoomMapping? {
     return webClient.get()
-      .uri("/prison/{prisonId}/room/nomisRoomId/{agencyInternalLocationCode}", prisonId, agencyInternalLocationCode)
+      .uri("/prison/{prisonId}/room/nomis-room-id/{agencyInternalLocationCode}", prisonId, agencyInternalLocationCode)
       .retrieve()
       .bodyToMono(RoomMapping::class.java)
       .onErrorResume(WebClientResponseException.NotFound::class.java) {

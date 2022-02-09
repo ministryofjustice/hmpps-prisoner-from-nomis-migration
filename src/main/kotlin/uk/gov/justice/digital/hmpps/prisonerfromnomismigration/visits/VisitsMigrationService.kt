@@ -11,6 +11,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_BY_PAGE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisCodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisVisit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VisitId
 
 @Service
@@ -18,6 +20,7 @@ class VisitsMigrationService(
   private val queueService: MigrationQueueService,
   private val nomisApiService: NomisApiService,
   private val visitMappingService: VisitMappingService,
+  private val visitsService: VisitsService,
   @Value("\${visits.page.size:1000}") private val pageSize: Long
 ) {
   private companion object {
@@ -80,14 +83,48 @@ class VisitsMigrationService(
         log.info("Migrating visit {}", nomisVisit)
         val room = nomisVisit.agencyInternalLocation?.let {
           visitMappingService.findRoomMapping(
-            agencyInternalLocationCode = nomisVisit.agencyInternalLocation.code,
+            agencyInternalLocationCode = nomisVisit.agencyInternalLocation.description,
             prisonId = nomisVisit.prisonId
           )
         }
-        log.info("Visit room {}", room ?: "NONE")
-        // TODO - call VSIP to migrate visit
+        val vsipVisit = visitsService.createVisit(
+          mapNomisVisit(nomisVisit, room).also {
+            log.info("Migrated visit {}", it)
+          }
+        )
+        log.info("Visit created in VSIP with id ${vsipVisit.visitId}")
         // TODO - call mapping service to add mapping
       }
 }
 
+// TODO - where does comment go?
+private fun mapNomisVisit(nomisVisit: NomisVisit, room: RoomMapping?): CreateVsipVisit = CreateVsipVisit(
+  prisonId = nomisVisit.prisonId,
+  prisonerId = nomisVisit.offenderNo,
+  startTimestamp = nomisVisit.startDateTime,
+  endTimestamp = nomisVisit.endDateTime,
+  visitType = nomisVisit.visitType.toVisitType(),
+  visitStatus = nomisVisit.visitStatus.toVisitStatus(),
+  visitRoom = room?.vsipRoomId ?: "NONE",
+  contactList = nomisVisit.visitors.map {
+    VsipVisitor(
+      nomisPersonId = it.personId,
+      leadVisitor = it.leadVisitor,
+    )
+  },
+
+)
+
 data class VisitsPage(val filter: VisitsMigrationFilter, val pageNumber: Long, val pageSize: Long)
+
+private fun NomisCodeDescription.toVisitType() = when (this.code) {
+  "SCON" -> "STANDARD_SOCIAL"
+  "OFFI" -> "OFFICIAL"
+  else -> throw IllegalArgumentException("Unknown visit type ${this.code}")
+}
+
+private fun NomisCodeDescription.toVisitStatus() = when (this.code) {
+  // TODO -> WHat statuses are there?
+  "CANC" -> "CANCELLED_BY_PRISON"
+  else -> "BOOKED"
+}

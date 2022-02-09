@@ -58,7 +58,7 @@ class VisitMappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubRoomMapping() {
     stubFor(
-      get(WireMock.urlPathMatching("/prison/.+?/room/nomisRoomId/.+?")).willReturn(
+      get(WireMock.urlPathMatching("/prison/.+?/room/nomis-room-id/.+?")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())

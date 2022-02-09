@@ -132,7 +132,7 @@ internal class VisitMappingServiceTest {
     @Test
     internal fun `will return null when not found`() {
       visitMappingApi.stubFor(
-        get(urlPathMatching("/prison/.+?/room/nomisRoomId/.+?")).willReturn(
+        get(urlPathMatching("/prison/.+?/room/nomis-room-id/.+?")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
@@ -146,7 +146,7 @@ internal class VisitMappingServiceTest {
     @Test
     internal fun `will return the mapping when found`() {
       visitMappingApi.stubFor(
-        get(urlPathMatching("/prison/.+?/room/nomisRoomId/.+?")).willReturn(
+        get(urlPathMatching("/prison/.+?/room/nomis-room-id/.+?")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
@@ -170,7 +170,7 @@ internal class VisitMappingServiceTest {
     @Test
     internal fun `will throw exception for any other error`() {
       visitMappingApi.stubFor(
-        get(urlPathMatching("/prison/.+?/room/nomisRoomId/.+?")).willReturn(
+        get(urlPathMatching("/prison/.+?/room/nomis-room-id/.+?")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
