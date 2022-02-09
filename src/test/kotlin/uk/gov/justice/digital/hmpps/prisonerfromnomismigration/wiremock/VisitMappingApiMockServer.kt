@@ -65,7 +65,7 @@ class VisitMappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withBody(
             """
               {
-                "vsipRoomId": "1234",
+                "vsipId": "1234",
                 "isOpen": true
               }
             """.trimIndent()

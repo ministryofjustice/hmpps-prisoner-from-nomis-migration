@@ -153,7 +153,7 @@ internal class VisitMappingServiceTest {
             .withBody(
               """
               {
-                "vsipRoomId": "1234",
+                "vsipId": "1234",
                 "isOpen": true
               }
               """.trimIndent()
@@ -163,7 +163,7 @@ internal class VisitMappingServiceTest {
 
       val mapping = visitMappingService.findRoomMapping("HB7SOC", "HEI")
       assertThat(mapping).isNotNull
-      assertThat(mapping!!.vsipRoomId).isEqualTo("1234")
+      assertThat(mapping!!.vsipId).isEqualTo("1234")
       assertThat(mapping.isOpen).isEqualTo(true)
     }
 
