@@ -105,7 +105,7 @@ private fun mapNomisVisit(nomisVisit: NomisVisit, room: RoomMapping?): CreateVsi
   endTimestamp = nomisVisit.endDateTime,
   visitType = nomisVisit.visitType.toVisitType(),
   visitStatus = nomisVisit.visitStatus.toVisitStatus(),
-  visitRoom = room?.vsipRoomId ?: "NONE",
+  visitRoom = room?.vsipId ?: "NONE",
   contactList = nomisVisit.visitors.map {
     VsipVisitor(
       nomisPersonId = it.personId,

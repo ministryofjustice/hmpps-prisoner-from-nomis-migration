@@ -334,7 +334,7 @@ internal class VisitsMigrationServiceTest {
       )
       whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
         RoomMapping(
-          vsipRoomId = "VSIP-ROOM-ID", isOpen = true
+          vsipId = "VSIP-ROOM-ID", isOpen = true
         )
       )
 
@@ -399,7 +399,7 @@ internal class VisitsMigrationServiceTest {
         )
         whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
           RoomMapping(
-            vsipRoomId = "VSIP-ROOM-ID", isOpen = true
+            vsipId = "VSIP-ROOM-ID", isOpen = true
           )
         )
 
@@ -463,7 +463,7 @@ internal class VisitsMigrationServiceTest {
       internal fun setUp() {
         whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
           RoomMapping(
-            vsipRoomId = "VSIP-ROOM-ID", isOpen = true
+            vsipId = "VSIP-ROOM-ID", isOpen = true
           )
         )
       }
@@ -539,7 +539,7 @@ internal class VisitsMigrationServiceTest {
       internal fun setUp() {
         whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
           RoomMapping(
-            vsipRoomId = "VSIP-ROOM-ID", isOpen = true
+            vsipId = "VSIP-ROOM-ID", isOpen = true
           )
         )
       }

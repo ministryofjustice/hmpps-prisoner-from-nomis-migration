@@ -49,4 +49,4 @@ class VisitMappingService(@Qualifier("visitMappingApiWebClient") private val web
 
 data class VisitNomisMapping(val nomisId: Long, val vsipId: String, val label: String?, val mappingType: String)
 
-data class RoomMapping(val vsipRoomId: String, val isOpen: Boolean)
+data class RoomMapping(val vsipId: String, val isOpen: Boolean)
