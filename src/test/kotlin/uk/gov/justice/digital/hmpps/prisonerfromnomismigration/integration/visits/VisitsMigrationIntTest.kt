@@ -61,6 +61,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubMultipleGetVisits(totalElements = 86)
       visitMappingApi.stubNomisVisitNotFound()
       visitMappingApi.stubRoomMapping()
+      visitMappingApi.stubVisitMappingCreate()
       visitsApi.stubCreateVisit()
 
       webTestClient.post().uri("/migrate/visits")
