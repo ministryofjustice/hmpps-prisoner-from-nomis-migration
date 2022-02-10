@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits
 
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -105,8 +106,8 @@ internal class VisitsMigrationServiceTest {
   }
 
   @Nested
-  @DisplayName("migrateVisitsByPage")
-  inner class MigrateVisitsByPage {
+  @DisplayName("divideVisitsByPage")
+  inner class DivideVisitsByPage {
 
     @BeforeEach
     internal fun setUp() {
@@ -374,6 +375,36 @@ internal class VisitsMigrationServiceTest {
     }
 
     @Test
+    internal fun `when no room found, migration for this visit is abandoned`() {
+      whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(null)
+
+      assertThatThrownBy {
+        service.migrateVisit(
+          MigrationContext(
+            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+          )
+        )
+      }.isInstanceOf(NoRoomMappingFoundException::class.java)
+    }
+
+    @Test
+    internal fun `when no room found in NOMIS, migration for this visit is abandoned`() {
+      whenever(nomisApiService.getVisit(any())).thenReturn(
+        aVisit(
+          agencyInternalLocation = null,
+        )
+      )
+
+      assertThatThrownBy {
+        service.migrateVisit(
+          MigrationContext(
+            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+          )
+        )
+      }.isInstanceOf(NoRoomMappingFoundException::class.java)
+    }
+
+    @Test
     internal fun `will create a visit in VSIP`() {
       service.migrateVisit(
         MigrationContext(
@@ -587,6 +618,26 @@ internal class VisitsMigrationServiceTest {
       }
     }
 
+    @Test
+    internal fun `will create mapping between VSIP and NOMIS visit`() {
+      whenever(nomisApiService.getVisit(any())).thenReturn(
+        aVisit(
+          visitId = 123456
+        )
+      )
+      whenever(visitsService.createVisit(any())).thenReturn(
+        VsipVisit(visitId = "654321")
+      )
+
+      service.migrateVisit(
+        MigrationContext(
+          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123456)
+        )
+      )
+
+      verify(visitMappingService).createNomisVisitMapping(123456, "654321", "2020-05-23T11:30:00")
+    }
+
     @Nested
     inner class WhenMigratedAlready {
       @BeforeEach
@@ -618,15 +669,16 @@ fun pages(total: Long, startId: Long = 1): PageImpl<VisitId> = PageImpl<VisitId>
 
   fun aVisit(
     prisonId: String = "BXI",
-    agencyInternalLocation: NomisCodeDescription = NomisCodeDescription("OFF_VIS", "MDI-VISITS-OFF_VIS"),
+    agencyInternalLocation: NomisCodeDescription? = NomisCodeDescription("OFF_VIS", "MDI-VISITS-OFF_VIS"),
     prisonerId: String = "A1234AA",
     startDateTime: LocalDateTime = LocalDateTime.parse("2020-01-01T10:00:00"),
     endDateTime: LocalDateTime = LocalDateTime.parse("2020-01-02T12:00:00"),
     visitType: NomisCodeDescription = NomisCodeDescription("SCON", "Social Contact"),
     visitStatus: NomisCodeDescription = NomisCodeDescription("SCH", "Scheduled"),
+    visitId: Long = 123
   ) = NomisVisit(
     offenderNo = prisonerId,
-    visitId = 1234,
+    visitId = visitId,
     startDateTime = startDateTime,
     endDateTime = endDateTime,
     agencyInternalLocation = agencyInternalLocation,

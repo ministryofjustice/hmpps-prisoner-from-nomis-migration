@@ -76,36 +76,44 @@ class VisitsMigrationService(
   fun migrateVisit(context: MigrationContext<VisitId>) =
     visitMappingService.findNomisVisitMapping(context.body.visitId)
       ?.run {
-        log.error("Will not migrate visit since it is migrated already, NOMIS id is ${context.body.visitId}, VSIP id is ${this.vsipId} as part migration ${this.label ?: "NONE"} (${this.mappingType})")
+        log.info("Will not migrate visit since it is migrated already, NOMIS id is ${context.body.visitId}, VSIP id is ${this.vsipId} as part migration ${this.label ?: "NONE"} (${this.mappingType})")
       }
       ?: run {
         val nomisVisit = nomisApiService.getVisit(context.body.visitId)
-        log.info("Migrating visit {}", nomisVisit)
-        val room = nomisVisit.agencyInternalLocation?.let {
+        nomisVisit.agencyInternalLocation?.let {
           visitMappingService.findRoomMapping(
             agencyInternalLocationCode = nomisVisit.agencyInternalLocation.description,
             prisonId = nomisVisit.prisonId
           )
+        }?.run {
+          val vsipVisit = visitsService.createVisit(
+            mapNomisVisit(nomisVisit, this)
+          )
+          visitMappingService.createNomisVisitMapping(
+            nomisVisitId = nomisVisit.visitId,
+            vsipVisitId = vsipVisit.visitId,
+            migrationId = context.migrationId
+          )
+        } ?: run {
+          log.error("Could not find room mapping for visit ${nomisVisit.visitId} with prison ${nomisVisit.prisonId} and agency internal location ${nomisVisit.agencyInternalLocation?.description}")
+          throw NoRoomMappingFoundException(
+            prisonId = nomisVisit.prisonId,
+            agencyInternalLocationDescription = nomisVisit.agencyInternalLocation?.description
+              ?: "NO NOMIS ROOM MAPPING FOUND"
+          )
         }
-        val vsipVisit = visitsService.createVisit(
-          mapNomisVisit(nomisVisit, room).also {
-            log.info("Migrated visit {}", it)
-          }
-        )
-        log.info("Visit created in VSIP with id ${vsipVisit.visitId}")
-        // TODO - call mapping service to add mapping
       }
 }
 
 // TODO - where does comment go?
-private fun mapNomisVisit(nomisVisit: NomisVisit, room: RoomMapping?): CreateVsipVisit = CreateVsipVisit(
+private fun mapNomisVisit(nomisVisit: NomisVisit, room: RoomMapping): CreateVsipVisit = CreateVsipVisit(
   prisonId = nomisVisit.prisonId,
   prisonerId = nomisVisit.offenderNo,
   startTimestamp = nomisVisit.startDateTime,
   endTimestamp = nomisVisit.endDateTime,
   visitType = nomisVisit.visitType.toVisitType(),
   visitStatus = nomisVisit.visitStatus.toVisitStatus(),
-  visitRoom = room?.vsipId ?: "NONE",
+  visitRoom = room.vsipId,
   contactList = nomisVisit.visitors.map {
     VsipVisitor(
       nomisPersonId = it.personId,
@@ -128,3 +136,6 @@ private fun NomisCodeDescription.toVisitStatus() = when (this.code) {
   "CANC" -> "CANCELLED_BY_PRISON"
   else -> "BOOKED"
 }
+
+class NoRoomMappingFoundException(val prisonId: String, val agencyInternalLocationDescription: String) :
+  RuntimeException("No room mapping found for prisonId $prisonId and agencyInternalLocationDescription $agencyInternalLocationDescription")
