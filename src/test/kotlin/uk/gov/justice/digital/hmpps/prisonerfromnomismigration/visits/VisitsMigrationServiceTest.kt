@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits
 
+import com.microsoft.applicationinsights.TelemetryClient
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -13,6 +14,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -38,12 +40,14 @@ internal class VisitsMigrationServiceTest {
   private val queueService: MigrationQueueService = mock()
   private val visitMappingService: VisitMappingService = mock()
   private val visitsService: VisitsService = mock()
+  private val telemetryClient: TelemetryClient = mock()
 
   val service = VisitsMigrationService(
     nomisApiService = nomisApiService,
     queueService = queueService,
     visitMappingService = visitMappingService,
     visitsService = visitsService,
+    telemetryClient = telemetryClient,
     pageSize = 200
   )
 
@@ -101,6 +105,66 @@ internal class VisitsMigrationServiceTest {
           assertThat(it.body.fromDateTime).isEqualTo(LocalDateTime.parse("2020-01-01T00:00:00"))
           assertThat(it.body.toDateTime).isEqualTo(LocalDateTime.parse("2020-01-02T23:00:00"))
         }
+      )
+    }
+
+    @Test
+    internal fun `will write analytic with estimated count and filter`() {
+      whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any())).thenReturn(
+        pages(23)
+      )
+      service.migrateVisits(
+        VisitsMigrationFilter(
+          prisonIds = listOf("LEI", "BXI"),
+          visitTypes = listOf("SCON"),
+          fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
+          toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
+        )
+      )
+
+      verify(telemetryClient).trackEvent(
+        eq("nomis-migration-visits-started"),
+        check {
+          assertThat(it["migrationId"]).isNotNull
+          assertThat(it["estimatedCount"]).isEqualTo("23")
+          assertThat(it["prisonIds"]).isEqualTo("LEI, BXI")
+          assertThat(it["visitTypes"]).isEqualTo("SCON")
+          assertThat(it["fromDateTime"]).isEqualTo("2020-01-01T00:00:00")
+          assertThat(it["toDateTime"]).isEqualTo("2020-01-02T23:00:00")
+        },
+        eq(null)
+      )
+    }
+
+    @Test
+    internal fun `will write analytics with empty filter`() {
+      whenever(
+        nomisApiService.getVisits(
+          prisonIds = any(),
+          visitTypes = any(),
+          fromDateTime = isNull(),
+          toDateTime = isNull(),
+          pageNumber = any(),
+          pageSize = any()
+        )
+      ).thenReturn(
+        pages(23)
+      )
+      service.migrateVisits(
+        VisitsMigrationFilter(visitTypes = listOf())
+      )
+
+      verify(telemetryClient).trackEvent(
+        eq("nomis-migration-visits-started"),
+        check {
+          assertThat(it["migrationId"]).isNotNull
+          assertThat(it["estimatedCount"]).isEqualTo("23")
+          assertThat(it["prisonIds"]).isEqualTo("")
+          assertThat(it["visitTypes"]).isEqualTo("")
+          assertThat(it["fromDateTime"]).isEqualTo("")
+          assertThat(it["toDateTime"]).isEqualTo("")
+        },
+        eq(null)
       )
     }
   }
@@ -636,6 +700,87 @@ internal class VisitsMigrationServiceTest {
       )
 
       verify(visitMappingService).createNomisVisitMapping(123456, "654321", "2020-05-23T11:30:00")
+    }
+
+    @Nested
+    inner class Analytics {
+      @Test
+      internal fun `migration abandoned due to room mapping missing`() {
+        whenever(nomisApiService.getVisit(any())).thenReturn(
+          aVisit(
+            prisonId = "BXI",
+            agencyInternalLocation = NomisCodeDescription("OFF_VIS", "MDI-VISITS-OFF_VIS"),
+            prisonerId = "A1234AA",
+            visitId = 123456,
+            startDateTime = LocalDateTime.parse("2018-05-23T11:30:00"),
+          )
+        )
+
+        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(null)
+
+        assertThatThrownBy {
+          service.migrateVisit(
+            MigrationContext(
+              migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+            )
+          )
+        }
+
+        verify(telemetryClient).trackEvent(
+          eq("nomis-migration-visit-no-room-mapping"),
+          check {
+            assertThat(it["migrationId"]).isEqualTo("2020-05-23T11:30:00")
+            assertThat(it["prisonId"]).isEqualTo("BXI")
+            assertThat(it["offenderNo"]).isEqualTo("A1234AA")
+            assertThat(it["visitId"]).isEqualTo("123456")
+            assertThat(it["startDateTime"]).isEqualTo("2018-05-23T11:30:00")
+            assertThat(it["agencyInternalLocation"]).isEqualTo("MDI-VISITS-OFF_VIS")
+          },
+          eq(null)
+        )
+      }
+
+      @Test
+      internal fun `when successfully migrated`() {
+        whenever(nomisApiService.getVisit(any())).thenReturn(
+          aVisit(
+            prisonId = "BXI",
+            agencyInternalLocation = NomisCodeDescription("OFF_VIS", "MDI-VISITS-OFF_VIS"),
+            prisonerId = "A1234AA",
+            visitId = 123456,
+            startDateTime = LocalDateTime.parse("2018-05-23T11:30:00"),
+          )
+        )
+        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+          RoomMapping(
+            vsipId = "VSIP-ROOM-ID", isOpen = true
+          )
+        )
+
+        whenever(visitsService.createVisit(any())).thenReturn(
+          VsipVisit(visitId = "654321")
+        )
+
+        service.migrateVisit(
+          MigrationContext(
+            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+          )
+        )
+
+        verify(telemetryClient).trackEvent(
+          eq("nomis-migration-visit-migrated"),
+          check {
+            assertThat(it["migrationId"]).isEqualTo("2020-05-23T11:30:00")
+            assertThat(it["prisonId"]).isEqualTo("BXI")
+            assertThat(it["offenderNo"]).isEqualTo("A1234AA")
+            assertThat(it["visitId"]).isEqualTo("123456")
+            assertThat(it["vsipVisitId"]).isEqualTo("654321")
+            assertThat(it["startDateTime"]).isEqualTo("2018-05-23T11:30:00")
+            assertThat(it["room"]).isEqualTo("VSIP-ROOM-ID")
+          },
+          eq(null)
+        )
+      }
     }
 
     @Nested

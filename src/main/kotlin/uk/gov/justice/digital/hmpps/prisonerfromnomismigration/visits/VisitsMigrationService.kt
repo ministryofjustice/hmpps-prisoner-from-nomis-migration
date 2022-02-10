@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits
 
+import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -14,6 +15,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisCodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisVisit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VisitId
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @Service
 class VisitsMigrationService(
@@ -21,6 +24,7 @@ class VisitsMigrationService(
   private val nomisApiService: NomisApiService,
   private val visitMappingService: VisitMappingService,
   private val visitsService: VisitsService,
+  private val telemetryClient: TelemetryClient,
   @Value("\${visits.page.size:1000}") private val pageSize: Long
 ) {
   private companion object {
@@ -43,6 +47,19 @@ class VisitsMigrationService(
       estimatedCount = visitCount
     ).apply {
       queueService.sendMessage(MIGRATE_VISITS, this)
+    }.also {
+      telemetryClient.trackEvent(
+        "nomis-migration-visits-started",
+        mapOf<String, String>(
+          "migrationId" to it.migrationId,
+          "estimatedCount" to it.estimatedCount.toString(),
+          "prisonIds" to it.body.prisonIds.joinToString(),
+          "visitTypes" to it.body.visitTypes.joinToString(),
+          "fromDateTime" to it.body.fromDateTime.asStringOrBlank(),
+          "toDateTime" to it.body.toDateTime.asStringOrBlank()
+        ),
+        null
+      )
     }
   }
 
@@ -86,23 +103,73 @@ class VisitsMigrationService(
             prisonId = nomisVisit.prisonId
           )
         }?.run {
-          val vsipVisit = visitsService.createVisit(
-            mapNomisVisit(nomisVisit, this)
-          )
-          visitMappingService.createNomisVisitMapping(
-            nomisVisitId = nomisVisit.visitId,
-            vsipVisitId = vsipVisit.visitId,
-            migrationId = context.migrationId
-          )
-        } ?: run {
-          log.error("Could not find room mapping for visit ${nomisVisit.visitId} with prison ${nomisVisit.prisonId} and agency internal location ${nomisVisit.agencyInternalLocation?.description}")
-          throw NoRoomMappingFoundException(
-            prisonId = nomisVisit.prisonId,
-            agencyInternalLocationDescription = nomisVisit.agencyInternalLocation?.description
-              ?: "NO NOMIS ROOM MAPPING FOUND"
-          )
-        }
+          visitsService.createVisit(mapNomisVisit(nomisVisit, this))
+            .also {
+              createNomisVisitMapping(
+                nomisVisitId = nomisVisit.visitId,
+                vsipVisitId = it.visitId,
+                migrationId = context.migrationId
+              )
+            }.also {
+              telemetryClient.trackEvent(
+                "nomis-migration-visit-migrated",
+                mapOf(
+                  "migrationId" to context.migrationId,
+                  "prisonId" to nomisVisit.prisonId,
+                  "offenderNo" to nomisVisit.offenderNo,
+                  "visitId" to nomisVisit.visitId.toString(),
+                  "vsipVisitId" to it.visitId,
+                  "startDateTime" to nomisVisit.startDateTime.asStringOrBlank(),
+                  "room" to this.vsipId
+                ),
+                null
+              )
+            }
+        } ?: run { handleNoRoomMappingFound(context.migrationId, nomisVisit) }
       }
+
+  private fun createNomisVisitMapping(
+    nomisVisitId: Long,
+    vsipVisitId: String,
+    migrationId: String
+  ) = try {
+    visitMappingService.createNomisVisitMapping(
+      nomisVisitId = nomisVisitId,
+      vsipVisitId = vsipVisitId,
+      migrationId = migrationId
+    )
+  } catch (e: Exception) {
+    telemetryClient.trackEvent(
+      "nomis-migration-visit-mapping-failed",
+      mapOf<String, String>(
+        "migrationId" to migrationId,
+        "vsipVisitId" to vsipVisitId,
+        "nomisVisitId" to nomisVisitId.toString()
+      ),
+      null
+    ).also { throw e }
+  }
+
+  private fun handleNoRoomMappingFound(migrationId: String, nomisVisit: NomisVisit) {
+    telemetryClient.trackEvent(
+      "nomis-migration-visit-no-room-mapping",
+      mapOf<String, String>(
+        "migrationId" to migrationId,
+        "prisonId" to nomisVisit.prisonId,
+        "offenderNo" to nomisVisit.offenderNo,
+        "visitId" to nomisVisit.visitId.toString(),
+        "startDateTime" to nomisVisit.startDateTime.asStringOrBlank(),
+        "agencyInternalLocation" to nomisVisit.agencyInternalLocation?.description.orEmpty()
+      ),
+      null
+    )
+
+    throw NoRoomMappingFoundException(
+      prisonId = nomisVisit.prisonId,
+      agencyInternalLocationDescription = nomisVisit.agencyInternalLocation?.description
+        ?: "NO NOMIS ROOM MAPPING FOUND"
+    )
+  }
 }
 
 // TODO - where does comment go?
@@ -139,3 +206,5 @@ private fun NomisCodeDescription.toVisitStatus() = when (this.code) {
 
 class NoRoomMappingFoundException(val prisonId: String, val agencyInternalLocationDescription: String) :
   RuntimeException("No room mapping found for prisonId $prisonId and agencyInternalLocationDescription $agencyInternalLocationDescription")
+
+private fun LocalDateTime?.asStringOrBlank(): String = this?.format(DateTimeFormatter.ISO_DATE_TIME) ?: ""
