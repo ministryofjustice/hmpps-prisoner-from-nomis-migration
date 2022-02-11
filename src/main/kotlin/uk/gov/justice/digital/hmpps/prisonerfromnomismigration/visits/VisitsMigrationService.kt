@@ -139,6 +139,7 @@ class VisitsMigrationService(
       migrationId = migrationId
     )
   } catch (e: Exception) {
+    log.error("Failed to create mapping for visit $nomisVisitId, VSIP id $vsipVisitId", e)
     telemetryClient.trackEvent(
       "nomis-migration-visit-mapping-failed",
       mapOf<String, String>(
@@ -147,7 +148,7 @@ class VisitsMigrationService(
         "nomisVisitId" to nomisVisitId.toString()
       ),
       null
-    ).also { throw e }
+    )
   }
 
   private fun handleNoRoomMappingFound(migrationId: String, nomisVisit: NomisVisit) {

@@ -702,6 +702,38 @@ internal class VisitsMigrationServiceTest {
       verify(visitMappingService).createNomisVisitMapping(123456, "654321", "2020-05-23T11:30:00")
     }
 
+    @Test
+    internal fun `will not throw exception (and place message back on queue) when mapping create fails`() {
+      whenever(nomisApiService.getVisit(any())).thenReturn(
+        aVisit(
+          visitId = 123456
+        )
+      )
+      whenever(visitsService.createVisit(any())).thenReturn(
+        VsipVisit(visitId = "654321")
+      )
+
+      whenever(visitMappingService.createNomisVisitMapping(any(), any(), any())).thenThrow(
+        RuntimeException("something went wrong")
+      )
+
+      service.migrateVisit(
+        MigrationContext(
+          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123456)
+        )
+      )
+
+      verify(telemetryClient).trackEvent(
+        eq("nomis-migration-visit-mapping-failed"),
+        check {
+          assertThat(it["migrationId"]).isEqualTo("2020-05-23T11:30:00")
+          assertThat(it["nomisVisitId"]).isEqualTo("123456")
+          assertThat(it["vsipVisitId"]).isEqualTo("654321")
+        },
+        eq(null)
+      )
+    }
+
     @Nested
     inner class Analytics {
       @Test
