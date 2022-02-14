@@ -4,6 +4,7 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
@@ -97,6 +98,38 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
             aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
               .withBody(visitResponse(it))
           )
+      )
+    }
+  }
+
+  fun verifyGetVisitsFilter(
+    prisonIds: List<String>,
+    visitTypes: List<String>,
+    fromDateTime: String,
+    toDateTime: String
+  ) {
+    nomisApi.verify(
+      getRequestedFor(
+        urlPathEqualTo("/visits/ids")
+      )
+        .withQueryParam("fromDateTime", equalTo(fromDateTime))
+        .withQueryParam("toDateTime", equalTo(toDateTime))
+    )
+    // verify each parameter one at a time
+    prisonIds.forEach {
+      nomisApi.verify(
+        getRequestedFor(
+          urlPathEqualTo("/visits/ids")
+        )
+          .withQueryParam("prisonIds", equalTo(it))
+      )
+    }
+    visitTypes.forEach {
+      nomisApi.verify(
+        getRequestedFor(
+          urlPathEqualTo("/visits/ids")
+        )
+          .withQueryParam("visitTypes", equalTo(it))
       )
     }
   }

@@ -5,6 +5,7 @@ import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
@@ -82,6 +83,19 @@ class VisitMappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.CREATED.value())
+      )
+    )
+  }
+
+  fun createVisitMappingCount() = findAll(postRequestedFor(urlEqualTo("/mapping"))).count()
+
+  fun verifyCreateMappingVisitIds(nomsVisitIds: Array<Long>) = nomsVisitIds.forEach {
+    verify(
+      postRequestedFor(urlEqualTo("/mapping")).withRequestBody(
+        WireMock.matchingJsonPath(
+          "nomisId",
+          WireMock.equalTo("$it")
+        )
       )
     )
   }
