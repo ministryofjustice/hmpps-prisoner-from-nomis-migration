@@ -61,6 +61,8 @@ There a circumstances where you want to run this service end to end but without 
 has not be written yet. To emulate the publishing service we may provide a mock, for instance MockVisitsResource which consumes migrated data.
 Details of the configuration follows:
 
+`API_BASE_URL_VISITS=https://prisoner-to-nomis-update-dev.hmpps.service.justice.gov.uk`
+
 
 ### Runbook
 
@@ -69,6 +71,83 @@ Details of the configuration follows:
 Since this services uses the HMPPS SQS library with defaults this has all the default endpoints for queue maintenance as documented in the [SQS library](https://github.com/ministryofjustice/hmpps-spring-boot-sqs/blob/main/README.md).
 
 For purging queues the queue name can be found in the [health check](https://prisoner-nomis-migration.hmpps.service.justice.gov.uk/health) and the required role is the default `ROLE_QUEUE_ADMIN`.
+
+#### Visit a Person in Prison (VSIP)
+
+With the kubernetes pods scaled to around 12, around `200,000` visits can be migrated per hour.
+
+A migration can be started by calling the migration end point using a HMPPS Auth token with the role `MIGRATE_VISITS`
+
+`POST /migrate/visits`
+
+```bash
+
+curl --location --request POST 'https://prisoner-nomis-migration.hmpps.service.justice.gov.uk/migrate/visits' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer <token with MIGRATE_VISITS>' \
+--data-raw '{
+"prisonIds": ["HEI"],
+"visitTypes": ["SCON"]
+}'
+```
+
+POST body to optionally contain:
+
+- `prisonIds` - a list of prison ids to migrate
+- `visitTypes` - a list of visit types to migrate. It will default to `SCON` if not provided.
+- `fromDateTime` - only include visits created after this date. NB this is creation date not the actual visit date.
+- `endDateTime` - only include visits created before this date. NB this is creation date not the actual visit date.
+
+The `from` and `end` times are primarily used to ensure that only visits created after the last migration are migrated. This is a performance optimisation 
+since visits will never be migrated twice. Once it is marked as migrated it can only be migrated again by resetting the visit mapping table.
+
+The response from this call will be an information JSON structure which echos the filter used but also includes:
+- `migrationId` - the id of the migration that groups Application Insights events and is also written to the visit mapping table
+- `estimatedCount` - the estimated number of visits that will be migrated. Since the last page of visits may include new visits created in NOMIS while the migration is running this number might change.
+
+Given the health check page reports the number of messages in the main queue and DLQ, it is possible to see at a glance how far the migration has progressed from the `/health` endpoint.
+
+##### Application Insights Events
+
+```azure
+customEvents 
+| where cloud_RoleName == 'hmpps-prisoner-from-nomis-migration' 
+| where name startswith "nomis-migration" 
+| summarize count() by name
+```
+
+will show all significant visit migration events
+
+- `nomis-migration-visits-started` - the single event for a migration which will contain the estimate count and the migration id
+- `nomis-migration-visit-migrated` - the event for each visit migrated. It will contain the visit ids and basic information about the visit
+- `nomis-migration-visit-mapping-failed`- indicates the visit was migrated but the mapping record could not be created. These events require manual intervention; see below.
+- `nomis-migration-visit-no-room-mapping` - indicates a visit was not migrated because the room it was in could not be mapped. These events require room mapping change and a rerun of the migration.
+
+`nomis-migration-visit-mapping-failed` requires the 2 IDs are extracted from application insights and manually added to the mapping table via the API
+
+```azure
+customEvents 
+| where cloud_RoleName == 'hmpps-prisoner-from-nomis-migration' 
+| where name == 'nomis-migration-visit-mapping-failed'
+| extend migrationId_ = tostring(customDimensions.migrationId)
+| extend nomisVisitId_ = tostring(customDimensions.nomisVisitId)
+| extend vsipVisitId_ = tostring(customDimensions.vsipVisitId)
+
+```
+For each failure the mapping endpoint should be called to create the mapping record.
+e.g.
+
+```bash
+curl --location --request POST 'https://nomis-visits-mapping.hmpps.service.justice.gov.uk/mapping' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer <token with ADMIN_NOMIS >' \
+--data-raw '{
+    "mappingType": "MIGRATED",
+    "nomisId": 624145,
+    "vsipId": "6b111f4c-6593-412e-8ec1-685486962e09",
+    "label": "2022-02-14T09:58:45"
+}'
+```
 
 
 
