@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import reactor.core.publisher.Mono
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @Service
 class VisitMappingService(@Qualifier("visitMappingApiWebClient") private val webClient: WebClient) {
@@ -45,8 +47,14 @@ class VisitMappingService(@Qualifier("visitMappingApiWebClient") private val web
       }
       .block()
   }
+
+  fun findLatestMigration(): LatestMigration? = LatestMigration()
+  fun getMigrationDetails(migrationId: String): MigrationDetails = MigrationDetails()
 }
 
 data class VisitNomisMapping(val nomisId: Long, val vsipId: String, val label: String?, val mappingType: String)
 
 data class RoomMapping(val vsipId: String, val isOpen: Boolean)
+
+data class LatestMigration(val migrationId: String = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
+data class MigrationDetails(val count: Long = 0, val startedDateTime: LocalDateTime = LocalDateTime.now())
