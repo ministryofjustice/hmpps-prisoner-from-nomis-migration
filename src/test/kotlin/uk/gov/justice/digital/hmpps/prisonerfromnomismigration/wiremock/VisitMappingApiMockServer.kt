@@ -7,6 +7,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
@@ -50,7 +51,7 @@ class VisitMappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubNomisVisitNotFound() {
     stubFor(
-      get(WireMock.urlPathMatching("/mapping/nomisId/.*")).willReturn(
+      get(urlPathMatching("/mapping/nomisId/.*")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.NOT_FOUND.value())
@@ -61,7 +62,7 @@ class VisitMappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubRoomMapping() {
     stubFor(
-      get(WireMock.urlPathMatching("/prison/.+?/room/nomis-room-id/.+?")).willReturn(
+      get(urlPathMatching("/prison/.+?/room/nomis-room-id/.+?")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
@@ -83,6 +84,75 @@ class VisitMappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.CREATED.value())
+      )
+    )
+  }
+
+  fun stubVisitMappingByMigrationId(whenCreated: String, count: Int = 278887) {
+    stubFor(
+      get(urlPathMatching("/mapping/migration-id/.*")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(
+            """
+{
+    "content": [
+        {
+            "nomisId": 191747,
+            "vsipId": "6c3ce237-f519-400d-85ca-9ba3e23323d8",
+            "label": "2022-02-14T09:58:45",
+            "whenCreated": "$whenCreated",
+            "mappingType": "MIGRATED"
+        }
+    ],
+    "pageable": {
+        "sort": {
+            "empty": true,
+            "sorted": false,
+            "unsorted": true
+        },
+        "offset": 0,
+        "pageSize": 1,
+        "pageNumber": 0,
+        "paged": true,
+        "unpaged": false
+    },
+    "last": false,
+    "totalPages": 278887,
+    "totalElements": $count,
+    "size": 1,
+    "number": 0,
+    "sort": {
+        "empty": true,
+        "sorted": false,
+        "unsorted": true
+    },
+    "first": true,
+    "numberOfElements": 1,
+    "empty": false
+}            
+            """.trimIndent()
+          )
+      )
+    )
+  }
+
+  fun stubLatestMigration(migrationId: String) {
+    stubFor(
+      get(urlEqualTo("/mapping/migrated/latest")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(
+            """
+{
+    "nomisId": 14478380,
+    "vsipId": "7fd62066-9aff-4f77-bdee-9d92aafc5555",
+    "label": "$migrationId",
+    "mappingType": "MIGRATED",
+    "whenCreated": "2022-02-16T16:21:15.589091"
+}              
+              """
+          )
       )
     )
   }

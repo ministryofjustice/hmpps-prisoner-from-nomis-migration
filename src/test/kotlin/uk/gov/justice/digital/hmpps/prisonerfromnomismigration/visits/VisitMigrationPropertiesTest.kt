@@ -76,7 +76,7 @@ internal class VisitMigrationPropertiesTest {
       whenever(visitMappingService.getMigrationDetails("2020-01-01T12:00:00")).thenReturn(
         MigrationDetails(
           count = 12_001,
-          startedDateTime = LocalDateTime.parse("2020-01-01T12:10:29"),
+          content = listOf(MigratedItem(whenCreated = LocalDateTime.parse("2020-01-01T12:10:29"))),
         )
       )
       details = build()
@@ -113,7 +113,7 @@ internal class VisitMigrationPropertiesTest {
       whenever(visitMappingService.getMigrationDetails("2020-01-01T12:00:00")).thenReturn(
         MigrationDetails(
           count = 12_001,
-          startedDateTime = LocalDateTime.parse("2020-01-01T12:10:29"),
+          content = listOf(MigratedItem(whenCreated = LocalDateTime.parse("2020-01-01T12:10:29"))),
         )
       )
       details = build()
