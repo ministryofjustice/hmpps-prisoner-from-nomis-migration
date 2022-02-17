@@ -1,12 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import reactor.core.publisher.Mono
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 @Service
 class VisitMappingService(@Qualifier("visitMappingApiWebClient") private val webClient: WebClient) {
@@ -48,13 +48,39 @@ class VisitMappingService(@Qualifier("visitMappingApiWebClient") private val web
       .block()
   }
 
-  fun findLatestMigration(): LatestMigration? = LatestMigration()
-  fun getMigrationDetails(migrationId: String): MigrationDetails = MigrationDetails()
+  fun findLatestMigration(): LatestMigration? = webClient.get()
+    .uri("/mapping/migrated/latest")
+    .retrieve()
+    .bodyToMono(LatestMigration::class.java)
+    .onErrorResume(WebClientResponseException.NotFound::class.java) {
+      Mono.empty()
+    }
+    .block()
+
+  fun getMigrationDetails(migrationId: String): MigrationDetails = webClient.get()
+    .uri {
+      it.path("/mapping/migration-id/{migrationId}")
+        .queryParam("size", 1)
+        .build(migrationId)
+    }
+    .retrieve()
+    .bodyToMono(MigrationDetails::class.java)
+    .block()!!
 }
 
 data class VisitNomisMapping(val nomisId: Long, val vsipId: String, val label: String?, val mappingType: String)
 
 data class RoomMapping(val vsipId: String, val isOpen: Boolean)
 
-data class LatestMigration(val migrationId: String = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
-data class MigrationDetails(val count: Long = 0, val startedDateTime: LocalDateTime = LocalDateTime.now())
+data class LatestMigration(@JsonProperty("label") val migrationId: String)
+data class MigrationDetails(
+  @JsonProperty("totalElements") val count: Long,
+  val content: List<MigratedItem>,
+) {
+  val startedDateTime: LocalDateTime?
+    get() = content.firstOrNull()?.whenCreated
+}
+
+data class MigratedItem(
+  val whenCreated: LocalDateTime
+)

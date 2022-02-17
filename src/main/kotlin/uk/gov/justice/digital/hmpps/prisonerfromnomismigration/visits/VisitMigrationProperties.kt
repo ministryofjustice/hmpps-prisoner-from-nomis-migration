@@ -34,11 +34,11 @@ class VisitMigrationProperties(
     }.getOrElse { mapOf() }
 
     val migrationProperties = visitMappingService.findLatestMigration()?.let {
-      val (count, startedDateTime) = visitMappingService.getMigrationDetails(it.migrationId)
+      val details = visitMappingService.getMigrationDetails(it.migrationId)
       mapOf<String, Any?>(
         "id" to it.migrationId,
-        "records migrated" to count,
-        "started" to startedDateTime
+        "records migrated" to details.count,
+        "started" to details.startedDateTime
       )
     } ?: mapOf()
 
