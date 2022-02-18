@@ -8,6 +8,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
+import com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
@@ -88,6 +89,31 @@ class VisitMappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubVisitMappingCreateFailureFollowedBySuccess() {
+    stubFor(
+      post(urlEqualTo("/mapping"))
+        .inScenario("Retry Scenario")
+        .whenScenarioStateIs(STARTED)
+        .willReturn(
+          aResponse()
+            .withStatus(500) // request unsuccessful with status code 500
+            .withHeader("Content-Type", "application/json")
+        )
+        .willSetStateTo("Cause Success")
+    )
+
+    stubFor(
+      post(urlEqualTo("/mapping"))
+        .inScenario("Retry Scenario")
+        .whenScenarioStateIs("Cause Success")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.CREATED.value())
+        )
+    )
+  }
+
   fun stubVisitMappingByMigrationId(whenCreated: String, count: Int = 278887) {
     stubFor(
       get(urlPathMatching("/mapping/migration-id/.*")).willReturn(
@@ -159,8 +185,9 @@ class VisitMappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun createVisitMappingCount() = findAll(postRequestedFor(urlEqualTo("/mapping"))).count()
 
-  fun verifyCreateMappingVisitIds(nomsVisitIds: Array<Long>) = nomsVisitIds.forEach {
+  fun verifyCreateMappingVisitIds(nomsVisitIds: Array<Long>, times: Int = 1) = nomsVisitIds.forEach {
     verify(
+      times,
       postRequestedFor(urlEqualTo("/mapping")).withRequestBody(
         WireMock.matchingJsonPath(
           "nomisId",

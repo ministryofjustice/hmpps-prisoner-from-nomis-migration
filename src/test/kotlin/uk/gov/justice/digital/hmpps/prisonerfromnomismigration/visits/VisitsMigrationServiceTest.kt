@@ -26,6 +26,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationCon
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISIT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_BY_PAGE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.RETRY_VISIT_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisCodeDescription
@@ -703,7 +704,7 @@ internal class VisitsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will not throw exception (and place message back on queue) when mapping create fails`() {
+    internal fun `will not throw exception (and place message back on queue) but create a new retry message`() {
       whenever(nomisApiService.getVisit(any())).thenReturn(
         aVisit(
           visitId = 123456
@@ -723,14 +724,13 @@ internal class VisitsMigrationServiceTest {
         )
       )
 
-      verify(telemetryClient).trackEvent(
-        eq("nomis-migration-visit-mapping-failed"),
-        check {
-          assertThat(it["migrationId"]).isEqualTo("2020-05-23T11:30:00")
-          assertThat(it["nomisVisitId"]).isEqualTo("123456")
-          assertThat(it["vsipVisitId"]).isEqualTo("654321")
-        },
-        eq(null)
+      verify(queueService).sendMessage(
+        eq(RETRY_VISIT_MAPPING),
+        check<MigrationContext<VisitMapping>> {
+          assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
+          assertThat(it.body.nomisVisitId).isEqualTo(123456)
+          assertThat(it.body.vsipVisitId).isEqualTo("654321")
+        }
       )
     }
 

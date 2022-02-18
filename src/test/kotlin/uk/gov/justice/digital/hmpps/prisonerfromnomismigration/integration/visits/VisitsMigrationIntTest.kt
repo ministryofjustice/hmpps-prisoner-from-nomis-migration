@@ -1,7 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.visits
 
 import org.assertj.core.api.Assertions.assertThat
-import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilCallTo
@@ -15,7 +14,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitMappingApiExtension.Companion.visitMappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsApiExtension.Companion.visitsApi
-import java.time.Duration
 
 class VisitsMigrationIntTest : SqsIntegrationTestBase() {
 
@@ -76,7 +74,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().isAccepted
 
       // wait for all mappings to be created before verifying
-      await atMost Duration.ofMinutes(2) untilCallTo { visitMappingApi.createVisitMappingCount() } matches { it == 86 }
+      await untilCallTo { visitMappingApi.createVisitMappingCount() } matches { it == 86 }
 
       // check filter matches what is passed in
       nomisApi.verifyGetVisitsFilter(
@@ -93,6 +91,35 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
 
       // Check each visit has a mapping (each visit will be a unique number starting from 1)
       visitMappingApi.verifyCreateMappingVisitIds(visitIdsUpTo86)
+    }
+
+    @Test
+    internal fun `will retry to create a mapping, and only the mapping, if it fails first time`() {
+      nomisApi.stubGetVisitsInitialCount(1)
+      nomisApi.stubMultipleGetVisitsCounts(totalElements = 1, pageSize = 10)
+      nomisApi.stubMultipleGetVisits(totalElements = 1)
+      visitMappingApi.stubNomisVisitNotFound()
+      visitMappingApi.stubRoomMapping()
+      visitsApi.stubCreateVisit()
+      visitMappingApi.stubVisitMappingCreateFailureFollowedBySuccess()
+
+      webTestClient.post().uri("/migrate/visits")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
+        .header("Content-Type", "application/json")
+        .body(
+          BodyInserters.fromValue("{}")
+        )
+        .exchange()
+        .expectStatus().isAccepted
+
+      // wait for all mappings to be created before verifying
+      await untilCallTo { visitMappingApi.createVisitMappingCount() } matches { it == 2 }
+
+      // check that each visit is created in VSIP
+      assertThat(visitsApi.createVisitCount()).isEqualTo(1)
+
+      // should retry to create mapping twice
+      visitMappingApi.verifyCreateMappingVisitIds(arrayOf(1L), times = 2)
     }
   }
 }

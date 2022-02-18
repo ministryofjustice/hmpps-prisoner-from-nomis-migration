@@ -10,6 +10,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatc
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISIT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_BY_PAGE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.RETRY_VISIT_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisCodeDescription
@@ -108,7 +109,7 @@ class VisitsMigrationService(
               createNomisVisitMapping(
                 nomisVisitId = nomisVisit.visitId,
                 vsipVisitId = it.visitId,
-                migrationId = context.migrationId
+                context = context
               )
             }.also {
               telemetryClient.trackEvent(
@@ -131,23 +132,21 @@ class VisitsMigrationService(
   private fun createNomisVisitMapping(
     nomisVisitId: Long,
     vsipVisitId: String,
-    migrationId: String
+    context: MigrationContext<*>
   ) = try {
     visitMappingService.createNomisVisitMapping(
       nomisVisitId = nomisVisitId,
       vsipVisitId = vsipVisitId,
-      migrationId = migrationId
+      migrationId = context.migrationId
     )
   } catch (e: Exception) {
     log.error("Failed to create mapping for visit $nomisVisitId, VSIP id $vsipVisitId", e)
-    telemetryClient.trackEvent(
-      "nomis-migration-visit-mapping-failed",
-      mapOf<String, String>(
-        "migrationId" to migrationId,
-        "vsipVisitId" to vsipVisitId,
-        "nomisVisitId" to nomisVisitId.toString()
-      ),
-      null
+    queueService.sendMessage(
+      RETRY_VISIT_MAPPING,
+      MigrationContext(
+        context = context,
+        body = VisitMapping(nomisVisitId = nomisVisitId, vsipVisitId = vsipVisitId)
+      )
     )
   }
 
@@ -169,6 +168,14 @@ class VisitsMigrationService(
       prisonId = nomisVisit.prisonId,
       agencyInternalLocationDescription = nomisVisit.agencyInternalLocation?.description
         ?: "NO NOMIS ROOM MAPPING FOUND"
+    )
+  }
+
+  fun retryCreateVisitMapping(context: MigrationContext<VisitMapping>) {
+    visitMappingService.createNomisVisitMapping(
+      nomisVisitId = context.body.nomisVisitId,
+      vsipVisitId = context.body.vsipVisitId,
+      migrationId = context.migrationId
     )
   }
 }
@@ -209,3 +216,8 @@ class NoRoomMappingFoundException(val prisonId: String, val agencyInternalLocati
   RuntimeException("No room mapping found for prisonId $prisonId and agencyInternalLocationDescription $agencyInternalLocationDescription")
 
 private fun LocalDateTime?.asStringOrBlank(): String = this?.format(DateTimeFormatter.ISO_DATE_TIME) ?: ""
+
+data class VisitMapping(
+  val nomisVisitId: Long,
+  val vsipVisitId: String,
+)
