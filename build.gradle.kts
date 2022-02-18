@@ -9,13 +9,17 @@ configurations {
 
 dependencies {
   implementation("org.springframework.boot:spring-boot-starter-webflux")
+  // right now only the x86_64 Mac version is shipped by default
+  // this could be moved to DPS gradle plugin and do logic like this:
+  // if dependency has webflux and architecture is arach_64 add this dependency
+  // It will probably require https://github.com/google/osdetector-gradle-plugin
+  // We only need this when building for MacOS locally
+  runtimeOnly("io.netty:netty-resolver-dns-native-macos::osx-aarch_64")
+
   implementation("org.springframework.boot:spring-boot-starter-security")
   implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
   implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
   implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:1.0.5")
-
-  // only required and used for M1 Macs to remove annoying DNS message
-  runtimeOnly("io.netty:netty-resolver-dns-native-macos:4.1.72.Final:osx-aarch_64")
 
   implementation("org.springdoc:springdoc-openapi-ui:1.6.5")
   implementation("org.springdoc:springdoc-openapi-kotlin:1.6.5")
