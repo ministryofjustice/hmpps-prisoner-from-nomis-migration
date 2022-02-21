@@ -1,5 +1,5 @@
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "4.0.3-beta"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "4.0.4-beta"
   kotlin("plugin.spring") version "1.6.10"
 }
 
@@ -9,12 +9,6 @@ configurations {
 
 dependencies {
   implementation("org.springframework.boot:spring-boot-starter-webflux")
-  // right now only the x86_64 Mac version is shipped by default
-  // this could be moved to DPS gradle plugin and do logic like this:
-  // if dependency has webflux and architecture is arach_64 add this dependency
-  // It will probably require https://github.com/google/osdetector-gradle-plugin
-  // We only need this when building for MacOS locally
-  runtimeOnly("io.netty:netty-resolver-dns-native-macos::osx-aarch_64")
 
   implementation("org.springframework.boot:spring-boot-starter-security")
   implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
