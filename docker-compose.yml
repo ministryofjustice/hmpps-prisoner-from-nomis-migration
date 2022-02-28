@@ -87,15 +87,28 @@ services:
     networks:
       - hmpps
     container_name: hpfnm-localstack
-    ports:
-      - "4566-4597:4566-4597"
-      - 8999:8080
     environment:
       - SERVICES=sqs,sns
       - DEBUG=${DEBUG- }
       - DOCKER_HOST=unix:///var/run/docker.sock
       - DEFAULT_REGION=eu-west-2
       - HOSTNAME_EXTERNAL=hpfnm-localstack
+    volumes:
+      - "${TMPDIR:-/tmp/localstack}:/tmp/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
+  localstack-external:
+    image: localstack/localstack:0.14.0
+    networks:
+      - hmpps
+    container_name: hpfnm-localstack-external
+    ports:
+      - "4566-4597:4566-4597"
+    environment:
+      - SERVICES=sqs
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - DEFAULT_REGION=eu-west-2
+      - PORT_WEB_UI=${PORT_WEB_UI- }
     volumes:
       - "${TMPDIR:-/tmp/localstack}:/tmp/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
