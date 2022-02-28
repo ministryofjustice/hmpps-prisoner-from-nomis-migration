@@ -14,7 +14,7 @@ data class VisitsMigrationFilter(
     description = "List of visit types to migrate",
     example = "SCON",
     allowableValues = ["SCON", "OFFI"],
-    defaultValue = "SCON"
+    defaultValue = "[\"SCON\"]"
   )
   val visitTypes: List<String> = listOf("SCON"),
 
