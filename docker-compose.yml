@@ -3,7 +3,8 @@ services:
   hmpps-prisoner-from-nomis-migration:
     build:
       context: .
-    network_mode: "host"
+    networks:
+      - hmpps
     container_name: hmpps-prisoner-from-nomis-migration
     ports:
       - "8081:8080"
@@ -12,12 +13,17 @@ services:
     environment:
       - SERVER_PORT=8080
       - SPRING_PROFILES_ACTIVE=dev
+      - HMPPS_SQS_LOCALSTACK_URL=http://hpfnm-localstack:4566
+      - API_BASE_URL_OAUTH=http://hpfnm-hmpps-auth:8080/auth
+      - API_BASE_URL_NOMIS=http://hpfnm-hmpps-nomis-prisoner-api:8080
+      - API_BASE_URL_VISITS=http://hpfnm-hmpps-visits-api:8080
+      - API_BASE_URL_VISIT_MAPPING=http://hpfnm-hmpps-nomis-visit-mapping-api:8080
 
   hmpps-auth:
     image: quay.io/hmpps/hmpps-auth:latest
     networks:
       - hmpps
-    container_name: hmpps-auth
+    container_name: hpfnm-hmpps-auth
     ports:
       - "8090:8080"
     healthcheck:
@@ -30,7 +36,7 @@ services:
     image: quay.io/hmpps/hmpps-nomis-prisoner-api:latest
     networks:
       - hmpps
-    container_name: hmpps-nomis-prisoner-api
+    container_name: hpfnm-hmpps-nomis-prisoner-api
     ports:
       - "8082:8080"
     healthcheck:
@@ -38,13 +44,14 @@ services:
     environment:
       - SERVER_PORT=8080
       - SPRING_PROFILES_ACTIVE=dev
+      - API_BASE_URL_OAUTH=http://hpfnm-hmpps-auth:8080/auth
 
   hmpps-visits-api:
     # For now use migration as a fake visits API
     image: quay.io/hmpps/hmpps-prisoner-to-nomis-update:latest
     networks:
       - hmpps
-    container_name: hmpps-visits-api
+    container_name: hpfnm-hmpps-visits-api
     ports:
       - "8083:8080"
     healthcheck:
@@ -52,13 +59,18 @@ services:
     environment:
       - SERVER_PORT=8080
       - SPRING_PROFILES_ACTIVE=dev
+      - HMPPS_SQS_LOCALSTACK_URL=http://hpfnm-localstack:4566
+      - API_BASE_URL_OAUTH=http://hpfnm-hmpps-auth:8080/auth
+      - API_BASE_URL_NOMIS=http://hpfnm-hmpps-nomis-prisoner-api:8080
+      - API_BASE_URL_VISITS=http://hpfnm-hmpps-visits-api:8080
+      - API_BASE_URL_VISIT_MAPPING=http://hpfnm-hmpps-nomis-visit-mapping-api:8080
 
 
   hmpps-nomis-visit-mapping-api:
     image: quay.io/hmpps/hmpps-nomis-visits-mapping-service:latest
     networks:
       - hmpps
-    container_name: hmpps-nomis-visit-mapping-api
+    container_name: hpfnm-hmpps-nomis-visit-mapping-api
     ports:
       - "8084:8080"
     healthcheck:
@@ -66,23 +78,40 @@ services:
     environment:
       - SERVER_PORT=8080
       - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_FLYWAY_URL=jdbc:postgresql://hpfnm-mapping-db:5432/mapping?sslmode=prefer
+      - SPRING_R2DBC_URL=r2dbc:postgresql://hpfnm-mapping-db:5432/mapping?sslmode=prefer
+      - API_BASE_URL_OAUTH=http://hpfnm-hmpps-auth:8080/auth
 
   localstack:
     image: localstack/localstack:0.14.0
     networks:
       - hmpps
-    container_name: localstack
+    container_name: hpfnm-localstack
     ports:
       - "4566-4597:4566-4597"
       - 8999:8080
     environment:
-      - SERVICES=sqs
+      - SERVICES=sqs,sns
       - DEBUG=${DEBUG- }
       - DOCKER_HOST=unix:///var/run/docker.sock
       - DEFAULT_REGION=eu-west-2
+      - HOSTNAME_EXTERNAL=hpfnm-localstack
     volumes:
       - "${TMPDIR:-/tmp/localstack}:/tmp/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
+
+  mapping-db:
+    image: postgres
+    networks:
+      - hmpps
+    container_name: hpfnm-mapping-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=mapping
+      - POSTGRES_USER=mapping
+      - POSTGRES_DB=mapping
 
 networks:
   hmpps:
