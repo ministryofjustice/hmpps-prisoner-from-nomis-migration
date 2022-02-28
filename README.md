@@ -16,20 +16,6 @@ automatically retried. Any persistent errors can be inspected and are retained i
 
 ## Running locally
 
-For running locally against docker instances of the following services:
-- hmpps-auth
-- hmpps-nomis-prisoner-api
-- visit-scheduler
-- hmpps-nomis-visits-mapping-service
-- localstack
-- run this application independently e.g. in IntelliJ
-
-`docker compose up --scale hmpps-prisoner-from-nomis-migration=0`
-
-or
-
-`docker-compose up  --scale hmpps-prisoner-from-nomis-migration=0`
-
 Running all services including this service
 
 `docker compose up`
@@ -46,6 +32,8 @@ However, if you do wish to do that the steps would be:
 - Set all environment variables to match those in [values-dev.yaml](/helm_deploy/values-dev.yaml) e.g. `API_BASE_URL_OAUTH=https://sign-in-dev.hmpps.service.justice.gov.uk/auth`
 - Set additional environment variables for personal **client credentials** you have that have the correct roles required to access the remotes services, the env names can be found in [values.yaml](helm_deploy/hmpps-prisoner-from-nomis-migration/values.yaml)
 - Set additional environment variables for the SQS Queue secrets that can be found in the `hmpps-prisoner-from-nomis-migration-dev` namespace, again the env names can be found in [values.yaml](helm_deploy/hmpps-prisoner-from-nomis-migration/values.yaml)
+
+## Running locally against T3 test services with localstack
 
 A better hybrid solution which gives better control messaging would be similar to above but using the `dev` profile and therefore localstack.
 
