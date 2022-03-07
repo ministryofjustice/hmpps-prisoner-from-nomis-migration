@@ -97,7 +97,8 @@ POST body to optionally contain:
 - `visitTypes` - a list of visit types to migrate. It will default to `SCON` if not provided.
 - `fromDateTime` - only include visits created after this date. NB this is creation date not the actual visit date.
 - `endDateTime` - only include visits created before this date. NB this is creation date not the actual visit date.
-- `ignoreMissingRoom` - only include visits which happened in a room, e.g where the room is present. Only required when testing
+- `ignoreMissingRoom` - When true exclude visits without an associated room (visits created during the VSIP synchronisation process), defaults to false. Only required during testing when mapping records are manually deleted.
+
 
 The `from` and `end` times are primarily used to ensure that only visits created after the last migration are migrated. This is a performance optimisation 
 since visits will never be migrated twice. Once it is marked as migrated it can only be migrated again by resetting the visit mapping table.
