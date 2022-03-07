@@ -19,6 +19,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     visitTypes: List<String>,
     fromDateTime: LocalDateTime?,
     toDateTime: LocalDateTime?,
+    ignoreMissingRoom: Boolean,
     pageNumber: Long,
     pageSize: Long,
   ): PageImpl<VisitId> =
@@ -29,6 +30,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
           .queryParam("visitTypes", visitTypes)
           .queryParam("fromDateTime", fromDateTime)
           .queryParam("toDateTime", toDateTime)
+          .queryParam("ignoreMissingRoom", ignoreMissingRoom)
           .queryParam("page", pageNumber)
           .queryParam("size", pageSize)
           .build()

@@ -57,7 +57,7 @@ internal class VisitsMigrationServiceTest {
   inner class MigrateVisits {
     @BeforeEach
     internal fun setUp() {
-      whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any())).thenReturn(
+      whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any())).thenReturn(
         pages(1)
       )
     }
@@ -74,18 +74,19 @@ internal class VisitsMigrationServiceTest {
       )
 
       verify(nomisApiService).getVisits(
-        listOf("LEI", "BXI"),
-        listOf("SCON"),
-        LocalDateTime.parse("2020-01-01T00:00:00"),
-        LocalDateTime.parse("2020-01-02T23:00:00"),
-        0,
-        1
+        prisonIds = listOf("LEI", "BXI"),
+        visitTypes = listOf("SCON"),
+        fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
+        toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
+        ignoreMissingRoom = false,
+        pageNumber = 0,
+        pageSize = 1
       )
     }
 
     @Test
     internal fun `will pass visit count and filter to queue`() {
-      whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any())).thenReturn(
+      whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any())).thenReturn(
         pages(23)
       )
       service.migrateVisits(
@@ -111,7 +112,7 @@ internal class VisitsMigrationServiceTest {
 
     @Test
     internal fun `will write analytic with estimated count and filter`() {
-      whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any())).thenReturn(
+      whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any())).thenReturn(
         pages(23)
       )
       service.migrateVisits(
@@ -145,6 +146,7 @@ internal class VisitsMigrationServiceTest {
           visitTypes = any(),
           fromDateTime = isNull(),
           toDateTime = isNull(),
+          ignoreMissingRoom = any(),
           pageNumber = any(),
           pageSize = any()
         )
@@ -161,6 +163,7 @@ internal class VisitsMigrationServiceTest {
           assertThat(it["migrationId"]).isNotNull
           assertThat(it["estimatedCount"]).isEqualTo("23")
           assertThat(it["prisonIds"]).isEqualTo("")
+          assertThat(it["ignoreMissingRoom"]).isEqualTo("false")
           assertThat(it["visitTypes"]).isEqualTo("")
           assertThat(it["fromDateTime"]).isEqualTo("")
           assertThat(it["toDateTime"]).isEqualTo("")
@@ -176,7 +179,7 @@ internal class VisitsMigrationServiceTest {
 
     @BeforeEach
     internal fun setUp() {
-      whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any())).thenReturn(
+      whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any())).thenReturn(
         pages(100_200)
       )
     }
@@ -270,7 +273,7 @@ internal class VisitsMigrationServiceTest {
   inner class MigrateVisitsForPage {
     @BeforeEach
     internal fun setUp() {
-      whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any())).thenReturn(
+      whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any())).thenReturn(
         pages(15)
       )
     }
@@ -284,6 +287,7 @@ internal class VisitsMigrationServiceTest {
             filter = VisitsMigrationFilter(
               prisonIds = listOf("LEI", "BXI"),
               visitTypes = listOf("SCON"),
+              ignoreMissingRoom = true,
               fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
               toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
             ),
@@ -293,12 +297,13 @@ internal class VisitsMigrationServiceTest {
       )
 
       verify(nomisApiService).getVisits(
-        listOf("LEI", "BXI"),
-        listOf("SCON"),
-        LocalDateTime.parse("2020-01-01T00:00:00"),
-        LocalDateTime.parse("2020-01-02T23:00:00"),
-        13,
-        15
+        prisonIds = listOf("LEI", "BXI"),
+        visitTypes = listOf("SCON"),
+        fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
+        toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
+        ignoreMissingRoom = true,
+        pageNumber = 13,
+        pageSize = 15
       )
     }
 
@@ -333,7 +338,7 @@ internal class VisitsMigrationServiceTest {
 
       val context: KArgumentCaptor<MigrationContext<VisitId>> = argumentCaptor()
 
-      whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any())).thenReturn(
+      whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any())).thenReturn(
         pages(
           15, startId = 1000
         )

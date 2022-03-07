@@ -29,4 +29,11 @@ data class VisitsMigrationFilter(
     example = "2020-03-24T12:00:00",
   )
   val toDateTime: LocalDateTime? = null,
+
+  @Schema(
+    description = "When true exclude visits without an associated room (visits created during the VSIP synchronisation process), defaults to false. Only required during testing when mapping records are manually deleted",
+    example = "false",
+    defaultValue = "false"
+  )
+  val ignoreMissingRoom: Boolean = false,
 )

@@ -38,6 +38,7 @@ class VisitsMigrationService(
       visitTypes = migrationFilter.visitTypes,
       fromDateTime = migrationFilter.fromDateTime,
       toDateTime = migrationFilter.toDateTime,
+      ignoreMissingRoom = migrationFilter.ignoreMissingRoom,
       pageNumber = 0,
       pageSize = 1,
     ).totalElements
@@ -57,7 +58,8 @@ class VisitsMigrationService(
           "prisonIds" to it.body.prisonIds.joinToString(),
           "visitTypes" to it.body.visitTypes.joinToString(),
           "fromDateTime" to it.body.fromDateTime.asStringOrBlank(),
-          "toDateTime" to it.body.toDateTime.asStringOrBlank()
+          "toDateTime" to it.body.toDateTime.asStringOrBlank(),
+          "ignoreMissingRoom" to it.body.ignoreMissingRoom.toString()
         ),
         null
       )
@@ -82,6 +84,7 @@ class VisitsMigrationService(
     visitTypes = context.body.filter.visitTypes,
     fromDateTime = context.body.filter.fromDateTime,
     toDateTime = context.body.filter.toDateTime,
+    ignoreMissingRoom = context.body.filter.ignoreMissingRoom,
     pageNumber = context.body.pageNumber,
     pageSize = context.body.pageSize
   ).content.map {
@@ -207,7 +210,7 @@ private fun NomisCodeDescription.toVisitType() = when (this.code) {
 }
 
 private fun NomisCodeDescription.toVisitStatus() = when (this.code) {
-  // TODO -> WHat statuses are there?
+  // TODO -> What statuses are there?
   "CANC" -> "CANCELLED_BY_PRISON"
   else -> "BOOKED"
 }
