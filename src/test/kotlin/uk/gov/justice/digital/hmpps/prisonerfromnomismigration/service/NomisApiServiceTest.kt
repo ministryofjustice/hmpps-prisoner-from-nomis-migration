@@ -52,6 +52,7 @@ internal class NomisApiServiceTest {
         visitTypes = listOf("SCON", "OFFI"),
         fromDateTime = LocalDateTime.parse("2020-01-01T01:30:00"),
         toDateTime = LocalDateTime.parse("2020-01-02T23:30:00"),
+        ignoreMissingRoom = false,
         pageNumber = 23,
         pageSize = 10
       )
@@ -70,12 +71,13 @@ internal class NomisApiServiceTest {
         visitTypes = listOf("SCON", "OFFI"),
         fromDateTime = LocalDateTime.parse("2020-01-01T01:30:00"),
         toDateTime = LocalDateTime.parse("2020-01-02T23:30:00"),
+        ignoreMissingRoom = true,
         pageNumber = 23,
         pageSize = 10
       )
       nomisApi.verify(
         getRequestedFor(
-          urlEqualTo("/visits/ids?prisonIds=MDI&prisonIds=BXI&visitTypes=SCON&visitTypes=OFFI&fromDateTime=2020-01-01T01:30&toDateTime=2020-01-02T23:30&page=23&size=10")
+          urlEqualTo("/visits/ids?prisonIds=MDI&prisonIds=BXI&visitTypes=SCON&visitTypes=OFFI&fromDateTime=2020-01-01T01:30&toDateTime=2020-01-02T23:30&ignoreMissingRoom=true&page=23&size=10")
         )
       )
     }
@@ -87,12 +89,13 @@ internal class NomisApiServiceTest {
         visitTypes = listOf(),
         fromDateTime = null,
         toDateTime = null,
+        ignoreMissingRoom = false,
         pageNumber = 23,
         pageSize = 10
       )
       nomisApi.verify(
         getRequestedFor(
-          urlEqualTo("/visits/ids?prisonIds&visitTypes&fromDateTime&toDateTime&page=23&size=10")
+          urlEqualTo("/visits/ids?prisonIds&visitTypes&fromDateTime&toDateTime&ignoreMissingRoom=false&page=23&size=10")
         )
       )
     }
@@ -177,6 +180,7 @@ internal class NomisApiServiceTest {
         prisonIds = listOf("MDI", "BXI"),
         visitTypes = listOf("SCON", "OFFI"),
         fromDateTime = LocalDateTime.parse("2020-01-01T01:30:00"),
+        ignoreMissingRoom = false,
         toDateTime = LocalDateTime.parse("2020-01-02T23:30:00"),
         pageNumber = 23,
         pageSize = 10

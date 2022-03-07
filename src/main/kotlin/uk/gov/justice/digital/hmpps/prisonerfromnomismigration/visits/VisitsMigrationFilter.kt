@@ -29,4 +29,11 @@ data class VisitsMigrationFilter(
     example = "2020-03-24T12:00:00",
   )
   val toDateTime: LocalDateTime? = null,
+
+  @Schema(
+    description = "Only include visits which happened in a room, e.g where the room is present. Only required when testing in the scenario where VSIP visits exist in NOMIS with no associated mapping",
+    example = "false",
+    defaultValue = "false"
+  )
+  val ignoreMissingRoom: Boolean = false,
 )
