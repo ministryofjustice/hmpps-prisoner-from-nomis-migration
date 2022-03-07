@@ -31,7 +31,7 @@ data class VisitsMigrationFilter(
   val toDateTime: LocalDateTime? = null,
 
   @Schema(
-    description = "Only include visits which happened in a room, e.g where the room is present. Only required when testing in the scenario where VSIP visits exist in NOMIS with no associated mapping",
+    description = "When true exclude visits without an associated room (visits created during the VSIP synchronisation process), defaults to false. Only required during testing when mapping records are manually deleted",
     example = "false",
     defaultValue = "false"
   )
