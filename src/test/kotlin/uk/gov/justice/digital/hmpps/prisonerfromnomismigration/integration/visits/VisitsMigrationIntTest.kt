@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.visits
 
+import com.microsoft.applicationinsights.TelemetryClient
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
@@ -7,6 +8,12 @@ import org.awaitility.kotlin.untilCallTo
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.http.ReactiveHttpOutputMessage
 import org.springframework.web.reactive.function.BodyInserter
 import org.springframework.web.reactive.function.BodyInserters
@@ -16,6 +23,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitMap
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsApiExtension.Companion.visitsApi
 
 class VisitsMigrationIntTest : SqsIntegrationTestBase() {
+
+  @SpyBean
+  private lateinit var telemetryClient: TelemetryClient
 
   @Nested
   @DisplayName("POST /migrate/visits")
@@ -91,6 +101,43 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
 
       // Check each visit has a mapping (each visit will be a unique number starting from 1)
       visitMappingApi.verifyCreateMappingVisitIds(visitIdsUpTo86)
+    }
+
+    @Test
+    internal fun `will add analytical events for starting, ending and each migrated record`() {
+      nomisApi.stubGetVisitsInitialCount(26)
+      nomisApi.stubMultipleGetVisitsCounts(totalElements = 26, pageSize = 10)
+      nomisApi.stubMultipleGetVisits(totalElements = 26)
+      visitMappingApi.stubNomisVisitNotFound()
+      visitMappingApi.stubRoomMapping()
+      visitMappingApi.stubVisitMappingCreate()
+      visitsApi.stubCreateVisit()
+
+      webTestClient.post().uri("/migrate/visits")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
+        .header("Content-Type", "application/json")
+        .body(
+          BodyInserters.fromValue(
+            """
+            {
+              "prisonIds": [
+                "HEI"
+              ],
+              "visitTypes": [
+                "SCON"
+              ]
+            }
+            """.trimIndent()
+          )
+        )
+        .exchange()
+        .expectStatus().isAccepted
+
+      // wait for all mappings to be created before verifying
+      await untilCallTo { visitMappingApi.createVisitMappingCount() } matches { it == 26 }
+
+      verify(telemetryClient).trackEvent(eq("nomis-migration-visits-started"), any(), isNull())
+      verify(telemetryClient, times(26)).trackEvent(eq("nomis-migration-visit-migrated"), any(), isNull())
     }
 
     @Test
