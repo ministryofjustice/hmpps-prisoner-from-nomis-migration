@@ -26,6 +26,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationCon
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISIT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_BY_PAGE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_STATUS_CHECK
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.RETRY_VISIT_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
@@ -99,14 +100,15 @@ internal class VisitsMigrationServiceTest {
       )
 
       verify(queueService).sendMessage(
-        eq(MIGRATE_VISITS),
-        check<MigrationContext<VisitsMigrationFilter>> {
+        message = eq(MIGRATE_VISITS),
+        context = check<MigrationContext<VisitsMigrationFilter>> {
           assertThat(it.estimatedCount).isEqualTo(23)
           assertThat(it.body.prisonIds).containsExactly("LEI")
           assertThat(it.body.visitTypes).containsExactly("SCON")
           assertThat(it.body.fromDateTime).isEqualTo(LocalDateTime.parse("2020-01-01T00:00:00"))
           assertThat(it.body.toDateTime).isEqualTo(LocalDateTime.parse("2020-01-02T23:00:00"))
-        }
+        },
+        delaySeconds = eq(0)
       )
     }
 
@@ -199,7 +201,26 @@ internal class VisitsMigrationServiceTest {
       )
 
       verify(queueService, times(100_200 / 200)).sendMessage(
-        eq(MIGRATE_VISITS_BY_PAGE), any()
+        eq(MIGRATE_VISITS_BY_PAGE), any(), delaySeconds = eq(0)
+      )
+    }
+
+    @Test
+    internal fun `will also send a single MIGRATION_STATUS_CHECK message`() {
+      service.divideVisitsByPage(
+        MigrationContext(
+          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
+          body = VisitsMigrationFilter(
+            prisonIds = listOf("LEI", "BXI"),
+            visitTypes = listOf("SCON"),
+            fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
+            toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
+          )
+        )
+      )
+
+      verify(queueService).sendMessage(
+        eq(MIGRATE_VISITS_STATUS_CHECK), any(), any()
       )
     }
 
@@ -218,15 +239,16 @@ internal class VisitsMigrationServiceTest {
       )
 
       verify(queueService, times(100_200 / 200)).sendMessage(
-        eq(MIGRATE_VISITS_BY_PAGE),
-        check<MigrationContext<VisitsPage>> {
+        message = eq(MIGRATE_VISITS_BY_PAGE),
+        context = check<MigrationContext<VisitsPage>> {
           assertThat(it.estimatedCount).isEqualTo(100_200)
           assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
           assertThat(it.body.filter.prisonIds).containsExactly("LEI", "BXI")
           assertThat(it.body.filter.visitTypes).containsExactly("SCON")
           assertThat(it.body.filter.fromDateTime).isEqualTo(LocalDateTime.parse("2020-01-01T00:00:00"))
           assertThat(it.body.filter.toDateTime).isEqualTo(LocalDateTime.parse("2020-01-02T23:00:00"))
-        }
+        },
+        delaySeconds = eq(0)
       )
     }
 
@@ -247,7 +269,7 @@ internal class VisitsMigrationServiceTest {
       )
 
       verify(queueService, times(100_200 / 200)).sendMessage(
-        any(), context.capture()
+        eq(MIGRATE_VISITS_BY_PAGE), context.capture(), delaySeconds = eq(0)
       )
       val allContexts: List<MigrationContext<VisitsPage>> = context.allValues
 
@@ -265,6 +287,119 @@ internal class VisitsMigrationServiceTest {
 
       assertThat(lastPage.body.pageNumber).isEqualTo((100_200 / 200) - 1)
       assertThat(lastPage.body.pageSize).isEqualTo(200)
+    }
+  }
+
+  @Nested
+  @DisplayName("migrateVisitsStatusCheck")
+  inner class MigrateVisitsStatusCheck {
+    @Nested
+    @DisplayName("when there are still messages on the queue")
+    inner class MessagesOnQueue {
+      @BeforeEach
+      internal fun setUp() {
+        whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed()).thenReturn(true)
+      }
+
+      @Test
+      internal fun `will check again in 10 seconds`() {
+        service.migrateVisitsStatusCheck(
+          MigrationContext(
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitMigrationStatusCheck()
+          )
+        )
+
+        verify(queueService).sendMessage(
+          eq(MIGRATE_VISITS_STATUS_CHECK), any(), eq(10)
+        )
+      }
+
+      @Test
+      internal fun `will check again in 10 second and reset even when previously started finishing up phase`() {
+        service.migrateVisitsStatusCheck(
+          MigrationContext(
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitMigrationStatusCheck(checkCount = 4)
+          )
+        )
+
+        verify(queueService).sendMessage(
+          message = eq(MIGRATE_VISITS_STATUS_CHECK),
+          context = check<MigrationContext<VisitMigrationStatusCheck>> {
+            assertThat(it.body.checkCount).isEqualTo(0)
+          },
+          delaySeconds = eq(10)
+        )
+      }
+    }
+
+    @Nested
+    @DisplayName("when there are no messages on the queue")
+    inner class NoMessagesOnQueue {
+      @BeforeEach
+      internal fun setUp() {
+        whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed()).thenReturn(false)
+      }
+
+      @Test
+      internal fun `will increment check count and try again a second when only checked 9 times`() {
+        service.migrateVisitsStatusCheck(
+          MigrationContext(
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitMigrationStatusCheck(checkCount = 9)
+          )
+        )
+
+        verify(queueService).sendMessage(
+          message = eq(MIGRATE_VISITS_STATUS_CHECK),
+          context = check<MigrationContext<VisitMigrationStatusCheck>> {
+            assertThat(it.body.checkCount).isEqualTo(10)
+          },
+          delaySeconds = eq(1)
+        )
+      }
+
+      @Test
+      internal fun `will finish off when checked 10 times previously`() {
+        service.migrateVisitsStatusCheck(
+          MigrationContext(
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitMigrationStatusCheck(checkCount = 10)
+          )
+        )
+
+        verify(queueService, never()).sendMessage(
+          message = eq(MIGRATE_VISITS_STATUS_CHECK),
+          context = any(),
+          delaySeconds = any()
+        )
+      }
+
+      @Test
+      internal fun `will add completed telemetry when finishing off`() {
+        service.migrateVisitsStatusCheck(
+          MigrationContext(
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 23,
+            body = VisitMigrationStatusCheck(checkCount = 10)
+          )
+        )
+
+        verify(telemetryClient).trackEvent(
+          eq("nomis-migration-visits-completed"),
+          check {
+            assertThat(it["migrationId"]).isNotNull
+            assertThat(it["estimatedCount"]).isEqualTo("23")
+            assertThat(it["durationMinutes"]).isNotNull()
+          },
+          eq(null)
+        )
+      }
     }
   }
 
@@ -325,11 +460,12 @@ internal class VisitsMigrationServiceTest {
       )
 
       verify(queueService, times(15)).sendMessage(
-        eq(MIGRATE_VISIT),
-        check<MigrationContext<VisitsMigrationFilter>> {
+        message = eq(MIGRATE_VISIT),
+        context = check<MigrationContext<VisitsMigrationFilter>> {
           assertThat(it.estimatedCount).isEqualTo(100_200)
           assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
-        }
+        },
+        delaySeconds = eq(0)
       )
     }
 
@@ -360,7 +496,8 @@ internal class VisitsMigrationServiceTest {
       )
 
       verify(queueService, times(15)).sendMessage(
-        eq(MIGRATE_VISIT), context.capture()
+        eq(MIGRATE_VISIT), context.capture(), delaySeconds = eq(0)
+
       )
       val allContexts: List<MigrationContext<VisitId>> = context.allValues
 
@@ -730,12 +867,13 @@ internal class VisitsMigrationServiceTest {
       )
 
       verify(queueService).sendMessage(
-        eq(RETRY_VISIT_MAPPING),
-        check<MigrationContext<VisitMapping>> {
+        message = eq(RETRY_VISIT_MAPPING),
+        context = check<MigrationContext<VisitMapping>> {
           assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
           assertThat(it.body.nomisVisitId).isEqualTo(123456)
           assertThat(it.body.vsipVisitId).isEqualTo("654321")
-        }
+        },
+        delaySeconds = eq(0)
       )
     }
 

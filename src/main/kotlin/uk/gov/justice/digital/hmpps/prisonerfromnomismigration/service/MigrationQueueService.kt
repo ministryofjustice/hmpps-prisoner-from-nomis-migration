@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 
+import com.amazonaws.services.sqs.AmazonSQS
 import com.amazonaws.services.sqs.model.SendMessageRequest
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.microsoft.applicationinsights.TelemetryClient
@@ -20,9 +21,14 @@ class MigrationQueueService(
   private val migrationSqsClient by lazy { migrationQueue.sqsClient }
   private val migrationQueueUrl by lazy { migrationQueue.queueUrl }
 
-  fun sendMessage(message: Messages, context: MigrationContext<*>) {
+  fun sendMessage(message: Messages, context: MigrationContext<*>, delaySeconds: Int = 0) {
     val result =
-      migrationSqsClient.sendMessage(SendMessageRequest(migrationQueueUrl, MigrationMessage(message, context).toJson()))
+      migrationSqsClient.sendMessage(
+        SendMessageRequest(
+          migrationQueueUrl,
+          MigrationMessage(message, context).toJson()
+        ).withDelaySeconds(delaySeconds)
+      )
 
     telemetryClient.trackEvent(
       message.name,
@@ -31,5 +37,13 @@ class MigrationQueueService(
     )
   }
 
+  // given counts are approximations there is only a probable chance this returns the correct result
+  fun isItProbableThatThereAreStillMessagesToBeProcessed(): Boolean =
+    migrationSqsClient.countMessagesOnQueue(migrationQueueUrl) > 0
+
   private fun Any.toJson() = objectMapper.writeValueAsString(this)
 }
+
+internal fun AmazonSQS.countMessagesOnQueue(queueUrl: String): Int =
+  this.getQueueAttributes(queueUrl, listOf("ApproximateNumberOfMessages"))
+    .let { it.attributes["ApproximateNumberOfMessages"]?.toInt() ?: 0 }

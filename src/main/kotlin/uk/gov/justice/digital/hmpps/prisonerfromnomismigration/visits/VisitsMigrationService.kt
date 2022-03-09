@@ -10,12 +10,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatc
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISIT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_BY_PAGE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_STATUS_CHECK
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.RETRY_VISIT_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisCodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisVisit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VisitId
+import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -77,6 +79,13 @@ class VisitsMigrationService(
       .forEach {
         queueService.sendMessage(MIGRATE_VISITS_BY_PAGE, it)
       }
+    queueService.sendMessage(
+      MIGRATE_VISITS_STATUS_CHECK,
+      MigrationContext(
+        context = context,
+        body = VisitMigrationStatusCheck()
+      )
+    )
   }
 
   fun migrateVisitsForPage(context: MigrationContext<VisitsPage>) = nomisApiService.getVisits(
@@ -132,6 +141,43 @@ class VisitsMigrationService(
         } ?: run { handleNoRoomMappingFound(context.migrationId, nomisVisit) }
       }
 
+  fun migrateVisitsStatusCheck(context: MigrationContext<VisitMigrationStatusCheck>) =
+    /*
+       when checking if there are messages to process, it is always an estimation due to SQS, therefore once
+       we think there are no messages we check several times in row reducing probability of false positives significantly
+    */
+    if (queueService.isItProbableThatThereAreStillMessagesToBeProcessed()) {
+      queueService.sendMessage(
+        MIGRATE_VISITS_STATUS_CHECK,
+        MigrationContext(
+          context = context,
+          body = VisitMigrationStatusCheck()
+        ),
+        delaySeconds = 10
+      )
+    } else {
+      if (context.body.hasCheckedAReasonableNumberOfTimes()) {
+        telemetryClient.trackEvent(
+          "nomis-migration-visits-completed",
+          mapOf<String, String>(
+            "migrationId" to context.migrationId,
+            "estimatedCount" to context.estimatedCount.toString(),
+            "durationMinutes" to context.durationMinutes().toString()
+          ),
+          null
+        )
+      } else {
+        queueService.sendMessage(
+          MIGRATE_VISITS_STATUS_CHECK,
+          MigrationContext(
+            context = context,
+            body = context.body.increment()
+          ),
+          delaySeconds = 1
+        )
+      }
+    }
+
   private fun createNomisVisitMapping(
     nomisVisitId: Long,
     vsipVisitId: String,
@@ -183,6 +229,9 @@ class VisitsMigrationService(
   }
 }
 
+private fun <T> MigrationContext<T>.durationMinutes(): Long =
+  Duration.between(LocalDateTime.parse(this.migrationId), LocalDateTime.now()).toMinutes()
+
 // TODO - where does comment go?
 private fun mapNomisVisit(nomisVisit: NomisVisit, room: RoomMapping): CreateVsipVisit = CreateVsipVisit(
   prisonId = nomisVisit.prisonId,
@@ -202,6 +251,11 @@ private fun mapNomisVisit(nomisVisit: NomisVisit, room: RoomMapping): CreateVsip
 )
 
 data class VisitsPage(val filter: VisitsMigrationFilter, val pageNumber: Long, val pageSize: Long)
+
+data class VisitMigrationStatusCheck(val checkCount: Int = 0) {
+  fun hasCheckedAReasonableNumberOfTimes() = checkCount > 9
+  fun increment() = this.copy(checkCount = checkCount + 1)
+}
 
 private fun NomisCodeDescription.toVisitType() = when (this.code) {
   "SCON" -> "STANDARD_SOCIAL"

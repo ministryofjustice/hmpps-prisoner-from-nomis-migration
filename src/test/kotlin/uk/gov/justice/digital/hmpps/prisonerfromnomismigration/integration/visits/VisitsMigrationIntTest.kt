@@ -4,6 +4,7 @@ import com.microsoft.applicationinsights.TelemetryClient
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
+import org.awaitility.kotlin.untilAsserted
 import org.awaitility.kotlin.untilCallTo
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -21,6 +22,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitMappingApiExtension.Companion.visitMappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsApiExtension.Companion.visitsApi
+import java.time.Duration
 
 class VisitsMigrationIntTest : SqsIntegrationTestBase() {
 
@@ -138,6 +140,14 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
 
       verify(telemetryClient).trackEvent(eq("nomis-migration-visits-started"), any(), isNull())
       verify(telemetryClient, times(26)).trackEvent(eq("nomis-migration-visit-migrated"), any(), isNull())
+
+      await.atMost(Duration.ofSeconds(21)) untilAsserted {
+        verify(telemetryClient).trackEvent(
+          eq("nomis-migration-visits-completed"),
+          any(),
+          isNull()
+        )
+      }
     }
 
     @Test
