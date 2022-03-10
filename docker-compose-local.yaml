@@ -4,7 +4,7 @@ services:
     image: localstack/localstack:0.14.0
     networks:
       - hmpps
-    container_name: localstack
+    container_name: hpfnm-local-localstack
     ports:
       - "4566-4597:4566-4597"
     environment:
@@ -15,6 +15,20 @@ services:
     volumes:
       - "${TMPDIR:-/tmp/localstack}:/tmp/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
+
+  migration-db:
+    image: postgres
+    networks:
+      - hmpps
+    container_name: hpfnm-migration-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=migration
+      - POSTGRES_USER=migration
+      - POSTGRES_DB=migration
+
 
 networks:
   hmpps:

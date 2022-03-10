@@ -18,6 +18,7 @@ services:
       - API_BASE_URL_NOMIS=http://hpfnm-hmpps-nomis-prisoner-api:8080
       - API_BASE_URL_VISITS=http://hpfnm-hmpps-visits-api:8080
       - API_BASE_URL_VISIT_MAPPING=http://hpfnm-hmpps-nomis-visit-mapping-api:8080
+      - SPRING_R2DBC_URL=r2dbc:postgresql://hpfnm-migration-db:5432/migration?sslmode=prefer
 
   hmpps-auth:
     image: quay.io/hmpps/hmpps-auth:latest
@@ -119,12 +120,23 @@ services:
       - hmpps
     container_name: hpfnm-mapping-db
     restart: unless-stopped
-    ports:
-      - "5432:5432"
     environment:
       - POSTGRES_PASSWORD=mapping
       - POSTGRES_USER=mapping
       - POSTGRES_DB=mapping
+
+  migration-db:
+    image: postgres
+    networks:
+      - hmpps
+    container_name: hpfnm-migration-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=migration
+      - POSTGRES_USER=migration
+      - POSTGRES_DB=migration
 
 networks:
   hmpps:

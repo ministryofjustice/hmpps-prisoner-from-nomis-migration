@@ -46,6 +46,14 @@ spring:
         provider:
           hmpps-auth:
             token-uri: ${api.base.url.oauth}/oauth/token
+  r2dbc:
+    url: r2dbc:postgresql://${DATABASE_ENDPOINT}/${DATABASE_NAME}
+    pool:
+      max-create-connection-time: 500
+      max-acquire-time: 1000
+    properties:
+      ssl: true
+      sslRootCert: /home/appuser/.postgresql/root.crt
 
 server:
   port: 8080

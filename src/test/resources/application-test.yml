@@ -14,3 +14,12 @@ api.base.url:
 visits:
   page:
     size: 10
+
+spring:
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/migration
+    username: migration
+    password: migration
+    properties:
+      sslMode: DISABLE
+      sslRootCert:
