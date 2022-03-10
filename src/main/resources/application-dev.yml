@@ -8,3 +8,12 @@ api.base.url:
   visits: http://localhost:8083
   visit.mapping: http://localhost:8084
 
+
+spring:
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/migration?sslmode=prefer
+    username: migration
+    password: migration
+    properties:
+      sslMode: DISABLE
+      sslRootCert:
