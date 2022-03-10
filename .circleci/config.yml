@@ -18,7 +18,6 @@ jobs:
       jdk_tag: "17.0"
       localstack_tag: "0.14.0"
       postgres_tag: "14"
-      postgres_db: "migration"
       postgres_username: "migration"
       postgres_password: "migration"
     steps:
