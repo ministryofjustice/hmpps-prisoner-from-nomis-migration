@@ -6,6 +6,7 @@ import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilAsserted
 import org.awaitility.kotlin.untilCallTo
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -32,6 +33,15 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
   @Nested
   @DisplayName("POST /migrate/visits")
   inner class MigrationVisits {
+    @BeforeEach
+    internal fun setUp() {
+      webTestClient.delete().uri("/history")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATION_ADMIN")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().is2xxSuccessful
+    }
+
     @Test
     internal fun `must have valid token to start migration`() {
       webTestClient.post().uri("/migrate/visits")
@@ -148,6 +158,20 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
           isNull()
         )
       }
+
+      webTestClient.get().uri("/history")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$.size()").isEqualTo(1)
+        .jsonPath("$[0].migrationId").isNotEmpty
+        .jsonPath("$[0].whenStarted").isNotEmpty
+        .jsonPath("$[0].whenEnded").isNotEmpty
+        .jsonPath("$[0].estimatedRecordCount").isEqualTo(26)
+        .jsonPath("$[0].migrationType").isEqualTo("VISITS")
+        .jsonPath("$[0].status").isEqualTo("COMPLETED")
     }
 
     @Test

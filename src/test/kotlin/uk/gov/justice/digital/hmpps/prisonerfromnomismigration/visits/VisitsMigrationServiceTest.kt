@@ -28,7 +28,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_BY_PAGE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_STATUS_CHECK
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.RETRY_VISIT_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisCodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisVisit
@@ -42,6 +44,7 @@ internal class VisitsMigrationServiceTest {
   private val queueService: MigrationQueueService = mock()
   private val visitMappingService: VisitMappingService = mock()
   private val visitsService: VisitsService = mock()
+  private val migrationHistoryService: MigrationHistoryService = mock()
   private val telemetryClient: TelemetryClient = mock()
 
   val service = VisitsMigrationService(
@@ -49,6 +52,7 @@ internal class VisitsMigrationServiceTest {
     queueService = queueService,
     visitMappingService = visitMappingService,
     visitsService = visitsService,
+    migrationHistoryService = migrationHistoryService,
     telemetryClient = telemetryClient,
     pageSize = 200
   )
@@ -109,6 +113,33 @@ internal class VisitsMigrationServiceTest {
           assertThat(it.body.toDateTime).isEqualTo(LocalDateTime.parse("2020-01-02T23:00:00"))
         },
         delaySeconds = eq(0)
+      )
+    }
+
+    @Test
+    internal fun `will write migration history record`() {
+      whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any())).thenReturn(
+        pages(23)
+      )
+      service.migrateVisits(
+        VisitsMigrationFilter(
+          prisonIds = listOf("LEI", "BXI"),
+          visitTypes = listOf("SCON"),
+          fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
+          toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
+        )
+      )
+
+      verify(migrationHistoryService).recordMigrationStarted(
+        migrationId = any(),
+        migrationType = eq(VISITS),
+        estimatedRecordCount = eq(23),
+        filter = check<VisitsMigrationFilter> {
+          assertThat(it.prisonIds).containsExactly("LEI", "BXI")
+          assertThat(it.visitTypes).containsExactly("SCON")
+          assertThat(it.fromDateTime).isEqualTo(LocalDateTime.parse("2020-01-01T00:00:00"))
+          assertThat(it.toDateTime).isEqualTo(LocalDateTime.parse("2020-01-02T23:00:00"))
+        }
       )
     }
 
@@ -398,6 +429,23 @@ internal class VisitsMigrationServiceTest {
             assertThat(it["durationMinutes"]).isNotNull()
           },
           eq(null)
+        )
+      }
+
+      @Test
+      internal fun `will update migration history record when finishing off`() {
+        service.migrateVisitsStatusCheck(
+          MigrationContext(
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 23,
+            body = VisitMigrationStatusCheck(checkCount = 10)
+          )
+        )
+
+        verify(migrationHistoryService).recordMigrationCompleted(
+          migrationId = eq("2020-05-23T11:30:00"),
+          recordsFailed = eq(0), // TODO - this should be the number of records that failed
+          recordsMigrated = eq(0) // TODO - this should be the number of records that were migrated
         )
       }
     }
