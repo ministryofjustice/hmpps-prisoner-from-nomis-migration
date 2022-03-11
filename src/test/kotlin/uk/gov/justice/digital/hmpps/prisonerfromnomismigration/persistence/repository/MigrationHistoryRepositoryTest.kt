@@ -9,7 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest
 import org.springframework.test.context.ActiveProfiles
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.TestBase
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationType.VISITS
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.VISITS
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 

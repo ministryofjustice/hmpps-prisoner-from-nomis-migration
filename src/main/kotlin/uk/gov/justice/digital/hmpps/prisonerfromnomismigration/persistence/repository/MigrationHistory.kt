@@ -4,7 +4,9 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.Transient
 import org.springframework.data.domain.Persistable
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationStatus.STARTED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.STARTED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import java.time.LocalDateTime
 
 data class MigrationHistory(
@@ -38,13 +40,4 @@ data class MigrationHistory(
   override fun isNew(): Boolean = new
 
   override fun getId(): String = migrationId
-}
-
-enum class MigrationType {
-  VISITS,
-}
-
-enum class MigrationStatus {
-  STARTED,
-  COMPLETED,
 }

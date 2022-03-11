@@ -12,7 +12,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_BY_PAGE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_STATUS_CHECK
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.RETRY_VISIT_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisCodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisVisit
@@ -27,6 +29,7 @@ class VisitsMigrationService(
   private val nomisApiService: NomisApiService,
   private val visitMappingService: VisitMappingService,
   private val visitsService: VisitsService,
+  private val migrationHistoryService: MigrationHistoryService,
   private val telemetryClient: TelemetryClient,
   @Value("\${visits.page.size:1000}") private val pageSize: Long
 ) {
@@ -64,6 +67,12 @@ class VisitsMigrationService(
           "ignoreMissingRoom" to it.body.ignoreMissingRoom.toString()
         ),
         null
+      )
+      migrationHistoryService.recordMigrationStarted(
+        migrationId = it.migrationId,
+        migrationType = VISITS,
+        estimatedRecordCount = it.estimatedCount,
+        filter = it.body
       )
     }
   }
@@ -165,6 +174,11 @@ class VisitsMigrationService(
             "durationMinutes" to context.durationMinutes().toString()
           ),
           null
+        )
+        migrationHistoryService.recordMigrationCompleted(
+          migrationId = context.migrationId,
+          recordsFailed = 0, // TODO - calculate from DLQ
+          recordsMigrated = 0, // TODO - calculate from Mapping table?
         )
       } else {
         queueService.sendMessage(
