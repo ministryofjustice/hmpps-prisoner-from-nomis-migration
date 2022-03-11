@@ -10,7 +10,6 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.reactive.server.WebTestClient
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.PostgresContainer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.JwtAuthHelper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.LocalStackContainer.setLocalStackProperties
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.HmppsAuthApiExtension
@@ -28,7 +27,7 @@ import uk.gov.justice.hmpps.sqs.HmppsQueueService
 )
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-class SqsIntegrationTestBase {
+class SqsIntegrationTestBase : TestBase() {
   @Autowired
   lateinit var webTestClient: WebTestClient
 
@@ -59,22 +58,11 @@ class SqsIntegrationTestBase {
 
   companion object {
     private val localStackContainer = LocalStackContainer.instance
-    private val pgContainer = PostgresContainer.instance
 
     @JvmStatic
     @DynamicPropertySource
     fun testcontainers(registry: DynamicPropertyRegistry) {
       localStackContainer?.also { setLocalStackProperties(it, registry) }
-    }
-
-    @JvmStatic
-    @DynamicPropertySource
-    fun properties(registry: DynamicPropertyRegistry) {
-      pgContainer?.run {
-        registry.add("spring.r2dbc.url") { pgContainer.jdbcUrl.replace("jdbc:", "r2dbc:") }
-        registry.add("spring.r2dbc.username", pgContainer::getUsername)
-        registry.add("spring.r2dbc.password", pgContainer::getPassword)
-      }
     }
   }
 }

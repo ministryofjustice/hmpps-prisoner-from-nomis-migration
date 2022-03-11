@@ -17,3 +17,7 @@ spring:
     properties:
       sslMode: DISABLE
       sslRootCert:
+  flyway:
+    url: jdbc:postgresql://localhost:5432/migration?sslmode=prefer
+    user: migration
+    password: migration

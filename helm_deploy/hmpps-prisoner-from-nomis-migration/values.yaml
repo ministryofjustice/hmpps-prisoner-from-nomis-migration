@@ -53,6 +53,8 @@ generic-service:
       HMPPS_SQS_QUEUES_MIGRATION_DLQ_ACCESS_KEY_ID: "access_key_id"
       HMPPS_SQS_QUEUES_MIGRATION_DLQ_SECRET_ACCESS_KEY: "secret_access_key"
     rds-database:
+      SPRING_FLYWAY_USER: "database_username"
+      SPRING_FLYWAY_PASSWORD: "database_password"
       SPRING_R2DBC_USERNAME: "database_username"
       SPRING_R2DBC_PASSWORD: "database_password"
       DATABASE_NAME: "database_name"
