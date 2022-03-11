@@ -21,9 +21,13 @@ dependencies {
   implementation("org.springdoc:springdoc-openapi-data-rest:1.6.6")
   implementation("org.springdoc:springdoc-openapi-security:1.6.6")
 
+  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
+  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.6.0")
+
   runtimeOnly("io.r2dbc:r2dbc-postgresql")
   runtimeOnly("org.springframework.boot:spring-boot-starter-jdbc")
   runtimeOnly("org.postgresql:postgresql:42.3.3")
+  implementation("org.flywaydb:flyway-core:8.5.1")
 
   testImplementation("io.swagger.parser.v3:swagger-parser:2.0.30")
   testImplementation("io.jsonwebtoken:jjwt:0.9.1")
