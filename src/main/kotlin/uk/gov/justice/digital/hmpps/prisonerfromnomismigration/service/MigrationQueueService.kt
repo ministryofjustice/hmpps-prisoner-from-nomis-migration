@@ -20,6 +20,8 @@ class MigrationQueueService(
   private val migrationQueue by lazy { hmppsQueueService.findByQueueId("migration") as HmppsQueue }
   private val migrationSqsClient by lazy { migrationQueue.sqsClient }
   private val migrationQueueUrl by lazy { migrationQueue.queueUrl }
+  private val migrationDLQSqsClient by lazy { migrationQueue.sqsDlqClient!! }
+  private val migrationDLQUrl by lazy { migrationQueue.dlqUrl!! }
 
   fun sendMessage(message: Messages, context: MigrationContext<*>, delaySeconds: Int = 0) {
     val result =
@@ -40,6 +42,8 @@ class MigrationQueueService(
   // given counts are approximations there is only a probable chance this returns the correct result
   fun isItProbableThatThereAreStillMessagesToBeProcessed(): Boolean =
     migrationSqsClient.countMessagesOnQueue(migrationQueueUrl) > 0
+
+  fun countMessagesThatHaveFailed(): Long = migrationDLQSqsClient.countMessagesOnQueue(migrationDLQUrl).toLong()
 
   private fun Any.toJson() = objectMapper.writeValueAsString(this)
 }

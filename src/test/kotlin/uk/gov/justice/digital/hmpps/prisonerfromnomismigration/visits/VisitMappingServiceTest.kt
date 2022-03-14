@@ -328,4 +328,65 @@ internal class VisitMappingServiceTest {
       }.isInstanceOf(WebClientResponseException.InternalServerError::class.java)
     }
   }
+
+  @Nested
+  @DisplayName("getMigrationCount")
+  inner class GetMigrationCount {
+    @BeforeEach
+    internal fun setUp() {
+      visitMappingApi.stubVisitMappingByMigrationId(count = 56_766)
+    }
+
+    @Test
+    internal fun `will supply authentication token`() {
+      visitMappingService.getMigrationCount("2020-01-01T10:00:00")
+
+      visitMappingApi.verify(
+        getRequestedFor(
+          urlPathMatching("/mapping/migration-id/.*")
+        )
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE"))
+      )
+    }
+
+    @Test
+    internal fun `will return zero when not found`() {
+      visitMappingApi.stubFor(
+        get(urlPathMatching("/mapping/migration-id/.*")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NOT_FOUND.value())
+            .withBody("""{"message":"Not found"}""")
+        )
+      )
+
+      assertThat(visitMappingService.getMigrationCount("2020-01-01T10:00:00")).isEqualTo(0)
+    }
+
+    @Test
+    internal fun `will return the mapping count when found`() {
+      visitMappingApi.stubVisitMappingByMigrationId(
+        whenCreated = "2020-01-01T11:10:00",
+        count = 56_766
+      )
+
+      assertThat(visitMappingService.getMigrationCount("2020-01-01T10:00:00")).isEqualTo(56_766)
+    }
+
+    @Test
+    internal fun `will throw exception for any other error`() {
+      visitMappingApi.stubFor(
+        get(urlPathMatching("/mapping/migration-id/.*")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
+            .withBody("""{"message":"Tea"}""")
+        )
+      )
+
+      assertThatThrownBy {
+        visitMappingService.getMigrationCount("2020-01-01T10:00:00")
+      }.isInstanceOf(WebClientResponseException.InternalServerError::class.java)
+    }
+  }
 }
