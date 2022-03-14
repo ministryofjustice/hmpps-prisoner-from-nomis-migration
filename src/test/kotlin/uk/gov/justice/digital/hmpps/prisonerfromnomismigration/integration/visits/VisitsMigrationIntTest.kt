@@ -165,23 +165,25 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
         )
       }
 
-      webTestClient.get().uri("/history")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-        .expectBody()
-        .jsonPath("$.size()").isEqualTo(1)
-        .jsonPath("$[0].migrationId").isNotEmpty
-        .jsonPath("$[0].whenStarted").isNotEmpty
-        .jsonPath("$[0].whenEnded").isNotEmpty
-        .jsonPath("$[0].estimatedRecordCount").isEqualTo(26)
-        .jsonPath("$[0].migrationType").isEqualTo("VISITS")
-        .jsonPath("$[0].status").isEqualTo("COMPLETED")
-        .jsonPath("$[0].filter").value(StringContains("SCON"))
-        .jsonPath("$[0].filter").value(StringContains("HEI"))
-        .jsonPath("$[0].recordsMigrated").isEqualTo(25)
-        .jsonPath("$[0].recordsFailed").isEqualTo(1)
+      await untilAsserted {
+        webTestClient.get().uri("/history")
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.size()").isEqualTo(1)
+          .jsonPath("$[0].migrationId").isNotEmpty
+          .jsonPath("$[0].whenStarted").isNotEmpty
+          .jsonPath("$[0].whenEnded").isNotEmpty
+          .jsonPath("$[0].estimatedRecordCount").isEqualTo(26)
+          .jsonPath("$[0].migrationType").isEqualTo("VISITS")
+          .jsonPath("$[0].status").isEqualTo("COMPLETED")
+          .jsonPath("$[0].filter").value(StringContains("SCON"))
+          .jsonPath("$[0].filter").value(StringContains("HEI"))
+          .jsonPath("$[0].recordsMigrated").isEqualTo(25)
+          .jsonPath("$[0].recordsFailed").isEqualTo(1)
+      }
     }
 
     @Test
