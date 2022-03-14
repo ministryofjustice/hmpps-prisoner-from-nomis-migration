@@ -6,6 +6,7 @@ import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilAsserted
 import org.awaitility.kotlin.untilCallTo
+import org.hamcrest.core.StringContains
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -70,6 +71,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
       visitMappingApi.stubRoomMapping()
       visitMappingApi.stubVisitMappingCreate()
       visitsApi.stubCreateVisit()
+      visitMappingApi.stubVisitMappingByMigrationId(count = 86)
 
       webTestClient.post().uri("/migrate/visits")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
@@ -125,6 +127,10 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
       visitMappingApi.stubVisitMappingCreate()
       visitsApi.stubCreateVisit()
 
+      // stub 25 migrated records and 1 fake a failure
+      visitMappingApi.stubVisitMappingByMigrationId(count = 25)
+      awsSqsDlqClient!!.sendMessage(dlqUrl, """{ "message": "some error" }""")
+
       webTestClient.post().uri("/migrate/visits")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
         .header("Content-Type", "application/json")
@@ -159,19 +165,25 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
         )
       }
 
-      webTestClient.get().uri("/history")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-        .expectBody()
-        .jsonPath("$.size()").isEqualTo(1)
-        .jsonPath("$[0].migrationId").isNotEmpty
-        .jsonPath("$[0].whenStarted").isNotEmpty
-        .jsonPath("$[0].whenEnded").isNotEmpty
-        .jsonPath("$[0].estimatedRecordCount").isEqualTo(26)
-        .jsonPath("$[0].migrationType").isEqualTo("VISITS")
-        .jsonPath("$[0].status").isEqualTo("COMPLETED")
+      await untilAsserted {
+        webTestClient.get().uri("/history")
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.size()").isEqualTo(1)
+          .jsonPath("$[0].migrationId").isNotEmpty
+          .jsonPath("$[0].whenStarted").isNotEmpty
+          .jsonPath("$[0].whenEnded").isNotEmpty
+          .jsonPath("$[0].estimatedRecordCount").isEqualTo(26)
+          .jsonPath("$[0].migrationType").isEqualTo("VISITS")
+          .jsonPath("$[0].status").isEqualTo("COMPLETED")
+          .jsonPath("$[0].filter").value(StringContains("SCON"))
+          .jsonPath("$[0].filter").value(StringContains("HEI"))
+          .jsonPath("$[0].recordsMigrated").isEqualTo(25)
+          .jsonPath("$[0].recordsFailed").isEqualTo(1)
+      }
     }
 
     @Test

@@ -66,6 +66,19 @@ class VisitMappingService(@Qualifier("visitMappingApiWebClient") private val web
     .retrieve()
     .bodyToMono(MigrationDetails::class.java)
     .block()!!
+
+  fun getMigrationCount(migrationId: String): Long = webClient.get()
+    .uri {
+      it.path("/mapping/migration-id/{migrationId}")
+        .queryParam("size", 1)
+        .build(migrationId)
+    }
+    .retrieve()
+    .bodyToMono(MigrationDetails::class.java)
+    .onErrorResume(WebClientResponseException.NotFound::class.java) {
+      Mono.empty()
+    }
+    .block()?.count ?: 0
 }
 
 data class VisitNomisMapping(val nomisId: Long, val vsipId: String, val label: String?, val mappingType: String)

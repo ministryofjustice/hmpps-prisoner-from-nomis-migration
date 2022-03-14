@@ -114,7 +114,7 @@ class VisitMappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubVisitMappingByMigrationId(whenCreated: String, count: Int = 278887) {
+  fun stubVisitMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 278887) {
     stubFor(
       get(urlPathMatching("/mapping/migration-id/.*")).willReturn(
         aResponse()

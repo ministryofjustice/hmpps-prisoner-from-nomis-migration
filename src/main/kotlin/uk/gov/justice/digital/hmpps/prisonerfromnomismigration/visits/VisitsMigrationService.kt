@@ -150,7 +150,7 @@ class VisitsMigrationService(
         } ?: run { handleNoRoomMappingFound(context.migrationId, nomisVisit) }
       }
 
-  fun migrateVisitsStatusCheck(context: MigrationContext<VisitMigrationStatusCheck>) =
+  fun migrateVisitsStatusCheck(context: MigrationContext<VisitMigrationStatusCheck>) {
     /*
        when checking if there are messages to process, it is always an estimation due to SQS, therefore once
        we think there are no messages we check several times in row reducing probability of false positives significantly
@@ -177,8 +177,8 @@ class VisitsMigrationService(
         )
         migrationHistoryService.recordMigrationCompleted(
           migrationId = context.migrationId,
-          recordsFailed = 0, // TODO - calculate from DLQ
-          recordsMigrated = 0, // TODO - calculate from Mapping table?
+          recordsFailed = queueService.countMessagesThatHaveFailed(),
+          recordsMigrated = visitMappingService.getMigrationCount(context.migrationId),
         )
       } else {
         queueService.sendMessage(
@@ -191,6 +191,7 @@ class VisitsMigrationService(
         )
       }
     }
+  }
 
   private fun createNomisVisitMapping(
     nomisVisitId: Long,

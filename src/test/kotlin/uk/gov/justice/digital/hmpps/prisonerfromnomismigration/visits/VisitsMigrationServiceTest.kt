@@ -373,6 +373,8 @@ internal class VisitsMigrationServiceTest {
       @BeforeEach
       internal fun setUp() {
         whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed()).thenReturn(false)
+        whenever(queueService.countMessagesThatHaveFailed()).thenReturn(0)
+        whenever(visitMappingService.getMigrationCount(any())).thenReturn(0)
       }
 
       @Test
@@ -434,6 +436,9 @@ internal class VisitsMigrationServiceTest {
 
       @Test
       internal fun `will update migration history record when finishing off`() {
+        whenever(queueService.countMessagesThatHaveFailed()).thenReturn(2)
+        whenever(visitMappingService.getMigrationCount("2020-05-23T11:30:00")).thenReturn(21)
+
         service.migrateVisitsStatusCheck(
           MigrationContext(
             migrationId = "2020-05-23T11:30:00",
@@ -444,8 +449,8 @@ internal class VisitsMigrationServiceTest {
 
         verify(migrationHistoryService).recordMigrationCompleted(
           migrationId = eq("2020-05-23T11:30:00"),
-          recordsFailed = eq(0), // TODO - this should be the number of records that failed
-          recordsMigrated = eq(0) // TODO - this should be the number of records that were migrated
+          recordsFailed = eq(2),
+          recordsMigrated = eq(21)
         )
       }
     }
