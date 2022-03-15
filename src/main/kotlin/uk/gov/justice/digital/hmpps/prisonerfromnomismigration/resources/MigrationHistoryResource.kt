@@ -23,7 +23,7 @@ import java.time.LocalDateTime
 @RestController
 @RequestMapping("/", produces = [MediaType.APPLICATION_JSON_VALUE])
 class MigrationHistoryResource(private val migrationHistoryService: MigrationHistoryService) {
-  @PreAuthorize("hasRole('ROLE_MIGRATE_VISITS')")
+  @PreAuthorize("hasRole('ROLE_MIGRATION_ADMIN')")
   @GetMapping("/history")
   @Operation(
     summary = "Lists all filtered migration history records un-paged",
