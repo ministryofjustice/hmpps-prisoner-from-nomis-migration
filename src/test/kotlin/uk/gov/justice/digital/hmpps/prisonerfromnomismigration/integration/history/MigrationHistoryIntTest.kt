@@ -25,6 +25,7 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
     internal fun createHistoryRecords() {
 
       runBlocking {
+        migrationHistoryRepository.deleteAll()
         migrationHistoryRepository.save(
           MigrationHistory(
             migrationId = "2020-01-01T00:00:00",
@@ -139,7 +140,7 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
     @Test
     internal fun `can read all records with no filter`() {
       webTestClient.get().uri("/history")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATION_ADMIN")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -158,7 +159,7 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
           .queryParam("migrationTypes", "VISITS")
           .build()
       }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATION_ADMIN")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -174,7 +175,7 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
           .queryParam("migrationTypes", "BANANAS")
           .build()
       }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATION_ADMIN")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -187,7 +188,7 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
           .queryParam("migrationTypes", "VISITS")
           .build()
       }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATION_ADMIN")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -202,7 +203,7 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
           .queryParam("fromDateTime", "2020-01-02T02:00:00")
           .build()
       }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATION_ADMIN")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -219,7 +220,7 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
           .queryParam("toDateTime", "2020-01-02T00:00:00")
           .build()
       }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATION_ADMIN")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -237,7 +238,7 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
           .queryParam("toDateTime", "2020-01-03T02:00:01")
           .build()
       }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATION_ADMIN")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -253,7 +254,7 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
           .queryParam("includeOnlyFailures", "true")
           .build()
       }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATION_ADMIN")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -270,7 +271,7 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
           .queryParam("filterContains", "WWI")
           .build()
       }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATION_ADMIN")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -283,7 +284,7 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
           .queryParam("filterContains", "visitTypes")
           .build()
       }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATION_ADMIN")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
