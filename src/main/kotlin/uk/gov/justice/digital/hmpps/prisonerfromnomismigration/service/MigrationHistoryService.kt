@@ -51,7 +51,17 @@ class MigrationHistoryService(
     }.onFailure { log.error("Unable to record migration stopped record", it) }
   }
 
-  suspend fun findAll() = migrationHistoryRepository.findAll()
+  suspend fun findAll(filter: HistoryFilter) = migrationHistoryRepository.findWithCriteria(
+    fromDateTime = filter.fromDateTime,
+    toDateTime = filter.toDateTime,
+    includeOnlyFailures = filter.includeOnlyFailures,
+    filterContains = filter.filterContains,
+    // this is nasty, can't work out how to deal with an empty list in the SQL so either pass our list on ALL migration types
+    // there has to be a better way, but just can't work it out.
+    migrationTypes = if (filter.migrationTypes.isNullOrEmpty()) MigrationType.values()
+      .map { it.name } else filter.migrationTypes,
+  )
+
   suspend fun deleteAll() = migrationHistoryRepository.deleteAll()
 }
 
