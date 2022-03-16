@@ -44,7 +44,7 @@ class MigrationHistoryResource(private val migrationHistoryService: MigrationHis
       )
     ]
   )
-  suspend fun getAll(
+  fun getAll(
     @Parameter(
       description = "List of migration types, when omitted all migration types will be returned",
       example = "VISITS",

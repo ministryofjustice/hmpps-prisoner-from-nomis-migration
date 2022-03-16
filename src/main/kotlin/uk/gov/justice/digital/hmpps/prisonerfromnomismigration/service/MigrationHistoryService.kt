@@ -51,7 +51,7 @@ class MigrationHistoryService(
     }.onFailure { log.error("Unable to record migration stopped record", it) }
   }
 
-  suspend fun findAll(filter: HistoryFilter) = migrationHistoryRepository.findAllWithFilter(filter)
+  fun findAll(filter: HistoryFilter) = migrationHistoryRepository.findAllWithFilter(filter)
 
   suspend fun deleteAll() = migrationHistoryRepository.deleteAll()
 }
