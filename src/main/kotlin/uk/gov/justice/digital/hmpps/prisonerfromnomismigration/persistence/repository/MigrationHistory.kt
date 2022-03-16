@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.Transient
@@ -21,6 +22,7 @@ data class MigrationHistory(
   var status: MigrationStatus = STARTED,
   @Transient
   @Value("false")
+  @JsonIgnore
   val new: Boolean = true,
 ) : Persistable<String> {
 

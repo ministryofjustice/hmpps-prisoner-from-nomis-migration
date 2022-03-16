@@ -32,7 +32,7 @@ class OpenApiConfiguration(buildProperties: BuildProperties) {
     .info(
       Info().title("Prisoner from NOMIS Migration API")
         .version(version)
-        .description("API to launch migration of prisoner data from NOMIS to new services")
+        .description("API to launch migration of prisoner data from NOMIS to new services<br/> All hmpps-queue-resource endpoints require the role <b>QUEUE_ADMIN</b> ")
         .contact(Contact().name("HMPPS Digital Studio").email("feedback@digital.justice.gov.uk"))
     )
     .components(

@@ -34,7 +34,7 @@ class VisitMigrationResource(
   @ResponseStatus(value = ACCEPTED)
   @Operation(
     summary = "Starts a visit migration",
-    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously",
+    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>MIGRATE_VISITS</b>",
     requestBody = io.swagger.v3.oas.annotations.parameters.RequestBody(
       content = [
         Content(
@@ -67,6 +67,7 @@ class VisitMigrationResource(
   @GetMapping("/visits/history")
   @Operation(
     summary = "Lists all filtered migration history records un-paged for visits",
+    description = "The records are un-paged and requires role <b>MIGRATE_VISITS</b>",
     responses = [
       ApiResponse(
         responseCode = "200",
