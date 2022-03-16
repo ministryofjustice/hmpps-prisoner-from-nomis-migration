@@ -26,7 +26,8 @@ class MigrationHistoryResource(private val migrationHistoryService: MigrationHis
   @PreAuthorize("hasRole('ROLE_MIGRATION_ADMIN')")
   @GetMapping("/history")
   @Operation(
-    summary = "Lists all filtered migration history records un-paged",
+    summary = "Lists all filtered migration history",
+    description = "The records are un-paged and requires role <b>MIGRATION_ADMIN</b>",
     responses = [
       ApiResponse(
         responseCode = "200",
@@ -88,7 +89,7 @@ class MigrationHistoryResource(private val migrationHistoryService: MigrationHis
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @Operation(
     summary = "Deletes all migration history records",
-    description = "This is only required for test environments",
+    description = "This is only required for test environments and requires role <b>MIGRATION_ADMIN</b>",
     responses = [
       ApiResponse(
         responseCode = "204",
