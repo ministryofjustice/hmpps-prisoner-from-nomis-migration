@@ -3,6 +3,10 @@ plugins {
   kotlin("plugin.spring") version "1.6.10"
 }
 
+dependencyCheck {
+  suppressionFiles.add("reactive-suppressions.xml")
+}
+
 configurations {
   testImplementation { exclude(group = "org.junit.vintage") }
 }
