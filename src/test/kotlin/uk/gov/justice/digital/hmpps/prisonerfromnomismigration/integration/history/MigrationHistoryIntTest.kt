@@ -146,10 +146,10 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
         .expectStatus().isOk
         .expectBody()
         .jsonPath("$.size()").isEqualTo(4)
-        .jsonPath("$[0].migrationId").isEqualTo("2020-01-01T00:00:00")
-        .jsonPath("$[1].migrationId").isEqualTo("2020-01-02T00:00:00")
-        .jsonPath("$[2].migrationId").isEqualTo("2020-01-02T02:00:00")
-        .jsonPath("$[3].migrationId").isEqualTo("2020-01-03T02:00:00")
+        .jsonPath("$[0].migrationId").isEqualTo("2020-01-03T02:00:00")
+        .jsonPath("$[1].migrationId").isEqualTo("2020-01-02T02:00:00")
+        .jsonPath("$[2].migrationId").isEqualTo("2020-01-02T00:00:00")
+        .jsonPath("$[3].migrationId").isEqualTo("2020-01-01T00:00:00")
     }
 
     @Test
@@ -165,10 +165,10 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
         .expectStatus().isOk
         .expectBody()
         .jsonPath("$.size()").isEqualTo(4)
-        .jsonPath("$[0].migrationId").isEqualTo("2020-01-01T00:00:00")
-        .jsonPath("$[1].migrationId").isEqualTo("2020-01-02T00:00:00")
-        .jsonPath("$[2].migrationId").isEqualTo("2020-01-02T02:00:00")
-        .jsonPath("$[3].migrationId").isEqualTo("2020-01-03T02:00:00")
+        .jsonPath("$[0].migrationId").isEqualTo("2020-01-03T02:00:00")
+        .jsonPath("$[1].migrationId").isEqualTo("2020-01-02T02:00:00")
+        .jsonPath("$[2].migrationId").isEqualTo("2020-01-02T00:00:00")
+        .jsonPath("$[3].migrationId").isEqualTo("2020-01-01T00:00:00")
 
       webTestClient.get().uri {
         it.path("/history")
@@ -209,8 +209,8 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
         .expectStatus().isOk
         .expectBody()
         .jsonPath("$.size()").isEqualTo(2)
-        .jsonPath("$[0].migrationId").isEqualTo("2020-01-02T02:00:00")
-        .jsonPath("$[1].migrationId").isEqualTo("2020-01-03T02:00:00")
+        .jsonPath("$[0].migrationId").isEqualTo("2020-01-03T02:00:00")
+        .jsonPath("$[1].migrationId").isEqualTo("2020-01-02T02:00:00")
     }
 
     @Test
@@ -226,8 +226,8 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
         .expectStatus().isOk
         .expectBody()
         .jsonPath("$.size()").isEqualTo(2)
-        .jsonPath("$[0].migrationId").isEqualTo("2020-01-01T00:00:00")
-        .jsonPath("$[1].migrationId").isEqualTo("2020-01-02T00:00:00")
+        .jsonPath("$[0].migrationId").isEqualTo("2020-01-02T00:00:00")
+        .jsonPath("$[1].migrationId").isEqualTo("2020-01-01T00:00:00")
     }
 
     @Test
@@ -260,8 +260,8 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
         .expectStatus().isOk
         .expectBody()
         .jsonPath("$.size()").isEqualTo(2)
-        .jsonPath("$[0].migrationId").isEqualTo("2020-01-01T00:00:00")
-        .jsonPath("$[1].migrationId").isEqualTo("2020-01-03T02:00:00")
+        .jsonPath("$[0].migrationId").isEqualTo("2020-01-03T02:00:00")
+        .jsonPath("$[1].migrationId").isEqualTo("2020-01-01T00:00:00")
     }
 
     @Test
