@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository
 
 import kotlinx.coroutines.flow.Flow
+import org.springframework.data.domain.Sort
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
 import org.springframework.data.r2dbc.core.flow
 import org.springframework.data.relational.core.query.Criteria.where
@@ -19,7 +20,10 @@ class MigrationHistoryRepositoryImpl(private val template: R2dbcEntityTemplate) 
   override fun findAllWithFilter(filter: HistoryFilter): Flow<MigrationHistory> {
     return template.select(MigrationHistory::class.java)
       .from("migration_history")
-      .matching(buildQuery(filter))
+      .matching(
+        buildQuery(filter)
+          .sort(Sort.by("when_started").descending())
+      )
       .flow()
   }
 
