@@ -12,8 +12,7 @@ data class VisitsMigrationFilter(
 
   @Schema(
     description = "List of visit types to migrate",
-    example = "SCON",
-    allowableValues = ["SCON", "OFFI"],
+    example = "[\"SCON\", \"OFFI\"]",
     defaultValue = "[\"SCON\"]"
   )
   val visitTypes: List<String> = listOf("SCON"),
