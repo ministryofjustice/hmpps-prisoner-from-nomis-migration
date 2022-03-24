@@ -28,3 +28,8 @@ spring:
     url: jdbc:postgresql://localhost:5432/migration?sslmode=prefer
     user: migration
     password: migration
+
+#logging:
+#  level:
+#   io.r2dbc.postgresql.QUERY: DEBUG # for queries
+#    io.r2dbc.postgresql.PARAM: INFO # for parameters
