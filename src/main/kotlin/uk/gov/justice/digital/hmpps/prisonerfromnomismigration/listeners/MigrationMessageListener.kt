@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners
 
+import com.amazon.sqs.javamessaging.message.SQSTextMessage
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.Logger
@@ -27,15 +28,20 @@ class MigrationMessageListener(
   }
 
   @JmsListener(destination = "migration", containerFactory = "hmppsQueueContainerFactoryProxy")
-  fun onMessage(message: String) {
+  fun onMessage(message: String, rawMessage: SQSTextMessage) {
     log.debug("Received message {}", message)
     val migrationMessage: MigrationMessage<*> = message.fromJson()
-    when (migrationMessage.type) {
-      MIGRATE_VISITS -> visitsMigrationService.divideVisitsByPage(context(message.fromJson()))
-      MIGRATE_VISITS_BY_PAGE -> visitsMigrationService.migrateVisitsForPage(context(message.fromJson()))
-      MIGRATE_VISIT -> visitsMigrationService.migrateVisit(context(message.fromJson()))
-      RETRY_VISIT_MAPPING -> visitsMigrationService.retryCreateVisitMapping(context(message.fromJson()))
-      MIGRATE_VISITS_STATUS_CHECK -> visitsMigrationService.migrateVisitsStatusCheck(context(message.fromJson()))
+    kotlin.runCatching {
+      when (migrationMessage.type) {
+        MIGRATE_VISITS -> visitsMigrationService.divideVisitsByPage(context(message.fromJson()))
+        MIGRATE_VISITS_BY_PAGE -> visitsMigrationService.migrateVisitsForPage(context(message.fromJson()))
+        MIGRATE_VISIT -> visitsMigrationService.migrateVisit(context(message.fromJson()))
+        RETRY_VISIT_MAPPING -> visitsMigrationService.retryCreateVisitMapping(context(message.fromJson()))
+        MIGRATE_VISITS_STATUS_CHECK -> visitsMigrationService.migrateVisitsStatusCheck(context(message.fromJson()))
+      }
+    }.onFailure {
+      log.error("MessageID:${rawMessage.sqsMessageId}", it)
+      throw it
     }
   }
 
