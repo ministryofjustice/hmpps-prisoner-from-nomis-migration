@@ -413,6 +413,67 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
         .jsonPath("$[0].migrationId").isEqualTo("2020-01-02T00:00:00")
     }
   }
+
+  @Nested
+  @DisplayName("GET /migrate/visits/history/{migrationId}")
+  inner class Get {
+    @BeforeEach
+    internal fun createHistoryRecords() {
+
+      runBlocking {
+        migrationHistoryRepository.deleteAll()
+        migrationHistoryRepository.save(
+          MigrationHistory(
+            migrationId = "2020-01-01T00:00:00",
+            whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
+            whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
+            status = COMPLETED,
+            estimatedRecordCount = 123_567,
+            filter = """"prisonIds":["HEI"],"visitTypes":["SCON"],"ignoreMissingRoom":false""",
+            recordsMigrated = 123_560,
+            recordsFailed = 7,
+            migrationType = VISITS
+          )
+        )
+      }
+    }
+
+    @AfterEach
+    internal fun deleteHistoryRecords() {
+      runBlocking {
+        migrationHistoryRepository.deleteAll()
+      }
+    }
+
+    @Test
+    internal fun `must have valid token to get history`() {
+      webTestClient.get().uri("/migrate/visits/history/2020-01-01T00:00:00")
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isUnauthorized
+    }
+
+    @Test
+    internal fun `must have correct role to get history`() {
+      webTestClient.get().uri("/migrate/visits/history/2020-01-01T00:00:00")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isForbidden
+    }
+
+    @Test
+    internal fun `can read record`() {
+      webTestClient.get().uri("/migrate/visits/history/2020-01-01T00:00:00")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$.migrationId").isEqualTo("2020-01-01T00:00:00")
+        .jsonPath("$.status").isEqualTo("COMPLETED")
+    }
+  }
 }
 
 fun someMigrationFilter(): BodyInserter<String, ReactiveHttpOutputMessage> = BodyInserters.fromValue(
