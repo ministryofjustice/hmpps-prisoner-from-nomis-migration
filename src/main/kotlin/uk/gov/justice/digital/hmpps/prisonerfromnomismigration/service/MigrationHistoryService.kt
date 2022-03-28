@@ -54,6 +54,8 @@ class MigrationHistoryService(
   fun findAll(filter: HistoryFilter) = migrationHistoryRepository.findAllWithFilter(filter)
 
   suspend fun deleteAll() = migrationHistoryRepository.deleteAll()
+  suspend fun get(migrationId: String): MigrationHistory =
+    migrationHistoryRepository.findById(migrationId) ?: throw NotFoundException(migrationId)
 }
 
 enum class MigrationType {
@@ -64,3 +66,5 @@ enum class MigrationStatus {
   STARTED,
   COMPLETED,
 }
+
+class NotFoundException(message: String) : RuntimeException(message)
