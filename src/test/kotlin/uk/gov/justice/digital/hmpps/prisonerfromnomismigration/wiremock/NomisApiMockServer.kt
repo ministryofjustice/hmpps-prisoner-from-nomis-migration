@@ -61,6 +61,36 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubGetVisitsRoomUsage() {
+    nomisApi.stubFor(
+      get(
+        urlPathEqualTo("/visits/rooms/usage-count")
+      )
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+            .withBody(
+              """
+              [
+    {
+        "agencyInternalLocationDescription": "AGI-VISITS-OFF_VIS",
+        "count": 95,
+        "prisonId": "AGI"
+    },
+    {
+        "agencyInternalLocationDescription": "BXI-VISITS-SOC_VIS",
+        "count": 14314,
+        "prisonId": "BXI"
+    },
+    {
+        "agencyInternalLocationDescription": "AKI-VISITS-3RD SECTOR",
+        "count": 390,
+        "prisonId": "AKI"
+    }]"""
+            )
+        )
+    )
+  }
+
   fun stubMultipleGetVisitsCounts(totalElements: Long, pageSize: Long) {
     // for each page create a response for each VisitId starting from 1 up to `totalElements`
 

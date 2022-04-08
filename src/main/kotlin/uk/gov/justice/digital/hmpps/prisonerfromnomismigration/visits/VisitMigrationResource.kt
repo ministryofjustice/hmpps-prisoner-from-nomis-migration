@@ -166,4 +166,62 @@ class VisitMigrationResource(
     @Schema(description = "Migration Id", example = "2020-03-24T12:00:00", required = true)
     migrationId: String
   ) = migrationHistoryService.get(migrationId)
+
+  @PreAuthorize("hasRole('ROLE_MIGRATE_VISITS')")
+  @GetMapping("/visits/rooms/usage")
+  @Operation(
+    summary = "get visit room usage and mappings by filter",
+    description = "Retrieves a list of rooms with usage count and vsip mapping for the (filtered) visits",
+    responses = [
+      ApiResponse(
+        responseCode = "200",
+        description = "list of visit room and count is returned"
+      ),
+      ApiResponse(
+        responseCode = "401",
+        description = "Unauthorized to access this endpoint",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
+      ),
+      ApiResponse(
+        responseCode = "403",
+        description = "Incorrect permissions to start migration",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
+      )
+    ]
+  )
+  fun getVisitRoomUsageDetailsByFilter(
+    @RequestParam(value = "prisonIds", required = false)
+    @Parameter(
+      description = "Filter results by prison ids (returns all prisons if not specified)",
+      example = "['MDI','LEI']"
+    ) prisonIds: List<String>?,
+    @RequestParam(value = "visitTypes", required = false)
+    @Parameter(
+      description = "Filter results by visitType (returns all types if not specified)",
+      example = "['SCON','OFFI']"
+    ) visitTypes: List<String>?,
+    @RequestParam(value = "fromDateTime", required = false)
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+    @Parameter(
+      description = "Filter results by visits that start on or after the given timestamp",
+      example = "2021-11-03T09:00:00"
+    ) fromDateTime: LocalDateTime?,
+    @RequestParam(value = "toDateTime", required = false)
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+    @Parameter(
+      description = "Filter results by visits that start on or before the given timestamp",
+      example = "2021-11-03T09:00:00"
+    ) toDateTime: LocalDateTime?
+  ): List<VisitRoomUsageResponse> =
+    visitsMigrationService.findRoomUsageByFilter(
+      VisitsMigrationFilter(
+        visitTypes = visitTypes ?: listOf(),
+        prisonIds = prisonIds ?: listOf(),
+        toDateTime = toDateTime,
+        fromDateTime = fromDateTime,
+        ignoreMissingRoom = false // not used
+      )
+    )
+
+
 }
