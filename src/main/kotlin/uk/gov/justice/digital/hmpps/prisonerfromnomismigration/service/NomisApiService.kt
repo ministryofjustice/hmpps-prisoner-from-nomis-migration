@@ -50,7 +50,8 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       .bodyToMono(NomisVisit::class.java)
       .block()!!
 
-  fun getRoomUsage(filter: VisitsMigrationFilter
+  fun getRoomUsage(
+    filter: VisitsMigrationFilter
   ): List<VisitRoomUsageResponse> =
     webClient.get()
       .uri {

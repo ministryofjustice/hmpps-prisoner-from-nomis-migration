@@ -81,7 +81,7 @@ class VisitMappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubRoomMapping(prisonId: String) {
     stubFor(
-      get(urlPathMatching("/prison/${prisonId}/room/nomis-room-id/.+?")).willReturn(
+      get(urlPathMatching("/prison/$prisonId/room/nomis-room-id/.+?")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
@@ -99,7 +99,7 @@ class VisitMappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubMissingRoomMapping(prisonId: String) {
     stubFor(
-      get(urlPathMatching("/prison/${prisonId}/room/nomis-room-id/.+?")).willReturn(
+      get(urlPathMatching("/prison/$prisonId/room/nomis-room-id/.+?")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.NOT_FOUND.value())

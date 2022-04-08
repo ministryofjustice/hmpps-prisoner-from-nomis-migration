@@ -222,6 +222,4 @@ class VisitMigrationResource(
         ignoreMissingRoom = false // not used
       )
     )
-
-
 }
