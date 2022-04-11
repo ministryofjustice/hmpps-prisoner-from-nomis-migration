@@ -9,6 +9,8 @@ import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomUsageResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationFilter
 import java.time.LocalDateTime
 
 @Service
@@ -46,6 +48,22 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       .uri("/visits/{nomisVisitId}", nomisVisitId)
       .retrieve()
       .bodyToMono(NomisVisit::class.java)
+      .block()!!
+
+  fun getRoomUsage(
+    filter: VisitsMigrationFilter
+  ): List<VisitRoomUsageResponse> =
+    webClient.get()
+      .uri {
+        it.path("/visits/rooms/usage-count")
+          .queryParam("prisonIds", filter.prisonIds)
+          .queryParam("visitTypes", filter.visitTypes)
+          .queryParam("fromDateTime", filter.fromDateTime)
+          .queryParam("toDateTime", filter.toDateTime)
+          .build()
+      }
+      .retrieve()
+      .bodyToMono(typeReference<List<VisitRoomUsageResponse>>())
       .block()!!
 }
 

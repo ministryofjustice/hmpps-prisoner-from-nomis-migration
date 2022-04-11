@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NotFoundException
 import javax.validation.ValidationException
 
@@ -61,6 +62,20 @@ class HmppsPrisonerFromNomisMigrationExceptionHandler {
     return ResponseEntity
       .status(HttpStatus.FORBIDDEN)
       .body(ErrorResponse(status = (HttpStatus.FORBIDDEN.value())))
+  }
+
+  @ExceptionHandler(MethodArgumentTypeMismatchException::class)
+  fun handleMethodArgumentTypeMismatchException(e: Exception): ResponseEntity<ErrorResponse> {
+    log.info("Validation exception: {}", e.message)
+    return ResponseEntity
+      .status(BAD_REQUEST)
+      .body(
+        ErrorResponse(
+          status = BAD_REQUEST,
+          userMessage = "Invalid Argument: ${e.cause?.message}",
+          developerMessage = e.message
+        )
+      )
   }
 
   companion object {

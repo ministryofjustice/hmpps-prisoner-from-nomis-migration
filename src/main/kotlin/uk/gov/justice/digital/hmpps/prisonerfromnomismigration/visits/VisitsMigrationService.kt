@@ -242,6 +242,18 @@ class VisitsMigrationService(
       migrationId = context.migrationId
     )
   }
+
+  fun findRoomUsageByFilter(filter: VisitsMigrationFilter): List<VisitRoomUsageResponse> {
+    val roomUsage = nomisApiService.getRoomUsage(filter)
+    return roomUsage.map { usage ->
+      usage.copy(
+        vsipRoom = visitMappingService.findRoomMapping(
+          usage.agencyInternalLocationDescription,
+          usage.prisonId
+        )?.vsipId
+      )
+    }.sortedWith(compareBy(VisitRoomUsageResponse::prisonId, VisitRoomUsageResponse::agencyInternalLocationDescription))
+  }
 }
 
 private fun <T> MigrationContext<T>.durationMinutes(): Long =

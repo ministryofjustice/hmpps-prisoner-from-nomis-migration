@@ -474,6 +474,69 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
         .jsonPath("$.status").isEqualTo("COMPLETED")
     }
   }
+
+  @DisplayName("filter Visit room usage count")
+  @Nested
+  inner class GetVisitRoomCountByFilterRequest {
+
+    @Test
+    fun `get room usage all visit rooms - no filter specified`() {
+      nomisApi.stubGetVisitsRoomUsage()
+      visitMappingApi.stubRoomMapping("AGI")
+      visitMappingApi.stubMissingRoomMapping("BXI")
+      visitMappingApi.stubRoomMapping("AKI")
+      webTestClient.get().uri("migrate/visits/rooms/usage")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$.size()").isEqualTo(3)
+        .jsonPath("$[0].agencyInternalLocationDescription").isEqualTo("AGI-VISITS-OFF_VIS")
+        .jsonPath("$[0].count").isEqualTo(95)
+        .jsonPath("$[0].prisonId").isEqualTo("AGI")
+        .jsonPath("$[0].vsipRoom").isEqualTo("1234")
+        .jsonPath("$[1].agencyInternalLocationDescription").isEqualTo("AKI-VISITS-3RD SECTOR")
+        .jsonPath("$[1].count").isEqualTo(390)
+        .jsonPath("$[1].prisonId").isEqualTo("AKI")
+        .jsonPath("$[1].vsipRoom").isEqualTo("1234")
+        .jsonPath("$[2].agencyInternalLocationDescription").isEqualTo("BXI-VISITS-SOC_VIS")
+        .jsonPath("$[2].count").isEqualTo(14314)
+        .jsonPath("$[2].prisonId").isEqualTo("BXI")
+        .jsonPath("$[2].vsipRoom").doesNotExist()
+    }
+
+    @Test
+    fun `malformed date returns bad request`() {
+
+      webTestClient.get().uri {
+        it.path("migrate/visits/rooms/usage")
+          .queryParam("fromDateTime", "202-10-01T09:00:00")
+          .build()
+      }
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
+        .exchange()
+        .expectStatus().isBadRequest
+    }
+
+    @Test
+    fun `get visit rooms usage prevents access without appropriate role`() {
+      assertThat(
+        webTestClient.get().uri("migrate/visits/rooms/usage")
+          .headers(setAuthorisation(roles = listOf("ROLE_BLA")))
+          .exchange()
+          .expectStatus().isForbidden
+      )
+    }
+
+    @Test
+    fun `get visit rooms usage prevents access without authorization`() {
+      assertThat(
+        webTestClient.get().uri("/visits/rooms/usage")
+          .exchange()
+          .expectStatus().isUnauthorized
+      )
+    }
+  }
 }
 
 fun someMigrationFilter(): BodyInserter<String, ReactiveHttpOutputMessage> = BodyInserters.fromValue(
