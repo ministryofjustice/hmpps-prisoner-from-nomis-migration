@@ -84,7 +84,7 @@ services:
       - API_BASE_URL_OAUTH=http://hpfnm-hmpps-auth:8080/auth
 
   localstack:
-    image: localstack/localstack:0.14.0
+    image: localstack/localstack:0.14.2
     networks:
       - hmpps
     container_name: hpfnm-localstack
@@ -99,7 +99,7 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock"
 
   localstack-external:
-    image: localstack/localstack:0.14.0
+    image: localstack/localstack:0.14.2
     networks:
       - hmpps
     container_name: hpfnm-localstack-external
