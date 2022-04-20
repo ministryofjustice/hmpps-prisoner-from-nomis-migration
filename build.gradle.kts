@@ -1,6 +1,6 @@
 plugins {
   id("uk.gov.justice.hmpps.gradle-spring-boot") version "4.1.4-beta"
-  kotlin("plugin.spring") version "1.6.20"
+  kotlin("plugin.spring") version "1.6.21"
 }
 
 dependencyCheck {
@@ -30,15 +30,15 @@ dependencies {
 
   runtimeOnly("io.r2dbc:r2dbc-postgresql")
   runtimeOnly("org.springframework.boot:spring-boot-starter-jdbc")
-  runtimeOnly("org.postgresql:postgresql:42.3.3")
-  implementation("org.flywaydb:flyway-core:8.5.7")
+  runtimeOnly("org.postgresql:postgresql:42.3.4")
+  implementation("org.flywaydb:flyway-core:8.5.8")
 
   testImplementation("io.swagger.parser.v3:swagger-parser:2.0.32")
   testImplementation("io.jsonwebtoken:jjwt:0.9.1")
   testImplementation("com.github.tomakehurst:wiremock-standalone:2.27.2")
-  testImplementation("org.testcontainers:localstack:1.17.0")
+  testImplementation("org.testcontainers:localstack:1.17.1")
   testImplementation("org.awaitility:awaitility-kotlin:4.2.0")
-  testImplementation("org.testcontainers:postgresql:1.17.0")
+  testImplementation("org.testcontainers:postgresql:1.17.1")
 }
 
 java {
