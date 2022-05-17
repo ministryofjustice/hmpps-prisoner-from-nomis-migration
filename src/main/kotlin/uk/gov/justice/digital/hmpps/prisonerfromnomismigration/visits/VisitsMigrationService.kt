@@ -7,9 +7,14 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatchId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.*
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.*
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.VISITS
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisCodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisVisit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VisitId
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
