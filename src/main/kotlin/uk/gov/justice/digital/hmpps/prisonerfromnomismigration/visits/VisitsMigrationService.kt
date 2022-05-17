@@ -259,23 +259,25 @@ class VisitsMigrationService(
 private fun <T> MigrationContext<T>.durationMinutes(): Long =
   Duration.between(LocalDateTime.parse(this.migrationId), LocalDateTime.now()).toMinutes()
 
-// TODO - where does comment go?
-private fun mapNomisVisit(nomisVisit: NomisVisit, room: RoomMapping): CreateVsipVisit = CreateVsipVisit(
-  prisonId = nomisVisit.prisonId,
-  prisonerId = nomisVisit.offenderNo,
-  startTimestamp = nomisVisit.startDateTime,
-  endTimestamp = nomisVisit.endDateTime,
-  visitType = nomisVisit.visitType.toVisitType(),
-  visitStatus = nomisVisit.visitStatus.toVisitStatus(),
-  visitRoom = room.vsipId,
-  contactList = nomisVisit.visitors.map {
-    VsipVisitor(
-      nomisPersonId = it.personId,
-      leadVisitor = it.leadVisitor,
-    )
-  },
+private fun mapNomisVisit(nomisVisit: NomisVisit, room: RoomMapping): CreateVsipVisit {
+  return CreateVsipVisit(
+    prisonId = nomisVisit.prisonId,
+    prisonerId = nomisVisit.offenderNo,
+    startTimestamp = nomisVisit.startDateTime,
+    endTimestamp = nomisVisit.endDateTime,
+    visitType = nomisVisit.visitType.toVisitType(),
+    visitStatus = getVsipVisitStatus(nomisVisit),
+    outcomeStatus = getVsipOutcome(nomisVisit),
+    visitRoom = room.vsipId,
+    contactList = nomisVisit.visitors.map {
+      VsipVisitor(
+        nomisPersonId = it.personId,
+        leadVisitor = it.leadVisitor,
+      )
+    },
 
-)
+  )
+}
 
 data class VisitsPage(val filter: VisitsMigrationFilter, val pageNumber: Long, val pageSize: Long)
 
@@ -288,12 +290,6 @@ private fun NomisCodeDescription.toVisitType() = when (this.code) {
   "SCON" -> "STANDARD_SOCIAL"
   "OFFI" -> "OFFICIAL"
   else -> throw IllegalArgumentException("Unknown visit type ${this.code}")
-}
-
-private fun NomisCodeDescription.toVisitStatus() = when (this.code) {
-  // TODO -> What statuses are there?
-  "CANC" -> "CANCELLED_BY_PRISON"
-  else -> "BOOKED"
 }
 
 class NoRoomMappingFoundException(val prisonId: String, val agencyInternalLocationDescription: String) :

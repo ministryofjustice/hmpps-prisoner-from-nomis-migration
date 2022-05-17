@@ -28,7 +28,8 @@ data class CreateVsipVisit(
   @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
   val endTimestamp: LocalDateTime,
   val visitType: String,
-  val visitStatus: String,
+  val visitStatus: VsipStatus,
+  val outcomeStatus: VsipOutcome? = null,
   val visitRoom: String,
   val reasonableAdjustments: String? = null,
   val contactList: List<VsipVisitor>? = listOf(),

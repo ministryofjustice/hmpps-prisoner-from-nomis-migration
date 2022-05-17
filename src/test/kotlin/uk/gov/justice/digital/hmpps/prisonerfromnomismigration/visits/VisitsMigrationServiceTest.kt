@@ -760,7 +760,7 @@ internal class VisitsMigrationServiceTest {
       }
 
       @Test
-      internal fun `cancelled is mapped to cancelled by prison (WHICH IS PROABLY WRONG)`() {
+      internal fun `cancelled is mapped to vsip cancelled status`() {
         whenever(nomisApiService.getVisit(any())).thenReturn(
           aVisit(
             visitStatus = NomisCodeDescription("CANC", "Cancelled")
@@ -775,7 +775,7 @@ internal class VisitsMigrationServiceTest {
 
         verify(visitsService).createVisit(
           check {
-            assertThat(it.visitStatus).isEqualTo("CANCELLED_BY_PRISON")
+            assertThat(it.visitStatus).isEqualTo(VsipStatus.CANCELLED)
           }
         )
       }
@@ -796,7 +796,7 @@ internal class VisitsMigrationServiceTest {
 
         verify(visitsService).createVisit(
           check {
-            assertThat(it.visitStatus).isEqualTo("BOOKED")
+            assertThat(it.visitStatus).isEqualTo(VsipStatus.BOOKED)
           }
         )
       }
@@ -817,7 +817,7 @@ internal class VisitsMigrationServiceTest {
 
         verify(visitsService).createVisit(
           check {
-            assertThat(it.visitStatus).isEqualTo("BOOKED")
+            assertThat(it.visitStatus).isEqualTo(VsipStatus.BOOKED)
           }
         )
       }
