@@ -7,18 +7,9 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatchId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISIT
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_BY_PAGE
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_STATUS_CHECK
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.RETRY_VISIT_MAPPING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.*
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.*
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.VISITS
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisCodeDescription
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisVisit
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VisitId
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -259,23 +250,25 @@ class VisitsMigrationService(
 private fun <T> MigrationContext<T>.durationMinutes(): Long =
   Duration.between(LocalDateTime.parse(this.migrationId), LocalDateTime.now()).toMinutes()
 
-// TODO - where does comment go?
-private fun mapNomisVisit(nomisVisit: NomisVisit, room: RoomMapping): CreateVsipVisit = CreateVsipVisit(
-  prisonId = nomisVisit.prisonId,
-  prisonerId = nomisVisit.offenderNo,
-  startTimestamp = nomisVisit.startDateTime,
-  endTimestamp = nomisVisit.endDateTime,
-  visitType = nomisVisit.visitType.toVisitType(),
-  visitStatus = nomisVisit.visitStatus.toVisitStatus(),
-  visitRoom = room.vsipId,
-  contactList = nomisVisit.visitors.map {
-    VsipVisitor(
-      nomisPersonId = it.personId,
-      leadVisitor = it.leadVisitor,
-    )
-  },
+private fun mapNomisVisit(nomisVisit: NomisVisit, room: RoomMapping): CreateVsipVisit {
+  return CreateVsipVisit(
+    prisonId = nomisVisit.prisonId,
+    prisonerId = nomisVisit.offenderNo,
+    startTimestamp = nomisVisit.startDateTime,
+    endTimestamp = nomisVisit.endDateTime,
+    visitType = nomisVisit.visitType.toVisitType(),
+    visitStatus = getVsipVisitStatus(nomisVisit),
+    outcomeStatus = getVsipOutcome(nomisVisit),
+    visitRoom = room.vsipId,
+    contactList = nomisVisit.visitors.map {
+      VsipVisitor(
+        nomisPersonId = it.personId,
+        leadVisitor = it.leadVisitor,
+      )
+    },
 
-)
+  )
+}
 
 data class VisitsPage(val filter: VisitsMigrationFilter, val pageNumber: Long, val pageSize: Long)
 
@@ -288,12 +281,6 @@ private fun NomisCodeDescription.toVisitType() = when (this.code) {
   "SCON" -> "STANDARD_SOCIAL"
   "OFFI" -> "OFFICIAL"
   else -> throw IllegalArgumentException("Unknown visit type ${this.code}")
-}
-
-private fun NomisCodeDescription.toVisitStatus() = when (this.code) {
-  // TODO -> What statuses are there?
-  "CANC" -> "CANCELLED_BY_PRISON"
-  else -> "BOOKED"
 }
 
 class NoRoomMappingFoundException(val prisonId: String, val agencyInternalLocationDescription: String) :

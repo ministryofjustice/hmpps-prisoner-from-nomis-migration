@@ -1,9 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits
 
-import com.github.tomakehurst.wiremock.client.WireMock
-import com.github.tomakehurst.wiremock.client.WireMock.equalToJson
-import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
-import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -28,8 +25,8 @@ internal class VisitsServiceTest {
     @BeforeEach
     internal fun setUp() {
       visitsApi.stubFor(
-        WireMock.post(urlEqualTo("/visits")).willReturn(
-          WireMock.aResponse()
+        post(urlEqualTo("/visits")).willReturn(
+          aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.CREATED.value())
             .withBody("""{"visitId": "654321"}""")
@@ -46,7 +43,7 @@ internal class VisitsServiceTest {
           startTimestamp = LocalDateTime.parse("2020-01-01T09:00:00"),
           endTimestamp = LocalDateTime.parse("2020-01-01T11:45:00"),
           visitType = "STANDARD_SOCIAL",
-          visitStatus = "BOOKED",
+          visitStatus = VsipStatus.BOOKED,
           visitRoom = "SOCIAL_CENTRE_1",
           contactList = listOf(
             VsipVisitor(nomisPersonId = 5668, leadVisitor = true),
@@ -58,7 +55,7 @@ internal class VisitsServiceTest {
 
       visitsApi.verify(
         postRequestedFor(urlEqualTo("/visits"))
-          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE"))
+          .withHeader("Authorization", equalTo("Bearer ABCDE"))
       )
     }
 
@@ -71,7 +68,7 @@ internal class VisitsServiceTest {
           startTimestamp = LocalDateTime.parse("2020-01-01T09:00:00"),
           endTimestamp = LocalDateTime.parse("2020-01-01T11:45:00"),
           visitType = "STANDARD_SOCIAL",
-          visitStatus = "BOOKED",
+          visitStatus = VsipStatus.BOOKED,
           visitRoom = "SOCIAL_CENTRE_1",
           contactList = listOf(
             VsipVisitor(nomisPersonId = 5668, leadVisitor = true),
@@ -120,7 +117,7 @@ internal class VisitsServiceTest {
           startTimestamp = LocalDateTime.parse("2020-01-01T09:00:00"),
           endTimestamp = LocalDateTime.parse("2020-01-01T11:45:00"),
           visitType = "STANDARD_SOCIAL",
-          visitStatus = "BOOKED",
+          visitStatus = VsipStatus.BOOKED,
           visitRoom = "SOCIAL_CENTRE_1",
           contactList = listOf(
             VsipVisitor(nomisPersonId = 5668, leadVisitor = true),

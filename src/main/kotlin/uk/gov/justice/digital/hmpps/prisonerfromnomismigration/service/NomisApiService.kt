@@ -87,6 +87,7 @@ data class NomisVisit(
   val visitors: List<NomisVisitor>,
   val visitType: NomisCodeDescription,
   val visitStatus: NomisCodeDescription,
+  val visitOutcome: NomisCodeDescription? = null,
   val agencyInternalLocation: NomisCodeDescription? = null,
   val commentText: String? = null,
   val visitorConcernText: String? = null,
