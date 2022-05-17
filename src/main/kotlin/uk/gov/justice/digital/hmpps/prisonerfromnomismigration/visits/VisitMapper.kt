@@ -41,6 +41,7 @@ enum class NomisVisitStatus {
   OFFEND,
   SCH,
   VISITOR,
+  COMP,
   VDE
 }
 
