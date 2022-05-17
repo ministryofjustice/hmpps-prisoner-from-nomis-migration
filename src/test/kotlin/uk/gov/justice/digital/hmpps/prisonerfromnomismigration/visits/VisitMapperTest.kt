@@ -39,16 +39,6 @@ internal class VisitMapperTest {
     assertThat(getVsipOutcome(createNomisVisit(NomisVisitStatus.EXP.name, NomisCancellationOutcome.ADMIN.name))).isEqualTo(VsipOutcome.ADMINISTRATIVE_CANCELLATION)
   }
 
-  /*
-   CANCELLATION,
-   COMPLETED_NORMALLY,
-   PRISONER_COMPLETED_EARLY,
-   TERMINATED_BY_STAFF,
-   VISITOR_COMPLETED_EARLY,
-   VISITOR_DECLINED_ENTRY,
-   VISITOR_DID_NOT_ARRIVE,
-   */
-
   @Test
   internal fun `will map correct status for visits `() {
     assertThat(getVsipVisitStatus(createNomisVisit(NomisVisitStatus.CANC.name, null))).isEqualTo(VsipStatus.CANCELLED)
