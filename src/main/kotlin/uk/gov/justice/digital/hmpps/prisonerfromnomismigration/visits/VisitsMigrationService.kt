@@ -7,7 +7,11 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatchId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.*
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISIT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_BY_PAGE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_STATUS_CHECK
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.RETRY_VISIT_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.VISITS
