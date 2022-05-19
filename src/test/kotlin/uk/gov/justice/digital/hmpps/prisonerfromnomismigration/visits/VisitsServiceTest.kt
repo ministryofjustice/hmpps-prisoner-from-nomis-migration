@@ -109,7 +109,8 @@ internal class VisitsServiceTest {
                 "leadVisitorId" : 123
               },
               "visitors" : [ ],
-              "visitNotes" : [ ]
+              "visitNotes" : [ ],
+              "visitRestriction": "OPEN"
             }
               """.trimIndent()
             )
