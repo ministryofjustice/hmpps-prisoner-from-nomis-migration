@@ -53,8 +53,8 @@ internal class VisitsServiceTest {
           contactList = listOf(
             VsipVisitor(nomisPersonId = 5668),
             VsipVisitor(nomisPersonId = 5678)
-          )
-
+          ),
+          visitRestriction = VisitRestriction.OPEN
         )
       )
 
@@ -79,8 +79,8 @@ internal class VisitsServiceTest {
             VsipVisitor(nomisPersonId = 5668),
             VsipVisitor(nomisPersonId = 5678)
           ),
-          legacyData = VsipLegacyData(leadVisitorId = 123)
-
+          legacyData = VsipLegacyData(leadVisitorId = 123),
+          visitRestriction = VisitRestriction.OPEN
         )
       )
 
@@ -109,7 +109,8 @@ internal class VisitsServiceTest {
                 "leadVisitorId" : 123
               },
               "visitors" : [ ],
-              "visitNotes" : [ ]
+              "visitNotes" : [ ],
+              "visitRestriction": "OPEN"
             }
               """.trimIndent()
             )
@@ -131,7 +132,8 @@ internal class VisitsServiceTest {
           contactList = listOf(
             VsipVisitor(nomisPersonId = 5668),
             VsipVisitor(nomisPersonId = 5678)
-          )
+          ),
+          visitRestriction = VisitRestriction.OPEN
         )
       )
       assertThat(visit.visitId).isEqualTo("654321")

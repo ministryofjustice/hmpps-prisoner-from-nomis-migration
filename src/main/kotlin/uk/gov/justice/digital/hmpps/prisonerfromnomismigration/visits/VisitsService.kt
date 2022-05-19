@@ -38,6 +38,7 @@ data class CreateVsipVisit(
   val visitContact: VsipLegacyContactOnVisit? = null,
   val visitors: Set<VsipVisitor>? = setOf(),
   val visitNotes: Set<VsipVisitNote>? = setOf(),
+  val visitRestriction: VisitRestriction
 )
 
 data class VsipLegacyData(
@@ -64,3 +65,11 @@ enum class VsipVisitNoteType {
 }
 
 data class VsipVisit(val visitId: String)
+
+enum class VisitRestriction(
+  val description: String,
+) {
+  OPEN("Open"),
+  CLOSED("Closed"),
+  UNKNOWN("Unknown")
+}
