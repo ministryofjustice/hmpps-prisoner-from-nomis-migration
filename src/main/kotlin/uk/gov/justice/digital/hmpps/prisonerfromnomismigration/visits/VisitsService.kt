@@ -10,12 +10,12 @@ import java.time.LocalDateTime
 @Service
 class VisitsService(@Qualifier("visitsApiWebClient") private val webClient: WebClient) {
 
-  fun createVisit(createVisitRequest: CreateVsipVisit): VsipVisit =
+  fun createVisit(createVisitRequest: CreateVsipVisit): String =
     webClient.post()
       .uri("/migrate-visits")
       .bodyValue(createVisitRequest)
       .retrieve()
-      .bodyToMono(VsipVisit::class.java)
+      .bodyToMono(String::class.java)
       .block()!!
 }
 

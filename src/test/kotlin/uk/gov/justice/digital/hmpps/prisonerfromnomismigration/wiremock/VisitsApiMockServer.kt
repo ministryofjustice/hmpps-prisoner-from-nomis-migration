@@ -53,7 +53,7 @@ class VisitsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.CREATED.value())
-          .withBody("""{"visitId": "654321"}""")
+          .withBody("654321")
       )
     )
   }
