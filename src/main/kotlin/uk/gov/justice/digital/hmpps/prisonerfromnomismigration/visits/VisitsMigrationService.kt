@@ -129,7 +129,7 @@ class VisitsMigrationService(
             .also {
               createNomisVisitMapping(
                 nomisVisitId = nomisVisit.visitId,
-                vsipVisitId = it.visitId,
+                vsipVisitId = it,
                 context = context
               )
             }.also {
@@ -140,7 +140,7 @@ class VisitsMigrationService(
                   "prisonId" to nomisVisit.prisonId,
                   "offenderNo" to nomisVisit.offenderNo,
                   "visitId" to nomisVisit.visitId.toString(),
-                  "vsipVisitId" to it.visitId,
+                  "vsipVisitId" to it,
                   "startDateTime" to nomisVisit.startDateTime.asStringOrBlank(),
                   "room" to this.vsipId
                 ),

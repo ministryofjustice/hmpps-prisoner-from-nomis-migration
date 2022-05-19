@@ -595,7 +595,7 @@ internal class VisitsMigrationServiceTest {
       )
 
       whenever(visitsService.createVisit(any())).thenReturn(
-        VsipVisit(visitId = "654321")
+        "654321"
       )
     }
 
@@ -922,7 +922,7 @@ internal class VisitsMigrationServiceTest {
         )
       )
       whenever(visitsService.createVisit(any())).thenReturn(
-        VsipVisit(visitId = "654321")
+        "654321"
       )
 
       service.migrateVisit(
@@ -942,7 +942,7 @@ internal class VisitsMigrationServiceTest {
         )
       )
       whenever(visitsService.createVisit(any())).thenReturn(
-        VsipVisit(visitId = "654321")
+        "654321"
       )
 
       whenever(visitMappingService.createNomisVisitMapping(any(), any(), any())).thenThrow(
@@ -1022,7 +1022,7 @@ internal class VisitsMigrationServiceTest {
         )
 
         whenever(visitsService.createVisit(any())).thenReturn(
-          VsipVisit(visitId = "654321")
+          "654321"
         )
 
         service.migrateVisit(

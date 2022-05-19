@@ -34,7 +34,7 @@ internal class VisitsServiceTest {
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.CREATED.value())
-            .withBody("""{"visitId": "654321"}""")
+            .withBody("654321")
         )
       )
     }
@@ -120,7 +120,7 @@ internal class VisitsServiceTest {
 
     @Test
     internal fun `will return newly created VSIP visitId`() {
-      val visit = visitsService.createVisit(
+      val visitId = visitsService.createVisit(
         CreateVsipVisit(
           prisonId = "BXI",
           prisonerId = "A1234AA",
@@ -136,7 +136,7 @@ internal class VisitsServiceTest {
           visitRestriction = VisitRestriction.OPEN
         )
       )
-      assertThat(visit.visitId).isEqualTo("654321")
+      assertThat(visitId).isEqualTo("654321")
     }
   }
 }
