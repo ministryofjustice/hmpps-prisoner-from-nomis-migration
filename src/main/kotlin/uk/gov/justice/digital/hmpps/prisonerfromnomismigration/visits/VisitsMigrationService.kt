@@ -284,7 +284,8 @@ private fun mapNomisVisit(nomisVisit: NomisVisit, room: RoomMapping): CreateVsip
       )
     },
     visitNotes = visitNotesSet,
-    visitors = nomisVisit.visitors.map { v -> VsipVisitor(v.personId) }.toSet()
+    visitors = nomisVisit.visitors.map { v -> VsipVisitor(v.personId) }.toSet(),
+    visitRestriction = VisitRestriction.OPEN
   )
 }
 
