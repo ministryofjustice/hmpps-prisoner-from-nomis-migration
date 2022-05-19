@@ -296,7 +296,7 @@ data class VisitMigrationStatusCheck(val checkCount: Int = 0) {
 }
 
 private fun NomisCodeDescription.toVisitType() = when (this.code) {
-  "SCON" -> "STANDARD_SOCIAL"
+  "SCON" -> "SOCIAL"
   "OFFI" -> "OFFICIAL"
   else -> throw IllegalArgumentException("Unknown visit type ${this.code}")
 }

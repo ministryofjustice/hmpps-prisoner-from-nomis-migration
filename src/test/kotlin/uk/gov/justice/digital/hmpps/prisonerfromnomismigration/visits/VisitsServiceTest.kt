@@ -47,7 +47,7 @@ internal class VisitsServiceTest {
           prisonerId = "A1234AA",
           startTimestamp = LocalDateTime.parse("2020-01-01T09:00:00"),
           endTimestamp = LocalDateTime.parse("2020-01-01T11:45:00"),
-          visitType = "STANDARD_SOCIAL",
+          visitType = "SOCIAL",
           visitStatus = VsipStatus.BOOKED,
           visitRoom = "SOCIAL_CENTRE_1",
           contactList = listOf(
@@ -72,7 +72,7 @@ internal class VisitsServiceTest {
           prisonerId = "A1234AA",
           startTimestamp = LocalDateTime.parse("2020-01-01T09:00:00"),
           endTimestamp = LocalDateTime.parse("2020-01-01T11:45:00"),
-          visitType = "STANDARD_SOCIAL",
+          visitType = "SOCIAL",
           visitStatus = VsipStatus.BOOKED,
           visitRoom = "SOCIAL_CENTRE_1",
           contactList = listOf(
@@ -94,7 +94,7 @@ internal class VisitsServiceTest {
               "prisonerId": "A1234AA",
               "startTimestamp": "2020-01-01T09:00:00",
               "endTimestamp": "2020-01-01T11:45:00",
-              "visitType": "STANDARD_SOCIAL",
+              "visitType": "SOCIAL",
               "visitStatus": "BOOKED",
               "visitRoom": "SOCIAL_CENTRE_1",
               "contactList": [
@@ -125,7 +125,7 @@ internal class VisitsServiceTest {
           prisonerId = "A1234AA",
           startTimestamp = LocalDateTime.parse("2020-01-01T09:00:00"),
           endTimestamp = LocalDateTime.parse("2020-01-01T11:45:00"),
-          visitType = "STANDARD_SOCIAL",
+          visitType = "SOCIAL",
           visitStatus = VsipStatus.BOOKED,
           visitRoom = "SOCIAL_CENTRE_1",
           contactList = listOf(
