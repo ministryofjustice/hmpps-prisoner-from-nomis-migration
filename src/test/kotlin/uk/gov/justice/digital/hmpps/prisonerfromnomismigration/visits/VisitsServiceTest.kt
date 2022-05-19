@@ -30,7 +30,7 @@ internal class VisitsServiceTest {
     @BeforeEach
     internal fun setUp() {
       visitsApi.stubFor(
-        post(urlEqualTo("/visits")).willReturn(
+        post(urlEqualTo("/migrate-visits")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.CREATED.value())
@@ -51,15 +51,15 @@ internal class VisitsServiceTest {
           visitStatus = VsipStatus.BOOKED,
           visitRoom = "SOCIAL_CENTRE_1",
           contactList = listOf(
-            VsipVisitor(nomisPersonId = 5668, leadVisitor = true),
-            VsipVisitor(nomisPersonId = 5678, leadVisitor = false)
+            VsipVisitor(nomisPersonId = 5668),
+            VsipVisitor(nomisPersonId = 5678)
           )
 
         )
       )
 
       visitsApi.verify(
-        postRequestedFor(urlEqualTo("/visits"))
+        postRequestedFor(urlEqualTo("/migrate-visits"))
           .withHeader("Authorization", equalTo("Bearer ABCDE"))
       )
     }
@@ -76,15 +76,16 @@ internal class VisitsServiceTest {
           visitStatus = VsipStatus.BOOKED,
           visitRoom = "SOCIAL_CENTRE_1",
           contactList = listOf(
-            VsipVisitor(nomisPersonId = 5668, leadVisitor = true),
-            VsipVisitor(nomisPersonId = 5678, leadVisitor = false)
-          )
+            VsipVisitor(nomisPersonId = 5668),
+            VsipVisitor(nomisPersonId = 5678)
+          ),
+          legacyData = VsipLegacyData(leadVisitorId = 123)
 
         )
       )
 
       visitsApi.verify(
-        postRequestedFor(urlEqualTo("/visits"))
+        postRequestedFor(urlEqualTo("/migrate-visits"))
           .withRequestBody(
             equalToJson(
               """
@@ -98,14 +99,17 @@ internal class VisitsServiceTest {
               "visitRoom": "SOCIAL_CENTRE_1",
               "contactList": [
                 {
-                  "nomisPersonId": 5668,
-                  "leadVisitor": true
+                  "nomisPersonId": 5668
                 },
                 {
-                  "nomisPersonId": 5678,
-                  "leadVisitor": false
+                  "nomisPersonId": 5678
                 }
-              ]
+              ],
+              "legacyData" : {
+                "leadVisitorId" : 123
+              },
+              "visitors" : [ ],
+              "visitNotes" : [ ]
             }
               """.trimIndent()
             )
@@ -125,8 +129,8 @@ internal class VisitsServiceTest {
           visitStatus = VsipStatus.BOOKED,
           visitRoom = "SOCIAL_CENTRE_1",
           contactList = listOf(
-            VsipVisitor(nomisPersonId = 5668, leadVisitor = true),
-            VsipVisitor(nomisPersonId = 5678, leadVisitor = false)
+            VsipVisitor(nomisPersonId = 5668),
+            VsipVisitor(nomisPersonId = 5678)
           )
         )
       )

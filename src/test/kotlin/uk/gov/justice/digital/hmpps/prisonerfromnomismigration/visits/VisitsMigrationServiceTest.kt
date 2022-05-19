@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits
 import com.microsoft.applicationinsights.TelemetryClient
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.assertj.core.api.Assertions.tuple
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -33,6 +34,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisCodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisLeadVisitor
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisVisit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisVisitor
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VisitId
@@ -336,9 +338,7 @@ internal class VisitsMigrationServiceTest {
       internal fun `will check again in 10 seconds`() {
         service.migrateVisitsStatusCheck(
           MigrationContext(
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = VisitMigrationStatusCheck()
+            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitMigrationStatusCheck()
           )
         )
 
@@ -407,9 +407,7 @@ internal class VisitsMigrationServiceTest {
         )
 
         verify(queueService, never()).sendMessage(
-          message = eq(MIGRATE_VISITS_STATUS_CHECK),
-          context = any(),
-          delaySeconds = any()
+          message = eq(MIGRATE_VISITS_STATUS_CHECK), context = any(), delaySeconds = any()
         )
       }
 
@@ -417,9 +415,7 @@ internal class VisitsMigrationServiceTest {
       internal fun `will add completed telemetry when finishing off`() {
         service.migrateVisitsStatusCheck(
           MigrationContext(
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 23,
-            body = VisitMigrationStatusCheck(checkCount = 10)
+            migrationId = "2020-05-23T11:30:00", estimatedCount = 23, body = VisitMigrationStatusCheck(checkCount = 10)
           )
         )
 
@@ -441,16 +437,12 @@ internal class VisitsMigrationServiceTest {
 
         service.migrateVisitsStatusCheck(
           MigrationContext(
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 23,
-            body = VisitMigrationStatusCheck(checkCount = 10)
+            migrationId = "2020-05-23T11:30:00", estimatedCount = 23, body = VisitMigrationStatusCheck(checkCount = 10)
           )
         )
 
         verify(migrationHistoryService).recordMigrationCompleted(
-          migrationId = eq("2020-05-23T11:30:00"),
-          recordsFailed = eq(2),
-          recordsMigrated = eq(21)
+          migrationId = eq("2020-05-23T11:30:00"), recordsFailed = eq(2), recordsMigrated = eq(21)
         )
       }
     }
@@ -581,16 +573,19 @@ internal class VisitsMigrationServiceTest {
           visitors = listOf(
             NomisVisitor(
               personId = 4729570,
-              leadVisitor = true,
             ),
             NomisVisitor(
               personId = 4729580,
-              leadVisitor = false,
             )
           ),
           visitType = NomisCodeDescription("SCON", "Social Contact"),
-          visitStatus = NomisCodeDescription("SCH", "Scheduled"),
+          visitStatus = NomisCodeDescription("CANC", "cancelled"),
+          leadVisitor = NomisLeadVisitor(
+            personId = 4729570, fullName = "Simon Mine", telephones = listOf("000 11111", "000 22222")
+          ),
+          visitOutcome = NomisCodeDescription(NomisCancellationOutcome.NO_ID.name, "No Id"),
           commentText = "This is a comment",
+          visitorConcernText = "I'm concerned",
         )
       )
       whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
@@ -742,6 +737,47 @@ internal class VisitsMigrationServiceTest {
         verify(visitsService).createVisit(
           check {
             assertThat(it.visitRoom).isEqualTo("VSIP-ROOM-ID")
+          }
+        )
+      }
+
+      @Test
+      internal fun `contact information is copied`() {
+        verify(visitsService).createVisit(
+          check {
+            assertThat(it.visitContact).isEqualTo(VsipLegacyContactOnVisit("Vince Hoyland", "0000 11111"))
+          }
+        )
+      }
+
+      @Test
+      internal fun `legacy lead visitor personId is copied`() {
+        verify(visitsService).createVisit(
+          check {
+            assertThat(it.legacyData).isEqualTo(VsipLegacyData(4729570))
+          }
+        )
+      }
+
+      @Test
+      internal fun `outcome status when null is copied`() {
+        verify(visitsService).createVisit(
+          check {
+            assertThat(it.outcomeStatus).isNull()
+          }
+        )
+      }
+
+      @Test
+      internal fun `comments are copied`() {
+        verify(visitsService).createVisit(
+          check {
+            assertThat(it.visitNotes).extracting("text", "type").contains(
+              tuple(
+                "This is a comment", VsipVisitNoteType.VISIT_COMMENT
+              ),
+              tuple("this is concerning", VsipVisitNoteType.VISITOR_CONCERN)
+            )
           }
         )
       }
@@ -1059,15 +1095,16 @@ fun pages(total: Long, startId: Long = 1): PageImpl<VisitId> = PageImpl<VisitId>
     visitors = listOf(
       NomisVisitor(
         personId = 4729570,
-        leadVisitor = true,
       ),
       NomisVisitor(
         personId = 4729580,
-        leadVisitor = false,
       )
     ),
     visitType = visitType,
     visitStatus = visitStatus,
     commentText = "This is a comment",
+    visitorConcernText = "this is concerning",
+    /* no outcome as only visits with a status of Cancelled will have an outcome returned from nomis */
+    leadVisitor = NomisLeadVisitor(4729570, fullName = "Vince Hoyland", telephones = listOf("0000 11111", "0000 22222"))
   )
   

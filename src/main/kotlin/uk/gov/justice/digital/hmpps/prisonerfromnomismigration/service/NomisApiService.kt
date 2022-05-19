@@ -72,8 +72,14 @@ data class VisitId(
 )
 
 data class NomisVisitor(
+  val personId: Long
+)
+
+data class NomisLeadVisitor(
   val personId: Long,
-  val leadVisitor: Boolean
+  val fullName: String,
+  // latest modified first
+  val telephones: List<String>,
 )
 
 data class NomisCodeDescription(val code: String, val description: String)
@@ -91,6 +97,7 @@ data class NomisVisit(
   val agencyInternalLocation: NomisCodeDescription? = null,
   val commentText: String? = null,
   val visitorConcernText: String? = null,
+  val leadVisitor: NomisLeadVisitor? = null,
 )
 
 class RestResponsePage<T> @JsonCreator(mode = JsonCreator.Mode.PROPERTIES) constructor(
