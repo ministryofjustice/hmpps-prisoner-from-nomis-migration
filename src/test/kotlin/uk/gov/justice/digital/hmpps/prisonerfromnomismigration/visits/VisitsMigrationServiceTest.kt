@@ -887,7 +887,7 @@ internal class VisitsMigrationServiceTest {
 
         verify(visitsService).createVisit(
           check {
-            assertThat(it.visitType).isEqualTo("STANDARD_SOCIAL")
+            assertThat(it.visitType).isEqualTo("SOCIAL")
           }
         )
       }
