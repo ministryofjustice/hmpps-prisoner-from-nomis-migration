@@ -49,7 +49,7 @@ class VisitsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubCreateVisit() {
     stubFor(
-      post(urlEqualTo("/visits")).willReturn(
+      post(urlEqualTo("/migrate-visits")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.CREATED.value())
@@ -58,5 +58,5 @@ class VisitsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun createVisitCount() = findAll(postRequestedFor(urlEqualTo("/visits"))).count()
+  fun createVisitCount() = findAll(postRequestedFor(urlEqualTo("/migrate-visits"))).count()
 }

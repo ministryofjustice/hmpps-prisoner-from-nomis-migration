@@ -12,7 +12,7 @@ class VisitsService(@Qualifier("visitsApiWebClient") private val webClient: WebC
 
   fun createVisit(createVisitRequest: CreateVsipVisit): VsipVisit =
     webClient.post()
-      .uri("/visits")
+      .uri("/migrate-visits")
       .bodyValue(createVisitRequest)
       .retrieve()
       .bodyToMono(VsipVisit::class.java)
@@ -34,11 +34,33 @@ data class CreateVsipVisit(
   val reasonableAdjustments: String? = null,
   val contactList: List<VsipVisitor>? = listOf(),
   val sessionId: Long? = null,
+  val legacyData: VsipLegacyData? = null,
+  val visitContact: VsipLegacyContactOnVisit? = null,
+  val visitors: Set<VsipVisitor>? = setOf(),
+  val visitNotes: Set<VsipVisitNote>? = setOf(),
+)
+
+data class VsipLegacyData(
+  val leadVisitorId: Long
+)
+
+data class VsipLegacyContactOnVisit(
+  val name: String,
+  val telephone: String? = null,
 )
 
 data class VsipVisitor(
-  val nomisPersonId: Long,
-  val leadVisitor: Boolean = false
+  val nomisPersonId: Long
 )
+
+class VsipVisitNote(
+  val type: VsipVisitNoteType,
+  val text: String
+)
+
+enum class VsipVisitNoteType {
+  VISITOR_CONCERN,
+  VISIT_COMMENT,
+}
 
 data class VsipVisit(val visitId: String)

@@ -260,6 +260,9 @@ private fun <T> MigrationContext<T>.durationMinutes(): Long =
   Duration.between(LocalDateTime.parse(this.migrationId), LocalDateTime.now()).toMinutes()
 
 private fun mapNomisVisit(nomisVisit: NomisVisit, room: RoomMapping): CreateVsipVisit {
+  val visitNotesSet = mutableSetOf<VsipVisitNote>()
+  nomisVisit.commentText?.apply { visitNotesSet.add(VsipVisitNote(VsipVisitNoteType.VISIT_COMMENT, this)) }
+  nomisVisit.visitorConcernText?.apply { visitNotesSet.add(VsipVisitNote(VsipVisitNoteType.VISITOR_CONCERN, this)) }
   return CreateVsipVisit(
     prisonId = nomisVisit.prisonId,
     prisonerId = nomisVisit.offenderNo,
@@ -272,10 +275,16 @@ private fun mapNomisVisit(nomisVisit: NomisVisit, room: RoomMapping): CreateVsip
     contactList = nomisVisit.visitors.map {
       VsipVisitor(
         nomisPersonId = it.personId,
-        leadVisitor = it.leadVisitor,
       )
     },
-
+    legacyData = nomisVisit.leadVisitor?.let { VsipLegacyData(it.personId) },
+    visitContact = nomisVisit.leadVisitor?.let {
+      VsipLegacyContactOnVisit(
+        name = it.fullName, telephone = it.telephones.firstOrNull()
+      )
+    },
+    visitNotes = visitNotesSet,
+    visitors = nomisVisit.visitors.map { v -> VsipVisitor(v.personId) }.toSet()
   )
 }
 
