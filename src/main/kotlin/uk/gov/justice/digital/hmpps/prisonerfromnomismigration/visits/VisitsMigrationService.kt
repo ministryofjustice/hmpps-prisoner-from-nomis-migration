@@ -20,6 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisCode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisVisit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VisitId
 import java.time.Duration
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -285,7 +286,7 @@ private fun mapNomisVisit(nomisVisit: NomisVisit, room: RoomMapping): CreateVsip
     },
     visitNotes = visitNotesSet,
     visitors = nomisVisit.visitors.map { v -> VsipVisitor(v.personId) }.toSet(),
-    visitRestriction = VisitRestriction.OPEN
+    visitRestriction = getVsipVisitRestriction(nomisVisit, room)
   )
 }
 
@@ -306,6 +307,10 @@ class NoRoomMappingFoundException(val prisonId: String, val agencyInternalLocati
   RuntimeException("No room mapping found for prisonId $prisonId and agencyInternalLocationDescription $agencyInternalLocationDescription")
 
 private fun LocalDateTime?.asStringOrBlank(): String = this?.format(DateTimeFormatter.ISO_DATE_TIME) ?: ""
+
+private fun getVsipVisitRestriction(nomisVisit: NomisVisit, room: RoomMapping): VisitRestriction =
+  if (nomisVisit.startDateTime.toLocalDate() < LocalDate.now()) VisitRestriction.UNKNOWN
+  else if (room.isOpen) VisitRestriction.OPEN else VisitRestriction.CLOSED
 
 data class VisitMapping(
   val nomisVisitId: Long,
