@@ -784,6 +784,97 @@ internal class VisitsMigrationServiceTest {
     }
 
     @Nested
+    @DisplayName("Visit restriction mapping (open/closed/unknown)")
+    inner class NomisToVisitRoomMapping {
+      @Test
+      internal fun `visit restriction is set to UNKNOWN for historical visits (prior to today)`() {
+        whenever(nomisApiService.getVisit(any())).thenReturn(
+          aVisit(
+            agencyInternalLocation = NomisCodeDescription("VSIP-ROOM-ID", "An open room"),
+            startDateTime = LocalDateTime.now().minusDays(1),
+            endDateTime = LocalDateTime.now().minusDays(1).plusHours(1),
+          )
+        )
+
+        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+          RoomMapping(
+            vsipId = "VSIP-ROOM-ID", isOpen = true
+          )
+        )
+
+        service.migrateVisit(
+          MigrationContext(
+            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+          )
+        )
+
+        verify(visitsService).createVisit(
+          check {
+            assertThat(it.visitRestriction).isEqualTo(VisitRestriction.UNKNOWN)
+          }
+        )
+      }
+
+      @Test
+      internal fun `visit restriction is set to correct value for a visit with today's date`() {
+        whenever(nomisApiService.getVisit(any())).thenReturn(
+          aVisit(
+            agencyInternalLocation = NomisCodeDescription("VSIP-ROOM-ID", "An open room"),
+            startDateTime = LocalDateTime.now(),
+            endDateTime = LocalDateTime.now().plusHours(1),
+          )
+        )
+
+        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+          RoomMapping(
+            vsipId = "VSIP-ROOM-ID", isOpen = true
+          )
+        )
+
+        service.migrateVisit(
+          MigrationContext(
+            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+          )
+        )
+
+        verify(visitsService).createVisit(
+          check {
+            assertThat(it.visitRestriction).isEqualTo(VisitRestriction.OPEN)
+          }
+        )
+      }
+
+      @Test
+      internal fun `visit restriction is set to correct value for a visit booked with a future date`() {
+        whenever(nomisApiService.getVisit(any())).thenReturn(
+          aVisit(
+            agencyInternalLocation = NomisCodeDescription("VSIP-ROOM-ID", "A closed room"),
+            startDateTime = LocalDateTime.now().plusDays(5),
+            endDateTime = LocalDateTime.now().plusDays(5).plusHours(1),
+          )
+        )
+
+        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+          RoomMapping(
+            vsipId = "VSIP-ROOM-ID", isOpen = false
+          )
+        )
+
+        service.migrateVisit(
+          MigrationContext(
+            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+          )
+        )
+
+        verify(visitsService).createVisit(
+          check {
+            assertThat(it.visitRestriction).isEqualTo(VisitRestriction.CLOSED)
+          }
+        )
+      }
+    }
+
+    @Nested
     @DisplayName("visit status mapping ** REQUIRES ACCEPTANCE CRITERIA - currently wrong")
     inner class NomisToVisitStatusMapping {
       @BeforeEach
