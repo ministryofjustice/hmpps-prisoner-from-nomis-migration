@@ -45,6 +45,7 @@ data class VsipLegacyData(
   val leadVisitorId: Long
 )
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 data class VsipLegacyContactOnVisit(
   val name: String,
   val telephone: String? = null,
