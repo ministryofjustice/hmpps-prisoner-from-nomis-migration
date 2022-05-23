@@ -80,7 +80,8 @@ internal class VisitsServiceTest {
             VsipVisitor(nomisPersonId = 5678)
           ),
           legacyData = VsipLegacyData(leadVisitorId = 123),
-          visitRestriction = VisitRestriction.OPEN
+          visitRestriction = VisitRestriction.OPEN,
+          visitContact = VsipLegacyContactOnVisit("James Flack")
         )
       )
 
@@ -110,7 +111,10 @@ internal class VisitsServiceTest {
               },
               "visitors" : [ ],
               "visitNotes" : [ ],
-              "visitRestriction": "OPEN"
+              "visitRestriction": "OPEN",
+              "visitContact" : {
+                "name" : "James Flack"
+              }
             }
               """.trimIndent()
             )
