@@ -30,7 +30,7 @@ data class CreateVsipVisit(
   val visitType: String,
   val visitStatus: VsipStatus,
   val outcomeStatus: VsipOutcome? = null,
-  val visitRoom: String,
+  val visitRoom: String?,
   val reasonableAdjustments: String? = null,
   val contactList: List<VsipVisitor>? = listOf(),
   val sessionId: Long? = null,
@@ -64,8 +64,6 @@ enum class VsipVisitNoteType {
   VISITOR_CONCERN,
   VISIT_COMMENT,
 }
-
-data class VsipVisit(val visitId: String)
 
 enum class VisitRestriction(
   val description: String,

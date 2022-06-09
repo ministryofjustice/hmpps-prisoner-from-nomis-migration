@@ -733,15 +733,6 @@ internal class VisitsMigrationServiceTest {
       }
 
       @Test
-      internal fun `room from room mapping is copied`() {
-        verify(visitsService).createVisit(
-          check {
-            assertThat(it.visitRoom).isEqualTo("VSIP-ROOM-ID")
-          }
-        )
-      }
-
-      @Test
       internal fun `contact information is copied`() {
         verify(visitsService).createVisit(
           check {
@@ -785,7 +776,7 @@ internal class VisitsMigrationServiceTest {
 
     @Nested
     @DisplayName("Visit restriction mapping (open/closed/unknown)")
-    inner class NomisToVisitRoomMapping {
+    inner class NomisToVisitRestrictionMapping {
       @Test
       internal fun `visit restriction is set to UNKNOWN for historical visits (prior to today)`() {
         whenever(nomisApiService.getVisit(any())).thenReturn(
@@ -869,6 +860,98 @@ internal class VisitsMigrationServiceTest {
         verify(visitsService).createVisit(
           check {
             assertThat(it.visitRestriction).isEqualTo(VisitRestriction.CLOSED)
+          }
+        )
+      }
+    }
+
+    @Nested
+    @DisplayName("Visit room mapping (date dependent)")
+    inner class NomisToVisitRoomMapping {
+      @Test
+      internal fun `visit room is set to the nomis description, ignoring the VSIP mapping for historical visits (prior to today)`() {
+        val aVisit = aVisit(
+          agencyInternalLocation = NomisCodeDescription("NOMIS-ROOM-CODE", "NOMIS-ROOM-DESC"),
+          startDateTime = LocalDateTime.now().minusDays(1),
+          endDateTime = LocalDateTime.now().minusDays(1).plusHours(1),
+        )
+        whenever(nomisApiService.getVisit(any())).thenReturn(
+          aVisit
+        )
+
+        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+          RoomMapping(
+            vsipId = "VSIP-ROOM-ID", isOpen = true
+          )
+        )
+
+        service.migrateVisit(
+          MigrationContext(
+            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+          )
+        )
+
+        verify(visitsService).createVisit(
+          check {
+            assertThat(it.visitRoom).isEqualTo("NOMIS-ROOM-DESC")
+          }
+        )
+      }
+
+      @Test
+      internal fun `visit room is set to correct value for a visit with today's date`() {
+        whenever(nomisApiService.getVisit(any())).thenReturn(
+          aVisit(
+            agencyInternalLocation = NomisCodeDescription("NOMIS-ROOM-CODE", "NOMIS-ROOM-DESC"),
+            startDateTime = LocalDateTime.now(),
+            endDateTime = LocalDateTime.now().plusHours(1),
+          )
+        )
+
+        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+          RoomMapping(
+            vsipId = "VSIP-ROOM-ID", isOpen = true
+          )
+        )
+
+        service.migrateVisit(
+          MigrationContext(
+            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+          )
+        )
+
+        verify(visitsService).createVisit(
+          check {
+            assertThat(it.visitRoom).isEqualTo("VSIP-ROOM-ID")
+          }
+        )
+      }
+
+      @Test
+      internal fun `visit room is set to correct value for a visit booked with a future date`() {
+        whenever(nomisApiService.getVisit(any())).thenReturn(
+          aVisit(
+            agencyInternalLocation = NomisCodeDescription("NOMIS-ROOM-CODE", "NOMIS-ROOM-DESC"),
+            startDateTime = LocalDateTime.now().plusDays(5),
+            endDateTime = LocalDateTime.now().plusDays(5).plusHours(1),
+          )
+        )
+
+        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+          RoomMapping(
+            vsipId = "VSIP-ROOM-ID", isOpen = false
+          )
+        )
+
+        service.migrateVisit(
+          MigrationContext(
+            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+          )
+        )
+
+        verify(visitsService).createVisit(
+          check {
+            assertThat(it.visitRoom).isEqualTo("VSIP-ROOM-ID")
           }
         )
       }
