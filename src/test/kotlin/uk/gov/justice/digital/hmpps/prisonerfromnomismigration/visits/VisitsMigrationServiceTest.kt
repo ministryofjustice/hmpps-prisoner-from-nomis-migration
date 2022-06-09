@@ -871,7 +871,7 @@ internal class VisitsMigrationServiceTest {
       @Test
       internal fun `visit room is set to the nomis description, ignoring the VSIP mapping for historical visits (prior to today)`() {
         val aVisit = aVisit(
-          agencyInternalLocation = NomisCodeDescription("VSIP-ROOM-ID", "VSIP-ROOM-DESC"),
+          agencyInternalLocation = NomisCodeDescription("NOMIS-ROOM-CODE", "NOMIS-ROOM-DESC"),
           startDateTime = LocalDateTime.now().minusDays(1),
           endDateTime = LocalDateTime.now().minusDays(1).plusHours(1),
         )
@@ -893,7 +893,7 @@ internal class VisitsMigrationServiceTest {
 
         verify(visitsService).createVisit(
           check {
-            assertThat(it.visitRoom).isEqualTo(aVisit.agencyInternalLocation?.description)
+            assertThat(it.visitRoom).isEqualTo("NOMIS-ROOM-DESC")
           }
         )
       }
@@ -902,7 +902,7 @@ internal class VisitsMigrationServiceTest {
       internal fun `visit room is set to correct value for a visit with today's date`() {
         whenever(nomisApiService.getVisit(any())).thenReturn(
           aVisit(
-            agencyInternalLocation = NomisCodeDescription("VSIP-ROOM-ID", "VSIP-ROOM-DESC"),
+            agencyInternalLocation = NomisCodeDescription("NOMIS-ROOM-CODE", "NOMIS-ROOM-DESC"),
             startDateTime = LocalDateTime.now(),
             endDateTime = LocalDateTime.now().plusHours(1),
           )
@@ -931,7 +931,7 @@ internal class VisitsMigrationServiceTest {
       internal fun `visit room is set to correct value for a visit booked with a future date`() {
         whenever(nomisApiService.getVisit(any())).thenReturn(
           aVisit(
-            agencyInternalLocation = NomisCodeDescription("VSIP-ROOM-ID", "VSIP-ROOM-DESC"),
+            agencyInternalLocation = NomisCodeDescription("NOMIS-ROOM-CODE", "NOMIS-ROOM-DESC"),
             startDateTime = LocalDateTime.now().plusDays(5),
             endDateTime = LocalDateTime.now().plusDays(5).plusHours(1),
           )
