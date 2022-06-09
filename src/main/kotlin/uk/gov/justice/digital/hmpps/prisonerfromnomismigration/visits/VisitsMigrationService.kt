@@ -272,7 +272,7 @@ private fun mapNomisVisit(nomisVisit: NomisVisit, room: RoomMapping): CreateVsip
     visitType = nomisVisit.visitType.toVisitType(),
     visitStatus = getVsipVisitStatus(nomisVisit),
     outcomeStatus = getVsipOutcome(nomisVisit),
-    visitRoom = room.vsipId,
+    visitRoom = getVsipVisitRoom(nomisVisit, room),
     contactList = nomisVisit.visitors.map {
       VsipVisitor(
         nomisPersonId = it.personId,
@@ -311,6 +311,10 @@ private fun LocalDateTime?.asStringOrBlank(): String = this?.format(DateTimeForm
 private fun getVsipVisitRestriction(nomisVisit: NomisVisit, room: RoomMapping): VisitRestriction =
   if (nomisVisit.startDateTime.toLocalDate() < LocalDate.now()) VisitRestriction.UNKNOWN
   else if (room.isOpen) VisitRestriction.OPEN else VisitRestriction.CLOSED
+
+private fun getVsipVisitRoom(nomisVisit: NomisVisit, room: RoomMapping): String? =
+  if (nomisVisit.startDateTime.toLocalDate() < LocalDate.now()) nomisVisit.agencyInternalLocation?.description
+  else room.vsipId
 
 data class VisitMapping(
   val nomisVisitId: Long,
