@@ -222,4 +222,38 @@ class VisitMigrationResource(
         ignoreMissingRoom = false // not used
       )
     )
+
+  @PreAuthorize("hasRole('ROLE_MIGRATE_VISITS')")
+  @PostMapping("/visits/{migrationId}/cancel")
+  @ResponseStatus(value = ACCEPTED)
+  @Operation(
+    summary = "Cancels a running migration. The actual cancellation might take several minutes to complete",
+    description = "Requires role <b>MIGRATE_VISITS</b>",
+    responses = [
+      ApiResponse(
+        responseCode = "202",
+        description = "Cancellation request accepted",
+      ),
+      ApiResponse(
+        responseCode = "401",
+        description = "Unauthorized to access this endpoint",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
+      ),
+      ApiResponse(
+        responseCode = "403",
+        description = "Incorrect permissions to access this endpoint",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "No running migration found with migration id",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
+      )
+    ]
+  )
+  suspend fun cancel(
+    @PathVariable
+    @Schema(description = "Migration Id", example = "2020-03-24T12:00:00", required = true)
+    migrationId: String
+  ) = visitsMigrationService.cancel(migrationId)
 }

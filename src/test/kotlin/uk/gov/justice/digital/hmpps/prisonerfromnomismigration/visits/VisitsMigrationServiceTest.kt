@@ -24,6 +24,7 @@ import org.mockito.kotlin.whenever
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.CANCEL_MIGRATE_VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISIT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_BY_PAGE
@@ -442,6 +443,135 @@ internal class VisitsMigrationServiceTest {
         )
 
         verify(migrationHistoryService).recordMigrationCompleted(
+          migrationId = eq("2020-05-23T11:30:00"), recordsFailed = eq(2), recordsMigrated = eq(21)
+        )
+      }
+    }
+  }
+  @Nested
+  @DisplayName("cancelMigrateVisitsStatusCheck")
+  inner class CancelMigrateVisitsStatusCheck {
+    @Nested
+    @DisplayName("when there are still messages on the queue")
+    inner class MessagesOnQueue {
+      @BeforeEach
+      internal fun setUp() {
+        whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed()).thenReturn(true)
+      }
+
+      @Test
+      internal fun `will check again in 10 seconds`() {
+        service.cancelMigrateVisitsStatusCheck(
+          MigrationContext(
+            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitMigrationStatusCheck()
+          )
+        )
+
+        verify(queueService).purgeAllMessages()
+        verify(queueService).sendMessage(
+          eq(CANCEL_MIGRATE_VISITS), any(), eq(10)
+        )
+      }
+
+      @Test
+      internal fun `will check again in 10 second and reset even when previously started finishing up phase`() {
+        service.cancelMigrateVisitsStatusCheck(
+          MigrationContext(
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitMigrationStatusCheck(checkCount = 4)
+          )
+        )
+
+        verify(queueService).purgeAllMessages()
+        verify(queueService).sendMessage(
+          message = eq(CANCEL_MIGRATE_VISITS),
+          context = check<MigrationContext<VisitMigrationStatusCheck>> {
+            assertThat(it.body.checkCount).isEqualTo(0)
+          },
+          delaySeconds = eq(10)
+        )
+      }
+    }
+
+    @Nested
+    @DisplayName("when there are no messages on the queue")
+    inner class NoMessagesOnQueue {
+      @BeforeEach
+      internal fun setUp() {
+        whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed()).thenReturn(false)
+        whenever(queueService.countMessagesThatHaveFailed()).thenReturn(0)
+        whenever(visitMappingService.getMigrationCount(any())).thenReturn(0)
+      }
+
+      @Test
+      internal fun `will increment check count and try again a second when only checked 9 times`() {
+        service.cancelMigrateVisitsStatusCheck(
+          MigrationContext(
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitMigrationStatusCheck(checkCount = 9)
+          )
+        )
+
+        verify(queueService).purgeAllMessages()
+
+        verify(queueService).sendMessage(
+          message = eq(CANCEL_MIGRATE_VISITS),
+          context = check<MigrationContext<VisitMigrationStatusCheck>> {
+            assertThat(it.body.checkCount).isEqualTo(10)
+          },
+          delaySeconds = eq(1)
+        )
+      }
+
+      @Test
+      internal fun `will finish off when checked 10 times previously`() {
+        service.cancelMigrateVisitsStatusCheck(
+          MigrationContext(
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitMigrationStatusCheck(checkCount = 10)
+          )
+        )
+
+        verify(queueService, never()).purgeAllMessages()
+        verify(queueService, never()).sendMessage(
+          message = eq(CANCEL_MIGRATE_VISITS), context = any(), delaySeconds = any()
+        )
+      }
+
+      @Test
+      internal fun `will add completed telemetry when finishing off`() {
+        service.cancelMigrateVisitsStatusCheck(
+          MigrationContext(
+            migrationId = "2020-05-23T11:30:00", estimatedCount = 23, body = VisitMigrationStatusCheck(checkCount = 10)
+          )
+        )
+
+        verify(telemetryClient).trackEvent(
+          eq("nomis-migration-visits-cancelled"),
+          check {
+            assertThat(it["migrationId"]).isNotNull
+            assertThat(it["estimatedCount"]).isEqualTo("23")
+            assertThat(it["durationMinutes"]).isNotNull()
+          },
+          eq(null)
+        )
+      }
+
+      @Test
+      internal fun `will update migration history record when cancelling`() {
+        whenever(queueService.countMessagesThatHaveFailed()).thenReturn(2)
+        whenever(visitMappingService.getMigrationCount("2020-05-23T11:30:00")).thenReturn(21)
+
+        service.cancelMigrateVisitsStatusCheck(
+          MigrationContext(
+            migrationId = "2020-05-23T11:30:00", estimatedCount = 23, body = VisitMigrationStatusCheck(checkCount = 10)
+          )
+        )
+
+        verify(migrationHistoryService).recordMigrationCancelled(
           migrationId = eq("2020-05-23T11:30:00"), recordsFailed = eq(2), recordsMigrated = eq(21)
         )
       }

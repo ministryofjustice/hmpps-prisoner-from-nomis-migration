@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.visi
 import com.microsoft.applicationinsights.TelemetryClient
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
+import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilAsserted
@@ -21,13 +22,16 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.http.ReactiveHttpOutputMessage
+import org.springframework.test.web.reactive.server.returnResult
 import org.springframework.web.reactive.function.BodyInserter
 import org.springframework.web.reactive.function.BodyInserters
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.COMPLETED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.VISITS
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationFilter
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitMappingApiExtension.Companion.visitMappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsApiExtension.Companion.visitsApi
@@ -535,6 +539,110 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
           .exchange()
           .expectStatus().isUnauthorized
       )
+    }
+  }
+
+  @Nested
+  @DisplayName("POST /migrate/visits/{migrationId}/terminate/")
+  inner class TerminateMigrationVisits {
+    @BeforeEach
+    internal fun setUp() {
+      webTestClient.delete().uri("/history")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATION_ADMIN")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().is2xxSuccessful
+    }
+
+    @Test
+    internal fun `must have valid token to terminate a migration`() {
+      webTestClient.post().uri("/migrate/visits/{migrationId}/cqncel/", "some id")
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isUnauthorized
+    }
+
+    @Test
+    internal fun `must have correct role to terminate a migration`() {
+      webTestClient.post().uri("/migrate/visits/{migrationId}/cancel/", "some id")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isForbidden
+    }
+
+    @Test
+    internal fun `will return a not found if no running migration found`() {
+      webTestClient.post().uri("/migrate/visits/{migrationId}/cancel/", "some id")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isNotFound
+    }
+
+    @Test
+    internal fun `will terminate a running migration`() {
+      val count = 30L
+      nomisApi.stubGetVisitsInitialCount(count)
+      nomisApi.stubMultipleGetVisitsCounts(totalElements = count, pageSize = 10)
+      nomisApi.stubMultipleGetVisits(totalElements = count)
+      visitMappingApi.stubNomisVisitNotFound()
+      visitMappingApi.stubRoomMapping()
+      visitMappingApi.stubVisitMappingCreate()
+      visitsApi.stubCreateVisit()
+      visitMappingApi.stubVisitMappingByMigrationId(count = count.toInt())
+
+      val migrationId = webTestClient.post().uri("/migrate/visits")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
+        .header("Content-Type", "application/json")
+        .body(
+          BodyInserters.fromValue(
+            """
+            {
+              "prisonIds": [
+                "MDI",
+                "BXI"
+              ],
+              "visitTypes": [
+                "SCON",
+                "OFFI"
+              ],
+              "fromDateTime": "2020-01-01T01:30:00",
+              "toDateTime": "2020-01-02T23:30:00"
+            }
+            """.trimIndent()
+          )
+        )
+        .exchange()
+        .expectStatus().isAccepted
+        .returnResult<MigrationContext<VisitsMigrationFilter>>()
+        .responseBody.blockFirst()!!.migrationId
+
+      webTestClient.post().uri("/migrate/visits/{migrationId}/cancel/", migrationId)
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isAccepted
+
+      webTestClient.get().uri("/migrate/visits/history/{migrationId}", migrationId)
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$.migrationId").isEqualTo(migrationId)
+        .jsonPath("$.status").isEqualTo("CANCELLED_REQUESTED")
+
+      await atMost Duration.ofSeconds(25) untilAsserted {
+        webTestClient.get().uri("/migrate/visits/history/{migrationId}", migrationId)
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.migrationId").isEqualTo(migrationId)
+          .jsonPath("$.status").isEqualTo("CANCELLED")
+      }
     }
   }
 }

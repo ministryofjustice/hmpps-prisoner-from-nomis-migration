@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.CANCEL_MIGRATE_VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISIT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_BY_PAGE
@@ -38,6 +39,7 @@ class MigrationMessageListener(
         MIGRATE_VISIT -> visitsMigrationService.migrateVisit(context(message.fromJson()))
         RETRY_VISIT_MAPPING -> visitsMigrationService.retryCreateVisitMapping(context(message.fromJson()))
         MIGRATE_VISITS_STATUS_CHECK -> visitsMigrationService.migrateVisitsStatusCheck(context(message.fromJson()))
+        CANCEL_MIGRATE_VISITS -> visitsMigrationService.cancelMigrateVisitsStatusCheck(context(message.fromJson()))
       }
     }.onFailure {
       log.error("MessageID:${rawMessage.sqsMessageId}", it)
