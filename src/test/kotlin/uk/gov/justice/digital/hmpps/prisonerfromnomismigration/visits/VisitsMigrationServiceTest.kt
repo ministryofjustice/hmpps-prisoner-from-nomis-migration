@@ -559,6 +559,9 @@ internal class VisitsMigrationServiceTest {
   @Nested
   @DisplayName("migrateVisit")
   inner class MigrateVisit {
+    private val yesterdayDateTime = LocalDateTime.now().minusDays(1)
+    private val tomorrowDateTime = LocalDateTime.now().plusDays(1)
+
     @BeforeEach
     internal fun setUp() {
       whenever(visitMappingService.findNomisVisitMapping(any())).thenReturn(null)
@@ -611,12 +614,13 @@ internal class VisitsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will retrieve room for NOMIS room id using internal agency description`() {
+    internal fun `will retrieve room for NOMIS room id using internal agency description (future visits)`() {
       whenever(nomisApiService.getVisit(any())).thenReturn(
         aVisit(
           prisonId = "BXI",
           agencyInternalLocation = NomisCodeDescription("OFF_VIS", "MDI-VISITS-OFF_VIS"),
-          prisonerId = "A1234AA"
+          prisonerId = "A1234AA",
+          startDateTime = LocalDateTime.now().plusDays(5)
         )
       )
 
@@ -630,8 +634,88 @@ internal class VisitsMigrationServiceTest {
     }
 
     @Test
-    internal fun `when no room found, migration for this visit is abandoned`() {
+    internal fun `migration abandoned due to room mapping missing - future date`() {
+      whenever(nomisApiService.getVisit(any())).thenReturn(
+        aVisit(
+          prisonId = "BXI",
+          agencyInternalLocation = NomisCodeDescription("OFF_VIS", "MDI-VISITS-OFF_VIS"),
+          prisonerId = "A1234AA",
+          visitId = 123456,
+          startDateTime = tomorrowDateTime,
+        )
+      )
+
       whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(null)
+
+      assertThatThrownBy {
+        service.migrateVisit(
+          MigrationContext(
+            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+          )
+        )
+      }.isInstanceOf(NoRoomMappingFoundException::class.java)
+
+      verify(telemetryClient).trackEvent(
+        eq("nomis-migration-visit-no-room-mapping"),
+        check {
+          assertThat(it["migrationId"]).isEqualTo("2020-05-23T11:30:00")
+          assertThat(it["prisonId"]).isEqualTo("BXI")
+          assertThat(it["offenderNo"]).isEqualTo("A1234AA")
+          assertThat(it["visitId"]).isEqualTo("123456")
+          assertThat(it["startDateTime"]).isEqualTo(tomorrowDateTime.toString())
+          assertThat(it["agencyInternalLocation"]).isEqualTo("MDI-VISITS-OFF_VIS")
+        },
+        eq(null)
+      )
+    }
+
+    @Test
+    internal fun `migration does not look up room mapping for historical visit`() {
+      whenever(nomisApiService.getVisit(any())).thenReturn(
+        aVisit(
+          prisonId = "BXI",
+          agencyInternalLocation = NomisCodeDescription("OFF_VIS", "MDI-VISITS-OFF_VIS"),
+          prisonerId = "A1234AA",
+          visitId = 123456,
+          startDateTime = yesterdayDateTime,
+        )
+      )
+
+      whenever(visitsService.createVisit(any())).thenReturn(
+        "654321"
+      )
+
+      service.migrateVisit(
+        MigrationContext(
+          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+        )
+      )
+
+      verify(telemetryClient).trackEvent(
+        eq("nomis-migration-visit-migrated"),
+        check {
+          assertThat(it["migrationId"]).isEqualTo("2020-05-23T11:30:00")
+          assertThat(it["prisonId"]).isEqualTo("BXI")
+          assertThat(it["offenderNo"]).isEqualTo("A1234AA")
+          assertThat(it["visitId"]).isEqualTo("123456")
+          assertThat(it["vsipVisitId"]).isEqualTo("654321")
+          assertThat(it["startDateTime"]).isEqualTo(yesterdayDateTime.toString())
+          assertThat(it["room"]).isEqualTo("MDI-VISITS-OFF_VIS")
+        },
+        eq(null)
+      )
+
+      verify(visitMappingService, never()).findRoomMapping(any(), any())
+    }
+
+    @Test
+    internal fun `when no room found in NOMIS, migration for this visit is abandoned (future visits)`() {
+      whenever(nomisApiService.getVisit(any())).thenReturn(
+        aVisit(
+          agencyInternalLocation = null,
+          startDateTime = tomorrowDateTime
+        )
+      )
 
       assertThatThrownBy {
         service.migrateVisit(
@@ -643,20 +727,32 @@ internal class VisitsMigrationServiceTest {
     }
 
     @Test
-    internal fun `when no room found in NOMIS, migration for this visit is abandoned`() {
+    internal fun `when no room found in NOMIS, migration for this visit is allowed (historical visits)`() {
       whenever(nomisApiService.getVisit(any())).thenReturn(
         aVisit(
           agencyInternalLocation = null,
+          startDateTime = yesterdayDateTime
         )
       )
 
-      assertThatThrownBy {
-        service.migrateVisit(
-          MigrationContext(
-            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
-          )
+      whenever(visitsService.createVisit(any())).thenReturn(
+        "654321"
+      )
+
+      service.migrateVisit(
+        MigrationContext(
+          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
         )
-      }.isInstanceOf(NoRoomMappingFoundException::class.java)
+      )
+
+      verify(telemetryClient).trackEvent(
+        eq("nomis-migration-visit-migrated"),
+        check {
+          assertThat(it["startDateTime"]).isEqualTo(yesterdayDateTime.toString())
+          assertThat(it["room"]).isEqualTo("UNKNOWN")
+        },
+        eq(null)
+      )
     }
 
     @Test
@@ -1142,48 +1238,13 @@ internal class VisitsMigrationServiceTest {
 
     @Nested
     inner class Analytics {
-      @Test
-      internal fun `migration abandoned due to room mapping missing`() {
-        whenever(nomisApiService.getVisit(any())).thenReturn(
-          aVisit(
-            prisonId = "BXI",
-            agencyInternalLocation = NomisCodeDescription("OFF_VIS", "MDI-VISITS-OFF_VIS"),
-            prisonerId = "A1234AA",
-            visitId = 123456,
-            startDateTime = LocalDateTime.parse("2018-05-23T11:30:00"),
-          )
-        )
-
-        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(null)
-
-        assertThatThrownBy {
-          service.migrateVisit(
-            MigrationContext(
-              migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
-            )
-          )
-        }
-
-        verify(telemetryClient).trackEvent(
-          eq("nomis-migration-visit-no-room-mapping"),
-          check {
-            assertThat(it["migrationId"]).isEqualTo("2020-05-23T11:30:00")
-            assertThat(it["prisonId"]).isEqualTo("BXI")
-            assertThat(it["offenderNo"]).isEqualTo("A1234AA")
-            assertThat(it["visitId"]).isEqualTo("123456")
-            assertThat(it["startDateTime"]).isEqualTo("2018-05-23T11:30:00")
-            assertThat(it["agencyInternalLocation"]).isEqualTo("MDI-VISITS-OFF_VIS")
-          },
-          eq(null)
-        )
-      }
 
       @Test
       internal fun `when successfully migrated`() {
         whenever(nomisApiService.getVisit(any())).thenReturn(
           aVisit(
             prisonId = "BXI",
-            agencyInternalLocation = NomisCodeDescription("OFF_VIS", "MDI-VISITS-OFF_VIS"),
+            agencyInternalLocation = NomisCodeDescription("OFF_VIS", "NOMIS_ROOM_DESCRIPTION"),
             prisonerId = "A1234AA",
             visitId = 123456,
             startDateTime = LocalDateTime.parse("2018-05-23T11:30:00"),
@@ -1214,7 +1275,7 @@ internal class VisitsMigrationServiceTest {
             assertThat(it["visitId"]).isEqualTo("123456")
             assertThat(it["vsipVisitId"]).isEqualTo("654321")
             assertThat(it["startDateTime"]).isEqualTo("2018-05-23T11:30:00")
-            assertThat(it["room"]).isEqualTo("VSIP-ROOM-ID")
+            assertThat(it["room"]).isEqualTo("NOMIS_ROOM_DESCRIPTION")
           },
           eq(null)
         )

@@ -120,36 +120,55 @@ class VisitsMigrationService(
       }
       ?: run {
         val nomisVisit = nomisApiService.getVisit(context.body.visitId)
-        nomisVisit.agencyInternalLocation?.let {
-          visitMappingService.findRoomMapping(
-            agencyInternalLocationCode = nomisVisit.agencyInternalLocation.description,
-            prisonId = nomisVisit.prisonId
-          )
-        }?.run {
-          visitsService.createVisit(mapNomisVisit(nomisVisit, this))
-            .also {
-              createNomisVisitMapping(
-                nomisVisitId = nomisVisit.visitId,
-                vsipVisitId = it,
-                context = context
-              )
-            }.also {
-              telemetryClient.trackEvent(
-                "nomis-migration-visit-migrated",
-                mapOf(
-                  "migrationId" to context.migrationId,
-                  "prisonId" to nomisVisit.prisonId,
-                  "offenderNo" to nomisVisit.offenderNo,
-                  "visitId" to nomisVisit.visitId.toString(),
-                  "vsipVisitId" to it,
-                  "startDateTime" to nomisVisit.startDateTime.asStringOrBlank(),
-                  "room" to this.vsipId
-                ),
-                null
-              )
-            }
-        } ?: run { handleNoRoomMappingFound(context.migrationId, nomisVisit) }
+        determineRoomMapping(nomisVisit)
+          ?.run {
+            visitsService.createVisit(mapNomisVisit(nomisVisit, this))
+              .also {
+                createNomisVisitMapping(
+                  nomisVisitId = nomisVisit.visitId,
+                  vsipVisitId = it,
+                  context = context
+                )
+              }.also {
+                telemetryClient.trackEvent(
+                  "nomis-migration-visit-migrated",
+                  mapOf(
+                    "migrationId" to context.migrationId,
+                    "prisonId" to nomisVisit.prisonId,
+                    "offenderNo" to nomisVisit.offenderNo,
+                    "visitId" to nomisVisit.visitId.toString(),
+                    "vsipVisitId" to it,
+                    "startDateTime" to nomisVisit.startDateTime.asStringOrBlank(),
+                    "room" to this.room
+                  ),
+                  null
+                )
+              }
+          } ?: run { handleNoRoomMappingFound(context.migrationId, nomisVisit) }
       }
+
+  private fun determineRoomMapping(
+    nomisVisit: NomisVisit
+  ): DateAwareRoomMapping? = if (isFutureVisit(nomisVisit)) {
+    nomisVisit.agencyInternalLocation?.let {
+      visitMappingService.findRoomMapping(
+        agencyInternalLocationCode = nomisVisit.agencyInternalLocation.description,
+        prisonId = nomisVisit.prisonId
+      )?.let {
+        DateAwareRoomMapping(
+          it.vsipId,
+          restriction = if (it.isOpen) VisitRestriction.OPEN else VisitRestriction.CLOSED
+        )
+      }
+    }
+  } else
+    DateAwareRoomMapping(
+      room = nomisVisit.agencyInternalLocation?.let { nomisVisit.agencyInternalLocation.description } ?: "UNKNOWN",
+      restriction = VisitRestriction.UNKNOWN
+    )
+
+  private fun isFutureVisit(nomisVisit: NomisVisit) =
+    nomisVisit.startDateTime.toLocalDate() >= LocalDate.now()
 
   fun migrateVisitsStatusCheck(context: MigrationContext<VisitMigrationStatusCheck>) {
     /*
@@ -255,42 +274,44 @@ class VisitsMigrationService(
       )
     }.sortedWith(compareBy(VisitRoomUsageResponse::prisonId, VisitRoomUsageResponse::agencyInternalLocationDescription))
   }
+
+  private fun mapNomisVisit(nomisVisit: NomisVisit, dateAwareRoomMapping: DateAwareRoomMapping): CreateVsipVisit {
+    val visitNotesSet = mutableSetOf<VsipVisitNote>()
+    nomisVisit.commentText?.apply { visitNotesSet.add(VsipVisitNote(VsipVisitNoteType.VISIT_COMMENT, this)) }
+    nomisVisit.visitorConcernText?.apply { visitNotesSet.add(VsipVisitNote(VsipVisitNoteType.VISITOR_CONCERN, this)) }
+    return CreateVsipVisit(
+      prisonId = nomisVisit.prisonId,
+      prisonerId = nomisVisit.offenderNo,
+      startTimestamp = nomisVisit.startDateTime,
+      endTimestamp = nomisVisit.endDateTime,
+      visitType = nomisVisit.visitType.toVisitType(),
+      visitStatus = getVsipVisitStatus(nomisVisit),
+      outcomeStatus = getVsipOutcome(nomisVisit),
+      visitRoom = dateAwareRoomMapping.room,
+      contactList = nomisVisit.visitors.map {
+        VsipVisitor(
+          nomisPersonId = it.personId,
+        )
+      },
+      legacyData = nomisVisit.leadVisitor?.let { VsipLegacyData(it.personId) },
+      visitContact = nomisVisit.leadVisitor?.let {
+        VsipLegacyContactOnVisit(
+          name = it.fullName, telephone = it.telephones.firstOrNull()
+        )
+      },
+      visitNotes = visitNotesSet,
+      visitors = nomisVisit.visitors.map { v -> VsipVisitor(v.personId) }.toSet(),
+      visitRestriction = dateAwareRoomMapping.restriction
+    )
+  }
 }
 
 private fun <T> MigrationContext<T>.durationMinutes(): Long =
   Duration.between(LocalDateTime.parse(this.migrationId), LocalDateTime.now()).toMinutes()
 
-private fun mapNomisVisit(nomisVisit: NomisVisit, room: RoomMapping): CreateVsipVisit {
-  val visitNotesSet = mutableSetOf<VsipVisitNote>()
-  nomisVisit.commentText?.apply { visitNotesSet.add(VsipVisitNote(VsipVisitNoteType.VISIT_COMMENT, this)) }
-  nomisVisit.visitorConcernText?.apply { visitNotesSet.add(VsipVisitNote(VsipVisitNoteType.VISITOR_CONCERN, this)) }
-  return CreateVsipVisit(
-    prisonId = nomisVisit.prisonId,
-    prisonerId = nomisVisit.offenderNo,
-    startTimestamp = nomisVisit.startDateTime,
-    endTimestamp = nomisVisit.endDateTime,
-    visitType = nomisVisit.visitType.toVisitType(),
-    visitStatus = getVsipVisitStatus(nomisVisit),
-    outcomeStatus = getVsipOutcome(nomisVisit),
-    visitRoom = getVsipVisitRoom(nomisVisit, room),
-    contactList = nomisVisit.visitors.map {
-      VsipVisitor(
-        nomisPersonId = it.personId,
-      )
-    },
-    legacyData = nomisVisit.leadVisitor?.let { VsipLegacyData(it.personId) },
-    visitContact = nomisVisit.leadVisitor?.let {
-      VsipLegacyContactOnVisit(
-        name = it.fullName, telephone = it.telephones.firstOrNull()
-      )
-    },
-    visitNotes = visitNotesSet,
-    visitors = nomisVisit.visitors.map { v -> VsipVisitor(v.personId) }.toSet(),
-    visitRestriction = getVsipVisitRestriction(nomisVisit, room)
-  )
-}
-
 data class VisitsPage(val filter: VisitsMigrationFilter, val pageNumber: Long, val pageSize: Long)
+
+data class DateAwareRoomMapping(val room: String?, val restriction: VisitRestriction)
 
 data class VisitMigrationStatusCheck(val checkCount: Int = 0) {
   fun hasCheckedAReasonableNumberOfTimes() = checkCount > 9
@@ -307,14 +328,6 @@ class NoRoomMappingFoundException(val prisonId: String, val agencyInternalLocati
   RuntimeException("No room mapping found for prisonId $prisonId and agencyInternalLocationDescription $agencyInternalLocationDescription")
 
 private fun LocalDateTime?.asStringOrBlank(): String = this?.format(DateTimeFormatter.ISO_DATE_TIME) ?: ""
-
-private fun getVsipVisitRestriction(nomisVisit: NomisVisit, room: RoomMapping): VisitRestriction =
-  if (nomisVisit.startDateTime.toLocalDate() < LocalDate.now()) VisitRestriction.UNKNOWN
-  else if (room.isOpen) VisitRestriction.OPEN else VisitRestriction.CLOSED
-
-private fun getVsipVisitRoom(nomisVisit: NomisVisit, room: RoomMapping): String? =
-  if (nomisVisit.startDateTime.toLocalDate() < LocalDate.now()) nomisVisit.agencyInternalLocation?.description
-  else room.vsipId
 
 data class VisitMapping(
   val nomisVisitId: Long,
