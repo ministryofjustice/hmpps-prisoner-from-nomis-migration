@@ -9,6 +9,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationCon
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener.MigrationMessage
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
+import uk.gov.justice.hmpps.sqs.PurgeQueueRequest
 
 @Service
 class MigrationQueueService(
@@ -46,6 +47,15 @@ class MigrationQueueService(
   fun countMessagesThatHaveFailed(): Long = migrationDLQSqsClient.countMessagesOnQueue(migrationDLQUrl).toLong()
 
   private fun Any.toJson() = objectMapper.writeValueAsString(this)
+  fun purgeAllMessages() {
+    hmppsQueueService.purgeQueue(
+      PurgeQueueRequest(
+        queueName = migrationQueue.queueName,
+        sqsClient = migrationSqsClient,
+        queueUrl = migrationQueueUrl
+      )
+    )
+  }
 }
 
 internal fun AmazonSQS.countMessagesOnQueue(queueUrl: String): Int =

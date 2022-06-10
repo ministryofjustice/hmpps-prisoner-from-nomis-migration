@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatchId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.CANCEL_MIGRATE_VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISIT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_BY_PAGE
@@ -213,6 +214,51 @@ class VisitsMigrationService(
     }
   }
 
+  fun cancelMigrateVisitsStatusCheck(context: MigrationContext<VisitMigrationStatusCheck>) {
+    /*
+       when checking if there are messages to process, it is always an estimation due to SQS, therefore once
+       we think there are no messages we check several times in row reducing probability of false positives significantly
+    */
+    if (queueService.isItProbableThatThereAreStillMessagesToBeProcessed()) {
+      queueService.purgeAllMessages()
+      queueService.sendMessage(
+        CANCEL_MIGRATE_VISITS,
+        MigrationContext(
+          context = context,
+          body = VisitMigrationStatusCheck()
+        ),
+        delaySeconds = 10
+      )
+    } else {
+      if (context.body.hasCheckedAReasonableNumberOfTimes()) {
+        telemetryClient.trackEvent(
+          "nomis-migration-visits-cancelled",
+          mapOf<String, String>(
+            "migrationId" to context.migrationId,
+            "estimatedCount" to context.estimatedCount.toString(),
+            "durationMinutes" to context.durationMinutes().toString()
+          ),
+          null
+        )
+        migrationHistoryService.recordMigrationCancelled(
+          migrationId = context.migrationId,
+          recordsFailed = queueService.countMessagesThatHaveFailed(),
+          recordsMigrated = visitMappingService.getMigrationCount(context.migrationId),
+        )
+      } else {
+        queueService.purgeAllMessages()
+        queueService.sendMessage(
+          CANCEL_MIGRATE_VISITS,
+          MigrationContext(
+            context = context,
+            body = context.body.increment()
+          ),
+          delaySeconds = 1
+        )
+      }
+    }
+  }
+
   private fun createNomisVisitMapping(
     nomisVisitId: Long,
     vsipVisitId: String,
@@ -273,6 +319,26 @@ class VisitsMigrationService(
         )?.vsipId
       )
     }.sortedWith(compareBy(VisitRoomUsageResponse::prisonId, VisitRoomUsageResponse::agencyInternalLocationDescription))
+  }
+
+  suspend fun cancel(migrationId: String) {
+    val migration = migrationHistoryService.get(migrationId)
+    telemetryClient.trackEvent(
+      "nomis-migration-visit-cancel-requested",
+      mapOf<String, String>(
+        "migrationId" to migration.migrationId,
+      ),
+      null
+    )
+    migrationHistoryService.recordMigrationCancelledRequested(migrationId)
+    queueService.purgeAllMessages()
+    queueService.sendMessage(
+      CANCEL_MIGRATE_VISITS,
+      MigrationContext(
+        context = MigrationContext(migrationId, migration.estimatedRecordCount, Unit),
+        body = VisitMigrationStatusCheck()
+      )
+    )
   }
 
   private fun mapNomisVisit(nomisVisit: NomisVisit, dateAwareRoomMapping: DateAwareRoomMapping): CreateVsipVisit {

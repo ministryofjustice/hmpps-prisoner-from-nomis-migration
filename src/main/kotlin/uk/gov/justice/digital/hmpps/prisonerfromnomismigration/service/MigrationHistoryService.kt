@@ -51,6 +51,33 @@ class MigrationHistoryService(
     }.onFailure { log.error("Unable to record migration stopped record", it) }
   }
 
+  fun recordMigrationCancelled(migrationId: String, recordsFailed: Long, recordsMigrated: Long) = runBlocking {
+    kotlin.runCatching {
+      migrationHistoryRepository.findById(migrationId)?.run {
+        migrationHistoryRepository.save(
+          this.copy(
+            whenEnded = LocalDateTime.now(),
+            recordsFailed = recordsFailed,
+            recordsMigrated = recordsMigrated,
+            status = MigrationStatus.CANCELLED
+          )
+        )
+      }
+    }.onFailure { log.error("Unable to record migration stopped cancelled", it) }
+  }
+
+  fun recordMigrationCancelledRequested(migrationId: String) = runBlocking {
+    kotlin.runCatching {
+      migrationHistoryRepository.findById(migrationId)?.run {
+        migrationHistoryRepository.save(
+          this.copy(
+            status = MigrationStatus.CANCELLED_REQUESTED
+          )
+        )
+      }
+    }.onFailure { log.error("Unable to record migration cancelled requested", it) }
+  }
+
   fun findAll(filter: HistoryFilter) = migrationHistoryRepository.findAllWithFilter(filter)
 
   suspend fun deleteAll() = migrationHistoryRepository.deleteAll()
@@ -65,6 +92,8 @@ enum class MigrationType {
 enum class MigrationStatus {
   STARTED,
   COMPLETED,
+  CANCELLED_REQUESTED,
+  CANCELLED,
 }
 
 class NotFoundException(message: String) : RuntimeException(message)
