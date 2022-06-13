@@ -343,8 +343,8 @@ class VisitsMigrationService(
 
   private fun mapNomisVisit(nomisVisit: NomisVisit, dateAwareRoomMapping: DateAwareRoomMapping): CreateVsipVisit {
     val visitNotesSet = mutableSetOf<VsipVisitNote>()
-    nomisVisit.commentText?.apply { visitNotesSet.add(VsipVisitNote(VsipVisitNoteType.VISIT_COMMENT, this)) }
-    nomisVisit.visitorConcernText?.apply { visitNotesSet.add(VsipVisitNote(VsipVisitNoteType.VISITOR_CONCERN, this)) }
+    nomisVisit.commentText?.apply { if (isFutureVisit(nomisVisit)) visitNotesSet.add(VsipVisitNote(VsipVisitNoteType.VISIT_COMMENT, this)) }
+    nomisVisit.visitorConcernText?.apply { if (isFutureVisit(nomisVisit)) visitNotesSet.add(VsipVisitNote(VsipVisitNoteType.VISITOR_CONCERN, this)) }
     return CreateVsipVisit(
       prisonId = nomisVisit.prisonId,
       prisonerId = nomisVisit.offenderNo,
