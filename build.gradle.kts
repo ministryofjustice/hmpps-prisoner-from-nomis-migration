@@ -1,5 +1,5 @@
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "4.2.1"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "4.2.2"
   kotlin("plugin.spring") version "1.6.21"
 }
 
@@ -30,7 +30,7 @@ dependencies {
 
   runtimeOnly("io.r2dbc:r2dbc-postgresql:0.8.12.RELEASE")
   runtimeOnly("org.springframework.boot:spring-boot-starter-jdbc")
-  runtimeOnly("org.postgresql:postgresql:42.3.6")
+  runtimeOnly("org.postgresql:postgresql:42.4.0")
   implementation("org.flywaydb:flyway-core:8.5.12")
 
   testImplementation("io.swagger.parser.v3:swagger-parser:2.0.33")
