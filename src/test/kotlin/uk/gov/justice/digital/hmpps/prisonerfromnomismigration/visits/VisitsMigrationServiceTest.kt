@@ -984,20 +984,6 @@ internal class VisitsMigrationServiceTest {
           }
         )
       }
-
-      @Test
-      internal fun `comments are copied`() {
-        verify(visitsService).createVisit(
-          check {
-            assertThat(it.visitNotes).extracting("text", "type").contains(
-              tuple(
-                "This is a comment", VsipVisitNoteType.VISIT_COMMENT
-              ),
-              tuple("this is concerning", VsipVisitNoteType.VISITOR_CONCERN)
-            )
-          }
-        )
-      }
     }
 
     @Nested
@@ -1086,6 +1072,104 @@ internal class VisitsMigrationServiceTest {
         verify(visitsService).createVisit(
           check {
             assertThat(it.visitRestriction).isEqualTo(VisitRestriction.CLOSED)
+          }
+        )
+      }
+    }
+
+    @Nested
+    @DisplayName("Visit comments mapping")
+    inner class NomisToVisitCommentsMapping {
+      @Test
+      internal fun `visit comments are excluded from migration for historical visits (prior to today)`() {
+        whenever(nomisApiService.getVisit(any())).thenReturn(
+          aVisit(
+            startDateTime = LocalDateTime.now().minusDays(1),
+            endDateTime = LocalDateTime.now().minusDays(1).plusHours(1),
+          )
+        )
+
+        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+          RoomMapping(
+            vsipId = "VSIP-ROOM-ID", isOpen = true
+          )
+        )
+
+        service.migrateVisit(
+          MigrationContext(
+            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+          )
+        )
+
+        verify(visitsService).createVisit(
+          check {
+            assertThat(it.visitNotes).isEmpty()
+          }
+        )
+      }
+
+      @Test
+      internal fun `visit comments are included in the migration for a visit with today's date`() {
+        whenever(nomisApiService.getVisit(any())).thenReturn(
+          aVisit(
+            startDateTime = LocalDateTime.now(),
+            endDateTime = LocalDateTime.now().plusHours(1),
+          )
+        )
+
+        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+          RoomMapping(
+            vsipId = "VSIP-ROOM-ID", isOpen = true
+          )
+        )
+
+        service.migrateVisit(
+          MigrationContext(
+            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+          )
+        )
+
+        verify(visitsService).createVisit(
+          check {
+            assertThat(it.visitNotes).extracting("text", "type").contains(
+              tuple(
+                "This is a comment", VsipVisitNoteType.VISIT_COMMENT
+              ),
+              tuple("this is concerning", VsipVisitNoteType.VISITOR_CONCERN)
+            )
+          }
+        )
+      }
+
+      @Test
+      internal fun `visit comments are included in the migration for a visit booked with a future date`() {
+        whenever(nomisApiService.getVisit(any())).thenReturn(
+          aVisit(
+            startDateTime = LocalDateTime.now().plusDays(5),
+            endDateTime = LocalDateTime.now().plusDays(5).plusHours(1),
+          )
+        )
+
+        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+          RoomMapping(
+            vsipId = "VSIP-ROOM-ID", isOpen = false
+          )
+        )
+
+        service.migrateVisit(
+          MigrationContext(
+            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+          )
+        )
+
+        verify(visitsService).createVisit(
+          check {
+            assertThat(it.visitNotes).extracting("text", "type").contains(
+              tuple(
+                "This is a comment", VsipVisitNoteType.VISIT_COMMENT
+              ),
+              tuple("this is concerning", VsipVisitNoteType.VISITOR_CONCERN)
+            )
           }
         )
       }
