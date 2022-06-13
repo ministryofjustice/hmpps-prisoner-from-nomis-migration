@@ -1142,10 +1142,9 @@ internal class VisitsMigrationServiceTest {
       }
 
       @Test
-      internal fun `visit restriction is set to correct value for a visit booked with a future date`() {
+      internal fun `visit comments are included in the migration for a visit booked with a future date`() {
         whenever(nomisApiService.getVisit(any())).thenReturn(
           aVisit(
-            agencyInternalLocation = NomisCodeDescription("VSIP-ROOM-ID", "A closed room"),
             startDateTime = LocalDateTime.now().plusDays(5),
             endDateTime = LocalDateTime.now().plusDays(5).plusHours(1),
           )
@@ -1165,7 +1164,12 @@ internal class VisitsMigrationServiceTest {
 
         verify(visitsService).createVisit(
           check {
-            assertThat(it.visitRestriction).isEqualTo(VisitRestriction.CLOSED)
+            assertThat(it.visitNotes).extracting("text", "type").contains(
+              tuple(
+                "This is a comment", VsipVisitNoteType.VISIT_COMMENT
+              ),
+              tuple("this is concerning", VsipVisitNoteType.VISITOR_CONCERN)
+            )
           }
         )
       }
