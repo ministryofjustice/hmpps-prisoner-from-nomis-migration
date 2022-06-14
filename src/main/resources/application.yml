@@ -93,4 +93,4 @@ management:
 
 cancel:
   queue:
-    purge-time-attempts: 30
+    purge-time-attempts: 60
