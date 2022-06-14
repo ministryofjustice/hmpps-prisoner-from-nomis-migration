@@ -90,3 +90,7 @@ management:
     info:
       cache:
         time-to-live: 2000ms
+
+cancel:
+  queue:
+    purge-time-attempts: 30

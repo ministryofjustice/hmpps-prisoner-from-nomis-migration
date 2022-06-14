@@ -33,3 +33,6 @@ spring:
 #  level:
 #   io.r2dbc.postgresql.QUERY: DEBUG # for queries
 #    io.r2dbc.postgresql.PARAM: INFO # for parameters
+cancel:
+  queue:
+    purge-time-attempts: 2

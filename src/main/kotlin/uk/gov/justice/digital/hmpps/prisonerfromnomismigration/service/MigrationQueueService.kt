@@ -6,11 +6,17 @@ import com.amazonaws.services.sqs.model.ReceiveMessageRequest
 import com.amazonaws.services.sqs.model.SendMessageRequest
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.microsoft.applicationinsights.TelemetryClient
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener.MigrationMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.CANCEL_MIGRATE_VISITS
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMigrationStatusCheck
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
 import uk.gov.justice.hmpps.sqs.PurgeQueueRequest
@@ -20,7 +26,7 @@ class MigrationQueueService(
   private val hmppsQueueService: HmppsQueueService,
   private val telemetryClient: TelemetryClient,
   private val objectMapper: ObjectMapper,
-
+  @Value("\${cancel.queue.purge-time-attempts}") val purgeAttempts: Int,
 ) {
   private val migrationQueue by lazy { hmppsQueueService.findByQueueId("migration") as HmppsQueue }
   private val migrationSqsClient by lazy { migrationQueue.sqsClient }
@@ -56,6 +62,7 @@ class MigrationQueueService(
 
   private fun Any.toJson() = objectMapper.writeValueAsString(this)
   fun purgeAllMessages() {
+    log.debug("Purging queue")
     // try purge first, since it is rate limited fall back to less efficient read/delete method
     kotlin.runCatching {
       hmppsQueueService.purgeQueue(
@@ -66,21 +73,44 @@ class MigrationQueueService(
         )
       )
     }.onFailure {
+      log.debug("Purging queue failed")
       deleteAllMessages()
+    }.onSuccess {
+      log.debug("Purging queue succeeded")
     }
   }
 
   private fun deleteAllMessages() {
     kotlin.runCatching {
       val messageCount = migrationSqsClient.countMessagesOnQueue(migrationQueueUrl)
+      log.debug("Purging $messageCount from queue via delete")
       repeat(messageCount) {
         migrationSqsClient.receiveMessage(ReceiveMessageRequest(migrationQueueUrl).withMaxNumberOfMessages(1)).messages.firstOrNull()
           ?.also { msg ->
+            log.debug("Purging message ${msg.receiptHandle} from queue via delete")
             migrationSqsClient.deleteMessage(DeleteMessageRequest(migrationQueueUrl, msg.receiptHandle))
           }
       }
     }.onFailure {
-      log.warn("Unable to remove messages", it)
+      log.warn("Purging queue via delete failed", it)
+    }
+  }
+
+  suspend fun purgeAllMessagesNowAndAgainInTheNearFuture(migrationContext: MigrationContext<VisitMigrationStatusCheck>) {
+    purgeAllMessages()
+    // so that MIGRATE_VISITS_BY_PAGE messages that are currently generating large numbers of messages
+    // have their messages immediately purged, keep purging messages every second for around 10 seconds
+    coroutineScope {
+      launch {
+        repeat(purgeAttempts) {
+          delay(1000L)
+          purgeAllMessages()
+        }
+        sendMessage(
+          CANCEL_MIGRATE_VISITS,
+          migrationContext
+        )
+      }
     }
   }
 }
