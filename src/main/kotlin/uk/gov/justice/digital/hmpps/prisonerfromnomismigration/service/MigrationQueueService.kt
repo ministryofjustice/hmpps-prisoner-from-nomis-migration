@@ -6,7 +6,7 @@ import com.amazonaws.services.sqs.model.ReceiveMessageRequest
 import com.amazonaws.services.sqs.model.SendMessageRequest
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.microsoft.applicationinsights.TelemetryClient
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.slf4j.Logger
@@ -96,21 +96,19 @@ class MigrationQueueService(
     }
   }
 
-  suspend fun purgeAllMessagesNowAndAgainInTheNearFuture(migrationContext: MigrationContext<VisitMigrationStatusCheck>) {
+  fun purgeAllMessagesNowAndAgainInTheNearFuture(migrationContext: MigrationContext<VisitMigrationStatusCheck>) {
     purgeAllMessages()
     // so that MIGRATE_VISITS_BY_PAGE messages that are currently generating large numbers of messages
     // have their messages immediately purged, keep purging messages every second for around 10 seconds
-    coroutineScope {
-      launch {
-        repeat(purgeAttempts) {
-          delay(1000L)
-          purgeAllMessages()
-        }
-        sendMessage(
-          CANCEL_MIGRATE_VISITS,
-          migrationContext
-        )
+    GlobalScope.launch {
+      repeat(purgeAttempts) {
+        delay(1000L)
+        purgeAllMessages()
       }
+      sendMessage(
+        CANCEL_MIGRATE_VISITS,
+        migrationContext
+      )
     }
   }
 }
