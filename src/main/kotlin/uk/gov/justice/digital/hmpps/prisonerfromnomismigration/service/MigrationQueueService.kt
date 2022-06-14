@@ -56,6 +56,7 @@ class MigrationQueueService(
 
   private fun Any.toJson() = objectMapper.writeValueAsString(this)
   fun purgeAllMessages() {
+    log.debug("Purging queue")
     // try purge first, since it is rate limited fall back to less efficient read/delete method
     kotlin.runCatching {
       hmppsQueueService.purgeQueue(
@@ -66,21 +67,26 @@ class MigrationQueueService(
         )
       )
     }.onFailure {
+      log.debug("Purging queue failed")
       deleteAllMessages()
+    }.onSuccess {
+      log.debug("Purging queue succeeded")
     }
   }
 
   private fun deleteAllMessages() {
     kotlin.runCatching {
       val messageCount = migrationSqsClient.countMessagesOnQueue(migrationQueueUrl)
+      log.debug("Purging $messageCount from queue via delete")
       repeat(messageCount) {
         migrationSqsClient.receiveMessage(ReceiveMessageRequest(migrationQueueUrl).withMaxNumberOfMessages(1)).messages.firstOrNull()
           ?.also { msg ->
+            log.debug("Purging message ${msg.receiptHandle} from queue via delete")
             migrationSqsClient.deleteMessage(DeleteMessageRequest(migrationQueueUrl, msg.receiptHandle))
           }
       }
     }.onFailure {
-      log.warn("Unable to remove messages", it)
+      log.warn("Purging queue via delete failed", it)
     }
   }
 }
