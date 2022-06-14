@@ -331,9 +331,7 @@ class VisitsMigrationService(
       null
     )
     migrationHistoryService.recordMigrationCancelledRequested(migrationId)
-    queueService.purgeAllMessages()
-    queueService.sendMessage(
-      CANCEL_MIGRATE_VISITS,
+    queueService.purgeAllMessagesNowAndAgainInTheNearFuture(
       MigrationContext(
         context = MigrationContext(migrationId, migration.estimatedRecordCount, Unit),
         body = VisitMigrationStatusCheck()
