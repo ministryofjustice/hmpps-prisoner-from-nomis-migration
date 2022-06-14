@@ -1,9 +1,13 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 
 import com.amazonaws.services.sqs.AmazonSQS
+import com.amazonaws.services.sqs.model.DeleteMessageRequest
+import com.amazonaws.services.sqs.model.ReceiveMessageRequest
 import com.amazonaws.services.sqs.model.SendMessageRequest
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.microsoft.applicationinsights.TelemetryClient
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener.MigrationMessage
@@ -23,6 +27,10 @@ class MigrationQueueService(
   private val migrationQueueUrl by lazy { migrationQueue.queueUrl }
   private val migrationDLQSqsClient by lazy { migrationQueue.sqsDlqClient!! }
   private val migrationDLQUrl by lazy { migrationQueue.dlqUrl!! }
+
+  private companion object {
+    val log: Logger = LoggerFactory.getLogger(this::class.java)
+  }
 
   fun sendMessage(message: Messages, context: MigrationContext<*>, delaySeconds: Int = 0) {
     val result =
@@ -48,13 +56,32 @@ class MigrationQueueService(
 
   private fun Any.toJson() = objectMapper.writeValueAsString(this)
   fun purgeAllMessages() {
-    hmppsQueueService.purgeQueue(
-      PurgeQueueRequest(
-        queueName = migrationQueue.queueName,
-        sqsClient = migrationSqsClient,
-        queueUrl = migrationQueueUrl
+    // try purge first, since it is rate limited fall back to less efficient read/delete method
+    kotlin.runCatching {
+      hmppsQueueService.purgeQueue(
+        PurgeQueueRequest(
+          queueName = migrationQueue.queueName,
+          sqsClient = migrationSqsClient,
+          queueUrl = migrationQueueUrl
+        )
       )
-    )
+    }.onFailure {
+      deleteAllMessages()
+    }
+  }
+
+  private fun deleteAllMessages() {
+    kotlin.runCatching {
+      val messageCount = migrationSqsClient.countMessagesOnQueue(migrationQueueUrl)
+      repeat(messageCount) {
+        migrationSqsClient.receiveMessage(ReceiveMessageRequest(migrationQueueUrl).withMaxNumberOfMessages(1)).messages.firstOrNull()
+          ?.also { msg ->
+            migrationSqsClient.deleteMessage(DeleteMessageRequest(migrationQueueUrl, msg.receiptHandle))
+          }
+      }
+    }.onFailure {
+      log.warn("Unable to remove messages", it)
+    }
   }
 }
 
