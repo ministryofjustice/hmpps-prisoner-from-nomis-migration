@@ -20,13 +20,15 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMigra
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
 import uk.gov.justice.hmpps.sqs.PurgeQueueRequest
+import java.time.Duration
 
 @Service
 class MigrationQueueService(
   private val hmppsQueueService: HmppsQueueService,
   private val telemetryClient: TelemetryClient,
   private val objectMapper: ObjectMapper,
-  @Value("\${cancel.queue.purge-time-attempts}") val purgeAttempts: Int,
+  @Value("\${cancel.queue.purge-frequency-time}") val purgeFrequency: Duration,
+  @Value("\${cancel.queue.purge-total-time}") val purgeTotalTime: Duration,
 ) {
   private val migrationQueue by lazy { hmppsQueueService.findByQueueId("migration") as HmppsQueue }
   private val migrationSqsClient by lazy { migrationQueue.sqsClient }
@@ -87,7 +89,6 @@ class MigrationQueueService(
       repeat(messageCount) {
         migrationSqsClient.receiveMessage(ReceiveMessageRequest(migrationQueueUrl).withMaxNumberOfMessages(1)).messages.firstOrNull()
           ?.also { msg ->
-            log.debug("Purging message ${msg.receiptHandle} from queue via delete")
             migrationSqsClient.deleteMessage(DeleteMessageRequest(migrationQueueUrl, msg.receiptHandle))
           }
       }
@@ -101,10 +102,11 @@ class MigrationQueueService(
     // so that MIGRATE_VISITS_BY_PAGE messages that are currently generating large numbers of messages
     // have their messages immediately purged, keep purging messages every second for around 10 seconds
     GlobalScope.launch {
-      repeat(purgeAttempts) {
-        delay(1000L)
+      repeat((purgeTotalTime.toMillis() / purgeFrequency.toMillis()).toInt()) {
+        delay(purgeFrequency.toMillis())
         purgeAllMessages()
       }
+      delay(purgeFrequency.toMillis())
       sendMessage(
         CANCEL_MIGRATE_VISITS,
         migrationContext
