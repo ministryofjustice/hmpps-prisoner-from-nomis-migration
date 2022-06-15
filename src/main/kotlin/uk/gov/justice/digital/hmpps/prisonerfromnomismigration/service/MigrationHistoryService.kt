@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.CANCELLED_REQUESTED
 import java.time.LocalDateTime
 
 @Service
@@ -83,6 +84,9 @@ class MigrationHistoryService(
   suspend fun deleteAll() = migrationHistoryRepository.deleteAll()
   suspend fun get(migrationId: String): MigrationHistory =
     migrationHistoryRepository.findById(migrationId) ?: throw NotFoundException(migrationId)
+
+  fun isCancelling(migrationId: String) =
+    runBlocking { migrationHistoryRepository.findById(migrationId)?.status == CANCELLED_REQUESTED }
 }
 
 enum class MigrationType {

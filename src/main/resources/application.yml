@@ -94,4 +94,4 @@ management:
 cancel:
   queue:
     purge-frequency-time: 200ms
-    purge-total-time: 2m
+    purge-total-time: 70s
