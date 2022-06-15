@@ -107,12 +107,14 @@ class VisitsMigrationService(
     ignoreMissingRoom = context.body.filter.ignoreMissingRoom,
     pageNumber = context.body.pageNumber,
     pageSize = context.body.pageSize
-  ).content.map {
+  ).takeUnless {
+    migrationHistoryService.isCancelling(context.migrationId)
+  }?.content?.map {
     MigrationContext(
       context = context,
       body = it
     )
-  }.forEach { queueService.sendMessage(MIGRATE_VISIT, it) }
+  }?.forEach { queueService.sendMessage(MIGRATE_VISIT, it) }
 
   fun migrateVisit(context: MigrationContext<VisitId>) =
     visitMappingService.findNomisVisitMapping(context.body.visitId)

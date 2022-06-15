@@ -20,6 +20,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
@@ -448,6 +449,7 @@ internal class VisitsMigrationServiceTest {
       }
     }
   }
+
   @Nested
   @DisplayName("cancelMigrateVisitsStatusCheck")
   inner class CancelMigrateVisitsStatusCheck {
@@ -583,6 +585,7 @@ internal class VisitsMigrationServiceTest {
   inner class MigrateVisitsForPage {
     @BeforeEach
     internal fun setUp() {
+      whenever(migrationHistoryService.isCancelling(any())).thenReturn(false)
       whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any())).thenReturn(
         pages(15)
       )
@@ -683,6 +686,34 @@ internal class VisitsMigrationServiceTest {
       assertThat(secondPage.body.visitId).isEqualTo(1001)
       assertThat(thirdPage.body.visitId).isEqualTo(1002)
       assertThat(lastPage.body.visitId).isEqualTo(1014)
+    }
+
+    @Test
+    internal fun `will not send MIGRATE_VISIT when cancelling`() {
+      whenever(migrationHistoryService.isCancelling(any())).thenReturn(true)
+
+      whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any())).thenReturn(
+        pages(
+          15, startId = 1000
+        )
+      )
+
+      service.migrateVisitsForPage(
+        MigrationContext(
+          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
+          body = VisitsPage(
+            filter = VisitsMigrationFilter(
+              prisonIds = listOf("LEI", "BXI"),
+              visitTypes = listOf("SCON"),
+              fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
+              toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
+            ),
+            pageNumber = 13, pageSize = 15
+          )
+        )
+      )
+
+      verifyNoInteractions(queueService)
     }
   }
 
