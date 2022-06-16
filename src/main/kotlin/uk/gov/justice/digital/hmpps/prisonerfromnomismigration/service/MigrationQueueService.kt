@@ -86,11 +86,17 @@ class MigrationQueueService(
     kotlin.runCatching {
       val messageCount = migrationSqsClient.countMessagesOnQueue(migrationQueueUrl)
       log.debug("Purging $messageCount from queue via delete")
-      repeat(messageCount) {
-        migrationSqsClient.receiveMessage(ReceiveMessageRequest(migrationQueueUrl).withMaxNumberOfMessages(1)).messages.firstOrNull()
-          ?.also { msg ->
-            migrationSqsClient.deleteMessage(DeleteMessageRequest(migrationQueueUrl, msg.receiptHandle))
+      run repeatBlock@{
+        repeat(messageCount) {
+          migrationSqsClient.receiveMessage(ReceiveMessageRequest(migrationQueueUrl).withMaxNumberOfMessages(1)).messages.firstOrNull()
+            ?.also { msg ->
+              migrationSqsClient.deleteMessage(DeleteMessageRequest(migrationQueueUrl, msg.receiptHandle))
+            } ?: run {
+            log.debug("No more messages found after $it so giving up reading more messages")
+            // when not found any messages since the message count was inaccurate, just break out and finish
+            return@repeatBlock
           }
+        }
       }
     }.onFailure {
       log.warn("Purging queue via delete failed", it)
