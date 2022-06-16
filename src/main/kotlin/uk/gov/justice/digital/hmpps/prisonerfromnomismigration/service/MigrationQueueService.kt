@@ -101,12 +101,14 @@ class MigrationQueueService(
     purgeAllMessages()
     // so that MIGRATE_VISITS_BY_PAGE messages that are currently generating large numbers of messages
     // have their messages immediately purged, keep purging messages every second for around 10 seconds
+    log.debug("Starting to purge ${(purgeTotalTime.toMillis() / purgeFrequency.toMillis()).toInt()} times")
     GlobalScope.launch {
       repeat((purgeTotalTime.toMillis() / purgeFrequency.toMillis()).toInt()) {
         delay(purgeFrequency.toMillis())
         purgeAllMessages()
       }
       delay(purgeFrequency.toMillis())
+      log.debug("Purging finished. Will send cancel shutdown messages")
       sendMessage(
         CANCEL_MIGRATE_VISITS,
         migrationContext
