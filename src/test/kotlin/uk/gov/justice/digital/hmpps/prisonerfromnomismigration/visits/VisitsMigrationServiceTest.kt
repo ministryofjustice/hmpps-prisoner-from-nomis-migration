@@ -823,7 +823,7 @@ internal class VisitsMigrationServiceTest {
           assertThat(it["prisonId"]).isEqualTo("BXI")
           assertThat(it["offenderNo"]).isEqualTo("A1234AA")
           assertThat(it["visitId"]).isEqualTo("123456")
-          assertThat(it["startDateTime"]).isEqualTo(tomorrowDateTime.toString())
+          assertThat(LocalDateTime.parse(it["startDateTime"])).isEqualTo(tomorrowDateTime)
           assertThat(it["agencyInternalLocation"]).isEqualTo("MDI-VISITS-OFF_VIS")
         },
         eq(null)
@@ -860,7 +860,7 @@ internal class VisitsMigrationServiceTest {
           assertThat(it["offenderNo"]).isEqualTo("A1234AA")
           assertThat(it["visitId"]).isEqualTo("123456")
           assertThat(it["vsipVisitId"]).isEqualTo("654321")
-          assertThat(it["startDateTime"]).isEqualTo(yesterdayDateTime.toString())
+          assertThat(LocalDateTime.parse(it["startDateTime"])).isEqualTo(yesterdayDateTime)
           assertThat(it["room"]).isEqualTo("MDI-VISITS-OFF_VIS")
         },
         eq(null)
@@ -909,7 +909,7 @@ internal class VisitsMigrationServiceTest {
       verify(telemetryClient).trackEvent(
         eq("nomis-migration-visit-migrated"),
         check {
-          assertThat(it["startDateTime"]).isEqualTo(yesterdayDateTime.toString())
+          assertThat(LocalDateTime.parse(it["startDateTime"])).isEqualTo(yesterdayDateTime)
           assertThat(it["room"]).isEqualTo("UNKNOWN")
         },
         eq(null)

@@ -16,4 +16,4 @@ generic-service:
     API_BASE_URL_VISIT_MAPPING: https://nomis-visits-mapping-preprod.hmpps.service.justice.gov.uk
 
 generic-prometheus-alerts:
-  alertSeverity: digital-prison-service-dev
+  alertSeverity: syscon
