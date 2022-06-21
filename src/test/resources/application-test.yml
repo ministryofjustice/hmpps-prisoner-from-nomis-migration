@@ -23,6 +23,10 @@ spring:
     properties:
       sslMode: DISABLE
       sslRootCert:
+    pool:
+      max-life-time: -1ns  #TODO using the production value of -1 breaks the integration tests
+      max-create-connection-time: 4000
+      max-acquire-time: 20000
   flyway:
     enabled: true
     url: jdbc:postgresql://localhost:5432/migration?sslmode=prefer

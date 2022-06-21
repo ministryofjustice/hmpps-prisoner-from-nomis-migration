@@ -5,6 +5,8 @@ plugins {
 
 dependencyCheck {
   suppressionFiles.add("reactive-suppressions.xml")
+  // Please remove the below suppressions once it has been suppressed in the DependencyCheck plugin (see this issue: https://github.com/jeremylong/DependencyCheck/issues/4616)
+  suppressionFiles.add("postgres-suppressions.xml")
 }
 
 configurations {
