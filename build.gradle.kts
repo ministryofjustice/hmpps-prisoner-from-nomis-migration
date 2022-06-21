@@ -5,6 +5,8 @@ plugins {
 
 dependencyCheck {
   suppressionFiles.add("reactive-suppressions.xml")
+  // Please remove the below suppressions once it has been suppressed in the DependencyCheck plugin (see this issue: https://github.com/jeremylong/DependencyCheck/issues/4616)
+  suppressionFiles.add("postgres-suppressions.xml")
 }
 
 configurations {
@@ -25,15 +27,15 @@ dependencies {
   implementation("org.springdoc:springdoc-openapi-data-rest:1.6.9")
   implementation("org.springdoc:springdoc-openapi-security:1.6.9")
 
-  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.2")
-  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.6.2")
+  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.3")
+  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.6.3")
 
-  runtimeOnly("io.r2dbc:r2dbc-postgresql:0.8.12.RELEASE")
+  runtimeOnly("org.postgresql:r2dbc-postgresql:0.9.1.RELEASE")
   runtimeOnly("org.springframework.boot:spring-boot-starter-jdbc")
   runtimeOnly("org.postgresql:postgresql:42.4.0")
-  implementation("org.flywaydb:flyway-core:8.5.12")
+  implementation("org.flywaydb:flyway-core:8.5.13")
 
-  testImplementation("io.swagger.parser.v3:swagger-parser:2.0.33")
+  testImplementation("io.swagger.parser.v3:swagger-parser:2.1.1")
   testImplementation("io.jsonwebtoken:jjwt:0.9.1")
   testImplementation("com.github.tomakehurst:wiremock-standalone:2.27.2")
   testImplementation("org.testcontainers:localstack:1.17.2")

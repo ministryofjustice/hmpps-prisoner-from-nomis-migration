@@ -49,8 +49,7 @@ spring:
   r2dbc:
     url: r2dbc:postgresql://${DATABASE_ENDPOINT}/${DATABASE_NAME}
     pool:
-      max-create-connection-time: 500
-      max-acquire-time: 1000
+      max-life-time: -1
     properties:
       ssl: true
       sslRootCert: /home/appuser/.postgresql/root.crt
