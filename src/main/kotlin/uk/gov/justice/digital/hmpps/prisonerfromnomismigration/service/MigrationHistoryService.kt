@@ -67,7 +67,7 @@ class MigrationHistoryService(
     }.onFailure { log.error("Unable to record migration stopped cancelled", it) }
   }
 
-  fun recordMigrationCancelledRequested(migrationId: String) = runBlocking {
+  suspend fun recordMigrationCancelledRequested(migrationId: String) =
     kotlin.runCatching {
       migrationHistoryRepository.findById(migrationId)?.run {
         migrationHistoryRepository.save(
@@ -77,7 +77,6 @@ class MigrationHistoryService(
         )
       }
     }.onFailure { log.error("Unable to record migration cancelled requested", it) }
-  }
 
   fun findAll(filter: HistoryFilter) = migrationHistoryRepository.findAllWithFilter(filter)
 
