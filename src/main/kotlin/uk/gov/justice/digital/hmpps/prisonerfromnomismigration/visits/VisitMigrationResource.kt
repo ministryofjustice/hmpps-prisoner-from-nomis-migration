@@ -63,7 +63,7 @@ class VisitMigrationResource(
       )
     ]
   )
-  fun migrateVisits(@RequestBody @Valid migrationFilter: VisitsMigrationFilter) =
+  suspend fun migrateVisits(@RequestBody @Valid migrationFilter: VisitsMigrationFilter) =
     visitsMigrationService.migrateVisits(migrationFilter)
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_VISITS')")
