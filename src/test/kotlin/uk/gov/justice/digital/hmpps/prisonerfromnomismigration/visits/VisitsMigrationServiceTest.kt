@@ -72,7 +72,7 @@ internal class VisitsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will pass filter through to get total count along with a tiny page count`() {
+    internal suspend fun `will pass filter through to get total count along with a tiny page count`() {
       service.migrateVisits(
         VisitsMigrationFilter(
           prisonIds = listOf("LEI", "BXI"),
@@ -94,7 +94,7 @@ internal class VisitsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will pass visit count and filter to queue`() {
+    internal suspend fun `will pass visit count and filter to queue`() {
       whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any())).thenReturn(
         pages(23)
       )
@@ -121,7 +121,7 @@ internal class VisitsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will write migration history record`() {
+    internal suspend fun `will write migration history record`() {
       whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any())).thenReturn(
         pages(23)
       )
@@ -148,7 +148,7 @@ internal class VisitsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will write analytic with estimated count and filter`() {
+    internal suspend fun `will write analytic with estimated count and filter`() {
       whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any())).thenReturn(
         pages(23)
       )
@@ -176,7 +176,7 @@ internal class VisitsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will write analytics with empty filter`() {
+    internal suspend fun `will write analytics with empty filter`() {
       whenever(
         nomisApiService.getVisits(
           prisonIds = any(),

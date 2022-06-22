@@ -39,7 +39,7 @@ class VisitsMigrationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  fun migrateVisits(migrationFilter: VisitsMigrationFilter): MigrationContext<VisitsMigrationFilter> {
+  suspend fun migrateVisits(migrationFilter: VisitsMigrationFilter): MigrationContext<VisitsMigrationFilter> {
     val visitCount = nomisApiService.getVisits(
       prisonIds = migrationFilter.prisonIds,
       visitTypes = migrationFilter.visitTypes,

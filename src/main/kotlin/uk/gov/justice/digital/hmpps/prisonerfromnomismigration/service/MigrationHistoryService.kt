@@ -19,23 +19,21 @@ class MigrationHistoryService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  fun recordMigrationStarted(
+  suspend fun recordMigrationStarted(
     migrationId: String,
     migrationType: MigrationType,
     estimatedRecordCount: Long = 0,
     filter: Any? = null
-  ) = runBlocking {
-    kotlin.runCatching {
-      migrationHistoryRepository.save(
-        MigrationHistory(
-          migrationId = migrationId,
-          migrationType = migrationType,
-          estimatedRecordCount = estimatedRecordCount,
-          filter = filter?.let { objectMapper.writeValueAsString(it) }
-        )
+  ) = kotlin.runCatching {
+    migrationHistoryRepository.save(
+      MigrationHistory(
+        migrationId = migrationId,
+        migrationType = migrationType,
+        estimatedRecordCount = estimatedRecordCount,
+        filter = filter?.let { objectMapper.writeValueAsString(it) }
       )
-    }.onFailure { log.error("Unable to record migration started record", it) }
-  }
+    )
+  }.onFailure { log.error("Unable to record migration started record", it) }
 
   fun recordMigrationCompleted(migrationId: String, recordsFailed: Long, recordsMigrated: Long) = runBlocking {
     kotlin.runCatching {
