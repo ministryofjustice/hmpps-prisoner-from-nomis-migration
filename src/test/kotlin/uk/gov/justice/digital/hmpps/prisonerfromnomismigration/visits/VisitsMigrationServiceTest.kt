@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits
 
 import com.microsoft.applicationinsights.TelemetryClient
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.Assertions.tuple
@@ -72,15 +73,17 @@ internal class VisitsMigrationServiceTest {
     }
 
     @Test
-    internal suspend fun `will pass filter through to get total count along with a tiny page count`() {
-      service.migrateVisits(
-        VisitsMigrationFilter(
-          prisonIds = listOf("LEI", "BXI"),
-          visitTypes = listOf("SCON"),
-          fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
-          toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
+    internal fun `will pass filter through to get total count along with a tiny page count`() {
+      runBlocking {
+        service.migrateVisits(
+          VisitsMigrationFilter(
+            prisonIds = listOf("LEI", "BXI"),
+            visitTypes = listOf("SCON"),
+            fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
+            toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
+          )
         )
-      )
+      }
 
       verify(nomisApiService).getVisits(
         prisonIds = listOf("LEI", "BXI"),
@@ -94,18 +97,20 @@ internal class VisitsMigrationServiceTest {
     }
 
     @Test
-    internal suspend fun `will pass visit count and filter to queue`() {
+    internal fun `will pass visit count and filter to queue`() {
       whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any())).thenReturn(
         pages(23)
       )
-      service.migrateVisits(
-        VisitsMigrationFilter(
-          prisonIds = listOf("LEI"),
-          visitTypes = listOf("SCON"),
-          fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
-          toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
+      runBlocking {
+        service.migrateVisits(
+          VisitsMigrationFilter(
+            prisonIds = listOf("LEI"),
+            visitTypes = listOf("SCON"),
+            fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
+            toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
+          )
         )
-      )
+      }
 
       verify(queueService).sendMessage(
         message = eq(MIGRATE_VISITS),
@@ -121,45 +126,49 @@ internal class VisitsMigrationServiceTest {
     }
 
     @Test
-    internal suspend fun `will write migration history record`() {
+    internal fun `will write migration history record`() {
       whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any())).thenReturn(
         pages(23)
       )
-      service.migrateVisits(
-        VisitsMigrationFilter(
-          prisonIds = listOf("LEI", "BXI"),
-          visitTypes = listOf("SCON"),
-          fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
-          toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
+      runBlocking {
+        service.migrateVisits(
+          VisitsMigrationFilter(
+            prisonIds = listOf("LEI", "BXI"),
+            visitTypes = listOf("SCON"),
+            fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
+            toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
+          )
         )
-      )
 
-      verify(migrationHistoryService).recordMigrationStarted(
-        migrationId = any(),
-        migrationType = eq(VISITS),
-        estimatedRecordCount = eq(23),
-        filter = check<VisitsMigrationFilter> {
-          assertThat(it.prisonIds).containsExactly("LEI", "BXI")
-          assertThat(it.visitTypes).containsExactly("SCON")
-          assertThat(it.fromDateTime).isEqualTo(LocalDateTime.parse("2020-01-01T00:00:00"))
-          assertThat(it.toDateTime).isEqualTo(LocalDateTime.parse("2020-01-02T23:00:00"))
-        }
-      )
+        verify(migrationHistoryService).recordMigrationStarted(
+          migrationId = any(),
+          migrationType = eq(VISITS),
+          estimatedRecordCount = eq(23),
+          filter = check<VisitsMigrationFilter> {
+            assertThat(it.prisonIds).containsExactly("LEI", "BXI")
+            assertThat(it.visitTypes).containsExactly("SCON")
+            assertThat(it.fromDateTime).isEqualTo(LocalDateTime.parse("2020-01-01T00:00:00"))
+            assertThat(it.toDateTime).isEqualTo(LocalDateTime.parse("2020-01-02T23:00:00"))
+          }
+        )
+      }
     }
 
     @Test
-    internal suspend fun `will write analytic with estimated count and filter`() {
+    internal fun `will write analytic with estimated count and filter`() {
       whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any())).thenReturn(
         pages(23)
       )
-      service.migrateVisits(
-        VisitsMigrationFilter(
-          prisonIds = listOf("LEI", "BXI"),
-          visitTypes = listOf("SCON"),
-          fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
-          toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
+      runBlocking {
+        service.migrateVisits(
+          VisitsMigrationFilter(
+            prisonIds = listOf("LEI", "BXI"),
+            visitTypes = listOf("SCON"),
+            fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
+            toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
+          )
         )
-      )
+      }
 
       verify(telemetryClient).trackEvent(
         eq("nomis-migration-visits-started"),
@@ -176,7 +185,7 @@ internal class VisitsMigrationServiceTest {
     }
 
     @Test
-    internal suspend fun `will write analytics with empty filter`() {
+    internal fun `will write analytics with empty filter`() {
       whenever(
         nomisApiService.getVisits(
           prisonIds = any(),
@@ -190,9 +199,11 @@ internal class VisitsMigrationServiceTest {
       ).thenReturn(
         pages(23)
       )
-      service.migrateVisits(
-        VisitsMigrationFilter(visitTypes = listOf())
-      )
+      runBlocking {
+        service.migrateVisits(
+          VisitsMigrationFilter(visitTypes = listOf())
+        )
+      }
 
       verify(telemetryClient).trackEvent(
         eq("nomis-migration-visits-started"),
