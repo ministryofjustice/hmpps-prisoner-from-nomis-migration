@@ -1,5 +1,5 @@
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "4.3.0-beta-1"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "4.3.1"
   kotlin("plugin.spring") version "1.7.0"
 }
 
@@ -38,9 +38,9 @@ dependencies {
   testImplementation("io.swagger.parser.v3:swagger-parser:2.1.1")
   testImplementation("io.jsonwebtoken:jjwt:0.9.1")
   testImplementation("com.github.tomakehurst:wiremock-standalone:2.27.2")
-  testImplementation("org.testcontainers:localstack:1.17.2")
+  testImplementation("org.testcontainers:localstack:1.17.3")
   testImplementation("org.awaitility:awaitility-kotlin:4.2.0")
-  testImplementation("org.testcontainers:postgresql:1.17.2")
+  testImplementation("org.testcontainers:postgresql:1.17.3")
 }
 
 java {
