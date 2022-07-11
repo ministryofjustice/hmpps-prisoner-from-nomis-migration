@@ -26,6 +26,8 @@ import org.mockito.kotlin.whenever
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.CANCEL_MIGRATE_VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISIT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS
@@ -34,6 +36,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.RETRY_VISIT_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisCodeDescription
@@ -51,6 +54,7 @@ internal class VisitsMigrationServiceTest {
   private val visitsService: VisitsService = mock()
   private val migrationHistoryService: MigrationHistoryService = mock()
   private val telemetryClient: TelemetryClient = mock()
+  private val auditService: AuditService = mock()
 
   val service = VisitsMigrationService(
     nomisApiService = nomisApiService,
@@ -59,6 +63,7 @@ internal class VisitsMigrationServiceTest {
     visitsService = visitsService,
     migrationHistoryService = migrationHistoryService,
     telemetryClient = telemetryClient,
+    auditService = auditService,
     pageSize = 200
   )
 
@@ -127,17 +132,18 @@ internal class VisitsMigrationServiceTest {
 
     @Test
     internal fun `will write migration history record`() {
+      val visitsMigrationFilter = VisitsMigrationFilter(
+        prisonIds = listOf("LEI", "BXI"),
+        visitTypes = listOf("SCON"),
+        fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
+        toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
+      )
       whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any())).thenReturn(
         pages(23)
       )
       runBlocking {
         service.migrateVisits(
-          VisitsMigrationFilter(
-            prisonIds = listOf("LEI", "BXI"),
-            visitTypes = listOf("SCON"),
-            fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
-            toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
-          )
+          visitsMigrationFilter
         )
 
         verify(migrationHistoryService).recordMigrationStarted(
@@ -150,6 +156,16 @@ internal class VisitsMigrationServiceTest {
             assertThat(it.fromDateTime).isEqualTo(LocalDateTime.parse("2020-01-01T00:00:00"))
             assertThat(it.toDateTime).isEqualTo(LocalDateTime.parse("2020-01-02T23:00:00"))
           }
+        )
+
+        verify(auditService).sendAuditEvent(
+          eq("MIGRATION_STARTED"),
+          check {
+            it as Map<*, *>
+            assertThat(it["migrationId"]).isNotNull
+            assertThat(it["migrationType"]).isEqualTo(VISITS.name)
+            assertThat(it["filter"]).isEqualTo(visitsMigrationFilter)
+          },
         )
       }
     }
@@ -1559,6 +1575,33 @@ internal class VisitsMigrationServiceTest {
 
         verify(visitMappingService, never()).createNomisVisitMapping(any(), any(), any())
       }
+    }
+  }
+
+  @Test
+  internal fun `will create audit event on user cancel`() {
+    runBlocking {
+      whenever(migrationHistoryService.get("123-2020-01-01")).thenReturn(
+        MigrationHistory(
+          migrationId = "123-2020-01-01 ",
+          status = MigrationStatus.CANCELLED,
+          whenEnded = LocalDateTime.parse("2020-01-01T00:00:00"),
+          whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
+          migrationType = VISITS,
+          estimatedRecordCount = 100,
+        )
+      )
+
+      service.cancel("123-2020-01-01")
+
+      verify(auditService).sendAuditEvent(
+        eq("MIGRATION_CANCEL_REQUESTED"),
+        check {
+          it as Map<*, *>
+          assertThat(it["migrationId"]).isNotNull
+          assertThat(it["migrationType"]).isEqualTo(VISITS.name)
+        },
+      )
     }
   }
 }

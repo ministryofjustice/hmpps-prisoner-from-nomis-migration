@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatchId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.CANCEL_MIGRATE_VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISIT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS
@@ -33,6 +35,7 @@ class VisitsMigrationService(
   private val visitsService: VisitsService,
   private val migrationHistoryService: MigrationHistoryService,
   private val telemetryClient: TelemetryClient,
+  private val auditService: AuditService,
   @Value("\${visits.page.size:1000}") private val pageSize: Long
 ) {
   private companion object {
@@ -75,6 +78,10 @@ class VisitsMigrationService(
         migrationType = VISITS,
         estimatedRecordCount = it.estimatedCount,
         filter = it.body
+      )
+      auditService.sendAuditEvent(
+        AuditType.MIGRATION_STARTED.name,
+        mapOf("migrationType" to VISITS.name, "migrationId" to it.migrationId, "filter" to it.body)
       )
     }
   }
@@ -333,6 +340,10 @@ class VisitsMigrationService(
       null
     )
     migrationHistoryService.recordMigrationCancelledRequested(migrationId)
+    auditService.sendAuditEvent(
+      AuditType.MIGRATION_CANCEL_REQUESTED.name,
+      mapOf("migrationType" to VISITS.name, "migrationId" to migration.migrationId)
+    )
     queueService.purgeAllMessagesNowAndAgainInTheNearFuture(
       MigrationContext(
         context = MigrationContext(migrationId, migration.estimatedRecordCount, Unit),
