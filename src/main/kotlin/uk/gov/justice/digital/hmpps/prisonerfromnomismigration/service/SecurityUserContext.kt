@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Component
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.AuthAwareAuthenticationToken
 
 @Component
 class SecurityUserContext {
