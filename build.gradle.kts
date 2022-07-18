@@ -1,5 +1,5 @@
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "4.3.2"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "4.3.3"
   kotlin("plugin.spring") version "1.7.0"
 }
 
@@ -27,13 +27,13 @@ dependencies {
   implementation("org.springdoc:springdoc-openapi-data-rest:1.6.9")
   implementation("org.springdoc:springdoc-openapi-security:1.6.9")
 
-  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.3")
-  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.6.3")
+  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
+  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.6.4")
 
   runtimeOnly("org.postgresql:r2dbc-postgresql:0.9.1.RELEASE")
   runtimeOnly("org.springframework.boot:spring-boot-starter-jdbc")
   runtimeOnly("org.postgresql:postgresql:42.4.0")
-  implementation("org.flywaydb:flyway-core:8.5.13")
+  implementation("org.flywaydb:flyway-core")
 
   testImplementation("io.swagger.parser.v3:swagger-parser:2.1.1")
   testImplementation("io.jsonwebtoken:jjwt:0.9.1")
