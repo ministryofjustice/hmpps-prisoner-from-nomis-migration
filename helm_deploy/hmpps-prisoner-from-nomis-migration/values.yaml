@@ -11,6 +11,8 @@ generic-service:
 
   ingress:
     enabled: true
+    v1_2_enabled: true
+    v0_47_enabled: true
     annotations:
       nginx.ingress.kubernetes.io/configuration-snippet: |
         server_tokens off;
@@ -19,7 +21,6 @@ generic-service:
           return 401;
         }
     host: app-hostname.local    # override per environment
-    contextColour: green
     tlsSecretName: prisoner-from-nomis-cert
 
   # Environment variables to load into the deployment
