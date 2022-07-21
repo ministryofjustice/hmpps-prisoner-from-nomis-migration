@@ -1,7 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config
 
 import org.slf4j.LoggerFactory
-import org.springframework.beans.TypeMismatchException
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.http.ResponseEntity
@@ -61,22 +60,6 @@ class HmppsPrisonerFromNomisMigrationExceptionHandler {
   @ExceptionHandler(MethodArgumentTypeMismatchException::class)
   fun handleMethodArgumentTypeMismatchException(e: Exception): Mono<ResponseEntity<ErrorResponse>> {
     log.info("Validation exception: {}", e.message)
-    return Mono.just(
-      ResponseEntity
-        .status(BAD_REQUEST)
-        .body(
-          ErrorResponse(
-            status = BAD_REQUEST,
-            userMessage = "Invalid Argument: ${e.cause?.message}",
-            developerMessage = e.message
-          )
-        )
-    )
-  }
-
-  @ExceptionHandler(TypeMismatchException::class)
-  fun handleTypeMismatchException(e: Exception): Mono<ResponseEntity<ErrorResponse>> {
-    log.info("Reactive Validation exception: {}", e.message)
     return Mono.just(
       ResponseEntity
         .status(BAD_REQUEST)

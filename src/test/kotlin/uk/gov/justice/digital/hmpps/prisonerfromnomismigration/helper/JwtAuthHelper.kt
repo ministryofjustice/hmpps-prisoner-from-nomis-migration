@@ -24,11 +24,8 @@ class JwtAuthHelper {
     keyPair = gen.generateKeyPair()
   }
 
-//  @Bean
-  // fun jwtDecoder(): JwtDecoder = NimbusJwtDecoder.withPublicKey(keyPair.public as RSAPublicKey).build()
-
   @Bean
-  fun reactiveJwtDecoder(): ReactiveJwtDecoder = NimbusReactiveJwtDecoder.withPublicKey(keyPair.public as RSAPublicKey).build()
+  fun jwtDecoder(): ReactiveJwtDecoder = NimbusReactiveJwtDecoder.withPublicKey(keyPair.public as RSAPublicKey).build()
 
   fun setAuthorisation(
     user: String = "AUTH_ADM",
