@@ -5,7 +5,7 @@ import net.minidev.json.JSONArray
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.web.server.LocalServerPort
+import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import java.time.LocalDate
@@ -21,7 +21,7 @@ class OpenApiDocsTest : SqsIntegrationTestBase() {
   @Test
   fun `open api docs are available`() {
     webTestClient.get()
-      .uri("/swagger-ui/index.html?configUrl=/v3/api-docs")
+      .uri("/webjars/swagger-ui/index.html?configUrl=/v3/api-docs")
       .accept(MediaType.APPLICATION_JSON)
       .exchange()
       .expectStatus().isOk

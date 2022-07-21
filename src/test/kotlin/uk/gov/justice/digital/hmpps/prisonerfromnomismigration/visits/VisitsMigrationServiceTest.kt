@@ -1,6 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits
 
 import com.microsoft.applicationinsights.TelemetryClient
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.just
+import io.mockk.mockk
+import io.mockk.runs
+import io.mockk.slot
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -16,7 +22,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -55,7 +60,6 @@ internal class VisitsMigrationServiceTest {
   private val migrationHistoryService: MigrationHistoryService = mock()
   private val telemetryClient: TelemetryClient = mock()
   private val auditService: AuditService = mock()
-
   val service = VisitsMigrationService(
     nomisApiService = nomisApiService,
     queueService = queueService,
@@ -70,11 +74,35 @@ internal class VisitsMigrationServiceTest {
   @Nested
   @DisplayName("migrateVisits")
   inner class MigrateVisits {
+    private val nomisApiService = mockk<NomisApiService>()
+    private val auditService = mockk<AuditService>(relaxed = true)
+    private val migrationHistoryService = mockk<MigrationHistoryService>(relaxed = true)
+
+    /* coroutine version of service required for this route */
+    private val service = VisitsMigrationService(
+      nomisApiService = nomisApiService,
+      queueService = queueService,
+      visitMappingService = visitMappingService,
+      visitsService = visitsService,
+      migrationHistoryService = migrationHistoryService,
+      telemetryClient = telemetryClient,
+      auditService = auditService,
+      pageSize = 200
+    )
+    val auditWhatParam = slot<String>()
+    val auditDetailsParam = slot<Map<*, *>>()
+
     @BeforeEach
     internal fun setUp() {
-      whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any())).thenReturn(
+      coEvery { nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any()) } returns
         pages(1)
-      )
+
+      coEvery {
+        auditService.sendAuditEvent(
+          what = capture(auditWhatParam), // makes mock match calls with any value for `speed` and record it in a slot
+          details = capture(auditDetailsParam) // makes mock and capturing only match calls with specific `direction`. Use `any()` to match calls with any `direction`
+        )
+      } just runs
     }
 
     @Test
@@ -90,22 +118,24 @@ internal class VisitsMigrationServiceTest {
         )
       }
 
-      verify(nomisApiService).getVisits(
-        prisonIds = listOf("LEI", "BXI"),
-        visitTypes = listOf("SCON"),
-        fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
-        toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
-        ignoreMissingRoom = false,
-        pageNumber = 0,
-        pageSize = 1
-      )
+      coVerify {
+        nomisApiService.getVisits(
+          prisonIds = listOf("LEI", "BXI"),
+          visitTypes = listOf("SCON"),
+          fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
+          toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
+          ignoreMissingRoom = false,
+          pageNumber = 0,
+          pageSize = 1
+        )
+      }
     }
 
     @Test
     internal fun `will pass visit count and filter to queue`() {
-      whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any())).thenReturn(
+      coEvery { nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any()) } returns
         pages(23)
-      )
+
       runBlocking {
         service.migrateVisits(
           VisitsMigrationFilter(
@@ -138,43 +168,41 @@ internal class VisitsMigrationServiceTest {
         fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
         toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
       )
-      whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any())).thenReturn(
+
+      coEvery { nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any()) } returns
         pages(23)
-      )
+
       runBlocking {
         service.migrateVisits(
           visitsMigrationFilter
         )
+      }
 
-        verify(migrationHistoryService).recordMigrationStarted(
+      coVerify {
+        migrationHistoryService.recordMigrationStarted(
           migrationId = any(),
-          migrationType = eq(VISITS),
-          estimatedRecordCount = eq(23),
-          filter = check<VisitsMigrationFilter> {
+          migrationType = VISITS,
+          estimatedRecordCount = 23,
+          filter = coWithArg<VisitsMigrationFilter> {
             assertThat(it.prisonIds).containsExactly("LEI", "BXI")
             assertThat(it.visitTypes).containsExactly("SCON")
             assertThat(it.fromDateTime).isEqualTo(LocalDateTime.parse("2020-01-01T00:00:00"))
             assertThat(it.toDateTime).isEqualTo(LocalDateTime.parse("2020-01-02T23:00:00"))
           }
         )
+      }
 
-        verify(auditService).sendAuditEvent(
-          eq("MIGRATION_STARTED"),
-          check {
-            it as Map<*, *>
-            assertThat(it["migrationId"]).isNotNull
-            assertThat(it["migrationType"]).isEqualTo(VISITS.name)
-            assertThat(it["filter"]).isEqualTo(visitsMigrationFilter)
-          },
-        )
+      with(auditDetailsParam.captured) {
+        assertThat(this).extracting("migrationId").isNotNull
+        assertThat(this).extracting("migrationType").isEqualTo("VISITS")
+        assertThat(this).extracting("filter").isEqualTo(visitsMigrationFilter)
       }
     }
 
     @Test
     internal fun `will write analytic with estimated count and filter`() {
-      whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any())).thenReturn(
-        pages(23)
-      )
+      coEvery { nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any()) } returns pages(23)
+
       runBlocking {
         service.migrateVisits(
           VisitsMigrationFilter(
@@ -202,7 +230,7 @@ internal class VisitsMigrationServiceTest {
 
     @Test
     internal fun `will write analytics with empty filter`() {
-      whenever(
+      coEvery {
         nomisApiService.getVisits(
           prisonIds = any(),
           visitTypes = any(),
@@ -212,9 +240,9 @@ internal class VisitsMigrationServiceTest {
           pageNumber = any(),
           pageSize = any()
         )
-      ).thenReturn(
+      } returns
         pages(23)
-      )
+
       runBlocking {
         service.migrateVisits(
           VisitsMigrationFilter(visitTypes = listOf())
@@ -243,7 +271,7 @@ internal class VisitsMigrationServiceTest {
 
     @BeforeEach
     internal fun setUp() {
-      whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any())).thenReturn(
+      whenever(nomisApiService.getVisitsBlocking(any(), any(), any(), any(), any(), any(), any())).thenReturn(
         pages(100_200)
       )
     }
@@ -613,7 +641,7 @@ internal class VisitsMigrationServiceTest {
     @BeforeEach
     internal fun setUp() {
       whenever(migrationHistoryService.isCancelling(any())).thenReturn(false)
-      whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any())).thenReturn(
+      whenever(nomisApiService.getVisitsBlocking(any(), any(), any(), any(), any(), any(), any())).thenReturn(
         pages(15)
       )
     }
@@ -636,7 +664,7 @@ internal class VisitsMigrationServiceTest {
         )
       )
 
-      verify(nomisApiService).getVisits(
+      verify(nomisApiService).getVisitsBlocking(
         prisonIds = listOf("LEI", "BXI"),
         visitTypes = listOf("SCON"),
         fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
@@ -679,7 +707,7 @@ internal class VisitsMigrationServiceTest {
 
       val context: KArgumentCaptor<MigrationContext<VisitId>> = argumentCaptor()
 
-      whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any())).thenReturn(
+      whenever(nomisApiService.getVisitsBlocking(any(), any(), any(), any(), any(), any(), any())).thenReturn(
         pages(
           15, startId = 1000
         )
@@ -719,7 +747,7 @@ internal class VisitsMigrationServiceTest {
     internal fun `will not send MIGRATE_VISIT when cancelling`() {
       whenever(migrationHistoryService.isCancelling(any())).thenReturn(true)
 
-      whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any())).thenReturn(
+      whenever(nomisApiService.getVisitsBlocking(any(), any(), any(), any(), any(), any(), any())).thenReturn(
         pages(
           15, startId = 1000
         )
@@ -779,7 +807,7 @@ internal class VisitsMigrationServiceTest {
           visitorConcernText = "I'm concerned",
         )
       )
-      whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+      whenever(visitMappingService.findRoomMappingBlocking(any(), any())).thenReturn(
         RoomMapping(
           vsipId = "VSIP-ROOM-ID", isOpen = true
         )
@@ -818,7 +846,7 @@ internal class VisitsMigrationServiceTest {
         )
       )
 
-      verify(visitMappingService).findRoomMapping(prisonId = "BXI", agencyInternalLocationCode = "MDI-VISITS-OFF_VIS")
+      verify(visitMappingService).findRoomMappingBlocking(prisonId = "BXI", agencyInternalLocationCode = "MDI-VISITS-OFF_VIS")
     }
 
     @Test
@@ -833,7 +861,7 @@ internal class VisitsMigrationServiceTest {
         )
       )
 
-      whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(null)
+      whenever(visitMappingService.findRoomMappingBlocking(any(), any())).thenReturn(null)
 
       assertThatThrownBy {
         service.migrateVisit(
@@ -893,7 +921,7 @@ internal class VisitsMigrationServiceTest {
         eq(null)
       )
 
-      verify(visitMappingService, never()).findRoomMapping(any(), any())
+      verify(visitMappingService, never()).findRoomMappingBlocking(any(), any())
     }
 
     @Test
@@ -967,7 +995,7 @@ internal class VisitsMigrationServiceTest {
             endDateTime = LocalDateTime.parse("2020-01-02T12:00:00"),
           )
         )
-        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+        whenever(visitMappingService.findRoomMappingBlocking(any(), any())).thenReturn(
           RoomMapping(
             vsipId = "VSIP-ROOM-ID", isOpen = true
           )
@@ -1057,7 +1085,7 @@ internal class VisitsMigrationServiceTest {
           )
         )
 
-        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+        whenever(visitMappingService.findRoomMappingBlocking(any(), any())).thenReturn(
           RoomMapping(
             vsipId = "VSIP-ROOM-ID", isOpen = true
           )
@@ -1086,7 +1114,7 @@ internal class VisitsMigrationServiceTest {
           )
         )
 
-        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+        whenever(visitMappingService.findRoomMappingBlocking(any(), any())).thenReturn(
           RoomMapping(
             vsipId = "VSIP-ROOM-ID", isOpen = true
           )
@@ -1115,7 +1143,7 @@ internal class VisitsMigrationServiceTest {
           )
         )
 
-        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+        whenever(visitMappingService.findRoomMappingBlocking(any(), any())).thenReturn(
           RoomMapping(
             vsipId = "VSIP-ROOM-ID", isOpen = false
           )
@@ -1147,7 +1175,7 @@ internal class VisitsMigrationServiceTest {
           )
         )
 
-        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+        whenever(visitMappingService.findRoomMappingBlocking(any(), any())).thenReturn(
           RoomMapping(
             vsipId = "VSIP-ROOM-ID", isOpen = true
           )
@@ -1175,7 +1203,7 @@ internal class VisitsMigrationServiceTest {
           )
         )
 
-        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+        whenever(visitMappingService.findRoomMappingBlocking(any(), any())).thenReturn(
           RoomMapping(
             vsipId = "VSIP-ROOM-ID", isOpen = true
           )
@@ -1208,7 +1236,7 @@ internal class VisitsMigrationServiceTest {
           )
         )
 
-        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+        whenever(visitMappingService.findRoomMappingBlocking(any(), any())).thenReturn(
           RoomMapping(
             vsipId = "VSIP-ROOM-ID", isOpen = false
           )
@@ -1247,7 +1275,7 @@ internal class VisitsMigrationServiceTest {
           aVisit
         )
 
-        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+        whenever(visitMappingService.findRoomMappingBlocking(any(), any())).thenReturn(
           RoomMapping(
             vsipId = "VSIP-ROOM-ID", isOpen = true
           )
@@ -1276,7 +1304,7 @@ internal class VisitsMigrationServiceTest {
           )
         )
 
-        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+        whenever(visitMappingService.findRoomMappingBlocking(any(), any())).thenReturn(
           RoomMapping(
             vsipId = "VSIP-ROOM-ID", isOpen = true
           )
@@ -1305,7 +1333,7 @@ internal class VisitsMigrationServiceTest {
           )
         )
 
-        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+        whenever(visitMappingService.findRoomMappingBlocking(any(), any())).thenReturn(
           RoomMapping(
             vsipId = "VSIP-ROOM-ID", isOpen = false
           )
@@ -1330,7 +1358,7 @@ internal class VisitsMigrationServiceTest {
     inner class NomisToVisitStatusMapping {
       @BeforeEach
       internal fun setUp() {
-        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+        whenever(visitMappingService.findRoomMappingBlocking(any(), any())).thenReturn(
           RoomMapping(
             vsipId = "VSIP-ROOM-ID", isOpen = true
           )
@@ -1406,7 +1434,7 @@ internal class VisitsMigrationServiceTest {
     inner class NomisToVisitTypeMapping {
       @BeforeEach
       internal fun setUp() {
-        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+        whenever(visitMappingService.findRoomMappingBlocking(any(), any())).thenReturn(
           RoomMapping(
             vsipId = "VSIP-ROOM-ID", isOpen = true
           )
@@ -1522,7 +1550,7 @@ internal class VisitsMigrationServiceTest {
             startDateTime = LocalDateTime.parse("2018-05-23T11:30:00"),
           )
         )
-        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+        whenever(visitMappingService.findRoomMappingBlocking(any(), any())).thenReturn(
           RoomMapping(
             vsipId = "VSIP-ROOM-ID", isOpen = true
           )

@@ -94,3 +94,8 @@ cancel:
   queue:
     purge-frequency-time: 200ms
     purge-total-time: 20s
+
+azure:
+  application-insights:
+    web:
+      enabled: false

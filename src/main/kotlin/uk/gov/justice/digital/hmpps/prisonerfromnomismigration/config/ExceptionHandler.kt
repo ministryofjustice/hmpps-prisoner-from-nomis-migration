@@ -3,79 +3,74 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.BAD_REQUEST
-import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
+import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NotFoundException
 import javax.validation.ValidationException
 
 @RestControllerAdvice
 class HmppsPrisonerFromNomisMigrationExceptionHandler {
+
   @ExceptionHandler(ValidationException::class)
-  fun handleValidationException(e: Exception): ResponseEntity<ErrorResponse> {
+  fun handleValidationException(e: Exception): Mono<ResponseEntity<ErrorResponse>> {
     log.info("Validation exception: {}", e.message)
-    return ResponseEntity
-      .status(BAD_REQUEST)
-      .body(
-        ErrorResponse(
-          status = BAD_REQUEST,
-          userMessage = "Validation failure: ${e.message}",
-          developerMessage = e.message
+    return Mono.just(
+      ResponseEntity
+        .status(BAD_REQUEST)
+        .body(
+          ErrorResponse(
+            status = BAD_REQUEST,
+            userMessage = "Validation failure: ${e.message}",
+            developerMessage = e.message
+          )
         )
-      )
+    )
   }
 
   @ExceptionHandler(NotFoundException::class)
-  fun handleNotFoundException(e: Exception): ResponseEntity<ErrorResponse?>? {
+  fun handleNotFoundException(e: Exception): Mono<ResponseEntity<ErrorResponse?>>? {
     log.info("Not Found: {}", e.message)
-    return ResponseEntity
-      .status(HttpStatus.NOT_FOUND)
-      .body(
-        ErrorResponse(
-          status = HttpStatus.NOT_FOUND,
-          userMessage = "Not Found: ${e.message}",
-          developerMessage = e.message
+    return Mono.just(
+      ResponseEntity
+        .status(HttpStatus.NOT_FOUND)
+        .body(
+          ErrorResponse(
+            status = HttpStatus.NOT_FOUND,
+            userMessage = "Not Found: ${e.message}",
+            developerMessage = e.message
+          )
         )
-      )
-  }
-
-  @ExceptionHandler(java.lang.Exception::class)
-  fun handleException(e: java.lang.Exception): ResponseEntity<ErrorResponse?>? {
-    log.error("Unexpected exception", e)
-    return ResponseEntity
-      .status(INTERNAL_SERVER_ERROR)
-      .body(
-        ErrorResponse(
-          status = INTERNAL_SERVER_ERROR,
-          userMessage = "Unexpected error: ${e.message}",
-          developerMessage = e.message
-        )
-      )
+    )
   }
 
   @ExceptionHandler(AccessDeniedException::class)
-  fun handleAccessDeniedException(e: AccessDeniedException): ResponseEntity<ErrorResponse> {
+  fun handleAccessDeniedException(e: AccessDeniedException): Mono<ResponseEntity<ErrorResponse>> {
     log.debug("Forbidden (403) returned with message {}", e.message)
-    return ResponseEntity
-      .status(HttpStatus.FORBIDDEN)
-      .body(ErrorResponse(status = (HttpStatus.FORBIDDEN.value())))
+    return Mono.just(
+      ResponseEntity
+        .status(HttpStatus.FORBIDDEN)
+        .body(ErrorResponse(status = (HttpStatus.FORBIDDEN.value())))
+    )
   }
 
   @ExceptionHandler(MethodArgumentTypeMismatchException::class)
-  fun handleMethodArgumentTypeMismatchException(e: Exception): ResponseEntity<ErrorResponse> {
+  fun handleMethodArgumentTypeMismatchException(e: Exception): Mono<ResponseEntity<ErrorResponse>> {
     log.info("Validation exception: {}", e.message)
-    return ResponseEntity
-      .status(BAD_REQUEST)
-      .body(
-        ErrorResponse(
-          status = BAD_REQUEST,
-          userMessage = "Invalid Argument: ${e.cause?.message}",
-          developerMessage = e.message
+    return Mono.just(
+      ResponseEntity
+        .status(BAD_REQUEST)
+        .body(
+          ErrorResponse(
+            status = BAD_REQUEST,
+            userMessage = "Invalid Argument: ${e.cause?.message}",
+            developerMessage = e.message
+          )
         )
-      )
+    )
   }
 
   companion object {
