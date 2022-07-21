@@ -143,7 +143,7 @@ internal class VisitMappingServiceTest {
         )
       )
 
-      assertThat(visitMappingService.findRoomMapping("HB7SOC", "HEI")).isNull()
+      assertThat(visitMappingService.findRoomMappingBlocking("HB7SOC", "HEI")).isNull()
     }
 
     @Test
@@ -164,7 +164,7 @@ internal class VisitMappingServiceTest {
         )
       )
 
-      val mapping = visitMappingService.findRoomMapping("HB7SOC", "HEI")
+      val mapping = visitMappingService.findRoomMappingBlocking("HB7SOC", "HEI")
       assertThat(mapping).isNotNull
       assertThat(mapping!!.vsipId).isEqualTo("1234")
       assertThat(mapping.isOpen).isEqualTo(true)
@@ -182,7 +182,7 @@ internal class VisitMappingServiceTest {
       )
 
       assertThatThrownBy {
-        visitMappingService.findRoomMapping("HB7SOC", "HEI")
+        visitMappingService.findRoomMappingBlocking("HB7SOC", "HEI")
       }.isInstanceOf(WebClientResponseException.InternalServerError::class.java)
     }
   }

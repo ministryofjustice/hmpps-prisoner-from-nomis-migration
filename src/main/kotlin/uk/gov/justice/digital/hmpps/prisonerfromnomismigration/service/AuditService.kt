@@ -28,10 +28,10 @@ class AuditService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  fun sendAuditEvent(what: String, details: Any) {
+  suspend fun sendAuditEvent(what: String, details: Any) {
     val auditEvent = AuditEvent(
       what = what,
-      who = securityUserContext.principal,
+      who = securityUserContext.username().toString(),
       service = serviceName,
       details = mapper.writeValueAsString(details)
     )

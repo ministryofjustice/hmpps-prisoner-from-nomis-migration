@@ -1,6 +1,8 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import kotlinx.coroutines.reactor.awaitSingleOrNull
+import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
@@ -37,7 +39,7 @@ class VisitMappingService(@Qualifier("visitMappingApiWebClient") private val web
       .block()
   }
 
-  fun findRoomMapping(agencyInternalLocationCode: String, prisonId: String): RoomMapping? {
+  suspend fun findRoomMapping(agencyInternalLocationCode: String, prisonId: String): RoomMapping? {
     return webClient.get()
       .uri("/prison/{prisonId}/room/nomis-room-id/{agencyInternalLocationCode}", prisonId, agencyInternalLocationCode)
       .retrieve()
@@ -45,8 +47,11 @@ class VisitMappingService(@Qualifier("visitMappingApiWebClient") private val web
       .onErrorResume(WebClientResponseException.NotFound::class.java) {
         Mono.empty()
       }
-      .block()
+      .awaitSingleOrNull()
   }
+
+  fun findRoomMappingBlocking(agencyInternalLocationCode: String, prisonId: String): RoomMapping? =
+    runBlocking { findRoomMapping(agencyInternalLocationCode, prisonId) }
 
   fun findLatestMigration(): LatestMigration? = webClient.get()
     .uri("/mapping/migrated/latest")

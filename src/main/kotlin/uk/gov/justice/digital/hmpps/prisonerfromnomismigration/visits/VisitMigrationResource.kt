@@ -189,7 +189,7 @@ class VisitMigrationResource(
       )
     ]
   )
-  fun getVisitRoomUsageDetailsByFilter(
+  suspend fun getVisitRoomUsageDetailsByFilter(
     @RequestParam(value = "prisonIds", required = false)
     @Parameter(
       description = "Filter results by prison ids (returns all prisons if not specified)",

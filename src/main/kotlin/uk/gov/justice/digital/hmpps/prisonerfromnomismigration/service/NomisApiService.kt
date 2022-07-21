@@ -3,6 +3,8 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.JsonNode
+import kotlinx.coroutines.reactive.awaitSingle
+import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
@@ -16,7 +18,7 @@ import java.time.LocalDateTime
 @Service
 class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
 
-  fun getVisits(
+  suspend fun getVisits(
     prisonIds: List<String>,
     visitTypes: List<String>,
     fromDateTime: LocalDateTime?,
@@ -39,7 +41,27 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       }
       .retrieve()
       .bodyToMono(typeReference<RestResponsePage<VisitId>>())
-      .block()!!
+      .awaitSingle()
+
+  fun getVisitsBlocking(
+    prisonIds: List<String>,
+    visitTypes: List<String>,
+    fromDateTime: LocalDateTime?,
+    toDateTime: LocalDateTime?,
+    ignoreMissingRoom: Boolean,
+    pageNumber: Long,
+    pageSize: Long,
+  ): PageImpl<VisitId> = runBlocking {
+    getVisits(
+      prisonIds,
+      visitTypes,
+      fromDateTime,
+      toDateTime,
+      ignoreMissingRoom,
+      pageNumber,
+      pageSize,
+    )
+  }
 
   fun getVisit(
     nomisVisitId: Long,
@@ -50,7 +72,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       .bodyToMono(NomisVisit::class.java)
       .block()!!
 
-  fun getRoomUsage(
+  suspend fun getRoomUsage(
     filter: VisitsMigrationFilter
   ): List<VisitRoomUsageResponse> =
     webClient.get()
@@ -64,7 +86,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       }
       .retrieve()
       .bodyToMono(typeReference<List<VisitRoomUsageResponse>>())
-      .block()!!
+      .awaitSingle()
 }
 
 data class VisitId(

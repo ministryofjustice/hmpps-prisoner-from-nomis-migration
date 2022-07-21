@@ -106,22 +106,23 @@ class VisitsMigrationService(
     )
   }
 
-  fun migrateVisitsForPage(context: MigrationContext<VisitsPage>) = nomisApiService.getVisits(
-    prisonIds = context.body.filter.prisonIds,
-    visitTypes = context.body.filter.visitTypes,
-    fromDateTime = context.body.filter.fromDateTime,
-    toDateTime = context.body.filter.toDateTime,
-    ignoreMissingRoom = context.body.filter.ignoreMissingRoom,
-    pageNumber = context.body.pageNumber,
-    pageSize = context.body.pageSize
-  ).takeUnless {
-    migrationHistoryService.isCancelling(context.migrationId)
-  }?.content?.map {
-    MigrationContext(
-      context = context,
-      body = it
-    )
-  }?.forEach { queueService.sendMessage(MIGRATE_VISIT, it) }
+  fun migrateVisitsForPage(context: MigrationContext<VisitsPage>) =
+    nomisApiService.getVisitsBlocking(
+      prisonIds = context.body.filter.prisonIds,
+      visitTypes = context.body.filter.visitTypes,
+      fromDateTime = context.body.filter.fromDateTime,
+      toDateTime = context.body.filter.toDateTime,
+      ignoreMissingRoom = context.body.filter.ignoreMissingRoom,
+      pageNumber = context.body.pageNumber,
+      pageSize = context.body.pageSize
+    ).takeUnless {
+      migrationHistoryService.isCancelling(context.migrationId)
+    }?.content?.map {
+      MigrationContext(
+        context = context,
+        body = it
+      )
+    }?.forEach { queueService.sendMessage(MIGRATE_VISIT, it) }
 
   fun migrateVisit(context: MigrationContext<VisitId>) =
     visitMappingService.findNomisVisitMapping(context.body.visitId)
@@ -161,7 +162,7 @@ class VisitsMigrationService(
     nomisVisit: NomisVisit
   ): DateAwareRoomMapping? = if (isFutureVisit(nomisVisit)) {
     nomisVisit.agencyInternalLocation?.let {
-      visitMappingService.findRoomMapping(
+      visitMappingService.findRoomMappingBlocking(
         agencyInternalLocationCode = nomisVisit.agencyInternalLocation.description,
         prisonId = nomisVisit.prisonId
       )?.let {
@@ -318,7 +319,7 @@ class VisitsMigrationService(
     )
   }
 
-  fun findRoomUsageByFilter(filter: VisitsMigrationFilter): List<VisitRoomUsageResponse> {
+  suspend fun findRoomUsageByFilter(filter: VisitsMigrationFilter): List<VisitRoomUsageResponse> {
     val roomUsage = nomisApiService.getRoomUsage(filter)
     return roomUsage.map { usage ->
       usage.copy(
@@ -354,8 +355,22 @@ class VisitsMigrationService(
 
   private fun mapNomisVisit(nomisVisit: NomisVisit, dateAwareRoomMapping: DateAwareRoomMapping): CreateVsipVisit {
     val visitNotesSet = mutableSetOf<VsipVisitNote>()
-    nomisVisit.commentText?.apply { if (isFutureVisit(nomisVisit)) visitNotesSet.add(VsipVisitNote(VsipVisitNoteType.VISIT_COMMENT, this)) }
-    nomisVisit.visitorConcernText?.apply { if (isFutureVisit(nomisVisit)) visitNotesSet.add(VsipVisitNote(VsipVisitNoteType.VISITOR_CONCERN, this)) }
+    nomisVisit.commentText?.apply {
+      if (isFutureVisit(nomisVisit)) visitNotesSet.add(
+        VsipVisitNote(
+          VsipVisitNoteType.VISIT_COMMENT,
+          this
+        )
+      )
+    }
+    nomisVisit.visitorConcernText?.apply {
+      if (isFutureVisit(nomisVisit)) visitNotesSet.add(
+        VsipVisitNote(
+          VsipVisitNoteType.VISITOR_CONCERN,
+          this
+        )
+      )
+    }
     return CreateVsipVisit(
       prisonId = nomisVisit.prisonId,
       prisonerId = nomisVisit.offenderNo,
