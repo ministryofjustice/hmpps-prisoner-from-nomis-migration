@@ -777,6 +777,8 @@ internal class VisitsMigrationServiceTest {
   inner class MigrateVisit {
     private val yesterdayDateTime = LocalDateTime.now().minusDays(1)
     private val tomorrowDateTime = LocalDateTime.now().plusDays(1)
+    private val tomorrowDateTimeMorning = LocalDateTime.now().plusDays(1).withHour(10).withMinute(30).withSecond(56)
+    private val tomorrowDateTimeAfternoon = LocalDateTime.now().plusDays(1).withHour(12).withMinute(0).withSecond(0)
 
     @BeforeEach
     internal fun setUp() {
@@ -980,6 +982,87 @@ internal class VisitsMigrationServiceTest {
       )
 
       verify(visitsService).createVisit(any())
+    }
+
+    @Test
+    internal fun `will map future visit times to designated slots for Hewell - morning `() {
+      whenever(nomisApiService.getVisit(any())).thenReturn(
+        aVisit(
+          prisonId = "HEI",
+          agencyInternalLocation = NomisCodeDescription("OFF_VIS", "MDI-VISITS-OFF_VIS"),
+          prisonerId = "A1234AA",
+          visitId = 123456,
+          startDateTime = tomorrowDateTimeMorning,
+          endDateTime = tomorrowDateTimeMorning.plusHours(2)
+        )
+      )
+
+      service.migrateVisit(
+        MigrationContext(
+          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+        )
+      )
+
+      verify(visitsService).createVisit(
+        check {
+          assertThat(it.startTimestamp).isEqualTo(tomorrowDateTimeMorning.toLocalDate().atTime(9, 0))
+          assertThat(it.endTimestamp).isEqualTo(tomorrowDateTimeMorning.toLocalDate().atTime(11, 0))
+        }
+      )
+    }
+
+    @Test
+    internal fun `will map future visit times to designated slots for Hewell - afternoon `() {
+      whenever(nomisApiService.getVisit(any())).thenReturn(
+        aVisit(
+          prisonId = "HEI",
+          agencyInternalLocation = NomisCodeDescription("OFF_VIS", "MDI-VISITS-OFF_VIS"),
+          prisonerId = "A1234AA",
+          visitId = 123456,
+          startDateTime = tomorrowDateTimeAfternoon,
+          endDateTime = tomorrowDateTimeAfternoon.plusHours(2)
+        )
+      )
+
+      service.migrateVisit(
+        MigrationContext(
+          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+        )
+      )
+
+      verify(visitsService).createVisit(
+        check {
+          assertThat(it.startTimestamp).isEqualTo(tomorrowDateTimeAfternoon.toLocalDate().atTime(14, 0))
+          assertThat(it.endTimestamp).isEqualTo(tomorrowDateTimeAfternoon.toLocalDate().atTime(16, 0))
+        }
+      )
+    }
+
+    @Test
+    internal fun `will leave historical visit times unchanged for Hewell`() {
+      whenever(nomisApiService.getVisit(any())).thenReturn(
+        aVisit(
+          prisonId = "HEI",
+          agencyInternalLocation = NomisCodeDescription("OFF_VIS", "MDI-VISITS-OFF_VIS"),
+          prisonerId = "A1234AA",
+          visitId = 123456,
+          startDateTime = yesterdayDateTime,
+          endDateTime = yesterdayDateTime.plusHours(2)
+        )
+      )
+
+      service.migrateVisit(
+        MigrationContext(
+          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+        )
+      )
+
+      verify(visitsService).createVisit(
+        check {
+          assertThat(it.startTimestamp).isEqualTo(yesterdayDateTime)
+          assertThat(it.endTimestamp).isEqualTo(yesterdayDateTime.plusHours(2))
+        }
+      )
     }
 
     @Nested
