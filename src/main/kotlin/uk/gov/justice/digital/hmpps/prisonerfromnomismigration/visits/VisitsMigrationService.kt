@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VisitId
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 @Service
@@ -355,8 +356,9 @@ class VisitsMigrationService(
 
   private fun mapNomisVisit(nomisVisit: NomisVisit, dateAwareRoomMapping: DateAwareRoomMapping): CreateVsipVisit {
     val visitNotesSet = mutableSetOf<VsipVisitNote>()
+    val futureVisit = isFutureVisit(nomisVisit)
     nomisVisit.commentText?.apply {
-      if (isFutureVisit(nomisVisit)) visitNotesSet.add(
+      if (futureVisit) visitNotesSet.add(
         VsipVisitNote(
           VsipVisitNoteType.VISIT_COMMENT,
           this
@@ -364,18 +366,22 @@ class VisitsMigrationService(
       )
     }
     nomisVisit.visitorConcernText?.apply {
-      if (isFutureVisit(nomisVisit)) visitNotesSet.add(
+      if (futureVisit) visitNotesSet.add(
         VsipVisitNote(
           VsipVisitNoteType.VISITOR_CONCERN,
           this
         )
       )
     }
+
+    val startDateTime = applyPrisonSpecificVisitStartTimeMapping(nomisVisit)
+    val endDateTime = applyPrisonSpecificVisitEndTimeMapping(nomisVisit)
+
     return CreateVsipVisit(
       prisonId = nomisVisit.prisonId,
       prisonerId = nomisVisit.offenderNo,
-      startTimestamp = nomisVisit.startDateTime,
-      endTimestamp = nomisVisit.endDateTime,
+      startTimestamp = startDateTime,
+      endTimestamp = endDateTime,
       visitType = nomisVisit.visitType.toVisitType(),
       visitStatus = getVsipVisitStatus(nomisVisit),
       outcomeStatus = getVsipOutcome(nomisVisit),
@@ -396,6 +402,24 @@ class VisitsMigrationService(
       visitRestriction = dateAwareRoomMapping.restriction
     )
   }
+
+  private fun applyPrisonSpecificVisitStartTimeMapping(nomisVisit: NomisVisit) =
+    if (isFutureVisit(nomisVisit) && nomisVisit.prisonId == "HEI") {
+      if (nomisVisit.startDateTime.toLocalTime().isBefore(LocalTime.NOON)) {
+        nomisVisit.startDateTime.toLocalDate().atTime(LocalTime.of(9, 0))
+      } else {
+        nomisVisit.startDateTime.toLocalDate().atTime(LocalTime.of(14, 0))
+      }
+    } else nomisVisit.startDateTime
+
+  private fun applyPrisonSpecificVisitEndTimeMapping(nomisVisit: NomisVisit) =
+    if (isFutureVisit(nomisVisit) && nomisVisit.prisonId == "HEI") {
+      if (nomisVisit.startDateTime.toLocalTime().isBefore(LocalTime.NOON)) {
+        nomisVisit.endDateTime.toLocalDate().atTime(LocalTime.of(11, 0))
+      } else {
+        nomisVisit.endDateTime.toLocalDate().atTime(LocalTime.of(16, 0))
+      }
+    } else nomisVisit.endDateTime
 }
 
 private fun <T> MigrationContext<T>.durationMinutes(): Long =
