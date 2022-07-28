@@ -10,6 +10,7 @@ import io.swagger.v3.oas.models.media.StringSchema
 import io.swagger.v3.oas.models.security.SecurityRequirement
 import io.swagger.v3.oas.models.security.SecurityScheme
 import io.swagger.v3.oas.models.servers.Server
+import io.swagger.v3.oas.models.tags.Tag
 import org.springdoc.core.customizers.OpenApiCustomiser
 import org.springframework.boot.info.BuildProperties
 import org.springframework.context.annotation.Bean
@@ -34,6 +35,14 @@ class OpenApiConfiguration(buildProperties: BuildProperties) {
         .version(version)
         .description("API to launch migration of prisoner data from NOMIS to new services<br/> All hmpps-queue-resource endpoints require the role <b>QUEUE_ADMIN</b> ")
         .contact(Contact().name("HMPPS Digital Studio").email("feedback@digital.justice.gov.uk"))
+    )
+    .tags(
+      listOf(
+        Tag().name("hmpps-queue-resource")
+          .description("""DO NOT USE - These synchronous endpoints will not work. See the asynchronous ones below"""),
+        Tag().name("hmpps-queue-resource-async")
+          .description("""Endpoints that are to be used by administrators only for managing SQS queues. All endpoints require the <b>QUEUE_ADMIN</b> role further information can be found in the <a href="https://github.com/ministryofjustice/hmpps-spring-boot-sqs">hmpps-spring-boot-sqs</a> project"""),
+      )
     )
     .components(
       Components().addSecuritySchemes(
