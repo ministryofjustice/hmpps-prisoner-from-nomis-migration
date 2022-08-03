@@ -38,8 +38,6 @@ class OpenApiConfiguration(buildProperties: BuildProperties) {
     )
     .tags(
       listOf(
-        Tag().name("hmpps-queue-resource")
-          .description("""DO NOT USE - These synchronous endpoints will not work. See the asynchronous ones below"""),
         Tag().name("hmpps-queue-resource-async")
           .description("""Endpoints that are to be used by administrators only for managing SQS queues. All endpoints require the <b>QUEUE_ADMIN</b> role further information can be found in the <a href="https://github.com/ministryofjustice/hmpps-spring-boot-sqs">hmpps-spring-boot-sqs</a> project"""),
       )
