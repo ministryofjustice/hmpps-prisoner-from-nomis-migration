@@ -99,3 +99,7 @@ azure:
   application-insights:
     web:
       enabled: false
+
+hmpps:
+  sqs:
+    reactiveApi: true
