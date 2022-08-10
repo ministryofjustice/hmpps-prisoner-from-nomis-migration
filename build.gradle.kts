@@ -34,7 +34,7 @@ dependencies {
 
   runtimeOnly("org.postgresql:r2dbc-postgresql:0.9.1.RELEASE")
   runtimeOnly("org.springframework.boot:spring-boot-starter-jdbc")
-  runtimeOnly("org.postgresql:postgresql:42.4.0")
+  runtimeOnly("org.postgresql:postgresql:42.4.1")
   implementation("org.flywaydb:flyway-core")
 
   testImplementation("io.swagger.parser.v3:swagger-parser:2.1.1")
