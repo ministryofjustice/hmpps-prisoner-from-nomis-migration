@@ -53,6 +53,14 @@ generic-service:
       HMPPS_SQS_QUEUES_MIGRATION_DLQ_NAME: "sqs_name"
       HMPPS_SQS_QUEUES_MIGRATION_DLQ_ACCESS_KEY_ID: "access_key_id"
       HMPPS_SQS_QUEUES_MIGRATION_DLQ_SECRET_ACCESS_KEY: "secret_access_key"
+    prisoner_from_nomis_queue:
+      HMPPS_SQS_QUEUES_EVENT_QUEUE_ACCESS_KEY_ID: "access_key_id"
+      HMPPS_SQS_QUEUES_EVENT_QUEUE_SECRET_ACCESS_KEY: "secret_access_key"
+      HMPPS_SQS_QUEUES_EVENT_QUEUE_NAME: "sqs_name"
+    prisoner_from_nomis_dl_queue:
+      HMPPS_SQS_QUEUES_EVENT_DLQ_NAME: "sqs_name"
+      HMPPS_SQS_QUEUES_EVENT_DLQ_ACCESS_KEY_ID: "access_key_id"
+      HMPPS_SQS_QUEUES_EVENT_DLQ_SECRET_ACCESS_KEY: "secret_access_key"
     rds-database:
       SPRING_FLYWAY_USER: "database_username"
       SPRING_FLYWAY_PASSWORD: "database_password"
