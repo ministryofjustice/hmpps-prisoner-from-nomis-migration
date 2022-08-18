@@ -35,11 +35,15 @@ class SqsIntegrationTestBase : TestBase() {
   private lateinit var hmppsQueueService: HmppsQueueService
 
   internal val registersQueue by lazy { hmppsQueueService.findByQueueId("migration") as HmppsQueue }
+  internal val offenderEventsQueue by lazy { hmppsQueueService.findByQueueId("event") as HmppsQueue }
 
   internal val awsSqsClient by lazy { registersQueue.sqsClient }
   internal val awsSqsDlqClient by lazy { registersQueue.sqsDlqClient }
   internal val queueUrl by lazy { registersQueue.queueUrl }
   internal val dlqUrl by lazy { registersQueue.dlqUrl }
+
+  internal val awsSqsOffenderEventsClient by lazy { offenderEventsQueue.sqsClient }
+  internal val queueOffenderEventsUrl by lazy { offenderEventsQueue.queueUrl }
 
   @Autowired
   protected lateinit var jwtAuthHelper: JwtAuthHelper
