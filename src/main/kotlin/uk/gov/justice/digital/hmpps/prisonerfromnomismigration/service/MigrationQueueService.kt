@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener.MigrationMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationVisitsMessageListener.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.CANCEL_MIGRATE_VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMigrationStatusCheck
 import uk.gov.justice.hmpps.sqs.HmppsQueue
@@ -30,7 +30,8 @@ class MigrationQueueService(
   @Value("\${cancel.queue.purge-frequency-time}") val purgeFrequency: Duration,
   @Value("\${cancel.queue.purge-total-time}") val purgeTotalTime: Duration,
 ) {
-  private val migrationQueue by lazy { hmppsQueueService.findByQueueId("migration") as HmppsQueue }
+  // TODO: we will eventually have different versions of this same bean pointing at different queues
+  private val migrationQueue by lazy { hmppsQueueService.findByQueueId("migrationvisits") as HmppsQueue }
   private val migrationSqsClient by lazy { migrationQueue.sqsClient }
   private val migrationQueueUrl by lazy { migrationQueue.queueUrl }
   private val migrationDLQSqsClient by lazy { migrationQueue.sqsDlqClient!! }

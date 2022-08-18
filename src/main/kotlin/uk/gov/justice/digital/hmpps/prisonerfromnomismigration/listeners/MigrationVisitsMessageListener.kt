@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.jms.annotation.JmsListener
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener.MigrationMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationVisitsMessageListener.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.CANCEL_MIGRATE_VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISIT
@@ -19,7 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationService
 
 @Service
-class MigrationMessageListener(
+class MigrationVisitsMessageListener(
   private val objectMapper: ObjectMapper,
   private val visitsMigrationService: VisitsMigrationService
 ) {
@@ -28,7 +28,7 @@ class MigrationMessageListener(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  @JmsListener(destination = "migration", containerFactory = "hmppsQueueContainerFactoryProxy")
+  @JmsListener(destination = "migrationvisits", containerFactory = "hmppsQueueContainerFactoryProxy")
   fun onMessage(message: String, rawMessage: SQSTextMessage) {
     log.debug("Received message {}", message)
     val migrationMessage: MigrationMessage<*> = message.fromJson()

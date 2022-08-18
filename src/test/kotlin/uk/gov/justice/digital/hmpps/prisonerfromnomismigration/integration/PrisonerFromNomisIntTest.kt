@@ -20,7 +20,7 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
     // TODO - complete when listener implemented
   }
 
-  private fun getNumberOfMessagesCurrentlyOnQueue(url: String = queueUrl): Int? {
+  private fun getNumberOfMessagesCurrentlyOnQueue(url: String = queueOffenderEventsUrl): Int? {
     val queueAttributes = awsSqsOffenderEventsClient.getQueueAttributes(url, listOf("ApproximateNumberOfMessages"))
     val messagesOnQueue = queueAttributes.attributes["ApproximateNumberOfMessages"]?.toInt()
     return messagesOnQueue
