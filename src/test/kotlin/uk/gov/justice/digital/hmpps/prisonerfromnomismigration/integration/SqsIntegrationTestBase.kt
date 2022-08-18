@@ -34,12 +34,12 @@ class SqsIntegrationTestBase : TestBase() {
   @Autowired
   private lateinit var hmppsQueueService: HmppsQueueService
 
-  internal val registersQueue by lazy { hmppsQueueService.findByQueueId("migration") as HmppsQueue }
+  internal val visitsMigrationQueue by lazy { hmppsQueueService.findByQueueId("migrationvisits") as HmppsQueue }
 
-  internal val awsSqsClient by lazy { registersQueue.sqsClient }
-  internal val awsSqsDlqClient by lazy { registersQueue.sqsDlqClient }
-  internal val queueUrl by lazy { registersQueue.queueUrl }
-  internal val dlqUrl by lazy { registersQueue.dlqUrl }
+  internal val awsSqsVisitsMigrationClient by lazy { visitsMigrationQueue.sqsClient }
+  internal val awsSqsVisitsMigrationDlqClient by lazy { visitsMigrationQueue.sqsDlqClient }
+  internal val visitsMigrationQueueUrl by lazy { visitsMigrationQueue.queueUrl }
+  internal val visitsMigrationDlqUrl by lazy { visitsMigrationQueue.dlqUrl }
 
   @Autowired
   protected lateinit var jwtAuthHelper: JwtAuthHelper
@@ -52,8 +52,8 @@ class SqsIntegrationTestBase : TestBase() {
 
   @BeforeEach
   fun cleanQueue() {
-    awsSqsClient.purgeQueue(PurgeQueueRequest(queueUrl))
-    awsSqsDlqClient?.purgeQueue(PurgeQueueRequest(dlqUrl))
+    awsSqsVisitsMigrationClient.purgeQueue(PurgeQueueRequest(visitsMigrationQueueUrl))
+    awsSqsVisitsMigrationDlqClient?.purgeQueue(PurgeQueueRequest(visitsMigrationDlqUrl))
   }
 
   companion object {

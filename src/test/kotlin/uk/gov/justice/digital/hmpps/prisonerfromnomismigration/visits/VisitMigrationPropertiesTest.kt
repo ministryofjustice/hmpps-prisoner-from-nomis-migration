@@ -23,7 +23,7 @@ internal class VisitMigrationPropertiesTest {
   private var hmppsQueueService: HmppsQueueService = mock()
   private var visitMappingService: VisitMappingService = mock()
   private val sqsClient: AmazonSQS = mock()
-  private var migrationQueue = HmppsQueue("migration", sqsClient, "queue", sqsClient, "dlq")
+  private var migrationQueue = HmppsQueue("migrationvisits", sqsClient, "queue", sqsClient, "dlq")
 
   private var visitMigrationProperties = VisitMigrationProperties(hmppsQueueService, visitMappingService)
   private lateinit var details: Map<String, Any>
@@ -140,7 +140,7 @@ internal class VisitMigrationPropertiesTest {
   }
 
   private fun mockQueuesWith(messagesOnQueueCount: Long, messagesInFlightCount: Long, messagesOnDLQCount: Long) {
-    whenever(hmppsQueueService.findByQueueId("migration")).thenReturn(migrationQueue)
+    whenever(hmppsQueueService.findByQueueId("migrationvisits")).thenReturn(migrationQueue)
     whenever(sqsClient.getQueueUrl("queue")).thenReturn(someGetQueueUrlResult())
     whenever(sqsClient.getQueueAttributes(someGetQueueAttributesRequest())).thenReturn(
       someGetQueueAttributesResult(

@@ -17,7 +17,7 @@ class VisitMigrationProperties(
   private var visitMappingService: VisitMappingService
 ) : InfoContributor {
 
-  internal val registersQueue by lazy { hmppsQueueService.findByQueueId("migration") as HmppsQueue }
+  internal val registersQueue by lazy { hmppsQueueService.findByQueueId("migrationvisits") as HmppsQueue }
 
   override fun contribute(builder: Builder) {
     val queueProperties = registersQueue.getQueueAttributes().map {

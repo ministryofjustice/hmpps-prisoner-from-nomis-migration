@@ -1,7 +1,10 @@
 hmpps.sqs:
   provider: localstack
   queues:
-    migration:
+    migrationvisits:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
+    migrationincentives:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
     audit:

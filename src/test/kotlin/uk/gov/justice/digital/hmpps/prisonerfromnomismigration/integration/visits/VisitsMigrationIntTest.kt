@@ -144,7 +144,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
 
       // stub 25 migrated records and 1 fake a failure
       visitMappingApi.stubVisitMappingByMigrationId(count = 25)
-      awsSqsDlqClient!!.sendMessage(dlqUrl, """{ "message": "some error" }""")
+      awsSqsVisitsMigrationDlqClient!!.sendMessage(visitsMigrationDlqUrl, """{ "message": "some error" }""")
 
       webTestClient.post().uri("/migrate/visits")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
