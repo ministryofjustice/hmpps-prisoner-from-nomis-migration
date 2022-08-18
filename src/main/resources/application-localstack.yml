@@ -10,3 +10,6 @@ hmpps.sqs:
     audit:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    event:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
