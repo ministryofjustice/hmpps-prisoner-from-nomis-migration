@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.springframework.boot.actuate.info.Info.Builder
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VISITS_QUEUE_ID
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
 import java.time.LocalDateTime
@@ -23,7 +24,7 @@ internal class VisitMigrationPropertiesTest {
   private var hmppsQueueService: HmppsQueueService = mock()
   private var visitMappingService: VisitMappingService = mock()
   private val sqsClient: AmazonSQS = mock()
-  private var migrationQueue = HmppsQueue("migrationvisits", sqsClient, "queue", sqsClient, "dlq")
+  private var migrationQueue = HmppsQueue(VISITS_QUEUE_ID, sqsClient, "queue", sqsClient, "dlq")
 
   private var visitMigrationProperties = VisitMigrationProperties(hmppsQueueService, visitMappingService)
   private lateinit var details: Map<String, Any>
@@ -140,7 +141,7 @@ internal class VisitMigrationPropertiesTest {
   }
 
   private fun mockQueuesWith(messagesOnQueueCount: Long, messagesInFlightCount: Long, messagesOnDLQCount: Long) {
-    whenever(hmppsQueueService.findByQueueId("migrationvisits")).thenReturn(migrationQueue)
+    whenever(hmppsQueueService.findByQueueId(VISITS_QUEUE_ID)).thenReturn(migrationQueue)
     whenever(sqsClient.getQueueUrl("queue")).thenReturn(someGetQueueUrlResult())
     whenever(sqsClient.getQueueAttributes(someGetQueueAttributesRequest())).thenReturn(
       someGetQueueAttributesResult(

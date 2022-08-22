@@ -9,6 +9,7 @@ import org.springframework.jms.annotation.JmsListener
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.context
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VISITS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMessages.CANCEL_MIGRATE_VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMessages.MIGRATE_VISIT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMessages.MIGRATE_VISITS
@@ -26,8 +27,7 @@ class MigrationVisitsMessageListener(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  // TODO can we move to a constant?
-  @JmsListener(destination = "migrationvisits", containerFactory = "hmppsQueueContainerFactoryProxy")
+  @JmsListener(destination = VISITS_QUEUE_ID, containerFactory = "hmppsQueueContainerFactoryProxy")
   fun onMessage(message: String, rawMessage: SQSTextMessage) {
     log.debug("Received message {}", message)
     val migrationMessage: MigrationMessage<VisitMessages, *> = message.fromJson()

@@ -13,6 +13,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.Incent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.MIGRATE_INCENTIVES_BY_PAGE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.MIGRATE_INCENTIVES_STATUS_CHECK
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.context
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.INCENTIVES_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 
 @Service
@@ -25,7 +26,7 @@ class MigrationIncentivesMessageListener(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  @JmsListener(destination = "migrationincentives", containerFactory = "hmppsQueueContainerFactoryProxy")
+  @JmsListener(destination = INCENTIVES_QUEUE_ID, containerFactory = "hmppsQueueContainerFactoryProxy")
   fun onMessage(message: String, rawMessage: SQSTextMessage) {
     log.debug("Received message {}", message)
     val migrationMessage: MigrationMessage<IncentiveMessages, *> = message.fromJson()

@@ -13,7 +13,9 @@ class MigrationMessage<M, T>(
   val context: MigrationContext<T>
 )
 
+const val VISITS_QUEUE_ID = "migrationvisits"
+const val INCENTIVES_QUEUE_ID = "migrationincentives"
 enum class MigrationType(val queueId: String) {
-  VISITS("migrationvisits"),
-  INCENTIVES("migrationincentives")
+  VISITS(VISITS_QUEUE_ID),
+  INCENTIVES(INCENTIVES_QUEUE_ID)
 }
