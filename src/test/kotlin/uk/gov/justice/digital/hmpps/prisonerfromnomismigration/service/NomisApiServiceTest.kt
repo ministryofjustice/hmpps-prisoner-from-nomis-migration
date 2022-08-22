@@ -20,6 +20,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.net.HttpURLConnection
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 @SpringAPIServiceTest
@@ -371,5 +372,253 @@ internal class NomisApiServiceTest {
         }.isInstanceOf(WebClientResponseException.NotFound::class.java)
       }
     }
+  }
+
+  @Nested
+  @DisplayName("getIncentives")
+  inner class GetIncentives {
+    @BeforeEach
+    internal fun setUp() {
+      nomisApi.stubFor(
+        get(
+          urlPathEqualTo("/incentives/ids")
+        ).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpURLConnection.HTTP_OK)
+            .withBody(incentivePagedResponse())
+        )
+      )
+    }
+
+    @Test
+    internal fun `will supply authentication token`() {
+      runBlocking {
+        nomisService.getIncentives(
+          fromDate = LocalDate.parse("2020-01-01"),
+          toDate = LocalDate.parse("2020-01-02"),
+          pageNumber = 23,
+          pageSize = 10
+        )
+      }
+      nomisApi.verify(
+        getRequestedFor(
+          urlPathEqualTo("/incentives/ids")
+        )
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE"))
+      )
+    }
+
+    @Test
+    internal fun `will pass all filters when present`() {
+      runBlocking {
+        nomisService.getIncentives(
+          fromDate = LocalDate.parse("2020-01-01"),
+          toDate = LocalDate.parse("2020-01-02"),
+          pageNumber = 23,
+          pageSize = 10
+        )
+      }
+      nomisApi.verify(
+        getRequestedFor(
+          urlEqualTo("/incentives/ids?fromDate=2020-01-01&toDate=2020-01-02&page=23&size=10")
+        )
+      )
+    }
+
+    @Test
+    internal fun `will pass empty filters when not present`() {
+      runBlocking {
+        nomisService.getIncentives(
+          fromDate = null,
+          toDate = null,
+          pageNumber = 23,
+          pageSize = 10
+        )
+      }
+      nomisApi.verify(
+        getRequestedFor(
+          urlEqualTo("/incentives/ids?fromDate&toDate&page=23&size=10")
+        )
+      )
+    }
+
+    @Test
+    internal fun `will return paging info along with the incentive ids`() {
+      nomisApi.stubFor(
+        get(
+          urlPathEqualTo("/incentives/ids")
+        ).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpURLConnection.HTTP_OK)
+            .withBody(
+              """
+{
+    "content": [
+        {
+            "bookingId": 1,
+            "sequence": 1
+        },
+        {
+            "bookingId": 2,
+            "sequence": 1
+        },
+        {
+            "bookingId": 3,
+            "sequence": 1
+        },
+        {
+            "bookingId": 4,
+            "sequence": 1
+        },
+        {
+            "bookingId": 5,
+            "sequence": 1
+        },
+        {
+            "bookingId": 6,
+            "sequence": 1
+        },
+        {
+            "bookingId": 7,
+            "sequence": 1
+        },
+        {
+            "bookingId": 8,
+            "sequence": 1
+        },
+        {
+            "bookingId": 9,
+            "sequence": 3
+        },
+        {
+            "bookingId": 10,
+            "sequence": 2
+        }
+    ],
+    "pageable": {
+        "sort": {
+            "empty": false,
+            "sorted": true,
+            "unsorted": false
+        },
+        "offset": 0,
+        "pageSize": 10,
+        "pageNumber": 23,
+        "paged": true,
+        "unpaged": false
+    },
+    "last": false,
+    "totalPages": 4190,
+    "totalElements": 41900,
+    "size": 10,
+    "number": 23,
+    "sort": {
+        "empty": false,
+        "sorted": true,
+        "unsorted": false
+    },
+    "first": true,
+    "numberOfElements": 10,
+    "empty": false
+}                
+      
+    """
+            )
+        )
+      )
+
+      val incentives = runBlocking {
+        nomisService.getIncentives(
+          fromDate = LocalDate.parse("2020-01-01"),
+          toDate = LocalDate.parse("2020-01-02"),
+          pageNumber = 23,
+          pageSize = 10
+        )
+      }
+
+      assertThat(incentives.content).hasSize(10)
+      assertThat(incentives.content).extracting<Long>(IncentiveId::bookingId)
+        .containsExactly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+      assertThat(incentives.content).extracting<Long>(IncentiveId::sequence)
+        .containsExactly(1, 1, 1, 1, 1, 1, 1, 1, 3, 2)
+      assertThat(incentives.totalPages).isEqualTo(4190)
+      assertThat(incentives.pageable.pageNumber).isEqualTo(23)
+      assertThat(incentives.totalElements).isEqualTo(41900)
+    }
+
+    private fun incentivePagedResponse() = """
+{
+    "content": [
+        {
+            "bookingId": 1,
+            "sequence": 1
+        },
+        {
+            "bookingId": 2,
+            "sequence": 1
+        },
+        {
+            "bookingId": 3,
+            "sequence": 1
+        },
+        {
+            "bookingId": 4,
+            "sequence": 1
+        },
+        {
+            "bookingId": 5,
+            "sequence": 1
+        },
+        {
+            "bookingId": 6,
+            "sequence": 1
+        },
+        {
+            "bookingId": 7,
+            "sequence": 1
+        },
+        {
+            "bookingId": 8,
+            "sequence": 1
+        },
+        {
+            "bookingId": 9,
+            "sequence": 1
+        },
+        {
+            "bookingId": 10,
+            "sequence": 1
+        }
+    ],
+    "pageable": {
+        "sort": {
+            "empty": false,
+            "sorted": true,
+            "unsorted": false
+        },
+        "offset": 0,
+        "pageSize": 10,
+        "pageNumber": 23,
+        "paged": true,
+        "unpaged": false
+    },
+    "last": false,
+    "totalPages": 4190,
+    "totalElements": 41900,
+    "size": 10,
+    "number": 23,
+    "sort": {
+        "empty": false,
+        "sorted": true,
+        "unsorted": false
+    },
+    "first": true,
+    "numberOfElements": 10,
+    "empty": false
+}                
+      
+    """.trimIndent()
   }
 }
