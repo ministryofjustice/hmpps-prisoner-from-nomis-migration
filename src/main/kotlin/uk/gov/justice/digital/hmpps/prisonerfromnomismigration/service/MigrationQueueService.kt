@@ -51,24 +51,24 @@ class MigrationQueueService(
   }
 
   // given counts are approximations there is only a probable chance this returns the correct result
-  fun isItProbableThatThereAreStillMessagesToBeProcessed(context: MigrationContext<*>): Boolean {
-    val queue = hmppsQueueService.findByQueueId(context.type.queueId)
-      ?: throw IllegalStateException("Queue not found for ${context.type.queueId}")
+  fun isItProbableThatThereAreStillMessagesToBeProcessed(type: MigrationType): Boolean {
+    val queue = hmppsQueueService.findByQueueId(type.queueId)
+      ?: throw IllegalStateException("Queue not found for ${type.queueId}")
 
     return queue.sqsClient.countMessagesOnQueue(queue.queueUrl) > 0
   }
 
-  fun countMessagesThatHaveFailed(context: MigrationContext<*>): Long {
-    val queue = hmppsQueueService.findByQueueId(context.type.queueId)
-      ?: throw IllegalStateException("Queue not found for ${context.type.queueId}")
+  fun countMessagesThatHaveFailed(type: MigrationType): Long {
+    val queue = hmppsQueueService.findByQueueId(type.queueId)
+      ?: throw IllegalStateException("Queue not found for ${type.queueId}")
 
     return queue.sqsDlqClient!!.countMessagesOnQueue(queue.dlqUrl!!).toLong()
   }
 
   private fun Any.toJson() = objectMapper.writeValueAsString(this)
-  fun purgeAllMessages(context: MigrationContext<*>) {
-    val queue = hmppsQueueService.findByQueueId(context.type.queueId)
-      ?: throw IllegalStateException("Queue not found for ${context.type.queueId}")
+  fun purgeAllMessages(type: MigrationType) {
+    val queue = hmppsQueueService.findByQueueId(type.queueId)
+      ?: throw IllegalStateException("Queue not found for ${type.queueId}")
     // try purge first, since it is rate limited fall back to less efficient read/delete method
     kotlin.runCatching {
       hmppsQueueService.purgeQueue(
@@ -111,14 +111,15 @@ class MigrationQueueService(
     migrationContext: MigrationContext<*>,
     message: T
   ) {
-    purgeAllMessages(migrationContext)
+    purgeAllMessages(migrationContext.type)
     // so that MIGRATE_<TYPE>_BY_PAGE messages that are currently generating large numbers of messages
     // have their messages immediately purged, keep purging messages every second for around 10 seconds
     log.debug("Starting to purge ${(purgeTotalTime.toMillis() / purgeFrequency.toMillis()).toInt()} times")
+    @Suppress("OPT_IN_USAGE")
     GlobalScope.launch {
       repeat((purgeTotalTime.toMillis() / purgeFrequency.toMillis()).toInt()) {
         delay(purgeFrequency.toMillis())
-        purgeAllMessages(migrationContext)
+        purgeAllMessages(migrationContext.type)
       }
       delay(purgeFrequency.toMillis())
       log.debug("Purging finished. Will send cancel shutdown messages")

@@ -188,7 +188,7 @@ class VisitsMigrationService(
        when checking if there are messages to process, it is always an estimation due to SQS, therefore once
        we think there are no messages we check several times in row reducing probability of false positives significantly
     */
-    if (queueService.isItProbableThatThereAreStillMessagesToBeProcessed(context)) {
+    if (queueService.isItProbableThatThereAreStillMessagesToBeProcessed(context.type)) {
       queueService.sendMessage(
         MIGRATE_VISITS_STATUS_CHECK,
         MigrationContext(
@@ -210,7 +210,7 @@ class VisitsMigrationService(
         )
         migrationHistoryService.recordMigrationCompleted(
           migrationId = context.migrationId,
-          recordsFailed = queueService.countMessagesThatHaveFailed(context),
+          recordsFailed = queueService.countMessagesThatHaveFailed(context.type),
           recordsMigrated = visitMappingService.getMigrationCount(context.migrationId),
         )
       } else {
@@ -231,8 +231,8 @@ class VisitsMigrationService(
        when checking if there are messages to process, it is always an estimation due to SQS, therefore once
        we think there are no messages we check several times in row reducing probability of false positives significantly
     */
-    if (queueService.isItProbableThatThereAreStillMessagesToBeProcessed(context)) {
-      queueService.purgeAllMessages(context)
+    if (queueService.isItProbableThatThereAreStillMessagesToBeProcessed(context.type)) {
+      queueService.purgeAllMessages(context.type)
       queueService.sendMessage(
         CANCEL_MIGRATE_VISITS,
         MigrationContext(
@@ -254,11 +254,11 @@ class VisitsMigrationService(
         )
         migrationHistoryService.recordMigrationCancelled(
           migrationId = context.migrationId,
-          recordsFailed = queueService.countMessagesThatHaveFailed(context),
+          recordsFailed = queueService.countMessagesThatHaveFailed(context.type),
           recordsMigrated = visitMappingService.getMigrationCount(context.migrationId),
         )
       } else {
-        queueService.purgeAllMessages(context)
+        queueService.purgeAllMessages(context.type)
         queueService.sendMessage(
           CANCEL_MIGRATE_VISITS,
           MigrationContext(

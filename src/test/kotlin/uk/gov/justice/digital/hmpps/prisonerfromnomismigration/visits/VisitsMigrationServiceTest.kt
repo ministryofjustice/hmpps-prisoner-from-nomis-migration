@@ -592,7 +592,7 @@ internal class VisitsMigrationServiceTest {
           )
         )
 
-        verify(queueService).purgeAllMessages(check { assertThat(it.type).isEqualTo(VISITS) })
+        verify(queueService).purgeAllMessages(check { assertThat(it).isEqualTo(VISITS) })
 
         verify(queueService).sendMessage(
           message = eq(CANCEL_MIGRATE_VISITS),
@@ -614,7 +614,7 @@ internal class VisitsMigrationServiceTest {
           )
         )
 
-        verify(queueService, never()).purgeAllMessages(check { assertThat(it.type).isEqualTo(VISITS) })
+        verify(queueService, never()).purgeAllMessages(check { assertThat(it).isEqualTo(VISITS) })
         verify(queueService, never()).sendMessage(
           message = eq(CANCEL_MIGRATE_VISITS), context = any(), delaySeconds = any()
         )

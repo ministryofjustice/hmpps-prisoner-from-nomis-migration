@@ -121,7 +121,7 @@ class IncentivesMigrationService(
        when checking if there are messages to process, it is always an estimation due to SQS, therefore once
        we think there are no messages we check several times in row reducing probability of false positives significantly
     */
-    if (queueService.isItProbableThatThereAreStillMessagesToBeProcessed(context)) {
+    if (queueService.isItProbableThatThereAreStillMessagesToBeProcessed(context.type)) {
       queueService.sendMessage(
         MIGRATE_INCENTIVES_STATUS_CHECK,
         MigrationContext(
@@ -143,7 +143,7 @@ class IncentivesMigrationService(
         )
         migrationHistoryService.recordMigrationCompleted(
           migrationId = context.migrationId,
-          recordsFailed = queueService.countMessagesThatHaveFailed(context),
+          recordsFailed = queueService.countMessagesThatHaveFailed(context.type),
           recordsMigrated = 0 // TODO calculated migrated
         )
       } else {
@@ -164,8 +164,8 @@ class IncentivesMigrationService(
        when checking if there are messages to process, it is always an estimation due to SQS, therefore once
        we think there are no messages we check several times in row reducing probability of false positives significantly
     */
-    if (queueService.isItProbableThatThereAreStillMessagesToBeProcessed(context)) {
-      queueService.purgeAllMessages(context)
+    if (queueService.isItProbableThatThereAreStillMessagesToBeProcessed(context.type)) {
+      queueService.purgeAllMessages(context.type)
       queueService.sendMessage(
         CANCEL_MIGRATE_INCENTIVES,
         MigrationContext(
@@ -187,11 +187,11 @@ class IncentivesMigrationService(
         )
         migrationHistoryService.recordMigrationCancelled(
           migrationId = context.migrationId,
-          recordsFailed = queueService.countMessagesThatHaveFailed(context),
+          recordsFailed = queueService.countMessagesThatHaveFailed(context.type),
           recordsMigrated = 0 // TODO calculated migrated
         )
       } else {
-        queueService.purgeAllMessages(context)
+        queueService.purgeAllMessages(context.type)
         queueService.sendMessage(
           CANCEL_MIGRATE_INCENTIVES,
           MigrationContext(
