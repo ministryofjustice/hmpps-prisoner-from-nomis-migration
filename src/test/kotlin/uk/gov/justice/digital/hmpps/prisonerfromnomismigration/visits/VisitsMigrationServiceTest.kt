@@ -33,12 +33,6 @@ import org.springframework.data.domain.Pageable
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.CANCEL_MIGRATE_VISITS
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISIT
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_BY_PAGE
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_STATUS_CHECK
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.RETRY_VISIT_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
@@ -49,6 +43,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisLead
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisVisit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisVisitor
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VisitId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMessages.CANCEL_MIGRATE_VISITS
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMessages.MIGRATE_VISIT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMessages.MIGRATE_VISITS
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMessages.MIGRATE_VISITS_BY_PAGE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMessages.MIGRATE_VISITS_STATUS_CHECK
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMessages.RETRY_VISIT_MAPPING
 import java.time.LocalDateTime
 
 @ExtendWith(MockitoExtension::class)
@@ -280,6 +280,7 @@ internal class VisitsMigrationServiceTest {
     internal fun `will send a page message for every page (200) of visits `() {
       service.divideVisitsByPage(
         MigrationContext(
+          type = VISITS,
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
           body = VisitsMigrationFilter(
             prisonIds = listOf("LEI", "BXI"),
@@ -299,6 +300,7 @@ internal class VisitsMigrationServiceTest {
     internal fun `will also send a single MIGRATION_STATUS_CHECK message`() {
       service.divideVisitsByPage(
         MigrationContext(
+          type = VISITS,
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
           body = VisitsMigrationFilter(
             prisonIds = listOf("LEI", "BXI"),
@@ -318,6 +320,7 @@ internal class VisitsMigrationServiceTest {
     internal fun `each page with have the filter and context attached`() {
       service.divideVisitsByPage(
         MigrationContext(
+          type = VISITS,
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
           body = VisitsMigrationFilter(
             prisonIds = listOf("LEI", "BXI"),
@@ -348,6 +351,7 @@ internal class VisitsMigrationServiceTest {
 
       service.divideVisitsByPage(
         MigrationContext(
+          type = VISITS,
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
           body = VisitsMigrationFilter(
             prisonIds = listOf("LEI", "BXI"),
@@ -388,14 +392,17 @@ internal class VisitsMigrationServiceTest {
     inner class MessagesOnQueue {
       @BeforeEach
       internal fun setUp() {
-        whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed()).thenReturn(true)
+        whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed(any())).thenReturn(true)
       }
 
       @Test
       internal fun `will check again in 10 seconds`() {
         service.migrateVisitsStatusCheck(
           MigrationContext(
-            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitMigrationStatusCheck()
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitMigrationStatusCheck()
           )
         )
 
@@ -408,6 +415,7 @@ internal class VisitsMigrationServiceTest {
       internal fun `will check again in 10 second and reset even when previously started finishing up phase`() {
         service.migrateVisitsStatusCheck(
           MigrationContext(
+            type = VISITS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
             body = VisitMigrationStatusCheck(checkCount = 4)
@@ -429,8 +437,8 @@ internal class VisitsMigrationServiceTest {
     inner class NoMessagesOnQueue {
       @BeforeEach
       internal fun setUp() {
-        whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed()).thenReturn(false)
-        whenever(queueService.countMessagesThatHaveFailed()).thenReturn(0)
+        whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed(any())).thenReturn(false)
+        whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(0)
         whenever(visitMappingService.getMigrationCount(any())).thenReturn(0)
       }
 
@@ -438,6 +446,7 @@ internal class VisitsMigrationServiceTest {
       internal fun `will increment check count and try again a second when only checked 9 times`() {
         service.migrateVisitsStatusCheck(
           MigrationContext(
+            type = VISITS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
             body = VisitMigrationStatusCheck(checkCount = 9)
@@ -457,6 +466,7 @@ internal class VisitsMigrationServiceTest {
       internal fun `will finish off when checked 10 times previously`() {
         service.migrateVisitsStatusCheck(
           MigrationContext(
+            type = VISITS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
             body = VisitMigrationStatusCheck(checkCount = 10)
@@ -472,7 +482,10 @@ internal class VisitsMigrationServiceTest {
       internal fun `will add completed telemetry when finishing off`() {
         service.migrateVisitsStatusCheck(
           MigrationContext(
-            migrationId = "2020-05-23T11:30:00", estimatedCount = 23, body = VisitMigrationStatusCheck(checkCount = 10)
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 23,
+            body = VisitMigrationStatusCheck(checkCount = 10)
           )
         )
 
@@ -489,12 +502,15 @@ internal class VisitsMigrationServiceTest {
 
       @Test
       internal fun `will update migration history record when finishing off`() {
-        whenever(queueService.countMessagesThatHaveFailed()).thenReturn(2)
+        whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(2)
         whenever(visitMappingService.getMigrationCount("2020-05-23T11:30:00")).thenReturn(21)
 
         service.migrateVisitsStatusCheck(
           MigrationContext(
-            migrationId = "2020-05-23T11:30:00", estimatedCount = 23, body = VisitMigrationStatusCheck(checkCount = 10)
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 23,
+            body = VisitMigrationStatusCheck(checkCount = 10)
           )
         )
 
@@ -513,18 +529,21 @@ internal class VisitsMigrationServiceTest {
     inner class MessagesOnQueue {
       @BeforeEach
       internal fun setUp() {
-        whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed()).thenReturn(true)
+        whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed(any())).thenReturn(true)
       }
 
       @Test
       internal fun `will check again in 10 seconds`() {
         service.cancelMigrateVisitsStatusCheck(
           MigrationContext(
-            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitMigrationStatusCheck()
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitMigrationStatusCheck()
           )
         )
 
-        verify(queueService).purgeAllMessages()
+        verify(queueService).purgeAllMessages(any())
         verify(queueService).sendMessage(
           eq(CANCEL_MIGRATE_VISITS), any(), eq(10)
         )
@@ -534,13 +553,14 @@ internal class VisitsMigrationServiceTest {
       internal fun `will check again in 10 second and reset even when previously started finishing up phase`() {
         service.cancelMigrateVisitsStatusCheck(
           MigrationContext(
+            type = VISITS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
             body = VisitMigrationStatusCheck(checkCount = 4)
           )
         )
 
-        verify(queueService).purgeAllMessages()
+        verify(queueService).purgeAllMessages(any())
         verify(queueService).sendMessage(
           message = eq(CANCEL_MIGRATE_VISITS),
           context = check<MigrationContext<VisitMigrationStatusCheck>> {
@@ -556,8 +576,8 @@ internal class VisitsMigrationServiceTest {
     inner class NoMessagesOnQueue {
       @BeforeEach
       internal fun setUp() {
-        whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed()).thenReturn(false)
-        whenever(queueService.countMessagesThatHaveFailed()).thenReturn(0)
+        whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed(any())).thenReturn(false)
+        whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(0)
         whenever(visitMappingService.getMigrationCount(any())).thenReturn(0)
       }
 
@@ -565,13 +585,14 @@ internal class VisitsMigrationServiceTest {
       internal fun `will increment check count and try again a second when only checked 9 times`() {
         service.cancelMigrateVisitsStatusCheck(
           MigrationContext(
+            type = VISITS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
             body = VisitMigrationStatusCheck(checkCount = 9)
           )
         )
 
-        verify(queueService).purgeAllMessages()
+        verify(queueService).purgeAllMessages(check { assertThat(it).isEqualTo(VISITS) })
 
         verify(queueService).sendMessage(
           message = eq(CANCEL_MIGRATE_VISITS),
@@ -586,13 +607,14 @@ internal class VisitsMigrationServiceTest {
       internal fun `will finish off when checked 10 times previously`() {
         service.cancelMigrateVisitsStatusCheck(
           MigrationContext(
+            type = VISITS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
             body = VisitMigrationStatusCheck(checkCount = 10)
           )
         )
 
-        verify(queueService, never()).purgeAllMessages()
+        verify(queueService, never()).purgeAllMessages(check { assertThat(it).isEqualTo(VISITS) })
         verify(queueService, never()).sendMessage(
           message = eq(CANCEL_MIGRATE_VISITS), context = any(), delaySeconds = any()
         )
@@ -602,7 +624,10 @@ internal class VisitsMigrationServiceTest {
       internal fun `will add completed telemetry when finishing off`() {
         service.cancelMigrateVisitsStatusCheck(
           MigrationContext(
-            migrationId = "2020-05-23T11:30:00", estimatedCount = 23, body = VisitMigrationStatusCheck(checkCount = 10)
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 23,
+            body = VisitMigrationStatusCheck(checkCount = 10)
           )
         )
 
@@ -619,12 +644,15 @@ internal class VisitsMigrationServiceTest {
 
       @Test
       internal fun `will update migration history record when cancelling`() {
-        whenever(queueService.countMessagesThatHaveFailed()).thenReturn(2)
+        whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(2)
         whenever(visitMappingService.getMigrationCount("2020-05-23T11:30:00")).thenReturn(21)
 
         service.cancelMigrateVisitsStatusCheck(
           MigrationContext(
-            migrationId = "2020-05-23T11:30:00", estimatedCount = 23, body = VisitMigrationStatusCheck(checkCount = 10)
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 23,
+            body = VisitMigrationStatusCheck(checkCount = 10)
           )
         )
 
@@ -650,6 +678,7 @@ internal class VisitsMigrationServiceTest {
     internal fun `will pass filter through to get total count along with a tiny page count`() {
       service.migrateVisitsForPage(
         MigrationContext(
+          type = VISITS,
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
           body = VisitsPage(
             filter = VisitsMigrationFilter(
@@ -679,6 +708,7 @@ internal class VisitsMigrationServiceTest {
     internal fun `will send MIGRATE_VISIT with context for each visit`() {
       service.migrateVisitsForPage(
         MigrationContext(
+          type = VISITS,
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
           body = VisitsPage(
             filter = VisitsMigrationFilter(
@@ -715,6 +745,7 @@ internal class VisitsMigrationServiceTest {
 
       service.migrateVisitsForPage(
         MigrationContext(
+          type = VISITS,
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
           body = VisitsPage(
             filter = VisitsMigrationFilter(
@@ -755,6 +786,7 @@ internal class VisitsMigrationServiceTest {
 
       service.migrateVisitsForPage(
         MigrationContext(
+          type = VISITS,
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
           body = VisitsPage(
             filter = VisitsMigrationFilter(
@@ -824,7 +856,10 @@ internal class VisitsMigrationServiceTest {
     internal fun `will retrieve visit from NOMIS`() {
       service.migrateVisit(
         MigrationContext(
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+          type = VISITS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = VisitId(123)
         )
       )
 
@@ -844,11 +879,17 @@ internal class VisitsMigrationServiceTest {
 
       service.migrateVisit(
         MigrationContext(
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+          type = VISITS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = VisitId(123)
         )
       )
 
-      verify(visitMappingService).findRoomMappingBlocking(prisonId = "BXI", agencyInternalLocationCode = "MDI-VISITS-OFF_VIS")
+      verify(visitMappingService).findRoomMappingBlocking(
+        prisonId = "BXI",
+        agencyInternalLocationCode = "MDI-VISITS-OFF_VIS"
+      )
     }
 
     @Test
@@ -868,7 +909,7 @@ internal class VisitsMigrationServiceTest {
       assertThatThrownBy {
         service.migrateVisit(
           MigrationContext(
-            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
           )
         )
       }.isInstanceOf(NoRoomMappingFoundException::class.java)
@@ -905,7 +946,7 @@ internal class VisitsMigrationServiceTest {
 
       service.migrateVisit(
         MigrationContext(
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+          type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
         )
       )
 
@@ -938,7 +979,7 @@ internal class VisitsMigrationServiceTest {
       assertThatThrownBy {
         service.migrateVisit(
           MigrationContext(
-            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
           )
         )
       }.isInstanceOf(NoRoomMappingFoundException::class.java)
@@ -959,7 +1000,7 @@ internal class VisitsMigrationServiceTest {
 
       service.migrateVisit(
         MigrationContext(
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+          type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
         )
       )
 
@@ -977,7 +1018,7 @@ internal class VisitsMigrationServiceTest {
     internal fun `will create a visit in VSIP`() {
       service.migrateVisit(
         MigrationContext(
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+          type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
         )
       )
 
@@ -999,7 +1040,7 @@ internal class VisitsMigrationServiceTest {
 
       service.migrateVisit(
         MigrationContext(
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+          type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
         )
       )
 
@@ -1026,7 +1067,7 @@ internal class VisitsMigrationServiceTest {
 
       service.migrateVisit(
         MigrationContext(
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+          type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
         )
       )
 
@@ -1053,7 +1094,7 @@ internal class VisitsMigrationServiceTest {
 
       service.migrateVisit(
         MigrationContext(
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+          type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
         )
       )
 
@@ -1086,7 +1127,7 @@ internal class VisitsMigrationServiceTest {
 
         service.migrateVisit(
           MigrationContext(
-            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
           )
         )
       }
@@ -1176,7 +1217,7 @@ internal class VisitsMigrationServiceTest {
 
         service.migrateVisit(
           MigrationContext(
-            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
           )
         )
 
@@ -1205,7 +1246,7 @@ internal class VisitsMigrationServiceTest {
 
         service.migrateVisit(
           MigrationContext(
-            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
           )
         )
 
@@ -1234,7 +1275,7 @@ internal class VisitsMigrationServiceTest {
 
         service.migrateVisit(
           MigrationContext(
-            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
           )
         )
 
@@ -1266,7 +1307,7 @@ internal class VisitsMigrationServiceTest {
 
         service.migrateVisit(
           MigrationContext(
-            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
           )
         )
 
@@ -1294,7 +1335,7 @@ internal class VisitsMigrationServiceTest {
 
         service.migrateVisit(
           MigrationContext(
-            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
           )
         )
 
@@ -1327,7 +1368,7 @@ internal class VisitsMigrationServiceTest {
 
         service.migrateVisit(
           MigrationContext(
-            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
           )
         )
 
@@ -1366,7 +1407,7 @@ internal class VisitsMigrationServiceTest {
 
         service.migrateVisit(
           MigrationContext(
-            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
           )
         )
 
@@ -1395,7 +1436,7 @@ internal class VisitsMigrationServiceTest {
 
         service.migrateVisit(
           MigrationContext(
-            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
           )
         )
 
@@ -1424,7 +1465,7 @@ internal class VisitsMigrationServiceTest {
 
         service.migrateVisit(
           MigrationContext(
-            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
           )
         )
 
@@ -1458,7 +1499,7 @@ internal class VisitsMigrationServiceTest {
 
         service.migrateVisit(
           MigrationContext(
-            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
           )
         )
 
@@ -1479,7 +1520,7 @@ internal class VisitsMigrationServiceTest {
 
         service.migrateVisit(
           MigrationContext(
-            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
           )
         )
 
@@ -1500,7 +1541,7 @@ internal class VisitsMigrationServiceTest {
 
         service.migrateVisit(
           MigrationContext(
-            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
           )
         )
 
@@ -1534,7 +1575,7 @@ internal class VisitsMigrationServiceTest {
 
         service.migrateVisit(
           MigrationContext(
-            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
           )
         )
 
@@ -1555,7 +1596,7 @@ internal class VisitsMigrationServiceTest {
 
         service.migrateVisit(
           MigrationContext(
-            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
           )
         )
 
@@ -1580,7 +1621,7 @@ internal class VisitsMigrationServiceTest {
 
       service.migrateVisit(
         MigrationContext(
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123456)
+          type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123456)
         )
       )
 
@@ -1604,7 +1645,7 @@ internal class VisitsMigrationServiceTest {
 
       service.migrateVisit(
         MigrationContext(
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123456)
+          type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123456)
         )
       )
 
@@ -1645,7 +1686,10 @@ internal class VisitsMigrationServiceTest {
 
         service.migrateVisit(
           MigrationContext(
-            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitId(123)
           )
         )
 
@@ -1680,7 +1724,10 @@ internal class VisitsMigrationServiceTest {
       internal fun `will do nothing`() {
         service.migrateVisit(
           MigrationContext(
-            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitId(123)
           )
         )
 

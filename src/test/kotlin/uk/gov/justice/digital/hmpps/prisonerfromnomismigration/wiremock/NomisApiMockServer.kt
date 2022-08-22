@@ -163,6 +163,57 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
       )
     }
   }
+
+  fun stubGetIncentivesInitialCount(totalElements: Long) {
+    nomisApi.stubFor(
+      get(
+        urlPathEqualTo("/incentives/ids")
+      )
+        .withQueryParam("page", equalTo("0"))
+        .withQueryParam("size", equalTo("1"))
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+            .withBody(incentivePagedResponse(totalElements = totalElements))
+        )
+    )
+  }
+
+  fun stubMultipleGetIncentivesCounts(totalElements: Long, pageSize: Long) {
+    // for each page create a response for each incentive id starting from 1 up to `totalElements`
+
+    val pages = (totalElements / pageSize) + 1
+    (0..pages).forEach { page ->
+      val startBookingId = (page * pageSize) + 1
+      val endBookingId = min((page * pageSize) + pageSize, totalElements)
+      nomisApi.stubFor(
+        get(
+          urlPathEqualTo("/incentives/ids")
+        )
+          .withQueryParam("page", equalTo(page.toString()))
+          .willReturn(
+            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+              .withBody(
+                incentivePagedResponse(
+                  totalElements = totalElements,
+                  bookingIds = (startBookingId..endBookingId).map { it },
+                  pageNumber = page,
+                  pageSize = pageSize
+                ),
+              )
+          )
+      )
+    }
+  }
+
+  fun verifyGetIncentivesFilter(fromDate: String, toDate: String) {
+    nomisApi.verify(
+      getRequestedFor(
+        urlPathEqualTo("/incentives/ids")
+      )
+        .withQueryParam("fromDate", equalTo(fromDate))
+        .withQueryParam("toDate", equalTo(toDate))
+    )
+  }
 }
 
 private fun visitResponse(visitId: Long) = """
@@ -234,6 +285,49 @@ private fun visitPagedResponse(
     },
     "first": true,
     "numberOfElements": ${visitIds.size},
+    "empty": false
+}                
+      
+  """.trimIndent()
+}
+
+private fun incentivePagedResponse(
+  totalElements: Long = 10,
+  bookingIds: List<Long> = (0L..10L).toList(),
+  pageSize: Long = 10,
+  pageNumber: Long = 0,
+): String {
+  val content = bookingIds.map { """{ "bookingId": $it, "sequence": 1 }""" }
+    .joinToString { it }
+  return """
+{
+    "content": [
+        $content
+    ],
+    "pageable": {
+        "sort": {
+            "empty": false,
+            "sorted": true,
+            "unsorted": false
+        },
+        "offset": 0,
+        "pageSize": $pageSize,
+        "pageNumber": $pageNumber,
+        "paged": true,
+        "unpaged": false
+    },
+    "last": false,
+    "totalPages": ${totalElements / pageSize + 1},
+    "totalElements": $totalElements,
+    "size": $pageSize,
+    "number": $pageNumber,
+    "sort": {
+        "empty": false,
+        "sorted": true,
+        "unsorted": false
+    },
+    "first": true,
+    "numberOfElements": ${bookingIds.size},
     "empty": false
 }                
       

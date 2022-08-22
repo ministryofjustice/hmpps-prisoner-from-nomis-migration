@@ -9,12 +9,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationCon
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatchId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.CANCEL_MIGRATE_VISITS
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISIT
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_BY_PAGE
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_STATUS_CHECK
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.RETRY_VISIT_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.VISITS
@@ -22,11 +16,17 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisCodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisVisit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VisitId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.asStringOrBlank
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMessages.CANCEL_MIGRATE_VISITS
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMessages.MIGRATE_VISIT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMessages.MIGRATE_VISITS
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMessages.MIGRATE_VISITS_BY_PAGE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMessages.MIGRATE_VISITS_STATUS_CHECK
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMessages.RETRY_VISIT_MAPPING
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
-import java.time.format.DateTimeFormatter
 
 @Service
 class VisitsMigrationService(
@@ -55,6 +55,7 @@ class VisitsMigrationService(
     ).totalElements
 
     return MigrationContext(
+      type = VISITS,
       migrationId = generateBatchId(),
       body = migrationFilter,
       estimatedCount = visitCount
@@ -187,7 +188,7 @@ class VisitsMigrationService(
        when checking if there are messages to process, it is always an estimation due to SQS, therefore once
        we think there are no messages we check several times in row reducing probability of false positives significantly
     */
-    if (queueService.isItProbableThatThereAreStillMessagesToBeProcessed()) {
+    if (queueService.isItProbableThatThereAreStillMessagesToBeProcessed(context.type)) {
       queueService.sendMessage(
         MIGRATE_VISITS_STATUS_CHECK,
         MigrationContext(
@@ -209,7 +210,7 @@ class VisitsMigrationService(
         )
         migrationHistoryService.recordMigrationCompleted(
           migrationId = context.migrationId,
-          recordsFailed = queueService.countMessagesThatHaveFailed(),
+          recordsFailed = queueService.countMessagesThatHaveFailed(context.type),
           recordsMigrated = visitMappingService.getMigrationCount(context.migrationId),
         )
       } else {
@@ -230,8 +231,8 @@ class VisitsMigrationService(
        when checking if there are messages to process, it is always an estimation due to SQS, therefore once
        we think there are no messages we check several times in row reducing probability of false positives significantly
     */
-    if (queueService.isItProbableThatThereAreStillMessagesToBeProcessed()) {
-      queueService.purgeAllMessages()
+    if (queueService.isItProbableThatThereAreStillMessagesToBeProcessed(context.type)) {
+      queueService.purgeAllMessages(context.type)
       queueService.sendMessage(
         CANCEL_MIGRATE_VISITS,
         MigrationContext(
@@ -253,11 +254,11 @@ class VisitsMigrationService(
         )
         migrationHistoryService.recordMigrationCancelled(
           migrationId = context.migrationId,
-          recordsFailed = queueService.countMessagesThatHaveFailed(),
+          recordsFailed = queueService.countMessagesThatHaveFailed(context.type),
           recordsMigrated = visitMappingService.getMigrationCount(context.migrationId),
         )
       } else {
-        queueService.purgeAllMessages()
+        queueService.purgeAllMessages(context.type)
         queueService.sendMessage(
           CANCEL_MIGRATE_VISITS,
           MigrationContext(
@@ -348,9 +349,13 @@ class VisitsMigrationService(
     )
     queueService.purgeAllMessagesNowAndAgainInTheNearFuture(
       MigrationContext(
-        context = MigrationContext(migrationId, migration.estimatedRecordCount, Unit),
+        context = MigrationContext(
+          type = VISITS,
+          migrationId, migration.estimatedRecordCount, Unit
+        ),
         body = VisitMigrationStatusCheck()
-      )
+      ),
+      message = CANCEL_MIGRATE_VISITS
     )
   }
 
@@ -442,8 +447,6 @@ private fun NomisCodeDescription.toVisitType() = when (this.code) {
 
 class NoRoomMappingFoundException(val prisonId: String, val agencyInternalLocationDescription: String) :
   RuntimeException("No room mapping found for prisonId $prisonId and agencyInternalLocationDescription $agencyInternalLocationDescription")
-
-private fun LocalDateTime?.asStringOrBlank(): String = this?.format(DateTimeFormatter.ISO_DATE_TIME) ?: ""
 
 data class VisitMapping(
   val nomisVisitId: Long,

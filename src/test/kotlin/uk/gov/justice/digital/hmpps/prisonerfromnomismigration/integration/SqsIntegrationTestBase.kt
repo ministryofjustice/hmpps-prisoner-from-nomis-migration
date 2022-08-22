@@ -12,6 +12,8 @@ import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.reactive.server.WebTestClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.JwtAuthHelper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.LocalStackContainer.setLocalStackProperties
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.INCENTIVES_QUEUE_ID
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VISITS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.HmppsAuthApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitMappingApiExtension
@@ -34,13 +36,16 @@ class SqsIntegrationTestBase : TestBase() {
   @Autowired
   private lateinit var hmppsQueueService: HmppsQueueService
 
-  internal val visitsMigrationQueue by lazy { hmppsQueueService.findByQueueId("migrationvisits") as HmppsQueue }
+  internal val visitsMigrationQueue by lazy { hmppsQueueService.findByQueueId(VISITS_QUEUE_ID) as HmppsQueue }
+  internal val incentivesMigrationQueue by lazy { hmppsQueueService.findByQueueId(INCENTIVES_QUEUE_ID) as HmppsQueue }
   internal val offenderEventsQueue by lazy { hmppsQueueService.findByQueueId("event") as HmppsQueue }
 
   internal val awsSqsVisitsMigrationClient by lazy { visitsMigrationQueue.sqsClient }
   internal val awsSqsVisitsMigrationDlqClient by lazy { visitsMigrationQueue.sqsDlqClient }
+  internal val awsSqsIncentivesMigrationDlqClient by lazy { incentivesMigrationQueue.sqsDlqClient }
   internal val visitsMigrationQueueUrl by lazy { visitsMigrationQueue.queueUrl }
   internal val visitsMigrationDlqUrl by lazy { visitsMigrationQueue.dlqUrl }
+  internal val incentivesMigrationDlqUrl by lazy { incentivesMigrationQueue.dlqUrl }
 
   internal val awsSqsOffenderEventsClient by lazy { offenderEventsQueue.sqsClient }
   internal val queueOffenderEventsUrl by lazy { offenderEventsQueue.queueUrl }

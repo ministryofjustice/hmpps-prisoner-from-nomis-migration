@@ -70,7 +70,7 @@ class MigrationHistoryService(
       migrationHistoryRepository.findById(migrationId)?.run {
         migrationHistoryRepository.save(
           this.copy(
-            status = MigrationStatus.CANCELLED_REQUESTED
+            status = CANCELLED_REQUESTED
           )
         )
       }
@@ -84,10 +84,6 @@ class MigrationHistoryService(
 
   fun isCancelling(migrationId: String) =
     runBlocking { migrationHistoryRepository.findById(migrationId)?.status == CANCELLED_REQUESTED }
-}
-
-enum class MigrationType {
-  VISITS,
 }
 
 enum class MigrationStatus {

@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits
 
 import com.amazon.sqs.javamessaging.message.SQSTextMessage
 import com.fasterxml.jackson.core.type.TypeReference
@@ -7,16 +7,15 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.jms.annotation.JmsListener
 import org.springframework.stereotype.Service
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationVisitsMessageListener.MigrationMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.CANCEL_MIGRATE_VISITS
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISIT
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_BY_PAGE
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.MIGRATE_VISITS_STATUS_CHECK
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Messages.RETRY_VISIT_MAPPING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.context
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VISITS_QUEUE_ID
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMessages.CANCEL_MIGRATE_VISITS
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMessages.MIGRATE_VISIT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMessages.MIGRATE_VISITS
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMessages.MIGRATE_VISITS_BY_PAGE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMessages.MIGRATE_VISITS_STATUS_CHECK
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMessages.RETRY_VISIT_MAPPING
 
 @Service
 class MigrationVisitsMessageListener(
@@ -28,10 +27,10 @@ class MigrationVisitsMessageListener(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  @JmsListener(destination = "migrationvisits", containerFactory = "hmppsQueueContainerFactoryProxy")
+  @JmsListener(destination = VISITS_QUEUE_ID, containerFactory = "hmppsQueueContainerFactoryProxy")
   fun onMessage(message: String, rawMessage: SQSTextMessage) {
     log.debug("Received message {}", message)
-    val migrationMessage: MigrationMessage<*> = message.fromJson()
+    val migrationMessage: MigrationMessage<VisitMessages, *> = message.fromJson()
     kotlin.runCatching {
       when (migrationMessage.type) {
         MIGRATE_VISITS -> visitsMigrationService.divideVisitsByPage(context(message.fromJson()))
@@ -47,14 +46,6 @@ class MigrationVisitsMessageListener(
     }
   }
 
-  class MigrationMessage<T>(
-    val type: Messages,
-    val context: MigrationContext<T>
-  )
-
   private inline fun <reified T> String.fromJson(): T =
     objectMapper.readValue(this, object : TypeReference<T>() {})
 }
-
-private inline fun <reified T> context(message: MigrationMessage<T>): MigrationContext<T> =
-  message.context

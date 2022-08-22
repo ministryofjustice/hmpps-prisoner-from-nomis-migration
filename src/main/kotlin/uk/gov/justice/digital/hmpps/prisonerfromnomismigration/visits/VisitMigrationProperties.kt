@@ -8,6 +8,7 @@ import com.amazonaws.services.sqs.model.QueueAttributeName.ApproximateNumberOfMe
 import org.springframework.boot.actuate.info.Info.Builder
 import org.springframework.boot.actuate.info.InfoContributor
 import org.springframework.stereotype.Component
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VISITS_QUEUE_ID
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
 
@@ -17,7 +18,7 @@ class VisitMigrationProperties(
   private var visitMappingService: VisitMappingService
 ) : InfoContributor {
 
-  internal val registersQueue by lazy { hmppsQueueService.findByQueueId("migrationvisits") as HmppsQueue }
+  internal val registersQueue by lazy { hmppsQueueService.findByQueueId(VISITS_QUEUE_ID) as HmppsQueue }
 
   override fun contribute(builder: Builder) {
     val queueProperties = registersQueue.getQueueAttributes().map {
