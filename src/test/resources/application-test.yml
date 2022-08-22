@@ -14,6 +14,9 @@ api.base.url:
 visits:
   page:
     size: 10
+incentives:
+  page:
+    size: 10
 
 spring:
   r2dbc:

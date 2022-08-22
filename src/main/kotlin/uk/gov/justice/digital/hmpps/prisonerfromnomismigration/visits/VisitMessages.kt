@@ -1,6 +1,6 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits
 
-enum class Messages {
+enum class VisitMessages {
   MIGRATE_VISITS,
   MIGRATE_VISITS_BY_PAGE,
   MIGRATE_VISIT,

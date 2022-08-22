@@ -1,0 +1,9 @@
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives
+
+enum class IncentiveMessages {
+  MIGRATE_INCENTIVES,
+  MIGRATE_INCENTIVES_BY_PAGE,
+  MIGRATE_INCENTIVE,
+  MIGRATE_INCENTIVES_STATUS_CHECK,
+  CANCEL_MIGRATE_INCENTIVES,
+}

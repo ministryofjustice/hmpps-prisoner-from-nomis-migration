@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomUsageResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationFilter
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Service
@@ -87,10 +88,48 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       .retrieve()
       .bodyToMono(typeReference<List<VisitRoomUsageResponse>>())
       .awaitSingle()
+
+  suspend fun getIncentives(
+    fromDate: LocalDate?,
+    toDate: LocalDate?,
+    pageNumber: Long,
+    pageSize: Long
+  ): PageImpl<IncentiveId> =
+    webClient.get()
+      .uri {
+        it.path("/incentives/ids")
+          .queryParam("fromDate", fromDate)
+          .queryParam("toDate", toDate)
+          .queryParam("page", pageNumber)
+          .queryParam("size", pageSize)
+          .build()
+      }
+      .retrieve()
+      .bodyToMono(typeReference<RestResponsePage<IncentiveId>>())
+      .awaitSingle()
+
+  fun getIncentivesBlocking(
+    fromDate: LocalDate?,
+    toDate: LocalDate?,
+    pageNumber: Long,
+    pageSize: Long
+  ): PageImpl<IncentiveId> = runBlocking {
+    getIncentives(
+      fromDate,
+      toDate,
+      pageNumber,
+      pageSize,
+    )
+  }
 }
 
 data class VisitId(
   val visitId: Long
+)
+
+data class IncentiveId(
+  val bookingId: Long,
+  val sequence: Long,
 )
 
 data class NomisVisitor(
