@@ -14,7 +14,7 @@ import uk.gov.justice.hmpps.sqs.HmppsQueueService
 
 @Component
 class IncentiveMigrationProperties(
-  private var hmppsQueueService: HmppsQueueService,
+  private val hmppsQueueService: HmppsQueueService,
 ) : InfoContributor {
 
   internal val queue by lazy { hmppsQueueService.findByQueueId(INCENTIVES_QUEUE_ID) as HmppsQueue }

@@ -14,8 +14,8 @@ import uk.gov.justice.hmpps.sqs.HmppsQueueService
 
 @Component
 class VisitMigrationProperties(
-  private var hmppsQueueService: HmppsQueueService,
-  private var visitMappingService: VisitMappingService
+  private val hmppsQueueService: HmppsQueueService,
+  private val visitMappingService: VisitMappingService
 ) : InfoContributor {
 
   internal val queue by lazy { hmppsQueueService.findByQueueId(VISITS_QUEUE_ID) as HmppsQueue }
