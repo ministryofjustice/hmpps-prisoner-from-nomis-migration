@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives
 
 import com.amazonaws.services.sqs.model.GetQueueAttributesRequest
 import com.amazonaws.services.sqs.model.GetQueueAttributesResult
@@ -8,17 +8,16 @@ import com.amazonaws.services.sqs.model.QueueAttributeName.ApproximateNumberOfMe
 import org.springframework.boot.actuate.info.Info.Builder
 import org.springframework.boot.actuate.info.InfoContributor
 import org.springframework.stereotype.Component
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VISITS_QUEUE_ID
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.INCENTIVES_QUEUE_ID
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
 
 @Component
-class VisitMigrationProperties(
+class IncentiveMigrationProperties(
   private var hmppsQueueService: HmppsQueueService,
-  private var visitMappingService: VisitMappingService
 ) : InfoContributor {
 
-  internal val queue by lazy { hmppsQueueService.findByQueueId(VISITS_QUEUE_ID) as HmppsQueue }
+  internal val queue by lazy { hmppsQueueService.findByQueueId(INCENTIVES_QUEUE_ID) as HmppsQueue }
 
   override fun contribute(builder: Builder) {
     val queueProperties = queue.getQueueAttributes().map {
@@ -34,17 +33,13 @@ class VisitMigrationProperties(
       )
     }.getOrElse { mapOf() }
 
-    val migrationProperties = visitMappingService.findLatestMigration()?.let {
-      val details = visitMappingService.getMigrationDetails(it.migrationId)
-      mapOf<String, Any?>(
-        "id" to it.migrationId,
-        "records migrated" to details.count,
-        "started" to details.startedDateTime
-      )
-    } ?: mapOf()
+    // TODO: we need the migrationId, current count and start time
+    // we can get 2 of these from history service, but current count still needs
+    // to be thought out
+    val migrationProperties = mapOf<String, Any>()
 
     builder.withDetail(
-      "last visits migration",
+      "last incentives migration",
       queueProperties + failureQueueProperties + migrationProperties
     )
   }
