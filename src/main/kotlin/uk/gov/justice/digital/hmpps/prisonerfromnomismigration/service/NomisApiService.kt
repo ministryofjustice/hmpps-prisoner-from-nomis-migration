@@ -121,6 +121,16 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       pageSize,
     )
   }
+
+  suspend fun getIncentive(
+    bookingId: Long,
+    sequence: Long
+  ): NomisIncentive =
+    webClient.get()
+      .uri("/incentives/booking-id/{bookingId}/incentive-sequence/{sequence}", bookingId, sequence)
+      .retrieve()
+      .bodyToMono(NomisIncentive::class.java)
+      .awaitSingle()
 }
 
 data class VisitId(
@@ -159,6 +169,16 @@ data class NomisVisit(
   val commentText: String? = null,
   val visitorConcernText: String? = null,
   val leadVisitor: NomisLeadVisitor? = null,
+)
+
+data class NomisIncentive(
+  val bookingId: Long,
+  val incentiveSequence: Long,
+  val commentText: String? = null,
+  val iepDateTime: LocalDateTime,
+  val prisonId: String,
+  val iepLevel: NomisCodeDescription,
+  val userId: String? = null,
 )
 
 class RestResponsePage<T> @JsonCreator(mode = JsonCreator.Mode.PROPERTIES) constructor(

@@ -214,6 +214,26 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
         .withQueryParam("toDate", equalTo(toDate))
     )
   }
+
+  fun stubGetIncentive(bookingId: Long, incentiveSequence: Long) {
+    nomisApi.stubFor(
+      get(
+        urlPathEqualTo("/incentives/booking-id/$bookingId/incentive-sequence/$incentiveSequence")
+      )
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+            .withBody(incentiveResponse(bookingId = bookingId, incentiveSequence = incentiveSequence))
+        )
+    )
+  }
+
+  fun verifyGetIncentive(bookingId: Long, incentiveSequence: Long) {
+    nomisApi.verify(
+      getRequestedFor(
+        urlPathEqualTo("/incentives/booking-id/$bookingId/incentive-sequence/$incentiveSequence")
+      )
+    )
+  }
 }
 
 private fun visitResponse(visitId: Long) = """
@@ -331,5 +351,23 @@ private fun incentivePagedResponse(
     "empty": false
 }                
       
+  """.trimIndent()
+}
+
+private fun incentiveResponse(
+  bookingId: Long = 2,
+  incentiveSequence: Long = 3,
+): String {
+  return """
+{
+  "bookingId":$bookingId,
+  "incentiveSequence":$incentiveSequence,
+  "commentText":"Mistake",
+  "iepDateTime":"2021-10-06T15:53:00",
+  "prisonId":"MDI",
+  "iepLevel":{"code":"STD","description":"Standard"},
+  "userId":"LBENNETT_GEN"
+  }
+   
   """.trimIndent()
 }
