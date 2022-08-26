@@ -31,6 +31,7 @@ dependencies {
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.6.4")
   implementation("io.jsonwebtoken:jjwt:0.9.1")
   implementation("io.opentelemetry:opentelemetry-api:1.17.0")
+  implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.3")
 
   runtimeOnly("org.postgresql:r2dbc-postgresql:0.9.1.RELEASE")
   runtimeOnly("org.springframework.boot:spring-boot-starter-jdbc")
