@@ -131,6 +131,16 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       .retrieve()
       .bodyToMono(NomisIncentive::class.java)
       .awaitSingle()
+
+  fun getIncentiveBlocking(
+    bookingId: Long,
+    sequence: Long
+  ): NomisIncentive = runBlocking {
+    getIncentive(
+      bookingId,
+      sequence,
+    )
+  }
 }
 
 data class VisitId(

@@ -205,6 +205,20 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }
   }
 
+  fun stubMultipleGetIncentives(totalElements: Long) {
+    (1..totalElements).forEach {
+      nomisApi.stubFor(
+        get(
+          urlPathEqualTo("/incentives/booking-id/$it/incentive-sequence/1")
+        )
+          .willReturn(
+            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+              .withBody(incentiveResponse(it, 1))
+          )
+      )
+    }
+  }
+
   fun verifyGetIncentivesFilter(fromDate: String, toDate: String) {
     nomisApi.verify(
       getRequestedFor(
