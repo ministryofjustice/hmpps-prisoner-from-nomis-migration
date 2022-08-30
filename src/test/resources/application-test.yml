@@ -10,6 +10,7 @@ api.base.url:
   oauth: http://localhost:8090/auth
   visits: http://localhost:8082
   visit.mapping: http://localhost:8083
+  incentives: http://localhost:8084
 
 visits:
   page:
