@@ -75,6 +75,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
     internal fun `will start processing pages of incentives`() {
       nomisApi.stubGetIncentivesInitialCount(86)
       nomisApi.stubMultipleGetIncentivesCounts(totalElements = 86, pageSize = 10)
+      nomisApi.stubMultipleGetIncentives(86)
 
       webTestClient.post().uri("/migrate/incentives")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCENTIVES")))
@@ -111,6 +112,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
     internal fun `will add analytical events for starting, ending and each migrated record`() {
       nomisApi.stubGetIncentivesInitialCount(26)
       nomisApi.stubMultipleGetIncentivesCounts(totalElements = 26, pageSize = 10)
+      nomisApi.stubMultipleGetIncentives(26)
 
       // stub 25 migrated records and 1 fake a failure
       awsSqsIncentivesMigrationDlqClient!!.sendMessage(incentivesMigrationDlqUrl, """{ "message": "some error" }""")
