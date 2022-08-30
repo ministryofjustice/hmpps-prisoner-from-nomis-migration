@@ -105,16 +105,20 @@ class IncentivesMigrationService(
       )
     }?.forEach { queueService.sendMessage(MIGRATE_INCENTIVE, it) }
 
-  fun migrateIncentive(context: MigrationContext<IncentiveId>) =
+  fun migrateIncentive(context: MigrationContext<IncentiveId>) {
+    val (bookingId, sequence) = context.body
+    val incentive = nomisApiService.getIncentiveBlocking(bookingId, sequence)
     telemetryClient.trackEvent(
       "nomis-migration-incentive-migrated",
       mapOf(
         "migrationId" to context.migrationId,
-        "bookingId" to context.body.bookingId.toString(),
-        "sequence" to context.body.sequence.toString(),
+        "bookingId" to bookingId.toString(),
+        "sequence" to sequence.toString(),
+        "level" to incentive.iepLevel.code,
       ),
       null
     )
+  }
 
   fun migrateIncentivesStatusCheck(context: MigrationContext<IncentiveMigrationStatusCheck>) {
     /*

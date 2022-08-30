@@ -42,6 +42,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.INCENTIVES
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisCodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisIncentive
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -745,6 +747,40 @@ internal class IncentivesMigrationServiceTest {
       )
 
       verifyNoInteractions(queueService)
+    }
+  }
+
+  @Nested
+  @DisplayName("migrateIncentive")
+  inner class MigrateIncentive {
+
+    @BeforeEach
+    internal fun setUp() {
+      whenever(nomisApiService.getIncentiveBlocking(any(), any())).thenReturn(
+        NomisIncentive(
+          bookingId = 1000,
+          incentiveSequence = 1,
+          commentText = "Doing well",
+          iepDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
+          prisonId = "HEI",
+          iepLevel = NomisCodeDescription("ENH", "Enhanced"),
+          userId = "JANE_SMITH",
+        )
+      )
+    }
+
+    @Test
+    internal fun `will retrieve incentive from NOMIS`() {
+      service.migrateIncentive(
+        MigrationContext(
+          type = INCENTIVES,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = IncentiveId(123, 2)
+        )
+      )
+
+      verify(nomisApiService).getIncentiveBlocking(123, 2)
     }
   }
 
