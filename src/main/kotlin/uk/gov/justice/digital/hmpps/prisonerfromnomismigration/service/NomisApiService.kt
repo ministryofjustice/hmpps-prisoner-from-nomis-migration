@@ -189,6 +189,7 @@ data class NomisIncentive(
   val prisonId: String,
   val iepLevel: NomisCodeDescription,
   val userId: String? = null,
+  val currentIep: Boolean,
 )
 
 class RestResponsePage<T> @JsonCreator(mode = JsonCreator.Mode.PROPERTIES) constructor(

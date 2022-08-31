@@ -10,6 +10,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.Incent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.MIGRATE_INCENTIVES
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.MIGRATE_INCENTIVES_BY_PAGE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.MIGRATE_INCENTIVES_STATUS_CHECK
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.ReviewType.REVIEW
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.IncentiveId
@@ -17,6 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.INCENTIVES
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisIncentive
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.asStringOrBlank
 import java.time.Duration
 import java.time.LocalDateTime
@@ -28,6 +30,7 @@ class IncentivesMigrationService(
   private val migrationHistoryService: MigrationHistoryService,
   private val telemetryClient: TelemetryClient,
   private val auditService: AuditService,
+  private val incentivesService: IncentivesService,
   @Value("\${incentives.page.size:1000}") private val pageSize: Long
 ) {
 
@@ -107,14 +110,16 @@ class IncentivesMigrationService(
 
   fun migrateIncentive(context: MigrationContext<IncentiveId>) {
     val (bookingId, sequence) = context.body
-    val incentive = nomisApiService.getIncentiveBlocking(bookingId, sequence)
+    val iep = nomisApiService.getIncentiveBlocking(bookingId, sequence)
+    val migratedIncentive = incentivesService.migrateIncentive(iep.toIncentive())
     telemetryClient.trackEvent(
       "nomis-migration-incentive-migrated",
       mapOf(
         "migrationId" to context.migrationId,
         "bookingId" to bookingId.toString(),
         "sequence" to sequence.toString(),
-        "level" to incentive.iepLevel.code,
+        "incentiveId" to migratedIncentive.id.toString(),
+        "level" to iep.iepLevel.code,
       ),
       null
     )
@@ -231,6 +236,18 @@ class IncentivesMigrationService(
     )
   }
 }
+
+private fun NomisIncentive.toIncentive(): CreateIncentiveIEP = CreateIncentiveIEP(
+  bookingId = bookingId,
+  prisonerNumber = "TODO", // TODO need noms number from API
+  iepCode = iepLevel.code,
+  locationId = this.prisonId,
+  reviewTime = this.iepDateTime,
+  reviewedBy = this.userId ?: "anonymous", // TODO can this ever happen??
+  commentText = this.commentText,
+  current = this.currentIep,
+  reviewType = REVIEW, // TODO we need audit module to work out review type
+)
 
 // TODO move this
 private fun <T> MigrationContext<T>.durationMinutes(): Long =

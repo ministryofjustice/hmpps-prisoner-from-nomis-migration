@@ -380,7 +380,8 @@ private fun incentiveResponse(
   "iepDateTime":"2021-10-06T15:53:00",
   "prisonId":"MDI",
   "iepLevel":{"code":"STD","description":"Standard"},
-  "userId":"LBENNETT_GEN"
+  "userId":"LBENNETT_GEN",
+  "currentIep": true
   }
    
   """.trimIndent()
