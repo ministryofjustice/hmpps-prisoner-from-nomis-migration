@@ -5,7 +5,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
-import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
@@ -49,7 +49,7 @@ class IncentivesApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubCreateIncentive() {
     stubFor(
-      post(urlEqualTo("/migrate-incentives")).willReturn(
+      post(urlMatching("/iep/migration/booking/\\d*")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.CREATED.value())
@@ -58,5 +58,5 @@ class IncentivesApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun createIncentiveCount() = findAll(postRequestedFor(urlEqualTo("/migrate-incentives"))).count()
+  fun createIncentiveCount() = findAll(postRequestedFor(urlMatching("/iep/migration/booking/\\d*"))).count()
 }

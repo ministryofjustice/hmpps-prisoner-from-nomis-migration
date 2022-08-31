@@ -13,6 +13,7 @@ import org.springframework.test.context.BootstrapWith
 import org.springframework.web.reactive.config.EnableWebFlux
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.WebClientConfiguration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.HmppsAuthApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.IncentivesApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitMappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsApiExtension
@@ -35,7 +36,8 @@ import kotlin.annotation.AnnotationTarget.CLASS
   NomisApiExtension::class,
   HmppsAuthApiExtension::class,
   VisitsApiExtension::class,
-  VisitMappingApiExtension::class
+  VisitMappingApiExtension::class,
+  IncentivesApiExtension::class,
 )
 @ActiveProfiles("test")
 @EnableWebFlux

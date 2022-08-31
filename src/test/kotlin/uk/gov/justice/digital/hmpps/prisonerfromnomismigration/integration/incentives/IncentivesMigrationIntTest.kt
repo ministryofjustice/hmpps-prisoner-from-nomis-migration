@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.ince
 
 import com.microsoft.applicationinsights.TelemetryClient
 import kotlinx.coroutines.runBlocking
+import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
@@ -28,6 +29,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repos
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.COMPLETED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.INCENTIVES
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.IncentivesApiExtension.Companion.incentivesApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.Duration
 import java.time.LocalDateTime
@@ -76,6 +78,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubGetIncentivesInitialCount(86)
       nomisApi.stubMultipleGetIncentivesCounts(totalElements = 86, pageSize = 10)
       nomisApi.stubMultipleGetIncentives(86)
+      incentivesApi.stubCreateIncentive()
 
       webTestClient.post().uri("/migrate/incentives")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCENTIVES")))
@@ -106,6 +109,8 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
         fromDate = "2020-01-01",
         toDate = "2020-01-02"
       )
+
+      assertThat(incentivesApi.createIncentiveCount()).isEqualTo(86)
     }
 
     @Test
@@ -113,6 +118,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubGetIncentivesInitialCount(26)
       nomisApi.stubMultipleGetIncentivesCounts(totalElements = 26, pageSize = 10)
       nomisApi.stubMultipleGetIncentives(26)
+      incentivesApi.stubCreateIncentive()
 
       // stub 25 migrated records and 1 fake a failure
       awsSqsIncentivesMigrationDlqClient!!.sendMessage(incentivesMigrationDlqUrl, """{ "message": "some error" }""")

@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives
 
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
@@ -15,10 +16,11 @@ import kotlin.random.Random
  */
 @RestController
 class MockIncentivesResource {
-  @PreAuthorize("hasRole('ROLE_MIGRATE_INCENTIVES')")
-  @PostMapping("/migrate-incentive")
+  @PreAuthorize("hasRole('ROLE_MAINTAIN_IEP')")
+  @PostMapping("/iep/migration/booking/{bookingId}")
   @Operation(hidden = true)
   fun createIncentive(
+    @PathVariable("bookingId") bookingId: Long,
     @RequestBody @Valid createIncentiveRequest: CreateIncentiveRequest
   ): CreateIncentiveResponse = CreateIncentiveResponse(Random.nextLong())
 }
@@ -32,13 +34,9 @@ data class CreateIncentiveRequest(
   val iepCode: String,
   val commentText: String? = null,
   val current: Boolean,
-  val reviewType: ReviewType,
+  val reviewType: String,
 )
 
 data class CreateIncentiveResponse(
   val id: Long,
 )
-
-enum class ReviewType {
-  INITIAL, REVIEW, TRANSFER, ADJUSTMENT
-}

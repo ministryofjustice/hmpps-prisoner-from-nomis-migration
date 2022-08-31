@@ -34,6 +34,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.Incent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.MIGRATE_INCENTIVES
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.MIGRATE_INCENTIVES_BY_PAGE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.MIGRATE_INCENTIVES_STATUS_CHECK
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.ReviewType.REVIEW
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.IncentiveId
@@ -54,12 +55,14 @@ internal class IncentivesMigrationServiceTest {
   private val migrationHistoryService: MigrationHistoryService = mock()
   private val telemetryClient: TelemetryClient = mock()
   private val auditService: AuditService = mock()
+  private val incentivesService: IncentivesService = mock()
   val service = IncentivesMigrationService(
     nomisApiService = nomisApiService,
     queueService = queueService,
     migrationHistoryService = migrationHistoryService,
     telemetryClient = telemetryClient,
     auditService = auditService,
+    incentivesService = incentivesService,
     pageSize = 200
   )
 
@@ -79,6 +82,7 @@ internal class IncentivesMigrationServiceTest {
       migrationHistoryService = migrationHistoryService,
       telemetryClient = telemetryClient,
       auditService = auditService,
+      incentivesService = incentivesService,
       pageSize = 200
     )
 
@@ -765,8 +769,11 @@ internal class IncentivesMigrationServiceTest {
           prisonId = "HEI",
           iepLevel = NomisCodeDescription("ENH", "Enhanced"),
           userId = "JANE_SMITH",
+          currentIep = true,
         )
       )
+
+      whenever(incentivesService.migrateIncentive(any())).thenReturn(CreateIncentiveIEPResponse(999L))
     }
 
     @Test
@@ -781,6 +788,47 @@ internal class IncentivesMigrationServiceTest {
       )
 
       verify(nomisApiService).getIncentiveBlocking(123, 2)
+    }
+
+    @Test
+    internal fun `will transform and send that IEP to the incentives service`() {
+      whenever(nomisApiService.getIncentiveBlocking(any(), any())).thenReturn(
+        NomisIncentive(
+          bookingId = 1000,
+          incentiveSequence = 1,
+          commentText = "Doing well",
+          iepDateTime = LocalDateTime.parse("2020-01-01T13:10:00"),
+          prisonId = "HEI",
+          iepLevel = NomisCodeDescription("ENH", "Enhanced"),
+          userId = "JANE_SMITH",
+          currentIep = true,
+        )
+      )
+
+      service.migrateIncentive(
+        MigrationContext(
+          type = INCENTIVES,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = IncentiveId(123, 2)
+        )
+      )
+
+      verify(incentivesService).migrateIncentive(
+        eq(
+          CreateIncentiveIEP(
+            bookingId = 1000,
+            commentText = "Doing well",
+            prisonerNumber = "TODO", // TODO when API returns this
+            iepCode = "ENH",
+            reviewTime = LocalDateTime.parse("2020-01-01T13:10:00"),
+            locationId = "HEI",
+            reviewedBy = "JANE_SMITH",
+            current = true,
+            reviewType = REVIEW // TODO when API returns module
+          )
+        )
+      )
     }
   }
 
