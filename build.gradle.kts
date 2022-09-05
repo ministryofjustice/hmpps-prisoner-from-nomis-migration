@@ -1,5 +1,5 @@
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "4.4.2"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "4.4.3-beta"
   kotlin("plugin.spring") version "1.7.10"
 }
 
@@ -31,11 +31,11 @@ dependencies {
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.6.4")
   implementation("io.jsonwebtoken:jjwt:0.9.1")
   implementation("io.opentelemetry:opentelemetry-api:1.17.0")
-  implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.3")
+  implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.4")
 
-  runtimeOnly("org.postgresql:r2dbc-postgresql:0.9.1.RELEASE")
+  runtimeOnly("org.postgresql:r2dbc-postgresql:0.9.2.RELEASE")
   runtimeOnly("org.springframework.boot:spring-boot-starter-jdbc")
-  runtimeOnly("org.postgresql:postgresql:42.4.2")
+  runtimeOnly("org.postgresql:postgresql:42.5.0")
   implementation("org.flywaydb:flyway-core")
 
   testImplementation("io.swagger.parser.v3:swagger-parser:2.1.2")
