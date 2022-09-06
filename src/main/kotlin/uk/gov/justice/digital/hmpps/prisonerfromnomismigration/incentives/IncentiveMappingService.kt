@@ -1,7 +1,5 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives
 
-import kotlinx.coroutines.reactor.awaitSingleOrNull
-import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
@@ -11,25 +9,30 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.LatestMigrat
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationDetails
 
 @Service
-class VisitMappingService(@Qualifier("mappingApiWebClient") private val webClient: WebClient) {
-  fun findNomisVisitMapping(nomisVisitId: Long): VisitNomisMapping? {
+class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webClient: WebClient) {
+  fun findNomisIncentiveMapping(nomisBookingId: Long, nomisIncentiveSequence: Long): IncentiveNomisMapping? {
     return webClient.get()
-      .uri("/mapping/nomisId/{nomisVisitId}", nomisVisitId)
+      .uri(
+        "/mapping/incentives/nomis-booking-id/{nomisBookingId}/nomis-incentive-sequence/{nomisIncentiveSequence}",
+        nomisBookingId,
+        nomisIncentiveSequence
+      )
       .retrieve()
-      .bodyToMono(VisitNomisMapping::class.java)
+      .bodyToMono(IncentiveNomisMapping::class.java)
       .onErrorResume(WebClientResponseException.NotFound::class.java) {
         Mono.empty()
       }
       .block()
   }
 
-  fun createNomisVisitMapping(nomisVisitId: Long, vsipVisitId: String, migrationId: String) {
+  fun createNomisIncentiveMapping(nomisBookingId: Long, nomisSequence: Long, incentiveId: Long, migrationId: String) {
     webClient.post()
-      .uri("/mapping")
+      .uri("/mapping/incentives")
       .bodyValue(
-        VisitNomisMapping(
-          nomisId = nomisVisitId,
-          vsipId = vsipVisitId,
+        IncentiveNomisMapping(
+          nomisBookingId = nomisBookingId,
+          nomisSequence = nomisSequence,
+          incentiveId = incentiveId,
           label = migrationId,
           mappingType = "MIGRATED"
         )
@@ -39,22 +42,8 @@ class VisitMappingService(@Qualifier("mappingApiWebClient") private val webClien
       .block()
   }
 
-  suspend fun findRoomMapping(agencyInternalLocationCode: String, prisonId: String): RoomMapping? {
-    return webClient.get()
-      .uri("/prison/{prisonId}/room/nomis-room-id/{agencyInternalLocationCode}", prisonId, agencyInternalLocationCode)
-      .retrieve()
-      .bodyToMono(RoomMapping::class.java)
-      .onErrorResume(WebClientResponseException.NotFound::class.java) {
-        Mono.empty()
-      }
-      .awaitSingleOrNull()
-  }
-
-  fun findRoomMappingBlocking(agencyInternalLocationCode: String, prisonId: String): RoomMapping? =
-    runBlocking { findRoomMapping(agencyInternalLocationCode, prisonId) }
-
   fun findLatestMigration(): LatestMigration? = webClient.get()
-    .uri("/mapping/migrated/latest")
+    .uri("/mapping/incentives/migrated/latest")
     .retrieve()
     .bodyToMono(LatestMigration::class.java)
     .onErrorResume(WebClientResponseException.NotFound::class.java) {
@@ -64,7 +53,7 @@ class VisitMappingService(@Qualifier("mappingApiWebClient") private val webClien
 
   fun getMigrationDetails(migrationId: String): MigrationDetails = webClient.get()
     .uri {
-      it.path("/mapping/migration-id/{migrationId}")
+      it.path("/mapping/incentives/migration-id/{migrationId}")
         .queryParam("size", 1)
         .build(migrationId)
     }
@@ -74,7 +63,7 @@ class VisitMappingService(@Qualifier("mappingApiWebClient") private val webClien
 
   fun getMigrationCount(migrationId: String): Long = webClient.get()
     .uri {
-      it.path("/mapping/migration-id/{migrationId}")
+      it.path("/mapping/incentives/migration-id/{migrationId}")
         .queryParam("size", 1)
         .build(migrationId)
     }
@@ -86,6 +75,10 @@ class VisitMappingService(@Qualifier("mappingApiWebClient") private val webClien
     .block()?.count ?: 0
 }
 
-data class VisitNomisMapping(val nomisId: Long, val vsipId: String, val label: String?, val mappingType: String)
-
-data class RoomMapping(val vsipId: String, val isOpen: Boolean)
+data class IncentiveNomisMapping(
+  val nomisBookingId: Long,
+  val nomisSequence: Long,
+  val incentiveId: Long,
+  val label: String?,
+  val mappingType: String
+)

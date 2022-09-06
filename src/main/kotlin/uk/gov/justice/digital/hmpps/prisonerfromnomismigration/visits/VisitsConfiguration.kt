@@ -13,20 +13,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.health.HealthChec
 @Configuration
 class VisitsConfiguration(
   @Value("\${api.base.url.visits}") val visitsApiBaseUri: String,
-  @Value("\${api.base.url.visit.mapping}") val visitMappingApiBaseUri: String,
 ) {
 
   @Bean
   fun visitsApiHealthWebClient(): WebClient {
     return WebClient.builder()
       .baseUrl(visitsApiBaseUri)
-      .build()
-  }
-
-  @Bean
-  fun visitMappingApiHealthWebClient(): WebClient {
-    return WebClient.builder()
-      .baseUrl(visitMappingApiBaseUri)
       .build()
   }
 
@@ -41,22 +33,7 @@ class VisitsConfiguration(
       .build()
   }
 
-  @Bean
-  fun visitMappingApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager): WebClient {
-    val oauth2Client = ServerOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager)
-    oauth2Client.setDefaultClientRegistrationId("visit-mapping-api")
-
-    return WebClient.builder()
-      .baseUrl(visitMappingApiBaseUri)
-      .filter(oauth2Client)
-      .build()
-  }
-
   @Component("visitsApi")
   class VisitsApiHealth
   constructor(@Qualifier("visitsApiHealthWebClient") webClient: WebClient) : HealthCheck(webClient)
-
-  @Component("visitMappingApi")
-  class VisitMappingApiHealth
-  constructor(@Qualifier("visitMappingApiHealthWebClient") webClient: WebClient) : HealthCheck(webClient)
 }

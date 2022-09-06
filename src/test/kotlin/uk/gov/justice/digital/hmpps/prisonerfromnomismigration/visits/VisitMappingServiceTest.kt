@@ -21,7 +21,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitMappingApiExtension.Companion.visitMappingApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 
 @SpringAPIServiceTest
 @Import(VisitMappingService::class, VisitsConfiguration::class)
@@ -35,7 +35,7 @@ internal class VisitMappingServiceTest {
 
     @Test
     internal fun `will return null when not found`() {
-      visitMappingApi.stubFor(
+      mappingApi.stubFor(
         get(urlPathMatching("/mapping/nomisId/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -49,7 +49,7 @@ internal class VisitMappingServiceTest {
 
     @Test
     internal fun `will return the mapping when found`() {
-      visitMappingApi.stubFor(
+      mappingApi.stubFor(
         get(urlPathMatching("/mapping/nomisId/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -77,7 +77,7 @@ internal class VisitMappingServiceTest {
 
     @Test
     internal fun `will throw exception for any other error`() {
-      visitMappingApi.stubFor(
+      mappingApi.stubFor(
         get(urlPathMatching("/mapping/nomisId/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -97,7 +97,7 @@ internal class VisitMappingServiceTest {
   inner class CreateNomisVisitMapping {
     @BeforeEach
     internal fun setUp() {
-      visitMappingApi.stubFor(
+      mappingApi.stubFor(
         post(urlEqualTo("/mapping")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -110,7 +110,7 @@ internal class VisitMappingServiceTest {
     internal fun `will pass VSIP visit id, migration Id and MIGRATED indicator to mapping service`() {
       visitMappingService.createNomisVisitMapping(1234, "5678", "2020-01-01T00:00:00")
 
-      visitMappingApi.verify(
+      mappingApi.verify(
         postRequestedFor(urlEqualTo("/mapping"))
           .withRequestBody(
             equalToJson(
@@ -134,7 +134,7 @@ internal class VisitMappingServiceTest {
 
     @Test
     internal fun `will return null when not found`() {
-      visitMappingApi.stubFor(
+      mappingApi.stubFor(
         get(urlPathMatching("/prison/.+?/room/nomis-room-id/.+?")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -148,7 +148,7 @@ internal class VisitMappingServiceTest {
 
     @Test
     internal fun `will return the mapping when found`() {
-      visitMappingApi.stubFor(
+      mappingApi.stubFor(
         get(urlPathMatching("/prison/.+?/room/nomis-room-id/.+?")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -172,7 +172,7 @@ internal class VisitMappingServiceTest {
 
     @Test
     internal fun `will throw exception for any other error`() {
-      visitMappingApi.stubFor(
+      mappingApi.stubFor(
         get(urlPathMatching("/prison/.+?/room/nomis-room-id/.+?")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -192,14 +192,14 @@ internal class VisitMappingServiceTest {
   inner class FindLatestMigration {
     @BeforeEach
     internal fun setUp() {
-      visitMappingApi.stubLatestMigration("2020-01-01T10:00:00")
+      mappingApi.stubLatestMigration("2020-01-01T10:00:00")
     }
 
     @Test
     internal fun `will supply authentication token`() {
       visitMappingService.findLatestMigration()
 
-      visitMappingApi.verify(
+      mappingApi.verify(
         getRequestedFor(
           urlPathEqualTo("/mapping/migrated/latest")
         )
@@ -209,7 +209,7 @@ internal class VisitMappingServiceTest {
 
     @Test
     internal fun `will return null when not found`() {
-      visitMappingApi.stubFor(
+      mappingApi.stubFor(
         get(urlPathEqualTo("/mapping/migrated/latest")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -223,7 +223,7 @@ internal class VisitMappingServiceTest {
 
     @Test
     internal fun `will return the mapping when found`() {
-      visitMappingApi.stubFor(
+      mappingApi.stubFor(
         get(urlEqualTo("/mapping/migrated/latest")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -248,7 +248,7 @@ internal class VisitMappingServiceTest {
 
     @Test
     internal fun `will throw exception for any other error`() {
-      visitMappingApi.stubFor(
+      mappingApi.stubFor(
         get(urlPathMatching("/mapping/migrated/latest")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -268,14 +268,14 @@ internal class VisitMappingServiceTest {
   inner class GetMigrationDetails {
     @BeforeEach
     internal fun setUp() {
-      visitMappingApi.stubVisitMappingByMigrationId("2020-01-01T11:10:00")
+      mappingApi.stubVisitMappingByMigrationId("2020-01-01T11:10:00")
     }
 
     @Test
     internal fun `will supply authentication token`() {
       visitMappingService.getMigrationDetails("2020-01-01T10:00:00")
 
-      visitMappingApi.verify(
+      mappingApi.verify(
         getRequestedFor(
           urlPathMatching("/mapping/migration-id/.*")
         )
@@ -285,7 +285,7 @@ internal class VisitMappingServiceTest {
 
     @Test
     internal fun `will throw error when not found`() {
-      visitMappingApi.stubFor(
+      mappingApi.stubFor(
         get(urlPathMatching("/mapping/migration-id/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -301,7 +301,7 @@ internal class VisitMappingServiceTest {
 
     @Test
     internal fun `will return the mapping when found`() {
-      visitMappingApi.stubVisitMappingByMigrationId(
+      mappingApi.stubVisitMappingByMigrationId(
         whenCreated = "2020-01-01T11:10:00",
         count = 56_766
       )
@@ -314,7 +314,7 @@ internal class VisitMappingServiceTest {
 
     @Test
     internal fun `will throw exception for any other error`() {
-      visitMappingApi.stubFor(
+      mappingApi.stubFor(
         get(urlPathMatching("/mapping/migration-id/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -334,14 +334,14 @@ internal class VisitMappingServiceTest {
   inner class GetMigrationCount {
     @BeforeEach
     internal fun setUp() {
-      visitMappingApi.stubVisitMappingByMigrationId(count = 56_766)
+      mappingApi.stubVisitMappingByMigrationId(count = 56_766)
     }
 
     @Test
     internal fun `will supply authentication token`() {
       visitMappingService.getMigrationCount("2020-01-01T10:00:00")
 
-      visitMappingApi.verify(
+      mappingApi.verify(
         getRequestedFor(
           urlPathMatching("/mapping/migration-id/.*")
         )
@@ -351,7 +351,7 @@ internal class VisitMappingServiceTest {
 
     @Test
     internal fun `will return zero when not found`() {
-      visitMappingApi.stubFor(
+      mappingApi.stubFor(
         get(urlPathMatching("/mapping/migration-id/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -365,7 +365,7 @@ internal class VisitMappingServiceTest {
 
     @Test
     internal fun `will return the mapping count when found`() {
-      visitMappingApi.stubVisitMappingByMigrationId(
+      mappingApi.stubVisitMappingByMigrationId(
         whenCreated = "2020-01-01T11:10:00",
         count = 56_766
       )
@@ -375,7 +375,7 @@ internal class VisitMappingServiceTest {
 
     @Test
     internal fun `will throw exception for any other error`() {
-      visitMappingApi.stubFor(
+      mappingApi.stubFor(
         get(urlPathMatching("/mapping/migration-id/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")

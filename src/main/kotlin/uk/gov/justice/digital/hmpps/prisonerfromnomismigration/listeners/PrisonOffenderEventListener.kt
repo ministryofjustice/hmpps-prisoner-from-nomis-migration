@@ -27,17 +27,11 @@ class PrisonOffenderEventListener(
     val sqsMessage: SQSMessage = objectMapper.readValue(message)
     when (val eventType = sqsMessage.MessageAttributes.eventType.Value) {
       "IEP_UPSERTED" -> {
-        val (bookingId, iepSeq) = objectMapper.readValue<PrisonOffenderEvent>(sqsMessage.Message)
-        telemetryClient.trackEvent(
-          "prison-offender-event-received",
-          mapOf(
-            "eventType" to eventType,
-            "bookingId" to bookingId.toString(),
-            "incentiveSequence" to iepSeq.toString()
-          ),
-          null
-        )
-        runBlocking { incentivesSynchronisationService.synchroniseIncentive(objectMapper.readValue(sqsMessage.Message)) }
+        val (bookingId, iepSeq, auditModuleName) = objectMapper.readValue<IncentiveUpsertedOffenderEvent>(sqsMessage.Message)
+        log.debug("received IEP_UPSERTED Offender event for bookingId $bookingId and seq $iepSeq with auditModuleName $auditModuleName")
+        if (shouldSynchronise(auditModuleName)) {
+          runBlocking { incentivesSynchronisationService.synchroniseIncentive(objectMapper.readValue(sqsMessage.Message)) }
+        }
       }
       else -> log.info("Received a message I wasn't expecting {}", eventType)
     }
@@ -46,11 +40,11 @@ class PrisonOffenderEventListener(
 
      dont synchronise if originates from incentives service or originates from one of the stored nomis procs
 
-        OCUWARNG         |    3704|
+        OCUWARNG         |    3704| // transfer via court??  (popup)
         PRISON_API       |    7607|
         OIDADMIS         |    8430|
-        MERGE            |      76|
-        OIDOIEPS         |    9160|
+        MERGE            |      76| To synchronise
+        OIDOIEPS         |    9160| To synchronise
         OIDITRAN         |     971|
         OSIOSEAR         |       1|
 
@@ -58,9 +52,13 @@ class PrisonOffenderEventListener(
      */
   }
 
+  private fun shouldSynchronise(auditModuleName: String): Boolean {
+    return auditModuleName == "OIDOIEPS"
+  }
+
   data class SQSMessage(val Message: String, val MessageId: String, val MessageAttributes: MessageAttributes)
   data class MessageAttributes(val eventType: EventType)
   data class EventType(val Value: String, val Type: String)
 }
 
-data class PrisonOffenderEvent(val bookingId: Long, val iepSeq: Long)
+data class IncentiveUpsertedOffenderEvent(val bookingId: Long, val iepSeq: Long, val auditModuleName: String)
