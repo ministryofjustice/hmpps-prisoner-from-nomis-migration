@@ -1,12 +1,15 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 
 import com.github.tomakehurst.wiremock.WireMockServer
-import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED
 import org.junit.jupiter.api.extension.AfterAllCallback
@@ -15,26 +18,26 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
 
-class VisitMappingApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
+class MappingApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
   companion object {
     @JvmField
-    val visitMappingApi = VisitMappingApiMockServer()
+    val mappingApi = MappingApiMockServer()
   }
 
   override fun beforeAll(context: ExtensionContext) {
-    visitMappingApi.start()
+    mappingApi.start()
   }
 
   override fun beforeEach(context: ExtensionContext) {
-    visitMappingApi.resetRequests()
+    mappingApi.resetRequests()
   }
 
   override fun afterAll(context: ExtensionContext) {
-    visitMappingApi.stop()
+    mappingApi.stop()
   }
 }
 
-class VisitMappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
+class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
   companion object {
     private const val WIREMOCK_PORT = 8083
   }
@@ -217,10 +220,65 @@ class VisitMappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     verify(
       times,
       postRequestedFor(urlEqualTo("/mapping")).withRequestBody(
-        WireMock.matchingJsonPath(
+        matchingJsonPath(
           "nomisId",
-          WireMock.equalTo("$it")
+          equalTo("$it")
         )
+      )
+    )
+  }
+
+  fun stubIncentiveMappingCreate() {
+    stubFor(
+      post(urlEqualTo("/mapping/incentives")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.CREATED.value())
+      )
+    )
+  }
+
+  fun stubIncentiveMappingByNomisIds(nomisBookingId: Long, nomisIncentiveSequence: Long) {
+    stubFor(
+      get(
+        urlPathEqualTo("/mapping/incentives/nomis-booking-id/$nomisBookingId/nomis-incentive-sequence/$nomisIncentiveSequence")
+      )
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """
+        {
+            "nomisBookingId": $nomisBookingId,
+            "nomisBIncentiveSequence": $nomisIncentiveSequence,
+            "incentiveId": 3,
+            "label": "2022-02-14T09:58:45",
+            "whenCreated": "2022-02-16T16:21:15.589091",
+            "mappingType": "MIGRATED"
+        }         
+              """.trimIndent()
+            )
+        )
+    )
+  }
+
+  fun stubNomisIncentiveMappingNotFound(nomisBookingId: Long, nomisIncentiveSequence: Long) {
+    stubFor(
+      get(
+        urlPathEqualTo("/mapping/incentives/nomis-booking-id/$nomisBookingId/nomis-incentive-sequence/$nomisIncentiveSequence")
+      ).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.NOT_FOUND.value())
+          .withBody("""{"message":"Not found"}""")
+      )
+    )
+  }
+
+  fun verifyGetIncentiveMapping(nomisBookingId: Long, nomisIncentiveSequence: Long) {
+    verify(
+      getRequestedFor(
+        urlPathEqualTo("/mapping/incentives/nomis-booking-id/$nomisBookingId/nomis-incentive-sequence/$nomisIncentiveSequence")
       )
     )
   }

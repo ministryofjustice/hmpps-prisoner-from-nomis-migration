@@ -5,8 +5,8 @@ import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.HmppsAuthApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.IncentivesApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitMappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsApiExtension
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -91,6 +91,6 @@ class HealthCheckTest : SqsIntegrationTestBase() {
     NomisApiExtension.nomisApi.stubHealthPing(status)
     VisitsApiExtension.visitsApi.stubHealthPing(status)
     IncentivesApiExtension.incentivesApi.stubHealthPing(status)
-    VisitMappingApiExtension.visitMappingApi.stubHealthPing(status)
+    MappingApiExtension.mappingApi.stubHealthPing(status)
   }
 }

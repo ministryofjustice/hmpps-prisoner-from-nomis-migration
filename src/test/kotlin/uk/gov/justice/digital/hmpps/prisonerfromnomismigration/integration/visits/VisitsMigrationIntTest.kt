@@ -32,8 +32,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repos
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.COMPLETED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationFilter
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitMappingApiExtension.Companion.visitMappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsApiExtension.Companion.visitsApi
 import java.time.Duration
 import java.time.LocalDateTime
@@ -82,11 +82,11 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubGetVisitsInitialCount(86)
       nomisApi.stubMultipleGetVisitsCounts(totalElements = 86, pageSize = 10)
       nomisApi.stubMultipleGetVisits(totalElements = 86)
-      visitMappingApi.stubNomisVisitNotFound()
-      visitMappingApi.stubRoomMapping()
-      visitMappingApi.stubVisitMappingCreate()
+      mappingApi.stubNomisVisitNotFound()
+      mappingApi.stubRoomMapping()
+      mappingApi.stubVisitMappingCreate()
       visitsApi.stubCreateVisit()
-      visitMappingApi.stubVisitMappingByMigrationId(count = 86)
+      mappingApi.stubVisitMappingByMigrationId(count = 86)
 
       webTestClient.post().uri("/migrate/visits")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
@@ -113,7 +113,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().isAccepted
 
       // wait for all mappings to be created before verifying
-      await untilCallTo { visitMappingApi.createVisitMappingCount() } matches { it == 86 }
+      await untilCallTo { mappingApi.createVisitMappingCount() } matches { it == 86 }
 
       // check filter matches what is passed in
       nomisApi.verifyGetVisitsFilter(
@@ -129,7 +129,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
       val visitIdsUpTo86 = (1L..86L).map { it }.toTypedArray()
 
       // Check each visit has a mapping (each visit will be a unique number starting from 1)
-      visitMappingApi.verifyCreateMappingVisitIds(visitIdsUpTo86)
+      mappingApi.verifyCreateMappingVisitIds(visitIdsUpTo86)
     }
 
     @Test
@@ -137,13 +137,13 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubGetVisitsInitialCount(26)
       nomisApi.stubMultipleGetVisitsCounts(totalElements = 26, pageSize = 10)
       nomisApi.stubMultipleGetVisits(totalElements = 26)
-      visitMappingApi.stubNomisVisitNotFound()
-      visitMappingApi.stubRoomMapping()
-      visitMappingApi.stubVisitMappingCreate()
+      mappingApi.stubNomisVisitNotFound()
+      mappingApi.stubRoomMapping()
+      mappingApi.stubVisitMappingCreate()
       visitsApi.stubCreateVisit()
 
       // stub 25 migrated records and 1 fake a failure
-      visitMappingApi.stubVisitMappingByMigrationId(count = 25)
+      mappingApi.stubVisitMappingByMigrationId(count = 25)
       awsSqsVisitsMigrationDlqClient!!.sendMessage(visitsMigrationDlqUrl, """{ "message": "some error" }""")
 
       webTestClient.post().uri("/migrate/visits")
@@ -167,7 +167,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().isAccepted
 
       // wait for all mappings to be created before verifying
-      await untilCallTo { visitMappingApi.createVisitMappingCount() } matches { it == 26 }
+      await untilCallTo { mappingApi.createVisitMappingCount() } matches { it == 26 }
 
       verify(telemetryClient).trackEvent(eq("nomis-migration-visits-started"), any(), isNull())
       verify(telemetryClient, times(26)).trackEvent(eq("nomis-migration-visit-migrated"), any(), isNull())
@@ -206,10 +206,10 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubGetVisitsInitialCount(1)
       nomisApi.stubMultipleGetVisitsCounts(totalElements = 1, pageSize = 10)
       nomisApi.stubMultipleGetVisits(totalElements = 1)
-      visitMappingApi.stubNomisVisitNotFound()
-      visitMappingApi.stubRoomMapping()
+      mappingApi.stubNomisVisitNotFound()
+      mappingApi.stubRoomMapping()
       visitsApi.stubCreateVisit()
-      visitMappingApi.stubVisitMappingCreateFailureFollowedBySuccess()
+      mappingApi.stubVisitMappingCreateFailureFollowedBySuccess()
 
       webTestClient.post().uri("/migrate/visits")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
@@ -221,13 +221,13 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().isAccepted
 
       // wait for all mappings to be created before verifying
-      await untilCallTo { visitMappingApi.createVisitMappingCount() } matches { it == 2 }
+      await untilCallTo { mappingApi.createVisitMappingCount() } matches { it == 2 }
 
       // check that each visit is created in VSIP
       assertThat(visitsApi.createVisitCount()).isEqualTo(1)
 
       // should retry to create mapping twice
-      visitMappingApi.verifyCreateMappingVisitIds(arrayOf(1L), times = 2)
+      mappingApi.verifyCreateMappingVisitIds(arrayOf(1L), times = 2)
     }
   }
 
@@ -486,9 +486,9 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     fun `get room usage all visit rooms - no filter specified`() {
       nomisApi.stubGetVisitsRoomUsage()
-      visitMappingApi.stubRoomMapping("AGI")
-      visitMappingApi.stubMissingRoomMapping("BXI")
-      visitMappingApi.stubRoomMapping("AKI")
+      mappingApi.stubRoomMapping("AGI")
+      mappingApi.stubMissingRoomMapping("BXI")
+      mappingApi.stubRoomMapping("AKI")
       webTestClient.get().uri("migrate/visits/rooms/usage")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
         .exchange()
@@ -586,11 +586,11 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubGetVisitsInitialCount(count)
       nomisApi.stubMultipleGetVisitsCounts(totalElements = count, pageSize = 10)
       nomisApi.stubMultipleGetVisits(totalElements = count)
-      visitMappingApi.stubNomisVisitNotFound()
-      visitMappingApi.stubRoomMapping()
-      visitMappingApi.stubVisitMappingCreate()
+      mappingApi.stubNomisVisitNotFound()
+      mappingApi.stubRoomMapping()
+      mappingApi.stubVisitMappingCreate()
       visitsApi.stubCreateVisit()
-      visitMappingApi.stubVisitMappingByMigrationId(count = count.toInt())
+      mappingApi.stubVisitMappingByMigrationId(count = count.toInt())
 
       val migrationId = webTestClient.post().uri("/migrate/visits")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))

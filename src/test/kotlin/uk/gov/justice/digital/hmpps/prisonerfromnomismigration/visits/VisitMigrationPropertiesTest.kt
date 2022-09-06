@@ -15,6 +15,9 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.springframework.boot.actuate.info.Info.Builder
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.LatestMigration
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigratedItem
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VISITS_QUEUE_ID
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
