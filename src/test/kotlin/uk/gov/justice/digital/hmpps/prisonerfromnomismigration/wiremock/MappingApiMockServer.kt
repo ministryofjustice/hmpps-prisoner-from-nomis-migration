@@ -282,4 +282,12 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       )
     )
   }
+
+  fun verifyCreateIncentiveMapping() {
+    verify(
+      postRequestedFor(
+        urlPathEqualTo("/mapping/incentives")
+      )
+    )
+  }
 }

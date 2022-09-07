@@ -25,10 +25,11 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
 
     nomisApi.stubGetIncentive(bookingId = 1234, incentiveSequence = 1)
     mappingApi.stubNomisIncentiveMappingNotFound(nomisBookingId = 1234, nomisIncentiveSequence = 1)
+    mappingApi.stubIncentiveMappingCreate()
 
     awsSqsOffenderEventsClient.sendMessage(queueOffenderEventsUrl, message)
 
-    await untilAsserted { mappingApi.verifyGetIncentiveMapping(nomisBookingId = 1234, nomisIncentiveSequence = 1) }
+    await untilAsserted { mappingApi.verifyCreateIncentiveMapping() }
 
     verify(telemetryClient).trackEvent(
       eq("incentive-created-synchronisation"),
