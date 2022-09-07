@@ -1766,37 +1766,36 @@ internal class VisitsMigrationServiceTest {
 
 fun pages(total: Long, startId: Long = 1): PageImpl<VisitId> = PageImpl<VisitId>(
   (startId..total - 1 + startId).map { VisitId(it) }, Pageable.ofSize(10), total
-  )
+)
 
-  fun aVisit(
-    prisonId: String = "BXI",
-    agencyInternalLocation: NomisCodeDescription? = NomisCodeDescription("OFF_VIS", "MDI-VISITS-OFF_VIS"),
-    prisonerId: String = "A1234AA",
-    startDateTime: LocalDateTime = LocalDateTime.parse("2020-01-01T10:00:00"),
-    endDateTime: LocalDateTime = LocalDateTime.parse("2020-01-02T12:00:00"),
-    visitType: NomisCodeDescription = NomisCodeDescription("SCON", "Social Contact"),
-    visitStatus: NomisCodeDescription = NomisCodeDescription("SCH", "Scheduled"),
-    visitId: Long = 123
-  ) = NomisVisit(
-    offenderNo = prisonerId,
-    visitId = visitId,
-    startDateTime = startDateTime,
-    endDateTime = endDateTime,
-    agencyInternalLocation = agencyInternalLocation,
-    prisonId = prisonId,
-    visitors = listOf(
-      NomisVisitor(
-        personId = 4729570,
-      ),
-      NomisVisitor(
-        personId = 4729580,
-      )
+fun aVisit(
+  prisonId: String = "BXI",
+  agencyInternalLocation: NomisCodeDescription? = NomisCodeDescription("OFF_VIS", "MDI-VISITS-OFF_VIS"),
+  prisonerId: String = "A1234AA",
+  startDateTime: LocalDateTime = LocalDateTime.parse("2020-01-01T10:00:00"),
+  endDateTime: LocalDateTime = LocalDateTime.parse("2020-01-02T12:00:00"),
+  visitType: NomisCodeDescription = NomisCodeDescription("SCON", "Social Contact"),
+  visitStatus: NomisCodeDescription = NomisCodeDescription("SCH", "Scheduled"),
+  visitId: Long = 123
+) = NomisVisit(
+  offenderNo = prisonerId,
+  visitId = visitId,
+  startDateTime = startDateTime,
+  endDateTime = endDateTime,
+  agencyInternalLocation = agencyInternalLocation,
+  prisonId = prisonId,
+  visitors = listOf(
+    NomisVisitor(
+      personId = 4729570,
     ),
-    visitType = visitType,
-    visitStatus = visitStatus,
-    commentText = "This is a comment",
-    visitorConcernText = "this is concerning",
-    /* no outcome as only visits with a status of Cancelled will have an outcome returned from nomis */
-    leadVisitor = NomisLeadVisitor(4729570, fullName = "Vince Hoyland", telephones = listOf("0000 11111", "0000 22222"))
-  )
-  
+    NomisVisitor(
+      personId = 4729580,
+    )
+  ),
+  visitType = visitType,
+  visitStatus = visitStatus,
+  commentText = "This is a comment",
+  visitorConcernText = "this is concerning",
+  /* no outcome as only visits with a status of Cancelled will have an outcome returned from nomis */
+  leadVisitor = NomisLeadVisitor(4729570, fullName = "Vince Hoyland", telephones = listOf("0000 11111", "0000 22222"))
+)
