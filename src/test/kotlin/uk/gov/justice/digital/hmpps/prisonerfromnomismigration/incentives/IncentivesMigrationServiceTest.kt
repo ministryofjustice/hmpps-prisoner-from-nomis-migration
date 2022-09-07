@@ -862,5 +862,4 @@ internal class IncentivesMigrationServiceTest {
 
 fun pages(total: Long, startId: Long = 1): PageImpl<IncentiveId> = PageImpl<IncentiveId>(
   (startId..total - 1 + startId).map { IncentiveId(it, 1) }, Pageable.ofSize(10), total
-  )
-  
+)
