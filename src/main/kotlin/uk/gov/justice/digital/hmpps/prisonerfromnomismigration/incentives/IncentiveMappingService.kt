@@ -25,7 +25,41 @@ class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webC
       .block()
   }
 
-  fun createNomisIncentiveMapping(nomisBookingId: Long, nomisSequence: Long, incentiveId: Long, migrationId: String) {
+  fun createNomisIncentiveMigrationMapping(
+    nomisBookingId: Long,
+    nomisSequence: Long,
+    incentiveId: Long,
+    migrationId: String
+  ) {
+    createNomisIncentiveMapping(
+      nomisBookingId = nomisBookingId,
+      nomisSequence = nomisSequence,
+      incentiveId = incentiveId,
+      migrationId = migrationId,
+      mappingType = "MIGRATED"
+    )
+  }
+
+  fun createNomisIncentiveSynchronisationMapping(
+    nomisBookingId: Long,
+    nomisSequence: Long,
+    incentiveId: Long,
+  ) {
+    createNomisIncentiveMapping(
+      nomisBookingId = nomisBookingId,
+      nomisSequence = nomisSequence,
+      incentiveId = incentiveId,
+      mappingType = "NOMIS_CREATED"
+    )
+  }
+
+  private fun createNomisIncentiveMapping(
+    nomisBookingId: Long,
+    nomisSequence: Long,
+    incentiveId: Long,
+    mappingType: String,
+    migrationId: String? = null
+  ) {
     webClient.post()
       .uri("/mapping/incentives")
       .bodyValue(
@@ -34,7 +68,7 @@ class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webC
           nomisSequence = nomisSequence,
           incentiveId = incentiveId,
           label = migrationId,
-          mappingType = "MIGRATED"
+          mappingType = mappingType
         )
       )
       .retrieve()
@@ -79,6 +113,6 @@ data class IncentiveNomisMapping(
   val nomisBookingId: Long,
   val nomisSequence: Long,
   val incentiveId: Long,
-  val label: String?,
+  val label: String? = null,
   val mappingType: String
 )
