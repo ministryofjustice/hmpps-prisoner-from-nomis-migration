@@ -19,7 +19,7 @@ class MockIncentivesResource {
   @PreAuthorize("hasRole('ROLE_MAINTAIN_IEP')")
   @PostMapping("/iep/migration/booking/{bookingId}")
   @Operation(hidden = true)
-  fun createIncentive(
+  suspend fun createIncentive(
     @PathVariable("bookingId") bookingId: Long,
     @RequestBody @Valid createIncentiveRequest: CreateIncentiveRequest
   ): CreateIncentiveResponse = CreateIncentiveResponse(Random.nextLong())
