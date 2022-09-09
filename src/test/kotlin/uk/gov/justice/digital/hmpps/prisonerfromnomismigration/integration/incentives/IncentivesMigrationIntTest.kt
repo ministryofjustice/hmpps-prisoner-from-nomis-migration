@@ -5,7 +5,9 @@ import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
+import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilAsserted
+import org.awaitility.kotlin.untilCallTo
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -30,6 +32,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repos
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.COMPLETED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.INCENTIVES
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.IncentivesApiExtension.Companion.incentivesApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.Duration
 import java.time.LocalDateTime
@@ -78,6 +81,9 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubGetIncentivesInitialCount(86)
       nomisApi.stubMultipleGetIncentivesCounts(totalElements = 86, pageSize = 10)
       nomisApi.stubMultipleGetIncentives(86)
+      mappingApi.stubAllNomisIncentiveMappingNotFound()
+      mappingApi.stubIncentiveMappingCreate()
+
       incentivesApi.stubCreateIncentive()
 
       webTestClient.post().uri("/migrate/incentives")
@@ -119,6 +125,8 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubMultipleGetIncentivesCounts(totalElements = 26, pageSize = 10)
       nomisApi.stubMultipleGetIncentives(26)
       incentivesApi.stubCreateIncentive()
+      mappingApi.stubAllNomisIncentiveMappingNotFound()
+      mappingApi.stubIncentiveMappingCreate()
 
       // stub 25 migrated records and 1 fake a failure
       awsSqsIncentivesMigrationDlqClient!!.sendMessage(incentivesMigrationDlqUrl, """{ "message": "some error" }""")
@@ -174,6 +182,39 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
           // .jsonPath("$[0].recordsMigrated").isEqualTo(25)
           .jsonPath("$[0].recordsFailed").isEqualTo(1)
       }
+    }
+
+    @Test
+    internal fun `will retry to create a mapping, and only the mapping, if it fails first time`() {
+      nomisApi.stubGetIncentivesInitialCount(1)
+      nomisApi.stubMultipleGetIncentivesCounts(totalElements = 1, pageSize = 10)
+      nomisApi.stubMultipleGetIncentives(totalElements = 1)
+      mappingApi.stubAllNomisIncentiveMappingNotFound()
+      incentivesApi.stubCreateIncentive(654321)
+      mappingApi.stubIncentiveMappingCreateFailureFollowedBySuccess()
+
+      webTestClient.post().uri("/migrate/incentives")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCENTIVES")))
+        .header("Content-Type", "application/json")
+        .body(
+          BodyInserters.fromValue(
+            """
+            {
+            }
+            """.trimIndent()
+          )
+        )
+        .exchange()
+        .expectStatus().isAccepted
+
+      // wait for all mappings to be created before verifying
+      await untilCallTo { mappingApi.createIncentiveMappingCount() } matches { it == 2 }
+
+      // check that one incentive is created
+      assertThat(incentivesApi.createIncentiveCount()).isEqualTo(1)
+
+      // should retry to create mapping twice
+      mappingApi.verifyCreateMappingIncentiveIds(arrayOf(654321), times = 2)
     }
   }
 

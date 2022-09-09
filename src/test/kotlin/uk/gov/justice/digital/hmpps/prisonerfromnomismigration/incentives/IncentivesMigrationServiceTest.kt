@@ -34,6 +34,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.Incent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.MIGRATE_INCENTIVES
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.MIGRATE_INCENTIVES_BY_PAGE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.MIGRATE_INCENTIVES_STATUS_CHECK
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.RETRY_INCENTIVE_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.ReviewType.REVIEW
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
@@ -56,6 +57,7 @@ internal class IncentivesMigrationServiceTest {
   private val telemetryClient: TelemetryClient = mock()
   private val auditService: AuditService = mock()
   private val incentivesService: IncentivesService = mock()
+  private val incentiveMappingService: IncentiveMappingService = mock()
   val service = IncentivesMigrationService(
     nomisApiService = nomisApiService,
     queueService = queueService,
@@ -63,6 +65,7 @@ internal class IncentivesMigrationServiceTest {
     telemetryClient = telemetryClient,
     auditService = auditService,
     incentivesService = incentivesService,
+    incentiveMappingService = incentiveMappingService,
     pageSize = 200
   )
 
@@ -83,6 +86,7 @@ internal class IncentivesMigrationServiceTest {
       telemetryClient = telemetryClient,
       auditService = auditService,
       incentivesService = incentivesService,
+      incentiveMappingService = incentiveMappingService,
       pageSize = 200
     )
 
@@ -760,6 +764,7 @@ internal class IncentivesMigrationServiceTest {
 
     @BeforeEach
     internal fun setUp() {
+      whenever(incentiveMappingService.findNomisIncentiveMapping(any(), any())).thenReturn(null)
       whenever(nomisApiService.getIncentiveBlocking(any(), any())).thenReturn(
         NomisIncentive(
           bookingId = 1000,
@@ -829,6 +834,110 @@ internal class IncentivesMigrationServiceTest {
           )
         )
       )
+    }
+
+    @Test
+    internal fun `will create a mapping between Incentives and NOMIS IEP`() {
+      whenever(nomisApiService.getIncentiveBlocking(any(), any())).thenReturn(
+        NomisIncentive(
+          bookingId = 123,
+          incentiveSequence = 2,
+          commentText = "Doing well",
+          iepDateTime = LocalDateTime.parse("2020-01-01T13:10:00"),
+          prisonId = "HEI",
+          iepLevel = NomisCodeDescription("ENH", "Enhanced"),
+          userId = "JANE_SMITH",
+          currentIep = true,
+        )
+      )
+      whenever(incentivesService.migrateIncentive(any())).thenReturn(CreateIncentiveIEPResponse(999L))
+
+      service.migrateIncentive(
+        MigrationContext(
+          type = INCENTIVES,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = IncentiveId(123, 2)
+        )
+      )
+
+      verify(incentiveMappingService).createNomisIncentiveMigrationMapping(
+        nomisBookingId = 123,
+        nomisSequence = 2,
+        incentiveId = 999,
+        migrationId = "2020-05-23T11:30:00",
+      )
+    }
+
+    @Test
+    internal fun `will not throw exception (and place message back on queue) but create a new retry message`() {
+      whenever(nomisApiService.getIncentiveBlocking(any(), any())).thenReturn(
+        NomisIncentive(
+          bookingId = 123,
+          incentiveSequence = 2,
+          commentText = "Doing well",
+          iepDateTime = LocalDateTime.parse("2020-01-01T13:10:00"),
+          prisonId = "HEI",
+          iepLevel = NomisCodeDescription("ENH", "Enhanced"),
+          userId = "JANE_SMITH",
+          currentIep = true,
+        )
+      )
+      whenever(incentivesService.migrateIncentive(any())).thenReturn(CreateIncentiveIEPResponse(999L))
+
+      whenever(incentiveMappingService.createNomisIncentiveMigrationMapping(any(), any(), any(), any())).thenThrow(
+        RuntimeException("something went wrong")
+      )
+
+      service.migrateIncentive(
+        MigrationContext(
+          type = INCENTIVES,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = IncentiveId(123, 2)
+        )
+      )
+
+      verify(queueService).sendMessage(
+        message = eq(RETRY_INCENTIVE_MAPPING),
+        context = check<MigrationContext<IncentiveMapping>> {
+          assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
+          assertThat(it.body.nomisBookingId).isEqualTo(123)
+          assertThat(it.body.nomisSequence).isEqualTo(2)
+          assertThat(it.body.incentiveId).isEqualTo(999)
+        },
+        delaySeconds = eq(0)
+      )
+    }
+
+    @Nested
+    inner class WhenMigratedAlready {
+      @BeforeEach
+      internal fun setUp() {
+        whenever(incentiveMappingService.findNomisIncentiveMapping(any(), any())).thenReturn(
+          IncentiveNomisMapping(
+            nomisBookingId = 123,
+            nomisSequence = 2,
+            incentiveId = 54321,
+            mappingType = "MIGRATION",
+          )
+        )
+      }
+
+      @Test
+      internal fun `will do nothing`() {
+
+        service.migrateIncentive(
+          MigrationContext(
+            type = INCENTIVES,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = IncentiveId(123, 2)
+          )
+        )
+
+        verifyNoInteractions(incentivesService)
+      }
     }
   }
 
