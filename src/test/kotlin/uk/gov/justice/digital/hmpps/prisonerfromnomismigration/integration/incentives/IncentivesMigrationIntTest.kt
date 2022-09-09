@@ -10,7 +10,6 @@ import org.awaitility.kotlin.untilAsserted
 import org.awaitility.kotlin.untilCallTo
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -186,7 +185,6 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Test
-    @Disabled
     internal fun `will retry to create a mapping, and only the mapping, if it fails first time`() {
       nomisApi.stubGetIncentivesInitialCount(1)
       nomisApi.stubMultipleGetIncentivesCounts(totalElements = 1, pageSize = 10)

@@ -123,20 +123,20 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubVisitMappingCreateFailureFollowedBySuccess() {
     stubFor(
       post(urlEqualTo("/mapping"))
-        .inScenario("Retry Scenario")
+        .inScenario("Retry Visit Scenario")
         .whenScenarioStateIs(STARTED)
         .willReturn(
           aResponse()
             .withStatus(500) // request unsuccessful with status code 500
             .withHeader("Content-Type", "application/json")
         )
-        .willSetStateTo("Cause Success")
+        .willSetStateTo("Cause Visit Success")
     )
 
     stubFor(
       post(urlEqualTo("/mapping"))
-        .inScenario("Retry Scenario")
-        .whenScenarioStateIs("Cause Success")
+        .inScenario("Retry Visit Scenario")
+        .whenScenarioStateIs("Cause Visit Success")
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -291,20 +291,20 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubIncentiveMappingCreateFailureFollowedBySuccess() {
     stubFor(
       post(urlPathEqualTo("/mapping/incentives"))
-        .inScenario("Retry Scenario")
+        .inScenario("Retry Incentive Scenario")
         .whenScenarioStateIs(STARTED)
         .willReturn(
           aResponse()
             .withStatus(500) // request unsuccessful with status code 500
             .withHeader("Content-Type", "application/json")
         )
-        .willSetStateTo("Cause Success")
+        .willSetStateTo("Cause Incentive Success")
     )
 
     stubFor(
       post(urlPathEqualTo("/mapping/incentives"))
-        .inScenario("Retry Scenario")
-        .whenScenarioStateIs("Cause Success")
+        .inScenario("Retry Incentive Scenario")
+        .whenScenarioStateIs("Cause Incentive Success")
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
