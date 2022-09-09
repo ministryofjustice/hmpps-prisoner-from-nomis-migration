@@ -1,6 +1,8 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives
 
 import com.microsoft.applicationinsights.TelemetryClient
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
@@ -10,6 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.Incent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.MIGRATE_INCENTIVES
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.MIGRATE_INCENTIVES_BY_PAGE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.MIGRATE_INCENTIVES_STATUS_CHECK
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.RETRY_INCENTIVE_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.IncentiveId
@@ -29,8 +32,12 @@ class IncentivesMigrationService(
   private val telemetryClient: TelemetryClient,
   private val auditService: AuditService,
   private val incentivesService: IncentivesService,
+  private val incentiveMappingService: IncentiveMappingService,
   @Value("\${incentives.page.size:1000}") private val pageSize: Long
 ) {
+  private companion object {
+    val log: Logger = LoggerFactory.getLogger(this::class.java)
+  }
 
   suspend fun migrateIncentives(migrationFilter: IncentivesMigrationFilter): MigrationContext<IncentivesMigrationFilter> {
     val incentiveCount = nomisApiService.getIncentives(
@@ -108,19 +115,33 @@ class IncentivesMigrationService(
 
   fun migrateIncentive(context: MigrationContext<IncentiveId>) {
     val (bookingId, sequence) = context.body
-    val iep = nomisApiService.getIncentiveBlocking(bookingId, sequence)
-    val migratedIncentive = incentivesService.migrateIncentive(iep.toIncentive())
-    telemetryClient.trackEvent(
-      "nomis-migration-incentive-migrated",
-      mapOf(
-        "migrationId" to context.migrationId,
-        "bookingId" to bookingId.toString(),
-        "sequence" to sequence.toString(),
-        "incentiveId" to migratedIncentive.id.toString(),
-        "level" to iep.iepLevel.code,
-      ),
-      null
-    )
+
+    incentiveMappingService.findNomisIncentiveMapping(bookingId, sequence)?.run {
+      log.info("Will not migrate incentive since it is migrated already, Booking id is ${context.body.bookingId}, sequence ${context.body.sequence}, incentive id is ${this.incentiveId} as part migration ${this.label ?: "NONE"} (${this.mappingType})")
+    }
+      ?: run {
+        val iep = nomisApiService.getIncentiveBlocking(bookingId, sequence)
+        val migratedIncentive = incentivesService.migrateIncentive(iep.toIncentive())
+          .also {
+            createIncentiveMapping(
+              bookingId,
+              nomisSequence = sequence,
+              incentiveId = it.id,
+              context = context
+            )
+          }
+        telemetryClient.trackEvent(
+          "nomis-migration-incentive-migrated",
+          mapOf(
+            "migrationId" to context.migrationId,
+            "bookingId" to bookingId.toString(),
+            "sequence" to sequence.toString(),
+            "incentiveId" to migratedIncentive.id.toString(),
+            "level" to iep.iepLevel.code,
+          ),
+          null
+        )
+      }
   }
 
   fun migrateIncentivesStatusCheck(context: MigrationContext<IncentiveMigrationStatusCheck>) {
@@ -233,7 +254,47 @@ class IncentivesMigrationService(
       message = CANCEL_MIGRATE_INCENTIVES
     )
   }
+
+  private fun createIncentiveMapping(
+    bookingId: Long,
+    nomisSequence: Long,
+    incentiveId: Long,
+    context: MigrationContext<*>
+  ) = try {
+    incentiveMappingService.createNomisIncentiveMigrationMapping(
+      nomisBookingId = bookingId,
+      nomisSequence = nomisSequence,
+      incentiveId = incentiveId,
+      migrationId = context.migrationId,
+    )
+  } catch (e: Exception) {
+    log.error(
+      "Failed to create mapping for incentive $bookingId, sequence $nomisSequence, Incentive id $incentiveId",
+      e
+    )
+    queueService.sendMessage(
+      RETRY_INCENTIVE_MAPPING,
+      MigrationContext(
+        context = context,
+        body = IncentiveMapping(nomisBookingId = bookingId, nomisSequence = nomisSequence, incentiveId = incentiveId)
+      )
+    )
+  }
+
+  fun retryCreateIncentiveMapping(context: MigrationContext<IncentiveMapping>) =
+    incentiveMappingService.createNomisIncentiveMigrationMapping(
+      nomisBookingId = context.body.nomisBookingId,
+      nomisSequence = context.body.nomisSequence,
+      incentiveId = context.body.incentiveId,
+      migrationId = context.migrationId,
+    )
 }
+
+data class IncentiveMapping(
+  val nomisBookingId: Long,
+  val nomisSequence: Long,
+  val incentiveId: Long,
+)
 
 // TODO move this
 private fun <T> MigrationContext<T>.durationMinutes(): Long =

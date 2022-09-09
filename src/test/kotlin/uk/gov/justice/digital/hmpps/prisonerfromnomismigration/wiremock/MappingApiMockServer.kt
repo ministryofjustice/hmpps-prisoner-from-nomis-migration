@@ -275,6 +275,59 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubAllNomisIncentiveMappingNotFound() {
+    stubFor(
+      get(
+        urlPathMatching("/mapping/incentives/nomis-booking-id/\\d*/nomis-incentive-sequence/\\d*")
+      ).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.NOT_FOUND.value())
+          .withBody("""{"message":"Not found"}""")
+      )
+    )
+  }
+
+  fun stubIncentiveMappingCreateFailureFollowedBySuccess() {
+    stubFor(
+      post(urlPathEqualTo("/mapping/incentives"))
+        .inScenario("Retry Scenario")
+        .whenScenarioStateIs(STARTED)
+        .willReturn(
+          aResponse()
+            .withStatus(500) // request unsuccessful with status code 500
+            .withHeader("Content-Type", "application/json")
+        )
+        .willSetStateTo("Cause Success")
+    )
+
+    stubFor(
+      post(urlPathEqualTo("/mapping/incentives"))
+        .inScenario("Retry Scenario")
+        .whenScenarioStateIs("Cause Success")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.CREATED.value())
+        )
+    )
+  }
+
+  fun createIncentiveMappingCount() =
+    findAll(postRequestedFor(urlPathEqualTo("/mapping/incentives"))).count()
+
+  fun verifyCreateMappingIncentiveIds(nomsIncentiveIds: Array<Long>, times: Int = 1) = nomsIncentiveIds.forEach {
+    verify(
+      times,
+      postRequestedFor(urlPathEqualTo("/mapping/incentives")).withRequestBody(
+        matchingJsonPath(
+          "incentiveId",
+          equalTo("$it")
+        )
+      )
+    )
+  }
+
   fun verifyGetIncentiveMapping(nomisBookingId: Long, nomisIncentiveSequence: Long) {
     verify(
       getRequestedFor(
