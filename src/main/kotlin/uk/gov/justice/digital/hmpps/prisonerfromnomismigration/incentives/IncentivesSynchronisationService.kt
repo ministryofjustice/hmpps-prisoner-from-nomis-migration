@@ -11,7 +11,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiS
 class IncentivesSynchronisationService(
   private val nomisApiService: NomisApiService,
   private val telemetryClient: TelemetryClient,
-  private val mappingService: IncentiveMappingService
+  private val mappingService: IncentiveMappingService,
+  private val incentiveService: IncentivesService
 ) {
 
   private companion object {
@@ -20,35 +21,74 @@ class IncentivesSynchronisationService(
 
   suspend fun synchroniseIncentive(iepEvent: IncentiveUpsertedOffenderEvent) {
     nomisApiService.getIncentive(iepEvent.bookingId, iepEvent.iepSeq).run {
+
       // todo integration and remove this log
       log.debug("received nomis incentive: $this")
 
-      mappingService.findNomisIncentiveMapping(iepEvent.bookingId, iepEvent.iepSeq)?.run {
+      mappingService.findNomisIncentiveMapping(
+        nomisBookingId = bookingId,
+        nomisIncentiveSequence = incentiveSequence
+      )?.let { incentiveMapping ->
         // todo remove this log
-        log.debug("found nomis incentive mapping: $this")
+        log.debug("found nomis incentive mapping: $incentiveMapping")
+        incentiveService.synchroniseUpdateIncentive(
+          iepEvent.bookingId, incentiveMapping.incentiveId,
+          UpdateIncentiveIEP(
+            reviewTime = this.iepDateTime,
+            commentText = this.commentText,
+            current = this.currentIep
+          )
+        )
         telemetryClient.trackEvent(
           "incentive-updated-synchronisation",
           mapOf(
             "bookingId" to iepEvent.bookingId.toString(),
             "incentiveSequence" to iepEvent.iepSeq.toString(),
-            "auditModuleName" to iepEvent.auditModuleName
+            "auditModuleName" to iepEvent.auditModuleName,
+            "currentIep" to this.currentIep.toString()
           ),
           null
         )
+        if (!this.currentIep) {
+          nomisApiService.getCurrentIncentive(iepEvent.bookingId).let { currentIep ->
+            log.debug("updating current IEP $this \nfollowing update to non current IEP: $currentIep")
+            incentiveService.synchroniseUpdateIncentive(
+              iepEvent.bookingId, incentiveMapping.incentiveId,
+              UpdateIncentiveIEP(
+                reviewTime = currentIep.iepDateTime,
+                commentText = currentIep.commentText,
+                current = currentIep.currentIep
+              )
+            )
+            telemetryClient.trackEvent(
+              "incentive-updated-synchronisation",
+              mapOf(
+                "bookingId" to iepEvent.bookingId.toString(),
+                "incentiveSequence" to iepEvent.iepSeq.toString(),
+                "auditModuleName" to iepEvent.auditModuleName,
+                "currentIep" to currentIep.toString()
+              ),
+              null
+            )
+          }
+        }
       } ?: run {
         log.debug("no nomis incentive mapping found")
-        mappingService.createNomisIncentiveSynchronisationMapping(
-          nomisBookingId = iepEvent.bookingId, nomisSequence = iepEvent.iepSeq, incentiveId = 999
-        )
-        telemetryClient.trackEvent(
-          "incentive-created-synchronisation",
-          mapOf(
-            "bookingId" to iepEvent.bookingId.toString(),
-            "incentiveSequence" to iepEvent.iepSeq.toString(),
-            "auditModuleName" to iepEvent.auditModuleName
-          ),
-          null
-        )
+        incentiveService.synchroniseCreateIncentive(this.toIncentive()).also {
+          mappingService.createNomisIncentiveSynchronisationMapping(
+            nomisBookingId = iepEvent.bookingId, nomisSequence = iepEvent.iepSeq, incentiveId = it.id
+          )
+          telemetryClient.trackEvent(
+            "incentive-created-synchronisation",
+            mapOf(
+              "bookingId" to iepEvent.bookingId.toString(),
+              "incentiveSequence" to iepEvent.iepSeq.toString(),
+              "incentiveId" to it.id.toString(),
+              "auditModuleName" to iepEvent.auditModuleName
+            ),
+            null
+          )
+        }
       }
     }
   }

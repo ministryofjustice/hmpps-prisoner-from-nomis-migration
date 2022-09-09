@@ -23,6 +23,22 @@ class MockIncentivesResource {
     @PathVariable("bookingId") bookingId: Long,
     @RequestBody @Valid createIncentiveRequest: CreateIncentiveRequest
   ): CreateIncentiveResponse = CreateIncentiveResponse(Random.nextLong())
+
+  @PreAuthorize("hasRole('ROLE_MAINTAIN_IEP')")
+  @PostMapping("/iep/sync/booking/{bookingId}")
+  @Operation(hidden = true)
+  fun createSynchroniseIncentive(
+    @PathVariable("bookingId") bookingId: Long,
+    @RequestBody @Valid createIncentiveRequest: CreateIncentiveRequest
+  ): CreateIncentiveResponse = CreateIncentiveResponse(Random.nextLong())
+
+  @PreAuthorize("hasRole('ROLE_MAINTAIN_IEP')")
+  @PostMapping("/iep/sync/booking/{bookingId}/id/{id}")
+  @Operation(hidden = true)
+  fun updateSynchroniseIncentive(
+    @PathVariable("bookingId") bookingId: Long,
+    @RequestBody @Valid createIncentiveRequest: CreateIncentiveRequest
+  ): CreateIncentiveResponse = CreateIncentiveResponse(Random.nextLong())
 }
 
 data class CreateIncentiveRequest(

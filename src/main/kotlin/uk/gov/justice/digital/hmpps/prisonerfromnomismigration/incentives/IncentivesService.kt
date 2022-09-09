@@ -2,9 +2,12 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives
 
 import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.annotation.JsonInclude
+import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisIncentive
 import java.time.LocalDateTime
 
 @Service
@@ -16,6 +19,22 @@ class IncentivesService(@Qualifier("incentivesApiWebClient") private val webClie
       .retrieve()
       .bodyToMono(CreateIncentiveIEPResponse::class.java)
       .block()!!
+
+  suspend fun synchroniseCreateIncentive(incentive: CreateIncentiveIEP): CreateIncentiveIEPResponse =
+    webClient.post()
+      .uri("/iep/sync/booking/{bookingId}", incentive.bookingId)
+      .bodyValue(incentive)
+      .retrieve()
+      .bodyToMono(CreateIncentiveIEPResponse::class.java)
+      .awaitSingle()
+
+  suspend fun synchroniseUpdateIncentive(bookingId: Long, incentiveId: Long, incentive: UpdateIncentiveIEP) =
+    webClient.put()
+      .uri("/iep/sync/booking/{bookingId}/id/{id}", bookingId, incentiveId)
+      .bodyValue(incentive)
+      .retrieve()
+      .bodyToMono(Unit::class.java)
+      .awaitSingleOrNull()
 }
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -30,7 +49,33 @@ data class CreateIncentiveIEP(
   val commentText: String? = null,
   val current: Boolean,
   val reviewType: ReviewType,
-)
+) {
+  fun toIncentive(nomisIncentive: NomisIncentive): CreateIncentiveIEP = CreateIncentiveIEP(
+    bookingId = bookingId,
+    prisonerNumber = "TODO", // TODO need noms number from API
+    iepCode = nomisIncentive.iepLevel.code,
+    locationId = nomisIncentive.prisonId,
+    reviewTime = nomisIncentive.iepDateTime,
+    reviewedBy = nomisIncentive.userId ?: "anonymous", // TODO can this ever happen??
+    commentText = nomisIncentive.commentText,
+    current = nomisIncentive.currentIep,
+    reviewType = ReviewType.REVIEW, // TODO we need audit module to work out review type
+  )
+}
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
+data class UpdateIncentiveIEP(
+  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+  val reviewTime: LocalDateTime,
+  val commentText: String? = null,
+  val current: Boolean,
+) {
+  fun toIncentive(nomisIncentive: NomisIncentive): UpdateIncentiveIEP = UpdateIncentiveIEP(
+    reviewTime = nomisIncentive.iepDateTime,
+    commentText = nomisIncentive.commentText,
+    current = nomisIncentive.currentIep,
+  )
+}
 
 enum class ReviewType {
   INITIAL, REVIEW, TRANSFER, ADJUSTMENT

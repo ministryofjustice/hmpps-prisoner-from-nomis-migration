@@ -10,7 +10,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.Incent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.MIGRATE_INCENTIVES
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.MIGRATE_INCENTIVES_BY_PAGE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.MIGRATE_INCENTIVES_STATUS_CHECK
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.ReviewType.REVIEW
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.IncentiveId
@@ -18,7 +17,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.INCENTIVES
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisIncentive
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.asStringOrBlank
 import java.time.Duration
 import java.time.LocalDateTime
@@ -236,18 +234,6 @@ class IncentivesMigrationService(
     )
   }
 }
-
-private fun NomisIncentive.toIncentive(): CreateIncentiveIEP = CreateIncentiveIEP(
-  bookingId = bookingId,
-  prisonerNumber = "TODO", // TODO need noms number from API
-  iepCode = iepLevel.code,
-  locationId = this.prisonId,
-  reviewTime = this.iepDateTime,
-  reviewedBy = this.userId ?: "anonymous", // TODO can this ever happen??
-  commentText = this.commentText,
-  current = this.currentIep,
-  reviewType = REVIEW, // TODO we need audit module to work out review type
-)
 
 // TODO move this
 private fun <T> MigrationContext<T>.durationMinutes(): Long =
