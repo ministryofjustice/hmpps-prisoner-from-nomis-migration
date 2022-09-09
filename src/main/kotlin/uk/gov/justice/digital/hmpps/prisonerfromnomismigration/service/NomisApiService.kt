@@ -11,6 +11,8 @@ import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.CreateIncentiveIEP
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.ReviewType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomUsageResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationFilter
 import java.time.LocalDate
@@ -141,6 +143,13 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       sequence,
     )
   }
+
+  suspend fun getCurrentIncentive(bookingId: Long): NomisIncentive =
+    webClient.get()
+      .uri("/incentives/booking-id/{bookingId}/current", bookingId)
+      .retrieve()
+      .bodyToMono(NomisIncentive::class.java)
+      .awaitSingle()
 }
 
 data class VisitId(
@@ -189,8 +198,20 @@ data class NomisIncentive(
   val prisonId: String,
   val iepLevel: NomisCodeDescription,
   val userId: String? = null,
-  val currentIep: Boolean,
-)
+  val currentIep: Boolean
+) {
+  fun toIncentive(): CreateIncentiveIEP = CreateIncentiveIEP(
+    bookingId = bookingId,
+    prisonerNumber = "TODO", // TODO need noms number from API
+    iepCode = iepLevel.code,
+    locationId = this.prisonId,
+    reviewTime = this.iepDateTime,
+    reviewedBy = this.userId ?: "anonymous", // TODO can this ever happen??
+    commentText = this.commentText,
+    current = this.currentIep,
+    reviewType = ReviewType.REVIEW, // TODO we need audit module to work out review type
+  )
+}
 
 class RestResponsePage<T> @JsonCreator(mode = JsonCreator.Mode.PROPERTIES) constructor(
   @JsonProperty("content") content: List<T>,

@@ -229,14 +229,38 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubGetIncentive(bookingId: Long, incentiveSequence: Long) {
+  fun stubGetIncentive(bookingId: Long, incentiveSequence: Long, currentIep: Boolean = true) {
     nomisApi.stubFor(
       get(
         urlPathEqualTo("/incentives/booking-id/$bookingId/incentive-sequence/$incentiveSequence")
       )
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(incentiveResponse(bookingId = bookingId, incentiveSequence = incentiveSequence))
+            .withBody(
+              incentiveResponse(
+                bookingId = bookingId,
+                incentiveSequence = incentiveSequence,
+                currentIep = currentIep
+              )
+            )
+        )
+    )
+  }
+
+  fun stubGetCurrentIncentive(bookingId: Long, incentiveSequence: Long) {
+    nomisApi.stubFor(
+      get(
+        urlPathEqualTo("/incentives/booking-id/$bookingId/current")
+      )
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+            .withBody(
+              incentiveResponse(
+                bookingId = bookingId,
+                incentiveSequence = incentiveSequence,
+                currentIep = true
+              )
+            )
         )
     )
   }
@@ -371,6 +395,7 @@ private fun incentivePagedResponse(
 private fun incentiveResponse(
   bookingId: Long = 2,
   incentiveSequence: Long = 3,
+  currentIep: Boolean = true,
 ): String {
   return """
 {
@@ -381,7 +406,7 @@ private fun incentiveResponse(
   "prisonId":"MDI",
   "iepLevel":{"code":"STD","description":"Standard"},
   "userId":"LBENNETT_GEN",
-  "currentIep": true
+  "currentIep": $currentIep
   }
    
   """.trimIndent()

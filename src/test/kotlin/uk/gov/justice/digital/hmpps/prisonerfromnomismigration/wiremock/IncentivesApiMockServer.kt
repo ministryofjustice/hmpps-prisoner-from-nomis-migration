@@ -5,6 +5,8 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.put
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
@@ -54,6 +56,44 @@ class IncentivesApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.CREATED.value())
           .withBody("""{"id": 654321}""")
+      )
+    )
+  }
+
+  fun stubCreateSynchroniseIncentive() {
+    stubFor(
+      post(urlMatching("/iep/sync/booking/\\d*")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.CREATED.value())
+          .withBody("""{"id": 654321}""")
+      )
+    )
+  }
+
+  fun stubUpdateSynchroniseIncentive() {
+    stubFor(
+      put(urlMatching("/iep/sync/booking/\\d*/id/\\d*")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+      )
+    )
+  }
+
+  fun verifyUpdateSynchroniseIncentive(times: Int) {
+    verify(
+      times,
+      putRequestedFor(
+        urlMatching("/iep/sync/booking/\\d*/id/\\d*")
+      )
+    )
+  }
+
+  fun verifyCreateSynchroniseIncentive() {
+    verify(
+      postRequestedFor(
+        urlMatching("/iep/sync/booking/\\d*")
       )
     )
   }
