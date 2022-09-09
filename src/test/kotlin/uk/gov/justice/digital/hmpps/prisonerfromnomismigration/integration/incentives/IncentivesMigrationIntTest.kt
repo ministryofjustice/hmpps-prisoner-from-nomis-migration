@@ -78,7 +78,6 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Test
-    @Disabled
     internal fun `will start processing pages of incentives`() {
       nomisApi.stubGetIncentivesInitialCount(86)
       nomisApi.stubMultipleGetIncentivesCounts(totalElements = 86, pageSize = 10)
@@ -122,7 +121,6 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Test
-    @Disabled
     internal fun `will add analytical events for starting, ending and each migrated record`() {
       nomisApi.stubGetIncentivesInitialCount(26)
       nomisApi.stubMultipleGetIncentivesCounts(totalElements = 26, pageSize = 10)
@@ -188,6 +186,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Test
+    @Disabled
     internal fun `will retry to create a mapping, and only the mapping, if it fails first time`() {
       nomisApi.stubGetIncentivesInitialCount(1)
       nomisApi.stubMultipleGetIncentivesCounts(totalElements = 1, pageSize = 10)
