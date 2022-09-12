@@ -1047,7 +1047,7 @@ internal class VisitsMigrationServiceTest {
       verify(visitsService).createVisit(
         check {
           assertThat(it.startTimestamp).isEqualTo(tomorrowDateTimeMorning.toLocalDate().atTime(9, 0))
-          assertThat(it.endTimestamp).isEqualTo(tomorrowDateTimeMorning.toLocalDate().atTime(11, 0))
+          assertThat(it.endTimestamp).isEqualTo(tomorrowDateTimeMorning.toLocalDate().atTime(10, 0))
         }
       )
     }
@@ -1073,8 +1073,8 @@ internal class VisitsMigrationServiceTest {
 
       verify(visitsService).createVisit(
         check {
-          assertThat(it.startTimestamp).isEqualTo(tomorrowDateTimeAfternoon.toLocalDate().atTime(14, 0))
-          assertThat(it.endTimestamp).isEqualTo(tomorrowDateTimeAfternoon.toLocalDate().atTime(16, 0))
+          assertThat(it.startTimestamp).isEqualTo(tomorrowDateTimeAfternoon.toLocalDate().atTime(13, 45))
+          assertThat(it.endTimestamp).isEqualTo(tomorrowDateTimeAfternoon.toLocalDate().atTime(14, 45))
         }
       )
     }
