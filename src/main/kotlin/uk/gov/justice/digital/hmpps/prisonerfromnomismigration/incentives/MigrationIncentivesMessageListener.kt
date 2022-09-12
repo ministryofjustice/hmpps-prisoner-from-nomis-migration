@@ -20,7 +20,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 @Service
 class MigrationIncentivesMessageListener(
   private val objectMapper: ObjectMapper,
-  private val incentivesMigrationService: IncentivesMigrationService
+  private val incentivesMigrationService: IncentivesMigrationService,
+  private val incentivesSynchronisationService: IncentivesSynchronisationService
 ) {
 
   private companion object {
@@ -39,6 +40,7 @@ class MigrationIncentivesMessageListener(
         MIGRATE_INCENTIVES_STATUS_CHECK -> incentivesMigrationService.migrateIncentivesStatusCheck(context(message.fromJson()))
         CANCEL_MIGRATE_INCENTIVES -> incentivesMigrationService.cancelMigrateIncentivesStatusCheck(context(message.fromJson()))
         RETRY_INCENTIVE_MAPPING -> incentivesMigrationService.retryCreateIncentiveMapping(context(message.fromJson()))
+        IncentiveMessages.RETRY_INCENTIVE_SYNCHRONISATION_MAPPING -> incentivesSynchronisationService.retryCreateIncentiveMapping(context(message.fromJson()))
       }
     }.onFailure {
       log.error("MessageID:${rawMessage.sqsMessageId}", it)

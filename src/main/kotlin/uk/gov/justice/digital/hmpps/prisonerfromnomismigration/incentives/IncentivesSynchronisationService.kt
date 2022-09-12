@@ -4,7 +4,10 @@ import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.IncentiveUpsertedOffenderEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 
 @Service
@@ -12,7 +15,8 @@ class IncentivesSynchronisationService(
   private val nomisApiService: NomisApiService,
   private val telemetryClient: TelemetryClient,
   private val mappingService: IncentiveMappingService,
-  private val incentiveService: IncentivesService
+  private val incentiveService: IncentivesService,
+  private val queueService: MigrationQueueService
 ) {
 
   private companion object {
@@ -75,9 +79,27 @@ class IncentivesSynchronisationService(
       } ?: run {
         log.debug("no nomis incentive mapping found")
         incentiveService.synchroniseCreateIncentive(this.toIncentive()).also {
-          mappingService.createNomisIncentiveSynchronisationMapping(
-            nomisBookingId = iepEvent.bookingId, nomisSequence = iepEvent.iepSeq, incentiveId = it.id
-          )
+          try {
+            mappingService.createNomisIncentiveSynchronisationMapping(
+              nomisBookingId = iepEvent.bookingId, nomisSequence = iepEvent.iepSeq, incentiveId = it.id
+            )
+          } catch (e: Exception) {
+            log.error(
+              "Failed to create mapping for incentive id ${it.id}, nomisBookingId ${iepEvent.bookingId}, nomsSequence ${iepEvent.iepSeq}",
+              e
+            )
+            queueService.sendMessage(
+              IncentiveMessages.RETRY_INCENTIVE_SYNCHRONISATION_MAPPING,
+              MigrationContext(
+                type = MigrationType.INCENTIVES, "dummy", 0,
+                body = IncentiveMapping(
+                  nomisBookingId = iepEvent.bookingId,
+                  nomisSequence = iepEvent.iepSeq,
+                  incentiveId = it.id
+                )
+              )
+            )
+          }
           telemetryClient.trackEvent(
             "incentive-created-synchronisation",
             mapOf(
@@ -91,5 +113,14 @@ class IncentivesSynchronisationService(
         }
       }
     }
+  }
+
+  fun retryCreateIncentiveMapping(context: MigrationContext<IncentiveMapping>) {
+    log.info("Retrying mapping creation for booking id: ${context.body.nomisBookingId}, noms seq: ${context.body.nomisSequence}, incentive id : ${context.body.incentiveId}")
+    mappingService.createNomisIncentiveSynchronisationMapping(
+      nomisBookingId = context.body.nomisBookingId,
+      nomisSequence = context.body.nomisSequence,
+      incentiveId = context.body.incentiveId,
+    )
   }
 }
