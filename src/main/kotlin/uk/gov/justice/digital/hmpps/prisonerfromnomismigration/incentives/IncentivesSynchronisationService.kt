@@ -76,7 +76,7 @@ class IncentivesSynchronisationService(
         log.debug("no nomis incentive mapping found")
         incentiveService.synchroniseCreateIncentive(this.toIncentive()).also {
           mappingService.createNomisIncentiveSynchronisationMapping(
-            nomisBookingId = iepEvent.bookingId, nomisSequence = iepEvent.iepSeq, incentiveId = it.id
+            nomisBookingId = iepEvent.bookingId, nomisIncentiveSequence = iepEvent.iepSeq, incentiveId = it.id
           )
           telemetryClient.trackEvent(
             "incentive-created-synchronisation",

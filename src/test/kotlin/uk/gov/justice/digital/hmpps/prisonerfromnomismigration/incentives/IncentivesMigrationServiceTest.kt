@@ -863,7 +863,7 @@ internal class IncentivesMigrationServiceTest {
 
       verify(incentiveMappingService).createNomisIncentiveMigrationMapping(
         nomisBookingId = 123,
-        nomisSequence = 2,
+        nomisIncentiveSequence = 2,
         incentiveId = 999,
         migrationId = "2020-05-23T11:30:00",
       )
@@ -903,7 +903,7 @@ internal class IncentivesMigrationServiceTest {
         context = check<MigrationContext<IncentiveMapping>> {
           assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
           assertThat(it.body.nomisBookingId).isEqualTo(123)
-          assertThat(it.body.nomisSequence).isEqualTo(2)
+          assertThat(it.body.nomisIncentiveSequence).isEqualTo(2)
           assertThat(it.body.incentiveId).isEqualTo(999)
         },
         delaySeconds = eq(0)
@@ -917,7 +917,7 @@ internal class IncentivesMigrationServiceTest {
         whenever(incentiveMappingService.findNomisIncentiveMapping(any(), any())).thenReturn(
           IncentiveNomisMapping(
             nomisBookingId = 123,
-            nomisSequence = 2,
+            nomisIncentiveSequence = 2,
             incentiveId = 54321,
             mappingType = "MIGRATION",
           )
