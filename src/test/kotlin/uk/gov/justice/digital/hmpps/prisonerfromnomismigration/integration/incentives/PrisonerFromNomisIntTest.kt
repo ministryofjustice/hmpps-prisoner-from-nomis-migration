@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.incentives
 
 import com.microsoft.applicationinsights.TelemetryClient
+import org.assertj.core.api.Assertions
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilAsserted
@@ -71,18 +72,11 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
       // wait for all mappings to be created before verifying
       await untilCallTo { mappingApi.createIncentiveMappingCount() } matches { it == 2 }
 
-      verify(telemetryClient).trackEvent(
-        eq("incentive-created-synchronisation"),
-        eq(
-          mapOf(
-            "bookingId" to "1234",
-            "incentiveSequence" to "1",
-            "incentiveId" to "654321",
-            "auditModuleName" to "OIDOIEPS"
-          )
-        ),
-        isNull()
-      )
+      // check that one incentive is created
+      Assertions.assertThat(incentivesApi.createIncentiveSynchronisationCount()).isEqualTo(1)
+
+      // should retry to create mapping twice
+      mappingApi.verifyCreateMappingIncentiveIds(arrayOf(654321), times = 2)
     }
   }
 
