@@ -9,13 +9,15 @@ import com.amazonaws.services.sqs.model.GetQueueUrlResult
 import com.amazonaws.services.sqs.model.QueueAttributeName
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.springframework.boot.actuate.info.Info.Builder
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.LatestMigration
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigratedItem
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.INCENTIVES_QUEUE_ID
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
@@ -23,10 +25,11 @@ import java.time.LocalDateTime
 
 internal class IncentiveMigrationPropertiesTest {
   private var hmppsQueueService: HmppsQueueService = mock()
+  private var incentiveMappingService: IncentiveMappingService = mock()
   private val sqsClient: AmazonSQS = mock()
   private var migrationQueue = HmppsQueue(INCENTIVES_QUEUE_ID, sqsClient, "queue", sqsClient, "dlq")
 
-  private var incentiveMigrationProperties = IncentiveMigrationProperties(hmppsQueueService)
+  private var incentiveMigrationProperties = IncentiveMigrationProperties(hmppsQueueService, incentiveMappingService)
   private lateinit var details: Map<String, Any>
 
   private fun build() =
@@ -42,6 +45,7 @@ internal class IncentiveMigrationPropertiesTest {
     @BeforeEach
     internal fun setUp() {
       mockEmptyQueues()
+      whenever(incentiveMappingService.findLatestMigration()).thenReturn(null)
       details = build()
     }
 
@@ -72,6 +76,13 @@ internal class IncentiveMigrationPropertiesTest {
     @BeforeEach
     internal fun setUp() {
       mockQueuesWith(messagesOnQueueCount = 20_000, messagesInFlightCount = 16, messagesOnDLQCount = 3)
+      whenever(incentiveMappingService.findLatestMigration()).thenReturn(LatestMigration(migrationId = "2020-01-01T12:00:00"))
+      whenever(incentiveMappingService.getMigrationDetails("2020-01-01T12:00:00")).thenReturn(
+        MigrationDetails(
+          count = 12_001,
+          content = listOf(MigratedItem(whenCreated = LocalDateTime.parse("2020-01-01T12:10:29"))),
+        )
+      )
       details = build()
     }
 
@@ -88,7 +99,6 @@ internal class IncentiveMigrationPropertiesTest {
     }
 
     @Test
-    @Disabled("we don't know how to do this yet")
     internal fun `will show migration Id, counts and date`() {
       assertThat(details["id"]).isEqualTo("2020-01-01T12:00:00")
       assertThat(details["records migrated"]).isEqualTo(12_001L)
@@ -103,6 +113,13 @@ internal class IncentiveMigrationPropertiesTest {
     @BeforeEach
     internal fun setUp() {
       mockEmptyQueues()
+      whenever(incentiveMappingService.findLatestMigration()).thenReturn(LatestMigration(migrationId = "2020-01-01T12:00:00"))
+      whenever(incentiveMappingService.getMigrationDetails("2020-01-01T12:00:00")).thenReturn(
+        MigrationDetails(
+          count = 12_001,
+          content = listOf(MigratedItem(whenCreated = LocalDateTime.parse("2020-01-01T12:10:29"))),
+        )
+      )
       details = build()
     }
 
@@ -119,7 +136,6 @@ internal class IncentiveMigrationPropertiesTest {
     }
 
     @Test
-    @Disabled("we don't know how to do this yet")
     internal fun `will show migration Id, counts and date`() {
       assertThat(details["id"]).isEqualTo("2020-01-01T12:00:00")
       assertThat(details["records migrated"]).isEqualTo(12_001L)
