@@ -85,6 +85,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
       mappingApi.stubIncentiveMappingCreate()
 
       incentivesApi.stubCreateIncentive()
+      mappingApi.stubIncentiveMappingByMigrationId(count = 86)
 
       webTestClient.post().uri("/migrate/incentives")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCENTIVES")))
@@ -129,6 +130,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
       mappingApi.stubIncentiveMappingCreate()
 
       // stub 25 migrated records and 1 fake a failure
+      mappingApi.stubIncentiveMappingByMigrationId(count = 25)
       awsSqsIncentivesMigrationDlqClient!!.sendMessage(incentivesMigrationDlqUrl, """{ "message": "some error" }""")
 
       webTestClient.post().uri("/migrate/incentives")
@@ -178,8 +180,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
           .jsonPath("$[0].estimatedRecordCount").isEqualTo(26)
           .jsonPath("$[0].migrationType").isEqualTo("INCENTIVES")
           .jsonPath("$[0].status").isEqualTo("COMPLETED")
-          // don't know how to calculate record count yet
-          // .jsonPath("$[0].recordsMigrated").isEqualTo(25)
+          .jsonPath("$[0].recordsMigrated").isEqualTo(25)
           .jsonPath("$[0].recordsFailed").isEqualTo(1)
       }
     }
@@ -493,6 +494,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
       val count = 30L
       nomisApi.stubGetIncentivesInitialCount(count)
       nomisApi.stubMultipleGetIncentivesCounts(totalElements = count, pageSize = 10)
+      mappingApi.stubIncentiveMappingByMigrationId(count = count.toInt())
 
       val migrationId = webTestClient.post().uri("/migrate/incentives")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCENTIVES")))
