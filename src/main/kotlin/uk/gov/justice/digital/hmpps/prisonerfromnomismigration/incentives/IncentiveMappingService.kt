@@ -27,13 +27,13 @@ class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webC
 
   fun createNomisIncentiveMigrationMapping(
     nomisBookingId: Long,
-    nomisSequence: Long,
+    nomisIncentiveSequence: Long,
     incentiveId: Long,
     migrationId: String
   ) {
     createNomisIncentiveMapping(
       nomisBookingId = nomisBookingId,
-      nomisSequence = nomisSequence,
+      nomisIncentiveSequence = nomisIncentiveSequence,
       incentiveId = incentiveId,
       migrationId = migrationId,
       mappingType = "MIGRATED"
@@ -42,12 +42,12 @@ class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webC
 
   fun createNomisIncentiveSynchronisationMapping(
     nomisBookingId: Long,
-    nomisSequence: Long,
+    nomisIncentiveSequence: Long,
     incentiveId: Long,
   ) {
     createNomisIncentiveMapping(
       nomisBookingId = nomisBookingId,
-      nomisSequence = nomisSequence,
+      nomisIncentiveSequence = nomisIncentiveSequence,
       incentiveId = incentiveId,
       mappingType = "NOMIS_CREATED"
     )
@@ -55,7 +55,7 @@ class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webC
 
   private fun createNomisIncentiveMapping(
     nomisBookingId: Long,
-    nomisSequence: Long,
+    nomisIncentiveSequence: Long,
     incentiveId: Long,
     mappingType: String,
     migrationId: String? = null
@@ -65,7 +65,7 @@ class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webC
       .bodyValue(
         IncentiveNomisMapping(
           nomisBookingId = nomisBookingId,
-          nomisSequence = nomisSequence,
+          nomisIncentiveSequence = nomisIncentiveSequence,
           incentiveId = incentiveId,
           label = migrationId,
           mappingType = mappingType
@@ -111,7 +111,7 @@ class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webC
 
 data class IncentiveNomisMapping(
   val nomisBookingId: Long,
-  val nomisSequence: Long,
+  val nomisIncentiveSequence: Long,
   val incentiveId: Long,
   val label: String? = null,
   val mappingType: String
