@@ -172,7 +172,7 @@ class IncentivesMigrationService(
         migrationHistoryService.recordMigrationCompleted(
           migrationId = context.migrationId,
           recordsFailed = queueService.countMessagesThatHaveFailed(context.type),
-          recordsMigrated = 0 // TODO calculated migrated
+          recordsMigrated = incentiveMappingService.getMigrationCount(context.migrationId),
         )
       } else {
         queueService.sendMessage(
@@ -216,7 +216,7 @@ class IncentivesMigrationService(
         migrationHistoryService.recordMigrationCancelled(
           migrationId = context.migrationId,
           recordsFailed = queueService.countMessagesThatHaveFailed(context.type),
-          recordsMigrated = 0 // TODO calculated migrated
+          recordsMigrated = incentiveMappingService.getMigrationCount(context.migrationId),
         )
       } else {
         queueService.purgeAllMessages(context.type)
