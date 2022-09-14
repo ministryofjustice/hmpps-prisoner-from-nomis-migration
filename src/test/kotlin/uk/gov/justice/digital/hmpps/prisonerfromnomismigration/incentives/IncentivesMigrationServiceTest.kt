@@ -405,6 +405,7 @@ internal class IncentivesMigrationServiceTest {
       internal fun setUp() {
         whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed(any())).thenReturn(false)
         whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(0)
+        whenever(incentiveMappingService.getMigrationCount(any())).thenReturn(0)
       }
 
       @Test
@@ -468,6 +469,7 @@ internal class IncentivesMigrationServiceTest {
       @Test
       internal fun `will update migration history record when finishing off`() {
         whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(2)
+        whenever(incentiveMappingService.getMigrationCount("2020-05-23T11:30:00")).thenReturn(21)
 
         service.migrateIncentivesStatusCheck(
           MigrationContext(
@@ -481,7 +483,7 @@ internal class IncentivesMigrationServiceTest {
         verify(migrationHistoryService).recordMigrationCompleted(
           migrationId = eq("2020-05-23T11:30:00"),
           recordsFailed = eq(2),
-          recordsMigrated = eq(0) // TODO how do we calculate this?
+          recordsMigrated = eq(21)
         )
       }
     }
@@ -544,6 +546,7 @@ internal class IncentivesMigrationServiceTest {
       internal fun setUp() {
         whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed(any())).thenReturn(false)
         whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(0)
+        whenever(incentiveMappingService.getMigrationCount(any())).thenReturn(0)
       }
 
       @Test
@@ -610,6 +613,7 @@ internal class IncentivesMigrationServiceTest {
       @Test
       internal fun `will update migration history record when cancelling`() {
         whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(2)
+        whenever(incentiveMappingService.getMigrationCount("2020-05-23T11:30:00")).thenReturn(21)
 
         service.cancelMigrateIncentivesStatusCheck(
           MigrationContext(
@@ -623,7 +627,7 @@ internal class IncentivesMigrationServiceTest {
         verify(migrationHistoryService).recordMigrationCancelled(
           migrationId = eq("2020-05-23T11:30:00"),
           recordsFailed = eq(2),
-          recordsMigrated = eq(0) // TODO how do we calculate this?
+          recordsMigrated = eq(21)
         )
       }
     }
@@ -863,7 +867,7 @@ internal class IncentivesMigrationServiceTest {
 
       verify(incentiveMappingService).createNomisIncentiveMigrationMapping(
         nomisBookingId = 123,
-        nomisSequence = 2,
+        nomisIncentiveSequence = 2,
         incentiveId = 999,
         migrationId = "2020-05-23T11:30:00",
       )
@@ -903,7 +907,7 @@ internal class IncentivesMigrationServiceTest {
         context = check<MigrationContext<IncentiveMapping>> {
           assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
           assertThat(it.body.nomisBookingId).isEqualTo(123)
-          assertThat(it.body.nomisSequence).isEqualTo(2)
+          assertThat(it.body.nomisIncentiveSequence).isEqualTo(2)
           assertThat(it.body.incentiveId).isEqualTo(999)
         },
         delaySeconds = eq(0)
@@ -917,7 +921,7 @@ internal class IncentivesMigrationServiceTest {
         whenever(incentiveMappingService.findNomisIncentiveMapping(any(), any())).thenReturn(
           IncentiveNomisMapping(
             nomisBookingId = 123,
-            nomisSequence = 2,
+            nomisIncentiveSequence = 2,
             incentiveId = 54321,
             mappingType = "MIGRATION",
           )

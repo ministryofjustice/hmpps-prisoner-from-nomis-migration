@@ -81,7 +81,7 @@ class IncentivesSynchronisationService(
         incentiveService.synchroniseCreateIncentive(this.toIncentive()).also {
           try {
             mappingService.createNomisIncentiveSynchronisationMapping(
-              nomisBookingId = iepEvent.bookingId, nomisSequence = iepEvent.iepSeq, incentiveId = it.id
+              nomisBookingId = iepEvent.bookingId, nomisIncentiveSequence = iepEvent.iepSeq, incentiveId = it.id
             )
           } catch (e: Exception) {
             log.error(

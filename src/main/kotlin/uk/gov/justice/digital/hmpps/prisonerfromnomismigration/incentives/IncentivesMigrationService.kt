@@ -125,7 +125,7 @@ class IncentivesMigrationService(
           .also {
             createIncentiveMapping(
               bookingId,
-              nomisSequence = sequence,
+              nomisIncentiveSequence = sequence,
               incentiveId = it.id,
               context = context
             )
@@ -172,7 +172,7 @@ class IncentivesMigrationService(
         migrationHistoryService.recordMigrationCompleted(
           migrationId = context.migrationId,
           recordsFailed = queueService.countMessagesThatHaveFailed(context.type),
-          recordsMigrated = 0 // TODO calculated migrated
+          recordsMigrated = incentiveMappingService.getMigrationCount(context.migrationId),
         )
       } else {
         queueService.sendMessage(
@@ -216,7 +216,7 @@ class IncentivesMigrationService(
         migrationHistoryService.recordMigrationCancelled(
           migrationId = context.migrationId,
           recordsFailed = queueService.countMessagesThatHaveFailed(context.type),
-          recordsMigrated = 0 // TODO calculated migrated
+          recordsMigrated = incentiveMappingService.getMigrationCount(context.migrationId),
         )
       } else {
         queueService.purgeAllMessages(context.type)
@@ -257,26 +257,30 @@ class IncentivesMigrationService(
 
   private fun createIncentiveMapping(
     bookingId: Long,
-    nomisSequence: Long,
+    nomisIncentiveSequence: Long,
     incentiveId: Long,
     context: MigrationContext<*>
   ) = try {
     incentiveMappingService.createNomisIncentiveMigrationMapping(
       nomisBookingId = bookingId,
-      nomisSequence = nomisSequence,
+      nomisIncentiveSequence = nomisIncentiveSequence,
       incentiveId = incentiveId,
       migrationId = context.migrationId,
     )
   } catch (e: Exception) {
     log.error(
-      "Failed to create mapping for incentive $bookingId, sequence $nomisSequence, Incentive id $incentiveId",
+      "Failed to create mapping for incentive $bookingId, sequence $nomisIncentiveSequence, Incentive id $incentiveId",
       e
     )
     queueService.sendMessage(
       RETRY_INCENTIVE_MAPPING,
       MigrationContext(
         context = context,
-        body = IncentiveMapping(nomisBookingId = bookingId, nomisSequence = nomisSequence, incentiveId = incentiveId)
+        body = IncentiveMapping(
+          nomisBookingId = bookingId,
+          nomisIncentiveSequence = nomisIncentiveSequence,
+          incentiveId = incentiveId
+        )
       )
     )
   }
@@ -284,7 +288,7 @@ class IncentivesMigrationService(
   fun retryCreateIncentiveMapping(context: MigrationContext<IncentiveMapping>) =
     incentiveMappingService.createNomisIncentiveMigrationMapping(
       nomisBookingId = context.body.nomisBookingId,
-      nomisSequence = context.body.nomisSequence,
+      nomisIncentiveSequence = context.body.nomisIncentiveSequence,
       incentiveId = context.body.incentiveId,
       migrationId = context.migrationId,
     )
@@ -292,7 +296,7 @@ class IncentivesMigrationService(
 
 data class IncentiveMapping(
   val nomisBookingId: Long,
-  val nomisSequence: Long,
+  val nomisIncentiveSequence: Long,
   val incentiveId: Long,
 )
 

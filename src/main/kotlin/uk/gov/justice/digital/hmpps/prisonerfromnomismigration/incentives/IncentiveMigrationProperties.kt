@@ -15,6 +15,7 @@ import uk.gov.justice.hmpps.sqs.HmppsQueueService
 @Component
 class IncentiveMigrationProperties(
   private val hmppsQueueService: HmppsQueueService,
+  private val incentiveMappingService: IncentiveMappingService
 ) : InfoContributor {
 
   internal val queue by lazy { hmppsQueueService.findByQueueId(INCENTIVES_QUEUE_ID) as HmppsQueue }
@@ -33,10 +34,14 @@ class IncentiveMigrationProperties(
       )
     }.getOrElse { mapOf() }
 
-    // TODO: we need the migrationId, current count and start time
-    // we can get 2 of these from history service, but current count still needs
-    // to be thought out
-    val migrationProperties = mapOf<String, Any>()
+    val migrationProperties = incentiveMappingService.findLatestMigration()?.let {
+      val details = incentiveMappingService.getMigrationDetails(it.migrationId)
+      mapOf<String, Any?>(
+        "id" to it.migrationId,
+        "records migrated" to details.count,
+        "started" to details.startedDateTime
+      )
+    } ?: mapOf()
 
     builder.withDetail(
       "last incentives migration",

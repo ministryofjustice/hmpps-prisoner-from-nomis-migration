@@ -194,6 +194,55 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubIncentiveMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 278887) {
+    stubFor(
+      get(urlPathMatching("/mapping/incentives/migration-id/.*")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(
+            """
+{
+    "content": [
+        {
+            "nomisId": 191747,
+            "vsipId": "6c3ce237-f519-400d-85ca-9ba3e23323d8",
+            "label": "2022-02-14T09:58:45",
+            "whenCreated": "$whenCreated",
+            "mappingType": "MIGRATED"
+        }
+    ],
+    "pageable": {
+        "sort": {
+            "empty": true,
+            "sorted": false,
+            "unsorted": true
+        },
+        "offset": 0,
+        "pageSize": 1,
+        "pageNumber": 0,
+        "paged": true,
+        "unpaged": false
+    },
+    "last": false,
+    "totalPages": 278887,
+    "totalElements": $count,
+    "size": 1,
+    "number": 0,
+    "sort": {
+        "empty": true,
+        "sorted": false,
+        "unsorted": true
+    },
+    "first": true,
+    "numberOfElements": 1,
+    "empty": false
+}            
+            """.trimIndent()
+          )
+      )
+    )
+  }
+
   fun stubLatestMigration(migrationId: String) {
     stubFor(
       get(urlEqualTo("/mapping/migrated/latest")).willReturn(
