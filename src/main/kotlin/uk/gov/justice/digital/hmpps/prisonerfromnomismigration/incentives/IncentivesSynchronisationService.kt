@@ -94,7 +94,7 @@ class IncentivesSynchronisationService(
                 type = MigrationType.INCENTIVES, "dummy", 0,
                 body = IncentiveMapping(
                   nomisBookingId = iepEvent.bookingId,
-                  nomisSequence = iepEvent.iepSeq,
+                  nomisIncentiveSequence = iepEvent.iepSeq,
                   incentiveId = it.id
                 )
               )
@@ -116,10 +116,10 @@ class IncentivesSynchronisationService(
   }
 
   fun retryCreateIncentiveMapping(context: MigrationContext<IncentiveMapping>) {
-    log.info("Retrying mapping creation for booking id: ${context.body.nomisBookingId}, noms seq: ${context.body.nomisSequence}, incentive id : ${context.body.incentiveId}")
+    log.info("Retrying mapping creation for booking id: ${context.body.nomisBookingId}, noms seq: ${context.body.nomisIncentiveSequence}, incentive id : ${context.body.incentiveId}")
     mappingService.createNomisIncentiveSynchronisationMapping(
       nomisBookingId = context.body.nomisBookingId,
-      nomisSequence = context.body.nomisSequence,
+      nomisIncentiveSequence = context.body.nomisIncentiveSequence,
       incentiveId = context.body.incentiveId,
     )
   }
