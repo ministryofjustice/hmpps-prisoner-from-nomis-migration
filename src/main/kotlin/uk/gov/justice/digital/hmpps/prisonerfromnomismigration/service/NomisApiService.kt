@@ -198,18 +198,19 @@ data class NomisIncentive(
   val prisonId: String,
   val iepLevel: NomisCodeDescription,
   val userId: String? = null,
+  val offenderNo: String,
   val currentIep: Boolean
 ) {
-  fun toIncentive(): CreateIncentiveIEP = CreateIncentiveIEP(
+  fun toIncentive(reviewType: ReviewType): CreateIncentiveIEP = CreateIncentiveIEP(
     bookingId = bookingId,
-    prisonerNumber = "TODO", // TODO need noms number from API
+    prisonerNumber = this.offenderNo,
     iepCode = iepLevel.code,
     locationId = this.prisonId,
     reviewTime = this.iepDateTime,
-    reviewedBy = this.userId ?: "anonymous", // TODO can this ever happen??
+    reviewedBy = this.userId,
     commentText = this.commentText,
     current = this.currentIep,
-    reviewType = ReviewType.REVIEW, // TODO we need audit module to work out review type
+    reviewType = reviewType,
   )
 }
 
