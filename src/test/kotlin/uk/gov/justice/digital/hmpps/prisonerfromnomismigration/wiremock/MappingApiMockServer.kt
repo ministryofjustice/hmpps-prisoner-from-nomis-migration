@@ -359,6 +359,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.CREATED.value())
         )
+        .willSetStateTo(STARTED)
     )
   }
 

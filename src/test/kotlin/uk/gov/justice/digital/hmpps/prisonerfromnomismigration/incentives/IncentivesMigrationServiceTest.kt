@@ -35,7 +35,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.Incent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.MIGRATE_INCENTIVES_BY_PAGE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.MIGRATE_INCENTIVES_STATUS_CHECK
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.RETRY_INCENTIVE_MAPPING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.ReviewType.REVIEW
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.ReviewType.MIGRATION
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.IncentiveId
@@ -779,6 +779,7 @@ internal class IncentivesMigrationServiceTest {
           iepLevel = NomisCodeDescription("ENH", "Enhanced"),
           userId = "JANE_SMITH",
           currentIep = true,
+          offenderNo = "A1234AA"
         )
       )
 
@@ -811,6 +812,7 @@ internal class IncentivesMigrationServiceTest {
           iepLevel = NomisCodeDescription("ENH", "Enhanced"),
           userId = "JANE_SMITH",
           currentIep = true,
+          offenderNo = "A1234AA"
         )
       )
 
@@ -828,13 +830,13 @@ internal class IncentivesMigrationServiceTest {
           CreateIncentiveIEP(
             bookingId = 1000,
             commentText = "Doing well",
-            prisonerNumber = "TODO", // TODO when API returns this
+            prisonerNumber = "A1234AA",
             iepCode = "ENH",
             reviewTime = LocalDateTime.parse("2020-01-01T13:10:00"),
             locationId = "HEI",
             reviewedBy = "JANE_SMITH",
             current = true,
-            reviewType = REVIEW // TODO when API returns module
+            reviewType = MIGRATION
           )
         )
       )
@@ -852,6 +854,7 @@ internal class IncentivesMigrationServiceTest {
           iepLevel = NomisCodeDescription("ENH", "Enhanced"),
           userId = "JANE_SMITH",
           currentIep = true,
+          offenderNo = "A1234AA"
         )
       )
       whenever(incentivesService.migrateIncentive(any())).thenReturn(CreateIncentiveIEPResponse(999L))
@@ -885,6 +888,7 @@ internal class IncentivesMigrationServiceTest {
           iepLevel = NomisCodeDescription("ENH", "Enhanced"),
           userId = "JANE_SMITH",
           currentIep = true,
+          offenderNo = "A1234AA"
         )
       )
       whenever(incentivesService.migrateIncentive(any())).thenReturn(CreateIncentiveIEPResponse(999L))

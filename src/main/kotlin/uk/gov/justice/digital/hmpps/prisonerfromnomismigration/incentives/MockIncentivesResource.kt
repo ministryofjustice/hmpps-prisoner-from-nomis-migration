@@ -37,7 +37,7 @@ class MockIncentivesResource {
   @Operation(hidden = true)
   fun updateSynchroniseIncentive(
     @PathVariable("bookingId") bookingId: Long,
-    @RequestBody @Valid createIncentiveRequest: CreateIncentiveRequest
+    @RequestBody @Valid updateIncentiveRequest: UpdateIncentiveRequest
   ): CreateIncentiveResponse = CreateIncentiveResponse(Random.nextLong())
 }
 
@@ -51,6 +51,12 @@ data class CreateIncentiveRequest(
   val commentText: String? = null,
   val current: Boolean,
   val reviewType: String,
+)
+
+data class UpdateIncentiveRequest(
+  val reviewTime: LocalDateTime,
+  val commentText: String? = null,
+  val current: Boolean,
 )
 
 data class CreateIncentiveResponse(

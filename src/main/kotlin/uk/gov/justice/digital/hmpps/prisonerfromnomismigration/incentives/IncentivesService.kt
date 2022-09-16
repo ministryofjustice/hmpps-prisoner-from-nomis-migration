@@ -44,22 +44,22 @@ data class CreateIncentiveIEP(
   val prisonerNumber: String,
   @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
   val reviewTime: LocalDateTime,
-  val reviewedBy: String,
+  val reviewedBy: String?,
   val iepCode: String,
   val commentText: String? = null,
   val current: Boolean,
   val reviewType: ReviewType,
 ) {
-  fun toIncentive(nomisIncentive: NomisIncentive): CreateIncentiveIEP = CreateIncentiveIEP(
+  fun toIncentive(nomisIncentive: NomisIncentive, reviewType: ReviewType): CreateIncentiveIEP = CreateIncentiveIEP(
     bookingId = bookingId,
-    prisonerNumber = "TODO", // TODO need noms number from API
+    prisonerNumber = nomisIncentive.offenderNo,
     iepCode = nomisIncentive.iepLevel.code,
     locationId = nomisIncentive.prisonId,
     reviewTime = nomisIncentive.iepDateTime,
     reviewedBy = nomisIncentive.userId ?: "anonymous", // TODO can this ever happen??
     commentText = nomisIncentive.commentText,
     current = nomisIncentive.currentIep,
-    reviewType = ReviewType.REVIEW, // TODO we need audit module to work out review type
+    reviewType = reviewType
   )
 }
 
@@ -78,7 +78,7 @@ data class UpdateIncentiveIEP(
 }
 
 enum class ReviewType {
-  INITIAL, REVIEW, TRANSFER, ADJUSTMENT
+  REVIEW, MIGRATION
 }
 
 data class CreateIncentiveIEPResponse(

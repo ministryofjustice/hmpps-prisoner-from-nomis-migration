@@ -1,8 +1,11 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.incentives
 
 import com.microsoft.applicationinsights.TelemetryClient
+import org.assertj.core.api.Assertions
 import org.awaitility.kotlin.await
+import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilAsserted
+import org.awaitility.kotlin.untilCallTo
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -52,6 +55,28 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
         ),
         isNull()
       )
+    }
+
+    @Test
+    fun `will retry to create a mapping if call fails`() {
+
+      val message = validIepCreatedMessage()
+
+      nomisApi.stubGetIncentive(bookingId = 1234, incentiveSequence = 1)
+      mappingApi.stubNomisIncentiveMappingNotFound(nomisBookingId = 1234, nomisIncentiveSequence = 1)
+      mappingApi.stubIncentiveMappingCreateFailureFollowedBySuccess()
+      incentivesApi.stubCreateSynchroniseIncentive()
+
+      awsSqsOffenderEventsClient.sendMessage(queueOffenderEventsUrl, message)
+
+      // wait for all mappings to be created before verifying
+      await untilCallTo { mappingApi.createIncentiveMappingCount() } matches { it == 2 }
+
+      // check that one incentive is created
+      Assertions.assertThat(incentivesApi.createIncentiveSynchronisationCount()).isEqualTo(1)
+
+      // should retry to create mapping twice
+      mappingApi.verifyCreateMappingIncentiveIds(arrayOf(654321), times = 2)
     }
   }
 

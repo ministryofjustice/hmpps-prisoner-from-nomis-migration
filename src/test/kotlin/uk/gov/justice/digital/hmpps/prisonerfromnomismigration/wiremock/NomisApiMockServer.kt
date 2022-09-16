@@ -406,7 +406,8 @@ private fun incentiveResponse(
   "prisonId":"MDI",
   "iepLevel":{"code":"STD","description":"Standard"},
   "userId":"LBENNETT_GEN",
-  "currentIep": $currentIep
+  "currentIep": $currentIep,
+  "offenderNo":"A1234AF"
   }
    
   """.trimIndent()
