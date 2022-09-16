@@ -3,10 +3,10 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.patch
+import com.github.tomakehurst.wiremock.client.WireMock.patchRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
-import com.github.tomakehurst.wiremock.client.WireMock.put
-import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
@@ -73,7 +73,7 @@ class IncentivesApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubUpdateSynchroniseIncentive() {
     stubFor(
-      put(urlMatching("/iep/sync/booking/\\d*/id/\\d*")).willReturn(
+      patch(urlMatching("/iep/sync/booking/\\d*/id/\\d*")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
@@ -84,16 +84,8 @@ class IncentivesApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun verifyUpdateSynchroniseIncentive(times: Int) {
     verify(
       times,
-      putRequestedFor(
+      patchRequestedFor(
         urlMatching("/iep/sync/booking/\\d*/id/\\d*")
-      )
-    )
-  }
-
-  fun verifyCreateSynchroniseIncentive() {
-    verify(
-      postRequestedFor(
-        urlMatching("/iep/sync/booking/\\d*")
       )
     )
   }

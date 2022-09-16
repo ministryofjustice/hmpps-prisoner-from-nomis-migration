@@ -1,7 +1,10 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives
 
 import io.swagger.v3.oas.annotations.Operation
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -16,13 +19,20 @@ import kotlin.random.Random
  */
 @RestController
 class MockIncentivesResource {
+  private companion object {
+    val log: Logger = LoggerFactory.getLogger(this::class.java)
+  }
   @PreAuthorize("hasRole('ROLE_MAINTAIN_IEP')")
   @PostMapping("/iep/migration/booking/{bookingId}")
   @Operation(hidden = true)
   suspend fun createIncentive(
     @PathVariable("bookingId") bookingId: Long,
     @RequestBody @Valid createIncentiveRequest: CreateIncentiveRequest
-  ): CreateIncentiveResponse = CreateIncentiveResponse(Random.nextLong())
+  ): CreateIncentiveResponse {
+    val id = Random.nextLong()
+    log.info("Created incentive for migration with id $id for booking $bookingId. Request was $createIncentiveRequest")
+    return CreateIncentiveResponse(id)
+  }
 
   @PreAuthorize("hasRole('ROLE_MAINTAIN_IEP')")
   @PostMapping("/iep/sync/booking/{bookingId}")
@@ -30,15 +40,23 @@ class MockIncentivesResource {
   fun createSynchroniseIncentive(
     @PathVariable("bookingId") bookingId: Long,
     @RequestBody @Valid createIncentiveRequest: CreateIncentiveRequest
-  ): CreateIncentiveResponse = CreateIncentiveResponse(Random.nextLong())
+  ): CreateIncentiveResponse {
+    val id = Random.nextLong()
+    log.info("Created incentive for synchronisation with id $id for booking $bookingId. Request was $createIncentiveRequest")
+    return CreateIncentiveResponse(id)
+  }
 
   @PreAuthorize("hasRole('ROLE_MAINTAIN_IEP')")
-  @PostMapping("/iep/sync/booking/{bookingId}/id/{id}")
+  @PatchMapping("/iep/sync/booking/{bookingId}/id/{id}")
   @Operation(hidden = true)
   fun updateSynchroniseIncentive(
     @PathVariable("bookingId") bookingId: Long,
+    @PathVariable("id") id: Long,
     @RequestBody @Valid updateIncentiveRequest: UpdateIncentiveRequest
-  ): CreateIncentiveResponse = CreateIncentiveResponse(Random.nextLong())
+  ): CreateIncentiveResponse {
+    log.info("Update incentive for synchronisation with id $id for booking $bookingId. Request was $updateIncentiveRequest")
+    return CreateIncentiveResponse(id)
+  }
 }
 
 data class CreateIncentiveRequest(
