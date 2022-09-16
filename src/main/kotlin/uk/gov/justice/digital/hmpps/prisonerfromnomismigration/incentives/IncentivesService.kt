@@ -7,7 +7,6 @@ import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisIncentive
 import java.time.LocalDateTime
 
 @Service
@@ -29,7 +28,7 @@ class IncentivesService(@Qualifier("incentivesApiWebClient") private val webClie
       .awaitSingle()
 
   suspend fun synchroniseUpdateIncentive(bookingId: Long, incentiveId: Long, incentive: UpdateIncentiveIEP) =
-    webClient.put()
+    webClient.patch()
       .uri("/iep/sync/booking/{bookingId}/id/{id}", bookingId, incentiveId)
       .bodyValue(incentive)
       .retrieve()
@@ -49,19 +48,7 @@ data class CreateIncentiveIEP(
   val commentText: String? = null,
   val current: Boolean,
   val reviewType: ReviewType,
-) {
-  fun toIncentive(nomisIncentive: NomisIncentive, reviewType: ReviewType): CreateIncentiveIEP = CreateIncentiveIEP(
-    bookingId = bookingId,
-    prisonerNumber = nomisIncentive.offenderNo,
-    iepCode = nomisIncentive.iepLevel.code,
-    locationId = nomisIncentive.prisonId,
-    reviewTime = nomisIncentive.iepDateTime,
-    reviewedBy = nomisIncentive.userId ?: "anonymous", // TODO can this ever happen??
-    commentText = nomisIncentive.commentText,
-    current = nomisIncentive.currentIep,
-    reviewType = reviewType
-  )
-}
+)
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class UpdateIncentiveIEP(
@@ -69,13 +56,7 @@ data class UpdateIncentiveIEP(
   val reviewTime: LocalDateTime,
   val commentText: String? = null,
   val current: Boolean,
-) {
-  fun toIncentive(nomisIncentive: NomisIncentive): UpdateIncentiveIEP = UpdateIncentiveIEP(
-    reviewTime = nomisIncentive.iepDateTime,
-    commentText = nomisIncentive.commentText,
-    current = nomisIncentive.currentIep,
-  )
-}
+)
 
 enum class ReviewType {
   REVIEW, MIGRATION
