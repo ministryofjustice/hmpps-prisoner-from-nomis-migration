@@ -1,5 +1,5 @@
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "4.5.0"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "4.5.1-beta"
   kotlin("plugin.spring") version "1.7.10"
 }
 
@@ -20,7 +20,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-security")
   implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
   implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
-  implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:1.1.8")
+  implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:1.1.9")
   implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
 
   implementation("org.springdoc:springdoc-openapi-webflux-ui:1.6.11")
@@ -44,7 +44,7 @@ dependencies {
   testImplementation("org.testcontainers:localstack:1.17.3")
   testImplementation("org.awaitility:awaitility-kotlin:4.2.0")
   testImplementation("org.testcontainers:postgresql:1.17.3")
-  testImplementation("io.mockk:mockk:1.12.7")
+  testImplementation("io.mockk:mockk:1.12.8")
 }
 
 java {
