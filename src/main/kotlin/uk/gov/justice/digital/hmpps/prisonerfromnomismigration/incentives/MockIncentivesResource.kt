@@ -37,7 +37,7 @@ class MockIncentivesResource {
   @PreAuthorize("hasRole('ROLE_MAINTAIN_IEP')")
   @PostMapping("/iep/sync/booking/{bookingId}")
   @Operation(hidden = true)
-  fun createSynchroniseIncentive(
+  suspend fun createSynchroniseIncentive(
     @PathVariable("bookingId") bookingId: Long,
     @RequestBody @Valid createIncentiveRequest: CreateIncentiveRequest
   ): CreateIncentiveResponse {
@@ -49,7 +49,7 @@ class MockIncentivesResource {
   @PreAuthorize("hasRole('ROLE_MAINTAIN_IEP')")
   @PatchMapping("/iep/sync/booking/{bookingId}/id/{id}")
   @Operation(hidden = true)
-  fun updateSynchroniseIncentive(
+  suspend fun updateSynchroniseIncentive(
     @PathVariable("bookingId") bookingId: Long,
     @PathVariable("id") id: Long,
     @RequestBody @Valid updateIncentiveRequest: UpdateIncentiveRequest
