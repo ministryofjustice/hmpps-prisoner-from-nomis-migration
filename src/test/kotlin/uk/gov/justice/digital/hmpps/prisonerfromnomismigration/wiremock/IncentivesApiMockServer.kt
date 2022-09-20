@@ -90,6 +90,14 @@ class IncentivesApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun verifyCreateSynchroniseIncentive() {
+    verify(
+      postRequestedFor(
+        urlMatching("/iep/sync/booking/\\d*")
+      )
+    )
+  }
+
   fun createIncentiveCount() = findAll(postRequestedFor(urlMatching("/iep/migration/booking/\\d*"))).count()
 
   fun createIncentiveSynchronisationCount() = findAll(postRequestedFor(urlMatching("/iep/sync/booking/\\d*"))).count()

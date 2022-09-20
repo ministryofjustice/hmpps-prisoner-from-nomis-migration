@@ -9,6 +9,8 @@ import org.springframework.jms.annotation.JmsListener
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentivesSynchronisationService
 
+private const val NOMIS_IEP_UI_SCREEN = "OIDOIEPS"
+
 @Service
 class PrisonOffenderEventListener(
   private val objectMapper: ObjectMapper,
@@ -37,25 +39,10 @@ class PrisonOffenderEventListener(
     } else {
       log.info("Feature switch is disabled for event {}", eventType)
     }
-
-    /* what triggered the update/insert? (audit module)
-
-     dont synchronise if originates from incentives service or originates from one of the stored nomis procs
-
-        OCUWARNG         |    3704| // transfer via court??  (popup)
-        PRISON_API       |    7607|
-        OIDADMIS         |    8430|
-        MERGE            |      76| To synchronise
-        OIDOIEPS         |    9160| To synchronise
-        OIDITRAN         |     971|
-        OSIOSEAR         |       1|
-
-     we ignore PRISON_API (incentives service), OIDITRAN and OIDADMIS (because incentives already handles admission and transfer events)
-     */
   }
 
   private fun shouldSynchronise(auditModuleName: String): Boolean {
-    return auditModuleName == "OIDOIEPS"
+    return auditModuleName == NOMIS_IEP_UI_SCREEN
   }
 
   data class SQSMessage(val Message: String, val MessageId: String, val MessageAttributes: MessageAttributes)

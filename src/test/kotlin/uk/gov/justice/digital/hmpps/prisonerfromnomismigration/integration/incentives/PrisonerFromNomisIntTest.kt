@@ -50,7 +50,6 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
             "bookingId" to "1234",
             "incentiveSequence" to "1",
             "incentiveId" to "654321",
-            "auditModuleName" to "OIDOIEPS"
           )
         ),
         isNull()
@@ -101,7 +100,6 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
           mapOf(
             "bookingId" to "1234",
             "incentiveSequence" to "1",
-            "auditModuleName" to "OIDOIEPS",
             "currentIep" to "true"
           )
         ),
@@ -112,10 +110,19 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
     @Test
     fun `will synchronise an incentive after a nomis update to a non-current incentive`() {
 
+      /* 1. update to non-current iep received
+         2. non current iep mapping retrieved
+         3. non current iep is updated in the incentives service
+         4. current iep is retrieved from nomis
+         5. mapping of current iep is found
+         6. iep is updated in the incentives service
+       */
+
       val message = validIepCreatedMessage()
 
       nomisApi.stubGetIncentive(bookingId = 1234, incentiveSequence = 1, currentIep = false)
       mappingApi.stubIncentiveMappingByNomisIds(nomisBookingId = 1234, nomisIncentiveSequence = 1)
+      mappingApi.stubIncentiveMappingByNomisIds(nomisBookingId = 1234, nomisIncentiveSequence = 2)
       incentivesApi.stubUpdateSynchroniseIncentive()
       awsSqsOffenderEventsClient.sendMessage(queueOffenderEventsUrl, message)
       nomisApi.stubGetCurrentIncentive(bookingId = 1234, incentiveSequence = 2)
@@ -124,6 +131,45 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
 
       verify(telemetryClient, Times(2)).trackEvent(
         eq("incentive-updated-synchronisation"),
+        any(),
+        isNull()
+      )
+    }
+
+    @Test
+    fun `will synchronise and create incentive in the incentive service (if no mapping) after a nomis update to a non-current incentive`() {
+
+      /* 1. update to non-current iep received
+         2. non current iep mapping retrieved
+         3. non current iep is updated in the incentives service
+         4. current iep is retrieved from nomis
+         5. no mapping is found
+         6. Mapping is created
+         7. iep is created in the incentives service
+       */
+
+      val message = validIepCreatedMessage()
+
+      nomisApi.stubGetIncentive(bookingId = 1234, incentiveSequence = 1, currentIep = false)
+      nomisApi.stubGetCurrentIncentive(bookingId = 1234, incentiveSequence = 2)
+      mappingApi.stubIncentiveMappingByNomisIds(nomisBookingId = 1234, nomisIncentiveSequence = 1)
+      mappingApi.stubNomisIncentiveMappingNotFound(nomisBookingId = 1234, nomisIncentiveSequence = 2)
+      incentivesApi.stubUpdateSynchroniseIncentive()
+      incentivesApi.stubCreateSynchroniseIncentive()
+      mappingApi.stubIncentiveMappingCreate()
+      awsSqsOffenderEventsClient.sendMessage(queueOffenderEventsUrl, message)
+
+      await untilAsserted { incentivesApi.verifyCreateSynchroniseIncentive() }
+
+      verify(telemetryClient, Times(1)).trackEvent(
+        eq("incentive-updated-synchronisation"),
+        any(),
+        isNull()
+      )
+
+      // created incentive for current incentive without a mapping
+      verify(telemetryClient, Times(1)).trackEvent(
+        eq("incentive-created-synchronisation"),
         any(),
         isNull()
       )
