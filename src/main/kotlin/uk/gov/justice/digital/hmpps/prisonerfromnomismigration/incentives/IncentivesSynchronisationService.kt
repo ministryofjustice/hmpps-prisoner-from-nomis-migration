@@ -37,7 +37,6 @@ class IncentivesSynchronisationService(
         log.debug("found nomis incentive mapping: $incentiveMapping")
         updateIncentiveService(this, incentiveMapping)
 
-        // TODO must get the mapping THEN if mapping doesn't exist  - create it or just update
         if (!this.currentIep) {
           nomisApiService.getCurrentIncentive(iepEvent.bookingId).let { currentIep ->
             log.info("updating current IEP $currentIep \nfollowing update to non current IEP: $this")
@@ -101,7 +100,7 @@ class IncentivesSynchronisationService(
     )
   }
 
-  private fun createIncentiveMapping(
+  private suspend fun createIncentiveMapping(
     nomisIncentive: NomisIncentive,
     it: CreateIncentiveIEPResponse
   ) {
