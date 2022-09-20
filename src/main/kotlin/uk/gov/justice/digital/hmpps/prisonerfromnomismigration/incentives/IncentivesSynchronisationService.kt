@@ -10,6 +10,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Incenti
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisIncentive
 
 @Service
 class IncentivesSynchronisationService(
@@ -27,92 +28,103 @@ class IncentivesSynchronisationService(
   suspend fun synchroniseIncentive(iepEvent: IncentiveUpsertedOffenderEvent) {
     nomisApiService.getIncentive(iepEvent.bookingId, iepEvent.iepSeq).run {
 
-      // todo integration and remove this log
       log.debug("received nomis incentive: $this")
 
       mappingService.findNomisIncentiveMapping(
         nomisBookingId = bookingId,
         nomisIncentiveSequence = incentiveSequence
       )?.let { incentiveMapping ->
-        // todo remove this log
         log.debug("found nomis incentive mapping: $incentiveMapping")
-        incentiveService.synchroniseUpdateIncentive(
-          iepEvent.bookingId, incentiveMapping.incentiveId,
-          UpdateIncentiveIEP(
-            reviewTime = this.iepDateTime,
-            commentText = this.commentText,
-            current = this.currentIep
-          )
-        )
-        telemetryClient.trackEvent(
-          "incentive-updated-synchronisation",
-          mapOf(
-            "bookingId" to iepEvent.bookingId.toString(),
-            "incentiveSequence" to iepEvent.iepSeq.toString(),
-            "auditModuleName" to iepEvent.auditModuleName,
-            "currentIep" to this.currentIep.toString()
-          ),
-          null
-        )
+        updateIncentiveService(this, incentiveMapping)
+
+        // TODO must get the mapping THEN if mapping doesn't exist  - create it or just update
         if (!this.currentIep) {
           nomisApiService.getCurrentIncentive(iepEvent.bookingId).let { currentIep ->
-            log.debug("updating current IEP $this \nfollowing update to non current IEP: $currentIep")
-            incentiveService.synchroniseUpdateIncentive(
-              iepEvent.bookingId, incentiveMapping.incentiveId,
-              UpdateIncentiveIEP(
-                reviewTime = currentIep.iepDateTime,
-                commentText = currentIep.commentText,
-                current = currentIep.currentIep
-              )
-            )
-            telemetryClient.trackEvent(
-              "incentive-updated-synchronisation",
-              mapOf(
-                "bookingId" to iepEvent.bookingId.toString(),
-                "incentiveSequence" to iepEvent.iepSeq.toString(),
-                "auditModuleName" to iepEvent.auditModuleName,
-                "currentIep" to currentIep.toString()
-              ),
-              null
-            )
+            log.info("updating current IEP $currentIep \nfollowing update to non current IEP: $this")
+
+            // get mapping for current IEP
+            mappingService.findNomisIncentiveMapping(
+              nomisBookingId = currentIep.bookingId,
+              nomisIncentiveSequence = currentIep.incentiveSequence
+            )?.let { currentIepMapping ->
+              log.debug("found mapping for current IEP $currentIep ")
+              updateIncentiveService(currentIep, currentIepMapping)
+            } ?: run {
+              log.info("no mapping found for current IEP $currentIep ")
+              createIncentiveAndMapping(currentIep)
+            }
           }
         }
       } ?: run {
         log.debug("no nomis incentive mapping found")
-        incentiveService.synchroniseCreateIncentive(this.toIncentive(REVIEW)).also {
-          try {
-            mappingService.createNomisIncentiveSynchronisationMapping(
-              nomisBookingId = iepEvent.bookingId, nomisIncentiveSequence = iepEvent.iepSeq, incentiveId = it.id
-            )
-          } catch (e: Exception) {
-            log.error(
-              "Failed to create mapping for incentive id ${it.id}, nomisBookingId ${iepEvent.bookingId}, nomsSequence ${iepEvent.iepSeq}",
-              e
-            )
-            queueService.sendMessage(
-              IncentiveMessages.RETRY_INCENTIVE_SYNCHRONISATION_MAPPING,
-              MigrationContext(
-                type = MigrationType.INCENTIVES, "dummy", 0,
-                body = IncentiveMapping(
-                  nomisBookingId = iepEvent.bookingId,
-                  nomisIncentiveSequence = iepEvent.iepSeq,
-                  incentiveId = it.id
-                )
-              )
-            )
-          }
-          telemetryClient.trackEvent(
-            "incentive-created-synchronisation",
-            mapOf(
-              "bookingId" to iepEvent.bookingId.toString(),
-              "incentiveSequence" to iepEvent.iepSeq.toString(),
-              "incentiveId" to it.id.toString(),
-              "auditModuleName" to iepEvent.auditModuleName
-            ),
-            null
-          )
-        }
+        createIncentiveAndMapping(this)
       }
+    }
+  }
+
+  private suspend fun createIncentiveAndMapping(nomisIncentive: NomisIncentive) {
+    incentiveService.synchroniseCreateIncentive(nomisIncentive.toIncentive(REVIEW)).also {
+      createIncentiveMapping(nomisIncentive, it)
+      telemetryClient.trackEvent(
+        "incentive-created-synchronisation",
+        mapOf(
+          "bookingId" to nomisIncentive.bookingId.toString(),
+          "incentiveSequence" to nomisIncentive.incentiveSequence.toString(),
+          "incentiveId" to it.id.toString()
+        ),
+        null
+      )
+    }
+  }
+
+  private suspend fun updateIncentiveService(
+    nomisIep: NomisIncentive,
+    iepMapping: IncentiveNomisMapping
+  ) {
+    incentiveService.synchroniseUpdateIncentive(
+      nomisIep.bookingId, iepMapping.incentiveId,
+      UpdateIncentiveIEP(
+        reviewTime = nomisIep.iepDateTime,
+        commentText = nomisIep.commentText,
+        current = nomisIep.currentIep
+      )
+    )
+
+    telemetryClient.trackEvent(
+      "incentive-updated-synchronisation",
+      mapOf(
+        "bookingId" to nomisIep.bookingId.toString(),
+        "incentiveSequence" to nomisIep.incentiveSequence.toString(),
+        "currentIep" to nomisIep.currentIep.toString()
+      ),
+      null
+    )
+  }
+
+  private fun createIncentiveMapping(
+    nomisIncentive: NomisIncentive,
+    it: CreateIncentiveIEPResponse
+  ) {
+    try {
+      mappingService.createNomisIncentiveSynchronisationMapping(
+        nomisBookingId = nomisIncentive.bookingId, nomisIncentiveSequence = nomisIncentive.incentiveSequence, incentiveId = it.id
+      )
+    } catch (e: Exception) {
+      log.error(
+        "Failed to create mapping for incentive id ${it.id}, nomisBookingId ${nomisIncentive.bookingId}, nomsSequence ${nomisIncentive.incentiveSequence}",
+        e
+      )
+      queueService.sendMessage(
+        IncentiveMessages.RETRY_INCENTIVE_SYNCHRONISATION_MAPPING,
+        MigrationContext(
+          type = MigrationType.INCENTIVES, "dummy", 0,
+          body = IncentiveMapping(
+            nomisBookingId = nomisIncentive.bookingId,
+            nomisIncentiveSequence = nomisIncentive.incentiveSequence,
+            incentiveId = it.id
+          )
+        )
+      )
     }
   }
 
