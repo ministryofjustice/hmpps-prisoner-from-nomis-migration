@@ -28,18 +28,18 @@ class IncentivesSynchronisationService(
   suspend fun synchroniseIncentive(iepEvent: IncentiveUpsertedOffenderEvent) {
     nomisApiService.getIncentive(iepEvent.bookingId, iepEvent.iepSeq).run {
 
-      log.debug("received nomis incentive: $this")
+      log.debug("received nomis incentive: ${this@run}")
 
       mappingService.findNomisIncentiveMapping(
         nomisBookingId = bookingId,
         nomisIncentiveSequence = incentiveSequence
       )?.let { incentiveMapping ->
         log.debug("found nomis incentive mapping: $incentiveMapping")
-        updateIncentiveService(this, incentiveMapping)
+        updateIncentiveService(this@run, incentiveMapping)
 
         if (!this.currentIep) {
           nomisApiService.getCurrentIncentive(iepEvent.bookingId).let { currentIep ->
-            log.info("updating current IEP $currentIep \nfollowing update to non current IEP: $this")
+            log.info("updating current IEP $currentIep \nfollowing update to non current IEP: ${this@run}")
 
             // get mapping for current IEP
             mappingService.findNomisIncentiveMapping(
@@ -56,7 +56,7 @@ class IncentivesSynchronisationService(
         }
       } ?: run {
         log.debug("no nomis incentive mapping found")
-        createIncentiveAndMapping(this)
+        createIncentiveAndMapping(this@run)
       }
     }
   }
