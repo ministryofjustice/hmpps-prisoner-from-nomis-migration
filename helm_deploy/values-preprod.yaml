@@ -15,6 +15,7 @@ generic-service:
     API_BASE_URL_MAPPING: https://nomis-visits-mapping-preprod.hmpps.service.justice.gov.uk
     # currently set to self for a mock API until real API is ready
     API_BASE_URL_INCENTIVES: https://prisoner-nomis-migration-preprod.hmpps.service.justice.gov.uk
+    FEATURE_EVENT_VISIT_CANCELLED: false
 
 generic-prometheus-alerts:
   rdsAlertsDatabases:

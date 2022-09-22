@@ -16,10 +16,12 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.boot.test.mock.mockito.SpyBean
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.validIepCreatedMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.validVisitCancellationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.IncentivesApiExtension.Companion.incentivesApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsApiExtension.Companion.visitsApi
 
 class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
 
@@ -28,7 +30,7 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
 
   @Nested
   @DisplayName("synchronise create incentive")
-  inner class SynchroniseCreate {
+  inner class SynchroniseCreateIncentive {
     @Test
     fun `will synchronise an incentive after a NOMIS incentive is created`() {
 
@@ -81,7 +83,7 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
 
   @Nested
   @DisplayName("synchronise update incentive")
-  inner class SynchroniseUpdate {
+  inner class SynchroniseUpdateIncentive {
     @Test
     fun `will synchronise an incentive after a nomis update to a current incentive`() {
 
@@ -111,8 +113,8 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
     fun `will synchronise an incentive after a nomis update to a non-current incentive`() {
 
       /* 1. update to non-current iep received
-         2. non current iep mapping retrieved
-         3. non current iep is updated in the incentives service
+         2. non-current iep mapping retrieved
+         3. non-current iep is updated in the incentives service
          4. current iep is retrieved from nomis
          5. mapping of current iep is found
          6. iep is updated in the incentives service
@@ -140,8 +142,8 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
     fun `will synchronise and create incentive in the incentive service (if no mapping) after a nomis update to a non-current incentive`() {
 
       /* 1. update to non-current iep received
-         2. non current iep mapping retrieved
-         3. non current iep is updated in the incentives service
+         2. non-current iep mapping retrieved
+         3. non-current iep is updated in the incentives service
          4. current iep is retrieved from nomis
          5. no mapping is found
          6. Mapping is created
@@ -173,6 +175,53 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
         any(),
         isNull()
       )
+    }
+  }
+
+  @Nested
+  @DisplayName("synchronise cancel visit")
+  inner class SynchroniseCancelVisit {
+    private val vsipId = "6c3ce237-f519"
+
+    @Test
+    fun `will synchronise a visit cancellation after a nomis visit cancellation event`() {
+
+      val message = validVisitCancellationMessage()
+
+      nomisApi.stubGetCancelledVisit(nomisVisitId = 9)
+      mappingApi.stubVisitMappingByNomisVisitId(nomisVisitId = 9, vsipId = vsipId)
+      visitsApi.stubCancelVisit(vsipId)
+      awsSqsOffenderEventsClient.sendMessage(queueOffenderEventsUrl, message)
+
+      await untilAsserted {
+
+        verify(telemetryClient, Times(1)).trackEvent(
+          eq("visit-cancellation-synchronisation"),
+          eq(
+            mapOf(
+              "offenderNo" to "A7948DY",
+              "vsipId" to vsipId,
+              "vsipOutcome" to "PRISONER_CANCELLED",
+              "nomisVisitId" to "9"
+            )
+          ),
+          isNull()
+        )
+      }
+    }
+
+    @Test
+    fun `will ignore a visit cancellation event without a mapping`() {
+
+      val message = validVisitCancellationMessage()
+
+      nomisApi.stubGetVisit(nomisVisitId = 9)
+      mappingApi.stubNomisVisitNotFound()
+      awsSqsOffenderEventsClient.sendMessage(queueOffenderEventsUrl, message)
+
+      await untilAsserted { mappingApi.verifyGetVisitMappingByNomisId() }
+
+      visitsApi.verifyCancelVisit(times = 0)
     }
   }
 }

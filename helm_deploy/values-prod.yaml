@@ -16,6 +16,7 @@ generic-service:
     # currently set to self for a mock API until real API is ready
     API_BASE_URL_INCENTIVES: https://prisoner-nomis-migration.hmpps.service.justice.gov.uk
     FEATURE_EVENT_IEP_UPSERTED: false
+    FEATURE_EVENT_VISIT_CANCELLED: false
 
 generic-prometheus-alerts:
   rdsAlertsDatabases:
