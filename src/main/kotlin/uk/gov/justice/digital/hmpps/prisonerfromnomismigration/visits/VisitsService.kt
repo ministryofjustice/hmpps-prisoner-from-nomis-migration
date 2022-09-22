@@ -17,6 +17,14 @@ class VisitsService(@Qualifier("visitsApiWebClient") private val webClient: WebC
       .retrieve()
       .bodyToMono(String::class.java)
       .block()!!
+
+  fun cancelVisit(visitReference: String, outcome: VsipOutcomeDto) =
+    webClient.patch()
+      .uri("/visits/$visitReference/cancel")
+      .bodyValue(outcome)
+      .retrieve()
+      .bodyToMono(Unit::class.java)
+      .block()
 }
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -72,3 +80,8 @@ enum class VisitRestriction(
   CLOSED("Closed"),
   UNKNOWN("Unknown")
 }
+
+class VsipOutcomeDto(
+  val outcomeStatus: VsipOutcome,
+  val text: String? = null
+)

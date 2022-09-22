@@ -1,8 +1,10 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 
 import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.patch
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
@@ -54,6 +56,25 @@ class VisitsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.CREATED.value())
           .withBody("654321")
+      )
+    )
+  }
+
+  fun stubCancelVisit(vsipReference: String) {
+    stubFor(
+      patch(urlEqualTo("/visits/$vsipReference/cancel")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+      )
+    )
+  }
+
+  fun verifyCancelVisit(times: Int) {
+    NomisApiExtension.nomisApi.verify(
+      times,
+      WireMock.getRequestedFor(
+        WireMock.urlPathEqualTo("/visits/.*/cancel")
       )
     )
   }

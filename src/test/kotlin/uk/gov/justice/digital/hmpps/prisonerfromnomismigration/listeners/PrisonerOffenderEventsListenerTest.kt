@@ -18,16 +18,19 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.junit.jupiter.MockitoExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.validIepCreatedMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentivesSynchronisationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitSynchronisationService
 
 @ExtendWith(MockitoExtension::class)
 internal class PrisonerDomainEventsListenerTest {
   private val incentivesSynchronisationService: IncentivesSynchronisationService = mockk()
+  private val visitSynchronisationService: VisitSynchronisationService = mockk()
   private val objectMapper: ObjectMapper = objectMapper()
   private val eventFeatureSwitch: EventFeatureSwitch = mockk()
 
   private val listener =
     PrisonOffenderEventListener(
       incentivesSynchronisationService = incentivesSynchronisationService,
+      visitSynchronisationService = visitSynchronisationService,
       eventFeatureSwitch = eventFeatureSwitch,
       objectMapper = objectMapper
     )

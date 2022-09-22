@@ -64,6 +64,14 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun verifyGetVisitMappingByNomisId() {
+    verify(
+      getRequestedFor(
+        urlPathMatching("/mapping/nomisId/.*")
+      )
+    )
+  }
+
   fun stubRoomMapping() {
     stubFor(
       get(urlPathMatching("/prison/.+?/room/nomis-room-id/.+?")).willReturn(
@@ -188,6 +196,30 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     "numberOfElements": 1,
     "empty": false
 }            
+            """.trimIndent()
+          )
+      )
+    )
+  }
+
+  fun stubVisitMappingByNomisVisitId(
+    whenCreated: String = "2020-01-01T11:10:00",
+    nomisVisitId: Long = 191747,
+    vsipId: String = "6c3ce237-f519-400d-85ca-9ba3e23323d8"
+  ) {
+    stubFor(
+      get(urlPathMatching("/mapping/nomisId/$nomisVisitId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(
+            """
+        {
+            "nomisId": $nomisVisitId,
+            "vsipId": "$vsipId",
+            "label": "2022-02-14T09:58:45",
+            "whenCreated": "$whenCreated",
+            "mappingType": "MIGRATED"
+        }          
             """.trimIndent()
           )
       )

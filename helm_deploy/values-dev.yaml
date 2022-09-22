@@ -15,6 +15,7 @@ generic-service:
     API_BASE_URL_MAPPING: https://nomis-visits-mapping-dev.hmpps.service.justice.gov.uk
     # currently set to self for a mock API until real API is ready
     API_BASE_URL_INCENTIVES: https://prisoner-nomis-migration-dev.hmpps.service.justice.gov.uk
+    FEATURE_EVENT_VISIT_CANCELLED: false
 
 # CloudPlatform AlertManager receiver to route promethues alerts to slack
 # See https://user-guide.cloud-platform.service.justice.gov.uk/documentation/monitoring-an-app/how-to-create-alarms.html#creating-your-own-custom-alerts

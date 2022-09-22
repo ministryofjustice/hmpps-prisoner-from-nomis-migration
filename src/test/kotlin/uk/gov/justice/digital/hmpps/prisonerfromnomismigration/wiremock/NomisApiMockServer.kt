@@ -132,6 +132,30 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }
   }
 
+  fun stubGetVisit(nomisVisitId: Long) {
+    nomisApi.stubFor(
+      get(
+        urlPathEqualTo("/visits/$nomisVisitId")
+      )
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+            .withBody(visitResponse(nomisVisitId))
+        )
+    )
+  }
+
+  fun stubGetCancelledVisit(nomisVisitId: Long) {
+    nomisApi.stubFor(
+      get(
+        urlPathEqualTo("/visits/$nomisVisitId")
+      )
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+            .withBody(visitCancelledResponse(nomisVisitId))
+        )
+    )
+  }
+
   fun verifyGetVisitsFilter(
     prisonIds: List<String>,
     visitTypes: List<String>,
@@ -298,6 +322,43 @@ private fun visitResponse(visitId: Long) = """
                 "visitStatus": {
                     "code": "SCH",
                     "description": "Scheduled"
+                },
+                "agencyInternalLocation": {
+                    "code": "OFF_VIS",
+                    "description": "MDI-VISITS-OFF_VIS"
+                },
+                "commentText": "Not sure if this is the right place to be"
+              }
+            """
+
+private fun visitCancelledResponse(visitId: Long) = """
+              {
+              "visitId": $visitId,
+              "offenderNo": "A7948DY",
+              "startDateTime": "2021-10-25T09:00:00",
+              "endDateTime": "2021-10-25T11:45:00",
+              "prisonId": "MDI",
+              "visitors": [
+                    {
+                        "personId": 4729570,
+                        "leadVisitor": true
+                    },
+                    {
+                        "personId": 4729580,
+                        "leadVisitor": false
+                    }
+                ],
+                "visitType": {
+                    "code": "SCON",
+                    "description": "Social Contact"
+                },
+                "visitStatus": {
+                    "code": "CANC",
+                    "description": "Cancelled"
+                },
+                "visitOutcome": {
+                    "code": "OFFCANC",
+                    "description": "Cancelled"
                 },
                 "agencyInternalLocation": {
                     "code": "OFF_VIS",

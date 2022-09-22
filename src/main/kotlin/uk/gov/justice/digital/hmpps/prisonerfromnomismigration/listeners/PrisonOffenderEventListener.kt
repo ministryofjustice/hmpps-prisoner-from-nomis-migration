@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.jms.annotation.JmsListener
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentivesSynchronisationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitSynchronisationService
 
 private const val NOMIS_IEP_UI_SCREEN = "OIDOIEPS"
 
@@ -15,6 +16,7 @@ private const val NOMIS_IEP_UI_SCREEN = "OIDOIEPS"
 class PrisonOffenderEventListener(
   private val objectMapper: ObjectMapper,
   private val incentivesSynchronisationService: IncentivesSynchronisationService,
+  private val visitSynchronisationService: VisitSynchronisationService,
   private val eventFeatureSwitch: EventFeatureSwitch
 ) {
 
@@ -35,6 +37,11 @@ class PrisonOffenderEventListener(
           runBlocking { incentivesSynchronisationService.synchroniseIncentive(objectMapper.readValue(sqsMessage.Message)) }
         }
       }
+      "VISIT_CANCELLED" -> {
+        val (offenderIdDisplay, visitId, auditModuleName) = objectMapper.readValue<VisitCancelledOffenderEvent>(sqsMessage.Message)
+        log.debug("received VISIT_CANCELLED Offender event for offenderNo $offenderIdDisplay and visitId $visitId with auditModuleName $auditModuleName")
+        runBlocking { visitSynchronisationService.cancelVisit(objectMapper.readValue(sqsMessage.Message)) }
+      }
       else -> log.info("Received a message I wasn't expecting {}", eventType)
     } else {
       log.info("Feature switch is disabled for event {}", eventType)
@@ -51,3 +58,4 @@ class PrisonOffenderEventListener(
 }
 
 data class IncentiveUpsertedOffenderEvent(val bookingId: Long, val iepSeq: Long, val auditModuleName: String)
+data class VisitCancelledOffenderEvent(val offenderIdDisplay: String, val visitId: Long, val auditModuleName: String)
