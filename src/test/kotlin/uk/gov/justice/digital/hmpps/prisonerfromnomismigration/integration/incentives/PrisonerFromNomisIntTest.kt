@@ -223,5 +223,19 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
 
       visitsApi.verifyCancelVisit(times = 0)
     }
+
+    @Test
+    fun `will ignore a visit cancellation event that originated in VSIP`() {
+
+      val message = validVisitCancellationMessage()
+
+      nomisApi.stubGetCancelledVisit(nomisVisitId = 9, modifyUserId = "PRISONER_MANAGER_API")
+      mappingApi.stubNomisVisitNotFound()
+      awsSqsOffenderEventsClient.sendMessage(queueOffenderEventsUrl, message)
+
+      await untilAsserted { nomisApi.verifyGetVisit(nomisVisitId = 9) }
+
+      mappingApi.verifyGetVisitMappingByNomisId(times = 0)
+    }
   }
 }

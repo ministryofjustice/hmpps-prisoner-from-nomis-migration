@@ -64,8 +64,9 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun verifyGetVisitMappingByNomisId() {
+  fun verifyGetVisitMappingByNomisId(times: Int = 1) {
     verify(
+      times,
       getRequestedFor(
         urlPathMatching("/mapping/nomisId/.*")
       )
