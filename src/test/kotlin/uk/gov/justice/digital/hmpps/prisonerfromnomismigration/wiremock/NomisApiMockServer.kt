@@ -144,14 +144,22 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubGetCancelledVisit(nomisVisitId: Long) {
+  fun verifyGetVisit(nomisVisitId: Long) {
+    nomisApi.verify(
+      getRequestedFor(
+        urlPathEqualTo("/visits/$nomisVisitId")
+      )
+    )
+  }
+
+  fun stubGetCancelledVisit(nomisVisitId: Long, modifyUserId: String = "transfer-staff-id") {
     nomisApi.stubFor(
       get(
         urlPathEqualTo("/visits/$nomisVisitId")
       )
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(visitCancelledResponse(nomisVisitId))
+            .withBody(visitCancelledResponse(nomisVisitId, modifyUserId))
         )
     )
   }
@@ -331,13 +339,14 @@ private fun visitResponse(visitId: Long) = """
               }
             """
 
-private fun visitCancelledResponse(visitId: Long) = """
+private fun visitCancelledResponse(visitId: Long, modifyUserId: String) = """
               {
               "visitId": $visitId,
               "offenderNo": "A7948DY",
               "startDateTime": "2021-10-25T09:00:00",
               "endDateTime": "2021-10-25T11:45:00",
               "prisonId": "MDI",
+              "modifyUserId": "$modifyUserId",
               "visitors": [
                     {
                         "personId": 4729570,

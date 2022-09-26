@@ -188,6 +188,7 @@ data class NomisVisit(
   val commentText: String? = null,
   val visitorConcernText: String? = null,
   val leadVisitor: NomisLeadVisitor? = null,
+  val modifyUserId: String? = null
 )
 
 data class NomisIncentive(
