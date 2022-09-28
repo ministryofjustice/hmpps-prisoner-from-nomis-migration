@@ -55,7 +55,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubNomisVisitNotFound() {
     stubFor(
-      get(urlPathMatching("/mapping/nomisId/.*")).willReturn(
+      get(urlPathMatching("/mapping/visits/nomisId/.*")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.NOT_FOUND.value())
@@ -68,7 +68,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     verify(
       times,
       getRequestedFor(
-        urlPathMatching("/mapping/nomisId/.*")
+        urlPathMatching("/mapping/visits/nomisId/.*")
       )
     )
   }
@@ -121,7 +121,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubVisitMappingCreate() {
     stubFor(
-      post(urlEqualTo("/mapping")).willReturn(
+      post(urlEqualTo("/mapping/visits")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.CREATED.value())
@@ -131,7 +131,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubVisitMappingCreateFailureFollowedBySuccess() {
     stubFor(
-      post(urlEqualTo("/mapping"))
+      post(urlEqualTo("/mapping/visits"))
         .inScenario("Retry Visit Scenario")
         .whenScenarioStateIs(STARTED)
         .willReturn(
@@ -143,7 +143,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
 
     stubFor(
-      post(urlEqualTo("/mapping"))
+      post(urlEqualTo("/mapping/visits"))
         .inScenario("Retry Visit Scenario")
         .whenScenarioStateIs("Cause Visit Success")
         .willReturn(
@@ -156,7 +156,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubVisitMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 278887) {
     stubFor(
-      get(urlPathMatching("/mapping/migration-id/.*")).willReturn(
+      get(urlPathMatching("/mapping/visits/migration-id/.*")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody(
@@ -209,7 +209,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     vsipId: String = "6c3ce237-f519-400d-85ca-9ba3e23323d8"
   ) {
     stubFor(
-      get(urlPathMatching("/mapping/nomisId/$nomisVisitId")).willReturn(
+      get(urlPathMatching("/mapping/visits/nomisId/$nomisVisitId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody(
@@ -278,7 +278,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubLatestMigration(migrationId: String) {
     stubFor(
-      get(urlEqualTo("/mapping/migrated/latest")).willReturn(
+      get(urlEqualTo("/mapping/visits/migrated/latest")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody(
@@ -296,12 +296,12 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun createVisitMappingCount() = findAll(postRequestedFor(urlEqualTo("/mapping"))).count()
+  fun createVisitMappingCount() = findAll(postRequestedFor(urlEqualTo("/mapping/visits"))).count()
 
   fun verifyCreateMappingVisitIds(nomsVisitIds: Array<Long>, times: Int = 1) = nomsVisitIds.forEach {
     verify(
       times,
-      postRequestedFor(urlEqualTo("/mapping")).withRequestBody(
+      postRequestedFor(urlEqualTo("/mapping/visits")).withRequestBody(
         matchingJsonPath(
           "nomisId",
           equalTo("$it")

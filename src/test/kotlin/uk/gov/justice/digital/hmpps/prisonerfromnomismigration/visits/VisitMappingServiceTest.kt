@@ -36,7 +36,7 @@ internal class VisitMappingServiceTest {
     @Test
     internal fun `will return null when not found`() {
       mappingApi.stubFor(
-        get(urlPathMatching("/mapping/nomisId/.*")).willReturn(
+        get(urlPathMatching("/mapping/visits/nomisId/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
@@ -50,7 +50,7 @@ internal class VisitMappingServiceTest {
     @Test
     internal fun `will return the mapping when found`() {
       mappingApi.stubFor(
-        get(urlPathMatching("/mapping/nomisId/.*")).willReturn(
+        get(urlPathMatching("/mapping/visits/nomisId/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
@@ -78,7 +78,7 @@ internal class VisitMappingServiceTest {
     @Test
     internal fun `will throw exception for any other error`() {
       mappingApi.stubFor(
-        get(urlPathMatching("/mapping/nomisId/.*")).willReturn(
+        get(urlPathMatching("/mapping/visits/nomisId/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
@@ -98,7 +98,7 @@ internal class VisitMappingServiceTest {
     @BeforeEach
     internal fun setUp() {
       mappingApi.stubFor(
-        post(urlEqualTo("/mapping")).willReturn(
+        post(urlEqualTo("/mapping/visits")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.CREATED.value())
@@ -111,7 +111,7 @@ internal class VisitMappingServiceTest {
       visitMappingService.createNomisVisitMapping(1234, "5678", "2020-01-01T00:00:00")
 
       mappingApi.verify(
-        postRequestedFor(urlEqualTo("/mapping"))
+        postRequestedFor(urlEqualTo("/mapping/visits"))
           .withRequestBody(
             equalToJson(
               """
@@ -201,7 +201,7 @@ internal class VisitMappingServiceTest {
 
       mappingApi.verify(
         getRequestedFor(
-          urlPathEqualTo("/mapping/migrated/latest")
+          urlPathEqualTo("/mapping/visits/migrated/latest")
         )
           .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE"))
       )
@@ -210,7 +210,7 @@ internal class VisitMappingServiceTest {
     @Test
     internal fun `will return null when not found`() {
       mappingApi.stubFor(
-        get(urlPathEqualTo("/mapping/migrated/latest")).willReturn(
+        get(urlPathEqualTo("/mapping/visits/migrated/latest")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
@@ -224,7 +224,7 @@ internal class VisitMappingServiceTest {
     @Test
     internal fun `will return the mapping when found`() {
       mappingApi.stubFor(
-        get(urlEqualTo("/mapping/migrated/latest")).willReturn(
+        get(urlEqualTo("/mapping/visits/migrated/latest")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withBody(
@@ -249,7 +249,7 @@ internal class VisitMappingServiceTest {
     @Test
     internal fun `will throw exception for any other error`() {
       mappingApi.stubFor(
-        get(urlPathMatching("/mapping/migrated/latest")).willReturn(
+        get(urlPathMatching("/mapping/visits/migrated/latest")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
@@ -277,7 +277,7 @@ internal class VisitMappingServiceTest {
 
       mappingApi.verify(
         getRequestedFor(
-          urlPathMatching("/mapping/migration-id/.*")
+          urlPathMatching("/mapping/visits/migration-id/.*")
         )
           .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE"))
       )
@@ -286,7 +286,7 @@ internal class VisitMappingServiceTest {
     @Test
     internal fun `will throw error when not found`() {
       mappingApi.stubFor(
-        get(urlPathMatching("/mapping/migration-id/.*")).willReturn(
+        get(urlPathMatching("/mapping/visits/migration-id/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
@@ -315,7 +315,7 @@ internal class VisitMappingServiceTest {
     @Test
     internal fun `will throw exception for any other error`() {
       mappingApi.stubFor(
-        get(urlPathMatching("/mapping/migration-id/.*")).willReturn(
+        get(urlPathMatching("/mapping/visits/migration-id/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
@@ -343,7 +343,7 @@ internal class VisitMappingServiceTest {
 
       mappingApi.verify(
         getRequestedFor(
-          urlPathMatching("/mapping/migration-id/.*")
+          urlPathMatching("/mapping/visits/migration-id/.*")
         )
           .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE"))
       )
@@ -352,7 +352,7 @@ internal class VisitMappingServiceTest {
     @Test
     internal fun `will return zero when not found`() {
       mappingApi.stubFor(
-        get(urlPathMatching("/mapping/migration-id/.*")).willReturn(
+        get(urlPathMatching("/mapping/visits/migration-id/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
@@ -376,7 +376,7 @@ internal class VisitMappingServiceTest {
     @Test
     internal fun `will throw exception for any other error`() {
       mappingApi.stubFor(
-        get(urlPathMatching("/mapping/migration-id/.*")).willReturn(
+        get(urlPathMatching("/mapping/visits/migration-id/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
