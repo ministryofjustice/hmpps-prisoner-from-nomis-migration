@@ -14,7 +14,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationDet
 class VisitMappingService(@Qualifier("mappingApiWebClient") private val webClient: WebClient) {
   fun findNomisVisitMapping(nomisVisitId: Long): VisitNomisMapping? {
     return webClient.get()
-      .uri("/mapping/nomisId/{nomisVisitId}", nomisVisitId)
+      .uri("/mapping/visits/nomisId/{nomisVisitId}", nomisVisitId)
       .retrieve()
       .bodyToMono(VisitNomisMapping::class.java)
       .onErrorResume(WebClientResponseException.NotFound::class.java) {
@@ -25,7 +25,7 @@ class VisitMappingService(@Qualifier("mappingApiWebClient") private val webClien
 
   fun createNomisVisitMapping(nomisVisitId: Long, vsipVisitId: String, migrationId: String) {
     webClient.post()
-      .uri("/mapping")
+      .uri("/mapping/visits")
       .bodyValue(
         VisitNomisMapping(
           nomisId = nomisVisitId,
@@ -54,7 +54,7 @@ class VisitMappingService(@Qualifier("mappingApiWebClient") private val webClien
     runBlocking { findRoomMapping(agencyInternalLocationCode, prisonId) }
 
   fun findLatestMigration(): LatestMigration? = webClient.get()
-    .uri("/mapping/migrated/latest")
+    .uri("/mapping/visits/migrated/latest")
     .retrieve()
     .bodyToMono(LatestMigration::class.java)
     .onErrorResume(WebClientResponseException.NotFound::class.java) {
@@ -64,7 +64,7 @@ class VisitMappingService(@Qualifier("mappingApiWebClient") private val webClien
 
   fun getMigrationDetails(migrationId: String): MigrationDetails = webClient.get()
     .uri {
-      it.path("/mapping/migration-id/{migrationId}")
+      it.path("/mapping/visits/migration-id/{migrationId}")
         .queryParam("size", 1)
         .build(migrationId)
     }
@@ -74,7 +74,7 @@ class VisitMappingService(@Qualifier("mappingApiWebClient") private val webClien
 
   fun getMigrationCount(migrationId: String): Long = webClient.get()
     .uri {
-      it.path("/mapping/migration-id/{migrationId}")
+      it.path("/mapping/visits/migration-id/{migrationId}")
         .queryParam("size", 1)
         .build(migrationId)
     }
