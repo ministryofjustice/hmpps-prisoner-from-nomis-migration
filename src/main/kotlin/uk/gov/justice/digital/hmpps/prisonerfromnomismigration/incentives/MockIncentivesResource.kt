@@ -64,7 +64,7 @@ data class CreateIncentiveRequest(
   val bookingId: Long,
   val prisonerNumber: String,
   val reviewTime: LocalDateTime,
-  val reviewedBy: String,
+  val reviewedBy: String?,
   val iepCode: String,
   val commentText: String? = null,
   val current: Boolean,
