@@ -122,7 +122,7 @@ class IncentivesMigrationService(
     }
       ?: run {
         val iep = nomisApiService.getIncentiveBlocking(bookingId, sequence)
-        val migratedIncentive = incentivesService.migrateIncentive(iep.toIncentive(reviewType = MIGRATION))
+        val migratedIncentive = incentivesService.migrateIncentive(iep.toIncentive(reviewType = MIGRATION), bookingId)
           .also {
             createIncentiveMapping(
               bookingId,

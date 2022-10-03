@@ -49,16 +49,16 @@ internal class IncentivesServiceTest {
     internal fun `will supply authentication token`() {
       incentivesService.migrateIncentive(
         CreateIncentiveIEP(
-          locationId = "BXI",
-          prisonerNumber = "A1234AA",
-          bookingId = 12345,
-          reviewTime = LocalDateTime.parse("2020-01-01T11:00:00"),
-          reviewedBy = "J_SMITH",
-          iepCode = "ENH",
-          commentText = "Good job",
+          prisonId = "BXI",
+          locationId = "BXI-RECP",
+          iepTime = LocalDateTime.parse("2020-01-01T11:00:00"),
+          userId = "J_SMITH",
+          iepLevel = "ENH",
+          comment = "Good job",
           current = true,
           reviewType = REVIEW,
-        )
+        ),
+        12345
       )
 
       incentivesApi.verify(
@@ -71,31 +71,30 @@ internal class IncentivesServiceTest {
     internal fun `will pass data as JSON to endpoint`() {
       incentivesService.migrateIncentive(
         CreateIncentiveIEP(
-          locationId = "BXI",
-          bookingId = 12345,
-          prisonerNumber = "A1234AA",
-          reviewTime = LocalDateTime.parse("2020-01-01T11:00:00"),
-          reviewedBy = "J_SMITH",
-          iepCode = "ENH",
-          commentText = "Good job",
+          prisonId = "BXI",
+          locationId = "BXI-RECP",
+          iepTime = LocalDateTime.parse("2020-01-01T11:00:00"),
+          userId = "J_SMITH",
+          iepLevel = "ENH",
+          comment = "Good job",
           current = true,
           reviewType = MIGRATION,
-        )
+        ),
+        12345
       )
 
       incentivesApi.verify(
-        postRequestedFor(urlMatching("/iep/migration/booking/\\d*"))
+        postRequestedFor(urlMatching("/iep/migration/booking/12345"))
           .withRequestBody(
             equalToJson(
               """
             {
-          "locationId": "BXI",
-          "bookingId": 12345,
-          "prisonerNumber": "A1234AA",
-          "reviewTime": "2020-01-01T11:00:00",
-          "reviewedBy": "J_SMITH",
-          "iepCode": "ENH",
-          "commentText": "Good job",
+          "locationId" : "BXI-RECP",
+          "prisonId" : "BXI",
+          "iepTime": "2020-01-01T11:00:00",
+          "userId": "J_SMITH",
+          "iepLevel": "ENH",
+          "comment": "Good job",
           "current": true,
           "reviewType": "MIGRATION"
             }
@@ -109,16 +108,16 @@ internal class IncentivesServiceTest {
     internal fun `will return newly created incentive id`() {
       val incentive = incentivesService.migrateIncentive(
         CreateIncentiveIEP(
-          locationId = "BXI",
-          prisonerNumber = "A1234AA",
-          bookingId = 12345,
-          reviewTime = LocalDateTime.parse("2020-01-01T11:00:00"),
-          reviewedBy = "J_SMITH",
-          iepCode = "ENH",
-          commentText = "Good job",
+          prisonId = "BXI",
+          locationId = "BXI-RECP",
+          iepTime = LocalDateTime.parse("2020-01-01T11:00:00"),
+          userId = "J_SMITH",
+          iepLevel = "ENH",
+          comment = "Good job",
           current = true,
           reviewType = REVIEW,
-        )
+        ),
+        12345
       )
 
       assertThat(incentive.id).isEqualTo(654321)

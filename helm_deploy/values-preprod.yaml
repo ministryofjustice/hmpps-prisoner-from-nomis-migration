@@ -13,8 +13,7 @@ generic-service:
     API_BASE_URL_NOMIS: https://nomis-prsner-pp.aks-live-1.studio-hosting.service.justice.gov.uk
     API_BASE_URL_VISITS: https://visit-scheduler-preprod.prison.service.justice.gov.uk
     API_BASE_URL_MAPPING: https://nomis-visits-mapping-preprod.hmpps.service.justice.gov.uk
-    # currently set to self for a mock API until real API is ready
-    API_BASE_URL_INCENTIVES: https://prisoner-nomis-migration-preprod.hmpps.service.justice.gov.uk
+    API_BASE_URL_INCENTIVES: https://incentives-api-dev.hmpps.service.justice.gov.uk
 
 generic-prometheus-alerts:
   rdsAlertsDatabases:

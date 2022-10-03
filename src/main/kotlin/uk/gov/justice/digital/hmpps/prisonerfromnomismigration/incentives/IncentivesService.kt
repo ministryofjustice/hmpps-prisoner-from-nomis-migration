@@ -11,17 +11,17 @@ import java.time.LocalDateTime
 
 @Service
 class IncentivesService(@Qualifier("incentivesApiWebClient") private val webClient: WebClient) {
-  fun migrateIncentive(incentive: CreateIncentiveIEP): CreateIncentiveIEPResponse =
+  fun migrateIncentive(incentive: CreateIncentiveIEP, bookingId: Long): CreateIncentiveIEPResponse =
     webClient.post()
-      .uri("/iep/migration/booking/{bookingId}", incentive.bookingId)
+      .uri("/iep/migration/booking/{bookingId}", bookingId)
       .bodyValue(incentive)
       .retrieve()
       .bodyToMono(CreateIncentiveIEPResponse::class.java)
       .block()!!
 
-  suspend fun synchroniseCreateIncentive(incentive: CreateIncentiveIEP): CreateIncentiveIEPResponse =
+  suspend fun synchroniseCreateIncentive(incentive: CreateIncentiveIEP, bookingId: Long): CreateIncentiveIEPResponse =
     webClient.post()
-      .uri("/iep/sync/booking/{bookingId}", incentive.bookingId)
+      .uri("/iep/sync/booking/{bookingId}", bookingId)
       .bodyValue(incentive)
       .retrieve()
       .bodyToMono(CreateIncentiveIEPResponse::class.java)
@@ -39,13 +39,12 @@ class IncentivesService(@Qualifier("incentivesApiWebClient") private val webClie
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class CreateIncentiveIEP(
   val locationId: String,
-  val bookingId: Long,
-  val prisonerNumber: String,
+  val prisonId: String,
   @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-  val reviewTime: LocalDateTime,
-  val reviewedBy: String?,
-  val iepCode: String,
-  val commentText: String? = null,
+  val iepTime: LocalDateTime,
+  val userId: String?,
+  val iepLevel: String,
+  val comment: String? = null,
   val current: Boolean,
   val reviewType: ReviewType,
 )
@@ -53,8 +52,8 @@ data class CreateIncentiveIEP(
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class UpdateIncentiveIEP(
   @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-  val reviewTime: LocalDateTime,
-  val commentText: String? = null,
+  val iepTime: LocalDateTime,
+  val comment: String? = null,
   val current: Boolean,
 )
 
