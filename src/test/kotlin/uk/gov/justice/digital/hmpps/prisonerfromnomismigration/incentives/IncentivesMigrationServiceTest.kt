@@ -783,7 +783,7 @@ internal class IncentivesMigrationServiceTest {
         )
       )
 
-      whenever(incentivesService.migrateIncentive(any())).thenReturn(CreateIncentiveIEPResponse(999L))
+      whenever(incentivesService.migrateIncentive(any(), any())).thenReturn(CreateIncentiveIEPResponse(999L))
     }
 
     @Test
@@ -828,17 +828,17 @@ internal class IncentivesMigrationServiceTest {
       verify(incentivesService).migrateIncentive(
         eq(
           CreateIncentiveIEP(
-            bookingId = 1000,
-            commentText = "Doing well",
-            prisonerNumber = "A1234AA",
-            iepCode = "ENH",
-            reviewTime = LocalDateTime.parse("2020-01-01T13:10:00"),
-            locationId = "HEI",
-            reviewedBy = "JANE_SMITH",
+            comment = "Doing well",
+            iepLevel = "ENH",
+            iepTime = LocalDateTime.parse("2020-01-01T13:10:00"),
+            locationId = "HEI-RECP",
+            prisonId = "HEI",
+            userId = "JANE_SMITH",
             current = true,
             reviewType = MIGRATION
           )
-        )
+        ),
+        eq(123)
       )
     }
 
@@ -857,7 +857,7 @@ internal class IncentivesMigrationServiceTest {
           offenderNo = "A1234AA"
         )
       )
-      whenever(incentivesService.migrateIncentive(any())).thenReturn(CreateIncentiveIEPResponse(999L))
+      whenever(incentivesService.migrateIncentive(any(), eq(123))).thenReturn(CreateIncentiveIEPResponse(999L))
 
       service.migrateIncentive(
         MigrationContext(
@@ -891,7 +891,7 @@ internal class IncentivesMigrationServiceTest {
           offenderNo = "A1234AA"
         )
       )
-      whenever(incentivesService.migrateIncentive(any())).thenReturn(CreateIncentiveIEPResponse(999L))
+      whenever(incentivesService.migrateIncentive(any(), any())).thenReturn(CreateIncentiveIEPResponse(999L))
 
       whenever(incentiveMappingService.createNomisIncentiveMigrationMapping(any(), any(), any(), any())).thenThrow(
         RuntimeException("something went wrong")

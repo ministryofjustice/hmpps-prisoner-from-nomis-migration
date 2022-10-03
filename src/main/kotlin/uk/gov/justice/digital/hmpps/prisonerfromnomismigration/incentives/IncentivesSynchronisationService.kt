@@ -62,7 +62,7 @@ class IncentivesSynchronisationService(
   }
 
   private suspend fun createIncentiveAndMapping(nomisIncentive: NomisIncentive) {
-    incentiveService.synchroniseCreateIncentive(nomisIncentive.toIncentive(REVIEW)).also {
+    incentiveService.synchroniseCreateIncentive(nomisIncentive.toIncentive(REVIEW), nomisIncentive.bookingId).also {
       createIncentiveMapping(nomisIncentive, it)
       telemetryClient.trackEvent(
         "incentive-created-synchronisation",
@@ -83,8 +83,8 @@ class IncentivesSynchronisationService(
     incentiveService.synchroniseUpdateIncentive(
       nomisIep.bookingId, iepMapping.incentiveId,
       UpdateIncentiveIEP(
-        reviewTime = nomisIep.iepDateTime,
-        commentText = nomisIep.commentText,
+        iepTime = nomisIep.iepDateTime,
+        comment = nomisIep.commentText,
         current = nomisIep.currentIep
       )
     )
@@ -106,7 +106,9 @@ class IncentivesSynchronisationService(
   ) {
     try {
       mappingService.createNomisIncentiveSynchronisationMapping(
-        nomisBookingId = nomisIncentive.bookingId, nomisIncentiveSequence = nomisIncentive.incentiveSequence, incentiveId = it.id
+        nomisBookingId = nomisIncentive.bookingId,
+        nomisIncentiveSequence = nomisIncentive.incentiveSequence,
+        incentiveId = it.id
       )
     } catch (e: Exception) {
       log.error(

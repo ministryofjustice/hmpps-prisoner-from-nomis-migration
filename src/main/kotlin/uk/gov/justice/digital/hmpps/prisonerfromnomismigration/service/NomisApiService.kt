@@ -203,13 +203,12 @@ data class NomisIncentive(
   val currentIep: Boolean
 ) {
   fun toIncentive(reviewType: ReviewType): CreateIncentiveIEP = CreateIncentiveIEP(
-    bookingId = bookingId,
-    prisonerNumber = this.offenderNo,
-    iepCode = iepLevel.code,
-    locationId = this.prisonId,
-    reviewTime = this.iepDateTime,
-    reviewedBy = this.userId,
-    commentText = this.commentText,
+    iepLevel = iepLevel.code,
+    locationId = "${this.prisonId}-RECP", // todo wire up when nomis api amended
+    prisonId = this.prisonId,
+    iepTime = this.iepDateTime,
+    userId = this.userId,
+    comment = this.commentText,
     current = this.currentIep,
     reviewType = reviewType,
   )
