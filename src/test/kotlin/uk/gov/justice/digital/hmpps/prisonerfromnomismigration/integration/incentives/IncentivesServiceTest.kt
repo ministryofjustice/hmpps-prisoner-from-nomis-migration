@@ -19,7 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.CreateIncentiveIEP
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentivesConfiguration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentivesService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.ReviewType.MIGRATION
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.ReviewType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.ReviewType.REVIEW
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.IncentivesApiExtension.Companion.incentivesApi
 import java.time.LocalDateTime
@@ -78,7 +78,7 @@ internal class IncentivesServiceTest {
           iepLevel = "ENH",
           comment = "Good job",
           current = true,
-          reviewType = MIGRATION,
+          reviewType = MIGRATED,
         ),
         12345
       )
@@ -96,7 +96,7 @@ internal class IncentivesServiceTest {
           "iepLevel": "ENH",
           "comment": "Good job",
           "current": true,
-          "reviewType": "MIGRATION"
+          "reviewType": "MIGRATED"
             }
               """.trimIndent()
             )

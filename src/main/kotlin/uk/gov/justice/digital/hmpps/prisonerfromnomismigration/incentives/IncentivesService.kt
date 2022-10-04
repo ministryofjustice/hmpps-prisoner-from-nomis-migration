@@ -58,7 +58,7 @@ data class UpdateIncentiveIEP(
 )
 
 enum class ReviewType {
-  REVIEW, MIGRATION
+  REVIEW, MIGRATED
 }
 
 data class CreateIncentiveIEPResponse(
