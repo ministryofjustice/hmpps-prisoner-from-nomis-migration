@@ -15,8 +15,11 @@ generic-service:
     API_BASE_URL_MAPPING: https://nomis-visits-mapping-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_INCENTIVES: https://incentives-api-dev.hmpps.service.justice.gov.uk
 
-# CloudPlatform AlertManager receiver to route promethues alerts to slack
-# See https://user-guide.cloud-platform.service.justice.gov.uk/documentation/monitoring-an-app/how-to-create-alarms.html#creating-your-own-custom-alerts
 generic-prometheus-alerts:
   rdsAlertsDatabases:
     cloud-platform-bb7deb71226bc52e: "prisoner nomis migration"
+  sqsAlertsQueueNames:
+    - "Digital-Prison-Services-dev-prisoner_from_nomis_queue"
+    - "Digital-Prison-Services-dev-prisoner_from_nomis_dl_queue"
+  sqsAlertsOldestThreshold: 2
+  sqsAlertsTotalMessagesThreshold: 1

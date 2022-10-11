@@ -18,3 +18,8 @@ generic-service:
 generic-prometheus-alerts:
   rdsAlertsDatabases:
     cloud-platform-62a9415f993d9717: "prisoner nomis migration"
+  sqsAlertsQueueNames:
+    - "Digital-Prison-Services-preprod-prisoner_from_nomis_queue"
+    - "Digital-Prison-Services-preprod-prisoner_from_nomis_dl_queue"
+  sqsAlertsOldestThreshold: 2
+  sqsAlertsTotalMessagesThreshold: 1
