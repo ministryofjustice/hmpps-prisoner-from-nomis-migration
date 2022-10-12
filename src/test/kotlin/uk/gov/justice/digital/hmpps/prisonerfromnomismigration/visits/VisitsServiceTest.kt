@@ -54,7 +54,8 @@ internal class VisitsServiceTest {
             VsipVisitor(nomisPersonId = 5668),
             VsipVisitor(nomisPersonId = 5678)
           ),
-          visitRestriction = VisitRestriction.OPEN
+          visitRestriction = VisitRestriction.OPEN,
+          createDateTime = LocalDateTime.parse("2020-01-01T08:00:00")
         )
       )
 
@@ -81,7 +82,9 @@ internal class VisitsServiceTest {
           ),
           legacyData = VsipLegacyData(leadVisitorId = 123),
           visitRestriction = VisitRestriction.OPEN,
-          visitContact = VsipLegacyContactOnVisit("James Flack")
+          visitContact = VsipLegacyContactOnVisit("James Flack"),
+          createDateTime = LocalDateTime.parse("2020-01-01T08:00:00"),
+          modifyDateTime = LocalDateTime.parse("2020-01-01T14:00:00")
         )
       )
 
@@ -114,7 +117,9 @@ internal class VisitsServiceTest {
               "visitRestriction": "OPEN",
               "visitContact" : {
                 "name" : "James Flack"
-              }
+              },
+              "createDateTime": "2020-01-01T08:00:00",
+              "modifyDateTime": "2020-01-01T14:00:00"
             }
               """.trimIndent()
             )
@@ -137,7 +142,8 @@ internal class VisitsServiceTest {
             VsipVisitor(nomisPersonId = 5668),
             VsipVisitor(nomisPersonId = 5678)
           ),
-          visitRestriction = VisitRestriction.OPEN
+          visitRestriction = VisitRestriction.OPEN,
+          createDateTime = LocalDateTime.parse("2020-01-01T08:00:00")
         )
       )
       assertThat(visitId).isEqualTo("654321")

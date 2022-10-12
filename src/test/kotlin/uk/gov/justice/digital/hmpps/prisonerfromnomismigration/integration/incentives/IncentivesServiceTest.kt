@@ -50,7 +50,6 @@ internal class IncentivesServiceTest {
       incentivesService.migrateIncentive(
         CreateIncentiveIEP(
           prisonId = "BXI",
-          locationId = "BXI-RECP",
           iepTime = LocalDateTime.parse("2020-01-01T11:00:00"),
           userId = "J_SMITH",
           iepLevel = "ENH",
@@ -72,7 +71,6 @@ internal class IncentivesServiceTest {
       incentivesService.migrateIncentive(
         CreateIncentiveIEP(
           prisonId = "BXI",
-          locationId = "BXI-RECP",
           iepTime = LocalDateTime.parse("2020-01-01T11:00:00"),
           userId = "J_SMITH",
           iepLevel = "ENH",
@@ -89,7 +87,6 @@ internal class IncentivesServiceTest {
             equalToJson(
               """
             {
-          "locationId" : "BXI-RECP",
           "prisonId" : "BXI",
           "iepTime": "2020-01-01T11:00:00",
           "userId": "J_SMITH",
@@ -109,7 +106,6 @@ internal class IncentivesServiceTest {
       val incentive = incentivesService.migrateIncentive(
         CreateIncentiveIEP(
           prisonId = "BXI",
-          locationId = "BXI-RECP",
           iepTime = LocalDateTime.parse("2020-01-01T11:00:00"),
           userId = "J_SMITH",
           iepLevel = "ENH",

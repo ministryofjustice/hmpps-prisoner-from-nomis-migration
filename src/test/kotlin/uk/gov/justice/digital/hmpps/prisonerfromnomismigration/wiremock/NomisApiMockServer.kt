@@ -312,6 +312,7 @@ private fun visitResponse(visitId: Long) = """
               "offenderNo": "A7948DY",
               "startDateTime": "2021-10-25T09:00:00",
               "endDateTime": "2021-10-25T11:45:00",
+              "whenCreated": "2021-10-24T09:00:00",
               "prisonId": "MDI",
               "visitors": [
                     {
@@ -345,6 +346,8 @@ private fun visitCancelledResponse(visitId: Long, modifyUserId: String) = """
               "offenderNo": "A7948DY",
               "startDateTime": "2021-10-25T09:00:00",
               "endDateTime": "2021-10-25T11:45:00",
+              "whenCreated": "2021-10-24T09:00:00",
+              "whenUpdated": "2021-10-25T14:45:00",
               "prisonId": "MDI",
               "modifyUserId": "$modifyUserId",
               "visitors": [
