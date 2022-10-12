@@ -404,7 +404,9 @@ class VisitsMigrationService(
       },
       visitNotes = visitNotesSet,
       visitors = nomisVisit.visitors.map { v -> VsipVisitor(v.personId) }.toSet(),
-      visitRestriction = dateAwareRoomMapping.restriction
+      visitRestriction = dateAwareRoomMapping.restriction,
+      createDateTime = nomisVisit.whenCreated,
+      modifyDateTime = nomisVisit.whenUpdated
     )
   }
 

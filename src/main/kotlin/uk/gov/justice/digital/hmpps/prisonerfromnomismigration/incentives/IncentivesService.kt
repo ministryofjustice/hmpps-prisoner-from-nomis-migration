@@ -38,7 +38,6 @@ class IncentivesService(@Qualifier("incentivesApiWebClient") private val webClie
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class CreateIncentiveIEP(
-  val locationId: String,
   val prisonId: String,
   @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
   val iepTime: LocalDateTime,

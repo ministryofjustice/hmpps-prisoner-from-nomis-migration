@@ -188,7 +188,9 @@ data class NomisVisit(
   val commentText: String? = null,
   val visitorConcernText: String? = null,
   val leadVisitor: NomisLeadVisitor? = null,
-  val modifyUserId: String? = null
+  val modifyUserId: String? = null,
+  val whenCreated: LocalDateTime,
+  val whenUpdated: LocalDateTime? = null
 )
 
 data class NomisIncentive(
@@ -204,7 +206,6 @@ data class NomisIncentive(
 ) {
   fun toIncentive(reviewType: ReviewType): CreateIncentiveIEP = CreateIncentiveIEP(
     iepLevel = iepLevel.code,
-    locationId = "${this.prisonId}-RECP", // todo wire up when nomis api amended
     prisonId = this.prisonId,
     iepTime = this.iepDateTime,
     userId = this.userId,

@@ -60,7 +60,6 @@ class MockIncentivesResource {
 }
 
 data class CreateIncentiveRequest(
-  val locationId: String,
   val bookingId: Long,
   val prisonerNumber: String,
   val reviewTime: LocalDateTime,

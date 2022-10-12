@@ -831,7 +831,6 @@ internal class IncentivesMigrationServiceTest {
             comment = "Doing well",
             iepLevel = "ENH",
             iepTime = LocalDateTime.parse("2020-01-01T13:10:00"),
-            locationId = "HEI-RECP",
             prisonId = "HEI",
             userId = "JANE_SMITH",
             current = true,

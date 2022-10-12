@@ -46,7 +46,11 @@ data class CreateVsipVisit(
   val visitContact: VsipLegacyContactOnVisit? = null,
   val visitors: Set<VsipVisitor>? = setOf(),
   val visitNotes: Set<VsipVisitNote>? = setOf(),
-  val visitRestriction: VisitRestriction
+  val visitRestriction: VisitRestriction,
+  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+  val createDateTime: LocalDateTime,
+  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+  val modifyDateTime: LocalDateTime? = null
 )
 
 data class VsipLegacyData(
