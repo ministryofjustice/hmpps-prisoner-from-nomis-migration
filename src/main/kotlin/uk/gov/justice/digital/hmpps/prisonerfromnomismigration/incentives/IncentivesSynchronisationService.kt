@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.ReviewType.REVIEW
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.IncentiveDeletedOffenderEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.IncentiveUpsertedOffenderEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
@@ -58,6 +59,17 @@ class IncentivesSynchronisationService(
         log.debug("no nomis incentive mapping found")
         createIncentiveAndMapping(this@run)
       }
+    }
+  }
+
+  suspend fun synchroniseDeletedIncentive(iepEvent: IncentiveDeletedOffenderEvent) {
+    mappingService.findNomisIncentiveMapping(
+      nomisBookingId = iepEvent.bookingId,
+      nomisIncentiveSequence = iepEvent.iepSeq
+    )?.let { incentiveMapping ->
+      log.debug("found incentive mapping that requires deleting: $incentiveMapping")
+    } ?: run {
+      log.warn("no incentive mapping found, ignoring the delete")
     }
   }
 
