@@ -31,17 +31,29 @@ class PrisonOffenderEventListener(
     val eventType = sqsMessage.MessageAttributes.eventType.Value
     if (eventFeatureSwitch.isEnabled(eventType)) when (eventType) {
       "IEP_UPSERTED" -> {
-        val (bookingId, iepSeq, auditModuleName) = objectMapper.readValue<IncentiveUpsertedOffenderEvent>(sqsMessage.Message)
-        log.debug("received IEP_UPSERTED Offender event for bookingId $bookingId and seq $iepSeq with auditModuleName $auditModuleName")
+        val (offenderIdDisplay, bookingId, iepSeq, auditModuleName) = objectMapper.readValue<IncentiveUpsertedOffenderEvent>(
+          sqsMessage.Message
+        )
+        log.debug("received IEP_UPSERTED Offender event for $offenderIdDisplay bookingId $bookingId and seq $iepSeq with auditModuleName $auditModuleName")
         if (shouldSynchronise(auditModuleName)) {
           runBlocking { incentivesSynchronisationService.synchroniseIncentive(objectMapper.readValue(sqsMessage.Message)) }
         }
       }
+
+      "IEP_DELETED" -> {
+        val (offenderIdDisplay, bookingId, iepSeq) = objectMapper.readValue<IncentiveDeletedOffenderEvent>(sqsMessage.Message)
+        log.debug("received IEP_DELETED Offender event for $offenderIdDisplay bookingId $bookingId and seq $iepSeq")
+        runBlocking { incentivesSynchronisationService.synchroniseDeletedIncentive(objectMapper.readValue(sqsMessage.Message)) }
+      }
+
       "VISIT_CANCELLED" -> {
-        val (offenderIdDisplay, visitId, auditModuleName) = objectMapper.readValue<VisitCancelledOffenderEvent>(sqsMessage.Message)
+        val (offenderIdDisplay, visitId, auditModuleName) = objectMapper.readValue<VisitCancelledOffenderEvent>(
+          sqsMessage.Message
+        )
         log.debug("received VISIT_CANCELLED Offender event for offenderNo $offenderIdDisplay and visitId $visitId with auditModuleName $auditModuleName")
         runBlocking { visitSynchronisationService.cancelVisit(objectMapper.readValue(sqsMessage.Message)) }
       }
+
       else -> log.info("Received a message I wasn't expecting {}", eventType)
     } else {
       log.info("Feature switch is disabled for event {}", eventType)
@@ -57,5 +69,12 @@ class PrisonOffenderEventListener(
   data class EventType(val Value: String, val Type: String)
 }
 
-data class IncentiveUpsertedOffenderEvent(val bookingId: Long, val iepSeq: Long, val auditModuleName: String)
+data class IncentiveUpsertedOffenderEvent(
+  val offenderIdDisplay: String,
+  val bookingId: Long,
+  val iepSeq: Long,
+  val auditModuleName: String
+)
+
+data class IncentiveDeletedOffenderEvent(val offenderIdDisplay: String, val bookingId: Long, val iepSeq: Long)
 data class VisitCancelledOffenderEvent(val offenderIdDisplay: String, val visitId: Long, val auditModuleName: String)
