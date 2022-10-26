@@ -11,11 +11,13 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.internal.verification.Times
 import org.mockito.kotlin.any
+import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.boot.test.mock.mockito.SpyBean
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.validIepCreatedMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.validIepDeletedMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.validVisitCancellationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.IncentivesApiExtension.Companion.incentivesApi
@@ -173,6 +175,79 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
       verify(telemetryClient, Times(1)).trackEvent(
         eq("incentive-created-synchronisation"),
         any(),
+        isNull()
+      )
+    }
+  }
+
+  @Nested
+  @DisplayName("synchronise delete incentive")
+  inner class SynchroniseDeleteIncentive {
+
+    @Test
+    fun `will synchronise an incentive after nomis deletes the associated IEP`() {
+
+      /* 1. Deletes any iep which may or may not have been current
+         2. Deleted iep mapping retrieved
+         3. current iep is retrieved from nomis
+         4. mapping of current iep is found
+         5. iep is updated in the incentives service
+         6. Deleted iep is deleted in the incentives service
+       */
+
+      val message = validIepDeletedMessage(bookingId = 1234, incentiveSequence = 1)
+
+      mappingApi.stubIncentiveMappingByNomisIds(nomisBookingId = 1234, nomisIncentiveSequence = 1, incentiveId = 456789)
+      nomisApi.stubGetCurrentIncentive(bookingId = 1234, incentiveSequence = 2)
+      mappingApi.stubIncentiveMappingByNomisIds(nomisBookingId = 1234, nomisIncentiveSequence = 2, incentiveId = 987654)
+
+      // set current incentive
+      incentivesApi.stubUpdateSynchroniseIncentive(bookingId = 1234, incentivesId = 987654)
+      // delete incentive
+      incentivesApi.stubDeleteSynchroniseIncentive(bookingId = 1234, incentivesId = 456789)
+
+      awsSqsOffenderEventsClient.sendMessage(queueOffenderEventsUrl, message)
+
+      await untilAsserted { incentivesApi.verifyDeleteSynchroniseIncentive() }
+
+      incentivesApi.verifyDeleteSynchroniseIncentive(bookingId = 1234, incentivesId = 456789)
+      incentivesApi.verifyUpdateSynchroniseIncentive(bookingId = 1234, incentivesId = 987654)
+
+      verify(telemetryClient).trackEvent(
+        eq("incentive-delete-synchronisation"),
+        check {
+          it["bookingId"] == "1234" &&
+            it["incentiveSequence"] == "1" &&
+            it["incentiveId"] == "456789"
+        },
+        isNull()
+      )
+    }
+
+    @Test
+    fun `will not synchronise anything after a non-mapped nomis IEP is deleted`() {
+
+      /* 1. Deletes any iep which may or may not have been current
+         2. Deleted iep mapping retrieved
+         3. No mapping found so do nothing
+       */
+
+      val message = validIepDeletedMessage(bookingId = 1234, incentiveSequence = 1)
+
+      mappingApi.stubNomisIncentiveMappingNotFound(nomisBookingId = 1234, nomisIncentiveSequence = 1)
+      awsSqsOffenderEventsClient.sendMessage(queueOffenderEventsUrl, message)
+
+      await untilAsserted {
+        verify(telemetryClient).trackEvent(
+          eq("incentive-delete-synchronisation-ignored"),
+          any(),
+          isNull()
+        )
+      }
+
+      verify(telemetryClient).trackEvent(
+        eq("incentive-delete-synchronisation-ignored"),
+        check { it["bookingId"] == "1234" && it["incentiveSequence"] == "1" },
         isNull()
       )
     }

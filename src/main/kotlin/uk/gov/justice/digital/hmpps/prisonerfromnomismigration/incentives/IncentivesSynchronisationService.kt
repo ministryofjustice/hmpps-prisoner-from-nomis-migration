@@ -39,21 +39,8 @@ class IncentivesSynchronisationService(
         updateIncentiveService(this@run, incentiveMapping)
 
         if (!this.currentIep) {
-          nomisApiService.getCurrentIncentive(iepEvent.bookingId).let { currentIep ->
-            log.info("updating current IEP $currentIep \nfollowing update to non current IEP: ${this@run}")
-
-            // get mapping for current IEP
-            mappingService.findNomisIncentiveMapping(
-              nomisBookingId = currentIep.bookingId,
-              nomisIncentiveSequence = currentIep.incentiveSequence
-            )?.let { currentIepMapping ->
-              log.debug("found mapping for current IEP $currentIep ")
-              updateIncentiveService(currentIep, currentIepMapping)
-            } ?: run {
-              log.info("no mapping found for current IEP $currentIep ")
-              createIncentiveAndMapping(currentIep)
-            }
-          }
+          log.info("updating current IEP $currentIep \nfollowing update to non current IEP: ${this@run}")
+          resynchroniseCurrentIncentive(iepEvent.bookingId)
         }
       } ?: run {
         log.debug("no nomis incentive mapping found")
@@ -66,10 +53,53 @@ class IncentivesSynchronisationService(
     mappingService.findNomisIncentiveMapping(
       nomisBookingId = iepEvent.bookingId,
       nomisIncentiveSequence = iepEvent.iepSeq
-    )?.let { incentiveMapping ->
-      log.debug("found incentive mapping that requires deleting: $incentiveMapping")
+    )?.let {
+      log.debug("found incentive mapping that requires deleting: $it")
+      resynchroniseCurrentIncentive(iepEvent.bookingId)
+      incentiveService.synchroniseDeleteIncentive(
+        bookingId = it.nomisBookingId,
+        incentiveId = it.incentiveId
+      )
+      mappingService.deleteIncentiveMapping(
+        nomisBookingId = it.nomisBookingId,
+        nomisIncentiveSequence = iepEvent.iepSeq,
+        incentiveId = it.incentiveId
+      )
+      telemetryClient.trackEvent(
+        "incentive-delete-synchronisation",
+        mapOf(
+          "bookingId" to iepEvent.bookingId.toString(),
+          "incentiveSequence" to iepEvent.iepSeq.toString(),
+          "incentiveId" to it.incentiveId.toString(),
+        ),
+        null
+      )
     } ?: run {
-      log.warn("no incentive mapping found, ignoring the delete")
+      log.warn("no incentive mapping found, ignoring the delete for ${iepEvent.bookingId} / ${iepEvent.iepSeq}")
+      telemetryClient.trackEvent(
+        "incentive-delete-synchronisation-ignored",
+        mapOf(
+          "bookingId" to iepEvent.bookingId.toString(),
+          "incentiveSequence" to iepEvent.iepSeq.toString(),
+        ),
+        null
+      )
+    }
+  }
+
+  private suspend fun resynchroniseCurrentIncentive(bookingId: Long) {
+    nomisApiService.getCurrentIncentive(bookingId).let { currentIep ->
+      // get mapping for current IEP
+      mappingService.findNomisIncentiveMapping(
+        nomisBookingId = currentIep.bookingId,
+        nomisIncentiveSequence = currentIep.incentiveSequence
+      )?.let { currentIepMapping ->
+        log.debug("found mapping for current IEP $currentIep ")
+        updateIncentiveService(currentIep, currentIepMapping)
+      } ?: run {
+        log.info("no mapping found for current IEP $currentIep ")
+        createIncentiveAndMapping(currentIep)
+      }
     }
   }
 

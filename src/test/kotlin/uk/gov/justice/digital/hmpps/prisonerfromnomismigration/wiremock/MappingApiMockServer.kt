@@ -320,7 +320,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubIncentiveMappingByNomisIds(nomisBookingId: Long, nomisIncentiveSequence: Long) {
+  fun stubIncentiveMappingByNomisIds(nomisBookingId: Long, nomisIncentiveSequence: Long, incentiveId: Long = 3) {
     stubFor(
       get(
         urlPathEqualTo("/mapping/incentives/nomis-booking-id/$nomisBookingId/nomis-incentive-sequence/$nomisIncentiveSequence")
@@ -333,7 +333,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
         {
             "nomisBookingId": $nomisBookingId,
             "nomisIncentiveSequence": $nomisIncentiveSequence,
-            "incentiveId": 3,
+            "incentiveId": $incentiveId,
             "label": "2022-02-14T09:58:45",
             "whenCreated": "2022-02-16T16:21:15.589091",
             "mappingType": "MIGRATED"

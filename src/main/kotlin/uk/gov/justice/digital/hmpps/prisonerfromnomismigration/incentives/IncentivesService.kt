@@ -34,6 +34,13 @@ class IncentivesService(@Qualifier("incentivesApiWebClient") private val webClie
       .retrieve()
       .bodyToMono(Unit::class.java)
       .awaitSingleOrNull()
+
+  suspend fun synchroniseDeleteIncentive(bookingId: Long, incentiveId: Long) =
+    webClient.delete()
+      .uri("/iep/sync/booking/{bookingId}/id/{id}", bookingId, incentiveId)
+      .retrieve()
+      .bodyToMono(Unit::class.java)
+      .awaitSingleOrNull()
 }
 
 @JsonInclude(JsonInclude.Include.NON_NULL)

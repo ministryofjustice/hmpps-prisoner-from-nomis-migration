@@ -1,12 +1,15 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.incentives
 
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.equalToJson
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -117,6 +120,33 @@ internal class IncentivesServiceTest {
       )
 
       assertThat(incentive.id).isEqualTo(654321)
+    }
+  }
+
+  @Nested
+  @DisplayName("synchroniseDeleteIncentive")
+  inner class SynchroniseDeleteIncentive {
+    @BeforeEach
+    internal fun setUp() {
+      incentivesApi.stubFor(
+        delete(urlMatching("/iep/sync/booking/\\d*/id/\\d*")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+        )
+      )
+    }
+
+    @Test
+    internal fun `will supply authentication token`() {
+      runBlocking {
+        incentivesService.synchroniseDeleteIncentive(bookingId = 1234, incentiveId = 9876)
+      }
+
+      incentivesApi.verify(
+        deleteRequestedFor(urlEqualTo("/iep/sync/booking/1234/id/9876"))
+          .withHeader("Authorization", equalTo("Bearer ABCDE"))
+      )
     }
   }
 }
