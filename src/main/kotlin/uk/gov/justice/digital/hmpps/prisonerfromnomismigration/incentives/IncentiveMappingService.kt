@@ -107,6 +107,10 @@ class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webC
       Mono.empty()
     }
     .block()?.count ?: 0
+
+  fun deleteIncentiveMapping(nomisBookingId: Long, nomisIncentiveSequence: Long, incentiveId: Long) {
+    // TODO - delete mapping for completeness though if we don't it just leaves a dangling mapping
+  }
 }
 
 data class IncentiveNomisMapping(

@@ -2,12 +2,15 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.patch
 import com.github.tomakehurst.wiremock.client.WireMock.patchRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
@@ -81,11 +84,56 @@ class IncentivesApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubUpdateSynchroniseIncentive(bookingId: Long, incentivesId: Long) {
+    stubFor(
+      patch(urlPathEqualTo("/iep/sync/booking/$bookingId/id/$incentivesId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+      )
+    )
+  }
+
+  fun stubDeleteSynchroniseIncentive(bookingId: Long, incentivesId: Long) {
+    stubFor(
+      delete(urlPathEqualTo("/iep/sync/booking/$bookingId/id/$incentivesId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+      )
+    )
+  }
+
   fun verifyUpdateSynchroniseIncentive(times: Int) {
     verify(
       times,
       patchRequestedFor(
         urlMatching("/iep/sync/booking/\\d*/id/\\d*")
+      )
+    )
+  }
+
+  fun verifyDeleteSynchroniseIncentive(times: Int = 1) {
+    verify(
+      times,
+      deleteRequestedFor(
+        urlMatching("/iep/sync/booking/\\d*/id/\\d*")
+      )
+    )
+  }
+
+  fun verifyUpdateSynchroniseIncentive(bookingId: Long, incentivesId: Long) {
+    verify(
+      patchRequestedFor(
+        urlPathEqualTo("/iep/sync/booking/$bookingId/id/$incentivesId")
+      )
+    )
+  }
+
+  fun verifyDeleteSynchroniseIncentive(bookingId: Long, incentivesId: Long) {
+    verify(
+      deleteRequestedFor(
+        urlPathEqualTo("/iep/sync/booking/$bookingId/id/$incentivesId")
       )
     )
   }
