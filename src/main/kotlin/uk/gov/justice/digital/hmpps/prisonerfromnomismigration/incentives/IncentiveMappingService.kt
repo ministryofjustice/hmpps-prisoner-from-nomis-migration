@@ -1,5 +1,8 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives
 
+import kotlinx.coroutines.reactive.awaitFirstOrNull
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
@@ -10,6 +13,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationDet
 
 @Service
 class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webClient: WebClient) {
+  private companion object {
+    val log: Logger = LoggerFactory.getLogger(this::class.java)
+  }
+
   fun findNomisIncentiveMapping(nomisBookingId: Long, nomisIncentiveSequence: Long): IncentiveNomisMapping? {
     return webClient.get()
       .uri(
@@ -108,9 +115,17 @@ class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webC
     }
     .block()?.count ?: 0
 
-  fun deleteIncentiveMapping(nomisBookingId: Long, nomisIncentiveSequence: Long, incentiveId: Long) {
-    // TODO - delete mapping for completeness though if we don't it just leaves a dangling mapping
-  }
+  suspend fun deleteIncentiveMapping(incentiveId: Long): Unit? = webClient.delete()
+    .uri(
+      "/mapping/incentives/incentive-id/{incentiveId}",
+      incentiveId,
+    )
+    .retrieve()
+    .bodyToMono(Unit::class.java)
+    .onErrorResume(WebClientResponseException::class.java) {
+      log.error("Unable to deleting mapping for incentiveId $incentiveId but ignoring and allowing dangling record", it)
+      Mono.empty()
+    }.awaitFirstOrNull()
 }
 
 data class IncentiveNomisMapping(

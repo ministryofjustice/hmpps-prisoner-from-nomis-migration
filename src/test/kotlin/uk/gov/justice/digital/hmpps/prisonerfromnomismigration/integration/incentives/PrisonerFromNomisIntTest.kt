@@ -205,6 +205,8 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
       incentivesApi.stubUpdateSynchroniseIncentive(bookingId = 1234, incentivesId = 987654)
       // delete incentive
       incentivesApi.stubDeleteSynchroniseIncentive(bookingId = 1234, incentivesId = 456789)
+      // delete mapping
+      mappingApi.stubDeleteIncentiveMapping(incentiveId = 456789)
 
       awsSqsOffenderEventsClient.sendMessage(queueOffenderEventsUrl, message)
 
@@ -212,6 +214,7 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
 
       incentivesApi.verifyDeleteSynchroniseIncentive(bookingId = 1234, incentivesId = 456789)
       incentivesApi.verifyUpdateSynchroniseIncentive(bookingId = 1234, incentivesId = 987654)
+      mappingApi.verifyDeleteIncentiveMapping(incentiveId = 456789)
 
       verify(telemetryClient).trackEvent(
         eq("incentive-delete-synchronisation"),

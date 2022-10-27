@@ -61,8 +61,6 @@ class IncentivesSynchronisationService(
         incentiveId = it.incentiveId
       )
       mappingService.deleteIncentiveMapping(
-        nomisBookingId = it.nomisBookingId,
-        nomisIncentiveSequence = iepEvent.iepSeq,
         incentiveId = it.incentiveId
       )
       telemetryClient.trackEvent(

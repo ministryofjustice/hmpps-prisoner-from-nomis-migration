@@ -2,6 +2,8 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
@@ -344,6 +346,19 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubDeleteIncentiveMapping(incentiveId: Long) {
+    stubFor(
+      delete(
+        urlPathEqualTo("/mapping/incentives/incentive-id/$incentiveId")
+      )
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NO_CONTENT.value())
+        )
+    )
+  }
+
   fun stubNomisIncentiveMappingNotFound(nomisBookingId: Long, nomisIncentiveSequence: Long) {
     stubFor(
       get(
@@ -411,10 +426,10 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun verifyGetIncentiveMapping(nomisBookingId: Long, nomisIncentiveSequence: Long) {
+  fun verifyDeleteIncentiveMapping(incentiveId: Long) {
     verify(
-      getRequestedFor(
-        urlPathEqualTo("/mapping/incentives/nomis-booking-id/$nomisBookingId/nomis-incentive-sequence/$nomisIncentiveSequence")
+      deleteRequestedFor(
+        urlPathEqualTo("/mapping/incentives/incentive-id/$incentiveId")
       )
     )
   }
