@@ -20,7 +20,7 @@ For running locally against docker instances of the following services:
 - hmpps-auth
 - hmpps-nomis-prisoner-api
 - visit-scheduler
-- hmpps-nomis-visits-mapping-service
+- hmpps-nomis-mapping-service
 - localstack
 - run this application independently e.g. in IntelliJ
 
@@ -140,7 +140,7 @@ For each failure the mapping endpoint should be called to create the mapping rec
 e.g.
 
 ```bash
-curl --location --request POST 'https://nomis-visits-mapping.hmpps.service.justice.gov.uk/mapping' \
+curl --location --request POST 'https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk/mapping' \
 --header 'Content-Type: application/json' \
 --header 'Authorization: Bearer <token with ADMIN_NOMIS >' \
 --data-raw '{
