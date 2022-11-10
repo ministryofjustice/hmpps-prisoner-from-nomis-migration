@@ -140,7 +140,7 @@ For each failure the mapping endpoint should be called to create the mapping rec
 e.g.
 
 ```bash
-curl --location --request POST 'https://nomis-mapping.hmpps.service.justice.gov.uk/mapping' \
+curl --location --request POST 'https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk/mapping' \
 --header 'Content-Type: application/json' \
 --header 'Authorization: Bearer <token with ADMIN_NOMIS >' \
 --data-raw '{
