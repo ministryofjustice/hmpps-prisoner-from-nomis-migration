@@ -1,6 +1,6 @@
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "4.5.7"
-  kotlin("plugin.spring") version "1.7.20"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "4.6.0-beta"
+  kotlin("plugin.spring") version "1.7.21"
 }
 
 dependencyCheck {
@@ -20,7 +20,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-security")
   implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
   implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
-  implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:1.1.12")
+  implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:1.1.13")
   implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
 
   implementation("org.springdoc:springdoc-openapi-webflux-ui:1.6.12")
@@ -30,15 +30,15 @@ dependencies {
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.6.4")
   implementation("io.jsonwebtoken:jjwt:0.9.1")
-  implementation("io.opentelemetry:opentelemetry-api:1.19.0")
-  implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.4")
+  implementation("io.opentelemetry:opentelemetry-api:1.20.0")
+  implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.14.0")
 
   runtimeOnly("org.postgresql:r2dbc-postgresql:0.9.2.RELEASE")
   runtimeOnly("org.springframework.boot:spring-boot-starter-jdbc")
   runtimeOnly("org.postgresql:postgresql:42.5.0")
   implementation("org.flywaydb:flyway-core")
 
-  testImplementation("io.swagger.parser.v3:swagger-parser:2.1.7")
+  testImplementation("io.swagger.parser.v3:swagger-parser:2.1.8")
 
   testImplementation("com.github.tomakehurst:wiremock-standalone:2.27.2")
   testImplementation("org.testcontainers:localstack:1.17.5")
