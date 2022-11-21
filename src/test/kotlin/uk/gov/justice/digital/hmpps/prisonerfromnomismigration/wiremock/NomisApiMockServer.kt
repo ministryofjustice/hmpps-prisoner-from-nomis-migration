@@ -476,6 +476,7 @@ private fun incentiveResponse(
   "incentiveSequence":$incentiveSequence,
   "commentText":"Mistake",
   "iepDateTime":"2021-10-06T15:53:00",
+  "whenCreated":"2021-10-06T15:53:22",
   "prisonId":"MDI",
   "iepLevel":{"code":"STD","description":"Standard"},
   "userId":"LBENNETT_GEN",

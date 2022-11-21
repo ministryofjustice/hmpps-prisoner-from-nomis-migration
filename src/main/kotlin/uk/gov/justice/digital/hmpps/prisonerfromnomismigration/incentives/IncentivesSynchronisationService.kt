@@ -122,11 +122,7 @@ class IncentivesSynchronisationService(
   ) {
     incentiveService.synchroniseUpdateIncentive(
       nomisIep.bookingId, iepMapping.incentiveId,
-      UpdateIncentiveIEP(
-        iepTime = nomisIep.iepDateTime,
-        comment = nomisIep.commentText,
-        current = nomisIep.currentIep
-      )
+      nomisIep.toUpdateIncentive()
     )
 
     telemetryClient.trackEvent(

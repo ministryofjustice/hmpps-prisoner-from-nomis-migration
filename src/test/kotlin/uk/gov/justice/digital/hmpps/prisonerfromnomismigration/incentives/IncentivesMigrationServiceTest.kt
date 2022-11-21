@@ -779,7 +779,8 @@ internal class IncentivesMigrationServiceTest {
           iepLevel = NomisCodeDescription("ENH", "Enhanced"),
           userId = "JANE_SMITH",
           currentIep = true,
-          offenderNo = "A1234AA"
+          offenderNo = "A1234AA",
+          whenCreated = LocalDateTime.parse("2020-01-01T00:00:55"),
         )
       )
 
@@ -812,7 +813,8 @@ internal class IncentivesMigrationServiceTest {
           iepLevel = NomisCodeDescription("ENH", "Enhanced"),
           userId = "JANE_SMITH",
           currentIep = true,
-          offenderNo = "A1234AA"
+          offenderNo = "A1234AA",
+          whenCreated = LocalDateTime.parse("2020-12-12T13:10:45"),
         )
       )
 
@@ -830,7 +832,7 @@ internal class IncentivesMigrationServiceTest {
           CreateIncentiveIEP(
             comment = "Doing well",
             iepLevel = "ENH",
-            iepTime = LocalDateTime.parse("2020-01-01T13:10:00"),
+            iepTime = LocalDateTime.parse("2020-01-01T13:10:45"),
             prisonId = "HEI",
             userId = "JANE_SMITH",
             current = true,
@@ -853,7 +855,8 @@ internal class IncentivesMigrationServiceTest {
           iepLevel = NomisCodeDescription("ENH", "Enhanced"),
           userId = "JANE_SMITH",
           currentIep = true,
-          offenderNo = "A1234AA"
+          offenderNo = "A1234AA",
+          whenCreated = LocalDateTime.parse("2020-01-01T00:00:15"),
         )
       )
       whenever(incentivesService.migrateIncentive(any(), eq(123))).thenReturn(CreateIncentiveIEPResponse(999L))
@@ -887,7 +890,8 @@ internal class IncentivesMigrationServiceTest {
           iepLevel = NomisCodeDescription("ENH", "Enhanced"),
           userId = "JANE_SMITH",
           currentIep = true,
-          offenderNo = "A1234AA"
+          offenderNo = "A1234AA",
+          whenCreated = LocalDateTime.parse("2020-11-11T13:10:11")
         )
       )
       whenever(incentivesService.migrateIncentive(any(), any())).thenReturn(CreateIncentiveIEPResponse(999L))

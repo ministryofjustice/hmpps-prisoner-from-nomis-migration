@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.CreateIncentiveIEP
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.ReviewType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.UpdateIncentiveIEP
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomUsageResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationFilter
 import java.time.LocalDate
@@ -202,17 +203,32 @@ data class NomisIncentive(
   val iepLevel: NomisCodeDescription,
   val userId: String? = null,
   val offenderNo: String,
-  val currentIep: Boolean
+  val currentIep: Boolean,
+  val whenCreated: LocalDateTime,
+  val whenUpdated: LocalDateTime? = null
 ) {
   fun toIncentive(reviewType: ReviewType): CreateIncentiveIEP = CreateIncentiveIEP(
     iepLevel = iepLevel.code,
     prisonId = this.prisonId,
-    iepTime = this.iepDateTime,
+    iepTime = getTransformedIncentiveDateTime(),
     userId = this.userId,
     comment = this.commentText,
     current = this.currentIep,
     reviewType = reviewType,
   )
+
+  fun toUpdateIncentive(): UpdateIncentiveIEP = UpdateIncentiveIEP(
+    iepTime = getTransformedIncentiveDateTime(),
+    comment = this.commentText,
+    current = this.currentIep,
+  )
+
+  /* NOMIS does not persist the seconds portion of the IEP during a manual IEP creation (or update) in pnomis.
+     This causes ordering issues within non-current IEPs within the Incentives service which doesn't replicate the nomis incentives seq.
+     We will use the seconds from the 'when created' timestamp to avoid multiple IEP records created in the same minute being out of order.
+   */
+  private fun getTransformedIncentiveDateTime(): LocalDateTime =
+    iepDateTime.withSecond(whenCreated.second)
 }
 
 class RestResponsePage<T> @JsonCreator(mode = JsonCreator.Mode.PROPERTIES) constructor(
