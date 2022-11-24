@@ -162,7 +162,7 @@ class VisitsMigrationService(
 
   private fun determineRoomMapping(
     nomisVisit: NomisVisit
-  ): DateAwareRoomMapping? = if (isFutureVisit(nomisVisit)) {
+  ): DateAwareRoomMapping? = if (isFutureVisit(nomisVisit) && !isErroneousFutureVisit(nomisVisit)) {
     nomisVisit.agencyInternalLocation?.let {
       visitMappingService.findRoomMappingBlocking(
         agencyInternalLocationCode = nomisVisit.agencyInternalLocation.description,
@@ -182,6 +182,9 @@ class VisitsMigrationService(
 
   private fun isFutureVisit(nomisVisit: NomisVisit) =
     nomisVisit.startDateTime.toLocalDate() >= LocalDate.now()
+
+  private fun isErroneousFutureVisit(nomisVisit: NomisVisit) =
+    nomisVisit.startDateTime.toLocalDate() > LocalDate.now().plusYears(1)
 
   fun migrateVisitsStatusCheck(context: MigrationContext<VisitMigrationStatusCheck>) {
     /*
