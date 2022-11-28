@@ -27,7 +27,7 @@ class MigrationVisitsMessageListener(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  @JmsListener(destination = VISITS_QUEUE_ID, containerFactory = "hmppsQueueContainerFactoryProxy")
+  @JmsListener(destination = VISITS_QUEUE_ID, containerFactory = "hmppsQueueContainerFactoryProxy", concurrency = "5")
   fun onMessage(message: String, rawMessage: SQSTextMessage) {
     log.debug("Received message {}", message)
     val migrationMessage: MigrationMessage<VisitMessages, *> = message.fromJson()

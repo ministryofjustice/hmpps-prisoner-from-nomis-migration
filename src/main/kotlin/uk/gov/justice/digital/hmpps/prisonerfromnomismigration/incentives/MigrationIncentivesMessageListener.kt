@@ -29,7 +29,7 @@ class MigrationIncentivesMessageListener(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  @JmsListener(destination = INCENTIVES_QUEUE_ID, containerFactory = "hmppsQueueContainerFactoryProxy")
+  @JmsListener(destination = INCENTIVES_QUEUE_ID, containerFactory = "hmppsQueueContainerFactoryProxy", concurrency = "5")
   fun onMessage(message: String, rawMessage: SQSTextMessage) {
     log.debug("Received message {}", message)
     val migrationMessage: MigrationMessage<IncentiveMessages, *> = message.fromJson()
