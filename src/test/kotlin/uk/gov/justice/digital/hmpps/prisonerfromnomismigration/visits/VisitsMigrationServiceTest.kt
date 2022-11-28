@@ -809,6 +809,7 @@ internal class VisitsMigrationServiceTest {
   inner class MigrateVisit {
     private val yesterdayDateTime = LocalDateTime.now().minusDays(1)
     private val tomorrowDateTime = LocalDateTime.now().plusDays(1)
+    private val inTwoYearsDateTime = LocalDateTime.now().plusYears(2)
     private val tomorrowDateTimeMorning = LocalDateTime.now().plusDays(1).withHour(10).withMinute(30).withSecond(56)
     private val tomorrowDateTimeAfternoon = LocalDateTime.now().plusDays(1).withHour(12).withMinute(0).withSecond(0)
 
@@ -961,6 +962,45 @@ internal class VisitsMigrationServiceTest {
           assertThat(it["visitId"]).isEqualTo("123456")
           assertThat(it["vsipVisitId"]).isEqualTo("654321")
           assertThat(LocalDateTime.parse(it["startDateTime"])).isEqualTo(yesterdayDateTime)
+          assertThat(it["room"]).isEqualTo("MDI-VISITS-OFF_VIS")
+        },
+        eq(null)
+      )
+
+      verify(visitMappingService, never()).findRoomMappingBlocking(any(), any())
+    }
+
+    @Test
+    internal fun `migration does not look up room mapping for bad visit data - defined as more than a year in the future`() {
+      whenever(nomisApiService.getVisit(any())).thenReturn(
+        aVisit(
+          prisonId = "BXI",
+          agencyInternalLocation = NomisCodeDescription("OFF_VIS", "MDI-VISITS-OFF_VIS"),
+          prisonerId = "A1234AA",
+          visitId = 123456,
+          startDateTime = inTwoYearsDateTime,
+        )
+      )
+
+      whenever(visitsService.createVisit(any())).thenReturn(
+        "654321"
+      )
+
+      service.migrateVisit(
+        MigrationContext(
+          type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
+        )
+      )
+
+      verify(telemetryClient).trackEvent(
+        eq("nomis-migration-visit-migrated"),
+        check {
+          assertThat(it["migrationId"]).isEqualTo("2020-05-23T11:30:00")
+          assertThat(it["prisonId"]).isEqualTo("BXI")
+          assertThat(it["offenderNo"]).isEqualTo("A1234AA")
+          assertThat(it["visitId"]).isEqualTo("123456")
+          assertThat(it["vsipVisitId"]).isEqualTo("654321")
+          assertThat(LocalDateTime.parse(it["startDateTime"])).isEqualTo(inTwoYearsDateTime)
           assertThat(it["room"]).isEqualTo("MDI-VISITS-OFF_VIS")
         },
         eq(null)
