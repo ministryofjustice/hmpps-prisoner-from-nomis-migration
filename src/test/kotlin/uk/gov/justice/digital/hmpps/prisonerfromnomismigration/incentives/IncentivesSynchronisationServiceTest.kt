@@ -62,7 +62,85 @@ internal class IncentiveSynchronisationServiceTest {
       service.synchroniseIncentive(anIncentiveEvent())
 
       verify(incentivesService).synchroniseUpdateIncentive(
-        1000, 111, UpdateIncentiveIEP(iepTime = LocalDateTime.parse("2020-01-01T00:00:55"), comment = "Doing well", current = true)
+        1000,
+        111,
+        UpdateIncentiveIEP(iepTime = LocalDateTime.parse("2020-01-01T00:00:55"), comment = "Doing well", current = true)
+      )
+    }
+  }
+
+  @Test
+  internal fun `will create an incentive time with seconds portion from the when created timestamp when IEP minute equals the when created minute`() {
+    whenever(incentivesMappingService.findNomisIncentiveMapping(any(), any())).thenReturn(null)
+
+    runBlocking {
+      whenever(nomisApiService.getIncentive(any(), any())).thenReturn(
+        NomisIncentive(
+          bookingId = 1000,
+          incentiveSequence = 1,
+          commentText = "Doing well",
+          iepDateTime = LocalDateTime.parse("2020-01-01T12:20:00"),
+          prisonId = "HEI",
+          iepLevel = NomisCodeDescription("ENH", "Enhanced"),
+          userId = "JANE_SMITH",
+          currentIep = true,
+          offenderNo = "A1234AA",
+          whenCreated = LocalDateTime.parse("2020-01-01T12:20:10"),
+        )
+      )
+      whenever(incentivesService.synchroniseCreateIncentive(any(), any())).thenReturn(CreateIncentiveIEPResponse(999L))
+
+      service.synchroniseIncentive(anIncentiveEvent())
+
+      verify(incentivesService).synchroniseCreateIncentive(
+        CreateIncentiveIEP(
+          prisonId = "HEI",
+          iepTime = LocalDateTime.parse("2020-01-01T12:20:10"),
+          comment = "Doing well",
+          current = true,
+          userId = "JANE_SMITH",
+          iepLevel = "ENH",
+          reviewType = ReviewType.REVIEW
+        ),
+        1000
+      )
+    }
+  }
+
+  @Test
+  internal fun `will create an incentive time with a seconds portion hardcoded to 59 when created timestamp is not in the same minute as the iep time`() {
+    whenever(incentivesMappingService.findNomisIncentiveMapping(any(), any())).thenReturn(null)
+
+    runBlocking {
+      whenever(nomisApiService.getIncentive(any(), any())).thenReturn(
+        NomisIncentive(
+          bookingId = 1000,
+          incentiveSequence = 1,
+          commentText = "Doing well",
+          iepDateTime = LocalDateTime.parse("2020-01-01T12:20:45"),
+          prisonId = "HEI",
+          iepLevel = NomisCodeDescription("ENH", "Enhanced"),
+          userId = "JANE_SMITH",
+          currentIep = true,
+          offenderNo = "A1234AA",
+          whenCreated = LocalDateTime.parse("2020-01-01T12:21:10"),
+        )
+      )
+      whenever(incentivesService.synchroniseCreateIncentive(any(), any())).thenReturn(CreateIncentiveIEPResponse(999L))
+
+      service.synchroniseIncentive(anIncentiveEvent())
+
+      verify(incentivesService).synchroniseCreateIncentive(
+        CreateIncentiveIEP(
+          prisonId = "HEI",
+          iepTime = LocalDateTime.parse("2020-01-01T12:20:59"),
+          comment = "Doing well",
+          current = true,
+          userId = "JANE_SMITH",
+          iepLevel = "ENH",
+          reviewType = ReviewType.REVIEW
+        ),
+        1000
       )
     }
   }
