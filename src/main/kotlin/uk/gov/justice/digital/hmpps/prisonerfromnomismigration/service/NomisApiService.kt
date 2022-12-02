@@ -228,7 +228,7 @@ data class NomisIncentive(
      We will use the seconds from the 'when created' timestamp to avoid multiple IEP records created in the same minute being out of order.
    */
   private fun getTransformedIncentiveDateTime(): LocalDateTime =
-    if (iepDateTime.minute < whenCreated.minute) {
+    if (iepDateTime.minute != whenCreated.minute) {
       iepDateTime.withSecond(59)
     } else
       iepDateTime.withSecond(whenCreated.second)
