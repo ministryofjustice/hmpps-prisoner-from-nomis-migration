@@ -1,5 +1,5 @@
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "4.7.0-beta"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "4.7.1"
   kotlin("plugin.spring") version "1.7.21"
 }
 
@@ -47,7 +47,7 @@ dependencies {
   testImplementation("org.testcontainers:localstack:1.17.6")
   testImplementation("org.awaitility:awaitility-kotlin:4.2.0")
   testImplementation("org.testcontainers:postgresql:1.17.6")
-  testImplementation("io.mockk:mockk:1.13.2")
+  testImplementation("io.mockk:mockk:1.13.3")
 }
 
 java {
