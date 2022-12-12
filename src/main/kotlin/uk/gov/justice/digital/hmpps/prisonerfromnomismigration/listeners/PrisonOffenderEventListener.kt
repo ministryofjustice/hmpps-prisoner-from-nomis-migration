@@ -60,7 +60,7 @@ class PrisonOffenderEventListener(
     }
   }
 
-  private fun shouldSynchronise(auditModuleName: String): Boolean {
+  private fun shouldSynchronise(auditModuleName: String?): Boolean {
     return auditModuleName == NOMIS_IEP_UI_SCREEN
   }
 
@@ -73,7 +73,7 @@ data class IncentiveUpsertedOffenderEvent(
   val offenderIdDisplay: String,
   val bookingId: Long,
   val iepSeq: Long,
-  val auditModuleName: String
+  val auditModuleName: String?
 )
 
 data class IncentiveDeletedOffenderEvent(val offenderIdDisplay: String, val bookingId: Long, val iepSeq: Long)

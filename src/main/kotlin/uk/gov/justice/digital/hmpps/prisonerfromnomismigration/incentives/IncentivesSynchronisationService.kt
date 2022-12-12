@@ -40,6 +40,8 @@ class IncentivesSynchronisationService(
 
         if (!this.currentIep) {
           log.info("updating current IEP $currentIep \nfollowing update to non current IEP: ${this@run}")
+          // send message to synchronis current record
+
           resynchroniseCurrentIncentive(iepEvent.bookingId)
         }
       } ?: run {
