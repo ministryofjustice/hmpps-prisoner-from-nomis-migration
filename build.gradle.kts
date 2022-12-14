@@ -1,5 +1,5 @@
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "4.7.2-beta-1"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "4.7.4"
   kotlin("plugin.spring") version "1.7.22"
 }
 
@@ -33,7 +33,7 @@ dependencies {
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.6.4")
   implementation("io.jsonwebtoken:jjwt:0.9.1")
-  implementation("io.opentelemetry:opentelemetry-api:1.20.1")
+  implementation("io.opentelemetry:opentelemetry-api:1.21.0")
   implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.14.1")
 
   runtimeOnly("org.postgresql:r2dbc-postgresql:$r2dbcPostgresVersion")
