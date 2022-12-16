@@ -44,9 +44,11 @@ class SqsIntegrationTestBase : TestBase() {
 
   internal val awsSqsVisitsMigrationClient by lazy { visitsMigrationQueue.sqsClient }
   internal val awsSqsVisitsMigrationDlqClient by lazy { visitsMigrationQueue.sqsDlqClient }
+  internal val awsSqsIncentivesMigrationClient by lazy { incentivesMigrationQueue.sqsClient }
   internal val awsSqsIncentivesMigrationDlqClient by lazy { incentivesMigrationQueue.sqsDlqClient }
   internal val visitsMigrationQueueUrl by lazy { visitsMigrationQueue.queueUrl }
   internal val visitsMigrationDlqUrl by lazy { visitsMigrationQueue.dlqUrl }
+  internal val incentivesMigrationUrl by lazy { incentivesMigrationQueue.queueUrl }
   internal val incentivesMigrationDlqUrl by lazy { incentivesMigrationQueue.dlqUrl }
 
   internal val awsSqsOffenderEventsClient by lazy { offenderEventsQueue.sqsClient }

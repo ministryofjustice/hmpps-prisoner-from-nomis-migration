@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives
 
 import com.microsoft.applicationinsights.TelemetryClient
+import kotlinx.coroutines.runBlocking
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -40,9 +41,21 @@ class IncentivesSynchronisationService(
 
         if (!this.currentIep) {
           log.info("updating current IEP $currentIep \nfollowing update to non current IEP: ${this@run}")
-          // send message to synchronis current record
 
-          resynchroniseCurrentIncentive(iepEvent.bookingId)
+          // nomis allows an IEP creation and updates to other IEPs in the same transaction. This delay will mitigate against an update being
+          // processed before a create request (and potentially creating a duplicate in nomis)
+          queueService.sendMessage(
+            IncentiveMessages.SYNCHRONISE_CURRENT_INCENTIVE,
+            MigrationContext(
+              type = MigrationType.INCENTIVES, "dummy", 0,
+              body = IncentiveMapping(
+                nomisBookingId = iepEvent.bookingId,
+                nomisIncentiveSequence = iepEvent.iepSeq,
+                incentiveId = incentiveMapping.incentiveId
+              )
+            ),
+            delaySeconds = 5
+          )
         }
       } ?: run {
         log.debug("no nomis incentive mapping found")
@@ -85,6 +98,10 @@ class IncentivesSynchronisationService(
         null
       )
     }
+  }
+
+  fun handleSynchroniseCurrentIncentiveMessage(context: MigrationContext<IncentiveMapping>) {
+    runBlocking { resynchroniseCurrentIncentive(context.body.nomisBookingId) }
   }
 
   private suspend fun resynchroniseCurrentIncentive(bookingId: Long) {
@@ -132,6 +149,7 @@ class IncentivesSynchronisationService(
       mapOf(
         "bookingId" to nomisIep.bookingId.toString(),
         "incentiveSequence" to nomisIep.incentiveSequence.toString(),
+        "incentiveId" to iepMapping.incentiveId.toString(),
         "currentIep" to nomisIep.currentIep.toString()
       ),
       null
