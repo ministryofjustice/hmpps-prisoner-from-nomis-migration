@@ -17,7 +17,9 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.boot.test.mock.mockito.SpyBean
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.validIepCreatedMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.validIepCreatedMessageWithNomisIds
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.validIepDeletedMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.validSynchroniseCurrentIncentiveMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.validVisitCancellationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.IncentivesApiExtension.Companion.incentivesApi
@@ -81,6 +83,46 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
       // should retry to create mapping twice
       mappingApi.verifyCreateMappingIncentiveIds(arrayOf(654321), times = 2)
     }
+
+    @Test
+    fun `will delay the synchronisation of a non-current incentive`() {
+
+      val messageUpdate = validIepCreatedMessageWithNomisIds(1234, 2)
+      nomisApi.stubGetIncentive(bookingId = 1234, incentiveSequence = 2, currentIep = false)
+      nomisApi.stubGetCurrentIncentive(bookingId = 1234, incentiveSequence = 2)
+      mappingApi.stubIncentiveMappingByNomisIds(nomisBookingId = 1234, nomisIncentiveSequence = 2, incentiveId = 4)
+      incentivesApi.stubUpdateSynchroniseIncentive()
+
+      awsSqsOffenderEventsClient.sendMessage(queueOffenderEventsUrl, messageUpdate)
+
+      await untilAsserted {
+        verify(telemetryClient).trackEvent(
+          eq("SYNCHRONISE_CURRENT_INCENTIVE"),
+          any(),
+          isNull()
+        )
+      }
+    }
+
+    @Test
+    fun `will handle a synchronise current incentive message`() {
+
+      val message = validSynchroniseCurrentIncentiveMessage()
+      nomisApi.stubGetIncentive(bookingId = 1234, incentiveSequence = 2, currentIep = false)
+      nomisApi.stubGetCurrentIncentive(bookingId = 1234, incentiveSequence = 2)
+      mappingApi.stubIncentiveMappingByNomisIds(nomisBookingId = 1234, nomisIncentiveSequence = 2, incentiveId = 4)
+      incentivesApi.stubUpdateSynchroniseIncentive()
+
+      awsSqsIncentivesMigrationClient.sendMessage(incentivesMigrationUrl, message)
+
+      await untilAsserted { incentivesApi.verifyUpdateSynchroniseIncentive(1) }
+
+      verify(telemetryClient, Times(1)).trackEvent(
+        eq("incentive-updated-synchronisation"),
+        any(),
+        isNull()
+      )
+    }
   }
 
   @Nested
@@ -104,6 +146,7 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
           mapOf(
             "bookingId" to "1234",
             "incentiveSequence" to "1",
+            "incentiveId" to "3",
             "currentIep" to "true"
           )
         ),
