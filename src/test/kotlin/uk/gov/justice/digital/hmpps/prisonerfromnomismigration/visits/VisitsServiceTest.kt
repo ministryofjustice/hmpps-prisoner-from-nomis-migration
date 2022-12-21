@@ -6,6 +6,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.equalToJson
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -40,7 +41,7 @@ internal class VisitsServiceTest {
     }
 
     @Test
-    internal fun `will supply authentication token`() {
+    internal fun `will supply authentication token`(): Unit = runBlocking {
       visitsService.createVisit(
         CreateVsipVisit(
           prisonId = "BXI",
@@ -66,7 +67,7 @@ internal class VisitsServiceTest {
     }
 
     @Test
-    internal fun `will pass data as JSON to endpoint`() {
+    internal fun `will pass data as JSON to endpoint`(): Unit = runBlocking {
       visitsService.createVisit(
         CreateVsipVisit(
           prisonId = "BXI",
@@ -128,7 +129,7 @@ internal class VisitsServiceTest {
     }
 
     @Test
-    internal fun `will return newly created VSIP visitId`() {
+    internal fun `will return newly created VSIP visitId`(): Unit = runBlocking {
       val visitId = visitsService.createVisit(
         CreateVsipVisit(
           prisonId = "BXI",

@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.JsonNode
 import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
-import kotlinx.coroutines.runBlocking
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
@@ -56,34 +55,14 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       .bodyToMono(typeReference<RestResponsePage<VisitId>>())
       .awaitSingle()
 
-  fun getVisitsBlocking(
-    prisonIds: List<String>,
-    visitTypes: List<String>,
-    fromDateTime: LocalDateTime?,
-    toDateTime: LocalDateTime?,
-    ignoreMissingRoom: Boolean,
-    pageNumber: Long,
-    pageSize: Long,
-  ): PageImpl<VisitId> = runBlocking {
-    getVisits(
-      prisonIds,
-      visitTypes,
-      fromDateTime,
-      toDateTime,
-      ignoreMissingRoom,
-      pageNumber,
-      pageSize,
-    )
-  }
-
-  fun getVisit(
+  suspend fun getVisit(
     nomisVisitId: Long,
   ): NomisVisit =
     webClient.get()
       .uri("/visits/{nomisVisitId}", nomisVisitId)
       .retrieve()
       .bodyToMono(NomisVisit::class.java)
-      .block()!!
+      .awaitSingle()!!
 
   suspend fun getRoomUsage(
     filter: VisitsMigrationFilter
@@ -120,20 +99,6 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       .bodyToMono(typeReference<RestResponsePage<IncentiveId>>())
       .awaitSingle()
 
-  fun getIncentivesBlocking(
-    fromDate: LocalDate?,
-    toDate: LocalDate?,
-    pageNumber: Long,
-    pageSize: Long
-  ): PageImpl<IncentiveId> = runBlocking {
-    getIncentives(
-      fromDate,
-      toDate,
-      pageNumber,
-      pageSize,
-    )
-  }
-
   suspend fun getIncentive(
     bookingId: Long,
     sequence: Long
@@ -143,16 +108,6 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       .retrieve()
       .bodyToMono(NomisIncentive::class.java)
       .awaitSingle()
-
-  fun getIncentiveBlocking(
-    bookingId: Long,
-    sequence: Long
-  ): NomisIncentive = runBlocking {
-    getIncentive(
-      bookingId,
-      sequence,
-    )
-  }
 
   suspend fun getCurrentIncentive(bookingId: Long): NomisIncentive? =
     webClient.get()
@@ -181,20 +136,6 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       .bodyToMono(typeReference<RestResponsePage<NomisSentencingAdjustmentId>>())
       .awaitSingle()
 
-  fun getSentenceAdjustmentsBlocking(
-    fromDate: LocalDate?,
-    toDate: LocalDate?,
-    pageNumber: Long,
-    pageSize: Long
-  ): PageImpl<NomisSentencingAdjustmentId> = runBlocking {
-    getSentenceAdjustments(
-      fromDate,
-      toDate,
-      pageNumber,
-      pageSize,
-    )
-  }
-
   suspend fun getSentenceAdjustment(
     nomisSentenceAdjustmentId: Long,
   ): NomisSentenceAdjustment =
@@ -203,14 +144,6 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       .retrieve()
       .bodyToMono(NomisSentenceAdjustment::class.java)
       .awaitSingle()
-
-  fun getSentenceAdjustmentBlocking(
-    nomisSentenceAdjustmentId: Long
-  ): NomisSentenceAdjustment = runBlocking {
-    getSentenceAdjustment(
-      nomisSentenceAdjustmentId
-    )
-  }
 
   fun <T> emptyWhenNotFound(exception: WebClientResponseException, optionalWarnMessage: String? = null): Mono<T> {
     optionalWarnMessage?.let { log.warn(optionalWarnMessage) }

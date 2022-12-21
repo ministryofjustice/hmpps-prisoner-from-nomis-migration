@@ -75,7 +75,7 @@ class SentencingMigrationService(
     }
   }
 
-  fun divideSentencingAdjustmentsByPage(context: MigrationContext<SentencingMigrationFilter>) {
+  suspend fun divideSentencingAdjustmentsByPage(context: MigrationContext<SentencingMigrationFilter>) {
     (1..context.estimatedCount step pageSize).asSequence()
       .map {
         MigrationContext(
@@ -95,8 +95,8 @@ class SentencingMigrationService(
     )
   }
 
-  fun migrateSentenceAdjustmentsForPage(context: MigrationContext<SentencingPage>) =
-    nomisApiService.getSentenceAdjustmentsBlocking(
+  suspend fun migrateSentenceAdjustmentsForPage(context: MigrationContext<SentencingPage>) =
+    nomisApiService.getSentenceAdjustments(
       fromDate = context.body.filter.fromDate,
       toDate = context.body.filter.toDate,
       pageNumber = context.body.pageNumber,
@@ -110,7 +110,7 @@ class SentencingMigrationService(
       )
     }?.forEach { queueService.sendMessage(MIGRATE_SENTENCING_ADJUSTMENT, it) }
 
-  fun migrateSentencingAdjustment(context: MigrationContext<NomisSentencingAdjustmentId>) {
+  suspend fun migrateSentencingAdjustment(context: MigrationContext<NomisSentencingAdjustmentId>) {
     val nomisAdjustmentId = context.body.adjustmentId
     val nomisAdjustmentType = context.body.adjustmentType
 
@@ -119,7 +119,7 @@ class SentencingMigrationService(
     }
       ?: run {
         // TODO: get either sentence adjustment or key date adjustment based on adjustment type
-        val nomisSentenceAdjustment = nomisApiService.getSentenceAdjustmentBlocking(nomisAdjustmentId)
+        val nomisSentenceAdjustment = nomisApiService.getSentenceAdjustment(nomisAdjustmentId)
         val migratedSentenceAdjustment =
           sentencingService.migrateSentencingAdjustment(nomisSentenceAdjustment.toSentenceAdjustment())
             .also {
@@ -143,7 +143,7 @@ class SentencingMigrationService(
       }
   }
 
-  fun migrateSentencingStatusCheck(context: MigrationContext<SentencingMigrationStatusCheck>) {
+  suspend fun migrateSentencingStatusCheck(context: MigrationContext<SentencingMigrationStatusCheck>) {
     /*
        when checking if there are messages to process, it is always an estimation due to SQS, therefore once
        we think there are no messages we check several times in row reducing probability of false positives significantly
@@ -187,7 +187,7 @@ class SentencingMigrationService(
     }
   }
 
-  fun cancelMigrateSentencingStatusCheck(context: MigrationContext<SentencingMigrationStatusCheck>) {
+  suspend fun cancelMigrateSentencingStatusCheck(context: MigrationContext<SentencingMigrationStatusCheck>) {
     /*
        when checking if there are messages to process, it is always an estimation due to SQS, therefore once
        we think there are no messages we check several times in row reducing probability of false positives significantly
@@ -256,7 +256,7 @@ class SentencingMigrationService(
     )
   }
 
-  private fun createSentenceAdjustmentMapping(
+  private suspend fun createSentenceAdjustmentMapping(
     nomisAdjustmentId: Long,
     nomisAdjustmentType: String,
     sentenceAdjustmentId: Long,
@@ -286,7 +286,7 @@ class SentencingMigrationService(
     )
   }
 
-  fun retryCreateSentenceAdjustmentMapping(context: MigrationContext<SentencingAdjustmentMapping>) =
+  suspend fun retryCreateSentenceAdjustmentMapping(context: MigrationContext<SentencingAdjustmentMapping>) =
     sentencingMappingService.createNomisSentencingAdjustmentMigrationMapping(
       nomisAdjustmentId = context.body.nomisAdjustmentId,
       nomisAdjustmentType = context.body.nomisAdjustmentType,

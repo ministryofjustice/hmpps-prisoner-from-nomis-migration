@@ -27,6 +27,7 @@ import org.springframework.web.reactive.function.BodyInserter
 import org.springframework.web.reactive.function.BodyInserters
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.COMPLETED
@@ -144,7 +145,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
 
       // stub 25 migrated records and 1 fake a failure
       mappingApi.stubVisitMappingByMigrationId(count = 25)
-      awsSqsVisitsMigrationDlqClient!!.sendMessage(visitsMigrationDlqUrl, """{ "message": "some error" }""")
+      awsSqsVisitsMigrationDlqClient!!.sendMessage(visitsMigrationDlqUrl!!, """{ "message": "some error" }""")
 
       webTestClient.post().uri("/migrate/visits")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
@@ -564,7 +565,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `must have correct role to terminate a migration`() {
-      webTestClient.post().uri("/migrate/visits/{migrationId}/cancel/", "some id")
+      webTestClient.post().uri("/migrate/visits/{migrationId}/cancel", "some id")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
         .header("Content-Type", "application/json")
         .exchange()
@@ -573,7 +574,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will return a not found if no running migration found`() {
-      webTestClient.post().uri("/migrate/visits/{migrationId}/cancel/", "some id")
+      webTestClient.post().uri("/migrate/visits/{migrationId}/cancel", "some id")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
         .header("Content-Type", "application/json")
         .exchange()
@@ -618,7 +619,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
         .returnResult<MigrationContext<VisitsMigrationFilter>>()
         .responseBody.blockFirst()!!.migrationId
 
-      webTestClient.post().uri("/migrate/visits/{migrationId}/cancel/", migrationId)
+      webTestClient.post().uri("/migrate/visits/{migrationId}/cancel", migrationId)
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
         .header("Content-Type", "application/json")
         .exchange()

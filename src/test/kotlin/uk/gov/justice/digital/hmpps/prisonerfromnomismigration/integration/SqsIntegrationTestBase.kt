@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration
 
-import com.amazonaws.services.sqs.model.PurgeQueueRequest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
@@ -10,6 +9,9 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.reactive.server.WebTestClient
+import software.amazon.awssdk.services.sqs.SqsAsyncClient
+import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest
+import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.JwtAuthHelper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.LocalStackContainer.setLocalStackProperties
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.INCENTIVES_QUEUE_ID
@@ -73,8 +75,8 @@ class SqsIntegrationTestBase : TestBase() {
 
   @BeforeEach
   fun cleanQueue() {
-    awsSqsVisitsMigrationClient.purgeQueue(PurgeQueueRequest(visitsMigrationQueueUrl))
-    awsSqsVisitsMigrationDlqClient?.purgeQueue(PurgeQueueRequest(visitsMigrationDlqUrl))
+    awsSqsVisitsMigrationClient.purgeQueue(PurgeQueueRequest.builder().queueUrl(visitsMigrationQueueUrl).build()).get()
+    awsSqsVisitsMigrationDlqClient?.purgeQueue(PurgeQueueRequest.builder().queueUrl(visitsMigrationDlqUrl).build())?.get()
   }
 
   companion object {
@@ -87,3 +89,6 @@ class SqsIntegrationTestBase : TestBase() {
     }
   }
 }
+
+internal fun SqsAsyncClient.sendMessage(queueOffenderEventsUrl: String, message: String) =
+  sendMessage(SendMessageRequest.builder().queueUrl(queueOffenderEventsUrl).messageBody(message).build()).get()

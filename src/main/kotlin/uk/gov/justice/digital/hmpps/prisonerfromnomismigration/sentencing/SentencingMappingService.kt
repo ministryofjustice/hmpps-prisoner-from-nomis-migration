@@ -1,5 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing
 
+import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
@@ -10,7 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationDet
 
 @Service
 class SentencingMappingService(@Qualifier("mappingApiWebClient") private val webClient: WebClient) {
-  fun findNomisSentencingAdjustmentMapping(
+  suspend fun findNomisSentencingAdjustmentMapping(
     nomisAdjustmentId: Long,
     nomisAdjustmentType: String,
   ): SentencingAdjustmentNomisMapping? {
@@ -25,10 +27,10 @@ class SentencingMappingService(@Qualifier("mappingApiWebClient") private val web
       .onErrorResume(WebClientResponseException.NotFound::class.java) {
         Mono.empty()
       }
-      .block()
+      .awaitSingleOrNull()
   }
 
-  fun createNomisSentencingAdjustmentMigrationMapping(
+  suspend fun createNomisSentencingAdjustmentMigrationMapping(
     nomisAdjustmentId: Long,
     nomisAdjustmentType: String,
     sentenceAdjustmentId: Long,
@@ -43,7 +45,7 @@ class SentencingMappingService(@Qualifier("mappingApiWebClient") private val web
     )
   }
 
-  private fun createNomisSentenceAdjustmentMapping(
+  private suspend fun createNomisSentenceAdjustmentMapping(
     nomisAdjustmentId: Long,
     nomisAdjustmentType: String,
     sentenceAdjustmentId: Long,
@@ -63,19 +65,19 @@ class SentencingMappingService(@Qualifier("mappingApiWebClient") private val web
       )
       .retrieve()
       .bodyToMono(Unit::class.java)
-      .block()
+      .awaitSingleOrNull()
   }
 
-  fun findLatestMigration(): LatestMigration? = webClient.get()
+  suspend fun findLatestMigration(): LatestMigration? = webClient.get()
     .uri("/mapping/sentencing/adjustments/migrated/latest")
     .retrieve()
     .bodyToMono(LatestMigration::class.java)
     .onErrorResume(WebClientResponseException.NotFound::class.java) {
       Mono.empty()
     }
-    .block()
+    .awaitSingleOrNull()
 
-  fun getMigrationDetails(migrationId: String): MigrationDetails = webClient.get()
+  suspend fun getMigrationDetails(migrationId: String): MigrationDetails = webClient.get()
     .uri {
       it.path("/mapping/sentencing/adjustments/migration-id/{migrationId}")
         .queryParam("size", 1)
@@ -83,9 +85,9 @@ class SentencingMappingService(@Qualifier("mappingApiWebClient") private val web
     }
     .retrieve()
     .bodyToMono(MigrationDetails::class.java)
-    .block()!!
+    .awaitSingle()!!
 
-  fun getMigrationCount(migrationId: String): Long = webClient.get()
+  suspend fun getMigrationCount(migrationId: String): Long = webClient.get()
     .uri {
       it.path("/mapping/sentencing/adjustments/migration-id/{migrationId}")
         .queryParam("size", 1)
@@ -96,7 +98,7 @@ class SentencingMappingService(@Qualifier("mappingApiWebClient") private val web
     .onErrorResume(WebClientResponseException.NotFound::class.java) {
       Mono.empty()
     }
-    .block()?.count ?: 0
+    .awaitSingleOrNull()?.count ?: 0
 }
 
 data class SentencingAdjustmentNomisMapping(

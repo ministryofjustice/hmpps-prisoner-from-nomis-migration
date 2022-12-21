@@ -10,6 +10,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -44,11 +45,13 @@ internal class VisitMappingServiceTest {
         )
       )
 
-      assertThat(visitMappingService.findNomisVisitMapping(1234)).isNull()
+      assertThat(
+        runBlocking { visitMappingService.findNomisVisitMapping(1234) }
+      ).isNull()
     }
 
     @Test
-    internal fun `will return the mapping when found`() {
+    internal fun `will return the mapping when found`(): Unit = runBlocking {
       mappingApi.stubFor(
         get(urlPathMatching("/mapping/visits/nomisId/.*")).willReturn(
           aResponse()
@@ -87,7 +90,9 @@ internal class VisitMappingServiceTest {
       )
 
       assertThatThrownBy {
-        visitMappingService.findNomisVisitMapping(1234)
+        runBlocking {
+          visitMappingService.findNomisVisitMapping(1234)
+        }
       }.isInstanceOf(WebClientResponseException.InternalServerError::class.java)
     }
   }
@@ -107,7 +112,7 @@ internal class VisitMappingServiceTest {
     }
 
     @Test
-    internal fun `will pass VSIP visit id, migration Id and MIGRATED indicator to mapping service`() {
+    internal fun `will pass VSIP visit id, migration Id and MIGRATED indicator to mapping service`(): Unit = runBlocking {
       visitMappingService.createNomisVisitMapping(1234, "5678", "2020-01-01T00:00:00")
 
       mappingApi.verify(
@@ -133,7 +138,7 @@ internal class VisitMappingServiceTest {
   inner class FindRoomMapping {
 
     @Test
-    internal fun `will return null when not found`() {
+    internal fun `will return null when not found`(): Unit = runBlocking {
       mappingApi.stubFor(
         get(urlPathMatching("/prison/.+?/room/nomis-room-id/.+?")).willReturn(
           aResponse()
@@ -143,11 +148,11 @@ internal class VisitMappingServiceTest {
         )
       )
 
-      assertThat(visitMappingService.findRoomMappingBlocking("HB7SOC", "HEI")).isNull()
+      assertThat(visitMappingService.findRoomMapping("HB7SOC", "HEI")).isNull()
     }
 
     @Test
-    internal fun `will return the mapping when found`() {
+    internal fun `will return the mapping when found`(): Unit = runBlocking {
       mappingApi.stubFor(
         get(urlPathMatching("/prison/.+?/room/nomis-room-id/.+?")).willReturn(
           aResponse()
@@ -164,7 +169,7 @@ internal class VisitMappingServiceTest {
         )
       )
 
-      val mapping = visitMappingService.findRoomMappingBlocking("HB7SOC", "HEI")
+      val mapping = visitMappingService.findRoomMapping("HB7SOC", "HEI")
       assertThat(mapping).isNotNull
       assertThat(mapping!!.vsipId).isEqualTo("1234")
       assertThat(mapping.isOpen).isEqualTo(true)
@@ -182,7 +187,9 @@ internal class VisitMappingServiceTest {
       )
 
       assertThatThrownBy {
-        visitMappingService.findRoomMappingBlocking("HB7SOC", "HEI")
+        runBlocking {
+          visitMappingService.findRoomMapping("HB7SOC", "HEI")
+        }
       }.isInstanceOf(WebClientResponseException.InternalServerError::class.java)
     }
   }
@@ -196,7 +203,7 @@ internal class VisitMappingServiceTest {
     }
 
     @Test
-    internal fun `will supply authentication token`() {
+    internal fun `will supply authentication token`(): Unit = runBlocking {
       visitMappingService.findLatestMigration()
 
       mappingApi.verify(
@@ -208,7 +215,7 @@ internal class VisitMappingServiceTest {
     }
 
     @Test
-    internal fun `will return null when not found`() {
+    internal fun `will return null when not found`(): Unit = runBlocking {
       mappingApi.stubFor(
         get(urlPathEqualTo("/mapping/visits/migrated/latest")).willReturn(
           aResponse()
@@ -222,7 +229,7 @@ internal class VisitMappingServiceTest {
     }
 
     @Test
-    internal fun `will return the mapping when found`() {
+    internal fun `will return the mapping when found`(): Unit = runBlocking {
       mappingApi.stubFor(
         get(urlEqualTo("/mapping/visits/migrated/latest")).willReturn(
           aResponse()
@@ -258,7 +265,9 @@ internal class VisitMappingServiceTest {
       )
 
       assertThatThrownBy {
-        visitMappingService.findLatestMigration()
+        runBlocking {
+          visitMappingService.findLatestMigration()
+        }
       }.isInstanceOf(WebClientResponseException.InternalServerError::class.java)
     }
   }
@@ -272,7 +281,7 @@ internal class VisitMappingServiceTest {
     }
 
     @Test
-    internal fun `will supply authentication token`() {
+    internal fun `will supply authentication token`(): Unit = runBlocking {
       visitMappingService.getMigrationDetails("2020-01-01T10:00:00")
 
       mappingApi.verify(
@@ -295,12 +304,14 @@ internal class VisitMappingServiceTest {
       )
 
       assertThatThrownBy {
-        visitMappingService.getMigrationDetails("2020-01-01T10:00:00")
+        runBlocking {
+          visitMappingService.getMigrationDetails("2020-01-01T10:00:00")
+        }
       }.isInstanceOf(WebClientResponseException.NotFound::class.java)
     }
 
     @Test
-    internal fun `will return the mapping when found`() {
+    internal fun `will return the mapping when found`(): Unit = runBlocking {
       mappingApi.stubVisitMappingByMigrationId(
         whenCreated = "2020-01-01T11:10:00",
         count = 56_766
@@ -324,7 +335,9 @@ internal class VisitMappingServiceTest {
       )
 
       assertThatThrownBy {
-        visitMappingService.getMigrationDetails("2020-01-01T10:00:00")
+        runBlocking {
+          visitMappingService.getMigrationDetails("2020-01-01T10:00:00")
+        }
       }.isInstanceOf(WebClientResponseException.InternalServerError::class.java)
     }
   }
@@ -338,7 +351,7 @@ internal class VisitMappingServiceTest {
     }
 
     @Test
-    internal fun `will supply authentication token`() {
+    internal fun `will supply authentication token`(): Unit = runBlocking {
       visitMappingService.getMigrationCount("2020-01-01T10:00:00")
 
       mappingApi.verify(
@@ -350,7 +363,7 @@ internal class VisitMappingServiceTest {
     }
 
     @Test
-    internal fun `will return zero when not found`() {
+    internal fun `will return zero when not found`(): Unit = runBlocking {
       mappingApi.stubFor(
         get(urlPathMatching("/mapping/visits/migration-id/.*")).willReturn(
           aResponse()
@@ -364,7 +377,7 @@ internal class VisitMappingServiceTest {
     }
 
     @Test
-    internal fun `will return the mapping count when found`() {
+    internal fun `will return the mapping count when found`(): Unit = runBlocking {
       mappingApi.stubVisitMappingByMigrationId(
         whenCreated = "2020-01-01T11:10:00",
         count = 56_766
@@ -385,7 +398,9 @@ internal class VisitMappingServiceTest {
       )
 
       assertThatThrownBy {
-        visitMappingService.getMigrationCount("2020-01-01T10:00:00")
+        runBlocking {
+          visitMappingService.getMigrationCount("2020-01-01T10:00:00")
+        }
       }.isInstanceOf(WebClientResponseException.InternalServerError::class.java)
     }
   }

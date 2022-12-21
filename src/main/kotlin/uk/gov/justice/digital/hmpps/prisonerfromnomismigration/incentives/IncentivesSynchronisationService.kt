@@ -1,7 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives
 
 import com.microsoft.applicationinsights.TelemetryClient
-import kotlinx.coroutines.runBlocking
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -100,8 +99,8 @@ class IncentivesSynchronisationService(
     }
   }
 
-  fun handleSynchroniseCurrentIncentiveMessage(context: MigrationContext<IncentiveMapping>) {
-    runBlocking { resynchroniseCurrentIncentive(context.body.nomisBookingId) }
+  suspend fun handleSynchroniseCurrentIncentiveMessage(context: MigrationContext<IncentiveMapping>) {
+    resynchroniseCurrentIncentive(context.body.nomisBookingId)
   }
 
   private suspend fun resynchroniseCurrentIncentive(bookingId: Long) {
@@ -185,7 +184,7 @@ class IncentivesSynchronisationService(
     }
   }
 
-  fun retryCreateIncentiveMapping(context: MigrationContext<IncentiveMapping>) {
+  suspend fun retryCreateIncentiveMapping(context: MigrationContext<IncentiveMapping>) {
     log.info("Retrying mapping creation for booking id: ${context.body.nomisBookingId}, noms seq: ${context.body.nomisIncentiveSequence}, incentive id : ${context.body.incentiveId}")
     mappingService.createNomisIncentiveSynchronisationMapping(
       nomisBookingId = context.body.nomisBookingId,

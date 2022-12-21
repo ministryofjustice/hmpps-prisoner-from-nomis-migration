@@ -34,7 +34,7 @@ class IncentivesMigrationService(
   private val auditService: AuditService,
   private val incentivesService: IncentivesService,
   private val incentiveMappingService: IncentiveMappingService,
-  @Value("\${incentives.page.size:1000}") private val pageSize: Long
+  @Value("\${incentives.page.size:1000}") private val pageSize: Long,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -79,7 +79,7 @@ class IncentivesMigrationService(
     }
   }
 
-  fun divideIncentivesByPage(context: MigrationContext<IncentivesMigrationFilter>) {
+  suspend fun divideIncentivesByPage(context: MigrationContext<IncentivesMigrationFilter>) {
     (1..context.estimatedCount step pageSize).asSequence()
       .map {
         MigrationContext(
@@ -99,8 +99,8 @@ class IncentivesMigrationService(
     )
   }
 
-  fun migrateIncentivesForPage(context: MigrationContext<IncentivesPage>) =
-    nomisApiService.getIncentivesBlocking(
+  suspend fun migrateIncentivesForPage(context: MigrationContext<IncentivesPage>) =
+    nomisApiService.getIncentives(
       fromDate = context.body.filter.fromDate,
       toDate = context.body.filter.toDate,
       pageNumber = context.body.pageNumber,
@@ -114,14 +114,14 @@ class IncentivesMigrationService(
       )
     }?.forEach { queueService.sendMessage(MIGRATE_INCENTIVE, it) }
 
-  fun migrateIncentive(context: MigrationContext<IncentiveId>) {
+  suspend fun migrateIncentive(context: MigrationContext<IncentiveId>) {
     val (bookingId, sequence) = context.body
 
     incentiveMappingService.findNomisIncentiveMapping(bookingId, sequence)?.run {
       log.info("Will not migrate incentive since it is migrated already, Booking id is ${context.body.bookingId}, sequence ${context.body.sequence}, incentive id is ${this.incentiveId} as part migration ${this.label ?: "NONE"} (${this.mappingType})")
     }
       ?: run {
-        val iep = nomisApiService.getIncentiveBlocking(bookingId, sequence)
+        val iep = nomisApiService.getIncentive(bookingId, sequence)
         val migratedIncentive = incentivesService.migrateIncentive(iep.toIncentive(reviewType = MIGRATED), bookingId)
           .also {
             createIncentiveMapping(
@@ -145,7 +145,7 @@ class IncentivesMigrationService(
       }
   }
 
-  fun migrateIncentivesStatusCheck(context: MigrationContext<IncentiveMigrationStatusCheck>) {
+  suspend fun migrateIncentivesStatusCheck(context: MigrationContext<IncentiveMigrationStatusCheck>) {
     /*
        when checking if there are messages to process, it is always an estimation due to SQS, therefore once
        we think there are no messages we check several times in row reducing probability of false positives significantly
@@ -188,7 +188,7 @@ class IncentivesMigrationService(
     }
   }
 
-  fun cancelMigrateIncentivesStatusCheck(context: MigrationContext<IncentiveMigrationStatusCheck>) {
+  suspend fun cancelMigrateIncentivesStatusCheck(context: MigrationContext<IncentiveMigrationStatusCheck>) {
     /*
        when checking if there are messages to process, it is always an estimation due to SQS, therefore once
        we think there are no messages we check several times in row reducing probability of false positives significantly
@@ -256,11 +256,11 @@ class IncentivesMigrationService(
     )
   }
 
-  private fun createIncentiveMapping(
+  private suspend fun createIncentiveMapping(
     bookingId: Long,
     nomisIncentiveSequence: Long,
     incentiveId: Long,
-    context: MigrationContext<*>
+    context: MigrationContext<*>,
   ) = try {
     incentiveMappingService.createNomisIncentiveMigrationMapping(
       nomisBookingId = bookingId,
@@ -286,7 +286,7 @@ class IncentivesMigrationService(
     )
   }
 
-  fun retryCreateIncentiveMapping(context: MigrationContext<IncentiveMapping>) =
+  suspend fun retryCreateIncentiveMapping(context: MigrationContext<IncentiveMapping>) =
     incentiveMappingService.createNomisIncentiveMigrationMapping(
       nomisBookingId = context.body.nomisBookingId,
       nomisIncentiveSequence = context.body.nomisIncentiveSequence,

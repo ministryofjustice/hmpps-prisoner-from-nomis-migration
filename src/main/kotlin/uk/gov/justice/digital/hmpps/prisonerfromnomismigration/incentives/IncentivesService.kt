@@ -11,13 +11,13 @@ import java.time.LocalDateTime
 
 @Service
 class IncentivesService(@Qualifier("incentivesApiWebClient") private val webClient: WebClient) {
-  fun migrateIncentive(incentive: CreateIncentiveIEP, bookingId: Long): CreateIncentiveIEPResponse =
+  suspend fun migrateIncentive(incentive: CreateIncentiveIEP, bookingId: Long): CreateIncentiveIEPResponse =
     webClient.post()
       .uri("/iep/migration/booking/{bookingId}", bookingId)
       .bodyValue(incentive)
       .retrieve()
       .bodyToMono(CreateIncentiveIEPResponse::class.java)
-      .block()!!
+      .awaitSingle()
 
   suspend fun synchroniseCreateIncentive(incentive: CreateIncentiveIEP, bookingId: Long): CreateIncentiveIEPResponse =
     webClient.post()

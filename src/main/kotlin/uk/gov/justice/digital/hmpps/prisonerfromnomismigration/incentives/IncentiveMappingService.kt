@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives
 
-import kotlinx.coroutines.reactive.awaitFirstOrNull
+import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
@@ -17,8 +18,8 @@ class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webC
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  fun findNomisIncentiveMapping(nomisBookingId: Long, nomisIncentiveSequence: Long): IncentiveNomisMapping? {
-    return webClient.get()
+  suspend fun findNomisIncentiveMapping(nomisBookingId: Long, nomisIncentiveSequence: Long): IncentiveNomisMapping? =
+    webClient.get()
       .uri(
         "/mapping/incentives/nomis-booking-id/{nomisBookingId}/nomis-incentive-sequence/{nomisIncentiveSequence}",
         nomisBookingId,
@@ -28,11 +29,9 @@ class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webC
       .bodyToMono(IncentiveNomisMapping::class.java)
       .onErrorResume(WebClientResponseException.NotFound::class.java) {
         Mono.empty()
-      }
-      .block()
-  }
+      }.awaitSingleOrNull()
 
-  fun createNomisIncentiveMigrationMapping(
+  suspend fun createNomisIncentiveMigrationMapping(
     nomisBookingId: Long,
     nomisIncentiveSequence: Long,
     incentiveId: Long,
@@ -47,7 +46,7 @@ class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webC
     )
   }
 
-  fun createNomisIncentiveSynchronisationMapping(
+  suspend fun createNomisIncentiveSynchronisationMapping(
     nomisBookingId: Long,
     nomisIncentiveSequence: Long,
     incentiveId: Long,
@@ -60,7 +59,7 @@ class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webC
     )
   }
 
-  private fun createNomisIncentiveMapping(
+  private suspend fun createNomisIncentiveMapping(
     nomisBookingId: Long,
     nomisIncentiveSequence: Long,
     incentiveId: Long,
@@ -80,29 +79,27 @@ class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webC
       )
       .retrieve()
       .bodyToMono(Unit::class.java)
-      .block()
+      .awaitSingleOrNull()
   }
 
-  fun findLatestMigration(): LatestMigration? = webClient.get()
+  suspend fun findLatestMigration(): LatestMigration? = webClient.get()
     .uri("/mapping/incentives/migrated/latest")
     .retrieve()
     .bodyToMono(LatestMigration::class.java)
     .onErrorResume(WebClientResponseException.NotFound::class.java) {
       Mono.empty()
-    }
-    .block()
+    }.awaitSingleOrNull()
 
-  fun getMigrationDetails(migrationId: String): MigrationDetails = webClient.get()
+  suspend fun getMigrationDetails(migrationId: String): MigrationDetails = webClient.get()
     .uri {
       it.path("/mapping/incentives/migration-id/{migrationId}")
         .queryParam("size", 1)
         .build(migrationId)
     }
     .retrieve()
-    .bodyToMono(MigrationDetails::class.java)
-    .block()!!
+    .bodyToMono(MigrationDetails::class.java).awaitSingle()
 
-  fun getMigrationCount(migrationId: String): Long = webClient.get()
+  suspend fun getMigrationCount(migrationId: String): Long = webClient.get()
     .uri {
       it.path("/mapping/incentives/migration-id/{migrationId}")
         .queryParam("size", 1)
@@ -112,8 +109,7 @@ class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webC
     .bodyToMono(MigrationDetails::class.java)
     .onErrorResume(WebClientResponseException.NotFound::class.java) {
       Mono.empty()
-    }
-    .block()?.count ?: 0
+    }.awaitSingleOrNull()?.count ?: 0
 
   suspend fun deleteIncentiveMapping(incentiveId: Long): Unit? = webClient.delete()
     .uri(
@@ -125,7 +121,7 @@ class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webC
     .onErrorResume(WebClientResponseException::class.java) {
       log.error("Unable to deleting mapping for incentiveId $incentiveId but ignoring and allowing dangling record", it)
       Mono.empty()
-    }.awaitFirstOrNull()
+    }.awaitSingleOrNull()
 }
 
 data class IncentiveNomisMapping(

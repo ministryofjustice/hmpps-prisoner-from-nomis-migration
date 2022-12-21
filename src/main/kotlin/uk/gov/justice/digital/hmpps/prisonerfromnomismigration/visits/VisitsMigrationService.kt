@@ -88,7 +88,7 @@ class VisitsMigrationService(
     }
   }
 
-  fun divideVisitsByPage(context: MigrationContext<VisitsMigrationFilter>) {
+  suspend fun divideVisitsByPage(context: MigrationContext<VisitsMigrationFilter>) {
     (1..context.estimatedCount step pageSize).asSequence()
       .map {
         MigrationContext(
@@ -108,8 +108,8 @@ class VisitsMigrationService(
     )
   }
 
-  fun migrateVisitsForPage(context: MigrationContext<VisitsPage>) =
-    nomisApiService.getVisitsBlocking(
+  suspend fun migrateVisitsForPage(context: MigrationContext<VisitsPage>) =
+    nomisApiService.getVisits(
       prisonIds = context.body.filter.prisonIds,
       visitTypes = context.body.filter.visitTypes,
       fromDateTime = context.body.filter.fromDateTime,
@@ -126,7 +126,7 @@ class VisitsMigrationService(
       )
     }?.forEach { queueService.sendMessage(MIGRATE_VISIT, it) }
 
-  fun migrateVisit(context: MigrationContext<VisitId>) =
+  suspend fun migrateVisit(context: MigrationContext<VisitId>) =
     visitMappingService.findNomisVisitMapping(context.body.visitId)
       ?.run {
         log.info("Will not migrate visit since it is migrated already, NOMIS id is ${context.body.visitId}, VSIP id is ${this.vsipId} as part migration ${this.label ?: "NONE"} (${this.mappingType})")
@@ -160,11 +160,11 @@ class VisitsMigrationService(
           } ?: run { handleNoRoomMappingFound(context.migrationId, nomisVisit) }
       }
 
-  private fun determineRoomMapping(
+  private suspend fun determineRoomMapping(
     nomisVisit: NomisVisit
   ): DateAwareRoomMapping? = if (isFutureVisit(nomisVisit) && !isErroneousFutureVisit(nomisVisit)) {
     nomisVisit.agencyInternalLocation?.let {
-      visitMappingService.findRoomMappingBlocking(
+      visitMappingService.findRoomMapping(
         agencyInternalLocationCode = nomisVisit.agencyInternalLocation.description,
         prisonId = nomisVisit.prisonId
       )?.let {
@@ -186,7 +186,7 @@ class VisitsMigrationService(
   private fun isErroneousFutureVisit(nomisVisit: NomisVisit) =
     nomisVisit.startDateTime.toLocalDate() > LocalDate.now().plusYears(1)
 
-  fun migrateVisitsStatusCheck(context: MigrationContext<VisitMigrationStatusCheck>) {
+  suspend fun migrateVisitsStatusCheck(context: MigrationContext<VisitMigrationStatusCheck>) {
     /*
        when checking if there are messages to process, it is always an estimation due to SQS, therefore once
        we think there are no messages we check several times in row reducing probability of false positives significantly
@@ -229,7 +229,7 @@ class VisitsMigrationService(
     }
   }
 
-  fun cancelMigrateVisitsStatusCheck(context: MigrationContext<VisitMigrationStatusCheck>) {
+  suspend fun cancelMigrateVisitsStatusCheck(context: MigrationContext<VisitMigrationStatusCheck>) {
     /*
        when checking if there are messages to process, it is always an estimation due to SQS, therefore once
        we think there are no messages we check several times in row reducing probability of false positives significantly
@@ -274,7 +274,7 @@ class VisitsMigrationService(
     }
   }
 
-  private fun createNomisVisitMapping(
+  private suspend fun createNomisVisitMapping(
     nomisVisitId: Long,
     vsipVisitId: String,
     context: MigrationContext<*>
@@ -295,7 +295,7 @@ class VisitsMigrationService(
     )
   }
 
-  private fun handleNoRoomMappingFound(migrationId: String, nomisVisit: NomisVisit) {
+  private suspend fun handleNoRoomMappingFound(migrationId: String, nomisVisit: NomisVisit) {
     telemetryClient.trackEvent(
       "nomis-migration-visit-no-room-mapping",
       mapOf<String, String>(
@@ -316,7 +316,7 @@ class VisitsMigrationService(
     )
   }
 
-  fun retryCreateVisitMapping(context: MigrationContext<VisitMapping>) {
+  suspend fun retryCreateVisitMapping(context: MigrationContext<VisitMapping>) {
     visitMappingService.createNomisVisitMapping(
       nomisVisitId = context.body.nomisVisitId,
       vsipVisitId = context.body.vsipVisitId,

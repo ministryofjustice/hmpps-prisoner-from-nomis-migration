@@ -1,22 +1,23 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 
-import com.amazonaws.services.sqs.AmazonSQS
-import com.amazonaws.services.sqs.model.DeleteMessageRequest
-import com.amazonaws.services.sqs.model.ReceiveMessageRequest
-import com.amazonaws.services.sqs.model.SendMessageRequest
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.microsoft.applicationinsights.TelemetryClient
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
+import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
+import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
 import uk.gov.justice.hmpps.sqs.PurgeQueueRequest
+import uk.gov.justice.hmpps.sqs.countMessagesOnQueue
 import java.time.Duration
 
 @Service
@@ -32,45 +33,46 @@ class MigrationQueueService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  fun <T : Enum<T>> sendMessage(message: T, context: MigrationContext<*>, delaySeconds: Int = 0) {
+  suspend fun <T : Enum<T>> sendMessage(message: T, context: MigrationContext<*>, delaySeconds: Int = 0) {
     val queue = hmppsQueueService.findByQueueId(context.type.queueId)
       ?: throw IllegalStateException("Queue not found for ${context.type.queueId}")
-    val result =
-      queue.sqsClient.sendMessage(
-        SendMessageRequest(
-          queue.queueUrl,
-          MigrationMessage(message, context).toJson()
-        ).withDelaySeconds(delaySeconds)
+    queue.sqsClient.sendMessage(
+      SendMessageRequest.builder()
+        .queueUrl(queue.queueUrl)
+        .messageBody(MigrationMessage(message, context).toJson())
+        .delaySeconds(delaySeconds)
+        .build()
+    ).thenAccept {
+      telemetryClient.trackEvent(
+        message.name,
+        mapOf("messageId" to it.messageId(), "migrationId" to context.migrationId),
+        null
       )
-
-    telemetryClient.trackEvent(
-      message.name,
-      mapOf("messageId" to result.messageId, "migrationId" to context.migrationId),
-      null
-    )
+    }
   }
 
   // given counts are approximations there is only a probable chance this returns the correct result
-  fun isItProbableThatThereAreStillMessagesToBeProcessed(type: MigrationType): Boolean {
+  suspend fun isItProbableThatThereAreStillMessagesToBeProcessed(type: MigrationType): Boolean {
     val queue = hmppsQueueService.findByQueueId(type.queueId)
       ?: throw IllegalStateException("Queue not found for ${type.queueId}")
 
-    return queue.sqsClient.countMessagesOnQueue(queue.queueUrl) > 0
+    return queue.sqsClient.countMessagesOnQueue(queue.queueUrl).await() > 0
   }
 
-  fun countMessagesThatHaveFailed(type: MigrationType): Long {
+  suspend fun countMessagesThatHaveFailed(type: MigrationType): Long {
     val queue = hmppsQueueService.findByQueueId(type.queueId)
       ?: throw IllegalStateException("Queue not found for ${type.queueId}")
 
-    return queue.sqsDlqClient!!.countMessagesOnQueue(queue.dlqUrl!!).toLong()
+    return queue.sqsDlqClient!!.countMessagesOnQueue(queue.dlqUrl!!).await().toLong()
   }
 
   private fun Any.toJson() = objectMapper.writeValueAsString(this)
-  fun purgeAllMessages(type: MigrationType) {
+
+  suspend fun purgeAllMessages(type: MigrationType) {
     val queue = hmppsQueueService.findByQueueId(type.queueId)
       ?: throw IllegalStateException("Queue not found for ${type.queueId}")
     // try purge first, since it is rate limited fall back to less efficient read/delete method
-    kotlin.runCatching {
+    runCatching {
       hmppsQueueService.purgeQueue(
         PurgeQueueRequest(
           queueName = queue.queueName,
@@ -86,20 +88,21 @@ class MigrationQueueService(
     }
   }
 
-  private fun deleteAllMessages(queue: HmppsQueue) {
-    kotlin.runCatching {
-      val messageCount = queue.sqsClient.countMessagesOnQueue(queue.queueUrl)
+  private suspend fun deleteAllMessages(queue: HmppsQueue) {
+    runCatching {
+      val messageCount = queue.sqsClient.countMessagesOnQueue(queue.queueUrl).await()
       log.debug("Purging $messageCount from queue via delete")
-      run repeatBlock@{
-        repeat(messageCount) {
-          queue.sqsClient.receiveMessage(ReceiveMessageRequest(queue.queueUrl).withMaxNumberOfMessages(1)).messages.firstOrNull()
-            ?.also { msg ->
-              queue.sqsClient.deleteMessage(DeleteMessageRequest(queue.queueUrl, msg.receiptHandle))
-            } ?: run {
-            log.debug("No more messages found after $it so giving up reading more messages")
-            // when not found any messages since the message count was inaccurate, just break out and finish
-            return@repeatBlock
-          }
+      (0..messageCount).forEach { i ->
+        queue.sqsClient.receiveMessage(
+          ReceiveMessageRequest.builder().queueUrl(queue.queueUrl).maxNumberOfMessages(1).build()
+        ).await().messages().firstOrNull()?.also { msg ->
+          queue.sqsClient.deleteMessage(
+            DeleteMessageRequest.builder().queueUrl(queue.queueUrl).receiptHandle(msg.receiptHandle()).build()
+          )
+        } ?: run {
+          log.debug("No more messages found - processed $i out of $messageCount, so giving up reading more messages")
+          // when not found any messages since the message count was inaccurate, just break out and finish
+          return
         }
       }
     }.onFailure {
@@ -107,9 +110,9 @@ class MigrationQueueService(
     }
   }
 
-  fun <T : Enum<T>> purgeAllMessagesNowAndAgainInTheNearFuture(
+  suspend fun <T : Enum<T>> purgeAllMessagesNowAndAgainInTheNearFuture(
     migrationContext: MigrationContext<*>,
-    message: T
+    message: T,
   ) {
     purgeAllMessages(migrationContext.type)
     // so that MIGRATE_<TYPE>_BY_PAGE messages that are currently generating large numbers of messages
@@ -130,7 +133,3 @@ class MigrationQueueService(
     }
   }
 }
-
-internal fun AmazonSQS.countMessagesOnQueue(queueUrl: String): Int =
-  this.getQueueAttributes(queueUrl, listOf("ApproximateNumberOfMessages"))
-    .let { it.attributes["ApproximateNumberOfMessages"]?.toInt() ?: 0 }

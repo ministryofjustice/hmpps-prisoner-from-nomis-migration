@@ -45,3 +45,17 @@ cancel:
   queue:
     purge-frequency-time: 100ms
     purge-total-time: 5s
+
+hmpps.sqs:
+  provider: localstack
+  queues:
+    migrationvisits:
+      visibilityTimeout: 1
+    migrationincentives:
+      visibilityTimeout: 1
+    migrationsentencing:
+      visibilityTimeout: 1
+    audit:
+      visibilityTimeout: 1
+    event:
+      visibilityTimeout: 1

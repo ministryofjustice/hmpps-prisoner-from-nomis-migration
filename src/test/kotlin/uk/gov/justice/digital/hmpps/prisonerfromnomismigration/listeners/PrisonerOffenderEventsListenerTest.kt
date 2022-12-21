@@ -21,7 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.Incent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitSynchronisationService
 
 @ExtendWith(MockitoExtension::class)
-internal class PrisonerDomainEventsListenerTest {
+internal class PrisonOffenderEventListenerTest {
   private val incentivesSynchronisationService: IncentivesSynchronisationService = mockk()
   private val visitSynchronisationService: VisitSynchronisationService = mockk()
   private val objectMapper: ObjectMapper = objectMapper()
@@ -52,7 +52,7 @@ internal class PrisonerDomainEventsListenerTest {
 
         listener.onMessage(
           message = validIepCreatedMessage()
-        )
+        ).get()
 
         coVerify {
           incentivesSynchronisationService.synchroniseIncentive(
