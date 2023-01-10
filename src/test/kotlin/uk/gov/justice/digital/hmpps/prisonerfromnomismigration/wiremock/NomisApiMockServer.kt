@@ -297,6 +297,17 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubGetCurrentIncentiveNotFound(bookingId: Long) {
+    nomisApi.stubFor(
+      get(
+        urlPathEqualTo("/incentives/booking-id/$bookingId/current")
+      )
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.NOT_FOUND.value())
+        )
+    )
+  }
+
   fun verifyGetIncentive(bookingId: Long, incentiveSequence: Long) {
     nomisApi.verify(
       getRequestedFor(

@@ -105,7 +105,7 @@ class IncentivesSynchronisationService(
   }
 
   private suspend fun resynchroniseCurrentIncentive(bookingId: Long) {
-    nomisApiService.getCurrentIncentive(bookingId).let { currentIep ->
+    nomisApiService.getCurrentIncentive(bookingId)?.let { currentIep ->
       // get mapping for current IEP
       mappingService.findNomisIncentiveMapping(
         nomisBookingId = currentIep.bookingId,
