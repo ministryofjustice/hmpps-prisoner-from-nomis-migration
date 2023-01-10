@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.web.reactive.function.client.WebClientResponseException
@@ -621,5 +622,51 @@ internal class NomisApiServiceTest {
 }                
       
     """.trimIndent()
+  }
+
+  @Nested
+  @DisplayName("getCurrentIncentive")
+  inner class GetCurrentIncentive {
+
+    @Test
+    internal fun `will catch 404 response`() {
+      nomisApi.stubFor(
+        get(
+          urlPathEqualTo("/incentives/booking-id/1234/current")
+        ).willReturn(
+          aResponse()
+            .withStatus(HttpURLConnection.HTTP_NOT_FOUND)
+        )
+      )
+
+      assertDoesNotThrow {
+        runBlocking {
+          nomisService.getCurrentIncentive(1234)
+        }
+      }
+      nomisApi.verify(
+        getRequestedFor(
+          urlEqualTo("/incentives/booking-id/1234/current")
+        )
+      )
+    }
+
+    @Test
+    internal fun `will propagate non-404 exceptions`() {
+      nomisApi.stubFor(
+        get(
+          urlPathEqualTo("/incentives/booking-id/1234/current")
+        ).willReturn(
+          aResponse()
+            .withStatus(HttpURLConnection.HTTP_BAD_REQUEST)
+        )
+      )
+
+      assertThatThrownBy {
+        runBlocking {
+          nomisService.getCurrentIncentive(1234)
+        }
+      }.isInstanceOf(WebClientResponseException.BadRequest::class.java)
+    }
   }
 }

@@ -235,7 +235,7 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
          3. current iep is retrieved from nomis
          4. mapping of current iep is found
          5. iep is updated in the incentives service
-         6. Deleted iep is deleted in the incentives service
+         6. Deleted iep is deleted in the incentives service and mapping service
        */
 
       val message = validIepDeletedMessage(bookingId = 1234, incentiveSequence = 1)
@@ -257,6 +257,45 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
 
       incentivesApi.verifyDeleteSynchroniseIncentive(bookingId = 1234, incentivesId = 456789)
       incentivesApi.verifyUpdateSynchroniseIncentive(bookingId = 1234, incentivesId = 987654)
+      mappingApi.verifyDeleteIncentiveMapping(incentiveId = 456789)
+
+      verify(telemetryClient).trackEvent(
+        eq("incentive-delete-synchronisation"),
+        check {
+          it["bookingId"] == "1234" &&
+            it["incentiveSequence"] == "1" &&
+            it["incentiveId"] == "456789"
+        },
+        isNull()
+      )
+    }
+
+    @Test
+    fun `will synchronise an incentive after nomis deletes the last associated IEP -  No current IEP left after deletion `() {
+
+      /* 1. Deletes any iep which may or may not have been current
+         2. Deleted iep mapping retrieved
+         3. current iep returns a 404 from nomis (deleted IEP was the only one)
+         4. Deleted iep is deleted in the incentives service and mapping service
+       */
+
+      val message = validIepDeletedMessage(bookingId = 1234, incentiveSequence = 1)
+
+      mappingApi.stubIncentiveMappingByNomisIds(nomisBookingId = 1234, nomisIncentiveSequence = 1, incentiveId = 456789)
+      nomisApi.stubGetCurrentIncentiveNotFound(bookingId = 1234)
+      mappingApi.stubIncentiveMappingByNomisIds(nomisBookingId = 1234, nomisIncentiveSequence = 2, incentiveId = 987654)
+
+      // delete incentive
+      incentivesApi.stubDeleteSynchroniseIncentive(bookingId = 1234, incentivesId = 456789)
+      // delete mapping
+      mappingApi.stubDeleteIncentiveMapping(incentiveId = 456789)
+
+      awsSqsOffenderEventsClient.sendMessage(queueOffenderEventsUrl, message)
+
+      await untilAsserted { incentivesApi.verifyDeleteSynchroniseIncentive() }
+
+      incentivesApi.verifyDeleteSynchroniseIncentive(bookingId = 1234, incentivesId = 456789)
+      incentivesApi.verifyUpdateSynchroniseIncentive(times = 0)
       mappingApi.verifyDeleteIncentiveMapping(incentiveId = 456789)
 
       verify(telemetryClient).trackEvent(

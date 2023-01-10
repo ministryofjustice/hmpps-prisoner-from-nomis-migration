@@ -4,13 +4,19 @@ import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.JsonNode
 import kotlinx.coroutines.reactive.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.runBlocking
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
+import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.WebClientResponseException
+import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.CreateIncentiveIEP
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.ReviewType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.UpdateIncentiveIEP
@@ -21,7 +27,9 @@ import java.time.LocalDateTime
 
 @Service
 class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
-
+  private companion object {
+    val log: Logger = LoggerFactory.getLogger(this::class.java)
+  }
   suspend fun getVisits(
     prisonIds: List<String>,
     visitTypes: List<String>,
@@ -145,12 +153,20 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     )
   }
 
-  suspend fun getCurrentIncentive(bookingId: Long): NomisIncentive =
+  suspend fun getCurrentIncentive(bookingId: Long): NomisIncentive? =
     webClient.get()
       .uri("/incentives/booking-id/{bookingId}/current", bookingId)
       .retrieve()
       .bodyToMono(NomisIncentive::class.java)
-      .awaitSingle()
+      .onErrorResume(WebClientResponseException::class.java) { emptyWhenNotFound(it, "No current incentive found for bookingId $bookingId") }
+      .awaitSingleOrNull()
+
+  fun <T> emptyWhenNotFound(exception: WebClientResponseException, optionalWarnMessage: String? = null): Mono<T> {
+    optionalWarnMessage?.let { log.warn(optionalWarnMessage) }
+    return emptyWhen(exception, HttpStatus.NOT_FOUND)
+  }
+  fun <T> emptyWhen(exception: WebClientResponseException, statusCode: HttpStatus): Mono<T> =
+    if (exception.statusCode == statusCode) Mono.empty() else Mono.error(exception)
 }
 
 data class VisitId(
