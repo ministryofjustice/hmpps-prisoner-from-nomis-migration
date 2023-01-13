@@ -11,6 +11,7 @@ api.base.url:
   visits: http://localhost:8082
   mapping: http://localhost:8083
   incentives: http://localhost:8084
+  sentencing: http://localhost:8085
 
 visits:
   page:

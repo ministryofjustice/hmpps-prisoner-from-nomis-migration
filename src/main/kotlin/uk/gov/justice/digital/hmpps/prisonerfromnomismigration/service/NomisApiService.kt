@@ -20,6 +20,7 @@ import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.CreateIncentiveIEP
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.ReviewType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.UpdateIncentiveIEP
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.CreateSentenceAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomUsageResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationFilter
 import java.time.LocalDate
@@ -161,6 +162,56 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       .onErrorResume(WebClientResponseException::class.java) { emptyWhenNotFound(it, "No current incentive found for bookingId $bookingId") }
       .awaitSingleOrNull()
 
+  suspend fun getSentenceAdjustments(
+    fromDate: LocalDate?,
+    toDate: LocalDate?,
+    pageNumber: Long,
+    pageSize: Long
+  ): PageImpl<SentenceAdjustmentId> =
+    webClient.get()
+      .uri {
+        it.path("/sentence-adjustments/ids")
+          .queryParam("fromDate", fromDate)
+          .queryParam("toDate", toDate)
+          .queryParam("page", pageNumber)
+          .queryParam("size", pageSize)
+          .build()
+      }
+      .retrieve()
+      .bodyToMono(typeReference<RestResponsePage<SentenceAdjustmentId>>())
+      .awaitSingle()
+
+  fun getSentenceAdjustmentsBlocking(
+    fromDate: LocalDate?,
+    toDate: LocalDate?,
+    pageNumber: Long,
+    pageSize: Long
+  ): PageImpl<SentenceAdjustmentId> = runBlocking {
+    getSentenceAdjustments(
+      fromDate,
+      toDate,
+      pageNumber,
+      pageSize,
+    )
+  }
+
+  suspend fun getSentenceAdjustment(
+    nomisSentenceAdjustmentId: Long,
+  ): NomisSentenceAdjustment =
+    webClient.get()
+      .uri("/sentence-adjustments/{nomisSentenceAdjustmentId}", nomisSentenceAdjustmentId)
+      .retrieve()
+      .bodyToMono(NomisSentenceAdjustment::class.java)
+      .awaitSingle()
+
+  fun getSentenceAdjustmentBlocking(
+    nomisSentenceAdjustmentId: Long
+  ): NomisSentenceAdjustment = runBlocking {
+    getSentenceAdjustment(
+      nomisSentenceAdjustmentId
+    )
+  }
+
   fun <T> emptyWhenNotFound(exception: WebClientResponseException, optionalWarnMessage: String? = null): Mono<T> {
     optionalWarnMessage?.let { log.warn(optionalWarnMessage) }
     return emptyWhen(exception, HttpStatus.NOT_FOUND)
@@ -176,6 +227,10 @@ data class VisitId(
 data class IncentiveId(
   val bookingId: Long,
   val sequence: Long,
+)
+
+data class SentenceAdjustmentId(
+  val sentenceAdjustmentId: Long,
 )
 
 data class NomisVisitor(
@@ -248,6 +303,15 @@ data class NomisIncentive(
       iepDateTime.withSecond(59)
     } else
       iepDateTime.withSecond(whenCreated.second)
+}
+
+data class NomisSentenceAdjustment(
+  // TODO
+  val date: LocalDateTime
+) {
+  fun toSentenceAdjustment(): CreateSentenceAdjustment = CreateSentenceAdjustment(
+    date = date
+  )
 }
 
 class RestResponsePage<T> @JsonCreator(mode = JsonCreator.Mode.PROPERTIES) constructor(

@@ -7,6 +7,7 @@ api.base.url:
   # Set to ourselves until new service is ready
   visits: http://localhost:8083
   visit.mapping: http://localhost:8084
+  sentencing: http://localhost:8085
 
 
 spring:
