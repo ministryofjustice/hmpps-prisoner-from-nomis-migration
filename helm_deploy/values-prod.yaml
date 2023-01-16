@@ -14,6 +14,8 @@ generic-service:
     API_BASE_URL_VISITS: https://visit-scheduler.prison.service.justice.gov.uk
     API_BASE_URL_MAPPING: https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk
     API_BASE_URL_INCENTIVES: https://incentives-api.hmpps.service.justice.gov.uk
+    # currently set to self for a mock API until real API is ready
+    API_BASE_URL_SENTENCING: https://prisoner-nomis-migration.hmpps.service.justice.gov.uk
 
 generic-prometheus-alerts:
   rdsAlertsDatabases:

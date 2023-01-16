@@ -7,6 +7,9 @@ hmpps.sqs:
     migrationincentives:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    migrationsentencing:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
     audit:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}

@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing
 
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
@@ -11,29 +11,29 @@ import org.springframework.web.reactive.function.client.WebClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.health.HealthCheck
 
 @Configuration
-class IncentivesConfiguration(
-  @Value("\${api.base.url.incentives}") val incentivesApiBaseUri: String,
+class SentencingConfiguration(
+  @Value("\${api.base.url.sentencing}") val sentencingApiBaseUri: String,
 ) {
 
   @Bean
-  fun incentivesApiHealthWebClient(): WebClient {
+  fun sentencingApiHealthWebClient(): WebClient {
     return WebClient.builder()
-      .baseUrl(incentivesApiBaseUri)
+      .baseUrl(sentencingApiBaseUri)
       .build()
   }
 
   @Bean
-  fun incentivesApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager): WebClient {
+  fun sentencingApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager): WebClient {
     val oauth2Client = ServerOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager)
-    oauth2Client.setDefaultClientRegistrationId("incentives-api")
+    oauth2Client.setDefaultClientRegistrationId("sentencing-api")
 
     return WebClient.builder()
-      .baseUrl(incentivesApiBaseUri)
+      .baseUrl(sentencingApiBaseUri)
       .filter(oauth2Client)
       .build()
   }
 
-  @Component("incentivesApi")
-  class IncentivesApiHealth
-  constructor(@Qualifier("incentivesApiHealthWebClient") webClient: WebClient) : HealthCheck(webClient)
+  @Component("sentencingApi")
+  class SentencingApiHealth
+  constructor(@Qualifier("sentencingApiHealthWebClient") webClient: WebClient) : HealthCheck(webClient)
 }

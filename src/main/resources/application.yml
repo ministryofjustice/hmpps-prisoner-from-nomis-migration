@@ -48,6 +48,11 @@ spring:
             client-id: ${incentives.client.id}
             client-secret: ${incentives.client.secret}
             authorization-grant-type: client_credentials
+          sentencing-api:
+            provider: hmpps-auth
+            client-id: ${sentencing.client.id}
+            client-secret: ${sentencing.client.secret}
+            authorization-grant-type: client_credentials
         provider:
           hmpps-auth:
             token-uri: ${api.base.url.oauth}/oauth/token
