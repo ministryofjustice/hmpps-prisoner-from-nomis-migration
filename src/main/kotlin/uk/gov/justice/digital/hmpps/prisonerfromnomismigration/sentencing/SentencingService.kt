@@ -5,13 +5,13 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
-import java.time.LocalDateTime
+import java.time.LocalDate
 
 @Service
 class SentencingService(@Qualifier("sentencingApiWebClient") private val webClient: WebClient) {
   fun migrateSentenceAdjustment(sentenceAdjustment: CreateSentenceAdjustment): CreateSentenceAdjustmentResponse =
     webClient.post()
-      .uri("/tempSentenceUrl")
+      .uri("/migration/sentencing/sentence-adjustments")
       .bodyValue(sentenceAdjustment)
       .retrieve()
       .bodyToMono(CreateSentenceAdjustmentResponse::class.java)
@@ -20,8 +20,17 @@ class SentencingService(@Qualifier("sentencingApiWebClient") private val webClie
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class CreateSentenceAdjustment(
-  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-  val date: LocalDateTime,
+  // will change once Sentencing API implemented
+  val bookingId: Long,
+  val sentenceSequence: Long,
+  val sentenceAdjustmentType: String,
+  @JsonFormat(pattern = "yyyy-MM-dd")
+  val adjustmentDate: LocalDate,
+  @JsonFormat(pattern = "yyyy-MM-dd")
+  val adjustmentFromDate: LocalDate?,
+  val adjustmentDays: Long,
+  val comment: String?,
+  val active: Boolean,
 )
 
 data class CreateSentenceAdjustmentResponse(

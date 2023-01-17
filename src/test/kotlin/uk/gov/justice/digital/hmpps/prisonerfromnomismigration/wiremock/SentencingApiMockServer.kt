@@ -1,12 +1,14 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 
 import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
+import org.springframework.http.HttpStatus
 
 class SentencingApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
   companion object {
@@ -42,4 +44,17 @@ class SentencingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       )
     )
   }
+
+  fun stubCreateSentenceAdjustment(sentenceAdjustmentId: Long = 654321) {
+    stubFor(
+      WireMock.post(WireMock.urlMatching("/migration/sentencing/sentence-adjustments")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.CREATED.value())
+          .withBody("""{"id": $sentenceAdjustmentId}""")
+      )
+    )
+  }
+
+  fun createSentenceAdjustmentCount() = findAll(WireMock.postRequestedFor(WireMock.urlMatching("/migration/sentencing/sentence-adjustments"))).count()
 }

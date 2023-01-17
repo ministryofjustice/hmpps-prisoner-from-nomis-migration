@@ -441,4 +441,117 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       )
     )
   }
+
+  fun stubAllNomisSentenceAdjustmentMappingNotFound() {
+    stubFor(
+      get(
+        urlPathMatching("/mapping/sentencing/nomis-sentencing-adjustment-id/\\d*")
+      ).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.NOT_FOUND.value())
+          .withBody("""{"message":"Not found"}""")
+      )
+    )
+  }
+
+  fun stubSentenceAdjustmentMappingCreate() {
+    stubFor(
+      post(urlEqualTo("/mapping/sentence-adjustments")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.CREATED.value())
+      )
+    )
+  }
+
+  fun stubSentenceAdjustmentMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 278887) {
+    stubFor(
+      get(urlPathMatching("/mapping/sentencing/migration-id/.*")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(
+            """
+{
+    "content": [
+        {
+            "sentenceAdjustmentId": 191747,
+            "nomisSentenceAdjustmentId": 123,
+            "label": "2022-02-14T09:58:45",
+            "whenCreated": "$whenCreated",
+            "mappingType": "MIGRATED"
+        }
+    ],
+    "pageable": {
+        "sort": {
+            "empty": true,
+            "sorted": false,
+            "unsorted": true
+        },
+        "offset": 0,
+        "pageSize": 1,
+        "pageNumber": 0,
+        "paged": true,
+        "unpaged": false
+    },
+    "last": false,
+    "totalPages": 278887,
+    "totalElements": $count,
+    "size": 1,
+    "number": 0,
+    "sort": {
+        "empty": true,
+        "sorted": false,
+        "unsorted": true
+    },
+    "first": true,
+    "numberOfElements": 1,
+    "empty": false
+}            
+            """.trimIndent()
+          )
+      )
+    )
+  }
+
+  fun stubSentenceAdjustmentMappingCreateFailureFollowedBySuccess() {
+    stubFor(
+      post(urlPathEqualTo("/mapping/sentence-adjustments"))
+        .inScenario("Retry sentence-adjustment Scenario")
+        .whenScenarioStateIs(STARTED)
+        .willReturn(
+          aResponse()
+            .withStatus(500) // request unsuccessful with status code 500
+            .withHeader("Content-Type", "application/json")
+        )
+        .willSetStateTo("Cause sentence-adjustment Success")
+    )
+
+    stubFor(
+      post(urlPathEqualTo("/mapping/sentence-adjustments"))
+        .inScenario("Retry sentence-adjustment Scenario")
+        .whenScenarioStateIs("Cause sentence-adjustment Success")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.CREATED.value())
+        )
+        .willSetStateTo(STARTED)
+    )
+  }
+
+  fun createSentenceAdjustmentMappingCount() =
+    findAll(postRequestedFor(urlPathEqualTo("/mapping/sentence-adjustments"))).count()
+
+  fun verifyCreateMappingSentenceAdjustmentIds(nomsSentenceAdjustmentIds: Array<Long>, times: Int = 1) = nomsSentenceAdjustmentIds.forEach {
+    verify(
+      times,
+      postRequestedFor(urlPathEqualTo("/mapping/sentence-adjustments")).withRequestBody(
+        matchingJsonPath(
+          "sentenceAdjustmentId",
+          equalTo("$it")
+        )
+      )
+    )
+  }
 }

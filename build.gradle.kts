@@ -1,6 +1,9 @@
+// import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
+
 plugins {
   id("uk.gov.justice.hmpps.gradle-spring-boot") version "4.8.1"
   kotlin("plugin.spring") version "1.8.0"
+  // id("org.openapi.generator") version "6.2.1"
 }
 
 dependencyCheck {
@@ -56,8 +59,45 @@ java {
 
 tasks {
   withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    //  dependsOn("buildSentencingApiModel")
     kotlinOptions {
       jvmTarget = "18"
     }
   }
 }
+
+/* TODO when sentencing API created
+
+tasks.register("buildSentencingApiModel", GenerateTask::class) {
+  generatorName.set("kotlin")
+  inputSpec.set("sentences-api-docs.json")
+  outputDir.set("$buildDir/generated")
+  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.model")
+  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.api")
+  configOptions.set(
+    mapOf(
+      "dateLibrary" to "java8",
+      "serializationLibrary" to "jackson"
+    )
+  )
+  globalProperties.set(
+    mapOf(
+      "models" to ""
+    )
+  )
+}
+
+kotlin {
+  sourceSets["main"].apply {
+    kotlin.srcDir("$buildDir/generated/src/main/kotlin")
+  }
+}
+
+configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+  filter {
+    exclude {
+      it.file.path.contains("build/generated/src/main/")
+    }
+  }
+}
+*/
