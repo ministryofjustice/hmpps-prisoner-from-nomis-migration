@@ -37,7 +37,7 @@ class SentencingMigrationResource(
   @ResponseStatus(value = ACCEPTED)
   @Operation(
     summary = "Starts an sentencing migration",
-    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>MIGRATE_INCENTIVES</b>",
+    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>MIGRATE_SENTENCING</b>",
     requestBody = io.swagger.v3.oas.annotations.parameters.RequestBody(
       content = [
         Content(
@@ -71,7 +71,7 @@ class SentencingMigrationResource(
   @GetMapping("/sentencing/history")
   @Operation(
     summary = "Lists all filtered migration history records un-paged for sentencing",
-    description = "The records are un-paged and requires role <b>MIGRATE_INCENTIVES</b>",
+    description = "The records are un-paged and requires role <b>MIGRATE_SENTENCING</b>",
     responses = [
       ApiResponse(
         responseCode = "200",
@@ -127,11 +127,11 @@ class SentencingMigrationResource(
   @GetMapping("/sentencing/history/{migrationId}")
   @Operation(
     summary = "Gets a specific migration history record",
-    description = "Requires role <b>MIGRATE_INCENTIVES</b>",
+    description = "Requires role <b>MIGRATE_SENTENCING</b>",
     responses = [
       ApiResponse(
         responseCode = "200",
-        description = "The incentive migration history record",
+        description = "The sentencing migration history record",
         content = [
           Content(
             mediaType = "application/json",

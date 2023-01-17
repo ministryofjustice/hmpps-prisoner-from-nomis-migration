@@ -1,4 +1,3 @@
-
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing
 
 import com.fasterxml.jackson.annotation.JsonInclude
