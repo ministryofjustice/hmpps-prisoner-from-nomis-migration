@@ -325,7 +325,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
         .withQueryParam("size", equalTo("1"))
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(incentivePagedResponse(totalElements = totalElements))
+            .withBody(sentenceAdjustmentPagedResponse(totalElements = totalElements))
         )
     )
   }
