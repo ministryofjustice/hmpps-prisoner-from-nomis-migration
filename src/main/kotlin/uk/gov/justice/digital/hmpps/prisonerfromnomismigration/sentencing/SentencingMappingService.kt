@@ -19,7 +19,7 @@ class SentencingMappingService(@Qualifier("mappingApiWebClient") private val web
   fun findNomisSentenceAdjustmentMapping(nomisSentenceAdjustmentId: Long): SentenceAdjustmentNomisMapping? {
     return webClient.get()
       .uri(
-        "/mapping/sentencing/nomis-sentencing-adjustment-id/{nomisSentenceAdjustmentId}",
+        "/mapping/sentence-adjustments/nomis-sentencing-adjustment-id/{nomisSentenceAdjustmentId}",
         nomisSentenceAdjustmentId
       )
       .retrieve()
@@ -65,7 +65,7 @@ class SentencingMappingService(@Qualifier("mappingApiWebClient") private val web
   }
 
   fun findLatestMigration(): LatestMigration? = webClient.get()
-    .uri("/mapping/sentencing/migrated/latest")
+    .uri("/mapping/sentence-adjustments/migrated/latest")
     .retrieve()
     .bodyToMono(LatestMigration::class.java)
     .onErrorResume(WebClientResponseException.NotFound::class.java) {
@@ -75,7 +75,7 @@ class SentencingMappingService(@Qualifier("mappingApiWebClient") private val web
 
   fun getMigrationDetails(migrationId: String): MigrationDetails = webClient.get()
     .uri {
-      it.path("/mapping/sentencing/migration-id/{migrationId}")
+      it.path("/mapping/sentence-adjustments/migration-id/{migrationId}")
         .queryParam("size", 1)
         .build(migrationId)
     }
@@ -85,7 +85,7 @@ class SentencingMappingService(@Qualifier("mappingApiWebClient") private val web
 
   fun getMigrationCount(migrationId: String): Long = webClient.get()
     .uri {
-      it.path("/mapping/sentencing/migration-id/{migrationId}")
+      it.path("/mapping/sentence-adjustments/migration-id/{migrationId}")
         .queryParam("size", 1)
         .build(migrationId)
     }
