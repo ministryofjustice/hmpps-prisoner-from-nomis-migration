@@ -306,11 +306,26 @@ data class NomisIncentive(
 }
 
 data class NomisSentenceAdjustment(
-  // TODO
-  val date: LocalDateTime
+  val sentenceAdjustmentId: Long,
+  val bookingId: Long,
+  val sentenceSequence: Long,
+  val sentenceAdjustmentType: String,
+  val adjustmentDate: LocalDate,
+  val adjustmentFromDate: LocalDate?,
+  val adjustmentToDate: LocalDate?,
+  val adjustmentDays: Long,
+  val comment: String?,
+  val active: Boolean,
 ) {
   fun toSentenceAdjustment(): CreateSentenceAdjustment = CreateSentenceAdjustment(
-    date = date
+    bookingId = bookingId,
+    sentenceSequence = sentenceSequence,
+    sentenceAdjustmentType = sentenceAdjustmentType,
+    adjustmentDate = adjustmentDate,
+    adjustmentFromDate = adjustmentFromDate,
+    adjustmentDays = adjustmentDays,
+    comment = comment,
+    active = active
   )
 }
 

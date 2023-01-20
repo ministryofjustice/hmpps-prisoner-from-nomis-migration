@@ -52,9 +52,10 @@ class SentencingMigrationService(
       queueService.sendMessage(MIGRATE_SENTENCE_ADJUSTMENTS, this)
     }.also {
       telemetryClient.trackEvent(
-        "nomis-migration-sentence-adjustments-started",
+        "nomis-migration-sentencing-started",
         mapOf<String, String>(
           "migrationId" to it.migrationId,
+          "sentencingMigrationType" to "Sentence Adjustments",
           "estimatedCount" to it.estimatedCount.toString(),
           "fromDate" to it.body.fromDate.asStringOrBlank(),
           "toDate" to it.body.toDate.asStringOrBlank(),

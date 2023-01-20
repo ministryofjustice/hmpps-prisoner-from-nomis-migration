@@ -197,10 +197,11 @@ internal class SentencingMigrationServiceTest {
       }
 
       verify(telemetryClient).trackEvent(
-        eq("nomis-migration-sentence-adjustments-started"),
+        eq("nomis-migration-sentencing-started"),
         check {
           assertThat(it["migrationId"]).isNotNull
           assertThat(it["estimatedCount"]).isEqualTo("23")
+          assertThat(it["sentencingMigrationType"]).isEqualTo("Sentence Adjustments")
           assertThat(it["fromDate"]).isEqualTo("2020-01-01")
           assertThat(it["toDate"]).isEqualTo("2020-01-02")
         },
@@ -227,10 +228,11 @@ internal class SentencingMigrationServiceTest {
       }
 
       verify(telemetryClient).trackEvent(
-        eq("nomis-migration-sentence-adjustments-started"),
+        eq("nomis-migration-sentencing-started"),
         check {
           assertThat(it["migrationId"]).isNotNull
           assertThat(it["estimatedCount"]).isEqualTo("23")
+          assertThat(it["sentencingMigrationType"]).isEqualTo("Sentence Adjustments")
           assertThat(it["fromDate"]).isEqualTo("")
           assertThat(it["toDate"]).isEqualTo("")
         },
@@ -768,9 +770,7 @@ internal class SentencingMigrationServiceTest {
     internal fun setUp() {
       whenever(sentencingMappingService.findNomisSentenceAdjustmentMapping(any())).thenReturn(null)
       whenever(nomisApiService.getSentenceAdjustmentBlocking(any())).thenReturn(
-        NomisSentenceAdjustment(
-          date = LocalDateTime.parse("2020-01-01T00:00:00"),
-        )
+        aNomisSentenceAdjustment()
       )
 
       whenever(sentencingService.migrateSentenceAdjustment(any())).thenReturn(CreateSentenceAdjustmentResponse(999L))
@@ -792,10 +792,10 @@ internal class SentencingMigrationServiceTest {
 
     @Test
     internal fun `will transform and send that adjustment to the Sentencing service`() {
+      val adjustmentDate = LocalDate.parse("2020-01-01")
+      val adjustmentFromDate = LocalDate.parse("2020-02-01")
       whenever(nomisApiService.getSentenceAdjustmentBlocking(any())).thenReturn(
-        NomisSentenceAdjustment(
-          date = LocalDateTime.parse("2020-01-01T00:00:00"),
-        )
+        aNomisSentenceAdjustment()
       )
 
       service.migrateSentenceAdjustment(
@@ -810,7 +810,14 @@ internal class SentencingMigrationServiceTest {
       verify(sentencingService).migrateSentenceAdjustment(
         eq(
           CreateSentenceAdjustment(
-            date = LocalDateTime.parse("2020-01-01T00:00:00"),
+            adjustmentDate = adjustmentDate,
+            adjustmentFromDate = adjustmentFromDate,
+            adjustmentDays = 8,
+            bookingId = 606,
+            sentenceSequence = 2,
+            comment = "a comment",
+            active = true,
+            sentenceAdjustmentType = "credit"
           )
         )
       )
@@ -819,9 +826,7 @@ internal class SentencingMigrationServiceTest {
     @Test
     internal fun `will create a mapping between a new Sentence Adjustment and a NOMIS Sentence Adjustment`() {
       whenever(nomisApiService.getSentenceAdjustmentBlocking(any())).thenReturn(
-        NomisSentenceAdjustment(
-          date = LocalDateTime.parse("2020-01-01T00:00:00"),
-        )
+        aNomisSentenceAdjustment()
       )
       whenever(sentencingService.migrateSentenceAdjustment(any())).thenReturn(CreateSentenceAdjustmentResponse(999L))
 
@@ -844,9 +849,7 @@ internal class SentencingMigrationServiceTest {
     @Test
     internal fun `will not throw exception (and place message back on queue) but create a new retry message`() {
       whenever(nomisApiService.getSentenceAdjustmentBlocking(any())).thenReturn(
-        NomisSentenceAdjustment(
-          date = LocalDateTime.parse("2020-01-01T13:10:00"),
-        )
+        aNomisSentenceAdjustment()
       )
       whenever(sentencingService.migrateSentenceAdjustment(any())).thenReturn(CreateSentenceAdjustmentResponse(999L))
 
@@ -931,6 +934,30 @@ internal class SentencingMigrationServiceTest {
     }
   }
 }
+
+fun aNomisSentenceAdjustment(
+  sentenceAdjustmentId: Long = 1,
+  bookingId: Long = 606,
+  sentenceSequence: Long = 2,
+  sentenceAdjustmentType: String = "credit",
+  adjustmentDate: LocalDate = LocalDate.parse("2020-01-01"),
+  adjustmentFromDate: LocalDate? = LocalDate.parse("2020-02-01"),
+  adjustmentToDate: LocalDate? = null,
+  adjustmentDays: Long = 8,
+  comment: String? = "a comment",
+  active: Boolean = true,
+) = NomisSentenceAdjustment(
+  sentenceAdjustmentId = sentenceAdjustmentId,
+  bookingId = bookingId,
+  sentenceSequence = sentenceSequence,
+  sentenceAdjustmentType = sentenceAdjustmentType,
+  adjustmentDate = adjustmentDate,
+  adjustmentFromDate = adjustmentFromDate,
+  adjustmentToDate = adjustmentToDate,
+  adjustmentDays = adjustmentDays,
+  comment = comment,
+  active = active
+)
 
 fun pages(total: Long, startId: Long = 1): PageImpl<SentenceAdjustmentId> = PageImpl<SentenceAdjustmentId>(
   (startId..total - 1 + startId).map { SentenceAdjustmentId(it) }, Pageable.ofSize(10), total

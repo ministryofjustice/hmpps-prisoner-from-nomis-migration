@@ -19,6 +19,9 @@ visits:
 incentives:
   page:
     size: 10
+sentencing:
+  page:
+    size: 10
 
 spring:
   r2dbc:
