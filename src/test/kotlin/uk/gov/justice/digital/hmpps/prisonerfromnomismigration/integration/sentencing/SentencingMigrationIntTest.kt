@@ -81,7 +81,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubGetSentenceAdjustmentsInitialCount(86)
       nomisApi.stubMultipleGetSentenceAdjustmentsCounts(totalElements = 86, pageSize = 10)
       nomisApi.stubMultipleGetSentenceAdjustments(86)
-      mappingApi.stubAllNomisSentenceAdjustmentMappingNotFound()
+      mappingApi.stubAllNomisSentencingAdjustmentsMappingNotFound()
       mappingApi.stubSentenceAdjustmentMappingCreate()
 
       sentencingApi.stubCreateSentenceAdjustment()
@@ -126,7 +126,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubMultipleGetSentenceAdjustmentsCounts(totalElements = 26, pageSize = 10)
       nomisApi.stubMultipleGetSentenceAdjustments(26)
       sentencingApi.stubCreateSentenceAdjustment()
-      mappingApi.stubAllNomisSentenceAdjustmentMappingNotFound()
+      mappingApi.stubAllNomisSentencingAdjustmentsMappingNotFound()
       mappingApi.stubSentenceAdjustmentMappingCreate()
 
       // stub 25 migrated records and 1 fake a failure
@@ -190,7 +190,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubGetSentenceAdjustmentsInitialCount(1)
       nomisApi.stubMultipleGetSentenceAdjustmentsCounts(totalElements = 1, pageSize = 10)
       nomisApi.stubMultipleGetSentenceAdjustments(totalElements = 1)
-      mappingApi.stubAllNomisSentenceAdjustmentMappingNotFound()
+      mappingApi.stubAllNomisSentencingAdjustmentsMappingNotFound()
       sentencingApi.stubCreateSentenceAdjustment(654321)
       mappingApi.stubSentenceAdjustmentMappingCreateFailureFollowedBySuccess()
 
@@ -494,7 +494,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
       val count = 30L
       nomisApi.stubGetSentenceAdjustmentsInitialCount(count)
       nomisApi.stubMultipleGetSentenceAdjustmentsCounts(totalElements = count, pageSize = 10)
-      mappingApi.stubIncentiveMappingByMigrationId(count = count.toInt())
+      mappingApi.stubSentenceAdjustmentMappingByMigrationId(count = count.toInt())
 
       val migrationId = webTestClient.post().uri("/migrate/sentencing")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))

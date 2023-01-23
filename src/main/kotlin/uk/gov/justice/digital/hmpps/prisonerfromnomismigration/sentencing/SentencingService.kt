@@ -9,12 +9,12 @@ import java.time.LocalDate
 
 @Service
 class SentencingService(@Qualifier("sentencingApiWebClient") private val webClient: WebClient) {
-  fun migrateSentenceAdjustment(sentenceAdjustment: CreateSentenceAdjustment): CreateSentenceAdjustmentResponse =
+  fun migrateSentencingAdjustment(sentenceAdjustment: CreateSentenceAdjustment): CreateSentencingAdjustmentResponse =
     webClient.post()
       .uri("/migration/sentencing/sentence-adjustments")
       .bodyValue(sentenceAdjustment)
       .retrieve()
-      .bodyToMono(CreateSentenceAdjustmentResponse::class.java)
+      .bodyToMono(CreateSentencingAdjustmentResponse::class.java)
       .block()!!
 }
 
@@ -33,6 +33,6 @@ data class CreateSentenceAdjustment(
   val active: Boolean,
 )
 
-data class CreateSentenceAdjustmentResponse(
+data class CreateSentencingAdjustmentResponse(
   val id: Long,
 )

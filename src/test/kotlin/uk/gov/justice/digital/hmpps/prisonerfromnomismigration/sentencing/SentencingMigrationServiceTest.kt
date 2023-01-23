@@ -31,11 +31,11 @@ import org.springframework.data.domain.Pageable
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.CANCEL_MIGRATE_SENTENCING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.MIGRATE_SENTENCE_ADJUSTMENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.MIGRATE_SENTENCE_ADJUSTMENTS
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.MIGRATE_SENTENCE_ADJUSTMENTS_BY_PAGE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.MIGRATE_SENTENCING_ADJUSTMENT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.MIGRATE_SENTENCING_ADJUSTMENTS_BY_PAGE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.MIGRATE_SENTENCING_STATUS_CHECK
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.RETRY_SENTENCE_ADJUSTMENT_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.RETRY_SENTENCING_ADJUSTMENT_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
@@ -43,7 +43,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.SENTENCING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisSentenceAdjustment
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SentenceAdjustmentId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisSentencingAdjustmentId
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -254,7 +254,7 @@ internal class SentencingMigrationServiceTest {
 
     @Test
     internal fun `will send a page message for every page (200) of sentencing `() {
-      service.divideSentenceAdjustmentsByPage(
+      service.divideSentencingAdjustmentsByPage(
         MigrationContext(
           type = SENTENCING,
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
@@ -266,13 +266,13 @@ internal class SentencingMigrationServiceTest {
       )
 
       verify(queueService, times(100_200 / 200)).sendMessage(
-        eq(MIGRATE_SENTENCE_ADJUSTMENTS_BY_PAGE), any(), delaySeconds = eq(0)
+        eq(MIGRATE_SENTENCING_ADJUSTMENTS_BY_PAGE), any(), delaySeconds = eq(0)
       )
     }
 
     @Test
     internal fun `will also send a single MIGRATION_STATUS_CHECK message`() {
-      service.divideSentenceAdjustmentsByPage(
+      service.divideSentencingAdjustmentsByPage(
         MigrationContext(
           type = SENTENCING,
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
@@ -290,7 +290,7 @@ internal class SentencingMigrationServiceTest {
 
     @Test
     internal fun `each page with have the filter and context attached`() {
-      service.divideSentenceAdjustmentsByPage(
+      service.divideSentencingAdjustmentsByPage(
         MigrationContext(
           type = SENTENCING,
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
@@ -302,7 +302,7 @@ internal class SentencingMigrationServiceTest {
       )
 
       verify(queueService, times(100_200 / 200)).sendMessage(
-        message = eq(MIGRATE_SENTENCE_ADJUSTMENTS_BY_PAGE),
+        message = eq(MIGRATE_SENTENCING_ADJUSTMENTS_BY_PAGE),
         context = check<MigrationContext<SentencingPage>> {
           assertThat(it.estimatedCount).isEqualTo(100_200)
           assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
@@ -317,7 +317,7 @@ internal class SentencingMigrationServiceTest {
     internal fun `each page will contain page number and page size`() {
       val context: KArgumentCaptor<MigrationContext<SentencingPage>> = argumentCaptor()
 
-      service.divideSentenceAdjustmentsByPage(
+      service.divideSentencingAdjustmentsByPage(
         MigrationContext(
           type = SENTENCING,
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
@@ -329,7 +329,7 @@ internal class SentencingMigrationServiceTest {
       )
 
       verify(queueService, times(100_200 / 200)).sendMessage(
-        eq(MIGRATE_SENTENCE_ADJUSTMENTS_BY_PAGE), context.capture(), delaySeconds = eq(0)
+        eq(MIGRATE_SENTENCING_ADJUSTMENTS_BY_PAGE), context.capture(), delaySeconds = eq(0)
       )
       val allContexts: List<MigrationContext<SentencingPage>> = context.allValues
 
@@ -685,7 +685,7 @@ internal class SentencingMigrationServiceTest {
       )
 
       verify(queueService, times(15)).sendMessage(
-        message = eq(MIGRATE_SENTENCE_ADJUSTMENT),
+        message = eq(MIGRATE_SENTENCING_ADJUSTMENT),
         context = check<MigrationContext<SentencingMigrationFilter>> {
           assertThat(it.estimatedCount).isEqualTo(100_200)
           assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
@@ -697,7 +697,7 @@ internal class SentencingMigrationServiceTest {
     @Test
     internal fun `will send MIGRATE_SENTENCE_ADJUSTMENT with bookingId for each sentence adjustment`() {
 
-      val context: KArgumentCaptor<MigrationContext<SentenceAdjustmentId>> = argumentCaptor()
+      val context: KArgumentCaptor<MigrationContext<NomisSentencingAdjustmentId>> = argumentCaptor()
 
       whenever(nomisApiService.getSentenceAdjustmentsBlocking(any(), any(), any(), any())).thenReturn(
         pages(
@@ -720,18 +720,18 @@ internal class SentencingMigrationServiceTest {
       )
 
       verify(queueService, times(15)).sendMessage(
-        eq(MIGRATE_SENTENCE_ADJUSTMENT), context.capture(), delaySeconds = eq(0)
+        eq(MIGRATE_SENTENCING_ADJUSTMENT), context.capture(), delaySeconds = eq(0)
 
       )
-      val allContexts: List<MigrationContext<SentenceAdjustmentId>> = context.allValues
+      val allContexts: List<MigrationContext<NomisSentencingAdjustmentId>> = context.allValues
 
       val (firstPage, secondPage, thirdPage) = allContexts
       val lastPage = allContexts.last()
 
-      assertThat(firstPage.body.sentenceAdjustmentId).isEqualTo(1000)
-      assertThat(secondPage.body.sentenceAdjustmentId).isEqualTo(1001)
-      assertThat(thirdPage.body.sentenceAdjustmentId).isEqualTo(1002)
-      assertThat(lastPage.body.sentenceAdjustmentId).isEqualTo(1014)
+      assertThat(firstPage.body.adjustmentId).isEqualTo(1000)
+      assertThat(secondPage.body.adjustmentId).isEqualTo(1001)
+      assertThat(thirdPage.body.adjustmentId).isEqualTo(1002)
+      assertThat(lastPage.body.adjustmentId).isEqualTo(1014)
     }
 
     @Test
@@ -768,22 +768,22 @@ internal class SentencingMigrationServiceTest {
 
     @BeforeEach
     internal fun setUp() {
-      whenever(sentencingMappingService.findNomisSentenceAdjustmentMapping(any())).thenReturn(null)
+      whenever(sentencingMappingService.findNomisSentencingAdjustmentMapping(any(), any())).thenReturn(null)
       whenever(nomisApiService.getSentenceAdjustmentBlocking(any())).thenReturn(
         aNomisSentenceAdjustment()
       )
 
-      whenever(sentencingService.migrateSentenceAdjustment(any())).thenReturn(CreateSentenceAdjustmentResponse(999L))
+      whenever(sentencingService.migrateSentencingAdjustment(any())).thenReturn(CreateSentencingAdjustmentResponse(999L))
     }
 
     @Test
-    internal fun `will retrieve sentence adjustment from NOMIS`() {
-      service.migrateSentenceAdjustment(
+    internal fun `will retrieve sentencing adjustment from NOMIS`() {
+      service.migrateSentencingAdjustment(
         MigrationContext(
           type = SENTENCING,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
-          body = SentenceAdjustmentId(123)
+          body = NomisSentencingAdjustmentId(123, "SENTENCE")
         )
       )
 
@@ -798,16 +798,16 @@ internal class SentencingMigrationServiceTest {
         aNomisSentenceAdjustment()
       )
 
-      service.migrateSentenceAdjustment(
+      service.migrateSentencingAdjustment(
         MigrationContext(
           type = SENTENCING,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
-          body = SentenceAdjustmentId(123)
+          body = NomisSentencingAdjustmentId(123, "SENTENCE")
         )
       )
 
-      verify(sentencingService).migrateSentenceAdjustment(
+      verify(sentencingService).migrateSentencingAdjustment(
         eq(
           CreateSentenceAdjustment(
             adjustmentDate = adjustmentDate,
@@ -828,19 +828,20 @@ internal class SentencingMigrationServiceTest {
       whenever(nomisApiService.getSentenceAdjustmentBlocking(any())).thenReturn(
         aNomisSentenceAdjustment()
       )
-      whenever(sentencingService.migrateSentenceAdjustment(any())).thenReturn(CreateSentenceAdjustmentResponse(999L))
+      whenever(sentencingService.migrateSentencingAdjustment(any())).thenReturn(CreateSentencingAdjustmentResponse(999L))
 
-      service.migrateSentenceAdjustment(
+      service.migrateSentencingAdjustment(
         MigrationContext(
           type = SENTENCING,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
-          body = SentenceAdjustmentId(123)
+          body = NomisSentencingAdjustmentId(123, "SENTENCE")
         )
       )
 
-      verify(sentencingMappingService).createNomisSentenceAdjustmentMigrationMapping(
-        nomisSentenceAdjustmentId = 123,
+      verify(sentencingMappingService).createNomisSentencingAdjustmentMigrationMapping(
+        nomisAdjustmentId = 123,
+        nomisAdjustmentType = "SENTENCE",
         sentenceAdjustmentId = 999,
         migrationId = "2020-05-23T11:30:00",
       )
@@ -851,26 +852,34 @@ internal class SentencingMigrationServiceTest {
       whenever(nomisApiService.getSentenceAdjustmentBlocking(any())).thenReturn(
         aNomisSentenceAdjustment()
       )
-      whenever(sentencingService.migrateSentenceAdjustment(any())).thenReturn(CreateSentenceAdjustmentResponse(999L))
+      whenever(sentencingService.migrateSentencingAdjustment(any())).thenReturn(CreateSentencingAdjustmentResponse(999L))
 
-      whenever(sentencingMappingService.createNomisSentenceAdjustmentMigrationMapping(any(), any(), any())).thenThrow(
+      whenever(
+        sentencingMappingService.createNomisSentencingAdjustmentMigrationMapping(
+          any(),
+          any(),
+          any(),
+          any()
+        )
+      ).thenThrow(
         RuntimeException("something went wrong")
       )
 
-      service.migrateSentenceAdjustment(
+      service.migrateSentencingAdjustment(
         MigrationContext(
           type = SENTENCING,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
-          body = SentenceAdjustmentId(123)
+          body = NomisSentencingAdjustmentId(123, "SENTENCE")
         )
       )
 
       verify(queueService).sendMessage(
-        message = eq(RETRY_SENTENCE_ADJUSTMENT_MAPPING),
-        context = check<MigrationContext<SentenceAdjustmentMapping>> {
+        message = eq(RETRY_SENTENCING_ADJUSTMENT_MAPPING),
+        context = check<MigrationContext<SentencingAdjustmentMapping>> {
           assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
-          assertThat(it.body.nomisSentenceAdjustmentId).isEqualTo(123)
+          assertThat(it.body.nomisAdjustmentId).isEqualTo(123)
+          assertThat(it.body.nomisAdjustmentType).isEqualTo("SENTENCE")
           assertThat(it.body.sentenceAdjustmentId).isEqualTo(999)
         },
         delaySeconds = eq(0)
@@ -881,9 +890,10 @@ internal class SentencingMigrationServiceTest {
     inner class WhenMigratedAlready {
       @BeforeEach
       internal fun setUp() {
-        whenever(sentencingMappingService.findNomisSentenceAdjustmentMapping(any())).thenReturn(
-          SentenceAdjustmentNomisMapping(
-            nomisSentenceAdjustmentId = 123,
+        whenever(sentencingMappingService.findNomisSentencingAdjustmentMapping(any(), any())).thenReturn(
+          SentencingAdjustmentNomisMapping(
+            nomisAdjustmentId = 123,
+            nomisAdjustmentType = "SENTENCE",
             sentenceAdjustmentId = 54321,
             mappingType = "MIGRATION",
           )
@@ -893,12 +903,12 @@ internal class SentencingMigrationServiceTest {
       @Test
       internal fun `will do nothing`() {
 
-        service.migrateSentenceAdjustment(
+        service.migrateSentencingAdjustment(
           MigrationContext(
             type = SENTENCING,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = SentenceAdjustmentId(123)
+            body = NomisSentencingAdjustmentId(123, "SENTENCE")
           )
         )
 
@@ -959,6 +969,6 @@ fun aNomisSentenceAdjustment(
   active = active
 )
 
-fun pages(total: Long, startId: Long = 1): PageImpl<SentenceAdjustmentId> = PageImpl<SentenceAdjustmentId>(
-  (startId..total - 1 + startId).map { SentenceAdjustmentId(it) }, Pageable.ofSize(10), total
+fun pages(total: Long, startId: Long = 1): PageImpl<NomisSentencingAdjustmentId> = PageImpl<NomisSentencingAdjustmentId>(
+  (startId..total - 1 + startId).map { NomisSentencingAdjustmentId(it, "SENTENCE") }, Pageable.ofSize(10), total
 )

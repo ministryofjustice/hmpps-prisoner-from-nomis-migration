@@ -325,7 +325,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
         .withQueryParam("size", equalTo("1"))
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(sentenceAdjustmentPagedResponse(totalElements = totalElements))
+            .withBody(sentencingAdjustmentPagedResponse(totalElements = totalElements))
         )
     )
   }
@@ -345,7 +345,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .willReturn(
             aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
               .withBody(
-                sentenceAdjustmentPagedResponse(
+                sentencingAdjustmentPagedResponse(
                   totalElements = totalElements,
                   sentenceAdjustmentIds = (startSentenceAdjustmentId..endBSentenceAdjustmentId).map { it },
                   pageNumber = page,
@@ -563,13 +563,13 @@ private fun incentiveResponse(
   """.trimIndent()
 }
 
-private fun sentenceAdjustmentPagedResponse(
+private fun sentencingAdjustmentPagedResponse(
   totalElements: Long = 10,
   sentenceAdjustmentIds: List<Long> = (0L..10L).toList(),
   pageSize: Long = 10,
   pageNumber: Long = 0,
 ): String {
-  val content = sentenceAdjustmentIds.map { """{ "sentenceAdjustmentId": $it }""" }
+  val content = sentenceAdjustmentIds.map { """{ "adjustmentId": $it, "adjustmentType": "SENTENCE" }""" }
     .joinToString { it }
   return """
 {

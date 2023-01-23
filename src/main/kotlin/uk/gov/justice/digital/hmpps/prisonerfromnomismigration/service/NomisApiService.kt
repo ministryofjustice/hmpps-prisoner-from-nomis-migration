@@ -167,7 +167,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     toDate: LocalDate?,
     pageNumber: Long,
     pageSize: Long
-  ): PageImpl<SentenceAdjustmentId> =
+  ): PageImpl<NomisSentencingAdjustmentId> =
     webClient.get()
       .uri {
         it.path("/sentence-adjustments/ids")
@@ -178,7 +178,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
           .build()
       }
       .retrieve()
-      .bodyToMono(typeReference<RestResponsePage<SentenceAdjustmentId>>())
+      .bodyToMono(typeReference<RestResponsePage<NomisSentencingAdjustmentId>>())
       .awaitSingle()
 
   fun getSentenceAdjustmentsBlocking(
@@ -186,7 +186,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     toDate: LocalDate?,
     pageNumber: Long,
     pageSize: Long
-  ): PageImpl<SentenceAdjustmentId> = runBlocking {
+  ): PageImpl<NomisSentencingAdjustmentId> = runBlocking {
     getSentenceAdjustments(
       fromDate,
       toDate,
@@ -229,8 +229,9 @@ data class IncentiveId(
   val sequence: Long,
 )
 
-data class SentenceAdjustmentId(
-  val sentenceAdjustmentId: Long,
+data class NomisSentencingAdjustmentId(
+  val adjustmentId: Long,
+  val adjustmentType: String,
 )
 
 data class NomisVisitor(

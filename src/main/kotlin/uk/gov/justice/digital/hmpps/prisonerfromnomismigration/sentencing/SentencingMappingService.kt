@@ -1,7 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing
 
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
@@ -12,31 +10,33 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationDet
 
 @Service
 class SentencingMappingService(@Qualifier("mappingApiWebClient") private val webClient: WebClient) {
-  private companion object {
-    val log: Logger = LoggerFactory.getLogger(this::class.java)
-  }
-
-  fun findNomisSentenceAdjustmentMapping(nomisSentenceAdjustmentId: Long): SentenceAdjustmentNomisMapping? {
+  fun findNomisSentencingAdjustmentMapping(
+    nomisAdjustmentId: Long,
+    nomisAdjustmentType: String,
+  ): SentencingAdjustmentNomisMapping? {
     return webClient.get()
       .uri(
-        "/mapping/sentence-adjustments/nomis-sentencing-adjustment-id/{nomisSentenceAdjustmentId}",
-        nomisSentenceAdjustmentId
+        "/mapping/sentencing/adjustments/nomis-adjustment-type/{nomisAdjustmentType}/nomis-adjustment-id/{nomisAdjustmentId}",
+        nomisAdjustmentType,
+        nomisAdjustmentId,
       )
       .retrieve()
-      .bodyToMono(SentenceAdjustmentNomisMapping::class.java)
+      .bodyToMono(SentencingAdjustmentNomisMapping::class.java)
       .onErrorResume(WebClientResponseException.NotFound::class.java) {
         Mono.empty()
       }
       .block()
   }
 
-  fun createNomisSentenceAdjustmentMigrationMapping(
-    nomisSentenceAdjustmentId: Long,
+  fun createNomisSentencingAdjustmentMigrationMapping(
+    nomisAdjustmentId: Long,
+    nomisAdjustmentType: String,
     sentenceAdjustmentId: Long,
     migrationId: String
   ) {
     createNomisSentenceAdjustmentMapping(
-      nomisSentenceAdjustmentId = nomisSentenceAdjustmentId,
+      nomisAdjustmentId = nomisAdjustmentId,
+      nomisAdjustmentType = nomisAdjustmentType,
       sentenceAdjustmentId = sentenceAdjustmentId,
       migrationId = migrationId,
       mappingType = "MIGRATED"
@@ -44,16 +44,18 @@ class SentencingMappingService(@Qualifier("mappingApiWebClient") private val web
   }
 
   private fun createNomisSentenceAdjustmentMapping(
-    nomisSentenceAdjustmentId: Long,
+    nomisAdjustmentId: Long,
+    nomisAdjustmentType: String,
     sentenceAdjustmentId: Long,
     mappingType: String,
     migrationId: String? = null
   ) {
     webClient.post()
-      .uri("/mapping/sentence-adjustments")
+      .uri("/mapping/sentencing/adjustments")
       .bodyValue(
-        SentenceAdjustmentNomisMapping(
-          nomisSentenceAdjustmentId = nomisSentenceAdjustmentId,
+        SentencingAdjustmentNomisMapping(
+          nomisAdjustmentId = nomisAdjustmentId,
+          nomisAdjustmentType = nomisAdjustmentType,
           sentenceAdjustmentId = sentenceAdjustmentId,
           label = migrationId,
           mappingType = mappingType
@@ -65,7 +67,7 @@ class SentencingMappingService(@Qualifier("mappingApiWebClient") private val web
   }
 
   fun findLatestMigration(): LatestMigration? = webClient.get()
-    .uri("/mapping/sentence-adjustments/migrated/latest")
+    .uri("/mapping/sentencing/adjustments/migrated/latest")
     .retrieve()
     .bodyToMono(LatestMigration::class.java)
     .onErrorResume(WebClientResponseException.NotFound::class.java) {
@@ -75,7 +77,7 @@ class SentencingMappingService(@Qualifier("mappingApiWebClient") private val web
 
   fun getMigrationDetails(migrationId: String): MigrationDetails = webClient.get()
     .uri {
-      it.path("/mapping/sentence-adjustments/migration-id/{migrationId}")
+      it.path("/mapping/sentencing/adjustments/migration-id/{migrationId}")
         .queryParam("size", 1)
         .build(migrationId)
     }
@@ -85,7 +87,7 @@ class SentencingMappingService(@Qualifier("mappingApiWebClient") private val web
 
   fun getMigrationCount(migrationId: String): Long = webClient.get()
     .uri {
-      it.path("/mapping/sentence-adjustments/migration-id/{migrationId}")
+      it.path("/mapping/sentencing/adjustments/migration-id/{migrationId}")
         .queryParam("size", 1)
         .build(migrationId)
     }
@@ -97,8 +99,9 @@ class SentencingMappingService(@Qualifier("mappingApiWebClient") private val web
     .block()?.count ?: 0
 }
 
-data class SentenceAdjustmentNomisMapping(
-  val nomisSentenceAdjustmentId: Long,
+data class SentencingAdjustmentNomisMapping(
+  val nomisAdjustmentId: Long,
+  val nomisAdjustmentType: String,
   val sentenceAdjustmentId: Long,
   val label: String? = null,
   val mappingType: String
