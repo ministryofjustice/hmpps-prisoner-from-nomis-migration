@@ -442,10 +442,10 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubAllNomisSentenceAdjustmentMappingNotFound() {
+  fun stubAllNomisSentencingAdjustmentsMappingNotFound() {
     stubFor(
       get(
-        urlPathMatching("/mapping/sentence-adjustments/nomis-sentencing-adjustment-id/\\d*")
+        urlPathMatching("/mapping/sentencing/adjustments/nomis-adjustment-type/SENTENCE/nomis-adjustment-id/\\d*")
       ).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
@@ -457,7 +457,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubSentenceAdjustmentMappingCreate() {
     stubFor(
-      post(urlEqualTo("/mapping/sentence-adjustments")).willReturn(
+      post(urlEqualTo("/mapping/sentencing/adjustments")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.CREATED.value())
@@ -467,7 +467,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubSentenceAdjustmentMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 278887) {
     stubFor(
-      get(urlPathMatching("/mapping/sentence-adjustments/migration-id/.*")).willReturn(
+      get(urlPathMatching("/mapping/sentencing/adjustments/migration-id/.*")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody(
@@ -476,7 +476,8 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     "content": [
         {
             "sentenceAdjustmentId": 191747,
-            "nomisSentenceAdjustmentId": 123,
+            "nomisAdjustmentId": 123,
+            "nomisAdjustmentType": "SENTENCE",
             "label": "2022-02-14T09:58:45",
             "whenCreated": "$whenCreated",
             "mappingType": "MIGRATED"
@@ -516,7 +517,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubSentenceAdjustmentMappingCreateFailureFollowedBySuccess() {
     stubFor(
-      post(urlPathEqualTo("/mapping/sentence-adjustments"))
+      post(urlPathEqualTo("/mapping/sentencing/adjustments"))
         .inScenario("Retry sentence-adjustment Scenario")
         .whenScenarioStateIs(STARTED)
         .willReturn(
@@ -528,7 +529,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
 
     stubFor(
-      post(urlPathEqualTo("/mapping/sentence-adjustments"))
+      post(urlPathEqualTo("/mapping/sentencing/adjustments"))
         .inScenario("Retry sentence-adjustment Scenario")
         .whenScenarioStateIs("Cause sentence-adjustment Success")
         .willReturn(
@@ -541,12 +542,12 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun createSentenceAdjustmentMappingCount() =
-    findAll(postRequestedFor(urlPathEqualTo("/mapping/sentence-adjustments"))).count()
+    findAll(postRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments"))).count()
 
   fun verifyCreateMappingSentenceAdjustmentIds(nomsSentenceAdjustmentIds: Array<Long>, times: Int = 1) = nomsSentenceAdjustmentIds.forEach {
     verify(
       times,
-      postRequestedFor(urlPathEqualTo("/mapping/sentence-adjustments")).withRequestBody(
+      postRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments")).withRequestBody(
         matchingJsonPath(
           "sentenceAdjustmentId",
           equalTo("$it")
