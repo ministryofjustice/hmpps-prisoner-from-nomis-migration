@@ -61,17 +61,19 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
 
       await untilAsserted { mappingApi.verifyCreateIncentiveMapping() }
 
-      verify(telemetryClient).trackEvent(
-        eq("incentive-created-synchronisation"),
-        eq(
-          mapOf(
-            "bookingId" to "1234",
-            "incentiveSequence" to "1",
-            "incentiveId" to "654321",
-          )
-        ),
-        isNull()
-      )
+      await untilAsserted {
+        verify(telemetryClient).trackEvent(
+          eq("incentive-created-synchronisation"),
+          eq(
+            mapOf(
+              "bookingId" to "1234",
+              "incentiveSequence" to "1",
+              "incentiveId" to "654321",
+            )
+          ),
+          isNull()
+        )
+      }
     }
 
     @Test
@@ -129,11 +131,13 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
 
       await untilAsserted { incentivesApi.verifyUpdateSynchroniseIncentive(1) }
 
-      verify(telemetryClient, Times(1)).trackEvent(
-        eq("incentive-updated-synchronisation"),
-        any(),
-        isNull()
-      )
+      await untilAsserted {
+        verify(telemetryClient, Times(1)).trackEvent(
+          eq("incentive-updated-synchronisation"),
+          any(),
+          isNull()
+        )
+      }
     }
   }
 
@@ -152,18 +156,20 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
 
       await untilAsserted { incentivesApi.verifyUpdateSynchroniseIncentive(1) }
 
-      verify(telemetryClient, Times(1)).trackEvent(
-        eq("incentive-updated-synchronisation"),
-        eq(
-          mapOf(
-            "bookingId" to "1234",
-            "incentiveSequence" to "1",
-            "incentiveId" to "3",
-            "currentIep" to "true"
-          )
-        ),
-        isNull()
-      )
+      await untilAsserted {
+        verify(telemetryClient, Times(1)).trackEvent(
+          eq("incentive-updated-synchronisation"),
+          eq(
+            mapOf(
+              "bookingId" to "1234",
+              "incentiveSequence" to "1",
+              "incentiveId" to "3",
+              "currentIep" to "true"
+            )
+          ),
+          isNull()
+        )
+      }
     }
 
     @Test
@@ -188,11 +194,13 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
 
       await untilAsserted { incentivesApi.verifyUpdateSynchroniseIncentive(2) }
 
-      verify(telemetryClient, Times(2)).trackEvent(
-        eq("incentive-updated-synchronisation"),
-        any(),
-        isNull()
-      )
+      await untilAsserted {
+        verify(telemetryClient, Times(2)).trackEvent(
+          eq("incentive-updated-synchronisation"),
+          any(),
+          isNull()
+        )
+      }
     }
 
     @Test
@@ -220,18 +228,21 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
 
       await untilAsserted { incentivesApi.verifyCreateSynchroniseIncentive() }
 
-      verify(telemetryClient, Times(1)).trackEvent(
-        eq("incentive-updated-synchronisation"),
-        any(),
-        isNull()
-      )
-
-      // created incentive for current incentive without a mapping
-      verify(telemetryClient, Times(1)).trackEvent(
-        eq("incentive-created-synchronisation"),
-        any(),
-        isNull()
-      )
+      await untilAsserted {
+        verify(telemetryClient, Times(1)).trackEvent(
+          eq("incentive-updated-synchronisation"),
+          any(),
+          isNull()
+        )
+      }
+      await untilAsserted {
+        // created incentive for current incentive without a mapping
+        verify(telemetryClient, Times(1)).trackEvent(
+          eq("incentive-created-synchronisation"),
+          any(),
+          isNull()
+        )
+      }
     }
   }
 
@@ -269,17 +280,22 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
 
       incentivesApi.verifyDeleteSynchroniseIncentive(bookingId = 1234, incentivesId = 456789)
       incentivesApi.verifyUpdateSynchroniseIncentive(bookingId = 1234, incentivesId = 987654)
-      mappingApi.verifyDeleteIncentiveMapping(incentiveId = 456789)
 
-      verify(telemetryClient).trackEvent(
-        eq("incentive-delete-synchronisation"),
-        check {
-          it["bookingId"] == "1234" &&
-            it["incentiveSequence"] == "1" &&
-            it["incentiveId"] == "456789"
-        },
-        isNull()
-      )
+      await untilAsserted {
+        mappingApi.verifyDeleteIncentiveMapping(incentiveId = 456789)
+      }
+
+      await untilAsserted {
+        verify(telemetryClient).trackEvent(
+          eq("incentive-delete-synchronisation"),
+          check {
+            it["bookingId"] == "1234" &&
+              it["incentiveSequence"] == "1" &&
+              it["incentiveId"] == "456789"
+          },
+          isNull()
+        )
+      }
     }
 
     @Test
@@ -308,17 +324,21 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
 
       incentivesApi.verifyDeleteSynchroniseIncentive(bookingId = 1234, incentivesId = 456789)
       incentivesApi.verifyUpdateSynchroniseIncentive(times = 0)
-      mappingApi.verifyDeleteIncentiveMapping(incentiveId = 456789)
+      await untilAsserted {
+        mappingApi.verifyDeleteIncentiveMapping(incentiveId = 456789)
+      }
 
-      verify(telemetryClient).trackEvent(
-        eq("incentive-delete-synchronisation"),
-        check {
-          it["bookingId"] == "1234" &&
-            it["incentiveSequence"] == "1" &&
-            it["incentiveId"] == "456789"
-        },
-        isNull()
-      )
+      await untilAsserted {
+        verify(telemetryClient).trackEvent(
+          eq("incentive-delete-synchronisation"),
+          check {
+            it["bookingId"] == "1234" &&
+              it["incentiveSequence"] == "1" &&
+              it["incentiveId"] == "456789"
+          },
+          isNull()
+        )
+      }
     }
 
     @Test

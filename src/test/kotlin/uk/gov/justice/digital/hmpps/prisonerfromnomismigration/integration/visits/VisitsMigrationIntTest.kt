@@ -180,10 +180,15 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
       // wait for all mappings to be created before verifying
       await untilCallTo { mappingApi.createVisitMappingCount() } matches { it == 26 }
 
-      verify(telemetryClient).trackEvent(eq("nomis-migration-visits-started"), any(), isNull())
-      verify(telemetryClient, times(26)).trackEvent(eq("nomis-migration-visit-migrated"), any(), isNull())
+      await untilAsserted {
+        verify(telemetryClient).trackEvent(eq("nomis-migration-visits-started"), any(), isNull())
+      }
 
-      await.atMost(Duration.ofSeconds(21)) untilAsserted {
+      await untilAsserted {
+        verify(telemetryClient, times(26)).trackEvent(eq("nomis-migration-visit-migrated"), any(), isNull())
+      }
+
+      await.atMost(Duration.ofSeconds(31)) untilAsserted {
         verify(telemetryClient).trackEvent(
           eq("nomis-migration-visits-completed"),
           any(),
