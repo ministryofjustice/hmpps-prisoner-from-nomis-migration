@@ -128,7 +128,9 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
         toDate = "2020-01-02"
       )
 
-      assertThat(sentencingApi.createSentenceAdjustmentCount()).isEqualTo(86)
+      await untilAsserted {
+        assertThat(sentencingApi.createSentenceAdjustmentCount()).isEqualTo(86)
+      }
     }
 
     @Test
