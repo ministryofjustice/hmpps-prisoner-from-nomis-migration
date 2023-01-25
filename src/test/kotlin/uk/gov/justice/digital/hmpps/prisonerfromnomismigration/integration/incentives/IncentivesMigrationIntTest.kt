@@ -128,7 +128,9 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
         toDate = "2020-01-02"
       )
 
-      assertThat(incentivesApi.createIncentiveCount()).isEqualTo(86)
+      await untilAsserted {
+        assertThat(incentivesApi.createIncentiveCount()).isEqualTo(86)
+      }
     }
 
     @Test
@@ -540,7 +542,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
         .jsonPath("$.migrationId").isEqualTo(migrationId)
         .jsonPath("$.status").isEqualTo("CANCELLED_REQUESTED")
 
-      await atMost Duration.ofSeconds(25) untilAsserted {
+      await atMost Duration.ofSeconds(60) untilAsserted {
         webTestClient.get().uri("/migrate/incentives/history/{migrationId}", migrationId)
           .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCENTIVES")))
           .header("Content-Type", "application/json")

@@ -649,7 +649,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
         .jsonPath("$.migrationId").isEqualTo(migrationId)
         .jsonPath("$.status").isEqualTo("CANCELLED_REQUESTED")
 
-      await atMost Duration.ofSeconds(25) untilAsserted {
+      await atMost Duration.ofSeconds(60) untilAsserted {
         webTestClient.get().uri("/migrate/visits/history/{migrationId}", migrationId)
           .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
           .header("Content-Type", "application/json")
