@@ -6,6 +6,7 @@ import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilAsserted
 import org.awaitility.kotlin.untilCallTo
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -16,6 +17,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.boot.test.mock.mockito.SpyBean
+import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.validIepCreatedMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.validIepCreatedMessageWithNomisIds
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.validIepDeletedMessage
@@ -27,11 +29,20 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.Incentiv
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsApiExtension.Companion.visitsApi
+import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 
 class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
 
   @SpyBean
   private lateinit var telemetryClient: TelemetryClient
+
+  @BeforeEach
+  fun cleanQueue() {
+    awsSqsIncentivesMigrationClient.purgeQueue(PurgeQueueRequest.builder().queueUrl(incentivesMigrationUrl).build()).get()
+    awsSqsIncentivesMigrationDlqClient?.purgeQueue(PurgeQueueRequest.builder().queueUrl(incentivesMigrationDlqUrl).build())?.get()
+    await untilCallTo { awsSqsIncentivesMigrationClient.countAllMessagesOnQueue(incentivesMigrationUrl).get() } matches { it == 0 }
+    await untilCallTo { awsSqsIncentivesMigrationDlqClient?.countAllMessagesOnQueue(incentivesMigrationDlqUrl!!)?.get() } matches { it == 0 }
+  }
 
   @Nested
   @DisplayName("synchronise create incentive")

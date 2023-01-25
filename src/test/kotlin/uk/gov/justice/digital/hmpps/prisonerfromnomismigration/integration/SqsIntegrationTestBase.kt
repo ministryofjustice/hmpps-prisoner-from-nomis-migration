@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration
 
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -10,7 +9,6 @@ import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.reactive.server.WebTestClient
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.JwtAuthHelper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.LocalStackContainer.setLocalStackProperties
@@ -72,12 +70,6 @@ class SqsIntegrationTestBase : TestBase() {
     roles: List<String> = listOf(),
     scopes: List<String> = listOf()
   ): (HttpHeaders) -> Unit = jwtAuthHelper.setAuthorisation(user, roles, scopes)
-
-  @BeforeEach
-  fun cleanQueue() {
-    awsSqsVisitsMigrationClient.purgeQueue(PurgeQueueRequest.builder().queueUrl(visitsMigrationQueueUrl).build()).get()
-    awsSqsVisitsMigrationDlqClient?.purgeQueue(PurgeQueueRequest.builder().queueUrl(visitsMigrationDlqUrl).build())?.get()
-  }
 
   companion object {
     private val localStackContainer = LocalStackContainer.instance

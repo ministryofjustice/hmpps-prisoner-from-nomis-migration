@@ -51,11 +51,16 @@ hmpps.sqs:
   queues:
     migrationvisits:
       visibilityTimeout: 1
+      dlqMaxReceiveCount: 1
     migrationincentives:
       visibilityTimeout: 1
+      dlqMaxReceiveCount: 1
     migrationsentencing:
       visibilityTimeout: 1
+      dlqMaxReceiveCount: 1
     audit:
       visibilityTimeout: 1
+      dlqMaxReceiveCount: 1
     event:
       visibilityTimeout: 1
+      dlqMaxReceiveCount: 1
