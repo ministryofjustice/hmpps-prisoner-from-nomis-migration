@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.ArraySchema
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
+import jakarta.validation.Valid
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.HttpStatus.ACCEPTED
 import org.springframework.http.MediaType
@@ -24,7 +25,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.HistoryFi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import java.time.LocalDateTime
-import javax.validation.Valid
 
 @RestController
 @RequestMapping("/migrate", produces = [MediaType.APPLICATION_JSON_VALUE])

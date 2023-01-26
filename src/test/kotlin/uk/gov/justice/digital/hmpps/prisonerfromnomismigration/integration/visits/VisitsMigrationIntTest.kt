@@ -25,8 +25,10 @@ import org.springframework.http.ReactiveHttpOutputMessage
 import org.springframework.test.web.reactive.server.returnResult
 import org.springframework.web.reactive.function.BodyInserter
 import org.springframework.web.reactive.function.BodyInserters
+import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.COMPLETED
@@ -35,6 +37,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigr
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsApiExtension.Companion.visitsApi
+import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -45,6 +48,14 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
 
   @Autowired
   private lateinit var migrationHistoryRepository: MigrationHistoryRepository
+
+  @BeforeEach
+  fun cleanQueue() {
+    awsSqsVisitsMigrationClient.purgeQueue(PurgeQueueRequest.builder().queueUrl(visitsMigrationQueueUrl).build()).get()
+    awsSqsVisitsMigrationDlqClient?.purgeQueue(PurgeQueueRequest.builder().queueUrl(visitsMigrationDlqUrl).build())?.get()
+    await untilCallTo { awsSqsVisitsMigrationClient.countAllMessagesOnQueue(visitsMigrationQueueUrl).get() } matches { it == 0 }
+    await untilCallTo { awsSqsVisitsMigrationDlqClient?.countAllMessagesOnQueue(visitsMigrationDlqUrl!!)?.get() } matches { it == 0 }
+  }
 
   @Nested
   @DisplayName("POST /migrate/visits")
@@ -144,7 +155,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
 
       // stub 25 migrated records and 1 fake a failure
       mappingApi.stubVisitMappingByMigrationId(count = 25)
-      awsSqsVisitsMigrationDlqClient!!.sendMessage(visitsMigrationDlqUrl, """{ "message": "some error" }""")
+      awsSqsVisitsMigrationDlqClient!!.sendMessage(visitsMigrationDlqUrl!!, """{ "message": "some error" }""")
 
       webTestClient.post().uri("/migrate/visits")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
@@ -169,10 +180,15 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
       // wait for all mappings to be created before verifying
       await untilCallTo { mappingApi.createVisitMappingCount() } matches { it == 26 }
 
-      verify(telemetryClient).trackEvent(eq("nomis-migration-visits-started"), any(), isNull())
-      verify(telemetryClient, times(26)).trackEvent(eq("nomis-migration-visit-migrated"), any(), isNull())
+      await untilAsserted {
+        verify(telemetryClient).trackEvent(eq("nomis-migration-visits-started"), any(), isNull())
+      }
 
-      await.atMost(Duration.ofSeconds(21)) untilAsserted {
+      await untilAsserted {
+        verify(telemetryClient, times(26)).trackEvent(eq("nomis-migration-visit-migrated"), any(), isNull())
+      }
+
+      await.atMost(Duration.ofSeconds(31)) untilAsserted {
         verify(telemetryClient).trackEvent(
           eq("nomis-migration-visits-completed"),
           any(),
@@ -564,7 +580,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `must have correct role to terminate a migration`() {
-      webTestClient.post().uri("/migrate/visits/{migrationId}/cancel/", "some id")
+      webTestClient.post().uri("/migrate/visits/{migrationId}/cancel", "some id")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
         .header("Content-Type", "application/json")
         .exchange()
@@ -573,7 +589,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will return a not found if no running migration found`() {
-      webTestClient.post().uri("/migrate/visits/{migrationId}/cancel/", "some id")
+      webTestClient.post().uri("/migrate/visits/{migrationId}/cancel", "some id")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
         .header("Content-Type", "application/json")
         .exchange()
@@ -618,7 +634,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
         .returnResult<MigrationContext<VisitsMigrationFilter>>()
         .responseBody.blockFirst()!!.migrationId
 
-      webTestClient.post().uri("/migrate/visits/{migrationId}/cancel/", migrationId)
+      webTestClient.post().uri("/migrate/visits/{migrationId}/cancel", migrationId)
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
         .header("Content-Type", "application/json")
         .exchange()
@@ -633,7 +649,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
         .jsonPath("$.migrationId").isEqualTo(migrationId)
         .jsonPath("$.status").isEqualTo("CANCELLED_REQUESTED")
 
-      await atMost Duration.ofSeconds(25) untilAsserted {
+      await atMost Duration.ofSeconds(60) untilAsserted {
         webTestClient.get().uri("/migrate/visits/history/{migrationId}", migrationId)
           .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
           .header("Content-Type", "application/json")

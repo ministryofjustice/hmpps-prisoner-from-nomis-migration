@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration
 
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.testcontainers.containers.localstack.LocalStackContainer
@@ -10,22 +11,19 @@ import java.io.IOException
 import java.net.ServerSocket
 
 object LocalStackContainer {
-  val log = LoggerFactory.getLogger(this::class.java)
+  private val log: Logger = LoggerFactory.getLogger(this::class.java)
   val instance by lazy { startLocalstackIfNotRunning() }
 
-  fun setLocalStackProperties(localStackContainer: LocalStackContainer, registry: DynamicPropertyRegistry) =
-    localStackContainer.getEndpointConfiguration(LocalStackContainer.Service.SNS)
-      .let { it.serviceEndpoint to it.signingRegion }
-      .also {
-        registry.add("hmpps.sqs.localstackUrl") { it.first }
-        registry.add("hmpps.sqs.region") { it.second }
-      }
+  fun setLocalStackProperties(localStackContainer: LocalStackContainer, registry: DynamicPropertyRegistry) {
+    registry.add("hmpps.sqs.localstackUrl") { localStackContainer.getEndpointOverride(LocalStackContainer.Service.SNS) }
+    registry.add("hmpps.sqs.region") { localStackContainer.region }
+  }
 
   private fun startLocalstackIfNotRunning(): LocalStackContainer? {
     if (localstackIsRunning()) return null
     val logConsumer = Slf4jLogConsumer(log).withPrefix("localstack")
     return LocalStackContainer(
-      DockerImageName.parse("localstack/localstack").withTag("0.14.2")
+      DockerImageName.parse("localstack/localstack").withTag("1.2.0")
     ).apply {
       withServices(LocalStackContainer.Service.SQS)
       withEnv("HOSTNAME_EXTERNAL", "localhost")

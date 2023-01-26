@@ -33,7 +33,7 @@ internal class IncentiveSynchronisationServiceTest {
   )
 
   @Test
-  internal fun `will update an incentive`() {
+  internal fun `will update an incentive`(): Unit = runBlocking {
     whenever(incentivesMappingService.findNomisIncentiveMapping(any(), any())).thenReturn(
       IncentiveNomisMapping(
         nomisBookingId = 1000L,
@@ -70,7 +70,7 @@ internal class IncentiveSynchronisationServiceTest {
   }
 
   @Test
-  internal fun `will create an incentive time with seconds portion from the when created timestamp when IEP minute equals the when created minute`() {
+  internal fun `will create an incentive time with seconds portion from the when created timestamp when IEP minute equals the when created minute`(): Unit = runBlocking {
     whenever(incentivesMappingService.findNomisIncentiveMapping(any(), any())).thenReturn(null)
 
     runBlocking {
@@ -108,7 +108,7 @@ internal class IncentiveSynchronisationServiceTest {
   }
 
   @Test
-  internal fun `will create an incentive time with a seconds portion hardcoded to 59 when created timestamp is not in the same minute as the iep time`() {
+  internal fun `will create an incentive time with a seconds portion hardcoded to 59 when created timestamp is not in the same minute as the iep time`(): Unit = runBlocking {
     whenever(incentivesMappingService.findNomisIncentiveMapping(any(), any())).thenReturn(null)
 
     runBlocking {

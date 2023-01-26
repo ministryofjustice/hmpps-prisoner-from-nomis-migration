@@ -24,6 +24,8 @@ import org.springframework.http.ReactiveHttpOutputMessage
 import org.springframework.test.web.reactive.server.returnResult
 import org.springframework.web.reactive.function.BodyInserter
 import org.springframework.web.reactive.function.BodyInserters
+import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest
+import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
@@ -34,6 +36,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.SentencingApiExtension.Companion.sentencingApi
+import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -44,6 +47,14 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
 
   @Autowired
   private lateinit var migrationHistoryRepository: MigrationHistoryRepository
+
+  @BeforeEach
+  fun cleanQueue() {
+    awsSqsSentencingMigrationClient.purgeQueue(PurgeQueueRequest.builder().queueUrl(sentencingMigrationUrl).build()).get()
+    awsSqsSentencingMigrationDlqClient?.purgeQueue(PurgeQueueRequest.builder().queueUrl(sentencingMigrationDlqUrl).build())?.get()
+    await untilCallTo { awsSqsSentencingMigrationClient.countAllMessagesOnQueue(sentencingMigrationUrl).get() } matches { it == 0 }
+    await untilCallTo { awsSqsSentencingMigrationDlqClient?.countAllMessagesOnQueue(sentencingMigrationDlqUrl!!)?.get() } matches { it == 0 }
+  }
 
   @Nested
   @DisplayName("POST /migrate/sentencing")
@@ -117,7 +128,9 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
         toDate = "2020-01-02"
       )
 
-      assertThat(sentencingApi.createSentenceAdjustmentCount()).isEqualTo(86)
+      await untilAsserted {
+        assertThat(sentencingApi.createSentenceAdjustmentCount()).isEqualTo(86)
+      }
     }
 
     @Test
@@ -131,7 +144,9 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
 
       // stub 25 migrated records and 1 fake a failure
       mappingApi.stubSentenceAdjustmentMappingByMigrationId(count = 25)
-      awsSqsSentencingMigrationDlqClient!!.sendMessage(sentencingMigrationDlqUrl, """{ "message": "some error" }""")
+      awsSqsSentencingMigrationDlqClient!!.sendMessage(
+        SendMessageRequest.builder().queueUrl(sentencingMigrationDlqUrl).messageBody("""{ "message": "some error" }""").build()
+      ).get()
 
       webTestClient.post().uri("/migrate/sentencing")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
@@ -473,7 +488,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `must have correct role to terminate a migration`() {
-      webTestClient.post().uri("/migrate/sentencing/{migrationId}/cancel/", "some id")
+      webTestClient.post().uri("/migrate/sentencing/{migrationId}/cancel", "some id")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
         .header("Content-Type", "application/json")
         .exchange()
@@ -482,7 +497,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will return a not found if no running migration found`() {
-      webTestClient.post().uri("/migrate/sentencing/{migrationId}/cancel/", "some id")
+      webTestClient.post().uri("/migrate/sentencing/{migrationId}/cancel", "some id")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .exchange()
@@ -514,7 +529,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
         .returnResult<MigrationContext<SentencingMigrationFilter>>()
         .responseBody.blockFirst()!!.migrationId
 
-      webTestClient.post().uri("/migrate/sentencing/{migrationId}/cancel/", migrationId)
+      webTestClient.post().uri("/migrate/sentencing/{migrationId}/cancel", migrationId)
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .exchange()
@@ -529,7 +544,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
         .jsonPath("$.migrationId").isEqualTo(migrationId)
         .jsonPath("$.status").isEqualTo("CANCELLED_REQUESTED")
 
-      await atMost Duration.ofSeconds(25) untilAsserted {
+      await atMost Duration.ofSeconds(60) untilAsserted {
         webTestClient.get().uri("/migrate/sentencing/history/{migrationId}", migrationId)
           .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
           .header("Content-Type", "application/json")

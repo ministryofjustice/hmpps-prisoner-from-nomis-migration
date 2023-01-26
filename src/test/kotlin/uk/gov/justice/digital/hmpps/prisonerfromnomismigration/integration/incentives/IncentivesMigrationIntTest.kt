@@ -24,9 +24,11 @@ import org.springframework.http.ReactiveHttpOutputMessage
 import org.springframework.test.web.reactive.server.returnResult
 import org.springframework.web.reactive.function.BodyInserter
 import org.springframework.web.reactive.function.BodyInserters
+import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentivesMigrationFilter
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.COMPLETED
@@ -34,6 +36,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.IncentivesApiExtension.Companion.incentivesApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
+import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -44,6 +47,14 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
 
   @Autowired
   private lateinit var migrationHistoryRepository: MigrationHistoryRepository
+
+  @BeforeEach
+  fun cleanQueue() {
+    awsSqsIncentivesMigrationClient.purgeQueue(PurgeQueueRequest.builder().queueUrl(incentivesMigrationUrl).build()).get()
+    awsSqsIncentivesMigrationDlqClient?.purgeQueue(PurgeQueueRequest.builder().queueUrl(incentivesMigrationDlqUrl).build())?.get()
+    await untilCallTo { awsSqsIncentivesMigrationClient.countAllMessagesOnQueue(incentivesMigrationUrl).get() } matches { it == 0 }
+    await untilCallTo { awsSqsIncentivesMigrationDlqClient?.countAllMessagesOnQueue(incentivesMigrationDlqUrl!!)?.get() } matches { it == 0 }
+  }
 
   @Nested
   @DisplayName("POST /migrate/incentives")
@@ -117,7 +128,9 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
         toDate = "2020-01-02"
       )
 
-      assertThat(incentivesApi.createIncentiveCount()).isEqualTo(86)
+      await untilAsserted {
+        assertThat(incentivesApi.createIncentiveCount()).isEqualTo(86)
+      }
     }
 
     @Test
@@ -131,7 +144,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
 
       // stub 25 migrated records and 1 fake a failure
       mappingApi.stubIncentiveMappingByMigrationId(count = 25)
-      awsSqsIncentivesMigrationDlqClient!!.sendMessage(incentivesMigrationDlqUrl, """{ "message": "some error" }""")
+      awsSqsIncentivesMigrationDlqClient!!.sendMessage(incentivesMigrationDlqUrl!!, """{ "message": "some error" }""")
 
       webTestClient.post().uri("/migrate/incentives")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCENTIVES")))
@@ -473,7 +486,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `must have correct role to terminate a migration`() {
-      webTestClient.post().uri("/migrate/incentives/{migrationId}/cancel/", "some id")
+      webTestClient.post().uri("/migrate/incentives/{migrationId}/cancel", "some id")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
         .header("Content-Type", "application/json")
         .exchange()
@@ -482,7 +495,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will return a not found if no running migration found`() {
-      webTestClient.post().uri("/migrate/incentives/{migrationId}/cancel/", "some id")
+      webTestClient.post().uri("/migrate/incentives/{migrationId}/cancel", "some id")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCENTIVES")))
         .header("Content-Type", "application/json")
         .exchange()
@@ -514,7 +527,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
         .returnResult<MigrationContext<IncentivesMigrationFilter>>()
         .responseBody.blockFirst()!!.migrationId
 
-      webTestClient.post().uri("/migrate/incentives/{migrationId}/cancel/", migrationId)
+      webTestClient.post().uri("/migrate/incentives/{migrationId}/cancel", migrationId)
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCENTIVES")))
         .header("Content-Type", "application/json")
         .exchange()
@@ -529,7 +542,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
         .jsonPath("$.migrationId").isEqualTo(migrationId)
         .jsonPath("$.status").isEqualTo("CANCELLED_REQUESTED")
 
-      await atMost Duration.ofSeconds(25) untilAsserted {
+      await atMost Duration.ofSeconds(60) untilAsserted {
         webTestClient.get().uri("/migrate/incentives/history/{migrationId}", migrationId)
           .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCENTIVES")))
           .header("Content-Type", "application/json")

@@ -1,7 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import kotlinx.coroutines.runBlocking
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -13,7 +12,7 @@ import java.time.LocalDateTime
 @Service
 class MigrationHistoryService(
   private val migrationHistoryRepository: MigrationHistoryRepository,
-  private val objectMapper: ObjectMapper
+  private val objectMapper: ObjectMapper,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -23,7 +22,7 @@ class MigrationHistoryService(
     migrationId: String,
     migrationType: MigrationType,
     estimatedRecordCount: Long = 0,
-    filter: Any? = null
+    filter: Any? = null,
   ) = kotlin.runCatching {
     migrationHistoryRepository.save(
       MigrationHistory(
@@ -35,8 +34,8 @@ class MigrationHistoryService(
     )
   }.onFailure { log.error("Unable to record migration started record", it) }
 
-  fun recordMigrationCompleted(migrationId: String, recordsFailed: Long, recordsMigrated: Long) = runBlocking {
-    kotlin.runCatching {
+  suspend fun recordMigrationCompleted(migrationId: String, recordsFailed: Long, recordsMigrated: Long) =
+    runCatching {
       migrationHistoryRepository.findById(migrationId)?.run {
         migrationHistoryRepository.save(
           this.copy(
@@ -48,10 +47,9 @@ class MigrationHistoryService(
         )
       }
     }.onFailure { log.error("Unable to record migration stopped record", it) }
-  }
 
-  fun recordMigrationCancelled(migrationId: String, recordsFailed: Long, recordsMigrated: Long) = runBlocking {
-    kotlin.runCatching {
+  suspend fun recordMigrationCancelled(migrationId: String, recordsFailed: Long, recordsMigrated: Long) =
+    runCatching {
       migrationHistoryRepository.findById(migrationId)?.run {
         migrationHistoryRepository.save(
           this.copy(
@@ -63,7 +61,6 @@ class MigrationHistoryService(
         )
       }
     }.onFailure { log.error("Unable to record migration stopped cancelled", it) }
-  }
 
   suspend fun recordMigrationCancelledRequested(migrationId: String) =
     kotlin.runCatching {
@@ -82,8 +79,8 @@ class MigrationHistoryService(
   suspend fun get(migrationId: String): MigrationHistory =
     migrationHistoryRepository.findById(migrationId) ?: throw NotFoundException(migrationId)
 
-  fun isCancelling(migrationId: String) =
-    runBlocking { migrationHistoryRepository.findById(migrationId)?.status == CANCELLED_REQUESTED }
+  suspend fun isCancelling(migrationId: String) =
+    migrationHistoryRepository.findById(migrationId)?.status == CANCELLED_REQUESTED
 }
 
 enum class MigrationStatus {

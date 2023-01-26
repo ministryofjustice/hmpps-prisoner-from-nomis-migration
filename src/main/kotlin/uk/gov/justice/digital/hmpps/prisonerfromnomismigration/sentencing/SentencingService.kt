@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing
 
 import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.annotation.JsonInclude
+import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
@@ -9,13 +10,13 @@ import java.time.LocalDate
 
 @Service
 class SentencingService(@Qualifier("sentencingApiWebClient") private val webClient: WebClient) {
-  fun migrateSentencingAdjustment(sentenceAdjustment: CreateSentenceAdjustment): CreateSentencingAdjustmentResponse =
+  suspend fun migrateSentencingAdjustment(sentenceAdjustment: CreateSentenceAdjustment): CreateSentencingAdjustmentResponse =
     webClient.post()
       .uri("/migration/sentencing/sentence-adjustments")
       .bodyValue(sentenceAdjustment)
       .retrieve()
       .bodyToMono(CreateSentencingAdjustmentResponse::class.java)
-      .block()!!
+      .awaitSingle()!!
 }
 
 @JsonInclude(JsonInclude.Include.NON_NULL)

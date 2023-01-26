@@ -1,13 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits
 
-import com.amazonaws.services.sqs.model.GetQueueAttributesRequest
-import com.amazonaws.services.sqs.model.GetQueueAttributesResult
-import com.amazonaws.services.sqs.model.QueueAttributeName.All
-import com.amazonaws.services.sqs.model.QueueAttributeName.ApproximateNumberOfMessages
-import com.amazonaws.services.sqs.model.QueueAttributeName.ApproximateNumberOfMessagesNotVisible
+import kotlinx.coroutines.future.await
+import kotlinx.coroutines.runBlocking
 import org.springframework.boot.actuate.info.Info.Builder
 import org.springframework.boot.actuate.info.InfoContributor
 import org.springframework.stereotype.Component
+import software.amazon.awssdk.services.sqs.model.GetQueueAttributesRequest
+import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VISITS_QUEUE_ID
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
@@ -20,17 +19,17 @@ class VisitMigrationProperties(
 
   internal val queue by lazy { hmppsQueueService.findByQueueId(VISITS_QUEUE_ID) as HmppsQueue }
 
-  override fun contribute(builder: Builder) {
+  override fun contribute(builder: Builder): Unit = runBlocking {
     val queueProperties = queue.getQueueAttributes().map {
       mapOf<String, Any?>(
-        "records waiting processing" to it.attributes[ApproximateNumberOfMessages.toString()],
-        "records currently being processed" to it.attributes[ApproximateNumberOfMessagesNotVisible.toString()]
+        "records waiting processing" to it.attributes()[QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES],
+        "records currently being processed" to it.attributes()[QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES_NOT_VISIBLE],
       )
     }.getOrElse { mapOf() }
 
     val failureQueueProperties = queue.getDlqAttributes().map {
       mapOf<String, Any?>(
-        "records that have failed" to it.attributes[ApproximateNumberOfMessages.toString()],
+        "records that have failed" to it.attributes()[QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES],
       )
     }.getOrElse { mapOf() }
 
@@ -49,18 +48,15 @@ class VisitMigrationProperties(
     )
   }
 
-  private fun HmppsQueue.getQueueAttributes(): Result<GetQueueAttributesResult> {
-    return runCatching {
-      this.sqsClient.getQueueAttributes(
-        GetQueueAttributesRequest(this.queueUrl).withAttributeNames(
-          All
-        )
-      )
-    }
+  private suspend fun HmppsQueue.getQueueAttributes() = runCatching {
+    this.sqsClient.getQueueAttributes(
+      GetQueueAttributesRequest.builder().queueUrl(this.queueUrl).attributeNames(QueueAttributeName.ALL).build()
+    ).await()
   }
 
-  private fun HmppsQueue.getDlqAttributes(): Result<GetQueueAttributesResult> =
-    runCatching {
-      this.sqsDlqClient!!.getQueueAttributes(GetQueueAttributesRequest(this.dlqUrl).withAttributeNames(All))
-    }
+  private suspend fun HmppsQueue.getDlqAttributes() = runCatching {
+    this.sqsDlqClient!!.getQueueAttributes(
+      GetQueueAttributesRequest.builder().queueUrl(this.dlqUrl).attributeNames(QueueAttributeName.ALL).build()
+    ).await()
+  }
 }

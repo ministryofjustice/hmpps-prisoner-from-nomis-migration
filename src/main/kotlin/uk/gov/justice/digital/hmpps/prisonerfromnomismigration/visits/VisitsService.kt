@@ -2,6 +2,8 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits
 
 import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.annotation.JsonInclude
+import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
@@ -10,21 +12,21 @@ import java.time.LocalDateTime
 @Service
 class VisitsService(@Qualifier("visitsApiWebClient") private val webClient: WebClient) {
 
-  fun createVisit(createVisitRequest: CreateVsipVisit): String =
+  suspend fun createVisit(createVisitRequest: CreateVsipVisit): String =
     webClient.post()
       .uri("/migrate-visits")
       .bodyValue(createVisitRequest)
       .retrieve()
       .bodyToMono(String::class.java)
-      .block()!!
+      .awaitSingle()!!
 
-  fun cancelVisit(visitReference: String, outcome: VsipOutcomeDto) =
+  suspend fun cancelVisit(visitReference: String, outcome: VsipOutcomeDto) =
     webClient.patch()
       .uri("/visits/$visitReference/cancel")
       .bodyValue(outcome)
       .retrieve()
       .bodyToMono(Unit::class.java)
-      .block()
+      .awaitSingleOrNull()
 }
 
 @JsonInclude(JsonInclude.Include.NON_NULL)

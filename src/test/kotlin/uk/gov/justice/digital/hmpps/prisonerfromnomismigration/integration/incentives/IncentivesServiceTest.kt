@@ -49,7 +49,7 @@ internal class IncentivesServiceTest {
     }
 
     @Test
-    internal fun `will supply authentication token`() {
+    internal fun `will supply authentication token`(): Unit = runBlocking {
       incentivesService.migrateIncentive(
         CreateIncentiveIEP(
           prisonId = "BXI",
@@ -70,7 +70,7 @@ internal class IncentivesServiceTest {
     }
 
     @Test
-    internal fun `will pass data as JSON to endpoint`() {
+    internal fun `will pass data as JSON to endpoint`(): Unit = runBlocking {
       incentivesService.migrateIncentive(
         CreateIncentiveIEP(
           prisonId = "BXI",
@@ -105,7 +105,7 @@ internal class IncentivesServiceTest {
     }
 
     @Test
-    internal fun `will return newly created incentive id`() {
+    internal fun `will return newly created incentive id`(): Unit = runBlocking {
       val incentive = incentivesService.migrateIncentive(
         CreateIncentiveIEP(
           prisonId = "BXI",

@@ -6,6 +6,7 @@ import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilAsserted
 import org.awaitility.kotlin.untilCallTo
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -16,21 +17,32 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.boot.test.mock.mockito.SpyBean
+import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.validIepCreatedMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.validIepCreatedMessageWithNomisIds
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.validIepDeletedMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.validSynchroniseCurrentIncentiveMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.validVisitCancellationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.IncentivesApiExtension.Companion.incentivesApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsApiExtension.Companion.visitsApi
+import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 
 class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
 
   @SpyBean
   private lateinit var telemetryClient: TelemetryClient
+
+  @BeforeEach
+  fun cleanQueue() {
+    awsSqsIncentivesMigrationClient.purgeQueue(PurgeQueueRequest.builder().queueUrl(incentivesMigrationUrl).build()).get()
+    awsSqsIncentivesMigrationDlqClient?.purgeQueue(PurgeQueueRequest.builder().queueUrl(incentivesMigrationDlqUrl).build())?.get()
+    await untilCallTo { awsSqsIncentivesMigrationClient.countAllMessagesOnQueue(incentivesMigrationUrl).get() } matches { it == 0 }
+    await untilCallTo { awsSqsIncentivesMigrationDlqClient?.countAllMessagesOnQueue(incentivesMigrationDlqUrl!!)?.get() } matches { it == 0 }
+  }
 
   @Nested
   @DisplayName("synchronise create incentive")
@@ -49,17 +61,19 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
 
       await untilAsserted { mappingApi.verifyCreateIncentiveMapping() }
 
-      verify(telemetryClient).trackEvent(
-        eq("incentive-created-synchronisation"),
-        eq(
-          mapOf(
-            "bookingId" to "1234",
-            "incentiveSequence" to "1",
-            "incentiveId" to "654321",
-          )
-        ),
-        isNull()
-      )
+      await untilAsserted {
+        verify(telemetryClient).trackEvent(
+          eq("incentive-created-synchronisation"),
+          eq(
+            mapOf(
+              "bookingId" to "1234",
+              "incentiveSequence" to "1",
+              "incentiveId" to "654321",
+            )
+          ),
+          isNull()
+        )
+      }
     }
 
     @Test
@@ -117,11 +131,13 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
 
       await untilAsserted { incentivesApi.verifyUpdateSynchroniseIncentive(1) }
 
-      verify(telemetryClient, Times(1)).trackEvent(
-        eq("incentive-updated-synchronisation"),
-        any(),
-        isNull()
-      )
+      await untilAsserted {
+        verify(telemetryClient, Times(1)).trackEvent(
+          eq("incentive-updated-synchronisation"),
+          any(),
+          isNull()
+        )
+      }
     }
   }
 
@@ -140,18 +156,20 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
 
       await untilAsserted { incentivesApi.verifyUpdateSynchroniseIncentive(1) }
 
-      verify(telemetryClient, Times(1)).trackEvent(
-        eq("incentive-updated-synchronisation"),
-        eq(
-          mapOf(
-            "bookingId" to "1234",
-            "incentiveSequence" to "1",
-            "incentiveId" to "3",
-            "currentIep" to "true"
-          )
-        ),
-        isNull()
-      )
+      await untilAsserted {
+        verify(telemetryClient, Times(1)).trackEvent(
+          eq("incentive-updated-synchronisation"),
+          eq(
+            mapOf(
+              "bookingId" to "1234",
+              "incentiveSequence" to "1",
+              "incentiveId" to "3",
+              "currentIep" to "true"
+            )
+          ),
+          isNull()
+        )
+      }
     }
 
     @Test
@@ -176,11 +194,13 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
 
       await untilAsserted { incentivesApi.verifyUpdateSynchroniseIncentive(2) }
 
-      verify(telemetryClient, Times(2)).trackEvent(
-        eq("incentive-updated-synchronisation"),
-        any(),
-        isNull()
-      )
+      await untilAsserted {
+        verify(telemetryClient, Times(2)).trackEvent(
+          eq("incentive-updated-synchronisation"),
+          any(),
+          isNull()
+        )
+      }
     }
 
     @Test
@@ -208,18 +228,21 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
 
       await untilAsserted { incentivesApi.verifyCreateSynchroniseIncentive() }
 
-      verify(telemetryClient, Times(1)).trackEvent(
-        eq("incentive-updated-synchronisation"),
-        any(),
-        isNull()
-      )
-
-      // created incentive for current incentive without a mapping
-      verify(telemetryClient, Times(1)).trackEvent(
-        eq("incentive-created-synchronisation"),
-        any(),
-        isNull()
-      )
+      await untilAsserted {
+        verify(telemetryClient, Times(1)).trackEvent(
+          eq("incentive-updated-synchronisation"),
+          any(),
+          isNull()
+        )
+      }
+      await untilAsserted {
+        // created incentive for current incentive without a mapping
+        verify(telemetryClient, Times(1)).trackEvent(
+          eq("incentive-created-synchronisation"),
+          any(),
+          isNull()
+        )
+      }
     }
   }
 
@@ -257,17 +280,22 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
 
       incentivesApi.verifyDeleteSynchroniseIncentive(bookingId = 1234, incentivesId = 456789)
       incentivesApi.verifyUpdateSynchroniseIncentive(bookingId = 1234, incentivesId = 987654)
-      mappingApi.verifyDeleteIncentiveMapping(incentiveId = 456789)
 
-      verify(telemetryClient).trackEvent(
-        eq("incentive-delete-synchronisation"),
-        check {
-          it["bookingId"] == "1234" &&
-            it["incentiveSequence"] == "1" &&
-            it["incentiveId"] == "456789"
-        },
-        isNull()
-      )
+      await untilAsserted {
+        mappingApi.verifyDeleteIncentiveMapping(incentiveId = 456789)
+      }
+
+      await untilAsserted {
+        verify(telemetryClient).trackEvent(
+          eq("incentive-delete-synchronisation"),
+          check {
+            it["bookingId"] == "1234" &&
+              it["incentiveSequence"] == "1" &&
+              it["incentiveId"] == "456789"
+          },
+          isNull()
+        )
+      }
     }
 
     @Test
@@ -296,17 +324,21 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
 
       incentivesApi.verifyDeleteSynchroniseIncentive(bookingId = 1234, incentivesId = 456789)
       incentivesApi.verifyUpdateSynchroniseIncentive(times = 0)
-      mappingApi.verifyDeleteIncentiveMapping(incentiveId = 456789)
+      await untilAsserted {
+        mappingApi.verifyDeleteIncentiveMapping(incentiveId = 456789)
+      }
 
-      verify(telemetryClient).trackEvent(
-        eq("incentive-delete-synchronisation"),
-        check {
-          it["bookingId"] == "1234" &&
-            it["incentiveSequence"] == "1" &&
-            it["incentiveId"] == "456789"
-        },
-        isNull()
-      )
+      await untilAsserted {
+        verify(telemetryClient).trackEvent(
+          eq("incentive-delete-synchronisation"),
+          check {
+            it["bookingId"] == "1234" &&
+              it["incentiveSequence"] == "1" &&
+              it["incentiveId"] == "456789"
+          },
+          isNull()
+        )
+      }
     }
 
     @Test

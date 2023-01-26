@@ -320,7 +320,7 @@ internal class NomisApiServiceTest {
     }
 
     @Test
-    internal fun `will supply authentication token`() {
+    internal fun `will supply authentication token`(): Unit = runBlocking {
       nomisService.getVisit(
         nomisVisitId = 10309617,
       )
@@ -333,7 +333,7 @@ internal class NomisApiServiceTest {
     }
 
     @Test
-    internal fun `will return visit data`() {
+    internal fun `will return visit data`(): Unit = runBlocking {
       val visit = nomisService.getVisit(
         nomisVisitId = 10309617,
       )
@@ -368,9 +368,11 @@ internal class NomisApiServiceTest {
       @Test
       internal fun `will throw an exception`() {
         assertThatThrownBy {
-          nomisService.getVisit(
-            nomisVisitId = 10309617,
-          )
+          runBlocking {
+            nomisService.getVisit(
+              nomisVisitId = 10309617,
+            )
+          }
         }.isInstanceOf(WebClientResponseException.NotFound::class.java)
       }
     }
