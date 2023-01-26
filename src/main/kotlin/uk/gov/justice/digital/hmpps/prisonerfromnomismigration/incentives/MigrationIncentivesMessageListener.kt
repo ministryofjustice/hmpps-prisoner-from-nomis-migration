@@ -3,10 +3,9 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.awspring.cloud.sqs.annotation.SqsListener
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.future.asCompletableFuture
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.future.future
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -35,12 +34,11 @@ class MigrationIncentivesMessageListener(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  @OptIn(DelicateCoroutinesApi::class)
   @SqsListener(INCENTIVES_QUEUE_ID, factory = "hmppsQueueContainerFactoryProxy")
   fun onMessage(message: String, rawMessage: Message): CompletableFuture<Void> {
     log.debug("Received message {}", message)
     val migrationMessage: MigrationMessage<IncentiveMessages, *> = message.fromJson()
-    return GlobalScope.launch {
+    return CoroutineScope(Dispatchers.Default).future {
       runCatching {
         when (migrationMessage.type) {
           MIGRATE_INCENTIVES -> incentivesMigrationService.divideIncentivesByPage(context(message.fromJson()))
@@ -61,7 +59,7 @@ class MigrationIncentivesMessageListener(
         log.error("MessageID:${rawMessage.messageId()}", it)
         throw it
       }
-    }.asCompletableFuture().thenAccept { }
+    }.thenAccept { }
   }
 
   private inline fun <reified T> String.fromJson(): T =
