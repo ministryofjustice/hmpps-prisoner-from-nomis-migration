@@ -16,4 +16,3 @@ hmpps.sqs:
     event:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
-      visibilityTimeout: 1
