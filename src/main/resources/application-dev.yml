@@ -8,7 +8,8 @@ api.base.url:
   visits: http://localhost:8083
   visit.mapping: http://localhost:8084
   sentencing: http://localhost:8085
-
+  mapping: http://localhost:8083
+  incentives: http://localhost:8083
 
 spring:
   r2dbc:
