@@ -1,7 +1,7 @@
 // import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "5.0.0-beta-4"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "5.0.0"
   kotlin("plugin.spring") version "1.8.0"
   // id("org.openapi.generator") version "6.2.1"
 }
@@ -30,7 +30,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-security")
   implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
   implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
-  implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:2.0.0-beta-8")
+  implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:2.0.0-beta-9")
   implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
 
   implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.0.2")
@@ -39,7 +39,7 @@ dependencies {
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8")
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk9")
 
-  implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.14.1")
+  implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.14.2")
 
   runtimeOnly("org.postgresql:r2dbc-postgresql:$r2dbcPostgresVersion")
   runtimeOnly("org.springframework.boot:spring-boot-starter-jdbc")
@@ -54,7 +54,7 @@ dependencies {
   testImplementation("org.testcontainers:localstack:1.17.6")
   testImplementation("org.awaitility:awaitility-kotlin:4.2.0")
   testImplementation("org.testcontainers:postgresql:1.17.6")
-  testImplementation("io.mockk:mockk:1.13.3")
+  testImplementation("io.mockk:mockk:1.13.4")
   testImplementation("javax.xml.bind:jaxb-api:2.3.1")
 }
 
