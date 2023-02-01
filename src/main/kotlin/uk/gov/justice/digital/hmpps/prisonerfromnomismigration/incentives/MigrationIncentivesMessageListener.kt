@@ -3,6 +3,8 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.awspring.cloud.sqs.annotation.SqsListener
+import io.opentelemetry.api.trace.SpanKind
+import io.opentelemetry.instrumentation.annotations.WithSpan
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.future.future
@@ -35,6 +37,7 @@ class MigrationIncentivesMessageListener(
   }
 
   @SqsListener(INCENTIVES_QUEUE_ID, factory = "hmppsQueueContainerFactoryProxy")
+  @WithSpan(value = "sqs-migration-incentives-queue", kind = SpanKind.SERVER)
   fun onMessage(message: String, rawMessage: Message): CompletableFuture<Void> {
     log.debug("Received message {}", message)
     val migrationMessage: MigrationMessage<IncentiveMessages, *> = message.fromJson()

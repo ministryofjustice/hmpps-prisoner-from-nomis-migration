@@ -46,6 +46,8 @@ dependencies {
   runtimeOnly("org.postgresql:postgresql:42.5.2")
   implementation("org.flywaydb:flyway-core")
 
+  implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:1.22.0")
+
   testImplementation("io.swagger.parser.v3:swagger-parser:2.1.11")
   testImplementation("io.jsonwebtoken:jjwt-impl:0.11.5")
   testImplementation("io.jsonwebtoken:jjwt-jackson:0.11.5")
