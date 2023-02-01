@@ -1,7 +1,7 @@
 // import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "5.0.0"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "5.0.1"
   kotlin("plugin.spring") version "1.8.0"
   // id("org.openapi.generator") version "6.2.1"
 }
@@ -46,7 +46,7 @@ dependencies {
   runtimeOnly("org.postgresql:postgresql:42.5.2")
   implementation("org.flywaydb:flyway-core")
 
-  implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:1.22.0")
+  implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:1.22.1")
 
   testImplementation("io.swagger.parser.v3:swagger-parser:2.1.11")
   testImplementation("io.jsonwebtoken:jjwt-impl:0.11.5")
