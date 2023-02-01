@@ -30,7 +30,7 @@ class PrisonOffenderEventListener(
   }
 
   @SqsListener("event", factory = "hmppsQueueContainerFactoryProxy")
-  @WithSpan(value = "prisoner-from-nomis-queue", kind = SpanKind.SERVER)
+  @WithSpan(value = "Digital-Prison-Services-prisoner_from_nomis_queue", kind = SpanKind.SERVER)
   fun onMessage(message: String): CompletableFuture<Void> {
     log.debug("Received offender event message {}", message)
     val sqsMessage: SQSMessage = objectMapper.readValue(message)

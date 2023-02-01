@@ -37,7 +37,7 @@ class MigrationIncentivesMessageListener(
   }
 
   @SqsListener(INCENTIVES_QUEUE_ID, factory = "hmppsQueueContainerFactoryProxy")
-  @WithSpan(value = "sqs-migration-incentives-queue", kind = SpanKind.SERVER)
+  @WithSpan(value = "dps-syscon-migration_incentives_queue", kind = SpanKind.SERVER)
   fun onMessage(message: String, rawMessage: Message): CompletableFuture<Void> {
     log.debug("Received message {}", message)
     val migrationMessage: MigrationMessage<IncentiveMessages, *> = message.fromJson()
