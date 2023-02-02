@@ -34,7 +34,7 @@ class MigrationSentencingMessageListener(
   }
 
   @SqsListener(SENTENCING_QUEUE_ID, factory = "hmppsQueueContainerFactoryProxy")
-  @WithSpan(value = "sqs-migration-sentencing-queue", kind = SpanKind.SERVER)
+  @WithSpan(value = "dps-syscon-migration_sentencing_queue", kind = SpanKind.SERVER)
   fun onMessage(message: String, rawMessage: Message): CompletableFuture<Void>? {
     log.debug("Received message {}", message)
     val migrationMessage: MigrationMessage<SentencingMessages, *> = message.fromJson()
