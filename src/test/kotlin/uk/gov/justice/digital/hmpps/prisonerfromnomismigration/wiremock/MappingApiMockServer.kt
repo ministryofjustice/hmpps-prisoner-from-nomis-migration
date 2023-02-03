@@ -445,7 +445,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubAllNomisSentencingAdjustmentsMappingNotFound() {
     stubFor(
       get(
-        urlPathMatching("/mapping/sentencing/adjustments/nomis-adjustment-type/SENTENCE/nomis-adjustment-id/\\d*")
+        urlPathMatching("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/\\d*")
       ).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
@@ -475,9 +475,9 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
 {
     "content": [
         {
-            "sentenceAdjustmentId": 191747,
+            "adjustmentId": 191747,
             "nomisAdjustmentId": 123,
-            "nomisAdjustmentType": "SENTENCE",
+            "nomisAdjustmentCategory": "SENTENCE",
             "label": "2022-02-14T09:58:45",
             "whenCreated": "$whenCreated",
             "mappingType": "MIGRATED"
@@ -549,7 +549,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       times,
       postRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments")).withRequestBody(
         matchingJsonPath(
-          "sentenceAdjustmentId",
+          "adjustmentId",
           equalTo("$it")
         )
       )

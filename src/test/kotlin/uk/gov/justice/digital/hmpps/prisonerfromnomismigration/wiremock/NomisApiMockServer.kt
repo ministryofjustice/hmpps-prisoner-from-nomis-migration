@@ -319,18 +319,18 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubGetSentenceAdjustmentsInitialCount(totalElements: Long) {
     nomisApi.stubFor(
       get(
-        urlPathEqualTo("/sentence-adjustments/ids")
+        urlPathEqualTo("/adjustments/ids")
       )
         .withQueryParam("page", equalTo("0"))
         .withQueryParam("size", equalTo("1"))
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(sentencingAdjustmentPagedResponse(totalElements = totalElements))
+            .withBody(adjustmentIdsPagedResponse(totalElements = totalElements))
         )
     )
   }
 
-  fun stubMultipleGetSentenceAdjustmentsCounts(totalElements: Long, pageSize: Long) {
+  fun stubMultipleGetAdjustmentIdCounts(totalElements: Long, pageSize: Long) {
     // for each page create a response for each sentence adjustment id starting from 1 up to `totalElements`
 
     val pages = (totalElements / pageSize) + 1
@@ -339,15 +339,15 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
       val endBSentenceAdjustmentId = min((page * pageSize) + pageSize, totalElements)
       nomisApi.stubFor(
         get(
-          urlPathEqualTo("/sentence-adjustments/ids")
+          urlPathEqualTo("/adjustments/ids")
         )
           .withQueryParam("page", equalTo(page.toString()))
           .willReturn(
             aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
               .withBody(
-                sentencingAdjustmentPagedResponse(
+                adjustmentIdsPagedResponse(
                   totalElements = totalElements,
-                  sentenceAdjustmentIds = (startSentenceAdjustmentId..endBSentenceAdjustmentId).map { it },
+                  adjustmentIds = (startSentenceAdjustmentId..endBSentenceAdjustmentId).map { it },
                   pageNumber = page,
                   pageSize = pageSize
                 ),
@@ -371,10 +371,10 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }
   }
 
-  fun verifyGetSentenceAdjustmentsCount(fromDate: String, toDate: String) {
+  fun verifyGetAdjustmentsIdsCount(fromDate: String, toDate: String) {
     nomisApi.verify(
       getRequestedFor(
-        urlPathEqualTo("/sentence-adjustments/ids")
+        urlPathEqualTo("/adjustments/ids")
       )
         .withQueryParam("fromDate", equalTo(fromDate))
         .withQueryParam("toDate", equalTo(toDate))
@@ -563,13 +563,13 @@ private fun incentiveResponse(
   """.trimIndent()
 }
 
-private fun sentencingAdjustmentPagedResponse(
+private fun adjustmentIdsPagedResponse(
   totalElements: Long = 10,
-  sentenceAdjustmentIds: List<Long> = (0L..10L).toList(),
+  adjustmentIds: List<Long> = (0L..10L).toList(),
   pageSize: Long = 10,
   pageNumber: Long = 0,
 ): String {
-  val content = sentenceAdjustmentIds.map { """{ "adjustmentId": $it, "adjustmentType": "SENTENCE" }""" }
+  val content = adjustmentIds.map { """{ "adjustmentId": $it, "adjustmentCategory": "SENTENCE" }""" }
     .joinToString { it }
   return """
 {
@@ -599,7 +599,7 @@ private fun sentencingAdjustmentPagedResponse(
         "unsorted": false
     },
     "first": true,
-    "numberOfElements": ${sentenceAdjustmentIds.size},
+    "numberOfElements": ${adjustmentIds.size},
     "empty": false
 }                
       
@@ -613,13 +613,13 @@ private fun sentenceAdjustmentResponse(
   return """
 {
   "bookingId":$bookingId,
-  "sentenceAdjustmentId":$sentenceAdjustmentId,
+  "id":$sentenceAdjustmentId,
   "commentText":"a comment",
   "adjustmentDate":"2021-10-06",
   "adjustmentFromDate":"2021-10-07",
   "active":true,
   "adjustmentDays":8,
-  "sentenceAdjustmentType":"debit"
+  "adjustmentType":"debit"
   }
    
   """.trimIndent()

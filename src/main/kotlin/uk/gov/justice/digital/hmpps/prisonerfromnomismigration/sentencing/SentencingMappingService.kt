@@ -14,12 +14,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationDet
 class SentencingMappingService(@Qualifier("mappingApiWebClient") private val webClient: WebClient) {
   suspend fun findNomisSentencingAdjustmentMapping(
     nomisAdjustmentId: Long,
-    nomisAdjustmentType: String,
+    nomisAdjustmentCategory: String,
   ): SentencingAdjustmentNomisMapping? {
     return webClient.get()
       .uri(
-        "/mapping/sentencing/adjustments/nomis-adjustment-type/{nomisAdjustmentType}/nomis-adjustment-id/{nomisAdjustmentId}",
-        nomisAdjustmentType,
+        "/mapping/sentencing/adjustments/nomis-adjustment-category/{nomisAdjustmentCategory}/nomis-adjustment-id/{nomisAdjustmentId}",
+        nomisAdjustmentCategory,
         nomisAdjustmentId,
       )
       .retrieve()
@@ -32,14 +32,14 @@ class SentencingMappingService(@Qualifier("mappingApiWebClient") private val web
 
   suspend fun createNomisSentencingAdjustmentMigrationMapping(
     nomisAdjustmentId: Long,
-    nomisAdjustmentType: String,
-    sentenceAdjustmentId: Long,
+    nomisAdjustmentCategory: String,
+    adjustmentId: String,
     migrationId: String
   ) {
     createNomisSentenceAdjustmentMapping(
       nomisAdjustmentId = nomisAdjustmentId,
-      nomisAdjustmentType = nomisAdjustmentType,
-      sentenceAdjustmentId = sentenceAdjustmentId,
+      nomisAdjustmentCategory = nomisAdjustmentCategory,
+      adjustmentId = adjustmentId,
       migrationId = migrationId,
       mappingType = "MIGRATED"
     )
@@ -47,8 +47,8 @@ class SentencingMappingService(@Qualifier("mappingApiWebClient") private val web
 
   private suspend fun createNomisSentenceAdjustmentMapping(
     nomisAdjustmentId: Long,
-    nomisAdjustmentType: String,
-    sentenceAdjustmentId: Long,
+    nomisAdjustmentCategory: String,
+    adjustmentId: String,
     mappingType: String,
     migrationId: String? = null
   ) {
@@ -57,8 +57,8 @@ class SentencingMappingService(@Qualifier("mappingApiWebClient") private val web
       .bodyValue(
         SentencingAdjustmentNomisMapping(
           nomisAdjustmentId = nomisAdjustmentId,
-          nomisAdjustmentType = nomisAdjustmentType,
-          sentenceAdjustmentId = sentenceAdjustmentId,
+          nomisAdjustmentCategory = nomisAdjustmentCategory,
+          adjustmentId = adjustmentId,
           label = migrationId,
           mappingType = mappingType
         )
@@ -103,8 +103,8 @@ class SentencingMappingService(@Qualifier("mappingApiWebClient") private val web
 
 data class SentencingAdjustmentNomisMapping(
   val nomisAdjustmentId: Long,
-  val nomisAdjustmentType: String,
-  val sentenceAdjustmentId: Long,
+  val nomisAdjustmentCategory: String,
+  val adjustmentId: String,
   val label: String? = null,
   val mappingType: String
 )

@@ -90,7 +90,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     internal fun `will start processing pages of sentence adjustments`() {
       nomisApi.stubGetSentenceAdjustmentsInitialCount(86)
-      nomisApi.stubMultipleGetSentenceAdjustmentsCounts(totalElements = 86, pageSize = 10)
+      nomisApi.stubMultipleGetAdjustmentIdCounts(totalElements = 86, pageSize = 10)
       nomisApi.stubMultipleGetSentenceAdjustments(86)
       mappingApi.stubAllNomisSentencingAdjustmentsMappingNotFound()
       mappingApi.stubSentenceAdjustmentMappingCreate()
@@ -123,7 +123,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
       }
 
       // check filter matches what is passed in
-      nomisApi.verifyGetSentenceAdjustmentsCount(
+      nomisApi.verifyGetAdjustmentsIdsCount(
         fromDate = "2020-01-01",
         toDate = "2020-01-02"
       )
@@ -136,7 +136,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     internal fun `will add analytical events for starting, ending and each migrated record`() {
       nomisApi.stubGetSentenceAdjustmentsInitialCount(26)
-      nomisApi.stubMultipleGetSentenceAdjustmentsCounts(totalElements = 26, pageSize = 10)
+      nomisApi.stubMultipleGetAdjustmentIdCounts(totalElements = 26, pageSize = 10)
       nomisApi.stubMultipleGetSentenceAdjustments(26)
       sentencingApi.stubCreateSentenceAdjustment()
       mappingApi.stubAllNomisSentencingAdjustmentsMappingNotFound()
@@ -203,7 +203,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     internal fun `will retry to create a mapping, and only the mapping, if it fails first time`() {
       nomisApi.stubGetSentenceAdjustmentsInitialCount(1)
-      nomisApi.stubMultipleGetSentenceAdjustmentsCounts(totalElements = 1, pageSize = 10)
+      nomisApi.stubMultipleGetAdjustmentIdCounts(totalElements = 1, pageSize = 10)
       nomisApi.stubMultipleGetSentenceAdjustments(totalElements = 1)
       mappingApi.stubAllNomisSentencingAdjustmentsMappingNotFound()
       sentencingApi.stubCreateSentenceAdjustment(654321)
@@ -508,7 +508,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
     internal fun `will terminate a running migration`() {
       val count = 30L
       nomisApi.stubGetSentenceAdjustmentsInitialCount(count)
-      nomisApi.stubMultipleGetSentenceAdjustmentsCounts(totalElements = count, pageSize = 10)
+      nomisApi.stubMultipleGetAdjustmentIdCounts(totalElements = count, pageSize = 10)
       mappingApi.stubSentenceAdjustmentMappingByMigrationId(count = count.toInt())
 
       val migrationId = webTestClient.post().uri("/migrate/sentencing")

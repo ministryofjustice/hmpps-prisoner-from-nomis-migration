@@ -117,15 +117,15 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       .onErrorResume(WebClientResponseException::class.java) { emptyWhenNotFound(it, "No current incentive found for bookingId $bookingId") }
       .awaitSingleOrNull()
 
-  suspend fun getSentenceAdjustments(
+  suspend fun getSentencingAdjustmentIds(
     fromDate: LocalDate?,
     toDate: LocalDate?,
     pageNumber: Long,
     pageSize: Long
-  ): PageImpl<NomisSentencingAdjustmentId> =
+  ): PageImpl<NomisAdjustmentId> =
     webClient.get()
       .uri {
-        it.path("/sentence-adjustments/ids")
+        it.path("/adjustments/ids")
           .queryParam("fromDate", fromDate)
           .queryParam("toDate", toDate)
           .queryParam("page", pageNumber)
@@ -133,7 +133,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
           .build()
       }
       .retrieve()
-      .bodyToMono(typeReference<RestResponsePage<NomisSentencingAdjustmentId>>())
+      .bodyToMono(typeReference<RestResponsePage<NomisAdjustmentId>>())
       .awaitSingle()
 
   suspend fun getSentenceAdjustment(
@@ -162,9 +162,9 @@ data class IncentiveId(
   val sequence: Long,
 )
 
-data class NomisSentencingAdjustmentId(
+data class NomisAdjustmentId(
   val adjustmentId: Long,
-  val adjustmentType: String,
+  val adjustmentCategory: String,
 )
 
 data class NomisVisitor(
@@ -240,10 +240,10 @@ data class NomisIncentive(
 }
 
 data class NomisSentenceAdjustment(
-  val sentenceAdjustmentId: Long,
+  val id: Long,
   val bookingId: Long,
   val sentenceSequence: Long,
-  val sentenceAdjustmentType: String,
+  val adjustmentType: String,
   val adjustmentDate: LocalDate,
   val adjustmentFromDate: LocalDate?,
   val adjustmentToDate: LocalDate?,
@@ -254,7 +254,7 @@ data class NomisSentenceAdjustment(
   fun toSentenceAdjustment(): CreateSentenceAdjustment = CreateSentenceAdjustment(
     bookingId = bookingId,
     sentenceSequence = sentenceSequence,
-    sentenceAdjustmentType = sentenceAdjustmentType,
+    adjustmentType = adjustmentType,
     adjustmentDate = adjustmentDate,
     adjustmentFromDate = adjustmentFromDate,
     adjustmentDays = adjustmentDays,
