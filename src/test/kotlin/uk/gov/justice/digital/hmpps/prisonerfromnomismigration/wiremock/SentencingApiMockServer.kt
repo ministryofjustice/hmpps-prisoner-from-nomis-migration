@@ -47,7 +47,7 @@ class SentencingApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubCreateSentenceAdjustment(sentenceAdjustmentId: Long = 654321) {
     stubFor(
-      WireMock.post(WireMock.urlMatching("/migration/sentencing/sentence-adjustments")).willReturn(
+      WireMock.post(WireMock.urlMatching("/migration/sentencing/adjustments")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.CREATED.value())
@@ -56,5 +56,5 @@ class SentencingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun createSentenceAdjustmentCount() = findAll(WireMock.postRequestedFor(WireMock.urlMatching("/migration/sentencing/sentence-adjustments"))).count()
+  fun createSentenceAdjustmentCount() = findAll(WireMock.postRequestedFor(WireMock.urlMatching("/migration/sentencing/adjustments"))).count()
 }

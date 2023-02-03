@@ -14,8 +14,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.SENTENCING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisAdjustmentId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisSentencingAdjustmentId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.asStringOrBlank
 import java.time.Duration
 import java.time.LocalDateTime
@@ -36,7 +36,7 @@ class SentencingMigrationService(
   }
 
   suspend fun migrateSentenceAdjustments(migrationFilter: SentencingMigrationFilter): MigrationContext<SentencingMigrationFilter> {
-    val count = nomisApiService.getSentenceAdjustments(
+    val count = nomisApiService.getSentencingAdjustmentIds(
       fromDate = migrationFilter.fromDate,
       toDate = migrationFilter.toDate,
       pageNumber = 0,
@@ -96,7 +96,7 @@ class SentencingMigrationService(
   }
 
   suspend fun migrateSentenceAdjustmentsForPage(context: MigrationContext<SentencingPage>) =
-    nomisApiService.getSentenceAdjustments(
+    nomisApiService.getSentencingAdjustmentIds(
       fromDate = context.body.filter.fromDate,
       toDate = context.body.filter.toDate,
       pageNumber = context.body.pageNumber,
@@ -110,12 +110,12 @@ class SentencingMigrationService(
       )
     }?.forEach { queueService.sendMessage(MIGRATE_SENTENCING_ADJUSTMENT, it) }
 
-  suspend fun migrateSentencingAdjustment(context: MigrationContext<NomisSentencingAdjustmentId>) {
+  suspend fun migrateSentencingAdjustment(context: MigrationContext<NomisAdjustmentId>) {
     val nomisAdjustmentId = context.body.adjustmentId
-    val nomisAdjustmentType = context.body.adjustmentType
+    val nomisAdjustmentCategory = context.body.adjustmentCategory
 
-    sentencingMappingService.findNomisSentencingAdjustmentMapping(nomisAdjustmentId, nomisAdjustmentType)?.run {
-      log.info("Will not migrate the sentence adjustment since it is migrated already, NOMIS Sentence Adjustment id is $nomisAdjustmentId, type is $nomisAdjustmentType, sentence adjustment id is ${this.sentenceAdjustmentId} as part migration ${this.label ?: "NONE"} (${this.mappingType})")
+    sentencingMappingService.findNomisSentencingAdjustmentMapping(nomisAdjustmentId, nomisAdjustmentCategory)?.run {
+      log.info("Will not migrate the sentence adjustment since it is migrated already, NOMIS Sentence Adjustment id is $nomisAdjustmentId, type is $nomisAdjustmentCategory, sentence adjustment id is ${this.adjustmentId} as part migration ${this.label ?: "NONE"} (${this.mappingType})")
     }
       ?: run {
         // TODO: get either sentence adjustment or key date adjustment based on adjustment type
@@ -125,8 +125,8 @@ class SentencingMigrationService(
             .also {
               createSentenceAdjustmentMapping(
                 nomisAdjustmentId = nomisAdjustmentId,
-                nomisAdjustmentType = nomisAdjustmentType,
-                sentenceAdjustmentId = it.id,
+                nomisAdjustmentCategory = nomisAdjustmentCategory,
+                adjustmentId = it.id,
                 context = context
               )
             }
@@ -134,8 +134,8 @@ class SentencingMigrationService(
           "nomis-migration-sentence-adjustment-migrated",
           mapOf(
             "nomisAdjustmentId" to nomisAdjustmentId.toString(),
-            "nomisAdjustmentType" to nomisAdjustmentType,
-            "sentenceAdjustmentId" to migratedSentenceAdjustment.id.toString(),
+            "nomisAdjustmentCategory" to nomisAdjustmentCategory,
+            "adjustmentId" to migratedSentenceAdjustment.id.toString(),
             "migrationId" to context.migrationId,
           ),
           null
@@ -258,19 +258,19 @@ class SentencingMigrationService(
 
   private suspend fun createSentenceAdjustmentMapping(
     nomisAdjustmentId: Long,
-    nomisAdjustmentType: String,
-    sentenceAdjustmentId: Long,
+    nomisAdjustmentCategory: String,
+    adjustmentId: String,
     context: MigrationContext<*>
   ) = try {
     sentencingMappingService.createNomisSentencingAdjustmentMigrationMapping(
       nomisAdjustmentId = nomisAdjustmentId,
-      nomisAdjustmentType = nomisAdjustmentType,
-      sentenceAdjustmentId = sentenceAdjustmentId,
+      nomisAdjustmentCategory = nomisAdjustmentCategory,
+      adjustmentId = adjustmentId,
       migrationId = context.migrationId,
     )
   } catch (e: Exception) {
     log.error(
-      "Failed to create mapping for  adjustment nomis id: $nomisAdjustmentId and type $nomisAdjustmentType, sentence adjustment id $sentenceAdjustmentId",
+      "Failed to create mapping for  adjustment nomis id: $nomisAdjustmentId and type $nomisAdjustmentCategory, sentence adjustment id $adjustmentId",
       e
     )
     queueService.sendMessage(
@@ -279,8 +279,8 @@ class SentencingMigrationService(
         context = context,
         body = SentencingAdjustmentMapping(
           nomisAdjustmentId = nomisAdjustmentId,
-          nomisAdjustmentType = nomisAdjustmentType,
-          sentenceAdjustmentId = sentenceAdjustmentId
+          nomisAdjustmentCategory = nomisAdjustmentCategory,
+          adjustmentId = adjustmentId
         )
       )
     )
@@ -289,16 +289,16 @@ class SentencingMigrationService(
   suspend fun retryCreateSentenceAdjustmentMapping(context: MigrationContext<SentencingAdjustmentMapping>) =
     sentencingMappingService.createNomisSentencingAdjustmentMigrationMapping(
       nomisAdjustmentId = context.body.nomisAdjustmentId,
-      nomisAdjustmentType = context.body.nomisAdjustmentType,
-      sentenceAdjustmentId = context.body.sentenceAdjustmentId,
+      nomisAdjustmentCategory = context.body.nomisAdjustmentCategory,
+      adjustmentId = context.body.adjustmentId,
       migrationId = context.migrationId,
     )
 }
 
 data class SentencingAdjustmentMapping(
   val nomisAdjustmentId: Long,
-  val nomisAdjustmentType: String,
-  val sentenceAdjustmentId: Long,
+  val nomisAdjustmentCategory: String,
+  val adjustmentId: String,
 )
 
 // TODO move this
