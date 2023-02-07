@@ -10,7 +10,7 @@ import java.time.LocalDate
 
 @Service
 class SentencingService(@Qualifier("sentencingApiWebClient") private val webClient: WebClient) {
-  suspend fun migrateSentencingAdjustment(sentenceAdjustment: CreateSentenceAdjustment): CreateSentencingAdjustmentResponse =
+  suspend fun migrateSentencingAdjustment(sentenceAdjustment: CreateSentencingAdjustment): CreateSentencingAdjustmentResponse =
     webClient.post()
       .uri("/migration/sentencing/adjustments")
       .bodyValue(sentenceAdjustment)
@@ -20,10 +20,10 @@ class SentencingService(@Qualifier("sentencingApiWebClient") private val webClie
 }
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-data class CreateSentenceAdjustment(
+data class CreateSentencingAdjustment(
   // will change once Sentencing API implemented
   val bookingId: Long,
-  val sentenceSequence: Long,
+  val sentenceSequence: Long? = null,
   val adjustmentType: String,
   @JsonFormat(pattern = "yyyy-MM-dd")
   val adjustmentDate: LocalDate,

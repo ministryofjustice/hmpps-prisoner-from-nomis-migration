@@ -14,8 +14,8 @@ import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.Message
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.context
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.CANCEL_MIGRATE_SENTENCING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.MIGRATE_SENTENCE_ADJUSTMENTS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.MIGRATE_SENTENCING_ADJUSTMENT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.MIGRATE_SENTENCING_ADJUSTMENTS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.MIGRATE_SENTENCING_ADJUSTMENTS_BY_PAGE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.MIGRATE_SENTENCING_STATUS_CHECK
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.RETRY_SENTENCING_ADJUSTMENT_MAPPING
@@ -41,7 +41,7 @@ class MigrationSentencingMessageListener(
     return CoroutineScope(Dispatchers.Default).future {
       runCatching {
         when (migrationMessage.type) {
-          MIGRATE_SENTENCE_ADJUSTMENTS -> sentencingMigrationService.divideSentencingAdjustmentsByPage(context(message.fromJson()))
+          MIGRATE_SENTENCING_ADJUSTMENTS -> sentencingMigrationService.divideSentencingAdjustmentsByPage(context(message.fromJson()))
           MIGRATE_SENTENCING_ADJUSTMENTS_BY_PAGE -> sentencingMigrationService.migrateSentenceAdjustmentsForPage(
             context(
               message.fromJson()

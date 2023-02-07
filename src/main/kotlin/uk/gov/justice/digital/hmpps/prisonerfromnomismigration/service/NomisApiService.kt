@@ -19,7 +19,7 @@ import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.CreateIncentiveIEP
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.ReviewType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.UpdateIncentiveIEP
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.CreateSentenceAdjustment
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.CreateSentencingAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomUsageResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationFilter
 import java.time.LocalDate
@@ -138,11 +138,20 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
 
   suspend fun getSentenceAdjustment(
     nomisSentenceAdjustmentId: Long,
-  ): NomisSentenceAdjustment =
+  ): NomisAdjustment =
     webClient.get()
       .uri("/sentence-adjustments/{nomisSentenceAdjustmentId}", nomisSentenceAdjustmentId)
       .retrieve()
-      .bodyToMono(NomisSentenceAdjustment::class.java)
+      .bodyToMono(NomisAdjustment::class.java)
+      .awaitSingle()
+
+  suspend fun getKeyDateAdjustment(
+    nomisKeyDateAdjustmentId: Long,
+  ): NomisAdjustment =
+    webClient.get()
+      .uri("/key-date-adjustments/{nomisKeyDateAdjustmentId}", nomisKeyDateAdjustmentId)
+      .retrieve()
+      .bodyToMono(NomisAdjustment::class.java)
       .awaitSingle()
 
   fun <T> emptyWhenNotFound(exception: WebClientResponseException, optionalWarnMessage: String? = null): Mono<T> {
@@ -239,11 +248,11 @@ data class NomisIncentive(
       iepDateTime.withSecond(whenCreated.second)
 }
 
-data class NomisSentenceAdjustment(
+data class NomisAdjustment(
   val id: Long,
   val bookingId: Long,
-  val sentenceSequence: Long,
-  val adjustmentType: String,
+  val sentenceSequence: Long? = null,
+  val adjustmentType: NomisCodeDescription,
   val adjustmentDate: LocalDate,
   val adjustmentFromDate: LocalDate?,
   val adjustmentToDate: LocalDate?,
@@ -251,10 +260,10 @@ data class NomisSentenceAdjustment(
   val comment: String?,
   val active: Boolean,
 ) {
-  fun toSentenceAdjustment(): CreateSentenceAdjustment = CreateSentenceAdjustment(
+  fun toSentencingAdjustment(): CreateSentencingAdjustment = CreateSentencingAdjustment(
     bookingId = bookingId,
     sentenceSequence = sentenceSequence,
-    adjustmentType = adjustmentType,
+    adjustmentType = adjustmentType.code,
     adjustmentDate = adjustmentDate,
     adjustmentFromDate = adjustmentFromDate,
     adjustmentDays = adjustmentDays,

@@ -31,8 +31,8 @@ import org.springframework.data.domain.Pageable
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.CANCEL_MIGRATE_SENTENCING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.MIGRATE_SENTENCE_ADJUSTMENTS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.MIGRATE_SENTENCING_ADJUSTMENT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.MIGRATE_SENTENCING_ADJUSTMENTS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.MIGRATE_SENTENCING_ADJUSTMENTS_BY_PAGE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.MIGRATE_SENTENCING_STATUS_CHECK
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.RETRY_SENTENCING_ADJUSTMENT_MAPPING
@@ -41,9 +41,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.SENTENCING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisAdjustmentId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisSentenceAdjustment
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisCodeDescription
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -104,7 +105,7 @@ internal class SentencingMigrationServiceTest {
     @Test
     internal fun `will pass filter through to get total count along with a tiny page count`() {
       runBlocking {
-        service.migrateSentenceAdjustments(
+        service.migrateAdjustments(
           SentencingMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
@@ -128,7 +129,7 @@ internal class SentencingMigrationServiceTest {
         pages(23)
 
       runBlocking {
-        service.migrateSentenceAdjustments(
+        service.migrateAdjustments(
           SentencingMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
@@ -137,7 +138,7 @@ internal class SentencingMigrationServiceTest {
       }
 
       verify(queueService).sendMessage(
-        message = eq(MIGRATE_SENTENCE_ADJUSTMENTS),
+        message = eq(MIGRATE_SENTENCING_ADJUSTMENTS),
         context = check<MigrationContext<SentencingMigrationFilter>> {
           assertThat(it.estimatedCount).isEqualTo(23)
           assertThat(it.body.fromDate).isEqualTo(LocalDate.parse("2020-01-01"))
@@ -158,7 +159,7 @@ internal class SentencingMigrationServiceTest {
         pages(23)
 
       runBlocking {
-        service.migrateSentenceAdjustments(
+        service.migrateAdjustments(
           sentencingMigrationFilter
         )
       }
@@ -188,7 +189,7 @@ internal class SentencingMigrationServiceTest {
         pages(23)
 
       runBlocking {
-        service.migrateSentenceAdjustments(
+        service.migrateAdjustments(
           SentencingMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
@@ -201,7 +202,7 @@ internal class SentencingMigrationServiceTest {
         check {
           assertThat(it["migrationId"]).isNotNull
           assertThat(it["estimatedCount"]).isEqualTo("23")
-          assertThat(it["sentencingMigrationType"]).isEqualTo("Sentence Adjustments")
+          assertThat(it["sentencingMigrationType"]).isEqualTo("Sentencing Adjustments")
           assertThat(it["fromDate"]).isEqualTo("2020-01-01")
           assertThat(it["toDate"]).isEqualTo("2020-01-02")
         },
@@ -222,7 +223,7 @@ internal class SentencingMigrationServiceTest {
         pages(23)
 
       runBlocking {
-        service.migrateSentenceAdjustments(
+        service.migrateAdjustments(
           SentencingMigrationFilter()
         )
       }
@@ -232,7 +233,7 @@ internal class SentencingMigrationServiceTest {
         check {
           assertThat(it["migrationId"]).isNotNull
           assertThat(it["estimatedCount"]).isEqualTo("23")
-          assertThat(it["sentencingMigrationType"]).isEqualTo("Sentence Adjustments")
+          assertThat(it["sentencingMigrationType"]).isEqualTo("Sentencing Adjustments")
           assertThat(it["fromDate"]).isEqualTo("")
           assertThat(it["toDate"]).isEqualTo("")
         },
@@ -809,7 +810,7 @@ internal class SentencingMigrationServiceTest {
 
       verify(sentencingService).migrateSentencingAdjustment(
         eq(
-          CreateSentenceAdjustment(
+          CreateSentencingAdjustment(
             adjustmentDate = adjustmentDate,
             adjustmentFromDate = adjustmentFromDate,
             adjustmentDays = 8,
@@ -817,7 +818,7 @@ internal class SentencingMigrationServiceTest {
             sentenceSequence = 2,
             comment = "a comment",
             active = true,
-            adjustmentType = "credit"
+            adjustmentType = "ADA"
           )
         )
       )
@@ -949,14 +950,14 @@ fun aNomisSentenceAdjustment(
   id: Long = 1,
   bookingId: Long = 606,
   sentenceSequence: Long = 2,
-  adjustmentType: String = "credit",
+  adjustmentType: NomisCodeDescription = NomisCodeDescription(code = "ADA", "type description"),
   adjustmentDate: LocalDate = LocalDate.parse("2020-01-01"),
   adjustmentFromDate: LocalDate? = LocalDate.parse("2020-02-01"),
   adjustmentToDate: LocalDate? = null,
   adjustmentDays: Long = 8,
   comment: String? = "a comment",
   active: Boolean = true,
-) = NomisSentenceAdjustment(
+) = NomisAdjustment(
   id = id,
   bookingId = bookingId,
   sentenceSequence = sentenceSequence,

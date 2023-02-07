@@ -45,7 +45,7 @@ class SentencingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubCreateSentenceAdjustment(sentenceAdjustmentId: Long = 654321) {
+  fun stubCreateSentencingAdjustment(sentenceAdjustmentId: Long = 654321) {
     stubFor(
       WireMock.post(WireMock.urlMatching("/migration/sentencing/adjustments")).willReturn(
         aResponse()

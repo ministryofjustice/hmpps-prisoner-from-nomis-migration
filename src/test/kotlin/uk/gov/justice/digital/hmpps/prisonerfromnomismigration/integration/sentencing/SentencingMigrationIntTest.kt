@@ -87,15 +87,15 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().isForbidden
     }
 
-    @Test
     internal fun `will start processing pages of sentence adjustments`() {
       nomisApi.stubGetSentenceAdjustmentsInitialCount(86)
       nomisApi.stubMultipleGetAdjustmentIdCounts(totalElements = 86, pageSize = 10)
-      nomisApi.stubMultipleGetSentenceAdjustments(86)
+      nomisApi.stubMultipleGetSentenceAdjustments(1..86 step 2)
+      nomisApi.stubMultipleGetKeyDateAdjustments(2..86 step 2)
       mappingApi.stubAllNomisSentencingAdjustmentsMappingNotFound()
       mappingApi.stubSentenceAdjustmentMappingCreate()
 
-      sentencingApi.stubCreateSentenceAdjustment()
+      sentencingApi.stubCreateSentencingAdjustment()
       mappingApi.stubSentenceAdjustmentMappingByMigrationId(count = 86)
 
       webTestClient.post().uri("/migrate/sentencing")
@@ -137,8 +137,9 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
     internal fun `will add analytical events for starting, ending and each migrated record`() {
       nomisApi.stubGetSentenceAdjustmentsInitialCount(26)
       nomisApi.stubMultipleGetAdjustmentIdCounts(totalElements = 26, pageSize = 10)
-      nomisApi.stubMultipleGetSentenceAdjustments(26)
-      sentencingApi.stubCreateSentenceAdjustment()
+      nomisApi.stubMultipleGetSentenceAdjustments(1..26 step 2)
+      nomisApi.stubMultipleGetKeyDateAdjustments(2..26 step 2)
+      sentencingApi.stubCreateSentencingAdjustment()
       mappingApi.stubAllNomisSentencingAdjustmentsMappingNotFound()
       mappingApi.stubSentenceAdjustmentMappingCreate()
 
@@ -171,7 +172,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
       }
 
       verify(telemetryClient).trackEvent(eq("nomis-migration-sentencing-started"), any(), isNull())
-      verify(telemetryClient, times(26)).trackEvent(eq("nomis-migration-sentence-adjustment-migrated"), any(), isNull())
+      verify(telemetryClient, times(26)).trackEvent(eq("nomis-migration-sentencing-adjustment-migrated"), any(), isNull())
 
       await.atMost(Duration.ofSeconds(21)) untilAsserted {
         verify(telemetryClient).trackEvent(
@@ -204,9 +205,9 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
     internal fun `will retry to create a mapping, and only the mapping, if it fails first time`() {
       nomisApi.stubGetSentenceAdjustmentsInitialCount(1)
       nomisApi.stubMultipleGetAdjustmentIdCounts(totalElements = 1, pageSize = 10)
-      nomisApi.stubMultipleGetSentenceAdjustments(totalElements = 1)
+      nomisApi.stubMultipleGetSentenceAdjustments(1..1)
       mappingApi.stubAllNomisSentencingAdjustmentsMappingNotFound()
-      sentencingApi.stubCreateSentenceAdjustment(654321)
+      sentencingApi.stubCreateSentencingAdjustment(654321)
       mappingApi.stubSentenceAdjustmentMappingCreateFailureFollowedBySuccess()
 
       webTestClient.post().uri("/migrate/sentencing")

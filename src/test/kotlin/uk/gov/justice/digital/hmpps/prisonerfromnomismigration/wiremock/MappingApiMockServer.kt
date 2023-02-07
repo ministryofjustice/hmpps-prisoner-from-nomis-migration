@@ -453,6 +453,16 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withBody("""{"message":"Not found"}""")
       )
     )
+    stubFor(
+      get(
+        urlPathMatching("/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id/\\d*")
+      ).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.NOT_FOUND.value())
+          .withBody("""{"message":"Not found"}""")
+      )
+    )
   }
 
   fun stubSentenceAdjustmentMappingCreate() {
