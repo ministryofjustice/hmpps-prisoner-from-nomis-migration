@@ -7,8 +7,8 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatchId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.MIGRATE_SENTENCE_ADJUSTMENTS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.MIGRATE_SENTENCING_ADJUSTMENT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.MIGRATE_SENTENCING_ADJUSTMENTS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
@@ -35,7 +35,7 @@ class SentencingMigrationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  suspend fun migrateSentenceAdjustments(migrationFilter: SentencingMigrationFilter): MigrationContext<SentencingMigrationFilter> {
+  suspend fun migrateAdjustments(migrationFilter: SentencingMigrationFilter): MigrationContext<SentencingMigrationFilter> {
     val count = nomisApiService.getSentencingAdjustmentIds(
       fromDate = migrationFilter.fromDate,
       toDate = migrationFilter.toDate,
@@ -49,13 +49,13 @@ class SentencingMigrationService(
       body = migrationFilter,
       estimatedCount = count
     ).apply {
-      queueService.sendMessage(MIGRATE_SENTENCE_ADJUSTMENTS, this)
+      queueService.sendMessage(MIGRATE_SENTENCING_ADJUSTMENTS, this)
     }.also {
       telemetryClient.trackEvent(
         "nomis-migration-sentencing-started",
         mapOf<String, String>(
           "migrationId" to it.migrationId,
-          "sentencingMigrationType" to "Sentence Adjustments",
+          "sentencingMigrationType" to "Sentencing Adjustments",
           "estimatedCount" to it.estimatedCount.toString(),
           "fromDate" to it.body.fromDate.asStringOrBlank(),
           "toDate" to it.body.toDate.asStringOrBlank(),
@@ -115,15 +115,17 @@ class SentencingMigrationService(
     val nomisAdjustmentCategory = context.body.adjustmentCategory
 
     sentencingMappingService.findNomisSentencingAdjustmentMapping(nomisAdjustmentId, nomisAdjustmentCategory)?.run {
-      log.info("Will not migrate the sentence adjustment since it is migrated already, NOMIS Sentence Adjustment id is $nomisAdjustmentId, type is $nomisAdjustmentCategory, sentence adjustment id is ${this.adjustmentId} as part migration ${this.label ?: "NONE"} (${this.mappingType})")
+      log.info("Will not migrate the adjustment since it is migrated already, NOMIS Adjustment id is $nomisAdjustmentId, type is $nomisAdjustmentCategory, sentencing adjustment id is ${this.adjustmentId} as part migration ${this.label ?: "NONE"} (${this.mappingType})")
     }
       ?: run {
-        // TODO: get either sentence adjustment or key date adjustment based on adjustment type
-        val nomisSentenceAdjustment = nomisApiService.getSentenceAdjustment(nomisAdjustmentId)
+        val nomisAdjustment =
+          if (nomisAdjustmentCategory == "SENTENCE") nomisApiService.getSentenceAdjustment(nomisAdjustmentId)
+          else nomisApiService.getKeyDateAdjustment(nomisAdjustmentId)
+
         val migratedSentenceAdjustment =
-          sentencingService.migrateSentencingAdjustment(nomisSentenceAdjustment.toSentenceAdjustment())
+          sentencingService.migrateSentencingAdjustment(nomisAdjustment.toSentencingAdjustment())
             .also {
-              createSentenceAdjustmentMapping(
+              createAdjustmentMapping(
                 nomisAdjustmentId = nomisAdjustmentId,
                 nomisAdjustmentCategory = nomisAdjustmentCategory,
                 adjustmentId = it.id,
@@ -131,11 +133,11 @@ class SentencingMigrationService(
               )
             }
         telemetryClient.trackEvent(
-          "nomis-migration-sentence-adjustment-migrated",
+          "nomis-migration-sentencing-adjustment-migrated",
           mapOf(
             "nomisAdjustmentId" to nomisAdjustmentId.toString(),
             "nomisAdjustmentCategory" to nomisAdjustmentCategory,
-            "adjustmentId" to migratedSentenceAdjustment.id.toString(),
+            "adjustmentId" to migratedSentenceAdjustment.id,
             "migrationId" to context.migrationId,
           ),
           null
@@ -256,7 +258,7 @@ class SentencingMigrationService(
     )
   }
 
-  private suspend fun createSentenceAdjustmentMapping(
+  private suspend fun createAdjustmentMapping(
     nomisAdjustmentId: Long,
     nomisAdjustmentCategory: String,
     adjustmentId: String,

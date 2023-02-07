@@ -357,15 +357,29 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }
   }
 
-  fun stubMultipleGetSentenceAdjustments(totalElements: Long) {
-    (1..totalElements).forEach {
+  fun stubMultipleGetSentenceAdjustments(intProgression: IntProgression) {
+    (intProgression).forEach {
       nomisApi.stubFor(
         get(
           urlPathEqualTo("/sentence-adjustments/$it")
         )
           .willReturn(
             aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-              .withBody(sentenceAdjustmentResponse(it))
+              .withBody(sentenceAdjustmentResponse(it.toLong()))
+          )
+      )
+    }
+  }
+
+  fun stubMultipleGetKeyDateAdjustments(intProgression: IntProgression) {
+    (intProgression).forEach {
+      nomisApi.stubFor(
+        get(
+          urlPathEqualTo("/key-date-adjustments/$it")
+        )
+          .willReturn(
+            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+              .withBody(keyDateAdjustmentResponse(it.toLong()))
           )
       )
     }
@@ -569,7 +583,7 @@ private fun adjustmentIdsPagedResponse(
   pageSize: Long = 10,
   pageNumber: Long = 0,
 ): String {
-  val content = adjustmentIds.map { """{ "adjustmentId": $it, "adjustmentCategory": "SENTENCE" }""" }
+  val content = adjustmentIds.map { """{ "adjustmentId": $it, "adjustmentCategory": "${getAdjustmentCategory(it)}"}""" }
     .joinToString { it }
   return """
 {
@@ -606,6 +620,8 @@ private fun adjustmentIdsPagedResponse(
   """.trimIndent()
 }
 
+private fun getAdjustmentCategory(it: Long) = if (it % 2L == 0L) "KEY_DATE" else "SENTENCE"
+
 private fun sentenceAdjustmentResponse(
   bookingId: Long = 2,
   sentenceAdjustmentId: Long = 3,
@@ -614,12 +630,38 @@ private fun sentenceAdjustmentResponse(
 {
   "bookingId":$bookingId,
   "id":$sentenceAdjustmentId,
+  "sentenceSequence": 0,
   "commentText":"a comment",
   "adjustmentDate":"2021-10-06",
   "adjustmentFromDate":"2021-10-07",
   "active":true,
   "adjustmentDays":8,
-  "adjustmentType":"debit"
+  "adjustmentType": {
+    "code": "RST",
+    "description": "RST Desc"
+    }
+  }
+   
+  """.trimIndent()
+}
+
+private fun keyDateAdjustmentResponse(
+  bookingId: Long = 2,
+  keyDateAdjustmentId: Long = 3,
+): String {
+  return """
+{
+  "bookingId":$bookingId,
+  "id":$keyDateAdjustmentId,
+  "commentText":"a comment",
+  "adjustmentDate":"2021-10-06",
+  "adjustmentFromDate":"2021-10-07",
+  "active":true,
+  "adjustmentDays":8,
+  "adjustmentType": {
+    "code": "ADA",
+    "description": "Additional days"
+    }
   }
    
   """.trimIndent()
