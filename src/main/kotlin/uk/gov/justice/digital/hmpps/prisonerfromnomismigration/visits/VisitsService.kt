@@ -21,7 +21,7 @@ class VisitsService(@Qualifier("visitsApiWebClient") private val webClient: WebC
       .awaitSingle()!!
 
   suspend fun cancelVisit(visitReference: String, outcome: VsipOutcomeDto) =
-    webClient.patch()
+    webClient.put()
       .uri("/visits/$visitReference/cancel")
       .bodyValue(outcome)
       .retrieve()
