@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -11,17 +11,13 @@ import kotlinx.coroutines.future.future
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentivesSynchronisationService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitSynchronisationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import java.util.concurrent.CompletableFuture
 
-private const val NOMIS_IEP_UI_SCREEN = "OIDOIEPS"
-
 @Service
-@Deprecated("Use domain specific listeners")
-class PrisonOffenderEventListener(
+class VisitsPrisonOffenderEventListener(
   private val objectMapper: ObjectMapper,
-  private val incentivesSynchronisationService: IncentivesSynchronisationService,
   private val visitSynchronisationService: VisitSynchronisationService,
   private val eventFeatureSwitch: EventFeatureSwitch
 ) {
@@ -31,29 +27,13 @@ class PrisonOffenderEventListener(
   }
 
   @SqsListener("event", factory = "hmppsQueueContainerFactoryProxy")
-  @WithSpan(value = "Digital-Prison-Services-prisoner_from_nomis_queue", kind = SpanKind.SERVER)
+  @WithSpan(value = "Digital-Prison-Services-prisoner_from_nomis_visits_queue", kind = SpanKind.SERVER)
   fun onMessage(message: String): CompletableFuture<Void> {
     log.debug("Received offender event message {}", message)
     val sqsMessage: SQSMessage = objectMapper.readValue(message)
     val eventType = sqsMessage.MessageAttributes.eventType.Value
     return CoroutineScope(Dispatchers.Default).future {
       if (eventFeatureSwitch.isEnabled(eventType)) when (eventType) {
-
-        "IEP_UPSERTED" -> {
-          val (offenderIdDisplay, bookingId, iepSeq, auditModuleName) = objectMapper.readValue<IncentiveUpsertedOffenderEvent>(
-            sqsMessage.Message
-          )
-          log.debug("received IEP_UPSERTED Offender event for $offenderIdDisplay bookingId $bookingId and seq $iepSeq with auditModuleName $auditModuleName")
-          if (shouldSynchronise(auditModuleName)) {
-            incentivesSynchronisationService.synchroniseIncentive(objectMapper.readValue(sqsMessage.Message))
-          }
-        }
-
-        "IEP_DELETED" -> {
-          val (offenderIdDisplay, bookingId, iepSeq) = objectMapper.readValue<IncentiveDeletedOffenderEvent>(sqsMessage.Message)
-          log.debug("received IEP_DELETED Offender event for $offenderIdDisplay bookingId $bookingId and seq $iepSeq")
-          incentivesSynchronisationService.synchroniseDeletedIncentive(objectMapper.readValue(sqsMessage.Message))
-        }
 
         "VISIT_CANCELLED" -> {
           val (offenderIdDisplay, visitId, auditModuleName) = objectMapper.readValue<VisitCancelledOffenderEvent>(
@@ -69,18 +49,6 @@ class PrisonOffenderEventListener(
       }
     }.thenAccept { }
   }
-
-  private fun shouldSynchronise(auditModuleName: String?): Boolean {
-    return auditModuleName == NOMIS_IEP_UI_SCREEN
-  }
 }
 
-data class IncentiveUpsertedOffenderEvent(
-  val offenderIdDisplay: String,
-  val bookingId: Long,
-  val iepSeq: Long,
-  val auditModuleName: String?
-)
-
-data class IncentiveDeletedOffenderEvent(val offenderIdDisplay: String, val bookingId: Long, val iepSeq: Long)
 data class VisitCancelledOffenderEvent(val offenderIdDisplay: String, val visitId: Long, val auditModuleName: String)

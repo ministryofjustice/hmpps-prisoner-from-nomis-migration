@@ -16,3 +16,12 @@ hmpps.sqs:
     event:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    eventvisits:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
+    eventincentives:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
+    eventsentencing:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}

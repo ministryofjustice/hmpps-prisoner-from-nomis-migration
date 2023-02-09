@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.DeserializationFeature
@@ -17,20 +17,17 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.junit.jupiter.MockitoExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.validIepCreatedMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentivesSynchronisationService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitSynchronisationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 
 @ExtendWith(MockitoExtension::class)
-internal class PrisonOffenderEventListenerTest {
+internal class IncentivesPrisonOffenderEventListenerTest {
   private val incentivesSynchronisationService: IncentivesSynchronisationService = mockk()
-  private val visitSynchronisationService: VisitSynchronisationService = mockk()
   private val objectMapper: ObjectMapper = objectMapper()
   private val eventFeatureSwitch: EventFeatureSwitch = mockk()
 
   private val listener =
-    PrisonOffenderEventListener(
+    IncentivesPrisonOffenderEventListener(
       incentivesSynchronisationService = incentivesSynchronisationService,
-      visitSynchronisationService = visitSynchronisationService,
       eventFeatureSwitch = eventFeatureSwitch,
       objectMapper = objectMapper
     )
