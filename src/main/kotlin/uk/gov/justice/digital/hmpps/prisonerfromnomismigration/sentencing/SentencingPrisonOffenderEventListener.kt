@@ -25,7 +25,7 @@ class SentencingPrisonOffenderEventListener(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  @SqsListener("event", factory = "hmppsQueueContainerFactoryProxy")
+  @SqsListener("eventsentencing", factory = "hmppsQueueContainerFactoryProxy")
   @WithSpan(value = "Digital-Prison-Services-prisoner_from_nomis_sentencing_queue", kind = SpanKind.SERVER)
   fun onMessage(message: String): CompletableFuture<Void> {
     log.debug("Received offender event message {}", message)
