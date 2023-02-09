@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -11,18 +11,16 @@ import kotlinx.coroutines.future.future
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentivesSynchronisationService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitSynchronisationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import java.util.concurrent.CompletableFuture
 
 private const val NOMIS_IEP_UI_SCREEN = "OIDOIEPS"
 
 @Service
-@Deprecated("Use domain specific listeners")
-class PrisonOffenderEventListener(
+class IncentivesPrisonOffenderEventListener(
   private val objectMapper: ObjectMapper,
   private val incentivesSynchronisationService: IncentivesSynchronisationService,
-  private val visitSynchronisationService: VisitSynchronisationService,
   private val eventFeatureSwitch: EventFeatureSwitch
 ) {
 
@@ -30,8 +28,8 @@ class PrisonOffenderEventListener(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  @SqsListener("event", factory = "hmppsQueueContainerFactoryProxy")
-  @WithSpan(value = "Digital-Prison-Services-prisoner_from_nomis_queue", kind = SpanKind.SERVER)
+  @SqsListener("eventincentives", factory = "hmppsQueueContainerFactoryProxy")
+  @WithSpan(value = "Digital-Prison-Services-prisoner_from_nomis_iep_queue", kind = SpanKind.SERVER)
   fun onMessage(message: String): CompletableFuture<Void> {
     log.debug("Received offender event message {}", message)
     val sqsMessage: SQSMessage = objectMapper.readValue(message)
@@ -55,14 +53,6 @@ class PrisonOffenderEventListener(
           incentivesSynchronisationService.synchroniseDeletedIncentive(objectMapper.readValue(sqsMessage.Message))
         }
 
-        "VISIT_CANCELLED" -> {
-          val (offenderIdDisplay, visitId, auditModuleName) = objectMapper.readValue<VisitCancelledOffenderEvent>(
-            sqsMessage.Message
-          )
-          log.debug("received VISIT_CANCELLED Offender event for offenderNo $offenderIdDisplay and visitId $visitId with auditModuleName $auditModuleName")
-          visitSynchronisationService.cancelVisit(objectMapper.readValue(sqsMessage.Message))
-        }
-
         else -> log.info("Received a message I wasn't expecting {}", eventType)
       } else {
         log.info("Feature switch is disabled for event {}", eventType)
@@ -83,4 +73,3 @@ data class IncentiveUpsertedOffenderEvent(
 )
 
 data class IncentiveDeletedOffenderEvent(val offenderIdDisplay: String, val bookingId: Long, val iepSeq: Long)
-data class VisitCancelledOffenderEvent(val offenderIdDisplay: String, val visitId: Long, val auditModuleName: String)

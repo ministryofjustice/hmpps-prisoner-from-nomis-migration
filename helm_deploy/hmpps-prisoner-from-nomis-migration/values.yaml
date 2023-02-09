@@ -82,6 +82,30 @@ generic-service:
       HMPPS_SQS_QUEUES_EVENT_DLQ_NAME: "sqs_name"
       HMPPS_SQS_QUEUES_EVENT_DLQ_ACCESS_KEY_ID: "access_key_id"
       HMPPS_SQS_QUEUES_EVENT_DLQ_SECRET_ACCESS_KEY: "secret_access_key"
+    prisoner-from-nomis-visits-queue:
+      HMPPS_SQS_QUEUES_EVENTVISITS_QUEUE_ACCESS_KEY_ID: "access_key_id"
+      HMPPS_SQS_QUEUES_EVENTVISITS_QUEUE_SECRET_ACCESS_KEY: "secret_access_key"
+      HMPPS_SQS_QUEUES_EVENTVISITS_QUEUE_NAME: "sqs_name"
+    prisoner-from-nomis-visits-dl-queue:
+      HMPPS_SQS_QUEUES_EVENTVISITS_DLQ_NAME: "sqs_name"
+      HMPPS_SQS_QUEUES_EVENTVISITS_DLQ_ACCESS_KEY_ID: "access_key_id"
+      HMPPS_SQS_QUEUES_EVENTVISITS_DLQ_SECRET_ACCESS_KEY: "secret_access_key"
+    prisoner-from-nomis-iep-queue:
+      HMPPS_SQS_QUEUES_EVENTINCENTIVES_QUEUE_ACCESS_KEY_ID: "access_key_id"
+      HMPPS_SQS_QUEUES_EVENTINCENTIVES_QUEUE_SECRET_ACCESS_KEY: "secret_access_key"
+      HMPPS_SQS_QUEUES_EVENTINCENTIVES_QUEUE_NAME: "sqs_name"
+    prisoner-from-nomis-iep-dl-queue:
+      HMPPS_SQS_QUEUES_EVENTINCENTIVES_DLQ_NAME: "sqs_name"
+      HMPPS_SQS_QUEUES_EVENTINCENTIVES_DLQ_ACCESS_KEY_ID: "access_key_id"
+      HMPPS_SQS_QUEUES_EVENTINCENTIVES_DLQ_SECRET_ACCESS_KEY: "secret_access_key"
+    prisoner-from-nomis-sentencing-queue:
+      HMPPS_SQS_QUEUES_EVENTSENTENCING_QUEUE_ACCESS_KEY_ID: "access_key_id"
+      HMPPS_SQS_QUEUES_EVENTSENTENCING_QUEUE_SECRET_ACCESS_KEY: "secret_access_key"
+      HMPPS_SQS_QUEUES_EVENTSENTENCING_QUEUE_NAME: "sqs_name"
+    prisoner-from-nomis-sentencing-dl-queue:
+      HMPPS_SQS_QUEUES_EVENTSENTENCING_DLQ_NAME: "sqs_name"
+      HMPPS_SQS_QUEUES_EVENTSENTENCING_DLQ_ACCESS_KEY_ID: "access_key_id"
+      HMPPS_SQS_QUEUES_EVENTSENTENCING_DLQ_SECRET_ACCESS_KEY: "secret_access_key"
     rds-database:
       SPRING_FLYWAY_USER: "database_username"
       SPRING_FLYWAY_PASSWORD: "database_password"
