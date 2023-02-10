@@ -253,7 +253,7 @@ data class NomisAdjustment(
   val bookingId: Long,
   val sentenceSequence: Long? = null,
   val adjustmentType: NomisCodeDescription,
-  val adjustmentDate: LocalDate,
+  val adjustmentDate: LocalDate?,
   val adjustmentFromDate: LocalDate?,
   val adjustmentToDate: LocalDate?,
   val adjustmentDays: Long,
