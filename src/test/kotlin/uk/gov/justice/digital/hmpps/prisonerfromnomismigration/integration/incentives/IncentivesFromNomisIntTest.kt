@@ -1,12 +1,10 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.incentives
 
-import com.microsoft.applicationinsights.TelemetryClient
 import org.assertj.core.api.Assertions
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilAsserted
 import org.awaitility.kotlin.untilCallTo
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -16,33 +14,17 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
-import org.springframework.boot.test.mock.mockito.SpyBean
-import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.validIepCreatedMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.validIepCreatedMessageWithNomisIds
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.validIepDeletedMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.validSynchroniseCurrentIncentiveMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.validVisitCancellationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.IncentivesApiExtension.Companion.incentivesApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsApiExtension.Companion.visitsApi
-import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 
-class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
-
-  @SpyBean
-  private lateinit var telemetryClient: TelemetryClient
-
-  @BeforeEach
-  fun cleanQueue() {
-    awsSqsIncentivesMigrationClient.purgeQueue(PurgeQueueRequest.builder().queueUrl(incentivesMigrationUrl).build()).get()
-    awsSqsIncentivesMigrationDlqClient?.purgeQueue(PurgeQueueRequest.builder().queueUrl(incentivesMigrationDlqUrl).build())?.get()
-    await untilCallTo { awsSqsIncentivesMigrationClient.countAllMessagesOnQueue(incentivesMigrationUrl).get() } matches { it == 0 }
-    await untilCallTo { awsSqsIncentivesMigrationDlqClient?.countAllMessagesOnQueue(incentivesMigrationDlqUrl!!)?.get() } matches { it == 0 }
-  }
+class IncentivesFromNomisIntTest : SqsIntegrationTestBase() {
 
   @Nested
   @DisplayName("synchronise create incentive")
@@ -57,7 +39,7 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
       mappingApi.stubIncentiveMappingCreate()
       incentivesApi.stubCreateSynchroniseIncentive()
 
-      awsSqsOffenderEventsClient.sendMessage(queueOffenderEventsUrl, message)
+      awsSqsIncentivesOffenderEventsClient.sendMessage(incentivesQueueOffenderEventsUrl, message)
 
       await untilAsserted { mappingApi.verifyCreateIncentiveMapping() }
 
@@ -86,7 +68,7 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
       mappingApi.stubIncentiveMappingCreateFailureFollowedBySuccess()
       incentivesApi.stubCreateSynchroniseIncentive()
 
-      awsSqsOffenderEventsClient.sendMessage(queueOffenderEventsUrl, message)
+      awsSqsIncentivesOffenderEventsClient.sendMessage(incentivesQueueOffenderEventsUrl, message)
 
       // wait for all mappings to be created before verifying
       await untilCallTo { mappingApi.createIncentiveMappingCount() } matches { it == 2 }
@@ -107,7 +89,7 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
       mappingApi.stubIncentiveMappingByNomisIds(nomisBookingId = 1234, nomisIncentiveSequence = 2, incentiveId = 4)
       incentivesApi.stubUpdateSynchroniseIncentive()
 
-      awsSqsOffenderEventsClient.sendMessage(queueOffenderEventsUrl, messageUpdate)
+      awsSqsIncentivesOffenderEventsClient.sendMessage(incentivesQueueOffenderEventsUrl, messageUpdate)
 
       await untilAsserted {
         verify(telemetryClient).trackEvent(
@@ -152,7 +134,7 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
       nomisApi.stubGetIncentive(bookingId = 1234, incentiveSequence = 1, currentIep = true)
       mappingApi.stubIncentiveMappingByNomisIds(nomisBookingId = 1234, nomisIncentiveSequence = 1)
       incentivesApi.stubUpdateSynchroniseIncentive()
-      awsSqsOffenderEventsClient.sendMessage(queueOffenderEventsUrl, message)
+      awsSqsIncentivesOffenderEventsClient.sendMessage(incentivesQueueOffenderEventsUrl, message)
 
       await untilAsserted { incentivesApi.verifyUpdateSynchroniseIncentive(1) }
 
@@ -189,7 +171,7 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
       mappingApi.stubIncentiveMappingByNomisIds(nomisBookingId = 1234, nomisIncentiveSequence = 1)
       mappingApi.stubIncentiveMappingByNomisIds(nomisBookingId = 1234, nomisIncentiveSequence = 2)
       incentivesApi.stubUpdateSynchroniseIncentive()
-      awsSqsOffenderEventsClient.sendMessage(queueOffenderEventsUrl, message)
+      awsSqsIncentivesOffenderEventsClient.sendMessage(incentivesQueueOffenderEventsUrl, message)
       nomisApi.stubGetCurrentIncentive(bookingId = 1234, incentiveSequence = 2)
 
       await untilAsserted { incentivesApi.verifyUpdateSynchroniseIncentive(2) }
@@ -224,7 +206,7 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
       incentivesApi.stubUpdateSynchroniseIncentive()
       incentivesApi.stubCreateSynchroniseIncentive()
       mappingApi.stubIncentiveMappingCreate()
-      awsSqsOffenderEventsClient.sendMessage(queueOffenderEventsUrl, message)
+      awsSqsIncentivesOffenderEventsClient.sendMessage(incentivesQueueOffenderEventsUrl, message)
 
       await untilAsserted { incentivesApi.verifyCreateSynchroniseIncentive() }
 
@@ -274,7 +256,7 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
       // delete mapping
       mappingApi.stubDeleteIncentiveMapping(incentiveId = 456789)
 
-      awsSqsOffenderEventsClient.sendMessage(queueOffenderEventsUrl, message)
+      awsSqsIncentivesOffenderEventsClient.sendMessage(incentivesQueueOffenderEventsUrl, message)
 
       await untilAsserted { incentivesApi.verifyDeleteSynchroniseIncentive() }
 
@@ -318,7 +300,7 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
       // delete mapping
       mappingApi.stubDeleteIncentiveMapping(incentiveId = 456789)
 
-      awsSqsOffenderEventsClient.sendMessage(queueOffenderEventsUrl, message)
+      awsSqsIncentivesOffenderEventsClient.sendMessage(incentivesQueueOffenderEventsUrl, message)
 
       await untilAsserted { incentivesApi.verifyDeleteSynchroniseIncentive() }
 
@@ -352,7 +334,7 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
       val message = validIepDeletedMessage(bookingId = 1234, incentiveSequence = 1)
 
       mappingApi.stubNomisIncentiveMappingNotFound(nomisBookingId = 1234, nomisIncentiveSequence = 1)
-      awsSqsOffenderEventsClient.sendMessage(queueOffenderEventsUrl, message)
+      awsSqsIncentivesOffenderEventsClient.sendMessage(incentivesQueueOffenderEventsUrl, message)
 
       await untilAsserted {
         verify(telemetryClient).trackEvent(
@@ -367,67 +349,6 @@ class PrisonerFromNomisIntTest : SqsIntegrationTestBase() {
         check { it["bookingId"] == "1234" && it["incentiveSequence"] == "1" },
         isNull()
       )
-    }
-  }
-
-  @Nested
-  @DisplayName("synchronise cancel visit")
-  inner class SynchroniseCancelVisit {
-    private val vsipId = "6c3ce237-f519"
-
-    @Test
-    fun `will synchronise a visit cancellation after a nomis visit cancellation event`() {
-
-      val message = validVisitCancellationMessage()
-
-      nomisApi.stubGetCancelledVisit(nomisVisitId = 9)
-      mappingApi.stubVisitMappingByNomisVisitId(nomisVisitId = 9, vsipId = vsipId)
-      visitsApi.stubCancelVisit(vsipId)
-      awsSqsOffenderEventsClient.sendMessage(queueOffenderEventsUrl, message)
-
-      await untilAsserted {
-
-        verify(telemetryClient, Times(1)).trackEvent(
-          eq("visit-cancellation-synchronisation"),
-          eq(
-            mapOf(
-              "offenderNo" to "A7948DY",
-              "vsipId" to vsipId,
-              "vsipOutcome" to "PRISONER_CANCELLED",
-              "nomisVisitId" to "9"
-            )
-          ),
-          isNull()
-        )
-      }
-    }
-
-    @Test
-    fun `will ignore a visit cancellation event without a mapping`() {
-
-      val message = validVisitCancellationMessage()
-
-      nomisApi.stubGetVisit(nomisVisitId = 9)
-      mappingApi.stubNomisVisitNotFound()
-      awsSqsOffenderEventsClient.sendMessage(queueOffenderEventsUrl, message)
-
-      await untilAsserted { mappingApi.verifyGetVisitMappingByNomisId() }
-
-      visitsApi.verifyCancelVisit(times = 0)
-    }
-
-    @Test
-    fun `will ignore a visit cancellation event that originated in VSIP`() {
-
-      val message = validVisitCancellationMessage()
-
-      nomisApi.stubGetCancelledVisit(nomisVisitId = 9, modifyUserId = "PRISONER_MANAGER_API")
-      mappingApi.stubNomisVisitNotFound()
-      awsSqsOffenderEventsClient.sendMessage(queueOffenderEventsUrl, message)
-
-      await untilAsserted { nomisApi.verifyGetVisit(nomisVisitId = 9) }
-
-      mappingApi.verifyGetVisitMappingByNomisId(times = 0)
     }
   }
 }
