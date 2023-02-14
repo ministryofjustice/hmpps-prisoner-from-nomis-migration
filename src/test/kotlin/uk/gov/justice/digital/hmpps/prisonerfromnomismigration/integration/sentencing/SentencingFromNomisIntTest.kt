@@ -2,7 +2,6 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sent
 
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
-import com.microsoft.applicationinsights.TelemetryClient
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilAsserted
@@ -14,7 +13,6 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
-import org.springframework.boot.test.mock.mockito.SpyBean
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.purgeQueueRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
@@ -24,9 +22,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.Sentenci
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 
 class SentencingFromNomisIntTest : SqsIntegrationTestBase() {
-
-  @SpyBean
-  private lateinit var telemetryClient: TelemetryClient
 
   @BeforeEach
   fun cleanQueue() {

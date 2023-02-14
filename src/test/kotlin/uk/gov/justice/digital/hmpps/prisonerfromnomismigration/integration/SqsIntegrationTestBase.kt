@@ -1,8 +1,10 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration
 
+import com.microsoft.applicationinsights.TelemetryClient
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.http.HttpHeaders
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
@@ -45,7 +47,6 @@ class SqsIntegrationTestBase : TestBase() {
   internal val visitsMigrationQueue by lazy { hmppsQueueService.findByQueueId(VISITS_QUEUE_ID) as HmppsQueue }
   internal val incentivesMigrationQueue by lazy { hmppsQueueService.findByQueueId(INCENTIVES_QUEUE_ID) as HmppsQueue }
   internal val sentencingMigrationQueue by lazy { hmppsQueueService.findByQueueId(SENTENCING_QUEUE_ID) as HmppsQueue }
-  internal val offenderEventsQueue by lazy { hmppsQueueService.findByQueueId("event") as HmppsQueue }
 
   internal val awsSqsVisitsMigrationClient by lazy { visitsMigrationQueue.sqsClient }
   internal val awsSqsVisitsMigrationDlqClient by lazy { visitsMigrationQueue.sqsDlqClient }
@@ -60,15 +61,21 @@ class SqsIntegrationTestBase : TestBase() {
   internal val sentencingMigrationUrl by lazy { sentencingMigrationQueue.queueUrl }
   internal val sentencingMigrationDlqUrl by lazy { sentencingMigrationQueue.dlqUrl }
 
-  internal val awsSqsOffenderEventsClient by lazy { offenderEventsQueue.sqsClient }
-  internal val queueOffenderEventsUrl by lazy { offenderEventsQueue.queueUrl }
-
+  internal val visitsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId("eventvisits") as HmppsQueue }
+  internal val visitsQueueOffenderEventsUrl by lazy { visitsOffenderEventsQueue.queueUrl }
+  internal val awsSqsVisitsOffenderEventsClient by lazy { visitsOffenderEventsQueue.sqsClient }
+  internal val incentivesOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId("eventincentives") as HmppsQueue }
+  internal val incentivesQueueOffenderEventsUrl by lazy { incentivesOffenderEventsQueue.queueUrl }
+  internal val awsSqsIncentivesOffenderEventsClient by lazy { incentivesOffenderEventsQueue.sqsClient }
   internal val sentencingOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId("eventsentencing") as HmppsQueue }
   internal val sentencingQueueOffenderEventsUrl by lazy { sentencingOffenderEventsQueue.queueUrl }
   internal val awsSqsSentencingOffenderEventsClient by lazy { sentencingOffenderEventsQueue.sqsClient }
 
   @Autowired
   protected lateinit var jwtAuthHelper: JwtAuthHelper
+
+  @SpyBean
+  protected lateinit var telemetryClient: TelemetryClient
 
   internal fun setAuthorisation(
     user: String = "ADMIN",

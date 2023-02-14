@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.visits
 
-import com.microsoft.applicationinsights.TelemetryClient
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
@@ -20,7 +19,6 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.http.ReactiveHttpOutputMessage
 import org.springframework.test.web.reactive.server.returnResult
 import org.springframework.web.reactive.function.BodyInserter
@@ -42,9 +40,6 @@ import java.time.Duration
 import java.time.LocalDateTime
 
 class VisitsMigrationIntTest : SqsIntegrationTestBase() {
-
-  @SpyBean
-  private lateinit var telemetryClient: TelemetryClient
 
   @Autowired
   private lateinit var migrationHistoryRepository: MigrationHistoryRepository
