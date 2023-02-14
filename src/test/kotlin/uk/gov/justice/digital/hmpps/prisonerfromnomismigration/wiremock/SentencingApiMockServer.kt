@@ -4,6 +4,8 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.put
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
@@ -45,16 +47,38 @@ class SentencingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubCreateSentencingAdjustment(sentenceAdjustmentId: Long = 654321) {
+  fun stubCreateSentencingAdjustmentForMigration(sentenceAdjustmentId: String = "654321") {
     stubFor(
-      WireMock.post(WireMock.urlMatching("/migration/sentencing/adjustments")).willReturn(
+      post(WireMock.urlMatching("/migration/sentencing/adjustments")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.CREATED.value())
-          .withBody("""{"id": $sentenceAdjustmentId}""")
+          .withBody("""{"id": "$sentenceAdjustmentId"}""")
       )
     )
   }
 
-  fun createSentenceAdjustmentCount() = findAll(WireMock.postRequestedFor(WireMock.urlMatching("/migration/sentencing/adjustments"))).count()
+  fun stubCreateSentencingAdjustmentForSynchronisation(sentenceAdjustmentId: String = "654321") {
+    stubFor(
+      post(WireMock.urlMatching("/synchronisation/sentencing/adjustments")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.CREATED.value())
+          .withBody("""{"id": "$sentenceAdjustmentId"}""")
+      )
+    )
+  }
+
+  fun stubUpdateSentencingAdjustmentForSynchronisation() {
+    stubFor(
+      put(WireMock.urlMatching("/synchronisation/sentencing/adjustments")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+      )
+    )
+  }
+
+  fun createSentenceAdjustmentCount() =
+    findAll(WireMock.postRequestedFor(WireMock.urlMatching("/migration/sentencing/adjustments"))).count()
 }

@@ -394,6 +394,19 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
         .withQueryParam("toDate", equalTo(toDate))
     )
   }
+
+  fun stubGetSentenceAdjustment(adjustmentId: Long) {
+    nomisApi.stubFor(
+      get(
+        urlPathEqualTo("/sentence-adjustments/$adjustmentId")
+      )
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(sentenceAdjustmentResponse(sentenceAdjustmentId = adjustmentId))
+        )
+    )
+  }
 }
 
 private fun visitResponse(visitId: Long) = """
