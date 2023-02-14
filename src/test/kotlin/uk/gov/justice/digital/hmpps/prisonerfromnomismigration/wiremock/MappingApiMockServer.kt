@@ -465,6 +465,34 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubGetNomisSentencingAdjustment(
+    adjustmentCategory: String = "SENTENCE",
+    nomisAdjustmentId: Long = 987L,
+    adjustmentId: String = "567S"
+  ) {
+    stubFor(
+      get(
+        urlPathMatching("/mapping/sentencing/adjustments/nomis-adjustment-category/$adjustmentCategory/nomis-adjustment-id/$nomisAdjustmentId")
+      ).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.NOT_FOUND.value())
+          .withBody(
+            """
+            {
+            "adjustmentId": "$adjustmentId",
+            "nomisAdjustmentId": $nomisAdjustmentId,
+            "nomisAdjustmentCategory": "$adjustmentCategory",
+            "label": "2022-02-14T09:58:45",
+            "whenCreated": "2022-02-14T09:58:45",
+            "mappingType": "MIGRATED"
+            }
+            """.trimMargin()
+          )
+      )
+    )
+  }
+
   fun stubSentenceAdjustmentMappingCreate() {
     stubFor(
       post(urlEqualTo("/mapping/sentencing/adjustments")).willReturn(
@@ -554,15 +582,16 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun createSentenceAdjustmentMappingCount() =
     findAll(postRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments"))).count()
 
-  fun verifyCreateMappingSentenceAdjustmentIds(nomsSentenceAdjustmentIds: Array<Long>, times: Int = 1) = nomsSentenceAdjustmentIds.forEach {
-    verify(
-      times,
-      postRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments")).withRequestBody(
-        matchingJsonPath(
-          "adjustmentId",
-          equalTo("$it")
+  fun verifyCreateMappingSentenceAdjustmentIds(nomsSentenceAdjustmentIds: Array<Long>, times: Int = 1) =
+    nomsSentenceAdjustmentIds.forEach {
+      verify(
+        times,
+        postRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments")).withRequestBody(
+          matchingJsonPath(
+            "adjustmentId",
+            equalTo("$it")
+          )
         )
       )
-    )
-  }
+    }
 }

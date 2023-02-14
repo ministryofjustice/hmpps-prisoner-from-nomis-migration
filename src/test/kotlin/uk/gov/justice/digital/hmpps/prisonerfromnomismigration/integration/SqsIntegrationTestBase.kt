@@ -9,6 +9,7 @@ import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.reactive.server.WebTestClient
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
+import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.JwtAuthHelper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.LocalStackContainer.setLocalStackProperties
@@ -62,6 +63,10 @@ class SqsIntegrationTestBase : TestBase() {
   internal val awsSqsOffenderEventsClient by lazy { offenderEventsQueue.sqsClient }
   internal val queueOffenderEventsUrl by lazy { offenderEventsQueue.queueUrl }
 
+  internal val sentencingOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId("eventsentencing") as HmppsQueue }
+  internal val sentencingQueueOffenderEventsUrl by lazy { sentencingOffenderEventsQueue.queueUrl }
+  internal val awsSqsSentencingOffenderEventsClient by lazy { sentencingOffenderEventsQueue.sqsClient }
+
   @Autowired
   protected lateinit var jwtAuthHelper: JwtAuthHelper
 
@@ -84,3 +89,5 @@ class SqsIntegrationTestBase : TestBase() {
 
 internal fun SqsAsyncClient.sendMessage(queueOffenderEventsUrl: String, message: String) =
   sendMessage(SendMessageRequest.builder().queueUrl(queueOffenderEventsUrl).messageBody(message).build()).get()
+
+internal fun String.purgeQueueRequest() = PurgeQueueRequest.builder().queueUrl(this).build()

@@ -17,6 +17,7 @@ import java.util.concurrent.CompletableFuture
 
 @Service
 class SentencingPrisonOffenderEventListener(
+  private val sentencingSynchronisationService: SentencingSynchronisationService,
   private val objectMapper: ObjectMapper,
   private val eventFeatureSwitch: EventFeatureSwitch
 ) {
@@ -31,9 +32,11 @@ class SentencingPrisonOffenderEventListener(
     log.debug("Received offender event message {}", message)
     val sqsMessage: SQSMessage = objectMapper.readValue(message)
     val eventType = sqsMessage.MessageAttributes.eventType.Value
-    return CoroutineScope(Dispatchers.Default).future {
+    return asCompletableFuture {
       if (eventFeatureSwitch.isEnabled(eventType)) when (eventType) {
-        "SENTENCE_ADJUSTMENT_UPSERTED", "SENTENCE_ADJUSTMENT_DELETED", "KEY_DATE_ADJUSTMENT_UPSERTED", "KEY_DATE_ADJUSTMENT_DELETED" -> {
+        "SENTENCE_ADJUSTMENT_UPSERTED" -> sentencingSynchronisationService.synchroniseSentenceAdjustmentCreateOrUpdate((sqsMessage.Message.fromJson()))
+
+        "SENTENCE_ADJUSTMENT_DELETED", "KEY_DATE_ADJUSTMENT_UPSERTED", "KEY_DATE_ADJUSTMENT_DELETED" -> {
           log.debug("received $eventType Offender event but right now not doing anything with it")
         }
 
@@ -41,6 +44,25 @@ class SentencingPrisonOffenderEventListener(
       } else {
         log.info("Feature switch is disabled for event {}", eventType)
       }
-    }.thenAccept { }
+    }
   }
+
+  private inline fun <reified T> String.fromJson(): T =
+    objectMapper.readValue(this)
+}
+
+data class SentenceAdjustmentUpsertedOffenderEvent(
+  val offenderIdDisplay: String,
+  val bookingId: Long,
+  val sentenceSeq: Long,
+  val adjustmentId: Long,
+  val auditModuleName: String?
+)
+
+private fun asCompletableFuture(
+  process: suspend () -> Unit
+): CompletableFuture<Void> {
+  return CoroutineScope(Dispatchers.Default).future {
+    process()
+  }.thenAccept { }
 }

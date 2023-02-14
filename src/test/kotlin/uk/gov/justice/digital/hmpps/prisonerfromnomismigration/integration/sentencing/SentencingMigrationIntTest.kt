@@ -95,7 +95,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
       mappingApi.stubAllNomisSentencingAdjustmentsMappingNotFound()
       mappingApi.stubSentenceAdjustmentMappingCreate()
 
-      sentencingApi.stubCreateSentencingAdjustment()
+      sentencingApi.stubCreateSentencingAdjustmentForMigration()
       mappingApi.stubSentenceAdjustmentMappingByMigrationId(count = 86)
 
       webTestClient.post().uri("/migrate/sentencing")
@@ -139,7 +139,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubMultipleGetAdjustmentIdCounts(totalElements = 26, pageSize = 10)
       nomisApi.stubMultipleGetSentenceAdjustments(1..26 step 2)
       nomisApi.stubMultipleGetKeyDateAdjustments(2..26 step 2)
-      sentencingApi.stubCreateSentencingAdjustment()
+      sentencingApi.stubCreateSentencingAdjustmentForMigration()
       mappingApi.stubAllNomisSentencingAdjustmentsMappingNotFound()
       mappingApi.stubSentenceAdjustmentMappingCreate()
 
@@ -207,7 +207,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubMultipleGetAdjustmentIdCounts(totalElements = 1, pageSize = 10)
       nomisApi.stubMultipleGetSentenceAdjustments(1..1)
       mappingApi.stubAllNomisSentencingAdjustmentsMappingNotFound()
-      sentencingApi.stubCreateSentencingAdjustment(654321)
+      sentencingApi.stubCreateSentencingAdjustmentForMigration("654321")
       mappingApi.stubSentenceAdjustmentMappingCreateFailureFollowedBySuccess()
 
       webTestClient.post().uri("/migrate/sentencing")
