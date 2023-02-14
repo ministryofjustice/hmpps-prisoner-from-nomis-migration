@@ -87,6 +87,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().isForbidden
     }
 
+    @Test
     internal fun `will start processing pages of sentence adjustments`() {
       nomisApi.stubGetSentenceAdjustmentsInitialCount(86)
       nomisApi.stubMultipleGetAdjustmentIdCounts(totalElements = 86, pageSize = 10)
