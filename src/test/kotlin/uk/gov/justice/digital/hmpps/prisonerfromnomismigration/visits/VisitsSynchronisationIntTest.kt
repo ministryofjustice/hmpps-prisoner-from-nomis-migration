@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.visits
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits
 
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
@@ -16,7 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingA
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsApiExtension.Companion.visitsApi
 
-class VisitsFromNomisIntTest : SqsIntegrationTestBase() {
+class VisitsSynchronisationIntTest : SqsIntegrationTestBase() {
 
   @Nested
   @DisplayName("synchronise cancel visit")

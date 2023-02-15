@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.incentives
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives
 
 import org.assertj.core.api.Assertions
 import org.awaitility.kotlin.await
@@ -24,7 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.Incentiv
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 
-class IncentivesFromNomisIntTest : SqsIntegrationTestBase() {
+class IncentivesSynchronisationIntTest : SqsIntegrationTestBase() {
 
   @Nested
   @DisplayName("synchronise create incentive")
