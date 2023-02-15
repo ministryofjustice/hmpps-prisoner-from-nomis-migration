@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.incentives
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing
 
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
@@ -23,37 +23,36 @@ import org.springframework.test.web.reactive.server.returnResult
 import org.springframework.web.reactive.function.BodyInserter
 import org.springframework.web.reactive.function.BodyInserters
 import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest
+import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentivesMigrationFilter
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.COMPLETED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.INCENTIVES
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.IncentivesApiExtension.Companion.incentivesApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.SENTENCING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.SentencingApiExtension.Companion.sentencingApi
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.time.Duration
 import java.time.LocalDateTime
 
-class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
+class SentencingMigrationIntTest : SqsIntegrationTestBase() {
 
   @Autowired
   private lateinit var migrationHistoryRepository: MigrationHistoryRepository
 
   @BeforeEach
   fun cleanQueue() {
-    awsSqsIncentivesMigrationClient.purgeQueue(PurgeQueueRequest.builder().queueUrl(incentivesMigrationUrl).build()).get()
-    awsSqsIncentivesMigrationDlqClient?.purgeQueue(PurgeQueueRequest.builder().queueUrl(incentivesMigrationDlqUrl).build())?.get()
-    await untilCallTo { awsSqsIncentivesMigrationClient.countAllMessagesOnQueue(incentivesMigrationUrl).get() } matches { it == 0 }
-    await untilCallTo { awsSqsIncentivesMigrationDlqClient?.countAllMessagesOnQueue(incentivesMigrationDlqUrl!!)?.get() } matches { it == 0 }
+    awsSqsSentencingMigrationClient.purgeQueue(PurgeQueueRequest.builder().queueUrl(sentencingMigrationUrl).build()).get()
+    awsSqsSentencingMigrationDlqClient?.purgeQueue(PurgeQueueRequest.builder().queueUrl(sentencingMigrationDlqUrl).build())?.get()
+    await untilCallTo { awsSqsSentencingMigrationClient.countAllMessagesOnQueue(sentencingMigrationUrl).get() } matches { it == 0 }
+    await untilCallTo { awsSqsSentencingMigrationDlqClient?.countAllMessagesOnQueue(sentencingMigrationDlqUrl!!)?.get() } matches { it == 0 }
   }
 
   @Nested
-  @DisplayName("POST /migrate/incentives")
-  inner class MigrationIncentives {
+  @DisplayName("POST /migrate/sentencing")
+  inner class MigrationSentenceAdjustments {
     @BeforeEach
     internal fun setUp() {
       webTestClient.delete().uri("/history")
@@ -65,7 +64,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `must have valid token to start migration`() {
-      webTestClient.post().uri("/migrate/incentives")
+      webTestClient.post().uri("/migrate/sentencing")
         .header("Content-Type", "application/json")
         .body(someMigrationFilter())
         .exchange()
@@ -74,7 +73,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `must have correct role to start migration`() {
-      webTestClient.post().uri("/migrate/incentives")
+      webTestClient.post().uri("/migrate/sentencing")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
         .header("Content-Type", "application/json")
         .body(someMigrationFilter())
@@ -83,18 +82,19 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Test
-    internal fun `will start processing pages of incentives`() {
-      nomisApi.stubGetIncentivesInitialCount(86)
-      nomisApi.stubMultipleGetIncentivesCounts(totalElements = 86, pageSize = 10)
-      nomisApi.stubMultipleGetIncentives(86)
-      mappingApi.stubAllNomisIncentiveMappingNotFound()
-      mappingApi.stubIncentiveMappingCreate()
+    internal fun `will start processing pages of sentence adjustments`() {
+      nomisApi.stubGetSentenceAdjustmentsInitialCount(86)
+      nomisApi.stubMultipleGetAdjustmentIdCounts(totalElements = 86, pageSize = 10)
+      nomisApi.stubMultipleGetSentenceAdjustments(1..86 step 2)
+      nomisApi.stubMultipleGetKeyDateAdjustments(2..86 step 2)
+      mappingApi.stubAllNomisSentencingAdjustmentsMappingNotFound()
+      mappingApi.stubSentenceAdjustmentMappingCreate()
 
-      incentivesApi.stubCreateIncentive()
-      mappingApi.stubIncentiveMappingByMigrationId(count = 86)
+      sentencingApi.stubCreateSentencingAdjustmentForMigration()
+      mappingApi.stubSentenceAdjustmentMappingByMigrationId(count = 86)
 
-      webTestClient.post().uri("/migrate/incentives")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCENTIVES")))
+      webTestClient.post().uri("/migrate/sentencing")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .body(
           BodyInserters.fromValue(
@@ -111,38 +111,41 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
 
       await atMost Duration.ofSeconds(60) untilAsserted {
         verify(telemetryClient).trackEvent(
-          eq("nomis-migration-incentives-completed"),
+          eq("nomis-migration-sentencing-completed"),
           any(),
           isNull()
         )
       }
 
       // check filter matches what is passed in
-      nomisApi.verifyGetIncentivesFilter(
+      nomisApi.verifyGetAdjustmentsIdsCount(
         fromDate = "2020-01-01",
         toDate = "2020-01-02"
       )
 
       await untilAsserted {
-        assertThat(incentivesApi.createIncentiveCount()).isEqualTo(86)
+        assertThat(sentencingApi.createSentenceAdjustmentCount()).isEqualTo(86)
       }
     }
 
     @Test
     internal fun `will add analytical events for starting, ending and each migrated record`() {
-      nomisApi.stubGetIncentivesInitialCount(26)
-      nomisApi.stubMultipleGetIncentivesCounts(totalElements = 26, pageSize = 10)
-      nomisApi.stubMultipleGetIncentives(26)
-      incentivesApi.stubCreateIncentive()
-      mappingApi.stubAllNomisIncentiveMappingNotFound()
-      mappingApi.stubIncentiveMappingCreate()
+      nomisApi.stubGetSentenceAdjustmentsInitialCount(26)
+      nomisApi.stubMultipleGetAdjustmentIdCounts(totalElements = 26, pageSize = 10)
+      nomisApi.stubMultipleGetSentenceAdjustments(1..26 step 2)
+      nomisApi.stubMultipleGetKeyDateAdjustments(2..26 step 2)
+      sentencingApi.stubCreateSentencingAdjustmentForMigration()
+      mappingApi.stubAllNomisSentencingAdjustmentsMappingNotFound()
+      mappingApi.stubSentenceAdjustmentMappingCreate()
 
       // stub 25 migrated records and 1 fake a failure
-      mappingApi.stubIncentiveMappingByMigrationId(count = 25)
-      awsSqsIncentivesMigrationDlqClient!!.sendMessage(incentivesMigrationDlqUrl!!, """{ "message": "some error" }""")
+      mappingApi.stubSentenceAdjustmentMappingByMigrationId(count = 25)
+      awsSqsSentencingMigrationDlqClient!!.sendMessage(
+        SendMessageRequest.builder().queueUrl(sentencingMigrationDlqUrl).messageBody("""{ "message": "some error" }""").build()
+      ).get()
 
-      webTestClient.post().uri("/migrate/incentives")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCENTIVES")))
+      webTestClient.post().uri("/migrate/sentencing")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .body(
           BodyInserters.fromValue(
@@ -157,26 +160,26 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
 
       await atMost Duration.ofSeconds(60) untilAsserted {
         verify(telemetryClient).trackEvent(
-          eq("nomis-migration-incentives-completed"),
+          eq("nomis-migration-sentencing-completed"),
           any(),
           isNull()
         )
       }
 
-      verify(telemetryClient).trackEvent(eq("nomis-migration-incentives-started"), any(), isNull())
-      verify(telemetryClient, times(26)).trackEvent(eq("nomis-migration-incentive-migrated"), any(), isNull())
+      verify(telemetryClient).trackEvent(eq("nomis-migration-sentencing-started"), any(), isNull())
+      verify(telemetryClient, times(26)).trackEvent(eq("nomis-migration-sentencing-adjustment-migrated"), any(), isNull())
 
       await.atMost(Duration.ofSeconds(21)) untilAsserted {
         verify(telemetryClient).trackEvent(
-          eq("nomis-migration-incentives-completed"),
+          eq("nomis-migration-sentencing-completed"),
           any(),
           isNull()
         )
       }
 
       await untilAsserted {
-        webTestClient.get().uri("/migrate/incentives/history")
-          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCENTIVES")))
+        webTestClient.get().uri("/migrate/sentencing/history")
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
           .header("Content-Type", "application/json")
           .exchange()
           .expectStatus().isOk
@@ -186,7 +189,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
           .jsonPath("$[0].whenStarted").isNotEmpty
           .jsonPath("$[0].whenEnded").isNotEmpty
           .jsonPath("$[0].estimatedRecordCount").isEqualTo(26)
-          .jsonPath("$[0].migrationType").isEqualTo("INCENTIVES")
+          .jsonPath("$[0].migrationType").isEqualTo("SENTENCING")
           .jsonPath("$[0].status").isEqualTo("COMPLETED")
           .jsonPath("$[0].recordsMigrated").isEqualTo(25)
           .jsonPath("$[0].recordsFailed").isEqualTo(1)
@@ -195,15 +198,15 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will retry to create a mapping, and only the mapping, if it fails first time`() {
-      nomisApi.stubGetIncentivesInitialCount(1)
-      nomisApi.stubMultipleGetIncentivesCounts(totalElements = 1, pageSize = 10)
-      nomisApi.stubMultipleGetIncentives(totalElements = 1)
-      mappingApi.stubAllNomisIncentiveMappingNotFound()
-      incentivesApi.stubCreateIncentive(654321)
-      mappingApi.stubIncentiveMappingCreateFailureFollowedBySuccess()
+      nomisApi.stubGetSentenceAdjustmentsInitialCount(1)
+      nomisApi.stubMultipleGetAdjustmentIdCounts(totalElements = 1, pageSize = 10)
+      nomisApi.stubMultipleGetSentenceAdjustments(1..1)
+      mappingApi.stubAllNomisSentencingAdjustmentsMappingNotFound()
+      sentencingApi.stubCreateSentencingAdjustmentForMigration("654321")
+      mappingApi.stubSentenceAdjustmentMappingCreateFailureFollowedBySuccess()
 
-      webTestClient.post().uri("/migrate/incentives")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCENTIVES")))
+      webTestClient.post().uri("/migrate/sentencing")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .body(
           BodyInserters.fromValue(
@@ -217,18 +220,18 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().isAccepted
 
       // wait for all mappings to be created before verifying
-      await untilCallTo { mappingApi.createIncentiveMappingCount() } matches { it == 2 }
+      await untilCallTo { mappingApi.createSentenceAdjustmentMappingCount() } matches { it == 2 }
 
-      // check that one incentive is created
-      assertThat(incentivesApi.createIncentiveCount()).isEqualTo(1)
+      // check that one sentence-adjustment is created
+      assertThat(sentencingApi.createSentenceAdjustmentCount()).isEqualTo(1)
 
       // should retry to create mapping twice
-      mappingApi.verifyCreateMappingIncentiveIds(arrayOf(654321), times = 2)
+      mappingApi.verifyCreateMappingSentenceAdjustmentIds(arrayOf(654321), times = 2)
     }
   }
 
   @Nested
-  @DisplayName("GET /migrate/incentives/history")
+  @DisplayName("GET /migrate/sentencing/history")
   inner class GetAll {
     @BeforeEach
     internal fun createHistoryRecords() {
@@ -245,7 +248,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = INCENTIVES
+            migrationType = SENTENCING
           )
         )
         migrationHistoryRepository.save(
@@ -258,7 +261,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = INCENTIVES
+            migrationType = SENTENCING
           )
         )
         migrationHistoryRepository.save(
@@ -271,7 +274,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = INCENTIVES
+            migrationType = SENTENCING
           )
         )
         migrationHistoryRepository.save(
@@ -284,7 +287,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = INCENTIVES
+            migrationType = SENTENCING
           )
         )
       }
@@ -299,7 +302,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `must have valid token to get history`() {
-      webTestClient.get().uri("/migrate/incentives/history")
+      webTestClient.get().uri("/migrate/sentencing/history")
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isUnauthorized
@@ -307,7 +310,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `must have correct role to get history`() {
-      webTestClient.get().uri("/migrate/incentives/history")
+      webTestClient.get().uri("/migrate/sentencing/history")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
         .header("Content-Type", "application/json")
         .exchange()
@@ -316,8 +319,8 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `can read all records with no filter`() {
-      webTestClient.get().uri("/migrate/incentives/history")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCENTIVES")))
+      webTestClient.get().uri("/migrate/sentencing/history")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -332,11 +335,11 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     internal fun `can filter so only records after a date are returned`() {
       webTestClient.get().uri {
-        it.path("/migrate/incentives/history")
+        it.path("/migrate/sentencing/history")
           .queryParam("fromDateTime", "2020-01-02T02:00:00")
           .build()
       }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCENTIVES")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -349,11 +352,11 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     internal fun `can filter so only records before a date are returned`() {
       webTestClient.get().uri {
-        it.path("/migrate/incentives/history")
+        it.path("/migrate/sentencing/history")
           .queryParam("toDateTime", "2020-01-02T00:00:00")
           .build()
       }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCENTIVES")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -366,12 +369,12 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     internal fun `can filter so only records between dates are returned`() {
       webTestClient.get().uri {
-        it.path("/migrate/incentives/history")
+        it.path("/migrate/sentencing/history")
           .queryParam("fromDateTime", "2020-01-03T01:59:59")
           .queryParam("toDateTime", "2020-01-03T02:00:01")
           .build()
       }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCENTIVES")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -383,11 +386,11 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     internal fun `can filter so only records with failed records are returned`() {
       webTestClient.get().uri {
-        it.path("/migrate/incentives/history")
+        it.path("/migrate/sentencing/history")
           .queryParam("includeOnlyFailures", "true")
           .build()
       }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCENTIVES")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -399,7 +402,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
   }
 
   @Nested
-  @DisplayName("GET /migrate/incentives/history/{migrationId}")
+  @DisplayName("GET /migrate/sentencing/history/{migrationId}")
   inner class Get {
     @BeforeEach
     internal fun createHistoryRecords() {
@@ -416,7 +419,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = INCENTIVES
+            migrationType = SENTENCING
           )
         )
       }
@@ -431,7 +434,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `must have valid token to get history`() {
-      webTestClient.get().uri("/migrate/incentives/history/2020-01-01T00:00:00")
+      webTestClient.get().uri("/migrate/sentencing/history/2020-01-01T00:00:00")
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isUnauthorized
@@ -439,7 +442,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `must have correct role to get history`() {
-      webTestClient.get().uri("/migrate/incentives/history/2020-01-01T00:00:00")
+      webTestClient.get().uri("/migrate/sentencing/history/2020-01-01T00:00:00")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
         .header("Content-Type", "application/json")
         .exchange()
@@ -448,8 +451,8 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `can read record`() {
-      webTestClient.get().uri("/migrate/incentives/history/2020-01-01T00:00:00")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCENTIVES")))
+      webTestClient.get().uri("/migrate/sentencing/history/2020-01-01T00:00:00")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -460,8 +463,8 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
   }
 
   @Nested
-  @DisplayName("POST /migrate/incentives/{migrationId}/terminate/")
-  inner class TerminateMigrationIncentives {
+  @DisplayName("POST /migrate/sentencing/{migrationId}/terminate/")
+  inner class TerminateMigrationSentencing {
     @BeforeEach
     internal fun setUp() {
       webTestClient.delete().uri("/history")
@@ -473,7 +476,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `must have valid token to terminate a migration`() {
-      webTestClient.post().uri("/migrate/incentives/{migrationId}/cqncel/", "some id")
+      webTestClient.post().uri("/migrate/sentencing/{migrationId}/cqncel/", "some id")
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isUnauthorized
@@ -481,7 +484,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `must have correct role to terminate a migration`() {
-      webTestClient.post().uri("/migrate/incentives/{migrationId}/cancel", "some id")
+      webTestClient.post().uri("/migrate/sentencing/{migrationId}/cancel", "some id")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
         .header("Content-Type", "application/json")
         .exchange()
@@ -490,8 +493,8 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will return a not found if no running migration found`() {
-      webTestClient.post().uri("/migrate/incentives/{migrationId}/cancel", "some id")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCENTIVES")))
+      webTestClient.post().uri("/migrate/sentencing/{migrationId}/cancel", "some id")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isNotFound
@@ -500,12 +503,12 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     internal fun `will terminate a running migration`() {
       val count = 30L
-      nomisApi.stubGetIncentivesInitialCount(count)
-      nomisApi.stubMultipleGetIncentivesCounts(totalElements = count, pageSize = 10)
-      mappingApi.stubIncentiveMappingByMigrationId(count = count.toInt())
+      nomisApi.stubGetSentenceAdjustmentsInitialCount(count)
+      nomisApi.stubMultipleGetAdjustmentIdCounts(totalElements = count, pageSize = 10)
+      mappingApi.stubSentenceAdjustmentMappingByMigrationId(count = count.toInt())
 
-      val migrationId = webTestClient.post().uri("/migrate/incentives")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCENTIVES")))
+      val migrationId = webTestClient.post().uri("/migrate/sentencing")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .body(
           BodyInserters.fromValue(
@@ -519,17 +522,17 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
         )
         .exchange()
         .expectStatus().isAccepted
-        .returnResult<MigrationContext<IncentivesMigrationFilter>>()
+        .returnResult<MigrationContext<SentencingMigrationFilter>>()
         .responseBody.blockFirst()!!.migrationId
 
-      webTestClient.post().uri("/migrate/incentives/{migrationId}/cancel", migrationId)
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCENTIVES")))
+      webTestClient.post().uri("/migrate/sentencing/{migrationId}/cancel", migrationId)
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isAccepted
 
-      webTestClient.get().uri("/migrate/incentives/history/{migrationId}", migrationId)
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCENTIVES")))
+      webTestClient.get().uri("/migrate/sentencing/history/{migrationId}", migrationId)
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -538,8 +541,8 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
         .jsonPath("$.status").isEqualTo("CANCELLED_REQUESTED")
 
       await atMost Duration.ofSeconds(60) untilAsserted {
-        webTestClient.get().uri("/migrate/incentives/history/{migrationId}", migrationId)
-          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCENTIVES")))
+        webTestClient.get().uri("/migrate/sentencing/history/{migrationId}", migrationId)
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
           .header("Content-Type", "application/json")
           .exchange()
           .expectStatus().isOk
