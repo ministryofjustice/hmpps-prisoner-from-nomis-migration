@@ -69,9 +69,9 @@ class SentencingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubUpdateSentencingAdjustmentForSynchronisation() {
+  fun stubUpdateSentencingAdjustmentForSynchronisation(adjustmentId: String = "654321") {
     stubFor(
-      put(WireMock.urlMatching("/synchronisation/sentencing/adjustments")).willReturn(
+      put(WireMock.urlMatching("/synchronisation/sentencing/adjustments/$adjustmentId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())

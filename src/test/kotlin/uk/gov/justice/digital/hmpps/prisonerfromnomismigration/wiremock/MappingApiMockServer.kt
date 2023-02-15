@@ -476,7 +476,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       ).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.NOT_FOUND.value())
+          .withStatus(HttpStatus.OK.value())
           .withBody(
             """
             {

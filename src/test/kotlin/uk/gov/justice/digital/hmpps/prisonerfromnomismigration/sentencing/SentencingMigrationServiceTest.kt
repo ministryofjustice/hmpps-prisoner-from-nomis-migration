@@ -810,7 +810,7 @@ internal class SentencingMigrationServiceTest {
 
       verify(sentencingService).migrateSentencingAdjustment(
         eq(
-          CreateSentencingAdjustment(
+          SentencingAdjustment(
             adjustmentDate = adjustmentDate,
             adjustmentFromDate = adjustmentFromDate,
             adjustmentDays = 8,
