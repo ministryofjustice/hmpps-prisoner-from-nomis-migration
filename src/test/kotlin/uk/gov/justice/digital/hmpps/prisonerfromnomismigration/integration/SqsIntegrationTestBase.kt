@@ -1,7 +1,9 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration
 
 import com.microsoft.applicationinsights.TelemetryClient
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.kotlin.reset
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.SpyBean
@@ -76,6 +78,11 @@ class SqsIntegrationTestBase : TestBase() {
 
   @SpyBean
   protected lateinit var telemetryClient: TelemetryClient
+
+  @BeforeEach
+  fun setUp() {
+    reset(telemetryClient)
+  }
 
   internal fun setAuthorisation(
     user: String = "ADMIN",
