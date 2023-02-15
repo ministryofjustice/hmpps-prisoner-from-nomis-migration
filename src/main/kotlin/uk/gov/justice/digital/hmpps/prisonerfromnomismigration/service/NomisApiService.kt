@@ -19,7 +19,7 @@ import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.CreateIncentiveIEP
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.ReviewType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.UpdateIncentiveIEP
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.CreateSentencingAdjustment
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomUsageResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationFilter
 import java.time.LocalDate
@@ -260,7 +260,7 @@ data class NomisAdjustment(
   val comment: String?,
   val active: Boolean,
 ) {
-  fun toSentencingAdjustment(): CreateSentencingAdjustment = CreateSentencingAdjustment(
+  fun toSentencingAdjustment(): SentencingAdjustment = SentencingAdjustment(
     bookingId = bookingId,
     sentenceSequence = sentenceSequence,
     adjustmentType = adjustmentType.code,

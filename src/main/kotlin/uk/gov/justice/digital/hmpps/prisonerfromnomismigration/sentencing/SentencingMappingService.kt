@@ -45,6 +45,19 @@ class SentencingMappingService(@Qualifier("mappingApiWebClient") private val web
     )
   }
 
+  suspend fun createNomisSentencingAdjustmentSynchronisationMapping(
+    nomisAdjustmentId: Long,
+    nomisAdjustmentCategory: String,
+    adjustmentId: String,
+  ) {
+    createNomisSentenceAdjustmentMapping(
+      nomisAdjustmentId = nomisAdjustmentId,
+      nomisAdjustmentCategory = nomisAdjustmentCategory,
+      adjustmentId = adjustmentId,
+      mappingType = "NOMIS_CREATED"
+    )
+  }
+
   private suspend fun createNomisSentenceAdjustmentMapping(
     nomisAdjustmentId: Long,
     nomisAdjustmentCategory: String,

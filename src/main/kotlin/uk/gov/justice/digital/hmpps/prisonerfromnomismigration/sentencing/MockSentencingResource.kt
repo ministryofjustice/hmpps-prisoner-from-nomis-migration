@@ -6,7 +6,9 @@ import jakarta.validation.Valid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import java.time.LocalDate
@@ -21,19 +23,40 @@ class MockSentencingResource {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
+
   @PreAuthorize("hasRole('ROLE_SENTENCING_SYNC')")
   @PostMapping("/migration/sentencing/adjustments")
   @Operation(hidden = true)
-  suspend fun createAdjustment(
-    @RequestBody @Valid createAdjustmentRequest: MockCreateAdjustmentRequest
+  suspend fun createAdjustmentForMigration(
+    @RequestBody @Valid adjustmentRequest: MockAdjustmentRequest
   ): MockCreateAdjustmentResponse {
     val id = Random.nextLong().toString()
-    log.info("Created adjustment for migration with id $id for booking ${createAdjustmentRequest.bookingId}. Request was $createAdjustmentRequest")
+    log.info("Created adjustment for migration with id $id for booking ${adjustmentRequest.bookingId}. Request was $adjustmentRequest")
     return MockCreateAdjustmentResponse(id)
+  }
+
+  @PostMapping("/synchronisation/sentencing/adjustments")
+  @Operation(hidden = true)
+  suspend fun createAdjustmentForSynchronisation(
+    @RequestBody @Valid adjustmentRequest: MockAdjustmentRequest
+  ): MockCreateAdjustmentResponse {
+    val id = Random.nextLong().toString()
+    log.info("Created adjustment for synchronisation with id $id for booking ${adjustmentRequest.bookingId}. Request was $adjustmentRequest")
+    return MockCreateAdjustmentResponse(id)
+  }
+
+  @PutMapping("/synchronisation/sentencing/adjustments/{adjustmentId}")
+  @Operation(hidden = true)
+  suspend fun updateAdjustmentForSynchronisation(
+    @PathVariable adjustmentId: String,
+    @RequestBody @Valid adjustmentRequest: MockAdjustmentRequest
+  ) {
+    val id = Random.nextLong().toString()
+    log.info("Updated adjustment for synchronisation with id $id for booking ${adjustmentRequest.bookingId}. Request was $adjustmentRequest")
   }
 }
 
-data class MockCreateAdjustmentRequest(
+data class MockAdjustmentRequest(
   // will change once Sentencing API implemented
   val bookingId: Long,
   val sentenceSequence: Long,
@@ -46,12 +69,6 @@ data class MockCreateAdjustmentRequest(
   val comment: String?,
   val active: Boolean,
 )
-
-/*data class UpdateAdjustmentRequest(
-  val reviewTime: LocalDateTime,
-  val commentText: String? = null,
-  val current: Boolean,
-)*/
 
 data class MockCreateAdjustmentResponse(
   val id: String,
