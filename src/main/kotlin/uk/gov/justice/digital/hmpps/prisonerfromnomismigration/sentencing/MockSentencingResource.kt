@@ -39,7 +39,7 @@ data class MockCreateAdjustmentRequest(
   val sentenceSequence: Long,
   val adjustmentType: String,
   @JsonFormat(pattern = "yyyy-MM-dd")
-  val adjustmentDate: LocalDate,
+  val adjustmentDate: LocalDate?,
   @JsonFormat(pattern = "yyyy-MM-dd")
   val adjustmentFromDate: LocalDate?,
   val adjustmentDays: Long,
