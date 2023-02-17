@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing
 
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
+import com.github.tomakehurst.wiremock.client.WireMock.exactly
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
@@ -47,6 +49,7 @@ class SentencingFromNomisIntTest : SqsIntegrationTestBase() {
   @DisplayName("SENTENCE_ADJUSTMENT_UPSERTED")
   inner class SentenceAdjustmentUpserted {
     @Nested
+    @DisplayName("When no mapping exists - new adjustment")
     inner class WhenNoMappingFound {
       @BeforeEach
       fun setUp() {
@@ -57,6 +60,42 @@ class SentencingFromNomisIntTest : SqsIntegrationTestBase() {
       inner class WhenCreateByDPS {
         @BeforeEach
         fun setUp() {
+          awsSqsSentencingOffenderEventsClient.sendMessage(
+            sentencingQueueOffenderEventsUrl,
+            sentencingEvent(
+              eventType = "SENTENCE_ADJUSTMENT_UPSERTED",
+              auditModuleName = "DPS_SYNCHRONISATION",
+              adjustmentId = NOMIS_ADJUSTMENT_ID,
+              bookingId = BOOKING_ID,
+              sentenceSeq = SENTENCE_SEQUENCE,
+              offenderIdDisplay = OFFENDER_NUMBER,
+            )
+          )
+        }
+
+        @Test
+        fun `the event is ignored`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              Mockito.eq("sentence-adjustment-synchronisation-skipped"),
+              check {
+                assertThat(it["adjustmentCategory"]).isEqualTo("SENTENCE")
+                assertThat(it["nomisAdjustmentId"]).isEqualTo(NOMIS_ADJUSTMENT_ID.toString())
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_NUMBER)
+                assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+                assertThat(it["sentenceSequence"]).isEqualTo(SENTENCE_SEQUENCE.toString())
+                assertThat(it["adjustmentId"]).isNull()
+              },
+              isNull(),
+            )
+          }
+
+          mappingApi.verify(
+            exactly(0),
+            getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID"))
+          )
+          nomisApi.verify(exactly(0), getRequestedFor(urlPathEqualTo("/sentence-adjustments/$NOMIS_ADJUSTMENT_ID")))
+          sentencingApi.verify(exactly(0), postRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments")))
         }
       }
 
@@ -84,7 +123,7 @@ class SentencingFromNomisIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will retrieve mapping to check if this is a new adjustment`() {
           await untilAsserted {
-            mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/987")))
+            mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID")))
           }
           await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
         }
@@ -123,7 +162,7 @@ class SentencingFromNomisIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
               Mockito.eq("sentence-adjustment-created-synchronisation-success"),
-              org.mockito.kotlin.check {
+              check {
                 assertThat(it["adjustmentId"]).isEqualTo(ADJUSTMENT_ID)
                 assertThat(it["adjustmentCategory"]).isEqualTo("SENTENCE")
                 assertThat(it["nomisAdjustmentId"]).isEqualTo(NOMIS_ADJUSTMENT_ID.toString())
@@ -139,6 +178,7 @@ class SentencingFromNomisIntTest : SqsIntegrationTestBase() {
     }
 
     @Nested
+    @DisplayName("When mapping exists - existing adjustment")
     inner class WhenMappingFound {
       @BeforeEach
       fun setUp() {
@@ -153,6 +193,45 @@ class SentencingFromNomisIntTest : SqsIntegrationTestBase() {
       inner class WhenUpdatedByDPS {
         @BeforeEach
         fun setUp() {
+          awsSqsSentencingOffenderEventsClient.sendMessage(
+            sentencingQueueOffenderEventsUrl,
+            sentencingEvent(
+              eventType = "SENTENCE_ADJUSTMENT_UPSERTED",
+              auditModuleName = "DPS_SYNCHRONISATION",
+              adjustmentId = NOMIS_ADJUSTMENT_ID,
+              bookingId = BOOKING_ID,
+              sentenceSeq = SENTENCE_SEQUENCE,
+              offenderIdDisplay = OFFENDER_NUMBER,
+            )
+          )
+        }
+
+        @Test
+        fun `the event is ignored`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              Mockito.eq("sentence-adjustment-synchronisation-skipped"),
+              check {
+                assertThat(it["adjustmentCategory"]).isEqualTo("SENTENCE")
+                assertThat(it["nomisAdjustmentId"]).isEqualTo(NOMIS_ADJUSTMENT_ID.toString())
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_NUMBER)
+                assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+                assertThat(it["sentenceSequence"]).isEqualTo(SENTENCE_SEQUENCE.toString())
+                assertThat(it["adjustmentId"]).isNull()
+              },
+              isNull(),
+            )
+          }
+
+          mappingApi.verify(
+            exactly(0),
+            getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID"))
+          )
+          nomisApi.verify(exactly(0), getRequestedFor(urlPathEqualTo("/sentence-adjustments/$NOMIS_ADJUSTMENT_ID")))
+          sentencingApi.verify(
+            exactly(0),
+            putRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID"))
+          )
         }
       }
 
@@ -205,7 +284,7 @@ class SentencingFromNomisIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
               Mockito.eq("sentence-adjustment-updated-synchronisation-success"),
-              org.mockito.kotlin.check {
+              check {
                 assertThat(it["adjustmentId"]).isEqualTo(ADJUSTMENT_ID)
                 assertThat(it["adjustmentCategory"]).isEqualTo("SENTENCE")
                 assertThat(it["nomisAdjustmentId"]).isEqualTo(NOMIS_ADJUSTMENT_ID.toString())
