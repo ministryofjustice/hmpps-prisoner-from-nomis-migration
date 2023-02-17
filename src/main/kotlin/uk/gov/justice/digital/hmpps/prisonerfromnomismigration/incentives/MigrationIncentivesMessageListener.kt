@@ -20,7 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.Incent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.RETRY_INCENTIVE_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.RETRY_INCENTIVE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.SYNCHRONISE_CURRENT_INCENTIVE
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.context
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.migrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.INCENTIVES_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import java.util.concurrent.CompletableFuture
@@ -44,18 +44,18 @@ class MigrationIncentivesMessageListener(
     return CoroutineScope(Dispatchers.Default).future {
       runCatching {
         when (migrationMessage.type) {
-          MIGRATE_INCENTIVES -> incentivesMigrationService.divideIncentivesByPage(context(message.fromJson()))
-          MIGRATE_INCENTIVES_BY_PAGE -> incentivesMigrationService.migrateIncentivesForPage(context(message.fromJson()))
-          MIGRATE_INCENTIVE -> incentivesMigrationService.migrateIncentive(context(message.fromJson()))
-          MIGRATE_INCENTIVES_STATUS_CHECK -> incentivesMigrationService.migrateIncentivesStatusCheck(context(message.fromJson()))
-          CANCEL_MIGRATE_INCENTIVES -> incentivesMigrationService.cancelMigrateIncentivesStatusCheck(context(message.fromJson()))
-          RETRY_INCENTIVE_MAPPING -> incentivesMigrationService.retryCreateIncentiveMapping(context(message.fromJson()))
+          MIGRATE_INCENTIVES -> incentivesMigrationService.divideIncentivesByPage(migrationContext(message.fromJson()))
+          MIGRATE_INCENTIVES_BY_PAGE -> incentivesMigrationService.migrateIncentivesForPage(migrationContext(message.fromJson()))
+          MIGRATE_INCENTIVE -> incentivesMigrationService.migrateIncentive(migrationContext(message.fromJson()))
+          MIGRATE_INCENTIVES_STATUS_CHECK -> incentivesMigrationService.migrateIncentivesStatusCheck(migrationContext(message.fromJson()))
+          CANCEL_MIGRATE_INCENTIVES -> incentivesMigrationService.cancelMigrateIncentivesStatusCheck(migrationContext(message.fromJson()))
+          RETRY_INCENTIVE_MAPPING -> incentivesMigrationService.retryCreateIncentiveMapping(migrationContext(message.fromJson()))
           SYNCHRONISE_CURRENT_INCENTIVE -> incentivesSynchronisationService.handleSynchroniseCurrentIncentiveMessage(
-            context(message.fromJson())
+            migrationContext(message.fromJson())
           )
 
           RETRY_INCENTIVE_SYNCHRONISATION_MAPPING -> incentivesSynchronisationService.retryCreateIncentiveMapping(
-            context(message.fromJson())
+            migrationContext(message.fromJson())
           )
         }
       }.onFailure {
