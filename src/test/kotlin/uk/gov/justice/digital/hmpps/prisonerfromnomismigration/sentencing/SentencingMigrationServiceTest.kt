@@ -167,7 +167,7 @@ internal class SentencingMigrationServiceTest {
       coVerify {
         migrationHistoryService.recordMigrationStarted(
           migrationId = any(),
-          synchronisationType = SENTENCING,
+          migrationType = SENTENCING,
           estimatedRecordCount = 23,
           filter = coWithArg<SentencingMigrationFilter> {
             assertThat(it.fromDate).isEqualTo(LocalDate.parse("2020-01-01"))
@@ -927,7 +927,7 @@ internal class SentencingMigrationServiceTest {
           status = MigrationStatus.CANCELLED,
           whenEnded = LocalDateTime.parse("2020-01-01T00:00:00"),
           whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
-          synchronisationType = SENTENCING,
+          migrationType = SENTENCING,
           estimatedRecordCount = 100,
         )
       )

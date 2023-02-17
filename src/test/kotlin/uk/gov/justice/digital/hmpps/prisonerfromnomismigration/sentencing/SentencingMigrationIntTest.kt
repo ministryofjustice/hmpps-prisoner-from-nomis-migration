@@ -248,7 +248,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            synchronisationType = SENTENCING
+            migrationType = SENTENCING
           )
         )
         migrationHistoryRepository.save(
@@ -261,7 +261,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            synchronisationType = SENTENCING
+            migrationType = SENTENCING
           )
         )
         migrationHistoryRepository.save(
@@ -274,7 +274,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            synchronisationType = SENTENCING
+            migrationType = SENTENCING
           )
         )
         migrationHistoryRepository.save(
@@ -287,7 +287,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            synchronisationType = SENTENCING
+            migrationType = SENTENCING
           )
         )
       }
@@ -419,7 +419,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            synchronisationType = SENTENCING
+            migrationType = SENTENCING
           )
         )
       }

@@ -77,7 +77,7 @@ class VisitsMigrationService(
       )
       migrationHistoryService.recordMigrationStarted(
         migrationId = it.migrationId,
-        synchronisationType = VISITS,
+        migrationType = VISITS,
         estimatedRecordCount = it.estimatedCount,
         filter = it.body
       )

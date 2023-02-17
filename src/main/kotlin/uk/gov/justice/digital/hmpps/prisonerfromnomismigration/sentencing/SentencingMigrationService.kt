@@ -64,7 +64,7 @@ class SentencingMigrationService(
       )
       migrationHistoryService.recordMigrationStarted(
         migrationId = it.migrationId,
-        synchronisationType = SENTENCING,
+        migrationType = SENTENCING,
         estimatedRecordCount = it.estimatedCount,
         filter = it.body
       )

@@ -20,14 +20,14 @@ class MigrationHistoryService(
 
   suspend fun recordMigrationStarted(
     migrationId: String,
-    synchronisationType: SynchronisationType,
+    migrationType: SynchronisationType,
     estimatedRecordCount: Long = 0,
     filter: Any? = null,
   ) = kotlin.runCatching {
     migrationHistoryRepository.save(
       MigrationHistory(
         migrationId = migrationId,
-        synchronisationType = synchronisationType,
+        migrationType = migrationType,
         estimatedRecordCount = estimatedRecordCount,
         filter = filter?.let { objectMapper.writeValueAsString(it) }
       )

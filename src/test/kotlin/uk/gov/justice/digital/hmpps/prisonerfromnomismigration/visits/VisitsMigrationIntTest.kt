@@ -259,7 +259,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
             filter = """"prisonIds":["HEI"],"visitTypes":["SCON"],"ignoreMissingRoom":false""",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            synchronisationType = VISITS
+            migrationType = VISITS
           )
         )
         migrationHistoryRepository.save(
@@ -272,7 +272,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
             filter = """"prisonIds":["WWI"],"visitTypes":["SCON"],"ignoreMissingRoom":false""",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            synchronisationType = VISITS
+            migrationType = VISITS
           )
         )
         migrationHistoryRepository.save(
@@ -285,7 +285,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
             filter = """"prisonIds":["BXI"],"visitTypes":["SCON"],"ignoreMissingRoom":false""",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            synchronisationType = VISITS
+            migrationType = VISITS
           )
         )
         migrationHistoryRepository.save(
@@ -298,7 +298,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
             filter = """"prisonIds":["BXI"],"visitTypes":["SCON"],"ignoreMissingRoom":false""",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            synchronisationType = VISITS
+            migrationType = VISITS
           )
         )
       }
@@ -446,7 +446,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
             filter = """"prisonIds":["HEI"],"visitTypes":["SCON"],"ignoreMissingRoom":false""",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            synchronisationType = VISITS
+            migrationType = VISITS
           )
         )
       }

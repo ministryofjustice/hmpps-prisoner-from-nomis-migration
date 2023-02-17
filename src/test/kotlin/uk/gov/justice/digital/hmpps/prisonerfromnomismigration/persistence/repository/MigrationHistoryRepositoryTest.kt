@@ -43,7 +43,7 @@ class MigrationHistoryRepositoryTest : TestBase() {
       MigrationHistory(
         migrationId = "2022-01-23T10:31:45",
         filter = filter,
-        synchronisationType = VISITS,
+        migrationType = VISITS,
         estimatedRecordCount = 123_678
       )
     )
@@ -52,7 +52,7 @@ class MigrationHistoryRepositoryTest : TestBase() {
     with(persistedMigrationHistory) {
       assertThat(migrationId).isEqualTo("2022-01-23T10:31:45")
       assertThat(filter).isEqualTo(filter)
-      assertThat(synchronisationType).isEqualTo(VISITS)
+      assertThat(migrationType).isEqualTo(VISITS)
       assertThat(status).isEqualTo(MigrationStatus.STARTED)
       assertThat(recordsFailed).isEqualTo(0)
       assertThat(recordsMigrated).isEqualTo(0)
@@ -71,7 +71,7 @@ class MigrationHistoryRepositoryTest : TestBase() {
     with(updatedMigrationHistory) {
       assertThat(migrationId).isEqualTo("2022-01-23T10:31:45")
       assertThat(filter).isEqualTo(filter)
-      assertThat(synchronisationType).isEqualTo(VISITS)
+      assertThat(migrationType).isEqualTo(VISITS)
       assertThat(status).isEqualTo(MigrationStatus.COMPLETED)
       assertThat(recordsFailed).isEqualTo(2)
       assertThat(recordsMigrated).isEqualTo(123_676)

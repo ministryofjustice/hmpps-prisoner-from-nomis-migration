@@ -244,7 +244,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            synchronisationType = INCENTIVES
+            migrationType = INCENTIVES
           )
         )
         migrationHistoryRepository.save(
@@ -257,7 +257,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            synchronisationType = INCENTIVES
+            migrationType = INCENTIVES
           )
         )
         migrationHistoryRepository.save(
@@ -270,7 +270,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            synchronisationType = INCENTIVES
+            migrationType = INCENTIVES
           )
         )
         migrationHistoryRepository.save(
@@ -283,7 +283,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            synchronisationType = INCENTIVES
+            migrationType = INCENTIVES
           )
         )
       }
@@ -415,7 +415,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            synchronisationType = INCENTIVES
+            migrationType = INCENTIVES
           )
         )
       }

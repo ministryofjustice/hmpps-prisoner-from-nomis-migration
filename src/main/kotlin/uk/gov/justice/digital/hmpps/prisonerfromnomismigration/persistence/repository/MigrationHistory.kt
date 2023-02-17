@@ -18,7 +18,7 @@ data class MigrationHistory(
   val filter: String? = null,
   var recordsMigrated: Long = 0,
   var recordsFailed: Long = 0,
-  val synchronisationType: SynchronisationType,
+  val migrationType: SynchronisationType,
   var status: MigrationStatus = STARTED,
   @Transient
   @Value("false")

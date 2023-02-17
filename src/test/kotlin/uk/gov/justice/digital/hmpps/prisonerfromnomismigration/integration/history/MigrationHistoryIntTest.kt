@@ -44,7 +44,7 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
             """.trimIndent(),
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            synchronisationType = VISITS
+            migrationType = VISITS
           )
         )
         migrationHistoryRepository.save(
@@ -65,7 +65,7 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
             """.trimIndent(),
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            synchronisationType = VISITS
+            migrationType = VISITS
           )
         )
         migrationHistoryRepository.save(
@@ -86,7 +86,7 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
             """.trimIndent(),
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            synchronisationType = VISITS
+            migrationType = VISITS
           )
         )
         migrationHistoryRepository.save(
@@ -107,7 +107,7 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
             """.trimIndent(),
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            synchronisationType = VISITS
+            migrationType = VISITS
           )
         )
       }

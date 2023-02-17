@@ -181,7 +181,7 @@ internal class VisitsMigrationServiceTest {
       coVerify {
         migrationHistoryService.recordMigrationStarted(
           migrationId = any(),
-          synchronisationType = VISITS,
+          migrationType = VISITS,
           estimatedRecordCount = 23,
           filter = coWithArg<VisitsMigrationFilter> {
             assertThat(it.prisonIds).containsExactly("LEI", "BXI")
@@ -1809,7 +1809,7 @@ internal class VisitsMigrationServiceTest {
           status = MigrationStatus.CANCELLED,
           whenEnded = LocalDateTime.parse("2020-01-01T00:00:00"),
           whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
-          synchronisationType = VISITS,
+          migrationType = VISITS,
           estimatedRecordCount = 100,
         )
       )

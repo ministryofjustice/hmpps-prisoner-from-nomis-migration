@@ -68,7 +68,7 @@ class IncentivesMigrationService(
       )
       migrationHistoryService.recordMigrationStarted(
         migrationId = it.migrationId,
-        synchronisationType = INCENTIVES,
+        migrationType = INCENTIVES,
         estimatedRecordCount = it.estimatedCount,
         filter = it.body
       )
