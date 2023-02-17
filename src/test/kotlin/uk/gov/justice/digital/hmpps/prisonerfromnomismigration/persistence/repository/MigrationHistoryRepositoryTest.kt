@@ -10,7 +10,7 @@ import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest
 import org.springframework.test.context.ActiveProfiles
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.TestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.VISITS
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.VISITS
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
@@ -43,7 +43,7 @@ class MigrationHistoryRepositoryTest : TestBase() {
       MigrationHistory(
         migrationId = "2022-01-23T10:31:45",
         filter = filter,
-        migrationType = VISITS,
+        synchronisationType = VISITS,
         estimatedRecordCount = 123_678
       )
     )
@@ -52,7 +52,7 @@ class MigrationHistoryRepositoryTest : TestBase() {
     with(persistedMigrationHistory) {
       assertThat(migrationId).isEqualTo("2022-01-23T10:31:45")
       assertThat(filter).isEqualTo(filter)
-      assertThat(migrationType).isEqualTo(VISITS)
+      assertThat(synchronisationType).isEqualTo(VISITS)
       assertThat(status).isEqualTo(MigrationStatus.STARTED)
       assertThat(recordsFailed).isEqualTo(0)
       assertThat(recordsMigrated).isEqualTo(0)
@@ -71,7 +71,7 @@ class MigrationHistoryRepositoryTest : TestBase() {
     with(updatedMigrationHistory) {
       assertThat(migrationId).isEqualTo("2022-01-23T10:31:45")
       assertThat(filter).isEqualTo(filter)
-      assertThat(migrationType).isEqualTo(VISITS)
+      assertThat(synchronisationType).isEqualTo(VISITS)
       assertThat(status).isEqualTo(MigrationStatus.COMPLETED)
       assertThat(recordsFailed).isEqualTo(2)
       assertThat(recordsMigrated).isEqualTo(123_676)

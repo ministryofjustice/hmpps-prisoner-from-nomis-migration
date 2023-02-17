@@ -29,7 +29,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.COMPLETED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.INCENTIVES
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.INCENTIVES
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.IncentivesApiExtension.Companion.incentivesApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
@@ -244,7 +244,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = INCENTIVES
+            synchronisationType = INCENTIVES
           )
         )
         migrationHistoryRepository.save(
@@ -257,7 +257,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = INCENTIVES
+            synchronisationType = INCENTIVES
           )
         )
         migrationHistoryRepository.save(
@@ -270,7 +270,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = INCENTIVES
+            synchronisationType = INCENTIVES
           )
         )
         migrationHistoryRepository.save(
@@ -283,7 +283,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = INCENTIVES
+            synchronisationType = INCENTIVES
           )
         )
       }
@@ -415,7 +415,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = INCENTIVES
+            synchronisationType = INCENTIVES
           )
         )
       }

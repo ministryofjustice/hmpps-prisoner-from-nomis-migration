@@ -29,7 +29,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.COMPLETED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.SENTENCING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.SENTENCING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.SentencingApiExtension.Companion.sentencingApi
@@ -248,7 +248,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = SENTENCING
+            synchronisationType = SENTENCING
           )
         )
         migrationHistoryRepository.save(
@@ -261,7 +261,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = SENTENCING
+            synchronisationType = SENTENCING
           )
         )
         migrationHistoryRepository.save(
@@ -274,7 +274,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = SENTENCING
+            synchronisationType = SENTENCING
           )
         )
         migrationHistoryRepository.save(
@@ -287,7 +287,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = SENTENCING
+            synchronisationType = SENTENCING
           )
         )
       }
@@ -419,7 +419,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = SENTENCING
+            synchronisationType = SENTENCING
           )
         )
       }

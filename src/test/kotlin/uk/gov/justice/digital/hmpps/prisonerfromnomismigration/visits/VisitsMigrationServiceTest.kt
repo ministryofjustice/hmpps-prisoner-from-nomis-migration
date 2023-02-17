@@ -36,12 +36,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditServ
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisCodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisLeadVisitor
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisVisit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisVisitor
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VisitId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMessages.CANCEL_MIGRATE_VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMessages.MIGRATE_VISIT
@@ -181,7 +181,7 @@ internal class VisitsMigrationServiceTest {
       coVerify {
         migrationHistoryService.recordMigrationStarted(
           migrationId = any(),
-          migrationType = VISITS,
+          synchronisationType = VISITS,
           estimatedRecordCount = 23,
           filter = coWithArg<VisitsMigrationFilter> {
             assertThat(it.prisonIds).containsExactly("LEI", "BXI")
@@ -1809,7 +1809,7 @@ internal class VisitsMigrationServiceTest {
           status = MigrationStatus.CANCELLED,
           whenEnded = LocalDateTime.parse("2020-01-01T00:00:00"),
           whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
-          migrationType = VISITS,
+          synchronisationType = VISITS,
           estimatedRecordCount = 100,
         )
       )

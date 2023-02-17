@@ -35,16 +35,16 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.Senten
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.MIGRATE_SENTENCING_ADJUSTMENTS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.MIGRATE_SENTENCING_ADJUSTMENTS_BY_PAGE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.MIGRATE_SENTENCING_STATUS_CHECK
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.RETRY_SENTENCING_ADJUSTMENT_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingMessages.RETRY_MIGRATION_SENTENCING_ADJUSTMENT_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.SENTENCING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisAdjustmentId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisCodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.SENTENCING
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -167,7 +167,7 @@ internal class SentencingMigrationServiceTest {
       coVerify {
         migrationHistoryService.recordMigrationStarted(
           migrationId = any(),
-          migrationType = SENTENCING,
+          synchronisationType = SENTENCING,
           estimatedRecordCount = 23,
           filter = coWithArg<SentencingMigrationFilter> {
             assertThat(it.fromDate).isEqualTo(LocalDate.parse("2020-01-01"))
@@ -876,7 +876,7 @@ internal class SentencingMigrationServiceTest {
       )
 
       verify(queueService).sendMessage(
-        message = eq(RETRY_SENTENCING_ADJUSTMENT_MAPPING),
+        message = eq(RETRY_MIGRATION_SENTENCING_ADJUSTMENT_MAPPING),
         context = check<MigrationContext<SentencingAdjustmentMapping>> {
           assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
           assertThat(it.body.nomisAdjustmentId).isEqualTo(123)
@@ -927,7 +927,7 @@ internal class SentencingMigrationServiceTest {
           status = MigrationStatus.CANCELLED,
           whenEnded = LocalDateTime.parse("2020-01-01T00:00:00"),
           whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
-          migrationType = SENTENCING,
+          synchronisationType = SENTENCING,
           estimatedRecordCount = 100,
         )
       )

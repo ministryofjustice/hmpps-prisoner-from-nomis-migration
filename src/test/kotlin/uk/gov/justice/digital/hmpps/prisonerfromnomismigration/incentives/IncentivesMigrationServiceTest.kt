@@ -42,10 +42,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Incentive
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.INCENTIVES
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisCodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisIncentive
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.INCENTIVES
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -168,7 +168,7 @@ internal class IncentivesMigrationServiceTest {
       coVerify {
         migrationHistoryService.recordMigrationStarted(
           migrationId = any(),
-          migrationType = INCENTIVES,
+          synchronisationType = INCENTIVES,
           estimatedRecordCount = 23,
           filter = coWithArg<IncentivesMigrationFilter> {
             assertThat(it.fromDate).isEqualTo(LocalDate.parse("2020-01-01"))
@@ -961,7 +961,7 @@ internal class IncentivesMigrationServiceTest {
           status = MigrationStatus.CANCELLED,
           whenEnded = LocalDateTime.parse("2020-01-01T00:00:00"),
           whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
-          migrationType = INCENTIVES,
+          synchronisationType = INCENTIVES,
           estimatedRecordCount = 100,
         )
       )

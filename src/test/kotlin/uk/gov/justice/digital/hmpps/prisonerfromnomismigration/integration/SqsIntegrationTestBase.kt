@@ -71,7 +71,9 @@ class SqsIntegrationTestBase : TestBase() {
   internal val awsSqsIncentivesOffenderEventsClient by lazy { incentivesOffenderEventsQueue.sqsClient }
   internal val sentencingOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId("eventsentencing") as HmppsQueue }
   internal val sentencingQueueOffenderEventsUrl by lazy { sentencingOffenderEventsQueue.queueUrl }
+  internal val sentencingQueueOffenderEventsDlqUrl by lazy { sentencingOffenderEventsQueue.dlqUrl }
   internal val awsSqsSentencingOffenderEventsClient by lazy { sentencingOffenderEventsQueue.sqsClient }
+  internal val awsSqsSentencingOffenderEventsDlqClient by lazy { sentencingOffenderEventsQueue.sqsDlqClient }
 
   @Autowired
   protected lateinit var jwtAuthHelper: JwtAuthHelper
@@ -82,6 +84,9 @@ class SqsIntegrationTestBase : TestBase() {
   @BeforeEach
   fun setUp() {
     reset(telemetryClient)
+    awsSqsSentencingOffenderEventsClient.purgeQueue(sentencingQueueOffenderEventsUrl).get()
+    awsSqsSentencingOffenderEventsClient.purgeQueue(sentencingQueueOffenderEventsDlqUrl)?.get()
+    awsSqsVisitsMigrationDlqClient?.purgeQueue(sentencingMigrationDlqUrl)?.get()
   }
 
   internal fun setAuthorisation(
@@ -105,3 +110,4 @@ internal fun SqsAsyncClient.sendMessage(queueOffenderEventsUrl: String, message:
   sendMessage(SendMessageRequest.builder().queueUrl(queueOffenderEventsUrl).messageBody(message).build()).get()
 
 internal fun String.purgeQueueRequest() = PurgeQueueRequest.builder().queueUrl(this).build()
+private fun SqsAsyncClient.purgeQueue(queueUrl: String?) = purgeQueue(queueUrl?.purgeQueueRequest())

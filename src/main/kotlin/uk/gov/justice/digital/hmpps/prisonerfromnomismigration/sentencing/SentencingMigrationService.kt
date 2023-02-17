@@ -13,9 +13,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditServ
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.SENTENCING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisAdjustmentId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.SENTENCING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.asStringOrBlank
 import java.time.Duration
 import java.time.LocalDateTime
@@ -64,7 +64,7 @@ class SentencingMigrationService(
       )
       migrationHistoryService.recordMigrationStarted(
         migrationId = it.migrationId,
-        migrationType = SENTENCING,
+        synchronisationType = SENTENCING,
         estimatedRecordCount = it.estimatedCount,
         filter = it.body
       )
@@ -276,7 +276,7 @@ class SentencingMigrationService(
       e
     )
     queueService.sendMessage(
-      SentencingMessages.RETRY_SENTENCING_ADJUSTMENT_MAPPING,
+      SentencingMessages.RETRY_MIGRATION_SENTENCING_ADJUSTMENT_MAPPING,
       MigrationContext(
         context = context,
         body = SentencingAdjustmentMapping(

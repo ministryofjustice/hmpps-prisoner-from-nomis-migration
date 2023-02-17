@@ -11,10 +11,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditServ
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisCodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisVisit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VisitId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.asStringOrBlank
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMessages.CANCEL_MIGRATE_VISITS
@@ -77,7 +77,7 @@ class VisitsMigrationService(
       )
       migrationHistoryService.recordMigrationStarted(
         migrationId = it.migrationId,
-        migrationType = VISITS,
+        synchronisationType = VISITS,
         estimatedRecordCount = it.estimatedCount,
         filter = it.body
       )

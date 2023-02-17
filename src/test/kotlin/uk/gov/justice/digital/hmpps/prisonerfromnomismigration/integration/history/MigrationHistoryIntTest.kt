@@ -11,7 +11,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.COMPLETED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.VISITS
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.VISITS
 import java.time.LocalDateTime
 
 class MigrationHistoryIntTest : SqsIntegrationTestBase() {
@@ -44,7 +44,7 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
             """.trimIndent(),
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = VISITS
+            synchronisationType = VISITS
           )
         )
         migrationHistoryRepository.save(
@@ -65,7 +65,7 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
             """.trimIndent(),
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = VISITS
+            synchronisationType = VISITS
           )
         )
         migrationHistoryRepository.save(
@@ -86,7 +86,7 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
             """.trimIndent(),
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = VISITS
+            synchronisationType = VISITS
           )
         )
         migrationHistoryRepository.save(
@@ -107,7 +107,7 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
             """.trimIndent(),
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = VISITS
+            synchronisationType = VISITS
           )
         )
       }

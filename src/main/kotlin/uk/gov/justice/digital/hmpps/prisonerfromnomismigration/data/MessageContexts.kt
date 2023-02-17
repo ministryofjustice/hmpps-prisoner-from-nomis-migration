@@ -1,10 +1,15 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data
 
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-class MigrationContext<T>(val type: MigrationType, val migrationId: String, val estimatedCount: Long, val body: T) {
+class MigrationContext<T>(
+  val type: SynchronisationType,
+  val migrationId: String,
+  val estimatedCount: Long,
+  val body: T
+) {
   constructor(context: MigrationContext<*>, body: T) : this(
     context.type,
     context.migrationId,
@@ -14,3 +19,9 @@ class MigrationContext<T>(val type: MigrationType, val migrationId: String, val 
 }
 
 fun generateBatchId(): String = LocalDateTime.now().withNano(0).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+
+class SynchronisationContext<T>(
+  val type: SynchronisationType,
+  val telemetryProperties: Map<String, String> = emptyMap(),
+  val body: T
+)

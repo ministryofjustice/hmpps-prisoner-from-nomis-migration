@@ -23,7 +23,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorRespo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.HistoryFilter
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 import java.time.LocalDateTime
 
 @RestController
@@ -116,7 +116,7 @@ class IncentiveMigrationResource(
 
   ) = migrationHistoryService.findAll(
     HistoryFilter(
-      migrationTypes = listOf(MigrationType.INCENTIVES.name),
+      migrationTypes = listOf(SynchronisationType.INCENTIVES.name),
       fromDateTime = fromDateTime,
       toDateTime = toDateTime,
       includeOnlyFailures = includeOnlyFailures,
