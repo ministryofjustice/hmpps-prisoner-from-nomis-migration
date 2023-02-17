@@ -13,6 +13,13 @@ class SentencingSynchronisationService(
   private val telemetryClient: TelemetryClient
 ) {
   suspend fun synchroniseSentenceAdjustmentCreateOrUpdate(event: SentenceAdjustmentUpsertedOffenderEvent) {
+    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      telemetryClient.trackEvent(
+        "sentence-adjustment-synchronisation-skipped",
+        event.toTelemetryProperties()
+      )
+      return
+    }
     val nomisAdjustment = nomisApiService.getSentenceAdjustment(event.adjustmentId)
     sentencingMappingService.findNomisSentencingAdjustmentMapping(
       nomisAdjustmentId = event.adjustmentId,
@@ -39,11 +46,10 @@ class SentencingSynchronisationService(
   }
 }
 
-private fun SentenceAdjustmentUpsertedOffenderEvent.toTelemetryProperties(adjustmentId: String) = mapOf(
+private fun SentenceAdjustmentUpsertedOffenderEvent.toTelemetryProperties(adjustmentId: String? = null) = mapOf(
   "offenderNo" to this.offenderIdDisplay,
   "bookingId" to this.bookingId.toString(),
   "sentenceSequence" to this.sentenceSeq.toString(),
   "nomisAdjustmentId" to this.adjustmentId.toString(),
   "adjustmentCategory" to "SENTENCE",
-  "adjustmentId" to adjustmentId,
-)
+) + (adjustmentId?.let { mapOf("adjustmentId" to it) } ?: emptyMap())
