@@ -59,7 +59,7 @@ class MockSentencingResource {
 data class MockAdjustmentRequest(
   // will change once Sentencing API implemented
   val bookingId: Long,
-  val sentenceSequence: Long,
+  val sentenceSequence: Long?,
   val adjustmentType: String,
   @JsonFormat(pattern = "yyyy-MM-dd")
   val adjustmentDate: LocalDate?,

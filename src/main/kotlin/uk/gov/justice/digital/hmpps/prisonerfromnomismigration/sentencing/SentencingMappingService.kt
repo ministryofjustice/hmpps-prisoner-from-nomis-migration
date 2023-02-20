@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing
 
+import kotlinx.coroutines.reactive.awaitFirstOrDefault
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.beans.factory.annotation.Qualifier
@@ -35,7 +36,7 @@ class SentencingMappingService(@Qualifier("mappingApiWebClient") private val web
     nomisAdjustmentCategory: String,
     adjustmentId: String,
     migrationId: String
-  ) {
+  ) =
     createNomisSentenceAdjustmentMapping(
       nomisAdjustmentId = nomisAdjustmentId,
       nomisAdjustmentCategory = nomisAdjustmentCategory,
@@ -43,19 +44,25 @@ class SentencingMappingService(@Qualifier("mappingApiWebClient") private val web
       migrationId = migrationId,
       mappingType = "MIGRATED"
     )
-  }
 
   suspend fun createNomisSentencingAdjustmentSynchronisationMapping(
     nomisAdjustmentId: Long,
     nomisAdjustmentCategory: String,
     adjustmentId: String,
-  ) {
+  ) =
     createNomisSentenceAdjustmentMapping(
       nomisAdjustmentId = nomisAdjustmentId,
       nomisAdjustmentCategory = nomisAdjustmentCategory,
       adjustmentId = adjustmentId,
       mappingType = "NOMIS_CREATED"
     )
+
+  data class CreateMappingResult(
+    /* currently, only interested in the error response as success doesn't return a body*/
+    val errorResponse: DuplicateAdjustmentErrorResponse? = null
+  ) {
+    val isError
+      get() = errorResponse != null
   }
 
   private suspend fun createNomisSentenceAdjustmentMapping(
@@ -64,8 +71,8 @@ class SentencingMappingService(@Qualifier("mappingApiWebClient") private val web
     adjustmentId: String,
     mappingType: String,
     migrationId: String? = null
-  ) {
-    webClient.post()
+  ): CreateMappingResult {
+    return webClient.post()
       .uri("/mapping/sentencing/adjustments")
       .bodyValue(
         SentencingAdjustmentNomisMapping(
@@ -78,7 +85,11 @@ class SentencingMappingService(@Qualifier("mappingApiWebClient") private val web
       )
       .retrieve()
       .bodyToMono(Unit::class.java)
-      .awaitSingleOrNull()
+      .map { CreateMappingResult() }
+      .onErrorResume(WebClientResponseException.Conflict::class.java) {
+        Mono.just(CreateMappingResult(it.getResponseBodyAs(DuplicateAdjustmentErrorResponse::class.java)))
+      }
+      .awaitFirstOrDefault(CreateMappingResult())
   }
 
   suspend fun findLatestMigration(): LatestMigration? = webClient.get()
@@ -120,4 +131,13 @@ data class SentencingAdjustmentNomisMapping(
   val adjustmentId: String,
   val label: String? = null,
   val mappingType: String
+)
+
+class DuplicateAdjustmentErrorResponse(
+  val moreInfo: DuplicateAdjustmentErrorContent
+)
+
+data class DuplicateAdjustmentErrorContent(
+  val duplicateAdjustment: SentencingAdjustmentNomisMapping,
+  val existingAdjustment: SentencingAdjustmentNomisMapping,
 )
