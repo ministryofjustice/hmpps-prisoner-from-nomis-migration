@@ -20,7 +20,7 @@ class MigrationHistoryService(
 
   suspend fun recordMigrationStarted(
     migrationId: String,
-    migrationType: MigrationType,
+    migrationType: SynchronisationType,
     estimatedRecordCount: Long = 0,
     filter: Any? = null,
   ) = kotlin.runCatching {

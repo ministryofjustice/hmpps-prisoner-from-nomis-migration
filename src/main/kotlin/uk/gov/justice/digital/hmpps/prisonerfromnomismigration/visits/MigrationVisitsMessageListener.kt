@@ -12,7 +12,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.Message
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.context
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.migrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VISITS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMessages.CANCEL_MIGRATE_VISITS
@@ -41,12 +41,12 @@ class MigrationVisitsMessageListener(
     return CoroutineScope(Dispatchers.Default).future {
       runCatching {
         when (migrationMessage.type) {
-          MIGRATE_VISITS -> visitsMigrationService.divideVisitsByPage(context(message.fromJson()))
-          MIGRATE_VISITS_BY_PAGE -> visitsMigrationService.migrateVisitsForPage(context(message.fromJson()))
-          MIGRATE_VISIT -> visitsMigrationService.migrateVisit(context(message.fromJson()))
-          RETRY_VISIT_MAPPING -> visitsMigrationService.retryCreateVisitMapping(context(message.fromJson()))
-          MIGRATE_VISITS_STATUS_CHECK -> visitsMigrationService.migrateVisitsStatusCheck(context(message.fromJson()))
-          CANCEL_MIGRATE_VISITS -> visitsMigrationService.cancelMigrateVisitsStatusCheck(context(message.fromJson()))
+          MIGRATE_VISITS -> visitsMigrationService.divideVisitsByPage(migrationContext(message.fromJson()))
+          MIGRATE_VISITS_BY_PAGE -> visitsMigrationService.migrateVisitsForPage(migrationContext(message.fromJson()))
+          MIGRATE_VISIT -> visitsMigrationService.migrateVisit(migrationContext(message.fromJson()))
+          RETRY_VISIT_MAPPING -> visitsMigrationService.retryCreateVisitMapping(migrationContext(message.fromJson()))
+          MIGRATE_VISITS_STATUS_CHECK -> visitsMigrationService.migrateVisitsStatusCheck(migrationContext(message.fromJson()))
+          CANCEL_MIGRATE_VISITS -> visitsMigrationService.cancelMigrateVisitsStatusCheck(migrationContext(message.fromJson()))
         }
       }.onFailure {
         log.error("MessageID:${rawMessage.messageId()}", it)

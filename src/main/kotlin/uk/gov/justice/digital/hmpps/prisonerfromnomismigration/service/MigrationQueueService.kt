@@ -14,6 +14,7 @@ import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.SynchronisationContext
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
 import uk.gov.justice.hmpps.sqs.PurgeQueueRequest
@@ -51,15 +52,32 @@ class MigrationQueueService(
     }
   }
 
+  suspend fun <T : Enum<T>> sendMessage(message: T, context: SynchronisationContext<*>) {
+    val queue = hmppsQueueService.findByQueueId(context.type.queueId)
+      ?: throw IllegalStateException("Queue not found for ${context.type.queueId}")
+    queue.sqsClient.sendMessage(
+      SendMessageRequest.builder()
+        .queueUrl(queue.queueUrl)
+        .messageBody(SynchronisationMessage(message, context).toJson())
+        .build()
+    ).thenAccept {
+      telemetryClient.trackEvent(
+        message.name,
+        mapOf("messageId" to it.messageId()),
+        null
+      )
+    }
+  }
+
   // given counts are approximations there is only a probable chance this returns the correct result
-  suspend fun isItProbableThatThereAreStillMessagesToBeProcessed(type: MigrationType): Boolean {
+  suspend fun isItProbableThatThereAreStillMessagesToBeProcessed(type: SynchronisationType): Boolean {
     val queue = hmppsQueueService.findByQueueId(type.queueId)
       ?: throw IllegalStateException("Queue not found for ${type.queueId}")
 
     return queue.sqsClient.countMessagesOnQueue(queue.queueUrl).await() > 0
   }
 
-  suspend fun countMessagesThatHaveFailed(type: MigrationType): Long {
+  suspend fun countMessagesThatHaveFailed(type: SynchronisationType): Long {
     val queue = hmppsQueueService.findByQueueId(type.queueId)
       ?: throw IllegalStateException("Queue not found for ${type.queueId}")
 
@@ -68,7 +86,7 @@ class MigrationQueueService(
 
   private fun Any.toJson() = objectMapper.writeValueAsString(this)
 
-  suspend fun purgeAllMessages(type: MigrationType) {
+  suspend fun purgeAllMessages(type: SynchronisationType) {
     val queue = hmppsQueueService.findByQueueId(type.queueId)
       ?: throw IllegalStateException("Queue not found for ${type.queueId}")
     // try purge first, since it is rate limited fall back to less efficient read/delete method

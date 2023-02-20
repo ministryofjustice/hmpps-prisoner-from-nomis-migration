@@ -579,6 +579,17 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubSentenceAdjustmentMappingCreateFailure() {
+    stubFor(
+      post(urlPathEqualTo("/mapping/sentencing/adjustments"))
+        .willReturn(
+          aResponse()
+            .withStatus(500)
+            .withHeader("Content-Type", "application/json")
+        )
+    )
+  }
+
   fun createSentenceAdjustmentMappingCount() =
     findAll(postRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments"))).count()
 

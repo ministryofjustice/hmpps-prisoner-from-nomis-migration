@@ -20,6 +20,7 @@ import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.purgeQueueRequest
@@ -40,8 +41,11 @@ class SentencingFromNomisIntTest : SqsIntegrationTestBase() {
   @BeforeEach
   fun cleanQueue() {
     awsSqsSentencingOffenderEventsClient.purgeQueue(sentencingQueueOffenderEventsUrl.purgeQueueRequest()).get()
+    awsSqsSentencingOffenderEventsDlqClient?.purgeQueue(sentencingQueueOffenderEventsDlqUrl?.purgeQueueRequest())?.get()
+
     await untilCallTo {
       awsSqsSentencingOffenderEventsClient.countAllMessagesOnQueue(sentencingQueueOffenderEventsUrl).get()
+      awsSqsSentencingOffenderEventsDlqClient?.countAllMessagesOnQueue(sentencingQueueOffenderEventsDlqUrl!!)?.get()
     } matches { it == 0 }
   }
 
@@ -170,6 +174,159 @@ class SentencingFromNomisIntTest : SqsIntegrationTestBase() {
                 assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
                 assertThat(it["sentenceSequence"]).isEqualTo(SENTENCE_SEQUENCE.toString())
               },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      inner class WhenThereAreFailures {
+        @Nested
+        inner class WhenMappingCreateFailsOnce {
+          @BeforeEach
+          fun setUp() {
+            mappingApi.stubSentenceAdjustmentMappingCreateFailureFollowedBySuccess()
+            nomisApi.stubGetSentenceAdjustment(adjustmentId = NOMIS_ADJUSTMENT_ID)
+            sentencingApi.stubCreateSentencingAdjustmentForSynchronisation(sentenceAdjustmentId = ADJUSTMENT_ID)
+            await untilCallTo {
+              awsSqsIncentivesMigrationDlqClient?.countAllMessagesOnQueue(sentencingMigrationDlqUrl!!)
+                ?.get()
+            } matches { it == 0 }
+
+            awsSqsSentencingOffenderEventsClient.sendMessage(
+              sentencingQueueOffenderEventsUrl,
+              sentencingEvent(
+                eventType = "SENTENCE_ADJUSTMENT_UPSERTED",
+                auditModuleName = "OIDSENAD",
+                adjustmentId = NOMIS_ADJUSTMENT_ID,
+                bookingId = BOOKING_ID,
+                sentenceSeq = SENTENCE_SEQUENCE,
+                offenderIdDisplay = OFFENDER_NUMBER,
+              )
+            )
+          }
+
+          @Test
+          fun `will only create the adjustment once despite the failure`() {
+            await untilAsserted {
+              mappingApi.verify(
+                exactly(2),
+                postRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments"))
+                  .withRequestBody(matchingJsonPath("nomisAdjustmentId", equalTo(NOMIS_ADJUSTMENT_ID.toString())))
+                  .withRequestBody(matchingJsonPath("nomisAdjustmentCategory", equalTo("SENTENCE")))
+                  .withRequestBody(matchingJsonPath("adjustmentId", equalTo(ADJUSTMENT_ID)))
+              )
+            }
+
+            sentencingApi.verify(
+              exactly(1),
+              postRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments"))
+            )
+          }
+
+          @Test
+          fun `will eventually fully succeed with no messages on the dead letter queue`() {
+            await untilAsserted {
+              verify(telemetryClient).trackEvent(
+                Mockito.eq("adjustment-mapping-created-synchronisation-success"),
+                check {
+                  assertThat(it["adjustmentId"]).isEqualTo(ADJUSTMENT_ID)
+                  assertThat(it["adjustmentCategory"]).isEqualTo("SENTENCE")
+                  assertThat(it["nomisAdjustmentId"]).isEqualTo(NOMIS_ADJUSTMENT_ID.toString())
+                  assertThat(it["offenderNo"]).isEqualTo(OFFENDER_NUMBER)
+                  assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+                  assertThat(it["sentenceSequence"]).isEqualTo(SENTENCE_SEQUENCE.toString())
+                },
+                isNull(),
+              )
+            }
+            verify(telemetryClient).trackEvent(
+              Mockito.eq("sentence-adjustment-created-synchronisation-success"),
+              check {
+                assertThat(it["adjustmentId"]).isEqualTo(ADJUSTMENT_ID)
+                assertThat(it["adjustmentCategory"]).isEqualTo("SENTENCE")
+                assertThat(it["nomisAdjustmentId"]).isEqualTo(NOMIS_ADJUSTMENT_ID.toString())
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_NUMBER)
+                assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+                assertThat(it["sentenceSequence"]).isEqualTo(SENTENCE_SEQUENCE.toString())
+              },
+              isNull(),
+            )
+            await untilCallTo {
+              awsSqsIncentivesMigrationDlqClient?.countAllMessagesOnQueue(sentencingMigrationDlqUrl!!)
+                ?.get()
+            } matches { it == 0 }
+          }
+        }
+
+        @Nested
+        inner class WhenMappingCreateFailsForever {
+          @BeforeEach
+          fun setUp() {
+            mappingApi.stubSentenceAdjustmentMappingCreateFailure()
+            nomisApi.stubGetSentenceAdjustment(adjustmentId = NOMIS_ADJUSTMENT_ID)
+            sentencingApi.stubCreateSentencingAdjustmentForSynchronisation(sentenceAdjustmentId = ADJUSTMENT_ID)
+            await untilCallTo {
+              awsSqsIncentivesMigrationDlqClient?.countAllMessagesOnQueue(sentencingMigrationDlqUrl!!)
+                ?.get()
+            } matches { it == 0 }
+
+            awsSqsSentencingOffenderEventsClient.sendMessage(
+              sentencingQueueOffenderEventsUrl,
+              sentencingEvent(
+                eventType = "SENTENCE_ADJUSTMENT_UPSERTED",
+                auditModuleName = "OIDSENAD",
+                adjustmentId = NOMIS_ADJUSTMENT_ID,
+                bookingId = BOOKING_ID,
+                sentenceSeq = SENTENCE_SEQUENCE,
+                offenderIdDisplay = OFFENDER_NUMBER,
+              )
+            )
+          }
+
+          @Test
+          fun `will only create the adjustment once despite constant failures failure`() {
+            await untilAsserted {
+              mappingApi.verify(
+                exactly(3), // Once and then twice via RETRY_SYNCHRONISATION_SENTENCING_ADJUSTMENT_MAPPING message
+                postRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments"))
+                  .withRequestBody(matchingJsonPath("nomisAdjustmentId", equalTo(NOMIS_ADJUSTMENT_ID.toString())))
+                  .withRequestBody(matchingJsonPath("nomisAdjustmentCategory", equalTo("SENTENCE")))
+                  .withRequestBody(matchingJsonPath("adjustmentId", equalTo(ADJUSTMENT_ID)))
+              )
+            }
+
+            sentencingApi.verify(
+              exactly(1),
+              postRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments"))
+            )
+          }
+
+          @Test
+          fun `will eventually partially fail with a message on the dead letter queue`() {
+            await untilCallTo {
+              awsSqsVisitsMigrationDlqClient?.countAllMessagesOnQueue(sentencingMigrationDlqUrl!!)
+                ?.get()
+            } matches { it == 1 }
+
+            verify(telemetryClient).trackEvent(
+              Mockito.eq("sentence-adjustment-created-synchronisation-success"),
+              check {
+                assertThat(it["adjustmentId"]).isEqualTo(ADJUSTMENT_ID)
+                assertThat(it["adjustmentCategory"]).isEqualTo("SENTENCE")
+                assertThat(it["nomisAdjustmentId"]).isEqualTo(NOMIS_ADJUSTMENT_ID.toString())
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_NUMBER)
+                assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+                assertThat(it["sentenceSequence"]).isEqualTo(SENTENCE_SEQUENCE.toString())
+                assertThat(it["mapping"]).isEqualTo("initial-failure")
+              },
+              isNull(),
+            )
+
+            verify(telemetryClient, never()).trackEvent(
+              Mockito.eq("adjustment-mapping-created-synchronisation-success"),
+              any(),
               isNull(),
             )
           }

@@ -7,7 +7,7 @@ import org.springframework.data.annotation.Transient
 import org.springframework.data.domain.Persistable
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.STARTED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 import java.time.LocalDateTime
 
 data class MigrationHistory(
@@ -18,7 +18,7 @@ data class MigrationHistory(
   val filter: String? = null,
   var recordsMigrated: Long = 0,
   var recordsFailed: Long = 0,
-  val migrationType: MigrationType,
+  val migrationType: SynchronisationType,
   var status: MigrationStatus = STARTED,
   @Transient
   @Value("false")

@@ -48,3 +48,6 @@ cancel:
 
 hmpps.sqs:
   provider: localstack
+  queues:
+    migrationsentencing:
+      dlqMaxReceiveCount: 2
