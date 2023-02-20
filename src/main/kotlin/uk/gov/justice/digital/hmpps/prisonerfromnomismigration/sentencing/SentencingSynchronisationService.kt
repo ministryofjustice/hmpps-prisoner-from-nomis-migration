@@ -24,7 +24,7 @@ class SentencingSynchronisationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  suspend fun synchroniseSentenceAdjustmentCreateOrUpdate(event: SentenceAdjustmentUpsertedOffenderEvent) {
+  suspend fun synchroniseSentenceAdjustmentCreateOrUpdate(event: SentenceAdjustmentOffenderEvent) {
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent(
         "sentence-adjustment-synchronisation-skipped",
@@ -54,13 +54,39 @@ class SentencingSynchronisationService(
     }
   }
 
+  suspend fun synchroniseSentenceAdjustmentDelete(event: SentenceAdjustmentOffenderEvent) {
+    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      telemetryClient.trackEvent(
+        "sentence-adjustment-delete-synchronisation-skipped",
+        event.toTelemetryProperties()
+      )
+      return
+    }
+    sentencingMappingService.findNomisSentencingAdjustmentMapping(
+      nomisAdjustmentId = event.adjustmentId,
+      nomisAdjustmentCategory = "SENTENCE"
+    )?.let {
+      sentencingService.deleteSentencingAdjustment(it.adjustmentId)
+      sentencingMappingService.deleteNomisSentenceAdjustmentMapping(it.adjustmentId)
+      telemetryClient.trackEvent(
+        "sentence-adjustment-delete-synchronisation-success",
+        event.toTelemetryProperties(adjustmentId = it.adjustmentId)
+      )
+    } ?: let {
+      telemetryClient.trackEvent(
+        "sentence-adjustment-delete-synchronisation-ignored",
+        event.toTelemetryProperties()
+      )
+    }
+  }
+
   enum class MappingResponse {
     MAPPING_CREATED,
     MAPPING_FAILED
   }
 
   suspend fun tryToCreateMapping(
-    event: SentenceAdjustmentUpsertedOffenderEvent,
+    event: SentenceAdjustmentOffenderEvent,
     adjustmentId: String
   ): MappingResponse =
     try {
@@ -104,7 +130,7 @@ class SentencingSynchronisationService(
   }
 }
 
-private fun SentenceAdjustmentUpsertedOffenderEvent.toTelemetryProperties(
+private fun SentenceAdjustmentOffenderEvent.toTelemetryProperties(
   adjustmentId: String? = null,
   mappingFailed: Boolean? = null,
 ) = mapOf(

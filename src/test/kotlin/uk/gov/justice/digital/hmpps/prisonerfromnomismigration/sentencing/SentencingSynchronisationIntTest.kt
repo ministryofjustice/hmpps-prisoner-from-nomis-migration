@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing
 
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.exactly
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
@@ -452,6 +453,182 @@ class SentencingFromNomisIntTest : SqsIntegrationTestBase() {
               isNull(),
             )
           }
+        }
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("SENTENCE_ADJUSTMENT_DELETED")
+  inner class SentenceAdjustmentDeleted {
+    @Nested
+    inner class WhenDeletedByDPS {
+      @BeforeEach
+      fun setUp() {
+        awsSqsSentencingOffenderEventsClient.sendMessage(
+          sentencingQueueOffenderEventsUrl,
+          sentencingEvent(
+            eventType = "SENTENCE_ADJUSTMENT_DELETED",
+            auditModuleName = "DPS_SYNCHRONISATION",
+            adjustmentId = NOMIS_ADJUSTMENT_ID,
+            bookingId = BOOKING_ID,
+            sentenceSeq = SENTENCE_SEQUENCE,
+            offenderIdDisplay = OFFENDER_NUMBER,
+          )
+        )
+      }
+
+      @Test
+      fun `the event is ignored`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            Mockito.eq("sentence-adjustment-delete-synchronisation-skipped"),
+            check {
+              assertThat(it["adjustmentCategory"]).isEqualTo("SENTENCE")
+              assertThat(it["nomisAdjustmentId"]).isEqualTo(NOMIS_ADJUSTMENT_ID.toString())
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_NUMBER)
+              assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+              assertThat(it["sentenceSequence"]).isEqualTo(SENTENCE_SEQUENCE.toString())
+              assertThat(it["adjustmentId"]).isNull()
+            },
+            isNull(),
+          )
+        }
+
+        mappingApi.verify(
+          exactly(0),
+          getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID"))
+        )
+        sentencingApi.verify(
+          exactly(0),
+          deleteRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID"))
+        )
+        mappingApi.verify(
+          exactly(0),
+          deleteRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID"))
+        )
+      }
+    }
+
+    @Nested
+    @DisplayName("When no mapping exists - adjustment either already deleted or never created")
+    inner class WhenNoMappingFound {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubAllNomisSentencingAdjustmentsMappingNotFound()
+        awsSqsSentencingOffenderEventsClient.sendMessage(
+          sentencingQueueOffenderEventsUrl,
+          sentencingEvent(
+            eventType = "SENTENCE_ADJUSTMENT_DELETED",
+            auditModuleName = "OIDSENAD",
+            adjustmentId = NOMIS_ADJUSTMENT_ID,
+            bookingId = BOOKING_ID,
+            sentenceSeq = SENTENCE_SEQUENCE,
+            offenderIdDisplay = OFFENDER_NUMBER,
+          )
+        )
+      }
+
+      @Test
+      fun `will check if mapping exists for the adjustment`() {
+        await untilAsserted {
+          mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID")))
+        }
+        await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
+      }
+
+      @Test
+      fun `will do nothing but track telemetry`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            Mockito.eq("sentence-adjustment-delete-synchronisation-ignored"),
+            check {
+              assertThat(it["adjustmentCategory"]).isEqualTo("SENTENCE")
+              assertThat(it["nomisAdjustmentId"]).isEqualTo(NOMIS_ADJUSTMENT_ID.toString())
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_NUMBER)
+              assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+              assertThat(it["sentenceSequence"]).isEqualTo(SENTENCE_SEQUENCE.toString())
+              assertThat(it["adjustmentId"]).isNull()
+            },
+            isNull(),
+          )
+        }
+
+        sentencingApi.verify(
+          exactly(0),
+          deleteRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID"))
+        )
+        mappingApi.verify(
+          exactly(0),
+          deleteRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID"))
+        )
+      }
+    }
+
+    @Nested
+    @DisplayName("When mapping found - adjustment exists")
+    inner class WhenMappingFound {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetNomisSentencingAdjustment(
+          adjustmentCategory = "SENTENCE",
+          nomisAdjustmentId = NOMIS_ADJUSTMENT_ID,
+          adjustmentId = ADJUSTMENT_ID,
+        )
+        sentencingApi.stubDeleteSentencingAdjustmentForSynchronisation(ADJUSTMENT_ID)
+        mappingApi.stubSentenceAdjustmentMappingDelete(ADJUSTMENT_ID)
+        awsSqsSentencingOffenderEventsClient.sendMessage(
+          sentencingQueueOffenderEventsUrl,
+          sentencingEvent(
+            eventType = "SENTENCE_ADJUSTMENT_DELETED",
+            auditModuleName = "OIDSENAD",
+            adjustmentId = NOMIS_ADJUSTMENT_ID,
+            bookingId = BOOKING_ID,
+            sentenceSeq = SENTENCE_SEQUENCE,
+            offenderIdDisplay = OFFENDER_NUMBER,
+          )
+        )
+      }
+
+      @Test
+      fun `will check if mapping exists for the adjustment`() {
+        await untilAsserted {
+          mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID")))
+        }
+        await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
+      }
+
+      @Test
+      fun `will delete the adjustment`() {
+        await untilAsserted {
+          sentencingApi.verify(deleteRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID")))
+        }
+        await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
+      }
+
+      @Test
+      fun `will delete the adjustment mapping`() {
+        await untilAsserted {
+          mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/adjustment-id/$ADJUSTMENT_ID")))
+        }
+        await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
+      }
+
+      @Test
+      fun `will create telemetry tracking the delete`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            Mockito.eq("sentence-adjustment-delete-synchronisation-success"),
+            check {
+              assertThat(it["adjustmentId"]).isEqualTo(ADJUSTMENT_ID)
+              assertThat(it["adjustmentCategory"]).isEqualTo("SENTENCE")
+              assertThat(it["nomisAdjustmentId"]).isEqualTo(NOMIS_ADJUSTMENT_ID.toString())
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_NUMBER)
+              assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+              assertThat(it["sentenceSequence"]).isEqualTo(SENTENCE_SEQUENCE.toString())
+            },
+            isNull(),
+          )
         }
       }
     }

@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing
 
 import com.github.tomakehurst.wiremock.client.WireMock
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
@@ -160,6 +161,28 @@ internal class SentencingServiceTest {
           .withRequestBody(WireMock.matchingJsonPath("adjustmentFromDate", equalTo("2021-07-01")))
           .withRequestBody(WireMock.matchingJsonPath("comment", equalTo("Remand added")))
           .withRequestBody(WireMock.matchingJsonPath("active", equalTo("true")))
+      )
+    }
+  }
+
+  @Nested
+  @DisplayName("DELETE /synchronisation/sentencing/adjustments")
+  inner class DeleteAdjustmentForSynchronisation {
+    @BeforeEach
+    internal fun setUp() {
+      sentencingApi.stubDeleteSentencingAdjustmentForSynchronisation(adjustmentId = ADJUSTMENT_ID)
+      runBlocking {
+        sentencingService.deleteSentencingAdjustment(
+          ADJUSTMENT_ID,
+        )
+      }
+    }
+
+    @Test
+    fun `should call api with OAuth2 token`() {
+      sentencingApi.verify(
+        deleteRequestedFor(urlEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID"))
+          .withHeader("Authorization", equalTo("Bearer ABCDE"))
       )
     }
   }

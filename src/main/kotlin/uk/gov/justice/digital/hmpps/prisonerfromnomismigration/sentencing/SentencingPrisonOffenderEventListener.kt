@@ -35,8 +35,9 @@ class SentencingPrisonOffenderEventListener(
     return asCompletableFuture {
       if (eventFeatureSwitch.isEnabled(eventType)) when (eventType) {
         "SENTENCE_ADJUSTMENT_UPSERTED" -> sentencingSynchronisationService.synchroniseSentenceAdjustmentCreateOrUpdate((sqsMessage.Message.fromJson()))
+        "SENTENCE_ADJUSTMENT_DELETED" -> sentencingSynchronisationService.synchroniseSentenceAdjustmentDelete((sqsMessage.Message.fromJson()))
 
-        "SENTENCE_ADJUSTMENT_DELETED", "KEY_DATE_ADJUSTMENT_UPSERTED", "KEY_DATE_ADJUSTMENT_DELETED" -> {
+        "KEY_DATE_ADJUSTMENT_UPSERTED", "KEY_DATE_ADJUSTMENT_DELETED" -> {
           log.debug("received $eventType Offender event but right now not doing anything with it")
         }
 
@@ -51,7 +52,7 @@ class SentencingPrisonOffenderEventListener(
     objectMapper.readValue(this)
 }
 
-data class SentenceAdjustmentUpsertedOffenderEvent(
+data class SentenceAdjustmentOffenderEvent(
   val offenderIdDisplay: String,
   val bookingId: Long,
   val sentenceSeq: Long,

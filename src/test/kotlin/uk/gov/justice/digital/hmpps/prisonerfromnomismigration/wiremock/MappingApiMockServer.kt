@@ -503,6 +503,16 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubSentenceAdjustmentMappingDelete(adjustmentId: String = "567S") {
+    stubFor(
+      delete(urlEqualTo("/mapping/sentencing/adjustments/adjustment-id/$adjustmentId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.NO_CONTENT.value())
+      )
+    )
+  }
+
   fun stubSentenceAdjustmentMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 278887) {
     stubFor(
       get(urlPathMatching("/mapping/sentencing/adjustments/migration-id/.*")).willReturn(

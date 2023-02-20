@@ -30,6 +30,12 @@ class SentencingService(@Qualifier("sentencingApiWebClient") private val webClie
       .bodyValue(sentencingAdjustment)
       .retrieve()
       .awaitBody()
+
+  suspend fun deleteSentencingAdjustment(adjustmentId: String): Unit =
+    webClient.delete()
+      .uri("/synchronisation/sentencing/adjustments/$adjustmentId")
+      .retrieve()
+      .awaitBody()
 }
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
