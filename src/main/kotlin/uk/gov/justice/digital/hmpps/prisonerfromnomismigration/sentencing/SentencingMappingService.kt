@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
+import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.LatestMigration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationDetails
@@ -112,6 +113,14 @@ class SentencingMappingService(@Qualifier("mappingApiWebClient") private val web
       Mono.empty()
     }
     .awaitSingleOrNull()?.count ?: 0
+
+  suspend fun deleteNomisSentenceAdjustmentMapping(
+    adjustmentId: String,
+  ): Unit =
+    webClient.delete()
+      .uri("/mapping/sentencing/adjustments/adjustment-id/$adjustmentId")
+      .retrieve()
+      .awaitBody()
 }
 
 data class SentencingAdjustmentNomisMapping(

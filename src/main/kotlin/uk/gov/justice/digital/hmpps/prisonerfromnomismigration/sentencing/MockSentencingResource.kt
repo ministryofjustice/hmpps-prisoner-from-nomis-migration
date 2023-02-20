@@ -6,6 +6,7 @@ import jakarta.validation.Valid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
@@ -51,8 +52,15 @@ class MockSentencingResource {
     @PathVariable adjustmentId: String,
     @RequestBody @Valid adjustmentRequest: MockAdjustmentRequest
   ) {
-    val id = Random.nextLong().toString()
-    log.info("Updated adjustment for synchronisation with id $id for booking ${adjustmentRequest.bookingId}. Request was $adjustmentRequest")
+    log.info("Updated adjustment for synchronisation with id $adjustmentId for booking ${adjustmentRequest.bookingId}. Request was $adjustmentRequest")
+  }
+
+  @DeleteMapping("/synchronisation/sentencing/adjustments/{adjustmentId}")
+  @Operation(hidden = true)
+  suspend fun deleteAdjustmentForSynchronisation(
+    @PathVariable adjustmentId: String,
+  ) {
+    log.info("Delete adjustment for synchronisation with id $adjustmentId")
   }
 }
 

@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing
 
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
@@ -59,6 +60,26 @@ class SentencingMappingServiceTest {
           .withRequestBody(matchingJsonPath("nomisAdjustmentCategory", equalTo("SENTENCE")))
           .withRequestBody(matchingJsonPath("adjustmentId", equalTo(ADJUSTMENT_ID)))
           .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED")))
+      )
+    }
+  }
+
+  @Nested
+  inner class DeleteNomisSentencingAdjustmentMapping {
+    @Test
+    internal fun `will pass oath2 token to service`() {
+      mappingApi.stubSentenceAdjustmentMappingDelete(ADJUSTMENT_ID)
+
+      runBlocking {
+        sentencingMappingService.deleteNomisSentenceAdjustmentMapping(
+          adjustmentId = ADJUSTMENT_ID
+        )
+      }
+
+      mappingApi.verify(
+        deleteRequestedFor(
+          urlPathEqualTo("/mapping/sentencing/adjustments/adjustment-id/$ADJUSTMENT_ID")
+        ).withHeader("Authorization", equalTo("Bearer ABCDE"))
       )
     }
   }
