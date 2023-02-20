@@ -589,6 +589,40 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubSentenceAdjustmentMappingCreateConflict() {
+    stubFor(
+      post(urlPathEqualTo("/mapping/sentencing/adjustments"))
+        .willReturn(
+          aResponse()
+            .withStatus(409)
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
+              "moreInfo": 
+              {
+                "existingAdjustment" :  {
+                  "adjustmentId": 10,
+                  "nomisAdjustmentId": 123,
+                  "nomisAdjustmentCategory": "SENTENCE",
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "MIGRATED"
+                 },
+                 "duplicateAdjustment" : {
+                  "adjustmentId": 11,
+                  "nomisAdjustmentId": 123,
+                  "nomisAdjustmentCategory": "SENTENCE",
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "MIGRATED"
+                  }
+              }
+              }"""
+            )
+        )
+    )
+  }
+
   fun stubSentenceAdjustmentMappingCreateFailure() {
     stubFor(
       post(urlPathEqualTo("/mapping/sentencing/adjustments"))

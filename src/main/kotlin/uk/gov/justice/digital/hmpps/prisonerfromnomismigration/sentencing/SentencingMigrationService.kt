@@ -269,7 +269,25 @@ class SentencingMigrationService(
       nomisAdjustmentCategory = nomisAdjustmentCategory,
       adjustmentId = adjustmentId,
       migrationId = context.migrationId,
-    )
+    ).also {
+      if (it.isError) {
+        val duplicateErrorDetails = it.errorResponse!!.moreInfo
+        telemetryClient.trackEvent(
+          "nomis-migration-sentencing-duplicate",
+          mapOf<String, String>(
+            "migrationId" to context.migrationId,
+            "duplicateAdjustmentId" to duplicateErrorDetails.duplicateAdjustment.adjustmentId,
+            "duplicateNomisAdjustmentId" to duplicateErrorDetails.duplicateAdjustment.nomisAdjustmentId.toString(),
+            "duplicateNomisAdjustmentCategory" to duplicateErrorDetails.duplicateAdjustment.nomisAdjustmentCategory,
+            "existingAdjustmentId" to duplicateErrorDetails.existingAdjustment.adjustmentId,
+            "existingNomisAdjustmentId" to duplicateErrorDetails.existingAdjustment.nomisAdjustmentId.toString(),
+            "existingNomisAdjustmentCategory" to duplicateErrorDetails.existingAdjustment.nomisAdjustmentCategory,
+            "durationMinutes" to context.durationMinutes().toString()
+          ),
+          null
+        )
+      }
+    }
   } catch (e: Exception) {
     log.error(
       "Failed to create mapping for  adjustment nomis id: $nomisAdjustmentId and type $nomisAdjustmentCategory, sentence adjustment id $adjustmentId",

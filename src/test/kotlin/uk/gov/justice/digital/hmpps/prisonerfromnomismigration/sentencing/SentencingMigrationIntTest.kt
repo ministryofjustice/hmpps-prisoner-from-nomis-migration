@@ -13,6 +13,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.times
@@ -227,6 +228,53 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
 
       // should retry to create mapping twice
       mappingApi.verifyCreateMappingSentenceAdjustmentIds(arrayOf(654321), times = 2)
+    }
+
+    @Test
+    internal fun `it will not retry after a 409 (duplicate adjustment written to Sentencing API)`() {
+      nomisApi.stubGetSentenceAdjustmentsInitialCount(1)
+      nomisApi.stubMultipleGetAdjustmentIdCounts(totalElements = 1, pageSize = 10)
+      nomisApi.stubMultipleGetSentenceAdjustments(1..1)
+      mappingApi.stubAllNomisSentencingAdjustmentsMappingNotFound()
+      sentencingApi.stubCreateSentencingAdjustmentForMigration("123")
+      mappingApi.stubSentenceAdjustmentMappingCreateConflict()
+
+      webTestClient.post().uri("/migrate/sentencing")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
+        .header("Content-Type", "application/json")
+        .body(
+          BodyInserters.fromValue(
+            """
+            {
+            }
+            """.trimIndent()
+          )
+        )
+        .exchange()
+        .expectStatus().isAccepted
+
+      // wait for all mappings to be created before verifying
+      await untilCallTo { mappingApi.createSentenceAdjustmentMappingCount() } matches { it == 1 }
+
+      // check that one sentence-adjustment is created
+      assertThat(sentencingApi.createSentenceAdjustmentCount()).isEqualTo(1)
+
+      // doesn't retry
+      mappingApi.verifyCreateMappingSentenceAdjustmentIds(arrayOf(123), times = 1)
+
+      verify(telemetryClient).trackEvent(
+        eq("nomis-migration-sentencing-duplicate"),
+        check {
+          assertThat(it["migrationId"]).isNotNull
+          assertThat(it["existingAdjustmentId"]).isEqualTo("10")
+          assertThat(it["duplicateAdjustmentId"]).isEqualTo("11")
+          assertThat(it["existingNomisAdjustmentId"]).isEqualTo("123")
+          assertThat(it["duplicateNomisAdjustmentId"]).isEqualTo("123")
+          assertThat(it["existingNomisAdjustmentCategory"]).isEqualTo("SENTENCE")
+          assertThat(it["duplicateNomisAdjustmentCategory"]).isEqualTo("SENTENCE")
+        },
+        isNull()
+      )
     }
   }
 
