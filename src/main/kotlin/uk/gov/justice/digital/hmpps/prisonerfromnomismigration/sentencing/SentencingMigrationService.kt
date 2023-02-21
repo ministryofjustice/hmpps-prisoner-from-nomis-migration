@@ -273,7 +273,7 @@ class SentencingMigrationService(
       if (it.isError) {
         val duplicateErrorDetails = it.errorResponse!!.moreInfo
         telemetryClient.trackEvent(
-          "nomis-migration-sentencing-duplicate",
+          "nomis-migration-adjustment-duplicate",
           mapOf<String, String>(
             "migrationId" to context.migrationId,
             "duplicateAdjustmentId" to duplicateErrorDetails.duplicateAdjustment.adjustmentId,
