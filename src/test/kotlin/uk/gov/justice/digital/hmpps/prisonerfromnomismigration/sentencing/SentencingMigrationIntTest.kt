@@ -263,7 +263,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
       mappingApi.verifyCreateMappingSentenceAdjustmentIds(arrayOf(123), times = 1)
 
       verify(telemetryClient).trackEvent(
-        eq("nomis-migration-sentencing-duplicate"),
+        eq("nomis-migration-adjustment-duplicate"),
         check {
           assertThat(it["migrationId"]).isNotNull
           assertThat(it["existingAdjustmentId"]).isEqualTo("10")
