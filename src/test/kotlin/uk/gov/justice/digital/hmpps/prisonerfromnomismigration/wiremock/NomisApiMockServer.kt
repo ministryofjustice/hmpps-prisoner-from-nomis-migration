@@ -308,14 +308,6 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun verifyGetIncentive(bookingId: Long, incentiveSequence: Long) {
-    nomisApi.verify(
-      getRequestedFor(
-        urlPathEqualTo("/incentives/booking-id/$bookingId/incentive-sequence/$incentiveSequence")
-      )
-    )
-  }
-
   fun stubGetSentenceAdjustmentsInitialCount(totalElements: Long) {
     nomisApi.stubFor(
       get(
@@ -404,6 +396,19 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse().withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
             .withBody(sentenceAdjustmentResponse(sentenceAdjustmentId = adjustmentId))
+        )
+    )
+  }
+
+  fun stubGetKeyDateAdjustment(adjustmentId: Long) {
+    nomisApi.stubFor(
+      get(
+        urlPathEqualTo("/key-date-adjustments/$adjustmentId")
+      )
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(keyDateAdjustmentResponse(keyDateAdjustmentId = adjustmentId))
         )
     )
   }
