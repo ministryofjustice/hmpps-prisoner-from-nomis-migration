@@ -387,7 +387,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubGetSentenceAdjustment(adjustmentId: Long) {
+  fun stubGetSentenceAdjustment(adjustmentId: Long, hiddenForUsers: Boolean = false) {
     nomisApi.stubFor(
       get(
         urlPathEqualTo("/sentence-adjustments/$adjustmentId")
@@ -395,7 +395,9 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
-            .withBody(sentenceAdjustmentResponse(sentenceAdjustmentId = adjustmentId))
+            .withBody(
+              sentenceAdjustmentResponse(sentenceAdjustmentId = adjustmentId, hiddenForUsers = hiddenForUsers)
+            )
         )
     )
   }
@@ -643,6 +645,7 @@ private fun getAdjustmentCategory(it: Long) = if (it % 2L == 0L) "KEY_DATE" else
 private fun sentenceAdjustmentResponse(
   bookingId: Long = 2,
   sentenceAdjustmentId: Long = 3,
+  hiddenForUsers: Boolean = false,
 ): String {
   return """
 {
@@ -653,6 +656,7 @@ private fun sentenceAdjustmentResponse(
   "adjustmentDate":"2021-10-06",
   "adjustmentFromDate":"2021-10-07",
   "active":true,
+  "hiddenFromUsers":$hiddenForUsers,
   "adjustmentDays":8,
   "adjustmentType": {
     "code": "RST",

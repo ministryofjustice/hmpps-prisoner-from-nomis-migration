@@ -1,5 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing
 
+import com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.exactly
@@ -37,7 +39,7 @@ private const val OFFENDER_NUMBER = "G4803UT"
 private const val BOOKING_ID = 1234L
 private const val SENTENCE_SEQUENCE = 1L
 
-class SentencingFromNomisIntTest : SqsIntegrationTestBase() {
+class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
   @BeforeEach
   fun cleanQueue() {
@@ -454,6 +456,55 @@ class SentencingFromNomisIntTest : SqsIntegrationTestBase() {
             )
           }
         }
+      }
+    }
+
+    @Nested
+    @DisplayName("When adjustment is hidden, that is, it is related to a key date adjustment")
+    inner class WhenSentenceAdjustmentInNOMISIsHidden {
+      @BeforeEach
+      fun setUp() {
+        nomisApi.stubGetSentenceAdjustment(adjustmentId = NOMIS_ADJUSTMENT_ID, hiddenForUsers = true)
+
+        awsSqsSentencingOffenderEventsClient.sendMessage(
+          sentencingQueueOffenderEventsUrl,
+          sentencingEvent(
+            eventType = "SENTENCE_ADJUSTMENT_UPSERTED",
+            auditModuleName = "OIDSENAD",
+            adjustmentId = NOMIS_ADJUSTMENT_ID,
+            bookingId = BOOKING_ID,
+            sentenceSeq = SENTENCE_SEQUENCE,
+            offenderIdDisplay = OFFENDER_NUMBER,
+          )
+        )
+      }
+
+      @Test
+      fun `will retrieve details about the adjustment from NOMIS`() {
+        await untilAsserted {
+          nomisApi.verify(getRequestedFor(urlPathEqualTo("/sentence-adjustments/$NOMIS_ADJUSTMENT_ID")))
+        }
+        await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
+      }
+
+      @Test
+      fun `the adjustment is not created or updated in the sentencing service but skipped`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            Mockito.eq("sentence-adjustment-hidden-synchronisation-skipped"),
+            check {
+              assertThat(it["adjustmentCategory"]).isEqualTo("SENTENCE")
+              assertThat(it["nomisAdjustmentId"]).isEqualTo(NOMIS_ADJUSTMENT_ID.toString())
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_NUMBER)
+              assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+              assertThat(it["sentenceSequence"]).isEqualTo(SENTENCE_SEQUENCE.toString())
+              assertThat(it["adjustmentId"]).isNull()
+            },
+            isNull(),
+          )
+        }
+
+        sentencingApi.verify(exactly(0), anyRequestedFor(anyUrl()))
       }
     }
   }

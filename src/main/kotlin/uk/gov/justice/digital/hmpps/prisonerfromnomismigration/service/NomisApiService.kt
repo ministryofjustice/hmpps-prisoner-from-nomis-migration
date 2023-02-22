@@ -259,6 +259,7 @@ data class NomisAdjustment(
   val adjustmentDays: Long,
   val comment: String?,
   val active: Boolean,
+  val hiddenFromUsers: Boolean,
 ) {
   fun toSentencingAdjustment(): SentencingAdjustment = SentencingAdjustment(
     bookingId = bookingId,

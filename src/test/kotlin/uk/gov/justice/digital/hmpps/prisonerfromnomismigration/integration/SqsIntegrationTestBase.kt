@@ -86,6 +86,8 @@ class SqsIntegrationTestBase : TestBase() {
     reset(telemetryClient)
     awsSqsSentencingOffenderEventsClient.purgeQueue(sentencingQueueOffenderEventsUrl).get()
     awsSqsSentencingOffenderEventsClient.purgeQueue(sentencingQueueOffenderEventsDlqUrl)?.get()
+    awsSqsSentencingMigrationClient.purgeQueue(sentencingMigrationUrl).get()
+    awsSqsSentencingMigrationDlqClient?.purgeQueue(sentencingMigrationDlqUrl)?.get()
     awsSqsVisitsMigrationDlqClient?.purgeQueue(sentencingMigrationDlqUrl)?.get()
   }
 
