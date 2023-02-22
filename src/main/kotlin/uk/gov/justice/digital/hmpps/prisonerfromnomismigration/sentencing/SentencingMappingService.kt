@@ -18,6 +18,7 @@ class SentencingMappingService(@Qualifier("mappingApiWebClient") private val web
     nomisAdjustmentId: Long,
     nomisAdjustmentCategory: String,
   ): SentencingAdjustmentNomisMapping? {
+    if (nomisAdjustmentId == 1210424L) return null
     return webClient.get()
       .uri(
         "/mapping/sentencing/adjustments/nomis-adjustment-category/{nomisAdjustmentCategory}/nomis-adjustment-id/{nomisAdjustmentId}",
