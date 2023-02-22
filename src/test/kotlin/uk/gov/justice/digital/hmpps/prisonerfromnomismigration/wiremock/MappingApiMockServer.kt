@@ -589,7 +589,11 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubSentenceAdjustmentMappingCreateConflict() {
+  fun stubSentenceAdjustmentMappingCreateConflict(
+    existingAdjustmentId: String = "10",
+    duplicateAdjustmentId: String = "11",
+    nomisAdjustmentId: Long = 123
+  ) {
     stubFor(
       post(urlPathEqualTo("/mapping/sentencing/adjustments"))
         .willReturn(
@@ -601,16 +605,16 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
               "moreInfo": 
               {
                 "existingAdjustment" :  {
-                  "adjustmentId": 10,
-                  "nomisAdjustmentId": 123,
+                  "adjustmentId": "$existingAdjustmentId",
+                  "nomisAdjustmentId": $nomisAdjustmentId,
                   "nomisAdjustmentCategory": "SENTENCE",
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",
                   "mappingType": "MIGRATED"
                  },
                  "duplicateAdjustment" : {
-                  "adjustmentId": 11,
-                  "nomisAdjustmentId": 123,
+                  "adjustmentId": "$duplicateAdjustmentId",
+                  "nomisAdjustmentId": $nomisAdjustmentId,
                   "nomisAdjustmentCategory": "SENTENCE",
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",
@@ -637,14 +641,14 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun createSentenceAdjustmentMappingCount() =
     findAll(postRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments"))).count()
 
-  fun verifyCreateMappingSentenceAdjustmentIds(nomsSentenceAdjustmentIds: Array<Long>, times: Int = 1) =
+  fun verifyCreateMappingSentenceAdjustmentIds(nomsSentenceAdjustmentIds: Array<String>, times: Int = 1) =
     nomsSentenceAdjustmentIds.forEach {
       verify(
         times,
         postRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments")).withRequestBody(
           matchingJsonPath(
             "adjustmentId",
-            equalTo("$it")
+            equalTo(it)
           )
         )
       )
