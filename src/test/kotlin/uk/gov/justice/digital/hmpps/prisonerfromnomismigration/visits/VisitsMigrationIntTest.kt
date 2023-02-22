@@ -23,7 +23,6 @@ import org.springframework.http.ReactiveHttpOutputMessage
 import org.springframework.test.web.reactive.server.returnResult
 import org.springframework.web.reactive.function.BodyInserter
 import org.springframework.web.reactive.function.BodyInserters
-import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
@@ -34,7 +33,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Synchroni
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsApiExtension.Companion.visitsApi
-import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -42,14 +40,6 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
 
   @Autowired
   private lateinit var migrationHistoryRepository: MigrationHistoryRepository
-
-  @BeforeEach
-  fun cleanQueue() {
-    awsSqsVisitsMigrationClient.purgeQueue(PurgeQueueRequest.builder().queueUrl(visitsMigrationQueueUrl).build()).get()
-    awsSqsVisitsMigrationDlqClient?.purgeQueue(PurgeQueueRequest.builder().queueUrl(visitsMigrationDlqUrl).build())?.get()
-    await untilCallTo { awsSqsVisitsMigrationClient.countAllMessagesOnQueue(visitsMigrationQueueUrl).get() } matches { it == 0 }
-    await untilCallTo { awsSqsVisitsMigrationDlqClient?.countAllMessagesOnQueue(visitsMigrationDlqUrl!!)?.get() } matches { it == 0 }
-  }
 
   @Nested
   @DisplayName("POST /migrate/visits")
