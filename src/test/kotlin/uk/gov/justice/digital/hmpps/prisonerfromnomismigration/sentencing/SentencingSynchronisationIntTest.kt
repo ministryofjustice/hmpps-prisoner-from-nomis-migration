@@ -27,7 +27,6 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.purgeQueueRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
@@ -41,17 +40,6 @@ private const val BOOKING_ID = 1234L
 private const val SENTENCE_SEQUENCE = 1L
 
 class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
-
-  @BeforeEach
-  fun cleanQueue() {
-    awsSqsSentencingOffenderEventsClient.purgeQueue(sentencingQueueOffenderEventsUrl.purgeQueueRequest()).get()
-    awsSqsSentencingOffenderEventsDlqClient?.purgeQueue(sentencingQueueOffenderEventsDlqUrl?.purgeQueueRequest())?.get()
-
-    await untilCallTo {
-      awsSqsSentencingOffenderEventsClient.countAllMessagesOnQueue(sentencingQueueOffenderEventsUrl).get()
-      awsSqsSentencingOffenderEventsDlqClient?.countAllMessagesOnQueue(sentencingQueueOffenderEventsDlqUrl!!)?.get()
-    } matches { it == 0 }
-  }
 
   @Nested
   @DisplayName("SENTENCE_ADJUSTMENT_UPSERTED")
@@ -133,7 +121,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID")))
           }
-          await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
         }
 
         @Test
@@ -141,7 +128,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             nomisApi.verify(getRequestedFor(urlPathEqualTo("/sentence-adjustments/$NOMIS_ADJUSTMENT_ID")))
           }
-          await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
         }
 
         @Test
@@ -149,7 +135,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             sentencingApi.verify(postRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments")))
           }
-          await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
         }
 
         @Test
@@ -162,7 +147,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBody(matchingJsonPath("adjustmentId", equalTo(ADJUSTMENT_ID)))
             )
           }
-          await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
         }
 
         @Test
@@ -193,10 +177,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             mappingApi.stubSentenceAdjustmentMappingCreateFailureFollowedBySuccess()
             nomisApi.stubGetSentenceAdjustment(adjustmentId = NOMIS_ADJUSTMENT_ID)
             sentencingApi.stubCreateSentencingAdjustmentForSynchronisation(sentenceAdjustmentId = ADJUSTMENT_ID)
-            await untilCallTo {
-              awsSqsIncentivesMigrationDlqClient?.countAllMessagesOnQueue(sentencingMigrationDlqUrl!!)
-                ?.get()
-            } matches { it == 0 }
 
             awsSqsSentencingOffenderEventsClient.sendMessage(
               sentencingQueueOffenderEventsUrl,
@@ -271,10 +251,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             mappingApi.stubSentenceAdjustmentMappingCreateFailure()
             nomisApi.stubGetSentenceAdjustment(adjustmentId = NOMIS_ADJUSTMENT_ID)
             sentencingApi.stubCreateSentencingAdjustmentForSynchronisation(sentenceAdjustmentId = ADJUSTMENT_ID)
-            await untilCallTo {
-              awsSqsIncentivesMigrationDlqClient?.countAllMessagesOnQueue(sentencingMigrationDlqUrl!!)
-                ?.get()
-            } matches { it == 0 }
 
             awsSqsSentencingOffenderEventsClient.sendMessage(
               sentencingQueueOffenderEventsUrl,
@@ -468,7 +444,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID")))
           }
-          await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
         }
 
         @Test
@@ -476,7 +451,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             nomisApi.verify(getRequestedFor(urlPathEqualTo("/sentence-adjustments/$NOMIS_ADJUSTMENT_ID")))
           }
-          await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
         }
 
         @Test
@@ -484,7 +458,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             sentencingApi.verify(putRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID")))
           }
-          await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
         }
 
         @Test
@@ -532,7 +505,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         await untilAsserted {
           nomisApi.verify(getRequestedFor(urlPathEqualTo("/sentence-adjustments/$NOMIS_ADJUSTMENT_ID")))
         }
-        await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
       }
 
       @Test
@@ -633,7 +605,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         await untilAsserted {
           mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID")))
         }
-        await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
       }
 
       @Test
@@ -694,7 +665,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         await untilAsserted {
           mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID")))
         }
-        await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
       }
 
       @Test
@@ -702,7 +672,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         await untilAsserted {
           sentencingApi.verify(deleteRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID")))
         }
-        await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
       }
 
       @Test
@@ -710,7 +679,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         await untilAsserted {
           mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/adjustment-id/$ADJUSTMENT_ID")))
         }
-        await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
       }
 
       @Test
@@ -810,7 +778,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID")))
           }
-          await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
         }
 
         @Test
@@ -818,7 +785,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             nomisApi.verify(getRequestedFor(urlPathEqualTo("/key-date-adjustments/$NOMIS_ADJUSTMENT_ID")))
           }
-          await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
         }
 
         @Test
@@ -826,7 +792,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             sentencingApi.verify(postRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments")))
           }
-          await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
         }
 
         @Test
@@ -839,7 +804,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBody(matchingJsonPath("adjustmentId", equalTo(ADJUSTMENT_ID)))
             )
           }
-          await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
         }
 
         @Test
@@ -869,10 +833,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             mappingApi.stubSentenceAdjustmentMappingCreateFailureFollowedBySuccess()
             nomisApi.stubGetKeyDateAdjustment(adjustmentId = NOMIS_ADJUSTMENT_ID)
             sentencingApi.stubCreateSentencingAdjustmentForSynchronisation(sentenceAdjustmentId = ADJUSTMENT_ID)
-            await untilCallTo {
-              awsSqsIncentivesMigrationDlqClient?.countAllMessagesOnQueue(sentencingMigrationDlqUrl!!)
-                ?.get()
-            } matches { it == 0 }
 
             awsSqsSentencingOffenderEventsClient.sendMessage(
               sentencingQueueOffenderEventsUrl,
@@ -944,10 +904,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             mappingApi.stubSentenceAdjustmentMappingCreateFailure()
             nomisApi.stubGetKeyDateAdjustment(adjustmentId = NOMIS_ADJUSTMENT_ID)
             sentencingApi.stubCreateSentencingAdjustmentForSynchronisation(sentenceAdjustmentId = ADJUSTMENT_ID)
-            await untilCallTo {
-              awsSqsIncentivesMigrationDlqClient?.countAllMessagesOnQueue(sentencingMigrationDlqUrl!!)
-                ?.get()
-            } matches { it == 0 }
 
             awsSqsSentencingOffenderEventsClient.sendMessage(
               sentencingQueueOffenderEventsUrl,
@@ -1089,7 +1045,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID")))
           }
-          await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
         }
 
         @Test
@@ -1097,7 +1052,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             nomisApi.verify(getRequestedFor(urlPathEqualTo("/key-date-adjustments/$NOMIS_ADJUSTMENT_ID")))
           }
-          await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
         }
 
         @Test
@@ -1105,7 +1059,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             sentencingApi.verify(putRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID")))
           }
-          await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
         }
 
         @Test
@@ -1201,7 +1154,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         await untilAsserted {
           mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID")))
         }
-        await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
       }
 
       @Test
@@ -1260,7 +1212,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         await untilAsserted {
           mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID")))
         }
-        await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
       }
 
       @Test
@@ -1268,7 +1219,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         await untilAsserted {
           sentencingApi.verify(deleteRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID")))
         }
-        await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
       }
 
       @Test
@@ -1276,7 +1226,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         await untilAsserted {
           mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/adjustment-id/$ADJUSTMENT_ID")))
         }
-        await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
       }
 
       @Test

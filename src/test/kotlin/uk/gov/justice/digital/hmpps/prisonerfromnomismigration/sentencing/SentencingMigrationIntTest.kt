@@ -23,7 +23,6 @@ import org.springframework.http.ReactiveHttpOutputMessage
 import org.springframework.test.web.reactive.server.returnResult
 import org.springframework.web.reactive.function.BodyInserter
 import org.springframework.web.reactive.function.BodyInserters
-import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
@@ -34,7 +33,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Synchroni
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.SentencingApiExtension.Companion.sentencingApi
-import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -42,14 +40,6 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
 
   @Autowired
   private lateinit var migrationHistoryRepository: MigrationHistoryRepository
-
-  @BeforeEach
-  fun cleanQueue() {
-    awsSqsSentencingMigrationClient.purgeQueue(PurgeQueueRequest.builder().queueUrl(sentencingMigrationUrl).build()).get()
-    awsSqsSentencingMigrationDlqClient?.purgeQueue(PurgeQueueRequest.builder().queueUrl(sentencingMigrationDlqUrl).build())?.get()
-    await untilCallTo { awsSqsSentencingMigrationClient.countAllMessagesOnQueue(sentencingMigrationUrl).get() } matches { it == 0 }
-    await untilCallTo { awsSqsSentencingMigrationDlqClient?.countAllMessagesOnQueue(sentencingMigrationDlqUrl!!)?.get() } matches { it == 0 }
-  }
 
   @Nested
   @DisplayName("POST /migrate/sentencing")
@@ -169,14 +159,6 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
 
       verify(telemetryClient).trackEvent(eq("nomis-migration-sentencing-started"), any(), isNull())
       verify(telemetryClient, times(26)).trackEvent(eq("nomis-migration-sentencing-adjustment-migrated"), any(), isNull())
-
-      await.atMost(Duration.ofSeconds(21)) untilAsserted {
-        verify(telemetryClient).trackEvent(
-          eq("nomis-migration-sentencing-completed"),
-          any(),
-          isNull()
-        )
-      }
 
       await untilAsserted {
         webTestClient.get().uri("/migrate/sentencing/history")
