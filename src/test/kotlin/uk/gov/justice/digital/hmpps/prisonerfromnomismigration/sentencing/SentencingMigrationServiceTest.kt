@@ -967,7 +967,8 @@ fun aNomisSentenceAdjustment(
   adjustmentToDate = adjustmentToDate,
   adjustmentDays = adjustmentDays,
   comment = comment,
-  active = active
+  active = active,
+  hiddenFromUsers = false
 )
 
 fun pages(total: Long, startId: Long = 1): PageImpl<NomisAdjustmentId> = PageImpl<NomisAdjustmentId>(

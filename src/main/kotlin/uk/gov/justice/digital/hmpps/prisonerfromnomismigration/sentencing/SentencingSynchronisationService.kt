@@ -32,25 +32,32 @@ class SentencingSynchronisationService(
       )
       return
     }
-    val nomisAdjustment = nomisApiService.getSentenceAdjustment(event.adjustmentId)
-    sentencingMappingService.findNomisSentencingAdjustmentMapping(
-      nomisAdjustmentId = event.adjustmentId,
-      nomisAdjustmentCategory = "SENTENCE"
-    )?.let {
-      sentencingService.updateSentencingAdjustment(it.adjustmentId, nomisAdjustment.toSentencingAdjustment())
-      telemetryClient.trackEvent(
-        "sentence-adjustment-updated-synchronisation-success",
-        event.toTelemetryProperties(it.adjustmentId)
-      )
-    } ?: let {
-      sentencingService.createSentencingAdjustment(nomisAdjustment.toSentencingAdjustment()).also { adjustment ->
-        tryToCreateSentenceMapping(event, adjustment.id).also { result ->
+    nomisApiService.getSentenceAdjustment(event.adjustmentId).takeUnless { it.hiddenFromUsers }
+      ?.also { nomisAdjustment ->
+        sentencingMappingService.findNomisSentencingAdjustmentMapping(
+          nomisAdjustmentId = event.adjustmentId,
+          nomisAdjustmentCategory = "SENTENCE"
+        )?.let {
+          sentencingService.updateSentencingAdjustment(it.adjustmentId, nomisAdjustment.toSentencingAdjustment())
           telemetryClient.trackEvent(
-            "sentence-adjustment-created-synchronisation-success",
-            event.toTelemetryProperties(adjustment.id, result == MAPPING_FAILED),
+            "sentence-adjustment-updated-synchronisation-success",
+            event.toTelemetryProperties(it.adjustmentId)
           )
+        } ?: let {
+          sentencingService.createSentencingAdjustment(nomisAdjustment.toSentencingAdjustment()).also { adjustment ->
+            tryToCreateSentenceMapping(event, adjustment.id).also { result ->
+              telemetryClient.trackEvent(
+                "sentence-adjustment-created-synchronisation-success",
+                event.toTelemetryProperties(adjustment.id, result == MAPPING_FAILED),
+              )
+            }
+          }
         }
-      }
+      } ?: also {
+      telemetryClient.trackEvent(
+        "sentence-adjustment-hidden-synchronisation-skipped",
+        event.toTelemetryProperties()
+      )
     }
   }
 
