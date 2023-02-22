@@ -157,7 +157,23 @@ class SentencingSynchronisationService(
         nomisAdjustmentId = event.adjustmentId,
         nomisAdjustmentCategory = "SENTENCE",
         adjustmentId = adjustmentId
-      )
+      ).also {
+        if (it.isError) {
+          val duplicateErrorDetails = it.errorResponse!!.moreInfo
+          telemetryClient.trackEvent(
+            "from-nomis-synch-adjustment-duplicate",
+            mapOf<String, String>(
+              "duplicateAdjustmentId" to duplicateErrorDetails.duplicateAdjustment.adjustmentId,
+              "duplicateNomisAdjustmentId" to duplicateErrorDetails.duplicateAdjustment.nomisAdjustmentId.toString(),
+              "duplicateNomisAdjustmentCategory" to duplicateErrorDetails.duplicateAdjustment.nomisAdjustmentCategory,
+              "existingAdjustmentId" to duplicateErrorDetails.existingAdjustment.adjustmentId,
+              "existingNomisAdjustmentId" to duplicateErrorDetails.existingAdjustment.nomisAdjustmentId.toString(),
+              "existingNomisAdjustmentCategory" to duplicateErrorDetails.existingAdjustment.nomisAdjustmentCategory
+            ),
+            null
+          )
+        }
+      }
       MAPPING_CREATED
     } catch (e: Exception) {
       log.error(

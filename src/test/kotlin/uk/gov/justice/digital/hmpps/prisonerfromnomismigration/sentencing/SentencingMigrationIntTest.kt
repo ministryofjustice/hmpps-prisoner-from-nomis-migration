@@ -227,7 +227,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
       assertThat(sentencingApi.createSentenceAdjustmentCount()).isEqualTo(1)
 
       // should retry to create mapping twice
-      mappingApi.verifyCreateMappingSentenceAdjustmentIds(arrayOf(654321), times = 2)
+      mappingApi.verifyCreateMappingSentenceAdjustmentIds(arrayOf("654321"), times = 2)
     }
 
     @Test
@@ -260,7 +260,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
       assertThat(sentencingApi.createSentenceAdjustmentCount()).isEqualTo(1)
 
       // doesn't retry
-      mappingApi.verifyCreateMappingSentenceAdjustmentIds(arrayOf(123), times = 1)
+      mappingApi.verifyCreateMappingSentenceAdjustmentIds(arrayOf("123"), times = 1)
 
       verify(telemetryClient).trackEvent(
         eq("nomis-migration-adjustment-duplicate"),
