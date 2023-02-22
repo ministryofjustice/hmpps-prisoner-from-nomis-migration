@@ -1,6 +1,9 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration
 
 import com.microsoft.applicationinsights.TelemetryClient
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.matches
+import org.awaitility.kotlin.untilCallTo
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.kotlin.reset
@@ -28,6 +31,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.Sentenci
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsApiExtension
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
+import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 
 @ExtendWith(
   NomisApiExtension::class,
@@ -75,6 +79,17 @@ class SqsIntegrationTestBase : TestBase() {
   internal val awsSqsSentencingOffenderEventsClient by lazy { sentencingOffenderEventsQueue.sqsClient }
   internal val awsSqsSentencingOffenderEventsDlqClient by lazy { sentencingOffenderEventsQueue.sqsDlqClient }
 
+  private val allQueues by lazy {
+    listOf(
+      visitsMigrationQueue,
+      incentivesMigrationQueue,
+      sentencingMigrationQueue,
+      visitsOffenderEventsQueue,
+      incentivesOffenderEventsQueue,
+      sentencingOffenderEventsQueue
+    )
+  }
+
   @Autowired
   protected lateinit var jwtAuthHelper: JwtAuthHelper
 
@@ -84,11 +99,7 @@ class SqsIntegrationTestBase : TestBase() {
   @BeforeEach
   fun setUp() {
     reset(telemetryClient)
-    awsSqsSentencingOffenderEventsClient.purgeQueue(sentencingQueueOffenderEventsUrl).get()
-    awsSqsSentencingOffenderEventsClient.purgeQueue(sentencingQueueOffenderEventsDlqUrl)?.get()
-    awsSqsSentencingMigrationClient.purgeQueue(sentencingMigrationUrl).get()
-    awsSqsSentencingMigrationDlqClient?.purgeQueue(sentencingMigrationDlqUrl)?.get()
-    awsSqsVisitsMigrationDlqClient?.purgeQueue(sentencingMigrationDlqUrl)?.get()
+    allQueues.forEach { it.purgeAndWait() }
   }
 
   internal fun setAuthorisation(
@@ -113,3 +124,14 @@ internal fun SqsAsyncClient.sendMessage(queueOffenderEventsUrl: String, message:
 
 internal fun String.purgeQueueRequest() = PurgeQueueRequest.builder().queueUrl(this).build()
 private fun SqsAsyncClient.purgeQueue(queueUrl: String?) = purgeQueue(queueUrl?.purgeQueueRequest())
+
+private fun HmppsQueue.purgeAndWait() {
+  sqsClient.purgeQueue(queueUrl).get().also {
+    await untilCallTo { sqsClient.countAllMessagesOnQueue(queueUrl).get() } matches { it == 0 }
+  }
+  sqsDlqClient?.run {
+    purgeQueue(dlqUrl).get().also {
+      await untilCallTo { this.countAllMessagesOnQueue(dlqUrl!!).get() } matches { it == 0 }
+    }
+  }
+}
