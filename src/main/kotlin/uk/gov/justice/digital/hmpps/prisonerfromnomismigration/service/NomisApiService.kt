@@ -271,6 +271,7 @@ data class NomisAdjustment(
     comment = comment,
     active = active
   )
+  fun getAdjustmentCategory() = sentenceSequence?.let { "SENTENCE" } ?: "KEY_DATE"
 }
 
 class RestResponsePage<T> @JsonCreator(mode = JsonCreator.Mode.PROPERTIES) constructor(

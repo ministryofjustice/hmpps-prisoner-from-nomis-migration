@@ -1,0 +1,78 @@
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners
+
+import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.databind.ObjectMapper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.future.future
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import software.amazon.awssdk.services.sqs.model.Message
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageType.CANCEL_MIGRATION
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageType.MIGRATE_BY_PAGE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageType.MIGRATE_ENTITIES
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageType.MIGRATE_ENTITY
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageType.MIGRATE_STATUS_CHECK
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageType.RETRY_MIGRATION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageType.RETRY_SYNCHRONISATION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingSynchronisationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.LocalMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
+import java.util.concurrent.CompletableFuture
+
+abstract class MigrationMessageListener<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
+  internal val objectMapper: ObjectMapper,
+  private val migrationService: MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>,
+  private val sentencingSynchronisationService: SentencingSynchronisationService
+) {
+
+  private companion object {
+    val log: Logger = LoggerFactory.getLogger(this::class.java)
+  }
+
+  fun onMessage(message: String, rawMessage: Message): CompletableFuture<Void>? {
+    log.debug("Received message {}", message)
+    val migrationMessage: LocalMessage<MessageType> = message.fromJson()
+    return CoroutineScope(Dispatchers.Default).future {
+      runCatching {
+        when (migrationMessage.type) {
+          MIGRATE_ENTITIES -> migrationService.divideEntitiesByPage(migrationContextFilter(parseContextFilter(message)))
+          MIGRATE_BY_PAGE -> migrationService.migrateEntitiesForPage(
+            migrationContextFilter(parseContextPageFilter(message))
+          )
+          MIGRATE_ENTITY -> migrationService.migrateNomisEntity(migrationContextFilter(parseContextNomisId(message)))
+          MIGRATE_STATUS_CHECK -> migrationService.migrateStatusCheck(migrationContext(message.fromJson()))
+          CANCEL_MIGRATION -> migrationService.cancelMigrateStatusCheck(migrationContext(message.fromJson()))
+          RETRY_MIGRATION_MAPPING -> migrationService.retryCreateMapping(
+            migrationContextFilter(
+              parseContextMapping(message)
+            )
+          )
+
+          RETRY_SYNCHRONISATION_MAPPING -> sentencingSynchronisationService.retryCreateSentenceAdjustmentMapping(
+            synchronisationContext(
+              message.fromJson()
+            )
+          )
+        }
+      }.onFailure {
+        log.error("MessageID:${rawMessage.messageId()}", it)
+        throw it
+      }
+    }.thenAccept { }
+  }
+
+  private fun <T> migrationContextFilter(message: MigrationMessage<*, T>): MigrationContext<T> =
+    message.context
+
+  private inline fun <reified T> String.fromJson(): T =
+    objectMapper.readValue(this, object : TypeReference<T>() {})
+
+  abstract fun parseContextFilter(json: String): MigrationMessage<*, FILTER>
+  abstract fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<FILTER>>
+  abstract fun parseContextNomisId(json: String): MigrationMessage<*, NOMIS_ID>
+  abstract fun parseContextMapping(json: String): MigrationMessage<*, MAPPING>
+}
