@@ -11,9 +11,10 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.LatestMigration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationDetails
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 
 @Service
-class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webClient: WebClient) {
+class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webClient: WebClient) : MigrationMapping {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
@@ -82,7 +83,7 @@ class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webC
       .awaitSingleOrNull()
   }
 
-  suspend fun findLatestMigration(): LatestMigration? = webClient.get()
+  override suspend fun findLatestMigration(): LatestMigration? = webClient.get()
     .uri("/mapping/incentives/migrated/latest")
     .retrieve()
     .bodyToMono(LatestMigration::class.java)
@@ -90,7 +91,7 @@ class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webC
       Mono.empty()
     }.awaitSingleOrNull()
 
-  suspend fun getMigrationDetails(migrationId: String): MigrationDetails = webClient.get()
+  override suspend fun getMigrationDetails(migrationId: String): MigrationDetails = webClient.get()
     .uri {
       it.path("/mapping/incentives/migration-id/{migrationId}")
         .queryParam("size", 1)
@@ -99,7 +100,7 @@ class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webC
     .retrieve()
     .bodyToMono(MigrationDetails::class.java).awaitSingle()
 
-  suspend fun getMigrationCount(migrationId: String): Long = webClient.get()
+  override suspend fun getMigrationCount(migrationId: String): Long = webClient.get()
     .uri {
       it.path("/mapping/incentives/migration-id/{migrationId}")
         .queryParam("size", 1)

@@ -39,7 +39,7 @@ internal class SentencingMigrationPropertiesTest {
     Builder()
       .apply { sentencingMigrationProperties.contribute(this) }
       .let {
-        it.build().details["last sentencing migration"] as Map<String, Any>
+        it.build().details["last SENTENCING_ADJUSTMENTS migration"] as Map<String, Any>
       }
 
   @Nested

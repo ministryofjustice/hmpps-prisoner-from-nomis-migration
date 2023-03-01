@@ -39,7 +39,7 @@ internal class IncentiveMigrationPropertiesTest {
     Builder()
       .apply { incentiveMigrationProperties.contribute(this) }
       .let {
-        it.build().details["last incentives migration"] as Map<String, Any>
+        it.build().details["last INCENTIVES migration"] as Map<String, Any>
       }
 
   @Nested
