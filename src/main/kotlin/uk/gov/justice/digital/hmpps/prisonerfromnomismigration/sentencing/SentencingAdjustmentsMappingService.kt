@@ -13,7 +13,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.LatestMigrat
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationDetails
 
 @Service
-class SentencingMappingService(@Qualifier("mappingApiWebClient") private val webClient: WebClient) {
+class SentencingAdjustmentsMappingService(@Qualifier("mappingApiWebClient") private val webClient: WebClient) {
   suspend fun findNomisSentencingAdjustmentMapping(
     nomisAdjustmentId: Long,
     nomisAdjustmentCategory: String,

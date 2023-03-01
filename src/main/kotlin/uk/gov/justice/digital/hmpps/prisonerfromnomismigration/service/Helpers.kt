@@ -25,10 +25,10 @@ class SynchronisationMessage<M, T>(
 
 const val VISITS_QUEUE_ID = "migrationvisits"
 const val INCENTIVES_QUEUE_ID = "migrationincentives"
-const val SENTENCING_QUEUE_ID = "migrationsentencing"
+const val SENTENCING_ADJUSTMENTS_QUEUE_ID = "migrationsentencing"
 
 enum class SynchronisationType(val queueId: String) {
   VISITS(VISITS_QUEUE_ID),
   INCENTIVES(INCENTIVES_QUEUE_ID),
-  SENTENCING(SENTENCING_QUEUE_ID)
+  SENTENCING_ADJUSTMENTS(SENTENCING_ADJUSTMENTS_QUEUE_ID)
 }

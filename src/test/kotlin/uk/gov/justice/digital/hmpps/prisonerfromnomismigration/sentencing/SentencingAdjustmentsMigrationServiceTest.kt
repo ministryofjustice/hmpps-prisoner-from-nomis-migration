@@ -46,27 +46,27 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisAdju
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisAdjustmentId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisCodeDescription
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.SENTENCING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.SENTENCING_ADJUSTMENTS
 import java.time.LocalDate
 import java.time.LocalDateTime
 
 @ExtendWith(MockitoExtension::class)
-internal class SentencingMigrationServiceTest {
+internal class SentencingAdjustmentsMigrationServiceTest {
   private val nomisApiService: NomisApiService = mock()
   private val queueService: MigrationQueueService = mock()
   private val migrationHistoryService: MigrationHistoryService = mock()
   private val telemetryClient: TelemetryClient = mock()
   private val auditService: AuditService = mock()
   private val sentencingService: SentencingService = mock()
-  private val sentencingMappingService: SentencingMappingService = mock()
-  val service = SentencingMigrationService(
+  private val sentencingAdjustmentsMappingService: SentencingAdjustmentsMappingService = mock()
+  val service = SentencingAdjustmentsMigrationService(
     nomisApiService = nomisApiService,
     queueService = queueService,
     migrationHistoryService = migrationHistoryService,
     telemetryClient = telemetryClient,
     auditService = auditService,
     sentencingService = sentencingService,
-    sentencingMappingService = sentencingMappingService,
+    sentencingAdjustmentsMappingService = sentencingAdjustmentsMappingService,
     pageSize = 200
   )
 
@@ -80,14 +80,14 @@ internal class SentencingMigrationServiceTest {
     private val auditWhatParam = slot<String>()
     private val auditDetailsParam = slot<Map<*, *>>()
 
-    val service = SentencingMigrationService(
+    val service = SentencingAdjustmentsMigrationService(
       nomisApiService = nomisApiService,
       queueService = queueService,
       migrationHistoryService = migrationHistoryService,
       telemetryClient = telemetryClient,
       auditService = auditService,
       sentencingService = sentencingService,
-      sentencingMappingService = sentencingMappingService,
+      sentencingAdjustmentsMappingService = sentencingAdjustmentsMappingService,
       pageSize = 200
     )
 
@@ -169,7 +169,7 @@ internal class SentencingMigrationServiceTest {
       coVerify {
         migrationHistoryService.recordMigrationStarted(
           migrationId = any(),
-          migrationType = SENTENCING,
+          migrationType = SENTENCING_ADJUSTMENTS,
           estimatedRecordCount = 23,
           filter = coWithArg<SentencingMigrationFilter> {
             assertThat(it.fromDate).isEqualTo(LocalDate.parse("2020-01-01"))
@@ -180,7 +180,7 @@ internal class SentencingMigrationServiceTest {
 
       with(auditDetailsParam.captured) {
         assertThat(this).extracting("migrationId").isNotNull
-        assertThat(this).extracting("migrationType").isEqualTo("SENTENCING")
+        assertThat(this).extracting("migrationType").isEqualTo("SENTENCING_ADJUSTMENTS")
         assertThat(this).extracting("filter").isEqualTo(sentencingMigrationFilter)
       }
     }
@@ -259,7 +259,7 @@ internal class SentencingMigrationServiceTest {
     internal fun `will send a page message for every page (200) of sentencing `(): Unit = runBlocking {
       service.divideEntitiesByPage(
         MigrationContext(
-          type = SENTENCING,
+          type = SENTENCING_ADJUSTMENTS,
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
           body = SentencingMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
@@ -277,7 +277,7 @@ internal class SentencingMigrationServiceTest {
     internal fun `will also send a single MIGRATION_STATUS_CHECK message`(): Unit = runBlocking {
       service.divideEntitiesByPage(
         MigrationContext(
-          type = SENTENCING,
+          type = SENTENCING_ADJUSTMENTS,
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
           body = SentencingMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
@@ -295,7 +295,7 @@ internal class SentencingMigrationServiceTest {
     internal fun `each page with have the filter and context attached`(): Unit = runBlocking {
       service.divideEntitiesByPage(
         MigrationContext(
-          type = SENTENCING,
+          type = SENTENCING_ADJUSTMENTS,
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
           body = SentencingMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
@@ -322,7 +322,7 @@ internal class SentencingMigrationServiceTest {
 
       service.divideEntitiesByPage(
         MigrationContext(
-          type = SENTENCING,
+          type = SENTENCING_ADJUSTMENTS,
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
           body = SentencingMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
@@ -368,7 +368,7 @@ internal class SentencingMigrationServiceTest {
       internal fun `will check again in 10 seconds`(): Unit = runBlocking {
         service.migrateStatusCheck(
           MigrationContext(
-            type = SENTENCING,
+            type = SENTENCING_ADJUSTMENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
             body = MigrationStatusCheck()
@@ -384,7 +384,7 @@ internal class SentencingMigrationServiceTest {
       internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit = runBlocking {
         service.migrateStatusCheck(
           MigrationContext(
-            type = SENTENCING,
+            type = SENTENCING_ADJUSTMENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
             body = MigrationStatusCheck(checkCount = 4)
@@ -408,14 +408,14 @@ internal class SentencingMigrationServiceTest {
       internal fun setUp(): Unit = runBlocking {
         whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed(any())).thenReturn(false)
         whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(0)
-        whenever(sentencingMappingService.getMigrationCount(any())).thenReturn(0)
+        whenever(sentencingAdjustmentsMappingService.getMigrationCount(any())).thenReturn(0)
       }
 
       @Test
       internal fun `will increment check count and try again a second when only checked 9 times`(): Unit = runBlocking {
         service.migrateStatusCheck(
           MigrationContext(
-            type = SENTENCING,
+            type = SENTENCING_ADJUSTMENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
             body = MigrationStatusCheck(checkCount = 9)
@@ -435,7 +435,7 @@ internal class SentencingMigrationServiceTest {
       internal fun `will finish off when checked 10 times previously`(): Unit = runBlocking {
         service.migrateStatusCheck(
           MigrationContext(
-            type = SENTENCING,
+            type = SENTENCING_ADJUSTMENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
             body = MigrationStatusCheck(checkCount = 10)
@@ -451,7 +451,7 @@ internal class SentencingMigrationServiceTest {
       internal fun `will add completed telemetry when finishing off`(): Unit = runBlocking {
         service.migrateStatusCheck(
           MigrationContext(
-            type = SENTENCING,
+            type = SENTENCING_ADJUSTMENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 23,
             body = MigrationStatusCheck(checkCount = 10)
@@ -472,11 +472,11 @@ internal class SentencingMigrationServiceTest {
       @Test
       internal fun `will update migration history record when finishing off`(): Unit = runBlocking {
         whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(2)
-        whenever(sentencingMappingService.getMigrationCount("2020-05-23T11:30:00")).thenReturn(21)
+        whenever(sentencingAdjustmentsMappingService.getMigrationCount("2020-05-23T11:30:00")).thenReturn(21)
 
         service.migrateStatusCheck(
           MigrationContext(
-            type = SENTENCING,
+            type = SENTENCING_ADJUSTMENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 23,
             body = MigrationStatusCheck(checkCount = 10)
@@ -507,7 +507,7 @@ internal class SentencingMigrationServiceTest {
       internal fun `will check again in 10 seconds`(): Unit = runBlocking {
         service.cancelMigrateStatusCheck(
           MigrationContext(
-            type = SENTENCING,
+            type = SENTENCING_ADJUSTMENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
             body = MigrationStatusCheck()
@@ -524,7 +524,7 @@ internal class SentencingMigrationServiceTest {
       internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit = runBlocking {
         service.cancelMigrateStatusCheck(
           MigrationContext(
-            type = SENTENCING,
+            type = SENTENCING_ADJUSTMENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
             body = MigrationStatusCheck(checkCount = 4)
@@ -549,21 +549,21 @@ internal class SentencingMigrationServiceTest {
       internal fun setUp(): Unit = runBlocking {
         whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed(any())).thenReturn(false)
         whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(0)
-        whenever(sentencingMappingService.getMigrationCount(any())).thenReturn(0)
+        whenever(sentencingAdjustmentsMappingService.getMigrationCount(any())).thenReturn(0)
       }
 
       @Test
       internal fun `will increment check count and try again a second when only checked 9 times`(): Unit = runBlocking {
         service.cancelMigrateStatusCheck(
           MigrationContext(
-            type = SENTENCING,
+            type = SENTENCING_ADJUSTMENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
             body = MigrationStatusCheck(checkCount = 9)
           )
         )
 
-        verify(queueService).purgeAllMessages(check { assertThat(it).isEqualTo(SENTENCING) })
+        verify(queueService).purgeAllMessages(check { assertThat(it).isEqualTo(SENTENCING_ADJUSTMENTS) })
 
         verify(queueService).sendMessage(
           message = eq(CANCEL_MIGRATION),
@@ -578,14 +578,14 @@ internal class SentencingMigrationServiceTest {
       internal fun `will finish off when checked 10 times previously`(): Unit = runBlocking {
         service.cancelMigrateStatusCheck(
           MigrationContext(
-            type = SENTENCING,
+            type = SENTENCING_ADJUSTMENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
             body = MigrationStatusCheck(checkCount = 10)
           )
         )
 
-        verify(queueService, never()).purgeAllMessages(check { assertThat(it).isEqualTo(SENTENCING) })
+        verify(queueService, never()).purgeAllMessages(check { assertThat(it).isEqualTo(SENTENCING_ADJUSTMENTS) })
         verify(queueService, never()).sendMessage(
           message = eq(CANCEL_MIGRATION), context = any(), delaySeconds = any()
         )
@@ -595,7 +595,7 @@ internal class SentencingMigrationServiceTest {
       internal fun `will add completed telemetry when finishing off`(): Unit = runBlocking {
         service.cancelMigrateStatusCheck(
           MigrationContext(
-            type = SENTENCING,
+            type = SENTENCING_ADJUSTMENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 23,
             body = MigrationStatusCheck(checkCount = 10)
@@ -616,11 +616,11 @@ internal class SentencingMigrationServiceTest {
       @Test
       internal fun `will update migration history record when cancelling`(): Unit = runBlocking {
         whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(2)
-        whenever(sentencingMappingService.getMigrationCount("2020-05-23T11:30:00")).thenReturn(21)
+        whenever(sentencingAdjustmentsMappingService.getMigrationCount("2020-05-23T11:30:00")).thenReturn(21)
 
         service.cancelMigrateStatusCheck(
           MigrationContext(
-            type = SENTENCING,
+            type = SENTENCING_ADJUSTMENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 23,
             body = MigrationStatusCheck(checkCount = 10)
@@ -651,7 +651,7 @@ internal class SentencingMigrationServiceTest {
     internal fun `will pass filter through to get total count along with a tiny page count`(): Unit = runBlocking {
       service.migrateEntitiesForPage(
         MigrationContext(
-          type = SENTENCING,
+          type = SENTENCING_ADJUSTMENTS,
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
           body = MigrationPage(
             filter = SentencingMigrationFilter(
@@ -675,7 +675,7 @@ internal class SentencingMigrationServiceTest {
     internal fun `will send MIGRATE_SENTENCE_ADJUSTMENT with context for each sentence adjustment`(): Unit = runBlocking {
       service.migrateEntitiesForPage(
         MigrationContext(
-          type = SENTENCING,
+          type = SENTENCING_ADJUSTMENTS,
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
           body = MigrationPage(
             filter = SentencingMigrationFilter(
@@ -710,7 +710,7 @@ internal class SentencingMigrationServiceTest {
 
       service.migrateEntitiesForPage(
         MigrationContext(
-          type = SENTENCING,
+          type = SENTENCING_ADJUSTMENTS,
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
           body = MigrationPage(
             filter = SentencingMigrationFilter(
@@ -749,7 +749,7 @@ internal class SentencingMigrationServiceTest {
 
       service.migrateEntitiesForPage(
         MigrationContext(
-          type = SENTENCING,
+          type = SENTENCING_ADJUSTMENTS,
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
           body = MigrationPage(
             filter = SentencingMigrationFilter(
@@ -771,7 +771,7 @@ internal class SentencingMigrationServiceTest {
 
     @BeforeEach
     internal fun setUp(): Unit = runBlocking {
-      whenever(sentencingMappingService.findNomisSentencingAdjustmentMapping(any(), any())).thenReturn(null)
+      whenever(sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMapping(any(), any())).thenReturn(null)
       whenever(nomisApiService.getSentenceAdjustment(any())).thenReturn(
         aNomisSentenceAdjustment()
       )
@@ -783,7 +783,7 @@ internal class SentencingMigrationServiceTest {
     internal fun `will retrieve sentencing adjustment from NOMIS`(): Unit = runBlocking {
       service.migrateNomisEntity(
         MigrationContext(
-          type = SENTENCING,
+          type = SENTENCING_ADJUSTMENTS,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
           body = NomisAdjustmentId(123, "SENTENCE")
@@ -803,7 +803,7 @@ internal class SentencingMigrationServiceTest {
 
       service.migrateNomisEntity(
         MigrationContext(
-          type = SENTENCING,
+          type = SENTENCING_ADJUSTMENTS,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
           body = NomisAdjustmentId(123, "SENTENCE")
@@ -835,14 +835,14 @@ internal class SentencingMigrationServiceTest {
 
       service.migrateNomisEntity(
         MigrationContext(
-          type = SENTENCING,
+          type = SENTENCING_ADJUSTMENTS,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
           body = NomisAdjustmentId(123, "SENTENCE")
         )
       )
 
-      verify(sentencingMappingService).createNomisSentencingAdjustmentMigrationMapping(
+      verify(sentencingAdjustmentsMappingService).createNomisSentencingAdjustmentMigrationMapping(
         nomisAdjustmentId = 123,
         nomisAdjustmentCategory = "SENTENCE",
         adjustmentId = "999",
@@ -858,7 +858,7 @@ internal class SentencingMigrationServiceTest {
       whenever(sentencingService.migrateSentencingAdjustment(any())).thenReturn(CreateSentencingAdjustmentResponse("999"))
 
       whenever(
-        sentencingMappingService.createNomisSentencingAdjustmentMigrationMapping(
+        sentencingAdjustmentsMappingService.createNomisSentencingAdjustmentMigrationMapping(
           any(),
           any(),
           any(),
@@ -870,7 +870,7 @@ internal class SentencingMigrationServiceTest {
 
       service.migrateNomisEntity(
         MigrationContext(
-          type = SENTENCING,
+          type = SENTENCING_ADJUSTMENTS,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
           body = NomisAdjustmentId(123, "SENTENCE")
@@ -893,7 +893,7 @@ internal class SentencingMigrationServiceTest {
     inner class WhenMigratedAlready {
       @BeforeEach
       internal fun setUp(): Unit = runBlocking {
-        whenever(sentencingMappingService.findNomisSentencingAdjustmentMapping(any(), any())).thenReturn(
+        whenever(sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMapping(any(), any())).thenReturn(
           SentencingAdjustmentNomisMapping(
             nomisAdjustmentId = 123,
             nomisAdjustmentCategory = "SENTENCE",
@@ -908,7 +908,7 @@ internal class SentencingMigrationServiceTest {
 
         service.migrateNomisEntity(
           MigrationContext(
-            type = SENTENCING,
+            type = SENTENCING_ADJUSTMENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
             body = NomisAdjustmentId(123, "SENTENCE")
@@ -929,7 +929,7 @@ internal class SentencingMigrationServiceTest {
           status = MigrationStatus.CANCELLED,
           whenEnded = LocalDateTime.parse("2020-01-01T00:00:00"),
           whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
-          migrationType = SENTENCING,
+          migrationType = SENTENCING_ADJUSTMENTS,
           estimatedRecordCount = 100,
         )
       )
@@ -941,7 +941,7 @@ internal class SentencingMigrationServiceTest {
         check {
           it as Map<*, *>
           assertThat(it["migrationId"]).isNotNull
-          assertThat(it["migrationType"]).isEqualTo(SENTENCING.name)
+          assertThat(it["migrationType"]).isEqualTo(SENTENCING_ADJUSTMENTS.name)
         },
       )
     }

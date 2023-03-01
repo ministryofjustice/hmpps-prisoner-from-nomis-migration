@@ -7,17 +7,17 @@ import org.springframework.boot.actuate.info.InfoContributor
 import org.springframework.stereotype.Component
 import software.amazon.awssdk.services.sqs.model.GetQueueAttributesRequest
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SENTENCING_QUEUE_ID
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SENTENCING_ADJUSTMENTS_QUEUE_ID
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
 
 @Component
 class SentencingMigrationProperties(
   private val hmppsQueueService: HmppsQueueService,
-  private val sentencingMappingService: SentencingMappingService,
+  private val sentencingAdjustmentsMappingService: SentencingAdjustmentsMappingService,
 ) : InfoContributor {
 
-  internal val queue by lazy { hmppsQueueService.findByQueueId(SENTENCING_QUEUE_ID) as HmppsQueue }
+  internal val queue by lazy { hmppsQueueService.findByQueueId(SENTENCING_ADJUSTMENTS_QUEUE_ID) as HmppsQueue }
 
   override fun contribute(builder: Builder): Unit = runBlocking {
     val queueProperties = queue.getQueueAttributes().map {
@@ -33,8 +33,8 @@ class SentencingMigrationProperties(
       )
     }.getOrElse { mapOf() }
 
-    val migrationProperties = sentencingMappingService.findLatestMigration()?.let {
-      val details = sentencingMappingService.getMigrationDetails(it.migrationId)
+    val migrationProperties = sentencingAdjustmentsMappingService.findLatestMigration()?.let {
+      val details = sentencingAdjustmentsMappingService.getMigrationDetails(it.migrationId)
       mapOf<String, Any?>(
         "id" to it.migrationId,
         "records migrated" to details.count,
