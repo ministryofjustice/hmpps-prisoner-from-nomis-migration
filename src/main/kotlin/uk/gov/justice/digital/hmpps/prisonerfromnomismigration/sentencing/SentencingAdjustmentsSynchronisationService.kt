@@ -7,15 +7,15 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.SynchronisationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingSynchronisationService.MappingResponse.MAPPING_CREATED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingSynchronisationService.MappingResponse.MAPPING_FAILED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustmentsSynchronisationService.MappingResponse.MAPPING_CREATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustmentsSynchronisationService.MappingResponse.MAPPING_FAILED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 
 @Service
-class SentencingSynchronisationService(
-  private val sentencingMappingService: SentencingMappingService,
+class SentencingAdjustmentsSynchronisationService(
+  private val sentencingAdjustmentsMappingService: SentencingAdjustmentsMappingService,
   private val nomisApiService: NomisApiService,
   private val sentencingService: SentencingService,
   private val telemetryClient: TelemetryClient,
@@ -35,7 +35,7 @@ class SentencingSynchronisationService(
     }
     nomisApiService.getSentenceAdjustment(event.adjustmentId).takeUnless { it.hiddenFromUsers }
       ?.also { nomisAdjustment ->
-        sentencingMappingService.findNomisSentencingAdjustmentMapping(
+        sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMapping(
           nomisAdjustmentId = event.adjustmentId,
           nomisAdjustmentCategory = "SENTENCE"
         )?.let {
@@ -70,12 +70,12 @@ class SentencingSynchronisationService(
       )
       return
     }
-    sentencingMappingService.findNomisSentencingAdjustmentMapping(
+    sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMapping(
       nomisAdjustmentId = event.adjustmentId,
       nomisAdjustmentCategory = "SENTENCE"
     )?.let {
       sentencingService.deleteSentencingAdjustment(it.adjustmentId)
-      sentencingMappingService.deleteNomisSentenceAdjustmentMapping(it.adjustmentId)
+      sentencingAdjustmentsMappingService.deleteNomisSentenceAdjustmentMapping(it.adjustmentId)
       telemetryClient.trackEvent(
         "sentence-adjustment-delete-synchronisation-success",
         event.toTelemetryProperties(adjustmentId = it.adjustmentId)
@@ -97,7 +97,7 @@ class SentencingSynchronisationService(
       return
     }
     val nomisAdjustment = nomisApiService.getKeyDateAdjustment(event.adjustmentId)
-    sentencingMappingService.findNomisSentencingAdjustmentMapping(
+    sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMapping(
       nomisAdjustmentId = event.adjustmentId,
       nomisAdjustmentCategory = "KEY-DATE"
     )?.let {
@@ -126,12 +126,12 @@ class SentencingSynchronisationService(
       )
       return
     }
-    sentencingMappingService.findNomisSentencingAdjustmentMapping(
+    sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMapping(
       nomisAdjustmentId = event.adjustmentId,
       nomisAdjustmentCategory = "KEY-DATE"
     )?.let {
       sentencingService.deleteSentencingAdjustment(it.adjustmentId)
-      sentencingMappingService.deleteNomisSentenceAdjustmentMapping(it.adjustmentId)
+      sentencingAdjustmentsMappingService.deleteNomisSentenceAdjustmentMapping(it.adjustmentId)
       telemetryClient.trackEvent(
         "key-date-adjustment-delete-synchronisation-success",
         event.toTelemetryProperties(adjustmentId = it.adjustmentId)
@@ -154,7 +154,7 @@ class SentencingSynchronisationService(
     adjustmentId: String
   ): MappingResponse =
     try {
-      sentencingMappingService.createNomisSentencingAdjustmentSynchronisationMapping(
+      sentencingAdjustmentsMappingService.createNomisSentencingAdjustmentSynchronisationMapping(
         nomisAdjustmentId = event.adjustmentId,
         nomisAdjustmentCategory = "SENTENCE",
         adjustmentId = adjustmentId
@@ -184,7 +184,7 @@ class SentencingSynchronisationService(
       queueService.sendMessage(
         MessageType.RETRY_SYNCHRONISATION_MAPPING,
         SynchronisationContext(
-          type = SynchronisationType.SENTENCING,
+          type = SynchronisationType.SENTENCING_ADJUSTMENTS,
           telemetryProperties = event.toTelemetryProperties(adjustmentId),
           body = SentencingAdjustmentNomisMapping(
             nomisAdjustmentId = event.adjustmentId,
@@ -202,7 +202,7 @@ class SentencingSynchronisationService(
     adjustmentId: String
   ): MappingResponse =
     try {
-      sentencingMappingService.createNomisSentencingAdjustmentSynchronisationMapping(
+      sentencingAdjustmentsMappingService.createNomisSentencingAdjustmentSynchronisationMapping(
         nomisAdjustmentId = event.adjustmentId,
         nomisAdjustmentCategory = "KEY-DATE",
         adjustmentId = adjustmentId
@@ -216,7 +216,7 @@ class SentencingSynchronisationService(
       queueService.sendMessage(
         MessageType.RETRY_SYNCHRONISATION_MAPPING,
         SynchronisationContext(
-          type = SynchronisationType.SENTENCING,
+          type = SynchronisationType.SENTENCING_ADJUSTMENTS,
           telemetryProperties = event.toTelemetryProperties(adjustmentId),
           body = SentencingAdjustmentNomisMapping(
             nomisAdjustmentId = event.adjustmentId,
@@ -230,7 +230,7 @@ class SentencingSynchronisationService(
     }
 
   suspend fun retryCreateSentenceAdjustmentMapping(context: SynchronisationContext<SentencingAdjustmentNomisMapping>) {
-    sentencingMappingService.createNomisSentencingAdjustmentSynchronisationMapping(
+    sentencingAdjustmentsMappingService.createNomisSentencingAdjustmentSynchronisationMapping(
       nomisAdjustmentId = context.body.nomisAdjustmentId,
       nomisAdjustmentCategory = context.body.nomisAdjustmentCategory,
       adjustmentId = context.body.adjustmentId

@@ -16,26 +16,26 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisAdju
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisAdjustmentId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.SENTENCING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.SENTENCING_ADJUSTMENTS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.asStringOrBlank
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationMinutes
 
 @Service
-class SentencingMigrationService(
+class SentencingAdjustmentsMigrationService(
   private val queueService: MigrationQueueService,
   private val nomisApiService: NomisApiService,
   migrationHistoryService: MigrationHistoryService,
   private val telemetryClient: TelemetryClient,
   auditService: AuditService,
   private val sentencingService: SentencingService,
-  private val sentencingMappingService: SentencingMappingService,
+  private val sentencingAdjustmentsMappingService: SentencingAdjustmentsMappingService,
   @Value("\${sentencing.page.size:1000}") private val pageSize: Long
 ) : MigrationService<SentencingMigrationFilter, NomisAdjustmentId, NomisAdjustment, SentencingAdjustmentNomisMapping>(
   queueService = queueService,
   auditService = auditService,
   migrationHistoryService = migrationHistoryService,
   telemetryClient = telemetryClient,
-  synchronisationType = SENTENCING,
+  synchronisationType = SENTENCING_ADJUSTMENTS,
   pageSize = pageSize
 ) {
   private companion object {
@@ -68,11 +68,11 @@ class SentencingMigrationService(
   }
 
   override fun getMigrationType(): SynchronisationType {
-    return SENTENCING
+    return SENTENCING_ADJUSTMENTS
   }
 
   override suspend fun retryCreateMapping(context: MigrationContext<SentencingAdjustmentNomisMapping>) {
-    sentencingMappingService.createNomisSentencingAdjustmentMigrationMapping(
+    sentencingAdjustmentsMappingService.createNomisSentencingAdjustmentMigrationMapping(
       nomisAdjustmentId = context.body.nomisAdjustmentId,
       nomisAdjustmentCategory = context.body.nomisAdjustmentCategory,
       adjustmentId = context.body.adjustmentId,
@@ -81,7 +81,7 @@ class SentencingMigrationService(
   }
 
   override suspend fun getMigrationCount(migrationId: String): Long {
-    return sentencingMappingService.getMigrationCount(migrationId)
+    return sentencingAdjustmentsMappingService.getMigrationCount(migrationId)
   }
 
   override suspend fun migrateNomisEntity(context: MigrationContext<NomisAdjustmentId>) {
@@ -89,7 +89,7 @@ class SentencingMigrationService(
     val nomisAdjustmentId = context.body.adjustmentId
     val nomisAdjustmentCategory = context.body.adjustmentCategory
 
-    sentencingMappingService.findNomisSentencingAdjustmentMapping(nomisAdjustmentId, nomisAdjustmentCategory)?.run {
+    sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMapping(nomisAdjustmentId, nomisAdjustmentCategory)?.run {
       log.info("Will not migrate the adjustment since it is migrated already, NOMIS Adjustment id is $nomisAdjustmentId, type is $nomisAdjustmentCategory, sentencing adjustment id is ${this.adjustmentId} as part migration ${this.label ?: "NONE"} (${this.mappingType})")
     }
       ?: run {
@@ -126,7 +126,7 @@ class SentencingMigrationService(
     adjustmentId: String,
     context: MigrationContext<*>
   ) = try {
-    sentencingMappingService.createNomisSentencingAdjustmentMigrationMapping(
+    sentencingAdjustmentsMappingService.createNomisSentencingAdjustmentMigrationMapping(
       nomisAdjustmentId = nomisAdjustmentId,
       nomisAdjustmentCategory = nomisAdjustmentCategory,
       adjustmentId = adjustmentId,

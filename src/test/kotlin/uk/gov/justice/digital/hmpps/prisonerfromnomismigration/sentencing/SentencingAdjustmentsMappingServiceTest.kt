@@ -16,10 +16,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingA
 private const val ADJUSTMENT_ID = "05b332ad-58eb-4ec2-963c-c9c927856788"
 
 @SpringAPIServiceTest
-@Import(SentencingMappingService::class, SentencingConfiguration::class)
-class SentencingMappingServiceTest {
+@Import(SentencingAdjustmentsMappingService::class, SentencingConfiguration::class)
+class SentencingAdjustmentsMappingServiceTest {
   @Autowired
-  private lateinit var sentencingMappingService: SentencingMappingService
+  private lateinit var sentencingAdjustmentsMappingService: SentencingAdjustmentsMappingService
 
   @Nested
   inner class CreateNomisSentencingAdjustmentSynchronisationMapping {
@@ -28,7 +28,7 @@ class SentencingMappingServiceTest {
       mappingApi.stubSentenceAdjustmentMappingCreate()
 
       runBlocking {
-        sentencingMappingService.createNomisSentencingAdjustmentSynchronisationMapping(
+        sentencingAdjustmentsMappingService.createNomisSentencingAdjustmentSynchronisationMapping(
           nomisAdjustmentId = 1234L,
           nomisAdjustmentCategory = "SENTENCE",
           adjustmentId = ADJUSTMENT_ID
@@ -47,7 +47,7 @@ class SentencingMappingServiceTest {
       mappingApi.stubSentenceAdjustmentMappingCreate()
 
       runBlocking {
-        sentencingMappingService.createNomisSentencingAdjustmentSynchronisationMapping(
+        sentencingAdjustmentsMappingService.createNomisSentencingAdjustmentSynchronisationMapping(
           nomisAdjustmentId = 1234L,
           nomisAdjustmentCategory = "SENTENCE",
           adjustmentId = ADJUSTMENT_ID
@@ -71,7 +71,7 @@ class SentencingMappingServiceTest {
       mappingApi.stubSentenceAdjustmentMappingDelete(ADJUSTMENT_ID)
 
       runBlocking {
-        sentencingMappingService.deleteNomisSentenceAdjustmentMapping(
+        sentencingAdjustmentsMappingService.deleteNomisSentenceAdjustmentMapping(
           adjustmentId = ADJUSTMENT_ID
         )
       }

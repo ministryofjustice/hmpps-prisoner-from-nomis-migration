@@ -29,7 +29,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.COMPLETED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.SENTENCING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.SENTENCING_ADJUSTMENTS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.SentencingApiExtension.Companion.sentencingApi
@@ -172,7 +172,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
           .jsonPath("$[0].whenStarted").isNotEmpty
           .jsonPath("$[0].whenEnded").isNotEmpty
           .jsonPath("$[0].estimatedRecordCount").isEqualTo(26)
-          .jsonPath("$[0].migrationType").isEqualTo("SENTENCING")
+          .jsonPath("$[0].migrationType").isEqualTo("SENTENCING_ADJUSTMENTS")
           .jsonPath("$[0].status").isEqualTo("COMPLETED")
           .jsonPath("$[0].recordsMigrated").isEqualTo(25)
           .jsonPath("$[0].recordsFailed").isEqualTo(1)
@@ -278,7 +278,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = SENTENCING
+            migrationType = SENTENCING_ADJUSTMENTS
           )
         )
         migrationHistoryRepository.save(
@@ -291,7 +291,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = SENTENCING
+            migrationType = SENTENCING_ADJUSTMENTS
           )
         )
         migrationHistoryRepository.save(
@@ -304,7 +304,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = SENTENCING
+            migrationType = SENTENCING_ADJUSTMENTS
           )
         )
         migrationHistoryRepository.save(
@@ -317,7 +317,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = SENTENCING
+            migrationType = SENTENCING_ADJUSTMENTS
           )
         )
       }
@@ -449,7 +449,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = SENTENCING
+            migrationType = SENTENCING_ADJUSTMENTS
           )
         )
       }

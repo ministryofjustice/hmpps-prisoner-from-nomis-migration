@@ -29,7 +29,7 @@ import java.time.LocalDateTime
 @RestController
 @RequestMapping("/migrate", produces = [MediaType.APPLICATION_JSON_VALUE])
 class SentencingMigrationResource(
-  private val sentencingMigrationService: SentencingMigrationService,
+  private val sentencingAdjustmentsMigrationService: SentencingAdjustmentsMigrationService,
   private val migrationHistoryService: MigrationHistoryService
 ) {
   @PreAuthorize("hasRole('ROLE_MIGRATE_SENTENCING')")
@@ -65,7 +65,7 @@ class SentencingMigrationResource(
   )
   suspend fun migrateSentencing(@RequestBody @Valid migrationFilter: SentencingMigrationFilter) =
     // TODO determine which sentencing entity is being migrated - assume adjustments for now
-    sentencingMigrationService.migrateAdjustments(migrationFilter)
+    sentencingAdjustmentsMigrationService.migrateAdjustments(migrationFilter)
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_SENTENCING')")
   @GetMapping("/sentencing/history")
@@ -116,7 +116,7 @@ class SentencingMigrationResource(
     ) @RequestParam includeOnlyFailures: Boolean = false,
   ) = migrationHistoryService.findAll(
     HistoryFilter(
-      migrationTypes = listOf(SynchronisationType.SENTENCING.name),
+      migrationTypes = listOf(SynchronisationType.SENTENCING_ADJUSTMENTS.name),
       fromDateTime = fromDateTime,
       toDateTime = toDateTime,
       includeOnlyFailures = includeOnlyFailures,
@@ -194,5 +194,5 @@ class SentencingMigrationResource(
     @PathVariable
     @Schema(description = "Migration Id", example = "2020-03-24T12:00:00", required = true)
     migrationId: String
-  ) = sentencingMigrationService.cancel(migrationId)
+  ) = sentencingAdjustmentsMigrationService.cancel(migrationId)
 }

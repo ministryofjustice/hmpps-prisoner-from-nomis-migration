@@ -16,7 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Message
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageType.MIGRATE_STATUS_CHECK
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageType.RETRY_MIGRATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageType.RETRY_SYNCHRONISATION_MAPPING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingSynchronisationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustmentsSynchronisationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.LocalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
@@ -26,7 +26,7 @@ import java.util.concurrent.CompletableFuture
 abstract class MigrationMessageListener<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
   internal val objectMapper: ObjectMapper,
   private val migrationService: MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>,
-  private val sentencingSynchronisationService: SentencingSynchronisationService
+  private val sentencingAdjustmentsSynchronisationService: SentencingAdjustmentsSynchronisationService
 ) {
 
   private companion object {
@@ -52,7 +52,7 @@ abstract class MigrationMessageListener<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>
             )
           )
 
-          RETRY_SYNCHRONISATION_MAPPING -> sentencingSynchronisationService.retryCreateSentenceAdjustmentMapping(
+          RETRY_SYNCHRONISATION_MAPPING -> sentencingAdjustmentsSynchronisationService.retryCreateSentenceAdjustmentMapping(
             synchronisationContext(
               message.fromJson()
             )
