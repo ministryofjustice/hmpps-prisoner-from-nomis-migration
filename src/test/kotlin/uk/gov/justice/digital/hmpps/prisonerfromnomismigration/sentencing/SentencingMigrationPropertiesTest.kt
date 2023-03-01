@@ -20,7 +20,7 @@ import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.LatestMigration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigratedItem
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationDetails
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SENTENCING_QUEUE_ID
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SENTENCING_ADJUSTMENTS_QUEUE_ID
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
 import java.time.LocalDateTime
@@ -28,11 +28,11 @@ import java.util.concurrent.CompletableFuture
 
 internal class SentencingMigrationPropertiesTest {
   private val hmppsQueueService: HmppsQueueService = mock()
-  private val sentencingMappingService: SentencingMappingService = mock()
+  private val sentencingAdjustmentsMappingService: SentencingAdjustmentsMappingService = mock()
   private val sqsClient: SqsAsyncClient = mock()
-  private val migrationQueue = HmppsQueue(SENTENCING_QUEUE_ID, sqsClient, "queue", sqsClient, "dlq")
+  private val migrationQueue = HmppsQueue(SENTENCING_ADJUSTMENTS_QUEUE_ID, sqsClient, "queue", sqsClient, "dlq")
 
-  private val sentencingMigrationProperties = SentencingMigrationProperties(hmppsQueueService, sentencingMappingService)
+  private val sentencingMigrationProperties = SentencingMigrationProperties(hmppsQueueService, sentencingAdjustmentsMappingService)
   private lateinit var details: Map<String, Any>
 
   private fun build() =
@@ -48,7 +48,7 @@ internal class SentencingMigrationPropertiesTest {
     @BeforeEach
     internal fun setUp(): Unit = runBlocking {
       mockEmptyQueues()
-      whenever(sentencingMappingService.findLatestMigration()).thenReturn(null)
+      whenever(sentencingAdjustmentsMappingService.findLatestMigration()).thenReturn(null)
       details = build()
     }
 
@@ -79,8 +79,8 @@ internal class SentencingMigrationPropertiesTest {
     @BeforeEach
     internal fun setUp(): Unit = runBlocking {
       mockQueuesWith(messagesOnQueueCount = 20_000, messagesInFlightCount = 16, messagesOnDLQCount = 3)
-      whenever(sentencingMappingService.findLatestMigration()).thenReturn(LatestMigration(migrationId = "2020-01-01T12:00:00"))
-      whenever(sentencingMappingService.getMigrationDetails("2020-01-01T12:00:00")).thenReturn(
+      whenever(sentencingAdjustmentsMappingService.findLatestMigration()).thenReturn(LatestMigration(migrationId = "2020-01-01T12:00:00"))
+      whenever(sentencingAdjustmentsMappingService.getMigrationDetails("2020-01-01T12:00:00")).thenReturn(
         MigrationDetails(
           count = 12_001,
           content = listOf(MigratedItem(whenCreated = LocalDateTime.parse("2020-01-01T12:10:29"))),
@@ -116,8 +116,8 @@ internal class SentencingMigrationPropertiesTest {
     @BeforeEach
     internal fun setUp(): Unit = runBlocking {
       mockEmptyQueues()
-      whenever(sentencingMappingService.findLatestMigration()).thenReturn(LatestMigration(migrationId = "2020-01-01T12:00:00"))
-      whenever(sentencingMappingService.getMigrationDetails("2020-01-01T12:00:00")).thenReturn(
+      whenever(sentencingAdjustmentsMappingService.findLatestMigration()).thenReturn(LatestMigration(migrationId = "2020-01-01T12:00:00"))
+      whenever(sentencingAdjustmentsMappingService.getMigrationDetails("2020-01-01T12:00:00")).thenReturn(
         MigrationDetails(
           count = 12_001,
           content = listOf(MigratedItem(whenCreated = LocalDateTime.parse("2020-01-01T12:10:29"))),
@@ -147,7 +147,7 @@ internal class SentencingMigrationPropertiesTest {
   }
 
   private fun mockQueuesWith(messagesOnQueueCount: Long, messagesInFlightCount: Long, messagesOnDLQCount: Long) {
-    whenever(hmppsQueueService.findByQueueId(SENTENCING_QUEUE_ID)).thenReturn(migrationQueue)
+    whenever(hmppsQueueService.findByQueueId(SENTENCING_ADJUSTMENTS_QUEUE_ID)).thenReturn(migrationQueue)
     whenever(
       sqsClient.getQueueUrl(GetQueueUrlRequest.builder().queueName("queue").build())
     ).thenReturn(someGetQueueUrlResult())

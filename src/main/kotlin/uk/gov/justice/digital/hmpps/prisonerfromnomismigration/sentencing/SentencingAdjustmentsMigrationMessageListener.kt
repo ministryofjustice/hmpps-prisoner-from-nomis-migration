@@ -12,17 +12,17 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisAdjustmentId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SENTENCING_QUEUE_ID
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SENTENCING_ADJUSTMENTS_QUEUE_ID
 import java.util.concurrent.CompletableFuture
 
 @Service
-class MigrationSentencingMessageListener(
+class SentencingAdjustmentsMigrationMessageListener(
   objectMapper: ObjectMapper,
-  sentencingMigrationService: SentencingMigrationService,
-  sentencingSynchronisationService: SentencingSynchronisationService
-) : MigrationMessageListener<SentencingMigrationFilter, NomisAdjustmentId, NomisAdjustment, SentencingAdjustmentNomisMapping>(objectMapper, sentencingMigrationService, sentencingSynchronisationService) {
+  sentencingAdjustmentsMigrationService: SentencingAdjustmentsMigrationService,
+  sentencingAdjustmentsSynchronisationService: SentencingAdjustmentsSynchronisationService
+) : MigrationMessageListener<SentencingMigrationFilter, NomisAdjustmentId, NomisAdjustment, SentencingAdjustmentNomisMapping>(objectMapper, sentencingAdjustmentsMigrationService, sentencingAdjustmentsSynchronisationService) {
 
-  @SqsListener(SENTENCING_QUEUE_ID, factory = "hmppsQueueContainerFactoryProxy")
+  @SqsListener(SENTENCING_ADJUSTMENTS_QUEUE_ID, factory = "hmppsQueueContainerFactoryProxy")
   @WithSpan(value = "dps-syscon-migration_sentencing_queue", kind = SpanKind.SERVER)
   fun onSentencingMessage(message: String, rawMessage: Message): CompletableFuture<Void>? {
     return onMessage(message, rawMessage)

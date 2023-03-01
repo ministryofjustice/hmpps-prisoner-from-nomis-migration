@@ -17,7 +17,7 @@ import java.util.concurrent.CompletableFuture
 
 @Service
 class SentencingPrisonOffenderEventListener(
-  private val sentencingSynchronisationService: SentencingSynchronisationService,
+  private val sentencingAdjustmentsSynchronisationService: SentencingAdjustmentsSynchronisationService,
   private val objectMapper: ObjectMapper,
   private val eventFeatureSwitch: EventFeatureSwitch
 ) {
@@ -34,10 +34,10 @@ class SentencingPrisonOffenderEventListener(
     val eventType = sqsMessage.MessageAttributes.eventType.Value
     return asCompletableFuture {
       if (eventFeatureSwitch.isEnabled(eventType)) when (eventType) {
-        "SENTENCE_ADJUSTMENT_UPSERTED" -> sentencingSynchronisationService.synchroniseSentenceAdjustmentCreateOrUpdate((sqsMessage.Message.fromJson()))
-        "SENTENCE_ADJUSTMENT_DELETED" -> sentencingSynchronisationService.synchroniseSentenceAdjustmentDelete((sqsMessage.Message.fromJson()))
-        "KEY_DATE_ADJUSTMENT_UPSERTED" -> sentencingSynchronisationService.synchroniseKeyDateAdjustmentCreateOrUpdate((sqsMessage.Message.fromJson()))
-        "KEY_DATE_ADJUSTMENT_DELETED" -> sentencingSynchronisationService.synchroniseKeyDateAdjustmentDelete((sqsMessage.Message.fromJson()))
+        "SENTENCE_ADJUSTMENT_UPSERTED" -> sentencingAdjustmentsSynchronisationService.synchroniseSentenceAdjustmentCreateOrUpdate((sqsMessage.Message.fromJson()))
+        "SENTENCE_ADJUSTMENT_DELETED" -> sentencingAdjustmentsSynchronisationService.synchroniseSentenceAdjustmentDelete((sqsMessage.Message.fromJson()))
+        "KEY_DATE_ADJUSTMENT_UPSERTED" -> sentencingAdjustmentsSynchronisationService.synchroniseKeyDateAdjustmentCreateOrUpdate((sqsMessage.Message.fromJson()))
+        "KEY_DATE_ADJUSTMENT_DELETED" -> sentencingAdjustmentsSynchronisationService.synchroniseKeyDateAdjustmentDelete((sqsMessage.Message.fromJson()))
 
         else -> log.info("Received a message I wasn't expecting {}", eventType)
       } else {
