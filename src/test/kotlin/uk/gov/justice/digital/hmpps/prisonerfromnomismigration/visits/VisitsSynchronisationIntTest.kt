@@ -25,7 +25,6 @@ class VisitsSynchronisationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `will synchronise a visit cancellation after a nomis visit cancellation event`() {
-
       val message = validVisitCancellationMessage()
 
       nomisApi.stubGetCancelledVisit(nomisVisitId = 9)
@@ -34,7 +33,6 @@ class VisitsSynchronisationIntTest : SqsIntegrationTestBase() {
       awsSqsVisitsOffenderEventsClient.sendMessage(visitsQueueOffenderEventsUrl, message)
 
       await untilAsserted {
-
         verify(telemetryClient, Times(1)).trackEvent(
           eq("visit-cancellation-synchronisation"),
           eq(
@@ -42,17 +40,16 @@ class VisitsSynchronisationIntTest : SqsIntegrationTestBase() {
               "offenderNo" to "A7948DY",
               "vsipId" to vsipId,
               "vsipOutcome" to "PRISONER_CANCELLED",
-              "nomisVisitId" to "9"
-            )
+              "nomisVisitId" to "9",
+            ),
           ),
-          isNull()
+          isNull(),
         )
       }
     }
 
     @Test
     fun `will ignore a visit cancellation event without a mapping`() {
-
       val message = validVisitCancellationMessage()
 
       nomisApi.stubGetVisit(nomisVisitId = 9)
@@ -66,7 +63,6 @@ class VisitsSynchronisationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `will ignore a visit cancellation event that originated in VSIP`() {
-
       val message = validVisitCancellationMessage()
 
       nomisApi.stubGetCancelledVisit(nomisVisitId = 9, modifyUserId = "PRISONER_MANAGER_API")

@@ -94,8 +94,8 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
               "fromDate": "2020-01-01",
               "toDate": "2020-01-02"
             }
-            """.trimIndent()
-          )
+            """.trimIndent(),
+          ),
         )
         .exchange()
         .expectStatus().isAccepted
@@ -104,14 +104,14 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
         verify(telemetryClient).trackEvent(
           eq("nomis-migration-completed"),
           any(),
-          isNull()
+          isNull(),
         )
       }
 
       // check filter matches what is passed in
       nomisApi.verifyGetAdjustmentsIdsCount(
         fromDate = "2020-01-01",
-        toDate = "2020-01-02"
+        toDate = "2020-01-02",
       )
 
       await untilAsserted {
@@ -132,7 +132,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
       // stub 25 migrated records and 1 fake a failure
       mappingApi.stubSentenceAdjustmentMappingByMigrationId(count = 25)
       awsSqsSentencingMigrationDlqClient!!.sendMessage(
-        SendMessageRequest.builder().queueUrl(sentencingMigrationDlqUrl).messageBody("""{ "message": "some error" }""").build()
+        SendMessageRequest.builder().queueUrl(sentencingMigrationDlqUrl).messageBody("""{ "message": "some error" }""").build(),
       ).get()
 
       webTestClient.post().uri("/migrate/sentencing")
@@ -143,8 +143,8 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
             """
             {
             }
-            """.trimIndent()
-          )
+            """.trimIndent(),
+          ),
         )
         .exchange()
         .expectStatus().isAccepted
@@ -153,7 +153,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
         verify(telemetryClient).trackEvent(
           eq("nomis-migration-completed"),
           any(),
-          isNull()
+          isNull(),
         )
       }
 
@@ -196,8 +196,8 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
             """
             {
             }
-            """.trimIndent()
-          )
+            """.trimIndent(),
+          ),
         )
         .exchange()
         .expectStatus().isAccepted
@@ -229,8 +229,8 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
             """
             {
             }
-            """.trimIndent()
-          )
+            """.trimIndent(),
+          ),
         )
         .exchange()
         .expectStatus().isAccepted
@@ -255,7 +255,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(it["existingNomisAdjustmentCategory"]).isEqualTo("SENTENCE")
           assertThat(it["duplicateNomisAdjustmentCategory"]).isEqualTo("SENTENCE")
         },
-        isNull()
+        isNull(),
       )
     }
   }
@@ -265,7 +265,6 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
   inner class GetAll {
     @BeforeEach
     internal fun createHistoryRecords() {
-
       runBlocking {
         migrationHistoryRepository.deleteAll()
         migrationHistoryRepository.save(
@@ -278,8 +277,8 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = SENTENCING_ADJUSTMENTS
-          )
+            migrationType = SENTENCING_ADJUSTMENTS,
+          ),
         )
         migrationHistoryRepository.save(
           MigrationHistory(
@@ -291,8 +290,8 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = SENTENCING_ADJUSTMENTS
-          )
+            migrationType = SENTENCING_ADJUSTMENTS,
+          ),
         )
         migrationHistoryRepository.save(
           MigrationHistory(
@@ -304,8 +303,8 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = SENTENCING_ADJUSTMENTS
-          )
+            migrationType = SENTENCING_ADJUSTMENTS,
+          ),
         )
         migrationHistoryRepository.save(
           MigrationHistory(
@@ -317,8 +316,8 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = SENTENCING_ADJUSTMENTS
-          )
+            migrationType = SENTENCING_ADJUSTMENTS,
+          ),
         )
       }
     }
@@ -436,7 +435,6 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
   inner class Get {
     @BeforeEach
     internal fun createHistoryRecords() {
-
       runBlocking {
         migrationHistoryRepository.deleteAll()
         migrationHistoryRepository.save(
@@ -449,8 +447,8 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = SENTENCING_ADJUSTMENTS
-          )
+            migrationType = SENTENCING_ADJUSTMENTS,
+          ),
         )
       }
     }
@@ -547,8 +545,8 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
               "fromDate": "2020-01-01",
               "toDate": "2020-01-02"
             }
-            """.trimIndent()
-          )
+            """.trimIndent(),
+          ),
         )
         .exchange()
         .expectStatus().isAccepted
@@ -588,5 +586,5 @@ fun someMigrationFilter(): BodyInserter<String, ReactiveHttpOutputMessage> = Bod
   """
   {
   }
-  """.trimIndent()
+  """.trimIndent(),
 )

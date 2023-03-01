@@ -41,12 +41,12 @@ internal class VisitMappingServiceTest {
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
-            .withBody("""{"message":"Not found"}""")
-        )
+            .withBody("""{"message":"Not found"}"""),
+        ),
       )
 
       assertThat(
-        runBlocking { visitMappingService.findNomisVisitMapping(1234) }
+        runBlocking { visitMappingService.findNomisVisitMapping(1234) },
       ).isNull()
     }
 
@@ -65,9 +65,9 @@ internal class VisitMappingServiceTest {
                 "label": "2020-01-01T00:00:00",
                 "mappingType": "MIGRATED"
               }
-              """.trimIndent()
-            )
-        )
+              """.trimIndent(),
+            ),
+        ),
       )
 
       val mapping = visitMappingService.findNomisVisitMapping(1234)
@@ -85,8 +85,8 @@ internal class VisitMappingServiceTest {
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
-            .withBody("""{"message":"Tea"}""")
-        )
+            .withBody("""{"message":"Tea"}"""),
+        ),
       )
 
       assertThatThrownBy {
@@ -106,8 +106,8 @@ internal class VisitMappingServiceTest {
         post(urlEqualTo("/mapping/visits")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.CREATED.value())
-        )
+            .withStatus(HttpStatus.CREATED.value()),
+        ),
       )
     }
 
@@ -126,9 +126,9 @@ internal class VisitMappingServiceTest {
               "label": "2020-01-01T00:00:00",
               "mappingType": "MIGRATED"
             }
-              """.trimIndent()
-            )
-          )
+              """.trimIndent(),
+            ),
+          ),
       )
     }
   }
@@ -144,8 +144,8 @@ internal class VisitMappingServiceTest {
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
-            .withBody("""{"message":"Not found"}""")
-        )
+            .withBody("""{"message":"Not found"}"""),
+        ),
       )
 
       assertThat(visitMappingService.findRoomMapping("HB7SOC", "HEI")).isNull()
@@ -164,9 +164,9 @@ internal class VisitMappingServiceTest {
                 "vsipId": "1234",
                 "isOpen": true
               }
-              """.trimIndent()
-            )
-        )
+              """.trimIndent(),
+            ),
+        ),
       )
 
       val mapping = visitMappingService.findRoomMapping("HB7SOC", "HEI")
@@ -182,8 +182,8 @@ internal class VisitMappingServiceTest {
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
-            .withBody("""{"message":"Tea"}""")
-        )
+            .withBody("""{"message":"Tea"}"""),
+        ),
       )
 
       assertThatThrownBy {
@@ -208,9 +208,9 @@ internal class VisitMappingServiceTest {
 
       mappingApi.verify(
         getRequestedFor(
-          urlPathEqualTo("/mapping/visits/migrated/latest")
+          urlPathEqualTo("/mapping/visits/migrated/latest"),
         )
-          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE"))
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
       )
     }
 
@@ -221,8 +221,8 @@ internal class VisitMappingServiceTest {
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
-            .withBody("""{"message":"Not found"}""")
-        )
+            .withBody("""{"message":"Not found"}"""),
+        ),
       )
 
       assertThat(visitMappingService.findLatestMigration()).isNull()
@@ -243,9 +243,9 @@ internal class VisitMappingServiceTest {
     "mappingType": "MIGRATED",
     "whenCreated": "2022-02-16T16:21:15.589091"
 }              
-              """
-            )
-        )
+              """,
+            ),
+        ),
       )
 
       val mapping = visitMappingService.findLatestMigration()
@@ -260,8 +260,8 @@ internal class VisitMappingServiceTest {
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
-            .withBody("""{"message":"Tea"}""")
-        )
+            .withBody("""{"message":"Tea"}"""),
+        ),
       )
 
       assertThatThrownBy {
@@ -286,9 +286,9 @@ internal class VisitMappingServiceTest {
 
       mappingApi.verify(
         getRequestedFor(
-          urlPathMatching("/mapping/visits/migration-id/.*")
+          urlPathMatching("/mapping/visits/migration-id/.*"),
         )
-          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE"))
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
       )
     }
 
@@ -299,8 +299,8 @@ internal class VisitMappingServiceTest {
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
-            .withBody("""{"message":"Not found"}""")
-        )
+            .withBody("""{"message":"Not found"}"""),
+        ),
       )
 
       assertThatThrownBy {
@@ -314,7 +314,7 @@ internal class VisitMappingServiceTest {
     internal fun `will return the mapping when found`(): Unit = runBlocking {
       mappingApi.stubVisitMappingByMigrationId(
         whenCreated = "2020-01-01T11:10:00",
-        count = 56_766
+        count = 56_766,
       )
 
       val mapping = visitMappingService.getMigrationDetails("2020-01-01T10:00:00")
@@ -330,8 +330,8 @@ internal class VisitMappingServiceTest {
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
-            .withBody("""{"message":"Tea"}""")
-        )
+            .withBody("""{"message":"Tea"}"""),
+        ),
       )
 
       assertThatThrownBy {
@@ -356,9 +356,9 @@ internal class VisitMappingServiceTest {
 
       mappingApi.verify(
         getRequestedFor(
-          urlPathMatching("/mapping/visits/migration-id/.*")
+          urlPathMatching("/mapping/visits/migration-id/.*"),
         )
-          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE"))
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
       )
     }
 
@@ -369,8 +369,8 @@ internal class VisitMappingServiceTest {
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
-            .withBody("""{"message":"Not found"}""")
-        )
+            .withBody("""{"message":"Not found"}"""),
+        ),
       )
 
       assertThat(visitMappingService.getMigrationCount("2020-01-01T10:00:00")).isEqualTo(0)
@@ -380,7 +380,7 @@ internal class VisitMappingServiceTest {
     internal fun `will return the mapping count when found`(): Unit = runBlocking {
       mappingApi.stubVisitMappingByMigrationId(
         whenCreated = "2020-01-01T11:10:00",
-        count = 56_766
+        count = 56_766,
       )
 
       assertThat(visitMappingService.getMigrationCount("2020-01-01T10:00:00")).isEqualTo(56_766)
@@ -393,8 +393,8 @@ internal class VisitMappingServiceTest {
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
-            .withBody("""{"message":"Tea"}""")
-        )
+            .withBody("""{"message":"Tea"}"""),
+        ),
       )
 
       assertThatThrownBy {

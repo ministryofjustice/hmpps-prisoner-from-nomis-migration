@@ -29,8 +29,8 @@ class MigrationHistoryService(
         migrationId = migrationId,
         migrationType = migrationType,
         estimatedRecordCount = estimatedRecordCount,
-        filter = filter?.let { objectMapper.writeValueAsString(it) }
-      )
+        filter = filter?.let { objectMapper.writeValueAsString(it) },
+      ),
     )
   }.onFailure { log.error("Unable to record migration started record", it) }
 
@@ -42,8 +42,8 @@ class MigrationHistoryService(
             whenEnded = LocalDateTime.now(),
             recordsFailed = recordsFailed,
             recordsMigrated = recordsMigrated,
-            status = MigrationStatus.COMPLETED
-          )
+            status = MigrationStatus.COMPLETED,
+          ),
         )
       }
     }.onFailure { log.error("Unable to record migration stopped record", it) }
@@ -56,8 +56,8 @@ class MigrationHistoryService(
             whenEnded = LocalDateTime.now(),
             recordsFailed = recordsFailed,
             recordsMigrated = recordsMigrated,
-            status = MigrationStatus.CANCELLED
-          )
+            status = MigrationStatus.CANCELLED,
+          ),
         )
       }
     }.onFailure { log.error("Unable to record migration stopped cancelled", it) }
@@ -67,8 +67,8 @@ class MigrationHistoryService(
       migrationHistoryRepository.findById(migrationId)?.run {
         migrationHistoryRepository.save(
           this.copy(
-            status = CANCELLED_REQUESTED
-          )
+            status = CANCELLED_REQUESTED,
+          ),
         )
       }
     }.onFailure { log.error("Unable to record migration cancelled requested", it) }

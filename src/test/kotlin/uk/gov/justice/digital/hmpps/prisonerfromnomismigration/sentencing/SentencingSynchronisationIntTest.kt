@@ -65,7 +65,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               bookingId = BOOKING_ID,
               sentenceSeq = SENTENCE_SEQUENCE,
               offenderIdDisplay = OFFENDER_NUMBER,
-            )
+            ),
           )
         }
 
@@ -88,7 +88,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
           mappingApi.verify(
             exactly(0),
-            getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID"))
+            getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID")),
           )
           nomisApi.verify(exactly(0), getRequestedFor(urlPathEqualTo("/sentence-adjustments/$NOMIS_ADJUSTMENT_ID")))
           sentencingApi.verify(exactly(0), postRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments")))
@@ -112,7 +112,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               bookingId = BOOKING_ID,
               sentenceSeq = SENTENCE_SEQUENCE,
               offenderIdDisplay = OFFENDER_NUMBER,
-            )
+            ),
           )
         }
 
@@ -144,7 +144,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               postRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments"))
                 .withRequestBody(matchingJsonPath("nomisAdjustmentId", equalTo(NOMIS_ADJUSTMENT_ID.toString())))
                 .withRequestBody(matchingJsonPath("nomisAdjustmentCategory", equalTo("SENTENCE")))
-                .withRequestBody(matchingJsonPath("adjustmentId", equalTo(ADJUSTMENT_ID)))
+                .withRequestBody(matchingJsonPath("adjustmentId", equalTo(ADJUSTMENT_ID))),
             )
           }
         }
@@ -187,7 +187,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 bookingId = BOOKING_ID,
                 sentenceSeq = SENTENCE_SEQUENCE,
                 offenderIdDisplay = OFFENDER_NUMBER,
-              )
+              ),
             )
           }
 
@@ -199,13 +199,13 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 postRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments"))
                   .withRequestBody(matchingJsonPath("nomisAdjustmentId", equalTo(NOMIS_ADJUSTMENT_ID.toString())))
                   .withRequestBody(matchingJsonPath("nomisAdjustmentCategory", equalTo("SENTENCE")))
-                  .withRequestBody(matchingJsonPath("adjustmentId", equalTo(ADJUSTMENT_ID)))
+                  .withRequestBody(matchingJsonPath("adjustmentId", equalTo(ADJUSTMENT_ID))),
               )
             }
 
             sentencingApi.verify(
               exactly(1),
-              postRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments"))
+              postRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments")),
             )
           }
 
@@ -261,7 +261,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 bookingId = BOOKING_ID,
                 sentenceSeq = SENTENCE_SEQUENCE,
                 offenderIdDisplay = OFFENDER_NUMBER,
-              )
+              ),
             )
           }
 
@@ -273,13 +273,13 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 postRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments"))
                   .withRequestBody(matchingJsonPath("nomisAdjustmentId", equalTo(NOMIS_ADJUSTMENT_ID.toString())))
                   .withRequestBody(matchingJsonPath("nomisAdjustmentCategory", equalTo("SENTENCE")))
-                  .withRequestBody(matchingJsonPath("adjustmentId", equalTo(ADJUSTMENT_ID)))
+                  .withRequestBody(matchingJsonPath("adjustmentId", equalTo(ADJUSTMENT_ID))),
               )
             }
 
             sentencingApi.verify(
               exactly(1),
-              postRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments"))
+              postRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments")),
             )
           }
 
@@ -319,7 +319,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @Test
       internal fun `it will not retry after a 409 (duplicate adjustment written to Sentencing API)`() {
-
         nomisApi.stubGetSentenceAdjustment(adjustmentId = NOMIS_ADJUSTMENT_ID)
         sentencingApi.stubCreateSentencingAdjustmentForSynchronisation(sentenceAdjustmentId = ADJUSTMENT_ID)
         mappingApi.stubSentenceAdjustmentMappingCreateConflict(duplicateAdjustmentId = ADJUSTMENT_ID, nomisAdjustmentId = NOMIS_ADJUSTMENT_ID)
@@ -333,7 +332,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             bookingId = BOOKING_ID,
             sentenceSeq = SENTENCE_SEQUENCE,
             offenderIdDisplay = OFFENDER_NUMBER,
-          )
+          ),
         )
 
         // wait for all mappings to be created before verifying
@@ -356,7 +355,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             assertThat(it["existingNomisAdjustmentCategory"]).isEqualTo("SENTENCE")
             assertThat(it["duplicateNomisAdjustmentCategory"]).isEqualTo("SENTENCE")
           },
-          isNull()
+          isNull(),
         )
       }
     }
@@ -386,7 +385,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               bookingId = BOOKING_ID,
               sentenceSeq = SENTENCE_SEQUENCE,
               offenderIdDisplay = OFFENDER_NUMBER,
-            )
+            ),
           )
         }
 
@@ -409,12 +408,12 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
           mappingApi.verify(
             exactly(0),
-            getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID"))
+            getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID")),
           )
           nomisApi.verify(exactly(0), getRequestedFor(urlPathEqualTo("/sentence-adjustments/$NOMIS_ADJUSTMENT_ID")))
           sentencingApi.verify(
             exactly(0),
-            putRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID"))
+            putRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID")),
           )
         }
       }
@@ -435,7 +434,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               bookingId = BOOKING_ID,
               sentenceSeq = SENTENCE_SEQUENCE,
               offenderIdDisplay = OFFENDER_NUMBER,
-            )
+            ),
           )
         }
 
@@ -496,7 +495,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             bookingId = BOOKING_ID,
             sentenceSeq = SENTENCE_SEQUENCE,
             offenderIdDisplay = OFFENDER_NUMBER,
-          )
+          ),
         )
       }
 
@@ -545,7 +544,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             bookingId = BOOKING_ID,
             sentenceSeq = SENTENCE_SEQUENCE,
             offenderIdDisplay = OFFENDER_NUMBER,
-          )
+          ),
         )
       }
 
@@ -568,15 +567,15 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
         mappingApi.verify(
           exactly(0),
-          getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID"))
+          getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID")),
         )
         sentencingApi.verify(
           exactly(0),
-          deleteRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID"))
+          deleteRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID")),
         )
         mappingApi.verify(
           exactly(0),
-          deleteRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID"))
+          deleteRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID")),
         )
       }
     }
@@ -596,7 +595,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             bookingId = BOOKING_ID,
             sentenceSeq = SENTENCE_SEQUENCE,
             offenderIdDisplay = OFFENDER_NUMBER,
-          )
+          ),
         )
       }
 
@@ -626,11 +625,11 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
         sentencingApi.verify(
           exactly(0),
-          deleteRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID"))
+          deleteRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID")),
         )
         mappingApi.verify(
           exactly(0),
-          deleteRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID"))
+          deleteRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID")),
         )
       }
     }
@@ -656,7 +655,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             bookingId = BOOKING_ID,
             sentenceSeq = SENTENCE_SEQUENCE,
             offenderIdDisplay = OFFENDER_NUMBER,
-          )
+          ),
         )
       }
 
@@ -724,7 +723,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               adjustmentId = NOMIS_ADJUSTMENT_ID,
               bookingId = BOOKING_ID,
               offenderIdDisplay = OFFENDER_NUMBER,
-            )
+            ),
           )
         }
 
@@ -746,7 +745,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
           mappingApi.verify(
             exactly(0),
-            getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID"))
+            getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID")),
           )
           nomisApi.verify(exactly(0), getRequestedFor(urlPathEqualTo("/sentence-adjustments/$NOMIS_ADJUSTMENT_ID")))
           sentencingApi.verify(exactly(0), postRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments")))
@@ -769,7 +768,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               adjustmentId = NOMIS_ADJUSTMENT_ID,
               bookingId = BOOKING_ID,
               offenderIdDisplay = OFFENDER_NUMBER,
-            )
+            ),
           )
         }
 
@@ -801,7 +800,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               postRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments"))
                 .withRequestBody(matchingJsonPath("nomisAdjustmentId", equalTo(NOMIS_ADJUSTMENT_ID.toString())))
                 .withRequestBody(matchingJsonPath("nomisAdjustmentCategory", equalTo("KEY-DATE")))
-                .withRequestBody(matchingJsonPath("adjustmentId", equalTo(ADJUSTMENT_ID)))
+                .withRequestBody(matchingJsonPath("adjustmentId", equalTo(ADJUSTMENT_ID))),
             )
           }
         }
@@ -842,7 +841,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 adjustmentId = NOMIS_ADJUSTMENT_ID,
                 bookingId = BOOKING_ID,
                 offenderIdDisplay = OFFENDER_NUMBER,
-              )
+              ),
             )
           }
 
@@ -854,13 +853,13 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 postRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments"))
                   .withRequestBody(matchingJsonPath("nomisAdjustmentId", equalTo(NOMIS_ADJUSTMENT_ID.toString())))
                   .withRequestBody(matchingJsonPath("nomisAdjustmentCategory", equalTo("KEY-DATE")))
-                  .withRequestBody(matchingJsonPath("adjustmentId", equalTo(ADJUSTMENT_ID)))
+                  .withRequestBody(matchingJsonPath("adjustmentId", equalTo(ADJUSTMENT_ID))),
               )
             }
 
             sentencingApi.verify(
               exactly(1),
-              postRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments"))
+              postRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments")),
             )
           }
 
@@ -913,7 +912,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 adjustmentId = NOMIS_ADJUSTMENT_ID,
                 bookingId = BOOKING_ID,
                 offenderIdDisplay = OFFENDER_NUMBER,
-              )
+              ),
             )
           }
 
@@ -925,13 +924,13 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 postRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments"))
                   .withRequestBody(matchingJsonPath("nomisAdjustmentId", equalTo(NOMIS_ADJUSTMENT_ID.toString())))
                   .withRequestBody(matchingJsonPath("nomisAdjustmentCategory", equalTo("KEY-DATE")))
-                  .withRequestBody(matchingJsonPath("adjustmentId", equalTo(ADJUSTMENT_ID)))
+                  .withRequestBody(matchingJsonPath("adjustmentId", equalTo(ADJUSTMENT_ID))),
               )
             }
 
             sentencingApi.verify(
               exactly(1),
-              postRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments"))
+              postRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments")),
             )
           }
 
@@ -989,7 +988,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               adjustmentId = NOMIS_ADJUSTMENT_ID,
               bookingId = BOOKING_ID,
               offenderIdDisplay = OFFENDER_NUMBER,
-            )
+            ),
           )
         }
 
@@ -1011,12 +1010,12 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
           mappingApi.verify(
             exactly(0),
-            getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID"))
+            getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID")),
           )
           nomisApi.verify(exactly(0), getRequestedFor(urlPathEqualTo("/key-date-adjustments/$NOMIS_ADJUSTMENT_ID")))
           sentencingApi.verify(
             exactly(0),
-            putRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID"))
+            putRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID")),
           )
         }
       }
@@ -1036,7 +1035,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               adjustmentId = NOMIS_ADJUSTMENT_ID,
               bookingId = BOOKING_ID,
               offenderIdDisplay = OFFENDER_NUMBER,
-            )
+            ),
           )
         }
 
@@ -1096,7 +1095,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             adjustmentId = NOMIS_ADJUSTMENT_ID,
             bookingId = BOOKING_ID,
             offenderIdDisplay = OFFENDER_NUMBER,
-          )
+          ),
         )
       }
 
@@ -1118,15 +1117,15 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
         mappingApi.verify(
           exactly(0),
-          getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID"))
+          getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID")),
         )
         sentencingApi.verify(
           exactly(0),
-          deleteRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID"))
+          deleteRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID")),
         )
         mappingApi.verify(
           exactly(0),
-          deleteRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID"))
+          deleteRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID")),
         )
       }
     }
@@ -1145,7 +1144,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             adjustmentId = NOMIS_ADJUSTMENT_ID,
             bookingId = BOOKING_ID,
             offenderIdDisplay = OFFENDER_NUMBER,
-          )
+          ),
         )
       }
 
@@ -1174,11 +1173,11 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
         sentencingApi.verify(
           exactly(0),
-          deleteRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID"))
+          deleteRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID")),
         )
         mappingApi.verify(
           exactly(0),
-          deleteRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID"))
+          deleteRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID")),
         )
       }
     }
@@ -1203,7 +1202,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             adjustmentId = NOMIS_ADJUSTMENT_ID,
             bookingId = BOOKING_ID,
             offenderIdDisplay = OFFENDER_NUMBER,
-          )
+          ),
         )
       }
 
@@ -1254,7 +1253,7 @@ fun sentencingEvent(
   bookingId: Long = BOOKING_ID,
   sentenceSeq: Long? = null,
   adjustmentId: Long = NOMIS_ADJUSTMENT_ID,
-  auditModuleName: String = "OIDSENAD"
+  auditModuleName: String = "OIDSENAD",
 ) = """{
     "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
     "Message": "{\"eventId\":\"5958295\",\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"offenderIdDisplay\":\"$offenderIdDisplay\",\"bookingId\": \"$bookingId\",${sentenceSeq.asJson()}\"nomisEventType\":\"WHATEVER\",\"adjustmentId\":\"$adjustmentId\",\"auditModuleName\":\"$auditModuleName\" }",

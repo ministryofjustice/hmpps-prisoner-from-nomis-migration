@@ -30,7 +30,7 @@ import java.time.LocalDateTime
 @RequestMapping("/migrate", produces = [MediaType.APPLICATION_JSON_VALUE])
 class VisitMigrationResource(
   private val visitsMigrationService: VisitsMigrationService,
-  private val migrationHistoryService: MigrationHistoryService
+  private val migrationHistoryService: MigrationHistoryService,
 ) {
   @PreAuthorize("hasRole('ROLE_MIGRATE_VISITS')")
   @PostMapping("/visits")
@@ -42,9 +42,9 @@ class VisitMigrationResource(
       content = [
         Content(
           mediaType = "application/json",
-          schema = Schema(implementation = VisitsMigrationFilter::class)
-        )
-      ]
+          schema = Schema(implementation = VisitsMigrationFilter::class),
+        ),
+      ],
     ),
     responses = [
       ApiResponse(
@@ -54,16 +54,19 @@ class VisitMigrationResource(
       ApiResponse(
         responseCode = "401",
         description = "Unauthorized to access this endpoint",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
       ),
       ApiResponse(
         responseCode = "403",
         description = "Incorrect permissions to start migration",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
-      )
-    ]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+    ],
   )
-  suspend fun migrateVisits(@RequestBody @Valid migrationFilter: VisitsMigrationFilter) =
+  suspend fun migrateVisits(
+    @RequestBody @Valid
+    migrationFilter: VisitsMigrationFilter,
+  ) =
     visitsMigrationService.migrateVisits(migrationFilter)
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_VISITS')")
@@ -78,21 +81,21 @@ class VisitMigrationResource(
         content = [
           Content(
             mediaType = "application/json",
-            array = ArraySchema(schema = Schema(implementation = MigrationHistory::class))
-          )
+            array = ArraySchema(schema = Schema(implementation = MigrationHistory::class)),
+          ),
         ],
       ),
       ApiResponse(
         responseCode = "401",
         description = "Unauthorized to access this endpoint",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
       ),
       ApiResponse(
         responseCode = "403",
         description = "Incorrect permissions to access this endpoint",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
-      )
-    ]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+    ],
   )
   suspend fun getAll(
     @Parameter(
@@ -100,14 +103,16 @@ class VisitMigrationResource(
       example = "2020-03-23T12:00:00",
     )
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-    @RequestParam fromDateTime: LocalDateTime? = null,
+    @RequestParam
+    fromDateTime: LocalDateTime? = null,
 
     @Parameter(
       description = "Only include migrations started before this date time",
       example = "2020-03-24T12:00:00",
     )
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-    @RequestParam toDateTime: LocalDateTime? = null,
+    @RequestParam
+    toDateTime: LocalDateTime? = null,
 
     @Parameter(
       description = "When true only include migrations that had at least one failure",
@@ -124,8 +129,8 @@ class VisitMigrationResource(
       fromDateTime = fromDateTime,
       toDateTime = toDateTime,
       includeOnlyFailures = includeOnlyFailures,
-      filterContains = prisonId?.let { """"prisonIds":["$it"]""" }
-    )
+      filterContains = prisonId?.let { """"prisonIds":["$it"]""" },
+    ),
   )
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_VISITS')")
@@ -140,31 +145,31 @@ class VisitMigrationResource(
         content = [
           Content(
             mediaType = "application/json",
-            schema = Schema(implementation = MigrationHistory::class)
-          )
-        ]
+            schema = Schema(implementation = MigrationHistory::class),
+          ),
+        ],
       ),
       ApiResponse(
         responseCode = "401",
         description = "Unauthorized to access this endpoint",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
       ),
       ApiResponse(
         responseCode = "403",
         description = "Incorrect permissions to access this endpoint",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
       ),
       ApiResponse(
         responseCode = "404",
         description = "Migration not found",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
-      )
-    ]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+    ],
   )
   suspend fun get(
     @PathVariable
     @Schema(description = "Migration Id", example = "2020-03-24T12:00:00", required = true)
-    migrationId: String
+    migrationId: String,
   ) = migrationHistoryService.get(migrationId)
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_VISITS')")
@@ -175,43 +180,47 @@ class VisitMigrationResource(
     responses = [
       ApiResponse(
         responseCode = "200",
-        description = "list of visit room and count is returned"
+        description = "list of visit room and count is returned",
       ),
       ApiResponse(
         responseCode = "401",
         description = "Unauthorized to access this endpoint",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
       ),
       ApiResponse(
         responseCode = "403",
         description = "Incorrect permissions to start migration",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
-      )
-    ]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+    ],
   )
   suspend fun getVisitRoomUsageDetailsByFilter(
     @RequestParam(value = "prisonIds", required = false)
     @Parameter(
       description = "Filter results by prison ids (returns all prisons if not specified)",
-      example = "['MDI','LEI']"
-    ) prisonIds: List<String>?,
+      example = "['MDI','LEI']",
+    )
+    prisonIds: List<String>?,
     @RequestParam(value = "visitTypes", required = false)
     @Parameter(
       description = "Filter results by visitType (returns all types if not specified)",
-      example = "['SCON','OFFI']"
-    ) visitTypes: List<String>?,
+      example = "['SCON','OFFI']",
+    )
+    visitTypes: List<String>?,
     @RequestParam(value = "fromDateTime", required = false)
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     @Parameter(
       description = "Filter results by visits that start on or after the given timestamp",
-      example = "2021-11-03T09:00:00"
-    ) fromDateTime: LocalDateTime?,
+      example = "2021-11-03T09:00:00",
+    )
+    fromDateTime: LocalDateTime?,
     @RequestParam(value = "toDateTime", required = false)
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     @Parameter(
       description = "Filter results by visits that start on or before the given timestamp",
-      example = "2021-11-03T09:00:00"
-    ) toDateTime: LocalDateTime?
+      example = "2021-11-03T09:00:00",
+    )
+    toDateTime: LocalDateTime?,
   ): List<VisitRoomUsageResponse> =
     visitsMigrationService.findRoomUsageByFilter(
       VisitsMigrationFilter(
@@ -219,8 +228,8 @@ class VisitMigrationResource(
         prisonIds = prisonIds ?: listOf(),
         toDateTime = toDateTime,
         fromDateTime = fromDateTime,
-        ignoreMissingRoom = false // not used
-      )
+        ignoreMissingRoom = false, // not used
+      ),
     )
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_VISITS')")
@@ -237,23 +246,23 @@ class VisitMigrationResource(
       ApiResponse(
         responseCode = "401",
         description = "Unauthorized to access this endpoint",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
       ),
       ApiResponse(
         responseCode = "403",
         description = "Incorrect permissions to access this endpoint",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
       ),
       ApiResponse(
         responseCode = "404",
         description = "No running migration found with migration id",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
-      )
-    ]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+    ],
   )
   suspend fun cancel(
     @PathVariable
     @Schema(description = "Migration Id", example = "2020-03-24T12:00:00", required = true)
-    migrationId: String
+    migrationId: String,
   ) = visitsMigrationService.cancel(migrationId)
 }

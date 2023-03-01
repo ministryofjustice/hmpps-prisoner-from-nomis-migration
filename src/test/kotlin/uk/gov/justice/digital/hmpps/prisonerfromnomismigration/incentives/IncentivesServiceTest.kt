@@ -40,8 +40,8 @@ internal class IncentivesServiceTest {
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.CREATED.value())
-            .withBody("""{"id": 654321}""")
-        )
+            .withBody("""{"id": 654321}"""),
+        ),
       )
     }
 
@@ -57,12 +57,12 @@ internal class IncentivesServiceTest {
           current = true,
           reviewType = REVIEW,
         ),
-        12345
+        12345,
       )
 
       incentivesApi.verify(
         postRequestedFor(urlEqualTo("/iep/migration/booking/12345"))
-          .withHeader("Authorization", equalTo("Bearer ABCDE"))
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
@@ -78,7 +78,7 @@ internal class IncentivesServiceTest {
           current = true,
           reviewType = MIGRATED,
         ),
-        12345
+        12345,
       )
 
       incentivesApi.verify(
@@ -95,9 +95,9 @@ internal class IncentivesServiceTest {
           "current": true,
           "reviewType": "MIGRATED"
             }
-              """.trimIndent()
-            )
-          )
+              """.trimIndent(),
+            ),
+          ),
       )
     }
 
@@ -113,7 +113,7 @@ internal class IncentivesServiceTest {
           current = true,
           reviewType = REVIEW,
         ),
-        12345
+        12345,
       )
 
       assertThat(incentive.id).isEqualTo(654321)
@@ -129,8 +129,8 @@ internal class IncentivesServiceTest {
         delete(urlMatching("/iep/sync/booking/\\d*/id/\\d*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.OK.value())
-        )
+            .withStatus(HttpStatus.OK.value()),
+        ),
       )
     }
 
@@ -142,7 +142,7 @@ internal class IncentivesServiceTest {
 
       incentivesApi.verify(
         deleteRequestedFor(urlEqualTo("/iep/sync/booking/1234/id/9876"))
-          .withHeader("Authorization", equalTo("Bearer ABCDE"))
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
   }

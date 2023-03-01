@@ -44,8 +44,8 @@ class VisitsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody(if (status == 200) "pong" else "some error")
-          .withStatus(status)
-      )
+          .withStatus(status),
+      ),
     )
   }
 
@@ -55,8 +55,8 @@ class VisitsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.CREATED.value())
-          .withBody("654321")
-      )
+          .withBody("654321"),
+      ),
     )
   }
 
@@ -65,8 +65,8 @@ class VisitsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       put(urlEqualTo("/visits/$vsipReference/cancel")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-      )
+          .withStatus(HttpStatus.OK.value()),
+      ),
     )
   }
 
@@ -74,8 +74,8 @@ class VisitsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     NomisApiExtension.nomisApi.verify(
       times,
       WireMock.getRequestedFor(
-        WireMock.urlPathEqualTo("/visits/.*/cancel")
-      )
+        WireMock.urlPathEqualTo("/visits/.*/cancel"),
+      ),
     )
   }
 

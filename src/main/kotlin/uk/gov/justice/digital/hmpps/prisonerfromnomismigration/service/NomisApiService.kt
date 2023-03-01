@@ -65,7 +65,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       .awaitSingle()!!
 
   suspend fun getRoomUsage(
-    filter: VisitsMigrationFilter
+    filter: VisitsMigrationFilter,
   ): List<VisitRoomUsageResponse> =
     webClient.get()
       .uri {
@@ -84,7 +84,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     fromDate: LocalDate?,
     toDate: LocalDate?,
     pageNumber: Long,
-    pageSize: Long
+    pageSize: Long,
   ): PageImpl<IncentiveId> =
     webClient.get()
       .uri {
@@ -101,7 +101,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
 
   suspend fun getIncentive(
     bookingId: Long,
-    sequence: Long
+    sequence: Long,
   ): NomisIncentive =
     webClient.get()
       .uri("/incentives/booking-id/{bookingId}/incentive-sequence/{sequence}", bookingId, sequence)
@@ -121,7 +121,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     fromDate: LocalDate?,
     toDate: LocalDate?,
     pageNumber: Long,
-    pageSize: Long
+    pageSize: Long,
   ): PageImpl<NomisAdjustmentId> =
     webClient.get()
       .uri {
@@ -163,7 +163,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
 }
 
 data class VisitId(
-  val visitId: Long
+  val visitId: Long,
 )
 
 data class IncentiveId(
@@ -177,7 +177,7 @@ data class NomisAdjustmentId(
 )
 
 data class NomisVisitor(
-  val personId: Long
+  val personId: Long,
 )
 
 data class NomisLeadVisitor(
@@ -205,7 +205,7 @@ data class NomisVisit(
   val leadVisitor: NomisLeadVisitor? = null,
   val modifyUserId: String? = null,
   val whenCreated: LocalDateTime,
-  val whenUpdated: LocalDateTime? = null
+  val whenUpdated: LocalDateTime? = null,
 )
 
 data class NomisIncentive(
@@ -219,7 +219,7 @@ data class NomisIncentive(
   val offenderNo: String,
   val currentIep: Boolean,
   val whenCreated: LocalDateTime,
-  val whenUpdated: LocalDateTime? = null
+  val whenUpdated: LocalDateTime? = null,
 ) {
   fun toIncentive(reviewType: ReviewType): CreateIncentiveIEP = CreateIncentiveIEP(
     iepLevel = iepLevel.code,
@@ -244,8 +244,9 @@ data class NomisIncentive(
   private fun getTransformedIncentiveDateTime(): LocalDateTime =
     if (iepDateTime.minute != whenCreated.minute) {
       iepDateTime.withSecond(59)
-    } else
+    } else {
       iepDateTime.withSecond(whenCreated.second)
+    }
 }
 
 data class NomisAdjustment(
@@ -269,19 +270,23 @@ data class NomisAdjustment(
     adjustmentFromDate = adjustmentFromDate,
     adjustmentDays = adjustmentDays,
     comment = comment,
-    active = active
+    active = active,
   )
   fun getAdjustmentCategory() = sentenceSequence?.let { "SENTENCE" } ?: "KEY_DATE"
 }
 
-class RestResponsePage<T> @JsonCreator(mode = JsonCreator.Mode.PROPERTIES) constructor(
+class RestResponsePage<T>
+@JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+constructor(
   @JsonProperty("content") content: List<T>,
   @JsonProperty("number") number: Int,
   @JsonProperty("size") size: Int,
   @JsonProperty("totalElements") totalElements: Long,
-  @Suppress("UNUSED_PARAMETER") @JsonProperty(
-    "pageable"
-  ) pageable: JsonNode
+  @Suppress("UNUSED_PARAMETER")
+  @JsonProperty(
+    "pageable",
+  )
+  pageable: JsonNode,
 ) : PageImpl<T>(content, PageRequest.of(number, size), totalElements)
 
 inline fun <reified T> typeReference() = object : ParameterizedTypeReference<T>() {}

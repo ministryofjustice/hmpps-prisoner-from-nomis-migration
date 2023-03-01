@@ -39,7 +39,7 @@ import kotlin.annotation.AnnotationTarget.CLASS
   VisitsApiExtension::class,
   MappingApiExtension::class,
   IncentivesApiExtension::class,
-  SentencingApiExtension::class
+  SentencingApiExtension::class,
 )
 @ActiveProfiles("test")
 @EnableWebFlux

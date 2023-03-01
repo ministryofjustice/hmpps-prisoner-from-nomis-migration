@@ -29,8 +29,8 @@ class IncentiveMappingServiceTest {
         delete(urlPathMatching("/mapping/incentives/incentive-id/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.NO_CONTENT.value())
-        )
+            .withStatus(HttpStatus.NO_CONTENT.value()),
+        ),
       )
 
       runBlocking {
@@ -39,8 +39,8 @@ class IncentiveMappingServiceTest {
 
       mappingApi.verify(
         deleteRequestedFor(
-          urlPathEqualTo("/mapping/incentives/incentive-id/9876")
-        ).withHeader("Authorization", WireMock.equalTo("Bearer ABCDE"))
+          urlPathEqualTo("/mapping/incentives/incentive-id/9876"),
+        ).withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
       )
     }
 
@@ -50,8 +50,8 @@ class IncentiveMappingServiceTest {
         delete(urlPathMatching("/mapping/incentives/incentive-id/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.SERVICE_UNAVAILABLE.value())
-        )
+            .withStatus(HttpStatus.SERVICE_UNAVAILABLE.value()),
+        ),
       )
 
       runBlocking {

@@ -15,12 +15,12 @@ open class LocalMessage<M>(
 
 class MigrationMessage<M, T>(
   type: M,
-  val context: MigrationContext<T>
+  val context: MigrationContext<T>,
 ) : LocalMessage<M>(type)
 
 class SynchronisationMessage<M, T>(
   type: M,
-  val context: SynchronisationContext<T>
+  val context: SynchronisationContext<T>,
 ) : LocalMessage<M>(type)
 
 const val VISITS_QUEUE_ID = "migrationvisits"
@@ -34,11 +34,11 @@ const val SENTENCING_ADJUSTMENTS_SYNC_QUEUE_ID = "eventsentencing"
 enum class MigrationType(val queueId: String) {
   VISITS(VISITS_QUEUE_ID),
   INCENTIVES(INCENTIVES_QUEUE_ID),
-  SENTENCING_ADJUSTMENTS(SENTENCING_ADJUSTMENTS_QUEUE_ID)
+  SENTENCING_ADJUSTMENTS(SENTENCING_ADJUSTMENTS_QUEUE_ID),
 }
 
 enum class SynchronisationType(val queueId: String) {
   VISITS(VISITS_SYNC_QUEUE_ID),
   INCENTIVES(INCENTIVES_SYNC_QUEUE_ID),
-  SENTENCING_ADJUSTMENTS(SENTENCING_ADJUSTMENTS_SYNC_QUEUE_ID)
+  SENTENCING_ADJUSTMENTS(SENTENCING_ADJUSTMENTS_SYNC_QUEUE_ID),
 }

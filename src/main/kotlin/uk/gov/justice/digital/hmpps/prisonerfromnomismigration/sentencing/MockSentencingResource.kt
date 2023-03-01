@@ -29,7 +29,8 @@ class MockSentencingResource {
   @PostMapping("/migration/sentencing/adjustments")
   @Operation(hidden = true)
   suspend fun createAdjustmentForMigration(
-    @RequestBody @Valid adjustmentRequest: MockAdjustmentRequest
+    @RequestBody @Valid
+    adjustmentRequest: MockAdjustmentRequest,
   ): MockCreateAdjustmentResponse {
     val id = Random.nextLong().toString()
     log.info("Created adjustment for migration with id $id for booking ${adjustmentRequest.bookingId}. Request was $adjustmentRequest")
@@ -39,7 +40,8 @@ class MockSentencingResource {
   @PostMapping("/synchronisation/sentencing/adjustments")
   @Operation(hidden = true)
   suspend fun createAdjustmentForSynchronisation(
-    @RequestBody @Valid adjustmentRequest: MockAdjustmentRequest
+    @RequestBody @Valid
+    adjustmentRequest: MockAdjustmentRequest,
   ): MockCreateAdjustmentResponse {
     val id = Random.nextLong().toString()
     log.info("Created adjustment for synchronisation with id $id for booking ${adjustmentRequest.bookingId}. Request was $adjustmentRequest")
@@ -50,7 +52,8 @@ class MockSentencingResource {
   @Operation(hidden = true)
   suspend fun updateAdjustmentForSynchronisation(
     @PathVariable adjustmentId: String,
-    @RequestBody @Valid adjustmentRequest: MockAdjustmentRequest
+    @RequestBody @Valid
+    adjustmentRequest: MockAdjustmentRequest,
   ) {
     log.info("Updated adjustment for synchronisation with id $adjustmentId for booking ${adjustmentRequest.bookingId}. Request was $adjustmentRequest")
   }

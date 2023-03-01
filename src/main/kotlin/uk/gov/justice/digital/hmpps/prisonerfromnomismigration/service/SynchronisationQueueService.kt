@@ -19,19 +19,19 @@ class SynchronisationQueueService(
       ?: throw IllegalStateException("Queue not found for ${synchronisationType.queueId}")
     val sqsMessage = SQSMessage(
       Type = messageType,
-      Message = InternalMessage(message, telemetryAttributes).toJson()
+      Message = InternalMessage(message, telemetryAttributes).toJson(),
     )
 
     queue.sqsClient.sendMessage(
       SendMessageRequest.builder()
         .queueUrl(queue.queueUrl)
         .messageBody(sqsMessage.toJson())
-        .build()
+        .build(),
     ).thenAccept {
       telemetryClient.trackEvent(
         messageType,
         mapOf("messageId" to it.messageId()),
-        null
+        null,
       )
     }
   }

@@ -19,7 +19,7 @@ import java.util.concurrent.CompletableFuture
 class VisitsPrisonOffenderEventListener(
   private val objectMapper: ObjectMapper,
   private val visitSynchronisationService: VisitSynchronisationService,
-  private val eventFeatureSwitch: EventFeatureSwitch
+  private val eventFeatureSwitch: EventFeatureSwitch,
 ) {
 
   private companion object {
@@ -33,17 +33,18 @@ class VisitsPrisonOffenderEventListener(
     val sqsMessage: SQSMessage = objectMapper.readValue(message)
     val eventType = sqsMessage.MessageAttributes!!.eventType.Value
     return CoroutineScope(Dispatchers.Default).future {
-      if (eventFeatureSwitch.isEnabled(eventType)) when (eventType) {
+      if (eventFeatureSwitch.isEnabled(eventType)) {
+        when (eventType) {
+          "VISIT_CANCELLED" -> {
+            val (offenderIdDisplay, visitId, auditModuleName) = objectMapper.readValue<VisitCancelledOffenderEvent>(
+              sqsMessage.Message,
+            )
+            log.debug("received VISIT_CANCELLED Offender event for offenderNo $offenderIdDisplay and visitId $visitId with auditModuleName $auditModuleName")
+            visitSynchronisationService.cancelVisit(objectMapper.readValue(sqsMessage.Message))
+          }
 
-        "VISIT_CANCELLED" -> {
-          val (offenderIdDisplay, visitId, auditModuleName) = objectMapper.readValue<VisitCancelledOffenderEvent>(
-            sqsMessage.Message
-          )
-          log.debug("received VISIT_CANCELLED Offender event for offenderNo $offenderIdDisplay and visitId $visitId with auditModuleName $auditModuleName")
-          visitSynchronisationService.cancelVisit(objectMapper.readValue(sqsMessage.Message))
+          else -> log.info("Received a message I wasn't expecting {}", eventType)
         }
-
-        else -> log.info("Received a message I wasn't expecting {}", eventType)
       } else {
         log.info("Feature switch is disabled for event {}", eventType)
       }

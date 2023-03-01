@@ -50,8 +50,8 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody(if (status == 200) "pong" else "some error")
-          .withStatus(status)
-      )
+          .withStatus(status),
+      ),
     )
   }
 
@@ -61,8 +61,8 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.NOT_FOUND.value())
-          .withBody("""{"message":"Not found"}""")
-      )
+          .withBody("""{"message":"Not found"}"""),
+      ),
     )
   }
 
@@ -70,8 +70,8 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     verify(
       times,
       getRequestedFor(
-        urlPathMatching("/mapping/visits/nomisId/.*")
-      )
+        urlPathMatching("/mapping/visits/nomisId/.*"),
+      ),
     )
   }
 
@@ -87,9 +87,9 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
                 "vsipId": "1234",
                 "isOpen": true
               }
-            """.trimIndent()
-          )
-      )
+            """.trimIndent(),
+          ),
+      ),
     )
   }
 
@@ -105,9 +105,9 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
                 "vsipId": "1234",
                 "isOpen": true
               }
-            """.trimIndent()
-          )
-      )
+            """.trimIndent(),
+          ),
+      ),
     )
   }
 
@@ -116,8 +116,8 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       get(urlPathMatching("/prison/$prisonId/room/nomis-room-id/.+?")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.NOT_FOUND.value())
-      )
+          .withStatus(HttpStatus.NOT_FOUND.value()),
+      ),
     )
   }
 
@@ -126,8 +126,8 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       post(urlEqualTo("/mapping/visits")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.CREATED.value())
-      )
+          .withStatus(HttpStatus.CREATED.value()),
+      ),
     )
   }
 
@@ -139,9 +139,9 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
         .willReturn(
           aResponse()
             .withStatus(500) // request unsuccessful with status code 500
-            .withHeader("Content-Type", "application/json")
+            .withHeader("Content-Type", "application/json"),
         )
-        .willSetStateTo("Cause Visit Success")
+        .willSetStateTo("Cause Visit Success"),
     )
 
     stubFor(
@@ -151,8 +151,8 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.CREATED.value())
-        )
+            .withStatus(HttpStatus.CREATED.value()),
+        ),
     )
   }
 
@@ -199,16 +199,16 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     "numberOfElements": 1,
     "empty": false
 }            
-            """.trimIndent()
-          )
-      )
+            """.trimIndent(),
+          ),
+      ),
     )
   }
 
   fun stubVisitMappingByNomisVisitId(
     whenCreated: String = "2020-01-01T11:10:00",
     nomisVisitId: Long = 191747,
-    vsipId: String = "6c3ce237-f519-400d-85ca-9ba3e23323d8"
+    vsipId: String = "6c3ce237-f519-400d-85ca-9ba3e23323d8",
   ) {
     stubFor(
       get(urlPathMatching("/mapping/visits/nomisId/$nomisVisitId")).willReturn(
@@ -223,9 +223,9 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
             "whenCreated": "$whenCreated",
             "mappingType": "MIGRATED"
         }          
-            """.trimIndent()
-          )
-      )
+            """.trimIndent(),
+          ),
+      ),
     )
   }
 
@@ -272,9 +272,9 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     "numberOfElements": 1,
     "empty": false
 }            
-            """.trimIndent()
-          )
-      )
+            """.trimIndent(),
+          ),
+      ),
     )
   }
 
@@ -292,9 +292,9 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     "mappingType": "MIGRATED",
     "whenCreated": "2022-02-16T16:21:15.589091"
 }              
-              """
-          )
-      )
+              """,
+          ),
+      ),
     )
   }
 
@@ -306,9 +306,9 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       postRequestedFor(urlEqualTo("/mapping/visits")).withRequestBody(
         matchingJsonPath(
           "nomisId",
-          equalTo("$it")
-        )
-      )
+          equalTo("$it"),
+        ),
+      ),
     )
   }
 
@@ -317,15 +317,15 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       post(urlEqualTo("/mapping/incentives")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.CREATED.value())
-      )
+          .withStatus(HttpStatus.CREATED.value()),
+      ),
     )
   }
 
   fun stubIncentiveMappingByNomisIds(nomisBookingId: Long, nomisIncentiveSequence: Long, incentiveId: Long = 3) {
     stubFor(
       get(
-        urlPathEqualTo("/mapping/incentives/nomis-booking-id/$nomisBookingId/nomis-incentive-sequence/$nomisIncentiveSequence")
+        urlPathEqualTo("/mapping/incentives/nomis-booking-id/$nomisBookingId/nomis-incentive-sequence/$nomisIncentiveSequence"),
       )
         .willReturn(
           aResponse()
@@ -340,48 +340,48 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
             "whenCreated": "2022-02-16T16:21:15.589091",
             "mappingType": "MIGRATED"
         }         
-              """.trimIndent()
-            )
-        )
+              """.trimIndent(),
+            ),
+        ),
     )
   }
 
   fun stubDeleteIncentiveMapping(incentiveId: Long) {
     stubFor(
       delete(
-        urlPathEqualTo("/mapping/incentives/incentive-id/$incentiveId")
+        urlPathEqualTo("/mapping/incentives/incentive-id/$incentiveId"),
       )
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.NO_CONTENT.value())
-        )
+            .withStatus(HttpStatus.NO_CONTENT.value()),
+        ),
     )
   }
 
   fun stubNomisIncentiveMappingNotFound(nomisBookingId: Long, nomisIncentiveSequence: Long) {
     stubFor(
       get(
-        urlPathEqualTo("/mapping/incentives/nomis-booking-id/$nomisBookingId/nomis-incentive-sequence/$nomisIncentiveSequence")
+        urlPathEqualTo("/mapping/incentives/nomis-booking-id/$nomisBookingId/nomis-incentive-sequence/$nomisIncentiveSequence"),
       ).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.NOT_FOUND.value())
-          .withBody("""{"message":"Not found"}""")
-      )
+          .withBody("""{"message":"Not found"}"""),
+      ),
     )
   }
 
   fun stubAllNomisIncentiveMappingNotFound() {
     stubFor(
       get(
-        urlPathMatching("/mapping/incentives/nomis-booking-id/\\d*/nomis-incentive-sequence/\\d*")
+        urlPathMatching("/mapping/incentives/nomis-booking-id/\\d*/nomis-incentive-sequence/\\d*"),
       ).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.NOT_FOUND.value())
-          .withBody("""{"message":"Not found"}""")
-      )
+          .withBody("""{"message":"Not found"}"""),
+      ),
     )
   }
 
@@ -393,9 +393,9 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
         .willReturn(
           aResponse()
             .withStatus(500) // request unsuccessful with status code 500
-            .withHeader("Content-Type", "application/json")
+            .withHeader("Content-Type", "application/json"),
         )
-        .willSetStateTo("Cause Incentive Success")
+        .willSetStateTo("Cause Incentive Success"),
     )
 
     stubFor(
@@ -405,9 +405,9 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.CREATED.value())
+            .withStatus(HttpStatus.CREATED.value()),
         )
-        .willSetStateTo(STARTED)
+        .willSetStateTo(STARTED),
     )
   }
 
@@ -420,59 +420,59 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       postRequestedFor(urlPathEqualTo("/mapping/incentives")).withRequestBody(
         matchingJsonPath(
           "incentiveId",
-          equalTo("$it")
-        )
-      )
+          equalTo("$it"),
+        ),
+      ),
     )
   }
 
   fun verifyDeleteIncentiveMapping(incentiveId: Long) {
     verify(
       deleteRequestedFor(
-        urlPathEqualTo("/mapping/incentives/incentive-id/$incentiveId")
-      )
+        urlPathEqualTo("/mapping/incentives/incentive-id/$incentiveId"),
+      ),
     )
   }
 
   fun verifyCreateIncentiveMapping() {
     verify(
       postRequestedFor(
-        urlPathEqualTo("/mapping/incentives")
-      )
+        urlPathEqualTo("/mapping/incentives"),
+      ),
     )
   }
 
   fun stubAllNomisSentencingAdjustmentsMappingNotFound() {
     stubFor(
       get(
-        urlPathMatching("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/\\d*")
+        urlPathMatching("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/\\d*"),
       ).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.NOT_FOUND.value())
-          .withBody("""{"message":"Not found"}""")
-      )
+          .withBody("""{"message":"Not found"}"""),
+      ),
     )
     stubFor(
       get(
-        urlPathMatching("/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id/\\d*")
+        urlPathMatching("/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id/\\d*"),
       ).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.NOT_FOUND.value())
-          .withBody("""{"message":"Not found"}""")
-      )
+          .withBody("""{"message":"Not found"}"""),
+      ),
     )
   }
 
   fun stubGetNomisSentencingAdjustment(
     adjustmentCategory: String = "SENTENCE",
     nomisAdjustmentId: Long = 987L,
-    adjustmentId: String = "567S"
+    adjustmentId: String = "567S",
   ) {
     stubFor(
       get(
-        urlPathMatching("/mapping/sentencing/adjustments/nomis-adjustment-category/$adjustmentCategory/nomis-adjustment-id/$nomisAdjustmentId")
+        urlPathMatching("/mapping/sentencing/adjustments/nomis-adjustment-category/$adjustmentCategory/nomis-adjustment-id/$nomisAdjustmentId"),
       ).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
@@ -487,9 +487,9 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
             "whenCreated": "2022-02-14T09:58:45",
             "mappingType": "MIGRATED"
             }
-            """.trimMargin()
-          )
-      )
+            """.trimMargin(),
+          ),
+      ),
     )
   }
 
@@ -498,8 +498,8 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       post(urlEqualTo("/mapping/sentencing/adjustments")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.CREATED.value())
-      )
+          .withStatus(HttpStatus.CREATED.value()),
+      ),
     )
   }
 
@@ -508,8 +508,8 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       delete(urlEqualTo("/mapping/sentencing/adjustments/adjustment-id/$adjustmentId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.NO_CONTENT.value())
-      )
+          .withStatus(HttpStatus.NO_CONTENT.value()),
+      ),
     )
   }
 
@@ -557,9 +557,9 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     "numberOfElements": 1,
     "empty": false
 }            
-            """.trimIndent()
-          )
-      )
+            """.trimIndent(),
+          ),
+      ),
     )
   }
 
@@ -571,9 +571,9 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
         .willReturn(
           aResponse()
             .withStatus(500) // request unsuccessful with status code 500
-            .withHeader("Content-Type", "application/json")
+            .withHeader("Content-Type", "application/json"),
         )
-        .willSetStateTo("Cause sentence-adjustment Success")
+        .willSetStateTo("Cause sentence-adjustment Success"),
     )
 
     stubFor(
@@ -583,16 +583,16 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.CREATED.value())
+            .withStatus(HttpStatus.CREATED.value()),
         )
-        .willSetStateTo(STARTED)
+        .willSetStateTo(STARTED),
     )
   }
 
   fun stubSentenceAdjustmentMappingCreateConflict(
     existingAdjustmentId: String = "10",
     duplicateAdjustmentId: String = "11",
-    nomisAdjustmentId: Long = 123
+    nomisAdjustmentId: Long = 123,
   ) {
     stubFor(
       post(urlPathEqualTo("/mapping/sentencing/adjustments"))
@@ -621,9 +621,9 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
                   "mappingType": "MIGRATED"
                   }
               }
-              }"""
-            )
-        )
+              }""",
+            ),
+        ),
     )
   }
 
@@ -633,8 +633,8 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
         .willReturn(
           aResponse()
             .withStatus(500)
-            .withHeader("Content-Type", "application/json")
-        )
+            .withHeader("Content-Type", "application/json"),
+        ),
     )
   }
 
@@ -648,9 +648,9 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
         postRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments")).withRequestBody(
           matchingJsonPath(
             "adjustmentId",
-            equalTo(it)
-          )
-        )
+            equalTo(it),
+          ),
+        ),
       )
     }
 }

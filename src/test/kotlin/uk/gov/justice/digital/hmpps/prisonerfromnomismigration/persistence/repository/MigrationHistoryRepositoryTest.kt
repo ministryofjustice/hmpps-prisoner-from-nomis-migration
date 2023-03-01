@@ -38,14 +38,13 @@ class MigrationHistoryRepositoryTest : TestBase() {
 
   @Test
   fun `Can create, get and save a MigrationHistory record`(): Unit = runBlocking {
-
     repository.save(
       MigrationHistory(
         migrationId = "2022-01-23T10:31:45",
         filter = filter,
         migrationType = VISITS,
-        estimatedRecordCount = 123_678
-      )
+        estimatedRecordCount = 123_678,
+      ),
     )
 
     val persistedMigrationHistory = repository.findById("2022-01-23T10:31:45") ?: throw AssertionError()

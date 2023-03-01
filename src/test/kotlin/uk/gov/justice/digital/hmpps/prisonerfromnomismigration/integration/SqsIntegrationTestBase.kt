@@ -86,7 +86,7 @@ class SqsIntegrationTestBase : TestBase() {
       sentencingMigrationQueue,
       visitsOffenderEventsQueue,
       incentivesOffenderEventsQueue,
-      sentencingOffenderEventsQueue
+      sentencingOffenderEventsQueue,
     )
   }
 
@@ -105,7 +105,7 @@ class SqsIntegrationTestBase : TestBase() {
   internal fun setAuthorisation(
     user: String = "ADMIN",
     roles: List<String> = listOf(),
-    scopes: List<String> = listOf()
+    scopes: List<String> = listOf(),
   ): (HttpHeaders) -> Unit = jwtAuthHelper.setAuthorisation(user, roles, scopes)
 
   companion object {

@@ -42,12 +42,12 @@ class MigrationQueueService(
         .queueUrl(queue.queueUrl)
         .messageBody(MigrationMessage(message, context).toJson())
         .delaySeconds(delaySeconds)
-        .build()
+        .build(),
     ).thenAccept {
       telemetryClient.trackEvent(
         message.name,
         mapOf("messageId" to it.messageId(), "migrationId" to context.migrationId),
-        null
+        null,
       )
     }
   }
@@ -59,12 +59,12 @@ class MigrationQueueService(
       SendMessageRequest.builder()
         .queueUrl(queue.queueUrl)
         .messageBody(SynchronisationMessage(message, context).toJson())
-        .build()
+        .build(),
     ).thenAccept {
       telemetryClient.trackEvent(
         message.name,
         mapOf("messageId" to it.messageId()),
-        null
+        null,
       )
     }
   }
@@ -95,8 +95,8 @@ class MigrationQueueService(
         PurgeQueueRequest(
           queueName = queue.queueName,
           sqsClient = queue.sqsClient,
-          queueUrl = queue.queueUrl
-        )
+          queueUrl = queue.queueUrl,
+        ),
       )
     }.onFailure {
       log.debug("Purging queue failed")
@@ -112,10 +112,10 @@ class MigrationQueueService(
       log.debug("Purging $messageCount from queue via delete")
       (0..messageCount).forEach { i ->
         queue.sqsClient.receiveMessage(
-          ReceiveMessageRequest.builder().queueUrl(queue.queueUrl).maxNumberOfMessages(1).build()
+          ReceiveMessageRequest.builder().queueUrl(queue.queueUrl).maxNumberOfMessages(1).build(),
         ).await().messages().firstOrNull()?.also { msg ->
           queue.sqsClient.deleteMessage(
-            DeleteMessageRequest.builder().queueUrl(queue.queueUrl).receiptHandle(msg.receiptHandle()).build()
+            DeleteMessageRequest.builder().queueUrl(queue.queueUrl).receiptHandle(msg.receiptHandle()).build(),
           )
         } ?: run {
           log.debug("No more messages found - processed $i out of $messageCount, so giving up reading more messages")
@@ -146,7 +146,7 @@ class MigrationQueueService(
       log.debug("Purging finished. Will send cancel shutdown messages")
       sendMessage(
         message,
-        migrationContext
+        migrationContext,
       )
     }
   }

@@ -28,8 +28,8 @@ class VisitMappingService(@Qualifier("mappingApiWebClient") private val webClien
           nomisId = nomisVisitId,
           vsipId = vsipVisitId,
           label = migrationId,
-          mappingType = "MIGRATED"
-        )
+          mappingType = "MIGRATED",
+        ),
       )
       .retrieve()
       .bodyToMono(Unit::class.java)

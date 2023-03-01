@@ -12,5 +12,5 @@ class SentencingMigrationProperties(
 ) : MigrationProperties(
   hmppsQueueService,
   sentencingAdjustmentsMappingService,
-  MigrationType.SENTENCING_ADJUSTMENTS
+  MigrationType.SENTENCING_ADJUSTMENTS,
 )

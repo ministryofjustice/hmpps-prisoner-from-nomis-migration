@@ -38,13 +38,13 @@ internal class NomisApiServiceTest {
     internal fun setUp() {
       nomisApi.stubFor(
         get(
-          urlPathEqualTo("/visits/ids")
+          urlPathEqualTo("/visits/ids"),
         ).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpURLConnection.HTTP_OK)
-            .withBody(visitPagedResponse())
-        )
+            .withBody(visitPagedResponse()),
+        ),
       )
     }
 
@@ -58,14 +58,14 @@ internal class NomisApiServiceTest {
           toDateTime = LocalDateTime.parse("2020-01-02T23:30:00"),
           ignoreMissingRoom = false,
           pageNumber = 23,
-          pageSize = 10
+          pageSize = 10,
         )
       }
       nomisApi.verify(
         getRequestedFor(
-          urlPathEqualTo("/visits/ids")
+          urlPathEqualTo("/visits/ids"),
         )
-          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE"))
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
       )
     }
 
@@ -79,13 +79,13 @@ internal class NomisApiServiceTest {
           toDateTime = LocalDateTime.parse("2020-01-02T23:30:00"),
           ignoreMissingRoom = true,
           pageNumber = 23,
-          pageSize = 10
+          pageSize = 10,
         )
       }
       nomisApi.verify(
         getRequestedFor(
-          urlEqualTo("/visits/ids?prisonIds=MDI&prisonIds=BXI&visitTypes=SCON&visitTypes=OFFI&fromDateTime=2020-01-01T01:30&toDateTime=2020-01-02T23:30&ignoreMissingRoom=true&page=23&size=10")
-        )
+          urlEqualTo("/visits/ids?prisonIds=MDI&prisonIds=BXI&visitTypes=SCON&visitTypes=OFFI&fromDateTime=2020-01-01T01:30&toDateTime=2020-01-02T23:30&ignoreMissingRoom=true&page=23&size=10"),
+        ),
       )
     }
 
@@ -99,13 +99,13 @@ internal class NomisApiServiceTest {
           toDateTime = null,
           ignoreMissingRoom = false,
           pageNumber = 23,
-          pageSize = 10
+          pageSize = 10,
         )
       }
       nomisApi.verify(
         getRequestedFor(
-          urlEqualTo("/visits/ids?prisonIds&visitTypes&fromDateTime&toDateTime&ignoreMissingRoom=false&page=23&size=10")
-        )
+          urlEqualTo("/visits/ids?prisonIds&visitTypes&fromDateTime&toDateTime&ignoreMissingRoom=false&page=23&size=10"),
+        ),
       )
     }
 
@@ -113,7 +113,7 @@ internal class NomisApiServiceTest {
     internal fun `will return paging info along with the visit ids`() {
       nomisApi.stubFor(
         get(
-          urlPathEqualTo("/visits/ids")
+          urlPathEqualTo("/visits/ids"),
         ).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -180,9 +180,9 @@ internal class NomisApiServiceTest {
     "empty": false
 }                
       
-    """
-            )
-        )
+    """,
+            ),
+        ),
       )
 
       val visits = runBlocking {
@@ -193,7 +193,7 @@ internal class NomisApiServiceTest {
           ignoreMissingRoom = false,
           toDateTime = LocalDateTime.parse("2020-01-02T23:30:00"),
           pageNumber = 23,
-          pageSize = 10
+          pageSize = 10,
         )
       }
 
@@ -275,7 +275,7 @@ internal class NomisApiServiceTest {
     internal fun setUp() {
       nomisApi.stubFor(
         get(
-          urlPathMatching("/visits/[0-9]+")
+          urlPathMatching("/visits/[0-9]+"),
         ).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -313,9 +313,9 @@ internal class NomisApiServiceTest {
                 "commentText": "Not sure if this is the right place to be",
                 "whenCreated": "2021-10-25T09:00:00"
               }
-              """.trimIndent()
-            )
-        )
+              """.trimIndent(),
+            ),
+        ),
       )
     }
 
@@ -326,9 +326,9 @@ internal class NomisApiServiceTest {
       )
       nomisApi.verify(
         getRequestedFor(
-          urlPathEqualTo("/visits/10309617")
+          urlPathEqualTo("/visits/10309617"),
         )
-          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE"))
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
       )
     }
 
@@ -356,12 +356,12 @@ internal class NomisApiServiceTest {
       internal fun setUp() {
         nomisApi.stubFor(
           get(
-            urlPathMatching("/visits/[0-9]+")
+            urlPathMatching("/visits/[0-9]+"),
           ).willReturn(
             aResponse()
               .withHeader("Content-Type", "application/json")
-              .withStatus(HttpURLConnection.HTTP_NOT_FOUND)
-          )
+              .withStatus(HttpURLConnection.HTTP_NOT_FOUND),
+          ),
         )
       }
 
@@ -385,13 +385,13 @@ internal class NomisApiServiceTest {
     internal fun setUp() {
       nomisApi.stubFor(
         get(
-          urlPathEqualTo("/incentives/ids")
+          urlPathEqualTo("/incentives/ids"),
         ).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpURLConnection.HTTP_OK)
-            .withBody(incentivePagedResponse())
-        )
+            .withBody(incentivePagedResponse()),
+        ),
       )
     }
 
@@ -402,14 +402,14 @@ internal class NomisApiServiceTest {
           fromDate = LocalDate.parse("2020-01-01"),
           toDate = LocalDate.parse("2020-01-02"),
           pageNumber = 23,
-          pageSize = 10
+          pageSize = 10,
         )
       }
       nomisApi.verify(
         getRequestedFor(
-          urlPathEqualTo("/incentives/ids")
+          urlPathEqualTo("/incentives/ids"),
         )
-          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE"))
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
       )
     }
 
@@ -420,13 +420,13 @@ internal class NomisApiServiceTest {
           fromDate = LocalDate.parse("2020-01-01"),
           toDate = LocalDate.parse("2020-01-02"),
           pageNumber = 23,
-          pageSize = 10
+          pageSize = 10,
         )
       }
       nomisApi.verify(
         getRequestedFor(
-          urlEqualTo("/incentives/ids?fromDate=2020-01-01&toDate=2020-01-02&page=23&size=10")
-        )
+          urlEqualTo("/incentives/ids?fromDate=2020-01-01&toDate=2020-01-02&page=23&size=10"),
+        ),
       )
     }
 
@@ -437,13 +437,13 @@ internal class NomisApiServiceTest {
           fromDate = null,
           toDate = null,
           pageNumber = 23,
-          pageSize = 10
+          pageSize = 10,
         )
       }
       nomisApi.verify(
         getRequestedFor(
-          urlEqualTo("/incentives/ids?fromDate&toDate&page=23&size=10")
-        )
+          urlEqualTo("/incentives/ids?fromDate&toDate&page=23&size=10"),
+        ),
       )
     }
 
@@ -451,7 +451,7 @@ internal class NomisApiServiceTest {
     internal fun `will return paging info along with the incentive ids`() {
       nomisApi.stubFor(
         get(
-          urlPathEqualTo("/incentives/ids")
+          urlPathEqualTo("/incentives/ids"),
         ).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -528,9 +528,9 @@ internal class NomisApiServiceTest {
     "empty": false
 }                
       
-    """
-            )
-        )
+    """,
+            ),
+        ),
       )
 
       val incentives = runBlocking {
@@ -538,7 +538,7 @@ internal class NomisApiServiceTest {
           fromDate = LocalDate.parse("2020-01-01"),
           toDate = LocalDate.parse("2020-01-02"),
           pageNumber = 23,
-          pageSize = 10
+          pageSize = 10,
         )
       }
 
@@ -634,11 +634,11 @@ internal class NomisApiServiceTest {
     internal fun `will catch 404 response`() {
       nomisApi.stubFor(
         get(
-          urlPathEqualTo("/incentives/booking-id/1234/current")
+          urlPathEqualTo("/incentives/booking-id/1234/current"),
         ).willReturn(
           aResponse()
-            .withStatus(HttpURLConnection.HTTP_NOT_FOUND)
-        )
+            .withStatus(HttpURLConnection.HTTP_NOT_FOUND),
+        ),
       )
 
       assertDoesNotThrow {
@@ -648,8 +648,8 @@ internal class NomisApiServiceTest {
       }
       nomisApi.verify(
         getRequestedFor(
-          urlEqualTo("/incentives/booking-id/1234/current")
-        )
+          urlEqualTo("/incentives/booking-id/1234/current"),
+        ),
       )
     }
 
@@ -657,11 +657,11 @@ internal class NomisApiServiceTest {
     internal fun `will propagate non-404 exceptions`() {
       nomisApi.stubFor(
         get(
-          urlPathEqualTo("/incentives/booking-id/1234/current")
+          urlPathEqualTo("/incentives/booking-id/1234/current"),
         ).willReturn(
           aResponse()
-            .withStatus(HttpURLConnection.HTTP_BAD_REQUEST)
-        )
+            .withStatus(HttpURLConnection.HTTP_BAD_REQUEST),
+        ),
       )
 
       assertThatThrownBy {

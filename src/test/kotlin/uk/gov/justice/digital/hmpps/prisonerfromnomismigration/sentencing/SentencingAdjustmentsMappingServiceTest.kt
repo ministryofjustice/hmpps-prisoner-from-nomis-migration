@@ -31,14 +31,14 @@ class SentencingAdjustmentsMappingServiceTest {
         sentencingAdjustmentsMappingService.createNomisSentencingAdjustmentSynchronisationMapping(
           nomisAdjustmentId = 1234L,
           nomisAdjustmentCategory = "SENTENCE",
-          adjustmentId = ADJUSTMENT_ID
+          adjustmentId = ADJUSTMENT_ID,
         )
       }
 
       mappingApi.verify(
         postRequestedFor(
-          urlPathEqualTo("/mapping/sentencing/adjustments")
-        ).withHeader("Authorization", equalTo("Bearer ABCDE"))
+          urlPathEqualTo("/mapping/sentencing/adjustments"),
+        ).withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
@@ -50,7 +50,7 @@ class SentencingAdjustmentsMappingServiceTest {
         sentencingAdjustmentsMappingService.createNomisSentencingAdjustmentSynchronisationMapping(
           nomisAdjustmentId = 1234L,
           nomisAdjustmentCategory = "SENTENCE",
-          adjustmentId = ADJUSTMENT_ID
+          adjustmentId = ADJUSTMENT_ID,
         )
       }
 
@@ -59,7 +59,7 @@ class SentencingAdjustmentsMappingServiceTest {
           .withRequestBody(matchingJsonPath("nomisAdjustmentId", equalTo("1234")))
           .withRequestBody(matchingJsonPath("nomisAdjustmentCategory", equalTo("SENTENCE")))
           .withRequestBody(matchingJsonPath("adjustmentId", equalTo(ADJUSTMENT_ID)))
-          .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED")))
+          .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
       )
     }
   }
@@ -72,14 +72,14 @@ class SentencingAdjustmentsMappingServiceTest {
 
       runBlocking {
         sentencingAdjustmentsMappingService.deleteNomisSentenceAdjustmentMapping(
-          adjustmentId = ADJUSTMENT_ID
+          adjustmentId = ADJUSTMENT_ID,
         )
       }
 
       mappingApi.verify(
         deleteRequestedFor(
-          urlPathEqualTo("/mapping/sentencing/adjustments/adjustment-id/$ADJUSTMENT_ID")
-        ).withHeader("Authorization", equalTo("Bearer ABCDE"))
+          urlPathEqualTo("/mapping/sentencing/adjustments/adjustment-id/$ADJUSTMENT_ID"),
+        ).withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
   }

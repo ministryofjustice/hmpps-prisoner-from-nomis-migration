@@ -6,9 +6,9 @@ enum class MigrationMessageType {
   MIGRATE_ENTITY,
   MIGRATE_STATUS_CHECK, // status check and cancel work at queue level. The queue is used by all Sentencing migration entity migrations
   CANCEL_MIGRATION,
-  RETRY_MIGRATION_MAPPING
+  RETRY_MIGRATION_MAPPING,
 }
 
 enum class SynchronisationMessageType {
-  RETRY_SYNCHRONISATION_MAPPING
+  RETRY_SYNCHRONISATION_MAPPING,
 }

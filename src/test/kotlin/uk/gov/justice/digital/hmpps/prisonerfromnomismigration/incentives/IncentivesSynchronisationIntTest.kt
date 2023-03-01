@@ -31,7 +31,6 @@ class IncentivesSynchronisationIntTest : SqsIntegrationTestBase() {
   inner class SynchroniseCreateIncentive {
     @Test
     fun `will synchronise an incentive after a NOMIS incentive is created`() {
-
       val message = validIepCreatedMessage()
 
       nomisApi.stubGetIncentive(bookingId = 1234, incentiveSequence = 1)
@@ -51,16 +50,15 @@ class IncentivesSynchronisationIntTest : SqsIntegrationTestBase() {
               "bookingId" to "1234",
               "incentiveSequence" to "1",
               "incentiveId" to "654321",
-            )
+            ),
           ),
-          isNull()
+          isNull(),
         )
       }
     }
 
     @Test
     fun `will retry to create a mapping if call fails`() {
-
       val message = validIepCreatedMessage()
 
       nomisApi.stubGetIncentive(bookingId = 1234, incentiveSequence = 1)
@@ -82,7 +80,6 @@ class IncentivesSynchronisationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `will delay the synchronisation of a non-current incentive`() {
-
       val messageUpdate = validIepCreatedMessageWithNomisIds(1234, 2)
       nomisApi.stubGetIncentive(bookingId = 1234, incentiveSequence = 2, currentIep = false)
       nomisApi.stubGetCurrentIncentive(bookingId = 1234, incentiveSequence = 2)
@@ -95,14 +92,13 @@ class IncentivesSynchronisationIntTest : SqsIntegrationTestBase() {
         verify(telemetryClient).trackEvent(
           eq("SYNCHRONISE_CURRENT_INCENTIVE"),
           any(),
-          isNull()
+          isNull(),
         )
       }
     }
 
     @Test
     fun `will handle a synchronise current incentive message`() {
-
       val message = validSynchroniseCurrentIncentiveMessage()
       nomisApi.stubGetCurrentIncentive(bookingId = 4321, incentiveSequence = 2)
       mappingApi.stubIncentiveMappingByNomisIds(nomisBookingId = 4321, nomisIncentiveSequence = 2, incentiveId = 4)
@@ -120,10 +116,10 @@ class IncentivesSynchronisationIntTest : SqsIntegrationTestBase() {
               "bookingId" to "4321",
               "incentiveSequence" to "2",
               "incentiveId" to "4",
-              "currentIep" to "true"
-            )
+              "currentIep" to "true",
+            ),
           ),
-          isNull()
+          isNull(),
         )
       }
     }
@@ -134,7 +130,6 @@ class IncentivesSynchronisationIntTest : SqsIntegrationTestBase() {
   inner class SynchroniseUpdateIncentive {
     @Test
     fun `will synchronise an incentive after a nomis update to a current incentive`() {
-
       val message = validIepCreatedMessage()
 
       nomisApi.stubGetIncentive(bookingId = 1234, incentiveSequence = 1, currentIep = true)
@@ -152,17 +147,16 @@ class IncentivesSynchronisationIntTest : SqsIntegrationTestBase() {
               "bookingId" to "1234",
               "incentiveSequence" to "1",
               "incentiveId" to "3",
-              "currentIep" to "true"
-            )
+              "currentIep" to "true",
+            ),
           ),
-          isNull()
+          isNull(),
         )
       }
     }
 
     @Test
     fun `will synchronise an incentive after a nomis update to a non-current incentive`() {
-
       /* 1. update to non-current iep received
          2. non-current iep mapping retrieved
          3. non-current iep is updated in the incentives service
@@ -186,14 +180,13 @@ class IncentivesSynchronisationIntTest : SqsIntegrationTestBase() {
         verify(telemetryClient, Times(2)).trackEvent(
           eq("incentive-updated-synchronisation"),
           any(),
-          isNull()
+          isNull(),
         )
       }
     }
 
     @Test
     fun `will synchronise and create incentive in the incentive service (if no mapping) after a nomis update to a non-current incentive`() {
-
       /* 1. update to non-current iep received
          2. non-current iep mapping retrieved
          3. non-current iep is updated in the incentives service
@@ -220,7 +213,7 @@ class IncentivesSynchronisationIntTest : SqsIntegrationTestBase() {
         verify(telemetryClient, Times(1)).trackEvent(
           eq("incentive-updated-synchronisation"),
           any(),
-          isNull()
+          isNull(),
         )
       }
       await untilAsserted {
@@ -228,7 +221,7 @@ class IncentivesSynchronisationIntTest : SqsIntegrationTestBase() {
         verify(telemetryClient, Times(1)).trackEvent(
           eq("incentive-created-synchronisation"),
           any(),
-          isNull()
+          isNull(),
         )
       }
     }
@@ -240,7 +233,6 @@ class IncentivesSynchronisationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `will synchronise an incentive after nomis deletes the associated IEP`() {
-
       /* 1. Deletes any iep which may or may not have been current
          2. Deleted iep mapping retrieved
          3. current iep is retrieved from nomis
@@ -281,14 +273,13 @@ class IncentivesSynchronisationIntTest : SqsIntegrationTestBase() {
               it["incentiveSequence"] == "1" &&
               it["incentiveId"] == "456789"
           },
-          isNull()
+          isNull(),
         )
       }
     }
 
     @Test
     fun `will synchronise an incentive after nomis deletes the last associated IEP -  No current IEP left after deletion `() {
-
       /* 1. Deletes any iep which may or may not have been current
          2. Deleted iep mapping retrieved
          3. current iep returns a 404 from nomis (deleted IEP was the only one)
@@ -324,14 +315,13 @@ class IncentivesSynchronisationIntTest : SqsIntegrationTestBase() {
               it["incentiveSequence"] == "1" &&
               it["incentiveId"] == "456789"
           },
-          isNull()
+          isNull(),
         )
       }
     }
 
     @Test
     fun `will not synchronise anything after a non-mapped nomis IEP is deleted`() {
-
       /* 1. Deletes any iep which may or may not have been current
          2. Deleted iep mapping retrieved
          3. No mapping found so do nothing
@@ -346,14 +336,14 @@ class IncentivesSynchronisationIntTest : SqsIntegrationTestBase() {
         verify(telemetryClient).trackEvent(
           eq("incentive-delete-synchronisation-ignored"),
           any(),
-          isNull()
+          isNull(),
         )
       }
 
       verify(telemetryClient).trackEvent(
         eq("incentive-delete-synchronisation-ignored"),
         check { it["bookingId"] == "1234" && it["incentiveSequence"] == "1" },
-        isNull()
+        isNull(),
       )
     }
   }

@@ -14,7 +14,7 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
   private val telemetryClient: TelemetryClient,
   private val auditService: AuditService,
   private val migrationType: MigrationType,
-  private val pageSize: Long
+  private val pageSize: Long,
 ) {
 
   abstract suspend fun getIds(migrationFilter: FILTER, pageSize: Long, pageNumber: Long): PageImpl<NOMIS_ID>
@@ -35,14 +35,14 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
     val count = getIds(
       migrationFilter,
       pageSize = 1,
-      pageNumber = 0
+      pageNumber = 0,
     ).totalElements
 
     return MigrationContext(
       type = migrationType,
       migrationId = generateBatchId(),
       body = migrationFilter,
-      estimatedCount = count
+      estimatedCount = count,
     ).apply {
       queueService.sendMessage(MigrationMessageType.MIGRATE_ENTITIES, this)
     }.also {
@@ -50,19 +50,19 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
         "nomis-migration-started",
         mapOf<String, String>(
           "migrationId" to it.migrationId,
-          "estimatedCount" to it.estimatedCount.toString()
+          "estimatedCount" to it.estimatedCount.toString(),
         ) + getTelemetryFromFilter(migrationFilter),
-        null
+        null,
       )
       migrationHistoryService.recordMigrationStarted(
         migrationId = it.migrationId,
         migrationType = migrationType,
         estimatedRecordCount = it.estimatedCount,
-        filter = it.body
+        filter = it.body,
       )
       auditService.sendAuditEvent(
         AuditType.MIGRATION_STARTED.name,
-        mapOf("migrationType" to migrationType.name, "migrationId" to it.migrationId, "filter" to it.body)
+        mapOf("migrationType" to migrationType.name, "migrationId" to it.migrationId, "filter" to it.body),
       )
     }
   }
@@ -72,7 +72,7 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
       .map {
         MigrationContext(
           context = context,
-          body = MigrationPage(filter = context.body, pageNumber = it / pageSize, pageSize = pageSize)
+          body = MigrationPage(filter = context.body, pageNumber = it / pageSize, pageSize = pageSize),
         )
       }
       .forEach {
@@ -82,8 +82,8 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
       MigrationMessageType.MIGRATE_STATUS_CHECK,
       MigrationContext(
         context = context,
-        body = MigrationStatusCheck()
-      )
+        body = MigrationStatusCheck(),
+      ),
     )
   }
 
@@ -93,7 +93,7 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
     }?.content?.map {
       MigrationContext(
         context = context,
-        body = it
+        body = it,
       )
     }?.forEach { queueService.sendMessage(MigrationMessageType.MIGRATE_ENTITY, it) }
 
@@ -107,9 +107,9 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
         MigrationMessageType.MIGRATE_STATUS_CHECK,
         MigrationContext(
           context = context,
-          body = MigrationStatusCheck()
+          body = MigrationStatusCheck(),
         ),
-        delaySeconds = 10
+        delaySeconds = 10,
       )
     } else {
       if (context.body.hasCheckedAReasonableNumberOfTimes()) {
@@ -119,9 +119,9 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
             "migrationId" to context.migrationId,
             "migrationType" to context.type.name,
             "estimatedCount" to context.estimatedCount.toString(),
-            "durationMinutes" to context.durationMinutes().toString()
+            "durationMinutes" to context.durationMinutes().toString(),
           ),
-          null
+          null,
         )
         migrationHistoryService.recordMigrationCompleted(
           migrationId = context.migrationId,
@@ -133,9 +133,9 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
           MigrationMessageType.MIGRATE_STATUS_CHECK,
           MigrationContext(
             context = context,
-            body = context.body.increment()
+            body = context.body.increment(),
           ),
-          delaySeconds = 1
+          delaySeconds = 1,
         )
       }
     }
@@ -152,9 +152,9 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
         MigrationMessageType.CANCEL_MIGRATION,
         MigrationContext(
           context = context,
-          body = MigrationStatusCheck()
+          body = MigrationStatusCheck(),
         ),
-        delaySeconds = 10
+        delaySeconds = 10,
       )
     } else {
       if (context.body.hasCheckedAReasonableNumberOfTimes()) {
@@ -164,9 +164,9 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
             "migrationId" to context.migrationId,
             "migrationType" to context.type.name,
             "estimatedCount" to context.estimatedCount.toString(),
-            "durationMinutes" to context.durationMinutes().toString()
+            "durationMinutes" to context.durationMinutes().toString(),
           ),
-          null
+          null,
         )
         migrationHistoryService.recordMigrationCancelled(
           migrationId = context.migrationId,
@@ -179,9 +179,9 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
           MigrationMessageType.CANCEL_MIGRATION,
           MigrationContext(
             context = context,
-            body = context.body.increment()
+            body = context.body.increment(),
           ),
-          delaySeconds = 1
+          delaySeconds = 1,
         )
       }
     }
@@ -194,19 +194,19 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
       mapOf<String, String>(
         "migrationId" to migration.migrationId,
       ),
-      null
+      null,
     )
     migrationHistoryService.recordMigrationCancelledRequested(migrationId)
     auditService.sendAuditEvent(
       AuditType.MIGRATION_CANCEL_REQUESTED.name,
-      mapOf("migrationType" to migrationType.name, "migrationId" to migration.migrationId)
+      mapOf("migrationType" to migrationType.name, "migrationId" to migration.migrationId),
     )
     queueService.purgeAllMessagesNowAndAgainInTheNearFuture(
       MigrationContext(
         context = MigrationContext(type = migrationType, migrationId, migration.estimatedRecordCount, Unit),
-        body = MigrationStatusCheck()
+        body = MigrationStatusCheck(),
       ),
-      message = MigrationMessageType.CANCEL_MIGRATION
+      message = MigrationMessageType.CANCEL_MIGRATION,
     )
   }
 }

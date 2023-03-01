@@ -22,12 +22,14 @@ class MockIncentivesResource {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
+
   @PreAuthorize("hasRole('ROLE_MAINTAIN_IEP')")
   @PostMapping("/iep/migration/booking/{bookingId}")
   @Operation(hidden = true)
   suspend fun createIncentive(
     @PathVariable("bookingId") bookingId: Long,
-    @RequestBody @Valid createIncentiveRequest: CreateIncentiveRequest
+    @RequestBody @Valid
+    createIncentiveRequest: CreateIncentiveRequest,
   ): CreateIncentiveResponse {
     val id = Random.nextLong()
     log.info("Created incentive for migration with id $id for booking $bookingId. Request was $createIncentiveRequest")
@@ -39,7 +41,8 @@ class MockIncentivesResource {
   @Operation(hidden = true)
   suspend fun createSynchroniseIncentive(
     @PathVariable("bookingId") bookingId: Long,
-    @RequestBody @Valid createIncentiveRequest: CreateIncentiveRequest
+    @RequestBody @Valid
+    createIncentiveRequest: CreateIncentiveRequest,
   ): CreateIncentiveResponse {
     val id = Random.nextLong()
     log.info("Created incentive for synchronisation with id $id for booking $bookingId. Request was $createIncentiveRequest")
@@ -52,7 +55,8 @@ class MockIncentivesResource {
   suspend fun updateSynchroniseIncentive(
     @PathVariable("bookingId") bookingId: Long,
     @PathVariable("id") id: Long,
-    @RequestBody @Valid updateIncentiveRequest: UpdateIncentiveRequest
+    @RequestBody @Valid
+    updateIncentiveRequest: UpdateIncentiveRequest,
   ): CreateIncentiveResponse {
     log.info("Update incentive for synchronisation with id $id for booking $bookingId. Request was $updateIncentiveRequest")
     return CreateIncentiveResponse(id)

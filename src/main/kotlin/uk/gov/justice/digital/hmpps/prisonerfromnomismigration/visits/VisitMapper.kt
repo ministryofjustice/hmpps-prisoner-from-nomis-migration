@@ -14,7 +14,7 @@ private val nomisCancellationOutcomes = mutableMapOf(
   NomisCancellationOutcome.VO_CANCEL to VsipOutcome.VISIT_ORDER_CANCELLED,
   NomisCancellationOutcome.BATCH_CANC to VsipOutcome.BATCH_CANCELLATION,
   NomisCancellationOutcome.ADMIN_CANCEL to VsipOutcome.ADMINISTRATIVE_CANCELLATION,
-  NomisCancellationOutcome.REFUSED to VsipOutcome.PRISONER_REFUSED_TO_ATTEND
+  NomisCancellationOutcome.REFUSED to VsipOutcome.PRISONER_REFUSED_TO_ATTEND,
 )
 
 private val nomisStatusToOutcomeMap = mutableMapOf(
@@ -23,7 +23,7 @@ private val nomisStatusToOutcomeMap = mutableMapOf(
   NomisVisitStatus.OFFEND to VsipOutcome.PRISONER_COMPLETED_EARLY,
   NomisVisitStatus.VDE to VsipOutcome.VISITOR_DECLINED_ENTRY,
   NomisVisitStatus.VISITOR to VsipOutcome.VISITOR_COMPLETED_EARLY,
-  NomisVisitStatus.NORM to VsipOutcome.COMPLETED_NORMALLY
+  NomisVisitStatus.NORM to VsipOutcome.COMPLETED_NORMALLY,
 )
 
 fun getVsipOutcome(nomisVisit: NomisVisit): VsipOutcome? =
@@ -42,7 +42,7 @@ enum class NomisVisitStatus {
   SCH,
   VISITOR,
   COMP,
-  VDE
+  VDE,
 }
 
 enum class NomisCancellationOutcome {
@@ -80,5 +80,5 @@ enum class VsipOutcome {
 
 enum class VsipStatus {
   BOOKED,
-  CANCELLED
+  CANCELLED,
 }

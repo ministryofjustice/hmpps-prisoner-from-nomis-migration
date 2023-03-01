@@ -84,7 +84,7 @@ internal class SentencingMigrationPropertiesTest {
         MigrationDetails(
           count = 12_001,
           content = listOf(MigratedItem(whenCreated = LocalDateTime.parse("2020-01-01T12:10:29"))),
-        )
+        ),
       )
       details = build()
     }
@@ -121,7 +121,7 @@ internal class SentencingMigrationPropertiesTest {
         MigrationDetails(
           count = 12_001,
           content = listOf(MigratedItem(whenCreated = LocalDateTime.parse("2020-01-01T12:10:29"))),
-        )
+        ),
       )
       details = build()
     }
@@ -149,17 +149,17 @@ internal class SentencingMigrationPropertiesTest {
   private fun mockQueuesWith(messagesOnQueueCount: Long, messagesInFlightCount: Long, messagesOnDLQCount: Long) {
     whenever(hmppsQueueService.findByQueueId(SENTENCING_ADJUSTMENTS_QUEUE_ID)).thenReturn(migrationQueue)
     whenever(
-      sqsClient.getQueueUrl(GetQueueUrlRequest.builder().queueName("queue").build())
+      sqsClient.getQueueUrl(GetQueueUrlRequest.builder().queueName("queue").build()),
     ).thenReturn(someGetQueueUrlResult())
     whenever(sqsClient.getQueueAttributes(someGetQueueAttributesRequest())).thenReturn(
       someGetQueueAttributesResult(
         messagesInFlightCount = messagesInFlightCount,
-        messagesOnQueueCount = messagesOnQueueCount
-      )
+        messagesOnQueueCount = messagesOnQueueCount,
+      ),
     )
     whenever(sqsClient.getQueueUrl(GetQueueUrlRequest.builder().queueName("dlq").build())).thenReturn(someGetQueueUrlResultForDLQ())
     whenever(sqsClient.getQueueAttributes(someGetQueueAttributesRequestForDLQ())).thenReturn(
-      someGetQueueAttributesResultForDLQ(messagesOnDLQCount)
+      someGetQueueAttributesResultForDLQ(messagesOnDLQCount),
     )
   }
 
@@ -180,16 +180,16 @@ internal class SentencingMigrationPropertiesTest {
           mapOf(
             QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES to "$messagesOnQueueCount",
             QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES_NOT_VISIBLE to "$messagesInFlightCount",
-            QueueAttributeName.REDRIVE_POLICY to "any redrive policy"
-          )
+            QueueAttributeName.REDRIVE_POLICY to "any redrive policy",
+          ),
         )
-        .build()
+        .build(),
     )
 
   private fun someGetQueueAttributesResultForDLQ(messagesOnDLQCount: Long) = CompletableFuture.completedFuture(
     GetQueueAttributesResponse.builder()
       .attributes(mapOf(QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES to messagesOnDLQCount.toString()))
-      .build()
+      .build(),
   )
 
   private fun someGetQueueAttributesRequest() =

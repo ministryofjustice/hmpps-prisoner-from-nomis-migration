@@ -29,7 +29,7 @@ internal class IncentivesPrisonOffenderEventListenerTest {
     IncentivesPrisonOffenderEventListener(
       incentivesSynchronisationService = incentivesSynchronisationService,
       eventFeatureSwitch = eventFeatureSwitch,
-      objectMapper = objectMapper
+      objectMapper = objectMapper,
     )
 
   @Nested
@@ -48,12 +48,12 @@ internal class IncentivesPrisonOffenderEventListenerTest {
         coEvery { incentivesSynchronisationService.synchroniseIncentive(any()) } just Runs
 
         listener.onMessage(
-          message = validIepCreatedMessage()
+          message = validIepCreatedMessage(),
         ).get()
 
         coVerify {
           incentivesSynchronisationService.synchroniseIncentive(
-            any()
+            any(),
           )
         }
       }
@@ -70,14 +70,13 @@ internal class IncentivesPrisonOffenderEventListenerTest {
 
       @Test
       internal fun `will not call service when disabled`() {
-
         listener.onMessage(
-          message = validIepCreatedMessage()
+          message = validIepCreatedMessage(),
         )
 
         coVerify(exactly = 0) {
           incentivesSynchronisationService.synchroniseIncentive(
-            any()
+            any(),
           )
         }
       }

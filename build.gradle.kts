@@ -1,7 +1,7 @@
 // import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "5.1.0"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "5.1.1-beta-2"
   kotlin("plugin.spring") version "1.8.10"
   // id("org.openapi.generator") version "6.2.1"
 }
@@ -43,12 +43,12 @@ dependencies {
 
   runtimeOnly("org.postgresql:r2dbc-postgresql:$r2dbcPostgresVersion")
   runtimeOnly("org.springframework.boot:spring-boot-starter-jdbc")
-  runtimeOnly("org.postgresql:postgresql:42.5.3")
+  runtimeOnly("org.postgresql:postgresql:42.5.4")
   implementation("org.flywaydb:flyway-core")
 
-  implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:1.22.1")
+  implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:1.23.0")
 
-  testImplementation("io.swagger.parser.v3:swagger-parser:2.1.11")
+  testImplementation("io.swagger.parser.v3:swagger-parser:2.1.12")
   testImplementation("io.jsonwebtoken:jjwt-impl:0.11.5")
   testImplementation("io.jsonwebtoken:jjwt-jackson:0.11.5")
 
@@ -61,14 +61,14 @@ dependencies {
 }
 
 java {
-  toolchain.languageVersion.set(JavaLanguageVersion.of(18))
+  toolchain.languageVersion.set(JavaLanguageVersion.of(19))
 }
 
 tasks {
   withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     //  dependsOn("buildSentencingApiModel")
     kotlinOptions {
-      jvmTarget = "18"
+      jvmTarget = "19"
     }
   }
 }

@@ -43,8 +43,8 @@ class SentencingApiMockServer : WireMockServer(WIREMOCK_PORT) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody(if (status == 200) "pong" else "some error")
-          .withStatus(status)
-      )
+          .withStatus(status),
+      ),
     )
   }
 
@@ -54,8 +54,8 @@ class SentencingApiMockServer : WireMockServer(WIREMOCK_PORT) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.CREATED.value())
-          .withBody("""{"id": "$sentenceAdjustmentId"}""")
-      )
+          .withBody("""{"id": "$sentenceAdjustmentId"}"""),
+      ),
     )
   }
 
@@ -65,8 +65,8 @@ class SentencingApiMockServer : WireMockServer(WIREMOCK_PORT) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.CREATED.value())
-          .withBody("""{"id": "$sentenceAdjustmentId"}""")
-      )
+          .withBody("""{"id": "$sentenceAdjustmentId"}"""),
+      ),
     )
   }
 
@@ -75,8 +75,8 @@ class SentencingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       put(WireMock.urlMatching("/synchronisation/sentencing/adjustments/$adjustmentId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-      )
+          .withStatus(HttpStatus.OK.value()),
+      ),
     )
   }
 
@@ -85,8 +85,8 @@ class SentencingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       delete(WireMock.urlMatching("/synchronisation/sentencing/adjustments/$adjustmentId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.NO_CONTENT.value())
-      )
+          .withStatus(HttpStatus.NO_CONTENT.value()),
+      ),
     )
   }
 
