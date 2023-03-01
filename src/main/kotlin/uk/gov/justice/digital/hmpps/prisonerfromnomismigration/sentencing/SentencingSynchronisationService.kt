@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.SynchronisationContext
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingSynchronisationService.MappingResponse.MAPPING_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingSynchronisationService.MappingResponse.MAPPING_FAILED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
@@ -181,14 +182,15 @@ class SentencingSynchronisationService(
         e
       )
       queueService.sendMessage(
-        SentencingMessages.RETRY_SYNCHRONISATION_SENTENCING_ADJUSTMENT_MAPPING,
+        MessageType.RETRY_SYNCHRONISATION_MAPPING,
         SynchronisationContext(
           type = SynchronisationType.SENTENCING,
           telemetryProperties = event.toTelemetryProperties(adjustmentId),
-          body = SentencingAdjustmentMapping(
+          body = SentencingAdjustmentNomisMapping(
             nomisAdjustmentId = event.adjustmentId,
             nomisAdjustmentCategory = "SENTENCE",
-            adjustmentId = adjustmentId
+            adjustmentId = adjustmentId,
+            mappingType = "NOMIS_CREATED"
           )
         )
       )
@@ -212,21 +214,22 @@ class SentencingSynchronisationService(
         e
       )
       queueService.sendMessage(
-        SentencingMessages.RETRY_SYNCHRONISATION_SENTENCING_ADJUSTMENT_MAPPING,
+        MessageType.RETRY_SYNCHRONISATION_MAPPING,
         SynchronisationContext(
           type = SynchronisationType.SENTENCING,
           telemetryProperties = event.toTelemetryProperties(adjustmentId),
-          body = SentencingAdjustmentMapping(
+          body = SentencingAdjustmentNomisMapping(
             nomisAdjustmentId = event.adjustmentId,
             nomisAdjustmentCategory = "KEY-DATE",
-            adjustmentId = adjustmentId
+            adjustmentId = adjustmentId,
+            mappingType = "NOMIS_CREATED"
           )
         )
       )
       MAPPING_FAILED
     }
 
-  suspend fun retryCreateSentenceAdjustmentMapping(context: SynchronisationContext<SentencingAdjustmentMapping>) {
+  suspend fun retryCreateSentenceAdjustmentMapping(context: SynchronisationContext<SentencingAdjustmentNomisMapping>) {
     sentencingMappingService.createNomisSentencingAdjustmentSynchronisationMapping(
       nomisAdjustmentId = context.body.nomisAdjustmentId,
       nomisAdjustmentCategory = context.body.nomisAdjustmentCategory,

@@ -64,7 +64,7 @@ class SentencingMigrationResource(
     ]
   )
   suspend fun migrateSentencing(@RequestBody @Valid migrationFilter: SentencingMigrationFilter) =
-    // TODO determine which sentencing entity is being migrated - assume sentence adjustment for now
+    // TODO determine which sentencing entity is being migrated - assume adjustments for now
     sentencingMigrationService.migrateAdjustments(migrationFilter)
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_SENTENCING')")
