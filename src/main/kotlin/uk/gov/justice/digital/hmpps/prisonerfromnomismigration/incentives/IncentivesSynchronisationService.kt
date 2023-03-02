@@ -7,9 +7,9 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.ReviewType.REVIEW
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisIncentive
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 
 @Service
 class IncentivesSynchronisationService(
@@ -44,7 +44,7 @@ class IncentivesSynchronisationService(
           queueService.sendMessage(
             IncentiveMessages.SYNCHRONISE_CURRENT_INCENTIVE,
             MigrationContext(
-              type = SynchronisationType.INCENTIVES, "dummy", 0,
+              type = MigrationType.INCENTIVES, "dummy", 0,
               body = IncentiveMapping(
                 nomisBookingId = iepEvent.bookingId,
                 nomisIncentiveSequence = iepEvent.iepSeq,
@@ -171,7 +171,7 @@ class IncentivesSynchronisationService(
       queueService.sendMessage(
         IncentiveMessages.RETRY_INCENTIVE_SYNCHRONISATION_MAPPING,
         MigrationContext(
-          type = SynchronisationType.INCENTIVES, "dummy", 0,
+          type = MigrationType.INCENTIVES, "dummy", 0,
           body = IncentiveMapping(
             nomisBookingId = nomisIncentive.bookingId,
             nomisIncentiveSequence = nomisIncentive.incentiveSequence,

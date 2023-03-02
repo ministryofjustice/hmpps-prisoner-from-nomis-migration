@@ -13,7 +13,7 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
   private val migrationHistoryService: MigrationHistoryService,
   private val telemetryClient: TelemetryClient,
   private val auditService: AuditService,
-  private val synchronisationType: SynchronisationType,
+  private val migrationType: MigrationType,
   private val pageSize: Long
 ) {
 
@@ -23,7 +23,7 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
 
   abstract fun getTelemetryFromNomisEntity(nomisEntity: NOMIS_ENTITY): Map<String, String>
 
-  abstract fun getMigrationType(): SynchronisationType
+  abstract fun getMigrationType(): MigrationType
 
   abstract suspend fun getMigrationCount(migrationId: String): Long
 
@@ -39,7 +39,7 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
     ).totalElements
 
     return MigrationContext(
-      type = synchronisationType,
+      type = migrationType,
       migrationId = generateBatchId(),
       body = migrationFilter,
       estimatedCount = count
@@ -56,13 +56,13 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
       )
       migrationHistoryService.recordMigrationStarted(
         migrationId = it.migrationId,
-        migrationType = synchronisationType,
+        migrationType = migrationType,
         estimatedRecordCount = it.estimatedCount,
         filter = it.body
       )
       auditService.sendAuditEvent(
         AuditType.MIGRATION_STARTED.name,
-        mapOf("migrationType" to synchronisationType.name, "migrationId" to it.migrationId, "filter" to it.body)
+        mapOf("migrationType" to migrationType.name, "migrationId" to it.migrationId, "filter" to it.body)
       )
     }
   }
@@ -199,11 +199,11 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
     migrationHistoryService.recordMigrationCancelledRequested(migrationId)
     auditService.sendAuditEvent(
       AuditType.MIGRATION_CANCEL_REQUESTED.name,
-      mapOf("migrationType" to synchronisationType.name, "migrationId" to migration.migrationId)
+      mapOf("migrationType" to migrationType.name, "migrationId" to migration.migrationId)
     )
     queueService.purgeAllMessagesNowAndAgainInTheNearFuture(
       MigrationContext(
-        context = MigrationContext(type = synchronisationType, migrationId, migration.estimatedRecordCount, Unit),
+        context = MigrationContext(type = migrationType, migrationId, migration.estimatedRecordCount, Unit),
         body = MigrationStatusCheck()
       ),
       message = MessageType.CANCEL_MIGRATION

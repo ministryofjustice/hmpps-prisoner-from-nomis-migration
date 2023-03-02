@@ -27,8 +27,8 @@ const val VISITS_QUEUE_ID = "migrationvisits"
 const val INCENTIVES_QUEUE_ID = "migrationincentives"
 const val SENTENCING_ADJUSTMENTS_QUEUE_ID = "migrationsentencing"
 
-enum class SynchronisationType(val queueId: String) {
-  VISITS(VISITS_QUEUE_ID),
-  INCENTIVES(INCENTIVES_QUEUE_ID),
-  SENTENCING_ADJUSTMENTS(SENTENCING_ADJUSTMENTS_QUEUE_ID)
+enum class MigrationType(val queueId: String, telemetryName: String) {
+  VISITS(VISITS_QUEUE_ID, "visits"),
+  INCENTIVES(INCENTIVES_QUEUE_ID, "incentives"),
+  SENTENCING_ADJUSTMENTS(SENTENCING_ADJUSTMENTS_QUEUE_ID, "sentencing-adjustments")
 }

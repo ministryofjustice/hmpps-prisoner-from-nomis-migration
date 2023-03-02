@@ -38,14 +38,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.Incent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.ReviewType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.IncentiveId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.INCENTIVES
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisCodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisIncentive
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.INCENTIVES
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisIncentiveId
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -697,7 +697,7 @@ internal class IncentivesMigrationServiceTest {
     @Test
     internal fun `will send MIGRATE_INCENTIVE with bookingId for each incentive`(): Unit = runBlocking {
 
-      val context: KArgumentCaptor<MigrationContext<IncentiveId>> = argumentCaptor()
+      val context: KArgumentCaptor<MigrationContext<NomisIncentiveId>> = argumentCaptor()
 
       whenever(nomisApiService.getIncentives(any(), any(), any(), any())).thenReturn(
         pages(
@@ -723,7 +723,7 @@ internal class IncentivesMigrationServiceTest {
         eq(MIGRATE_INCENTIVE), context.capture(), delaySeconds = eq(0)
 
       )
-      val allContexts: List<MigrationContext<IncentiveId>> = context.allValues
+      val allContexts: List<MigrationContext<NomisIncentiveId>> = context.allValues
 
       val (firstPage, secondPage, thirdPage) = allContexts
       val lastPage = allContexts.last()
@@ -794,7 +794,7 @@ internal class IncentivesMigrationServiceTest {
           type = INCENTIVES,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
-          body = IncentiveId(123, 2)
+          body = NomisIncentiveId(123, 2)
         )
       )
 
@@ -823,7 +823,7 @@ internal class IncentivesMigrationServiceTest {
           type = INCENTIVES,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
-          body = IncentiveId(123, 2)
+          body = NomisIncentiveId(123, 2)
         )
       )
 
@@ -866,7 +866,7 @@ internal class IncentivesMigrationServiceTest {
           type = INCENTIVES,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
-          body = IncentiveId(123, 2)
+          body = NomisIncentiveId(123, 2)
         )
       )
 
@@ -905,7 +905,7 @@ internal class IncentivesMigrationServiceTest {
           type = INCENTIVES,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
-          body = IncentiveId(123, 2)
+          body = NomisIncentiveId(123, 2)
         )
       )
 
@@ -943,7 +943,7 @@ internal class IncentivesMigrationServiceTest {
             type = INCENTIVES,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = IncentiveId(123, 2)
+            body = NomisIncentiveId(123, 2)
           )
         )
 
@@ -980,6 +980,6 @@ internal class IncentivesMigrationServiceTest {
   }
 }
 
-fun pages(total: Long, startId: Long = 1): PageImpl<IncentiveId> = PageImpl<IncentiveId>(
-  (startId..total - 1 + startId).map { IncentiveId(it, 1) }, Pageable.ofSize(10), total
+fun pages(total: Long, startId: Long = 1): PageImpl<NomisIncentiveId> = PageImpl<NomisIncentiveId>(
+  (startId..total - 1 + startId).map { NomisIncentiveId(it, 1) }, Pageable.ofSize(10), total
 )

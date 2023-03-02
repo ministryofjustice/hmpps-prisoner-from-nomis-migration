@@ -543,9 +543,9 @@ internal class NomisApiServiceTest {
       }
 
       assertThat(incentives.content).hasSize(10)
-      assertThat(incentives.content).extracting<Long>(IncentiveId::bookingId)
+      assertThat(incentives.content).extracting<Long>(NomisIncentiveId::bookingId)
         .containsExactly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-      assertThat(incentives.content).extracting<Long>(IncentiveId::sequence)
+      assertThat(incentives.content).extracting<Long>(NomisIncentiveId::sequence)
         .containsExactly(1, 1, 1, 1, 1, 1, 1, 1, 3, 2)
       assertThat(incentives.totalPages).isEqualTo(4190)
       assertThat(incentives.pageable.pageNumber).isEqualTo(23)

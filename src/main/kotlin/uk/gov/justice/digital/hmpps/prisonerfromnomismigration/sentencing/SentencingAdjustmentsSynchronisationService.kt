@@ -10,8 +10,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Message
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustmentsSynchronisationService.MappingResponse.MAPPING_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustmentsSynchronisationService.MappingResponse.MAPPING_FAILED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 
 @Service
 class SentencingAdjustmentsSynchronisationService(
@@ -184,7 +184,7 @@ class SentencingAdjustmentsSynchronisationService(
       queueService.sendMessage(
         MessageType.RETRY_SYNCHRONISATION_MAPPING,
         SynchronisationContext(
-          type = SynchronisationType.SENTENCING_ADJUSTMENTS,
+          type = MigrationType.SENTENCING_ADJUSTMENTS,
           telemetryProperties = event.toTelemetryProperties(adjustmentId),
           body = SentencingAdjustmentNomisMapping(
             nomisAdjustmentId = event.adjustmentId,
@@ -216,7 +216,7 @@ class SentencingAdjustmentsSynchronisationService(
       queueService.sendMessage(
         MessageType.RETRY_SYNCHRONISATION_MAPPING,
         SynchronisationContext(
-          type = SynchronisationType.SENTENCING_ADJUSTMENTS,
+          type = MigrationType.SENTENCING_ADJUSTMENTS,
           telemetryProperties = event.toTelemetryProperties(adjustmentId),
           body = SentencingAdjustmentNomisMapping(
             nomisAdjustmentId = event.adjustmentId,

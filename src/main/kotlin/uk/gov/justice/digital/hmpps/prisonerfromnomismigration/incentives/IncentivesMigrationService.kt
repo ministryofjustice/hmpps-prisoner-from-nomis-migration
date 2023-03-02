@@ -4,6 +4,7 @@ import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatchId
@@ -16,11 +17,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.Incent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.ReviewType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.IncentiveId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.INCENTIVES
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.INCENTIVES
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisIncentive
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisIncentiveId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.asStringOrBlank
 import java.time.Duration
 import java.time.LocalDateTime
@@ -29,15 +33,31 @@ import java.time.LocalDateTime
 class IncentivesMigrationService(
   private val queueService: MigrationQueueService,
   private val nomisApiService: NomisApiService,
-  private val migrationHistoryService: MigrationHistoryService,
+  migrationHistoryService: MigrationHistoryService,
   private val telemetryClient: TelemetryClient,
-  private val auditService: AuditService,
+  auditService: AuditService,
   private val incentivesService: IncentivesService,
   private val incentiveMappingService: IncentiveMappingService,
-  @Value("\${incentives.page.size:1000}") private val pageSize: Long,
+  @Value("\${incentives.page.size:1000}") private val pageSize: Long
+) : MigrationService<IncentivesMigrationFilter, NomisIncentiveId, NomisIncentive, IncentiveNomisMapping>(
+  queueService = queueService,
+  auditService = auditService,
+  migrationHistoryService = migrationHistoryService,
+  telemetryClient = telemetryClient,
+  migrationType = MigrationType.SENTENCING_ADJUSTMENTS,
+  pageSize = pageSize
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
+  }
+
+  override suspend fun getIds(migrationFilter: IncentivesMigrationFilter, pageSize: Long, pageNumber: Long): PageImpl<NomisIncentiveId> {
+    return nomisApiService.getIncentives(
+      fromDate = migrationFilter.fromDate,
+      toDate = migrationFilter.toDate,
+      pageNumber = pageNumber,
+      pageSize = pageSize,
+    )
   }
 
   suspend fun migrateIncentives(migrationFilter: IncentivesMigrationFilter): MigrationContext<IncentivesMigrationFilter> {
@@ -114,7 +134,7 @@ class IncentivesMigrationService(
       )
     }?.forEach { queueService.sendMessage(MIGRATE_INCENTIVE, it) }
 
-  suspend fun migrateIncentive(context: MigrationContext<IncentiveId>) {
+  suspend fun migrateIncentive(context: MigrationContext<NomisIncentiveId>) {
     val (bookingId, sequence) = context.body
 
     incentiveMappingService.findNomisIncentiveMapping(bookingId, sequence)?.run {

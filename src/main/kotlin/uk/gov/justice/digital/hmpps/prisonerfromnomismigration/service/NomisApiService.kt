@@ -85,7 +85,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     toDate: LocalDate?,
     pageNumber: Long,
     pageSize: Long
-  ): PageImpl<IncentiveId> =
+  ): PageImpl<NomisIncentiveId> =
     webClient.get()
       .uri {
         it.path("/incentives/ids")
@@ -96,7 +96,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
           .build()
       }
       .retrieve()
-      .bodyToMono(typeReference<RestResponsePage<IncentiveId>>())
+      .bodyToMono(typeReference<RestResponsePage<NomisIncentiveId>>())
       .awaitSingle()
 
   suspend fun getIncentive(
@@ -166,7 +166,7 @@ data class VisitId(
   val visitId: Long
 )
 
-data class IncentiveId(
+data class NomisIncentiveId(
   val bookingId: Long,
   val sequence: Long,
 )
