@@ -11,9 +11,11 @@ import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.LatestMigration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationDetails
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 
 @Service
-class SentencingAdjustmentsMappingService(@Qualifier("mappingApiWebClient") private val webClient: WebClient) {
+class SentencingAdjustmentsMappingService(@Qualifier("mappingApiWebClient") private val webClient: WebClient) :
+  MigrationMapping {
   suspend fun findNomisSentencingAdjustmentMapping(
     nomisAdjustmentId: Long,
     nomisAdjustmentCategory: String,
@@ -93,7 +95,7 @@ class SentencingAdjustmentsMappingService(@Qualifier("mappingApiWebClient") priv
       .awaitFirstOrDefault(CreateMappingResult())
   }
 
-  suspend fun findLatestMigration(): LatestMigration? = webClient.get()
+  override suspend fun findLatestMigration(): LatestMigration? = webClient.get()
     .uri("/mapping/sentencing/adjustments/migrated/latest")
     .retrieve()
     .bodyToMono(LatestMigration::class.java)
@@ -102,7 +104,7 @@ class SentencingAdjustmentsMappingService(@Qualifier("mappingApiWebClient") priv
     }
     .awaitSingleOrNull()
 
-  suspend fun getMigrationDetails(migrationId: String): MigrationDetails = webClient.get()
+  override suspend fun getMigrationDetails(migrationId: String): MigrationDetails = webClient.get()
     .uri {
       it.path("/mapping/sentencing/adjustments/migration-id/{migrationId}")
         .queryParam("size", 1)
@@ -112,7 +114,7 @@ class SentencingAdjustmentsMappingService(@Qualifier("mappingApiWebClient") priv
     .bodyToMono(MigrationDetails::class.java)
     .awaitSingle()!!
 
-  suspend fun getMigrationCount(migrationId: String): Long = webClient.get()
+  override suspend fun getMigrationCount(migrationId: String): Long = webClient.get()
     .uri {
       it.path("/mapping/sentencing/adjustments/migration-id/{migrationId}")
         .queryParam("size", 1)
