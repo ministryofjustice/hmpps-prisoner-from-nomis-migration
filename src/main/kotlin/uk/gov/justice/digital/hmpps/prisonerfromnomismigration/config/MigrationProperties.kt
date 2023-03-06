@@ -7,14 +7,14 @@ import org.springframework.boot.actuate.info.InfoContributor
 import software.amazon.awssdk.services.sqs.model.GetQueueAttributesRequest
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
 
 abstract class MigrationProperties(
   private val hmppsQueueService: HmppsQueueService,
   private val mappingService: MigrationMapping,
-  private val migrationType: SynchronisationType
+  private val migrationType: MigrationType
 ) : InfoContributor {
 
   internal val queue by lazy { hmppsQueueService.findByQueueId(migrationType.queueId) as HmppsQueue }

@@ -31,7 +31,7 @@ class VisitsPrisonOffenderEventListener(
   fun onMessage(message: String): CompletableFuture<Void> {
     log.debug("Received offender event message {}", message)
     val sqsMessage: SQSMessage = objectMapper.readValue(message)
-    val eventType = sqsMessage.MessageAttributes.eventType.Value
+    val eventType = sqsMessage.MessageAttributes!!.eventType.Value
     return CoroutineScope(Dispatchers.Default).future {
       if (eventFeatureSwitch.isEnabled(eventType)) when (eventType) {
 

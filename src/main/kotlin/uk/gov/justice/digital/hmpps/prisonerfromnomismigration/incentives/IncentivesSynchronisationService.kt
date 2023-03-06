@@ -4,11 +4,11 @@ import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.ReviewType.REVIEW
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisIncentive
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 
 @Service
@@ -17,7 +17,7 @@ class IncentivesSynchronisationService(
   private val telemetryClient: TelemetryClient,
   private val mappingService: IncentiveMappingService,
   private val incentiveService: IncentivesService,
-  private val queueService: MigrationQueueService
+  private val queueService: SynchronisationQueueService
 ) {
 
   private companion object {
@@ -42,14 +42,10 @@ class IncentivesSynchronisationService(
           // nomis allows an IEP creation and updates to other IEPs in the same transaction. This delay will mitigate against an update being
           // processed before a create request (and potentially creating a duplicate in nomis)
           queueService.sendMessage(
-            IncentiveMessages.SYNCHRONISE_CURRENT_INCENTIVE,
-            MigrationContext(
-              type = SynchronisationType.INCENTIVES, "dummy", 0,
-              body = IncentiveMapping(
-                nomisBookingId = iepEvent.bookingId,
-                nomisIncentiveSequence = iepEvent.iepSeq,
-                incentiveId = incentiveMapping.incentiveId
-              )
+            messageType = IncentiveMessages.SYNCHRONISE_CURRENT_INCENTIVE.name,
+            synchronisationType = SynchronisationType.INCENTIVES,
+            message = IncentiveBooking(
+              nomisBookingId = iepEvent.bookingId
             ),
             delaySeconds = 5
           )
@@ -97,8 +93,8 @@ class IncentivesSynchronisationService(
     }
   }
 
-  suspend fun handleSynchroniseCurrentIncentiveMessage(context: MigrationContext<IncentiveMapping>) {
-    resynchroniseCurrentIncentive(context.body.nomisBookingId)
+  suspend fun handleSynchroniseCurrentIncentiveMessage(internalMessage: InternalMessage<IncentiveBooking>) {
+    resynchroniseCurrentIncentive(internalMessage.body.nomisBookingId)
   }
 
   private suspend fun resynchroniseCurrentIncentive(bookingId: Long) {
@@ -169,25 +165,23 @@ class IncentivesSynchronisationService(
         e
       )
       queueService.sendMessage(
-        IncentiveMessages.RETRY_INCENTIVE_SYNCHRONISATION_MAPPING,
-        MigrationContext(
-          type = SynchronisationType.INCENTIVES, "dummy", 0,
-          body = IncentiveMapping(
-            nomisBookingId = nomisIncentive.bookingId,
-            nomisIncentiveSequence = nomisIncentive.incentiveSequence,
-            incentiveId = it.id
-          )
+        IncentiveMessages.RETRY_INCENTIVE_SYNCHRONISATION_MAPPING.name,
+        SynchronisationType.INCENTIVES,
+        IncentiveMapping(
+          nomisBookingId = nomisIncentive.bookingId,
+          nomisIncentiveSequence = nomisIncentive.incentiveSequence,
+          incentiveId = it.id
         )
       )
     }
   }
 
-  suspend fun retryCreateIncentiveMapping(context: MigrationContext<IncentiveMapping>) {
-    log.info("Retrying mapping creation for booking id: ${context.body.nomisBookingId}, noms seq: ${context.body.nomisIncentiveSequence}, incentive id : ${context.body.incentiveId}")
+  suspend fun retryCreateIncentiveMapping(internalMessage: InternalMessage<IncentiveMapping>) {
+    log.info("Retrying mapping creation for booking id: ${internalMessage.body.nomisBookingId}, noms seq: ${internalMessage.body.nomisIncentiveSequence}, incentive id : ${internalMessage.body.incentiveId}")
     mappingService.createNomisIncentiveSynchronisationMapping(
-      nomisBookingId = context.body.nomisBookingId,
-      nomisIncentiveSequence = context.body.nomisIncentiveSequence,
-      incentiveId = context.body.incentiveId,
+      nomisBookingId = internalMessage.body.nomisBookingId,
+      nomisIncentiveSequence = internalMessage.body.nomisIncentiveSequence,
+      incentiveId = internalMessage.body.incentiveId,
     )
   }
 }

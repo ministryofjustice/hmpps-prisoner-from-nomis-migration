@@ -70,14 +70,14 @@ class MigrationQueueService(
   }
 
   // given counts are approximations there is only a probable chance this returns the correct result
-  suspend fun isItProbableThatThereAreStillMessagesToBeProcessed(type: SynchronisationType): Boolean {
+  suspend fun isItProbableThatThereAreStillMessagesToBeProcessed(type: MigrationType): Boolean {
     val queue = hmppsQueueService.findByQueueId(type.queueId)
       ?: throw IllegalStateException("Queue not found for ${type.queueId}")
 
     return queue.sqsClient.countMessagesOnQueue(queue.queueUrl).await() > 0
   }
 
-  suspend fun countMessagesThatHaveFailed(type: SynchronisationType): Long {
+  suspend fun countMessagesThatHaveFailed(type: MigrationType): Long {
     val queue = hmppsQueueService.findByQueueId(type.queueId)
       ?: throw IllegalStateException("Queue not found for ${type.queueId}")
 
@@ -86,7 +86,7 @@ class MigrationQueueService(
 
   private fun Any.toJson() = objectMapper.writeValueAsString(this)
 
-  suspend fun purgeAllMessages(type: SynchronisationType) {
+  suspend fun purgeAllMessages(type: MigrationType) {
     val queue = hmppsQueueService.findByQueueId(type.queueId)
       ?: throw IllegalStateException("Queue not found for ${type.queueId}")
     // try purge first, since it is rate limited fall back to less efficient read/delete method

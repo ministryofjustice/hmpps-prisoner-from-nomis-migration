@@ -42,10 +42,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Incentive
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.INCENTIVES
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisCodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisIncentive
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.INCENTIVES
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -378,24 +378,25 @@ internal class IncentivesMigrationServiceTest {
       }
 
       @Test
-      internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit = runBlocking {
-        service.migrateIncentivesStatusCheck(
-          MigrationContext(
-            type = INCENTIVES,
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = IncentiveMigrationStatusCheck(checkCount = 4)
+      internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit =
+        runBlocking {
+          service.migrateIncentivesStatusCheck(
+            MigrationContext(
+              type = INCENTIVES,
+              migrationId = "2020-05-23T11:30:00",
+              estimatedCount = 100_200,
+              body = IncentiveMigrationStatusCheck(checkCount = 4)
+            )
           )
-        )
 
-        verify(queueService).sendMessage(
-          message = eq(MIGRATE_INCENTIVES_STATUS_CHECK),
-          context = check<MigrationContext<IncentiveMigrationStatusCheck>> {
-            assertThat(it.body.checkCount).isEqualTo(0)
-          },
-          delaySeconds = eq(10)
-        )
-      }
+          verify(queueService).sendMessage(
+            message = eq(MIGRATE_INCENTIVES_STATUS_CHECK),
+            context = check<MigrationContext<IncentiveMigrationStatusCheck>> {
+              assertThat(it.body.checkCount).isEqualTo(0)
+            },
+            delaySeconds = eq(10)
+          )
+        }
     }
 
     @Nested
@@ -518,25 +519,26 @@ internal class IncentivesMigrationServiceTest {
       }
 
       @Test
-      internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit = runBlocking {
-        service.cancelMigrateIncentivesStatusCheck(
-          MigrationContext(
-            type = INCENTIVES,
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = IncentiveMigrationStatusCheck(checkCount = 4)
+      internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit =
+        runBlocking {
+          service.cancelMigrateIncentivesStatusCheck(
+            MigrationContext(
+              type = INCENTIVES,
+              migrationId = "2020-05-23T11:30:00",
+              estimatedCount = 100_200,
+              body = IncentiveMigrationStatusCheck(checkCount = 4)
+            )
           )
-        )
 
-        verify(queueService).purgeAllMessages(any())
-        verify(queueService).sendMessage(
-          message = eq(CANCEL_MIGRATE_INCENTIVES),
-          context = check<MigrationContext<IncentiveMigrationStatusCheck>> {
-            assertThat(it.body.checkCount).isEqualTo(0)
-          },
-          delaySeconds = eq(10)
-        )
-      }
+          verify(queueService).purgeAllMessages(any())
+          verify(queueService).sendMessage(
+            message = eq(CANCEL_MIGRATE_INCENTIVES),
+            context = check<MigrationContext<IncentiveMigrationStatusCheck>> {
+              assertThat(it.body.checkCount).isEqualTo(0)
+            },
+            delaySeconds = eq(10)
+          )
+        }
     }
 
     @Nested
@@ -879,47 +881,48 @@ internal class IncentivesMigrationServiceTest {
     }
 
     @Test
-    internal fun `will not throw exception (and place message back on queue) but create a new retry message`(): Unit = runBlocking {
-      whenever(nomisApiService.getIncentive(any(), any())).thenReturn(
-        NomisIncentive(
-          bookingId = 123,
-          incentiveSequence = 2,
-          commentText = "Doing well",
-          iepDateTime = LocalDateTime.parse("2020-01-01T13:10:00"),
-          prisonId = "HEI",
-          iepLevel = NomisCodeDescription("ENH", "Enhanced"),
-          userId = "JANE_SMITH",
-          currentIep = true,
-          offenderNo = "A1234AA",
-          whenCreated = LocalDateTime.parse("2020-11-11T13:10:11")
+    internal fun `will not throw exception (and place message back on queue) but create a new retry message`(): Unit =
+      runBlocking {
+        whenever(nomisApiService.getIncentive(any(), any())).thenReturn(
+          NomisIncentive(
+            bookingId = 123,
+            incentiveSequence = 2,
+            commentText = "Doing well",
+            iepDateTime = LocalDateTime.parse("2020-01-01T13:10:00"),
+            prisonId = "HEI",
+            iepLevel = NomisCodeDescription("ENH", "Enhanced"),
+            userId = "JANE_SMITH",
+            currentIep = true,
+            offenderNo = "A1234AA",
+            whenCreated = LocalDateTime.parse("2020-11-11T13:10:11")
+          )
         )
-      )
-      whenever(incentivesService.migrateIncentive(any(), any())).thenReturn(CreateIncentiveIEPResponse(999L))
+        whenever(incentivesService.migrateIncentive(any(), any())).thenReturn(CreateIncentiveIEPResponse(999L))
 
-      whenever(incentiveMappingService.createNomisIncentiveMigrationMapping(any(), any(), any(), any())).thenThrow(
-        RuntimeException("something went wrong")
-      )
-
-      service.migrateIncentive(
-        MigrationContext(
-          type = INCENTIVES,
-          migrationId = "2020-05-23T11:30:00",
-          estimatedCount = 100_200,
-          body = IncentiveId(123, 2)
+        whenever(incentiveMappingService.createNomisIncentiveMigrationMapping(any(), any(), any(), any())).thenThrow(
+          RuntimeException("something went wrong")
         )
-      )
 
-      verify(queueService).sendMessage(
-        message = eq(RETRY_INCENTIVE_MAPPING),
-        context = check<MigrationContext<IncentiveMapping>> {
-          assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
-          assertThat(it.body.nomisBookingId).isEqualTo(123)
-          assertThat(it.body.nomisIncentiveSequence).isEqualTo(2)
-          assertThat(it.body.incentiveId).isEqualTo(999)
-        },
-        delaySeconds = eq(0)
-      )
-    }
+        service.migrateIncentive(
+          MigrationContext(
+            type = INCENTIVES,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = IncentiveId(123, 2)
+          )
+        )
+
+        verify(queueService).sendMessage(
+          message = eq(RETRY_INCENTIVE_MAPPING),
+          context = check<MigrationContext<IncentiveMapping>> {
+            assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
+            assertThat(it.body.nomisBookingId).isEqualTo(123)
+            assertThat(it.body.nomisIncentiveSequence).isEqualTo(2)
+            assertThat(it.body.incentiveId).isEqualTo(999)
+          },
+          delaySeconds = eq(0)
+        )
+      }
 
     @Nested
     inner class WhenMigratedAlready {
