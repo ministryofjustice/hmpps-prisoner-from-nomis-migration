@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives
 
-import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.awspring.cloud.sqs.annotation.SqsListener
@@ -76,7 +75,7 @@ class IncentivesPrisonOffenderEventListener(
   }
 
   private inline fun <reified T> String.fromJson(): T =
-    objectMapper.readValue(this, object : TypeReference<T>() {})
+    objectMapper.readValue(this)
 
   private fun shouldSynchronise(auditModuleName: String?): Boolean {
     return auditModuleName == NOMIS_IEP_UI_SCREEN
