@@ -9,16 +9,16 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisCodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisIncentive
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import java.time.LocalDateTime
 
 @ExtendWith(MockitoExtension::class)
 internal class IncentiveSynchronisationServiceTest {
   private val nomisApiService: NomisApiService = mock()
-  private val queueService: MigrationQueueService = mock()
+  private val queueService: SynchronisationQueueService = mock()
   private val incentivesMappingService: IncentiveMappingService = mock()
   private val incentivesService: IncentivesService = mock()
 

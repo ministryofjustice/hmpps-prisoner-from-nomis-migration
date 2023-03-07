@@ -9,13 +9,12 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.services.sqs.model.Message
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageType.CANCEL_MIGRATION
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageType.MIGRATE_BY_PAGE
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageType.MIGRATE_ENTITIES
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageType.MIGRATE_ENTITY
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageType.MIGRATE_STATUS_CHECK
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageType.RETRY_MIGRATION_MAPPING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageType.RETRY_SYNCHRONISATION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.CANCEL_MIGRATION
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_BY_PAGE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_ENTITIES
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_ENTITY
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_STATUS_CHECK
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.RETRY_MIGRATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustmentsSynchronisationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.LocalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
@@ -35,7 +34,7 @@ abstract class MigrationMessageListener<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>
 
   fun onMessage(message: String, rawMessage: Message): CompletableFuture<Void>? {
     log.debug("Received message {}", message)
-    val migrationMessage: LocalMessage<MessageType> = message.fromJson()
+    val migrationMessage: LocalMessage<MigrationMessageType> = message.fromJson()
     return CoroutineScope(Dispatchers.Default).future {
       runCatching {
         when (migrationMessage.type) {
@@ -49,12 +48,6 @@ abstract class MigrationMessageListener<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>
           RETRY_MIGRATION_MAPPING -> migrationService.retryCreateMapping(
             migrationContextFilter(
               parseContextMapping(message)
-            )
-          )
-
-          RETRY_SYNCHRONISATION_MAPPING -> sentencingAdjustmentsSynchronisationService.retryCreateSentenceAdjustmentMapping(
-            synchronisationContext(
-              message.fromJson()
             )
           )
         }

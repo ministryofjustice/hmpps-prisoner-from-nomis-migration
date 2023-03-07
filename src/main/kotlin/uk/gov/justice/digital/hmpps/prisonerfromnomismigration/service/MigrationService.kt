@@ -4,7 +4,7 @@ import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.data.domain.PageImpl
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatchId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -13,7 +13,7 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
   private val migrationHistoryService: MigrationHistoryService,
   private val telemetryClient: TelemetryClient,
   private val auditService: AuditService,
-  private val synchronisationType: SynchronisationType,
+  private val migrationType: MigrationType,
   private val pageSize: Long
 ) {
 
@@ -23,7 +23,7 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
 
   abstract fun getTelemetryFromNomisEntity(nomisEntity: NOMIS_ENTITY): Map<String, String>
 
-  abstract fun getMigrationType(): SynchronisationType
+  abstract fun getMigrationType(): MigrationType
 
   abstract suspend fun getMigrationCount(migrationId: String): Long
 
@@ -39,12 +39,12 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
     ).totalElements
 
     return MigrationContext(
-      type = synchronisationType,
+      type = migrationType,
       migrationId = generateBatchId(),
       body = migrationFilter,
       estimatedCount = count
     ).apply {
-      queueService.sendMessage(MessageType.MIGRATE_ENTITIES, this)
+      queueService.sendMessage(MigrationMessageType.MIGRATE_ENTITIES, this)
     }.also {
       telemetryClient.trackEvent(
         "nomis-migration-started",
@@ -56,13 +56,13 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
       )
       migrationHistoryService.recordMigrationStarted(
         migrationId = it.migrationId,
-        migrationType = synchronisationType,
+        migrationType = migrationType,
         estimatedRecordCount = it.estimatedCount,
         filter = it.body
       )
       auditService.sendAuditEvent(
         AuditType.MIGRATION_STARTED.name,
-        mapOf("migrationType" to synchronisationType.name, "migrationId" to it.migrationId, "filter" to it.body)
+        mapOf("migrationType" to migrationType.name, "migrationId" to it.migrationId, "filter" to it.body)
       )
     }
   }
@@ -76,10 +76,10 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
         )
       }
       .forEach {
-        queueService.sendMessage(MessageType.MIGRATE_BY_PAGE, it)
+        queueService.sendMessage(MigrationMessageType.MIGRATE_BY_PAGE, it)
       }
     queueService.sendMessage(
-      MessageType.MIGRATE_STATUS_CHECK,
+      MigrationMessageType.MIGRATE_STATUS_CHECK,
       MigrationContext(
         context = context,
         body = MigrationStatusCheck()
@@ -95,7 +95,7 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
         context = context,
         body = it
       )
-    }?.forEach { queueService.sendMessage(MessageType.MIGRATE_ENTITY, it) }
+    }?.forEach { queueService.sendMessage(MigrationMessageType.MIGRATE_ENTITY, it) }
 
   suspend fun migrateStatusCheck(context: MigrationContext<MigrationStatusCheck>) {
     /*
@@ -104,7 +104,7 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
     */
     if (queueService.isItProbableThatThereAreStillMessagesToBeProcessed(context.type)) {
       queueService.sendMessage(
-        MessageType.MIGRATE_STATUS_CHECK,
+        MigrationMessageType.MIGRATE_STATUS_CHECK,
         MigrationContext(
           context = context,
           body = MigrationStatusCheck()
@@ -130,7 +130,7 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
         )
       } else {
         queueService.sendMessage(
-          MessageType.MIGRATE_STATUS_CHECK,
+          MigrationMessageType.MIGRATE_STATUS_CHECK,
           MigrationContext(
             context = context,
             body = context.body.increment()
@@ -149,7 +149,7 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
     if (queueService.isItProbableThatThereAreStillMessagesToBeProcessed(context.type)) {
       queueService.purgeAllMessages(context.type)
       queueService.sendMessage(
-        MessageType.CANCEL_MIGRATION,
+        MigrationMessageType.CANCEL_MIGRATION,
         MigrationContext(
           context = context,
           body = MigrationStatusCheck()
@@ -176,7 +176,7 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
       } else {
         queueService.purgeAllMessages(context.type)
         queueService.sendMessage(
-          MessageType.CANCEL_MIGRATION,
+          MigrationMessageType.CANCEL_MIGRATION,
           MigrationContext(
             context = context,
             body = context.body.increment()
@@ -199,14 +199,14 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
     migrationHistoryService.recordMigrationCancelledRequested(migrationId)
     auditService.sendAuditEvent(
       AuditType.MIGRATION_CANCEL_REQUESTED.name,
-      mapOf("migrationType" to synchronisationType.name, "migrationId" to migration.migrationId)
+      mapOf("migrationType" to migrationType.name, "migrationId" to migration.migrationId)
     )
     queueService.purgeAllMessagesNowAndAgainInTheNearFuture(
       MigrationContext(
-        context = MigrationContext(type = synchronisationType, migrationId, migration.estimatedRecordCount, Unit),
+        context = MigrationContext(type = migrationType, migrationId, migration.estimatedRecordCount, Unit),
         body = MigrationStatusCheck()
       ),
-      message = MessageType.CANCEL_MIGRATION
+      message = MigrationMessageType.CANCEL_MIGRATION
     )
   }
 }

@@ -18,8 +18,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.Incent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.MIGRATE_INCENTIVES_BY_PAGE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.MIGRATE_INCENTIVES_STATUS_CHECK
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.RETRY_INCENTIVE_MAPPING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.RETRY_INCENTIVE_SYNCHRONISATION_MAPPING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.SYNCHRONISE_CURRENT_INCENTIVE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.migrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.INCENTIVES_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
@@ -29,7 +27,6 @@ import java.util.concurrent.CompletableFuture
 class MigrationIncentivesMessageListener(
   private val objectMapper: ObjectMapper,
   private val incentivesMigrationService: IncentivesMigrationService,
-  private val incentivesSynchronisationService: IncentivesSynchronisationService,
 ) {
 
   private companion object {
@@ -50,13 +47,7 @@ class MigrationIncentivesMessageListener(
           MIGRATE_INCENTIVES_STATUS_CHECK -> incentivesMigrationService.migrateIncentivesStatusCheck(migrationContext(message.fromJson()))
           CANCEL_MIGRATE_INCENTIVES -> incentivesMigrationService.cancelMigrateIncentivesStatusCheck(migrationContext(message.fromJson()))
           RETRY_INCENTIVE_MAPPING -> incentivesMigrationService.retryCreateIncentiveMapping(migrationContext(message.fromJson()))
-          SYNCHRONISE_CURRENT_INCENTIVE -> incentivesSynchronisationService.handleSynchroniseCurrentIncentiveMessage(
-            migrationContext(message.fromJson())
-          )
-
-          RETRY_INCENTIVE_SYNCHRONISATION_MAPPING -> incentivesSynchronisationService.retryCreateIncentiveMapping(
-            migrationContext(message.fromJson())
-          )
+          else -> { log.error("Received unexpected message: ${migrationMessage.type}") }
         }
       }.onFailure {
         log.error("MessageID:${rawMessage.messageId()}", it)

@@ -7,16 +7,16 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.SENTENCING_ADJUSTMENTS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisAdjustmentId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.SENTENCING_ADJUSTMENTS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.asStringOrBlank
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationMinutes
 
@@ -35,7 +35,7 @@ class SentencingAdjustmentsMigrationService(
   auditService = auditService,
   migrationHistoryService = migrationHistoryService,
   telemetryClient = telemetryClient,
-  synchronisationType = SENTENCING_ADJUSTMENTS,
+  migrationType = SENTENCING_ADJUSTMENTS,
   pageSize = pageSize
 ) {
   private companion object {
@@ -67,7 +67,7 @@ class SentencingAdjustmentsMigrationService(
     )
   }
 
-  override fun getMigrationType(): SynchronisationType {
+  override fun getMigrationType(): MigrationType {
     return SENTENCING_ADJUSTMENTS
   }
 
@@ -156,7 +156,7 @@ class SentencingAdjustmentsMigrationService(
       e
     )
     queueService.sendMessage(
-      MessageType.RETRY_MIGRATION_MAPPING,
+      MigrationMessageType.RETRY_MIGRATION_MAPPING,
       MigrationContext(
         context = context,
         body = SentencingAdjustmentNomisMapping(

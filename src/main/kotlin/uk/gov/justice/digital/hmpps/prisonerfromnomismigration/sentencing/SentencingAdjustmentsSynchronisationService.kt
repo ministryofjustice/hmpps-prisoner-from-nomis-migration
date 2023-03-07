@@ -5,12 +5,12 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.SynchronisationContext
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustmentsSynchronisationService.MappingResponse.MAPPING_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustmentsSynchronisationService.MappingResponse.MAPPING_FAILED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 
 @Service
@@ -19,7 +19,7 @@ class SentencingAdjustmentsSynchronisationService(
   private val nomisApiService: NomisApiService,
   private val sentencingService: SentencingService,
   private val telemetryClient: TelemetryClient,
-  private val queueService: MigrationQueueService,
+  private val queueService: SynchronisationQueueService,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -182,17 +182,15 @@ class SentencingAdjustmentsSynchronisationService(
         e
       )
       queueService.sendMessage(
-        MessageType.RETRY_SYNCHRONISATION_MAPPING,
-        SynchronisationContext(
-          type = SynchronisationType.SENTENCING_ADJUSTMENTS,
-          telemetryProperties = event.toTelemetryProperties(adjustmentId),
-          body = SentencingAdjustmentNomisMapping(
-            nomisAdjustmentId = event.adjustmentId,
-            nomisAdjustmentCategory = "SENTENCE",
-            adjustmentId = adjustmentId,
-            mappingType = "NOMIS_CREATED"
-          )
-        )
+        messageType = SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING.name,
+        synchronisationType = SynchronisationType.SENTENCING_ADJUSTMENTS,
+        message = SentencingAdjustmentNomisMapping(
+          nomisAdjustmentId = event.adjustmentId,
+          nomisAdjustmentCategory = "SENTENCE",
+          adjustmentId = adjustmentId,
+          mappingType = "NOMIS_CREATED"
+        ),
+        telemetryAttributes = event.toTelemetryProperties(adjustmentId)
       )
       MAPPING_FAILED
     }
@@ -214,30 +212,28 @@ class SentencingAdjustmentsSynchronisationService(
         e
       )
       queueService.sendMessage(
-        MessageType.RETRY_SYNCHRONISATION_MAPPING,
-        SynchronisationContext(
-          type = SynchronisationType.SENTENCING_ADJUSTMENTS,
-          telemetryProperties = event.toTelemetryProperties(adjustmentId),
-          body = SentencingAdjustmentNomisMapping(
-            nomisAdjustmentId = event.adjustmentId,
-            nomisAdjustmentCategory = "KEY-DATE",
-            adjustmentId = adjustmentId,
-            mappingType = "NOMIS_CREATED"
-          )
-        )
+        messageType = SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING.name,
+        synchronisationType = SynchronisationType.SENTENCING_ADJUSTMENTS,
+        message = SentencingAdjustmentNomisMapping(
+          nomisAdjustmentId = event.adjustmentId,
+          nomisAdjustmentCategory = "KEY-DATE",
+          adjustmentId = adjustmentId,
+          mappingType = "NOMIS_CREATED"
+        ),
+        telemetryAttributes = event.toTelemetryProperties(adjustmentId)
       )
       MAPPING_FAILED
     }
 
-  suspend fun retryCreateSentenceAdjustmentMapping(context: SynchronisationContext<SentencingAdjustmentNomisMapping>) {
+  suspend fun retryCreateSentenceAdjustmentMapping(retryMessage: InternalMessage<SentencingAdjustmentNomisMapping>) {
     sentencingAdjustmentsMappingService.createNomisSentencingAdjustmentSynchronisationMapping(
-      nomisAdjustmentId = context.body.nomisAdjustmentId,
-      nomisAdjustmentCategory = context.body.nomisAdjustmentCategory,
-      adjustmentId = context.body.adjustmentId
+      nomisAdjustmentId = retryMessage.body.nomisAdjustmentId,
+      nomisAdjustmentCategory = retryMessage.body.nomisAdjustmentCategory,
+      adjustmentId = retryMessage.body.adjustmentId
     ).also {
       telemetryClient.trackEvent(
         "adjustment-mapping-created-synchronisation-success",
-        context.telemetryProperties
+        retryMessage.telemetryAttributes
       )
     }
   }

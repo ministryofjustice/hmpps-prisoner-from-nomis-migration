@@ -29,12 +29,12 @@ import org.mockito.kotlin.whenever
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageType.CANCEL_MIGRATION
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageType.MIGRATE_BY_PAGE
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageType.MIGRATE_ENTITIES
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageType.MIGRATE_ENTITY
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageType.MIGRATE_STATUS_CHECK
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageType.RETRY_MIGRATION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.CANCEL_MIGRATION
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_BY_PAGE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_ENTITIES
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_ENTITY
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_STATUS_CHECK
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.RETRY_MIGRATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
@@ -42,11 +42,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatusCheck
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.SENTENCING_ADJUSTMENTS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisAdjustmentId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisCodeDescription
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.SENTENCING_ADJUSTMENTS
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -381,24 +381,25 @@ internal class SentencingAdjustmentsMigrationServiceTest {
       }
 
       @Test
-      internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit = runBlocking {
-        service.migrateStatusCheck(
-          MigrationContext(
-            type = SENTENCING_ADJUSTMENTS,
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = MigrationStatusCheck(checkCount = 4)
+      internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit =
+        runBlocking {
+          service.migrateStatusCheck(
+            MigrationContext(
+              type = SENTENCING_ADJUSTMENTS,
+              migrationId = "2020-05-23T11:30:00",
+              estimatedCount = 100_200,
+              body = MigrationStatusCheck(checkCount = 4)
+            )
           )
-        )
 
-        verify(queueService).sendMessage(
-          message = eq(MIGRATE_STATUS_CHECK),
-          context = check<MigrationContext<MigrationStatusCheck>> {
-            assertThat(it.body.checkCount).isEqualTo(0)
-          },
-          delaySeconds = eq(10)
-        )
-      }
+          verify(queueService).sendMessage(
+            message = eq(MIGRATE_STATUS_CHECK),
+            context = check<MigrationContext<MigrationStatusCheck>> {
+              assertThat(it.body.checkCount).isEqualTo(0)
+            },
+            delaySeconds = eq(10)
+          )
+        }
     }
 
     @Nested
@@ -521,25 +522,26 @@ internal class SentencingAdjustmentsMigrationServiceTest {
       }
 
       @Test
-      internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit = runBlocking {
-        service.cancelMigrateStatusCheck(
-          MigrationContext(
-            type = SENTENCING_ADJUSTMENTS,
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = MigrationStatusCheck(checkCount = 4)
+      internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit =
+        runBlocking {
+          service.cancelMigrateStatusCheck(
+            MigrationContext(
+              type = SENTENCING_ADJUSTMENTS,
+              migrationId = "2020-05-23T11:30:00",
+              estimatedCount = 100_200,
+              body = MigrationStatusCheck(checkCount = 4)
+            )
           )
-        )
 
-        verify(queueService).purgeAllMessages(any())
-        verify(queueService).sendMessage(
-          message = eq(CANCEL_MIGRATION),
-          context = check<MigrationContext<MigrationStatusCheck>> {
-            assertThat(it.body.checkCount).isEqualTo(0)
-          },
-          delaySeconds = eq(10)
-        )
-      }
+          verify(queueService).purgeAllMessages(any())
+          verify(queueService).sendMessage(
+            message = eq(CANCEL_MIGRATION),
+            context = check<MigrationContext<MigrationStatusCheck>> {
+              assertThat(it.body.checkCount).isEqualTo(0)
+            },
+            delaySeconds = eq(10)
+          )
+        }
     }
 
     @Nested
@@ -672,70 +674,72 @@ internal class SentencingAdjustmentsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will send MIGRATE_SENTENCE_ADJUSTMENT with context for each sentence adjustment`(): Unit = runBlocking {
-      service.migrateEntitiesForPage(
-        MigrationContext(
-          type = SENTENCING_ADJUSTMENTS,
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
-          body = MigrationPage(
-            filter = SentencingMigrationFilter(
-              fromDate = LocalDate.parse("2020-01-01"),
-              toDate = LocalDate.parse("2020-01-02"),
-            ),
-            pageNumber = 13, pageSize = 15
+    internal fun `will send MIGRATE_SENTENCE_ADJUSTMENT with context for each sentence adjustment`(): Unit =
+      runBlocking {
+        service.migrateEntitiesForPage(
+          MigrationContext(
+            type = SENTENCING_ADJUSTMENTS,
+            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
+            body = MigrationPage(
+              filter = SentencingMigrationFilter(
+                fromDate = LocalDate.parse("2020-01-01"),
+                toDate = LocalDate.parse("2020-01-02"),
+              ),
+              pageNumber = 13, pageSize = 15
+            )
           )
         )
-      )
 
-      verify(queueService, times(15)).sendMessage(
-        message = eq(MIGRATE_ENTITY),
-        context = check<MigrationContext<SentencingMigrationFilter>> {
-          assertThat(it.estimatedCount).isEqualTo(100_200)
-          assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
-        },
-        delaySeconds = eq(0)
-      )
-    }
+        verify(queueService, times(15)).sendMessage(
+          message = eq(MIGRATE_ENTITY),
+          context = check<MigrationContext<SentencingMigrationFilter>> {
+            assertThat(it.estimatedCount).isEqualTo(100_200)
+            assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
+          },
+          delaySeconds = eq(0)
+        )
+      }
 
     @Test
-    internal fun `will send MIGRATE_SENTENCE_ADJUSTMENT with bookingId for each sentence adjustment`(): Unit = runBlocking {
+    internal fun `will send MIGRATE_SENTENCE_ADJUSTMENT with bookingId for each sentence adjustment`(): Unit =
+      runBlocking {
 
-      val context: KArgumentCaptor<MigrationContext<NomisAdjustmentId>> = argumentCaptor()
+        val context: KArgumentCaptor<MigrationContext<NomisAdjustmentId>> = argumentCaptor()
 
-      whenever(nomisApiService.getSentencingAdjustmentIds(any(), any(), any(), any())).thenReturn(
-        pages(
-          15, startId = 1000
-        )
-      )
-
-      service.migrateEntitiesForPage(
-        MigrationContext(
-          type = SENTENCING_ADJUSTMENTS,
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
-          body = MigrationPage(
-            filter = SentencingMigrationFilter(
-              fromDate = LocalDate.parse("2020-01-01"),
-              toDate = LocalDate.parse("2020-01-02"),
-            ),
-            pageNumber = 13, pageSize = 15
+        whenever(nomisApiService.getSentencingAdjustmentIds(any(), any(), any(), any())).thenReturn(
+          pages(
+            15, startId = 1000
           )
         )
-      )
 
-      verify(queueService, times(15)).sendMessage(
-        eq(MIGRATE_ENTITY), context.capture(), delaySeconds = eq(0)
+        service.migrateEntitiesForPage(
+          MigrationContext(
+            type = SENTENCING_ADJUSTMENTS,
+            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
+            body = MigrationPage(
+              filter = SentencingMigrationFilter(
+                fromDate = LocalDate.parse("2020-01-01"),
+                toDate = LocalDate.parse("2020-01-02"),
+              ),
+              pageNumber = 13, pageSize = 15
+            )
+          )
+        )
 
-      )
-      val allContexts: List<MigrationContext<NomisAdjustmentId>> = context.allValues
+        verify(queueService, times(15)).sendMessage(
+          eq(MIGRATE_ENTITY), context.capture(), delaySeconds = eq(0)
 
-      val (firstPage, secondPage, thirdPage) = allContexts
-      val lastPage = allContexts.last()
+        )
+        val allContexts: List<MigrationContext<NomisAdjustmentId>> = context.allValues
 
-      assertThat(firstPage.body.adjustmentId).isEqualTo(1000)
-      assertThat(secondPage.body.adjustmentId).isEqualTo(1001)
-      assertThat(thirdPage.body.adjustmentId).isEqualTo(1002)
-      assertThat(lastPage.body.adjustmentId).isEqualTo(1014)
-    }
+        val (firstPage, secondPage, thirdPage) = allContexts
+        val lastPage = allContexts.last()
+
+        assertThat(firstPage.body.adjustmentId).isEqualTo(1000)
+        assertThat(secondPage.body.adjustmentId).isEqualTo(1001)
+        assertThat(thirdPage.body.adjustmentId).isEqualTo(1002)
+        assertThat(lastPage.body.adjustmentId).isEqualTo(1014)
+      }
 
     @Test
     internal fun `will not send MIGRATE_SENTENCE_ADJUSTMENT when cancelling`(): Unit = runBlocking {
@@ -827,67 +831,69 @@ internal class SentencingAdjustmentsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will create a mapping between a new Sentence Adjustment and a NOMIS Sentence Adjustment`(): Unit = runBlocking {
-      whenever(nomisApiService.getSentenceAdjustment(any())).thenReturn(
-        aNomisSentenceAdjustment()
-      )
-      whenever(sentencingService.migrateSentencingAdjustment(any())).thenReturn(CreateSentencingAdjustmentResponse("999"))
-
-      service.migrateNomisEntity(
-        MigrationContext(
-          type = SENTENCING_ADJUSTMENTS,
-          migrationId = "2020-05-23T11:30:00",
-          estimatedCount = 100_200,
-          body = NomisAdjustmentId(123, "SENTENCE")
+    internal fun `will create a mapping between a new Sentence Adjustment and a NOMIS Sentence Adjustment`(): Unit =
+      runBlocking {
+        whenever(nomisApiService.getSentenceAdjustment(any())).thenReturn(
+          aNomisSentenceAdjustment()
         )
-      )
+        whenever(sentencingService.migrateSentencingAdjustment(any())).thenReturn(CreateSentencingAdjustmentResponse("999"))
 
-      verify(sentencingAdjustmentsMappingService).createNomisSentencingAdjustmentMigrationMapping(
-        nomisAdjustmentId = 123,
-        nomisAdjustmentCategory = "SENTENCE",
-        adjustmentId = "999",
-        migrationId = "2020-05-23T11:30:00",
-      )
-    }
+        service.migrateNomisEntity(
+          MigrationContext(
+            type = SENTENCING_ADJUSTMENTS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = NomisAdjustmentId(123, "SENTENCE")
+          )
+        )
+
+        verify(sentencingAdjustmentsMappingService).createNomisSentencingAdjustmentMigrationMapping(
+          nomisAdjustmentId = 123,
+          nomisAdjustmentCategory = "SENTENCE",
+          adjustmentId = "999",
+          migrationId = "2020-05-23T11:30:00",
+        )
+      }
 
     @Test
-    internal fun `will not throw exception (and place message back on queue) but create a new retry message`(): Unit = runBlocking {
-      whenever(nomisApiService.getSentenceAdjustment(any())).thenReturn(
-        aNomisSentenceAdjustment()
-      )
-      whenever(sentencingService.migrateSentencingAdjustment(any())).thenReturn(CreateSentencingAdjustmentResponse("999"))
-
-      whenever(
-        sentencingAdjustmentsMappingService.createNomisSentencingAdjustmentMigrationMapping(
-          any(),
-          any(),
-          any(),
-          any()
+    internal fun `will not throw exception (and place message back on queue) but create a new retry message`(): Unit =
+      runBlocking {
+        whenever(nomisApiService.getSentenceAdjustment(any())).thenReturn(
+          aNomisSentenceAdjustment()
         )
-      ).thenThrow(
-        RuntimeException("something went wrong")
-      )
+        whenever(sentencingService.migrateSentencingAdjustment(any())).thenReturn(CreateSentencingAdjustmentResponse("999"))
 
-      service.migrateNomisEntity(
-        MigrationContext(
-          type = SENTENCING_ADJUSTMENTS,
-          migrationId = "2020-05-23T11:30:00",
-          estimatedCount = 100_200,
-          body = NomisAdjustmentId(123, "SENTENCE")
+        whenever(
+          sentencingAdjustmentsMappingService.createNomisSentencingAdjustmentMigrationMapping(
+            any(),
+            any(),
+            any(),
+            any()
+          )
+        ).thenThrow(
+          RuntimeException("something went wrong")
         )
-      )
 
-      verify(queueService).sendMessage(
-        message = eq(RETRY_MIGRATION_MAPPING),
-        context = check<MigrationContext<SentencingAdjustmentNomisMapping>> {
-          assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
-          assertThat(it.body.nomisAdjustmentId).isEqualTo(123)
-          assertThat(it.body.nomisAdjustmentCategory).isEqualTo("SENTENCE")
-          assertThat(it.body.adjustmentId).isEqualTo("999")
-        },
-        delaySeconds = eq(0)
-      )
-    }
+        service.migrateNomisEntity(
+          MigrationContext(
+            type = SENTENCING_ADJUSTMENTS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = NomisAdjustmentId(123, "SENTENCE")
+          )
+        )
+
+        verify(queueService).sendMessage(
+          message = eq(RETRY_MIGRATION_MAPPING),
+          context = check<MigrationContext<SentencingAdjustmentNomisMapping>> {
+            assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
+            assertThat(it.body.nomisAdjustmentId).isEqualTo(123)
+            assertThat(it.body.nomisAdjustmentCategory).isEqualTo("SENTENCE")
+            assertThat(it.body.adjustmentId).isEqualTo("999")
+          },
+          delaySeconds = eq(0)
+        )
+      }
 
     @Nested
     inner class WhenMigratedAlready {

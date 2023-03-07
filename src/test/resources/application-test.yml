@@ -51,3 +51,5 @@ hmpps.sqs:
   queues:
     migrationsentencing:
       dlqMaxReceiveCount: 2
+    eventsentencing:
+      dlqMaxReceiveCount: 2

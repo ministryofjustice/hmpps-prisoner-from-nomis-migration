@@ -53,6 +53,7 @@ fun validVisitCancellationMessage() = """{
 """.trimIndent()
 
 fun validSynchroniseCurrentIncentiveMessage() = """{
-  "type":"SYNCHRONISE_CURRENT_INCENTIVE",
-  "context":{"type":"INCENTIVES","migrationId":"dummy","estimatedCount":0,"body":{"nomisBookingId":1234,"nomisIncentiveSequence":2,"incentiveId":654321}}}
+  "Type":"SYNCHRONISE_CURRENT_INCENTIVE",
+  "Message": "{\"body\":{\"nomisBookingId\":1234}, \"telemetryAttributes\": {}}"
+}
 """.trimIndent()

@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
 import java.util.concurrent.CompletableFuture
 
 @Service
@@ -31,17 +32,38 @@ class SentencingPrisonOffenderEventListener(
   fun onMessage(message: String): CompletableFuture<Void> {
     log.debug("Received offender event message {}", message)
     val sqsMessage: SQSMessage = objectMapper.readValue(message)
-    val eventType = sqsMessage.MessageAttributes.eventType.Value
     return asCompletableFuture {
-      if (eventFeatureSwitch.isEnabled(eventType)) when (eventType) {
-        "SENTENCE_ADJUSTMENT_UPSERTED" -> sentencingAdjustmentsSynchronisationService.synchroniseSentenceAdjustmentCreateOrUpdate((sqsMessage.Message.fromJson()))
-        "SENTENCE_ADJUSTMENT_DELETED" -> sentencingAdjustmentsSynchronisationService.synchroniseSentenceAdjustmentDelete((sqsMessage.Message.fromJson()))
-        "KEY_DATE_ADJUSTMENT_UPSERTED" -> sentencingAdjustmentsSynchronisationService.synchroniseKeyDateAdjustmentCreateOrUpdate((sqsMessage.Message.fromJson()))
-        "KEY_DATE_ADJUSTMENT_DELETED" -> sentencingAdjustmentsSynchronisationService.synchroniseKeyDateAdjustmentDelete((sqsMessage.Message.fromJson()))
 
-        else -> log.info("Received a message I wasn't expecting {}", eventType)
-      } else {
-        log.info("Feature switch is disabled for event {}", eventType)
+      when (sqsMessage.Type) {
+
+        "Notification" -> {
+          val eventType = sqsMessage.MessageAttributes!!.eventType.Value
+          if (eventFeatureSwitch.isEnabled(eventType)) when (eventType) {
+            "SENTENCE_ADJUSTMENT_UPSERTED" -> sentencingAdjustmentsSynchronisationService.synchroniseSentenceAdjustmentCreateOrUpdate(
+              (sqsMessage.Message.fromJson())
+            )
+
+            "SENTENCE_ADJUSTMENT_DELETED" -> sentencingAdjustmentsSynchronisationService.synchroniseSentenceAdjustmentDelete(
+              (sqsMessage.Message.fromJson())
+            )
+
+            "KEY_DATE_ADJUSTMENT_UPSERTED" -> sentencingAdjustmentsSynchronisationService.synchroniseKeyDateAdjustmentCreateOrUpdate(
+              (sqsMessage.Message.fromJson())
+            )
+
+            "KEY_DATE_ADJUSTMENT_DELETED" -> sentencingAdjustmentsSynchronisationService.synchroniseKeyDateAdjustmentDelete(
+              (sqsMessage.Message.fromJson())
+            )
+
+            else -> log.info("Received a message I wasn't expecting {}", eventType)
+          } else {
+            log.info("Feature switch is disabled for event {}", eventType)
+          }
+        }
+
+        SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING.name -> sentencingAdjustmentsSynchronisationService.retryCreateSentenceAdjustmentMapping(
+          sqsMessage.Message.fromJson()
+        )
       }
     }
   }

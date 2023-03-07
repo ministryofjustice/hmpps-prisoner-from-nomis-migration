@@ -109,7 +109,7 @@ class IncentivesSynchronisationIntTest : SqsIntegrationTestBase() {
       mappingApi.stubIncentiveMappingByNomisIds(nomisBookingId = 1234, nomisIncentiveSequence = 2, incentiveId = 4)
       incentivesApi.stubUpdateSynchroniseIncentive()
 
-      awsSqsIncentivesMigrationClient.sendMessage(incentivesMigrationUrl, message)
+      awsSqsIncentivesOffenderEventsClient.sendMessage(incentivesQueueOffenderEventsUrl, message)
 
       await untilAsserted { incentivesApi.verifyUpdateSynchroniseIncentive(1) }
 

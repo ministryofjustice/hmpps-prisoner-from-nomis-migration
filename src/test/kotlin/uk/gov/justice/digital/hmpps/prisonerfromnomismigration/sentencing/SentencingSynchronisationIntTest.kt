@@ -286,7 +286,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           @Test
           fun `will eventually partially fail with a message on the dead letter queue`() {
             await untilCallTo {
-              awsSqsVisitsMigrationDlqClient?.countAllMessagesOnQueue(sentencingMigrationDlqUrl!!)
+              awsSqsVisitsMigrationDlqClient?.countAllMessagesOnQueue(sentencingQueueOffenderEventsDlqUrl!!)
                 ?.get()
             } matches { it == 1 }
 
@@ -938,7 +938,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           @Test
           fun `will eventually partially fail with a message on the dead letter queue`() {
             await untilCallTo {
-              awsSqsVisitsMigrationDlqClient?.countAllMessagesOnQueue(sentencingMigrationDlqUrl!!)
+              awsSqsVisitsMigrationDlqClient?.countAllMessagesOnQueue(sentencingQueueOffenderEventsDlqUrl!!)
                 ?.get()
             } matches { it == 1 }
 
