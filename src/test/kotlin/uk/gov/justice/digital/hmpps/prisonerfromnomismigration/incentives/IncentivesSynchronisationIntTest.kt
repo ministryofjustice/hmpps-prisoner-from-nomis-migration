@@ -110,7 +110,7 @@ class IncentivesSynchronisationIntTest : SqsIntegrationTestBase() {
 
       awsSqsIncentivesOffenderEventsClient.sendMessage(incentivesQueueOffenderEventsUrl, message)
 
-      await untilAsserted { incentivesApi.verifyUpdateSynchroniseIncentive(1) }
+      await untilAsserted { incentivesApi.verifyUpdateSynchroniseIncentive(1, 4321) }
 
       await untilAsserted {
         verify(telemetryClient, Times(1)).trackEvent(
