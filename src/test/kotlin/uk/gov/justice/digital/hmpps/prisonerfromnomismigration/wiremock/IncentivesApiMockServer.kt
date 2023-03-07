@@ -113,6 +113,15 @@ class IncentivesApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun verifyUpdateSynchroniseIncentive(times: Int, bookingId: Long) {
+    verify(
+      times,
+      patchRequestedFor(
+        urlMatching("/iep/sync/booking/$bookingId/id/\\d*")
+      )
+    )
+  }
+
   fun verifyDeleteSynchroniseIncentive(times: Int = 1) {
     verify(
       times,

@@ -104,19 +104,25 @@ class IncentivesSynchronisationIntTest : SqsIntegrationTestBase() {
     fun `will handle a synchronise current incentive message`() {
 
       val message = validSynchroniseCurrentIncentiveMessage()
-      nomisApi.stubGetIncentive(bookingId = 1234, incentiveSequence = 2, currentIep = false)
-      nomisApi.stubGetCurrentIncentive(bookingId = 1234, incentiveSequence = 2)
-      mappingApi.stubIncentiveMappingByNomisIds(nomisBookingId = 1234, nomisIncentiveSequence = 2, incentiveId = 4)
+      nomisApi.stubGetCurrentIncentive(bookingId = 4321, incentiveSequence = 2)
+      mappingApi.stubIncentiveMappingByNomisIds(nomisBookingId = 4321, nomisIncentiveSequence = 2, incentiveId = 4)
       incentivesApi.stubUpdateSynchroniseIncentive()
 
       awsSqsIncentivesOffenderEventsClient.sendMessage(incentivesQueueOffenderEventsUrl, message)
 
-      await untilAsserted { incentivesApi.verifyUpdateSynchroniseIncentive(1) }
+      await untilAsserted { incentivesApi.verifyUpdateSynchroniseIncentive(1, 4321) }
 
       await untilAsserted {
         verify(telemetryClient, Times(1)).trackEvent(
           eq("incentive-updated-synchronisation"),
-          any(),
+          eq(
+            mapOf(
+              "bookingId" to "4321",
+              "incentiveSequence" to "2",
+              "incentiveId" to "4",
+              "currentIep" to "true"
+            )
+          ),
           isNull()
         )
       }
