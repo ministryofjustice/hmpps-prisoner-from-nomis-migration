@@ -22,7 +22,7 @@ private const val NOMIS_IEP_UI_SCREEN = "OIDOIEPS"
 class IncentivesPrisonOffenderEventListener(
   private val objectMapper: ObjectMapper,
   private val incentivesSynchronisationService: IncentivesSynchronisationService,
-  private val eventFeatureSwitch: EventFeatureSwitch
+  private val eventFeatureSwitch: EventFeatureSwitch,
 ) {
 
   private companion object {
@@ -36,40 +36,41 @@ class IncentivesPrisonOffenderEventListener(
     val sqsMessage: SQSMessage = objectMapper.readValue(message)
     return CoroutineScope(Dispatchers.Default).future {
       when (sqsMessage.Type) {
-
         "Notification" -> {
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
-          if (eventFeatureSwitch.isEnabled(eventType)) when (eventType) {
-            "IEP_UPSERTED" -> {
-              val (offenderIdDisplay, bookingId, iepSeq, auditModuleName) = objectMapper.readValue<IncentiveUpsertedOffenderEvent>(
-                sqsMessage.Message
-              )
-              log.debug("received IEP_UPSERTED Offender event for $offenderIdDisplay bookingId $bookingId and seq $iepSeq with auditModuleName $auditModuleName")
-              if (shouldSynchronise(auditModuleName)) {
-                incentivesSynchronisationService.synchroniseIncentive(objectMapper.readValue(sqsMessage.Message))
+          if (eventFeatureSwitch.isEnabled(eventType)) {
+            when (eventType) {
+              "IEP_UPSERTED" -> {
+                val (offenderIdDisplay, bookingId, iepSeq, auditModuleName) = objectMapper.readValue<IncentiveUpsertedOffenderEvent>(
+                  sqsMessage.Message,
+                )
+                log.debug("received IEP_UPSERTED Offender event for $offenderIdDisplay bookingId $bookingId and seq $iepSeq with auditModuleName $auditModuleName")
+                if (shouldSynchronise(auditModuleName)) {
+                  incentivesSynchronisationService.synchroniseIncentive(objectMapper.readValue(sqsMessage.Message))
+                }
               }
-            }
 
-            "IEP_DELETED" -> {
-              val (offenderIdDisplay, bookingId, iepSeq) = objectMapper.readValue<IncentiveDeletedOffenderEvent>(
-                sqsMessage.Message
-              )
-              log.debug("received IEP_DELETED Offender event for $offenderIdDisplay bookingId $bookingId and seq $iepSeq")
-              incentivesSynchronisationService.synchroniseDeletedIncentive(objectMapper.readValue(sqsMessage.Message))
-            }
+              "IEP_DELETED" -> {
+                val (offenderIdDisplay, bookingId, iepSeq) = objectMapper.readValue<IncentiveDeletedOffenderEvent>(
+                  sqsMessage.Message,
+                )
+                log.debug("received IEP_DELETED Offender event for $offenderIdDisplay bookingId $bookingId and seq $iepSeq")
+                incentivesSynchronisationService.synchroniseDeletedIncentive(objectMapper.readValue(sqsMessage.Message))
+              }
 
-            else -> log.info("Received a message I wasn't expecting: {}", eventType)
+              else -> log.info("Received a message I wasn't expecting: {}", eventType)
+            }
           } else {
             log.warn("Feature switch is disabled for {}", eventType)
           }
         }
 
         IncentiveSynchronisationMessageType.SYNCHRONISE_CURRENT_INCENTIVE.name -> incentivesSynchronisationService.handleSynchroniseCurrentIncentiveMessage(
-          sqsMessage.Message.fromJson()
+          sqsMessage.Message.fromJson(),
         )
 
         SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING.name -> incentivesSynchronisationService.retryCreateIncentiveMapping(
-          sqsMessage.Message.fromJson()
+          sqsMessage.Message.fromJson(),
         )
       }
     }.thenAccept { }
@@ -87,15 +88,15 @@ data class IncentiveUpsertedOffenderEvent(
   val offenderIdDisplay: String,
   val bookingId: Long,
   val iepSeq: Long,
-  val auditModuleName: String?
+  val auditModuleName: String?,
 )
 
 data class IncentiveDeletedOffenderEvent(val offenderIdDisplay: String, val bookingId: Long, val iepSeq: Long)
 
 data class IncentiveBooking(
-  val nomisBookingId: Long
+  val nomisBookingId: Long,
 )
 
 enum class IncentiveSynchronisationMessageType {
-  SYNCHRONISE_CURRENT_INCENTIVE
+  SYNCHRONISE_CURRENT_INCENTIVE,
 }

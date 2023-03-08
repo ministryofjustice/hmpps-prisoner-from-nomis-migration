@@ -10,7 +10,7 @@ import org.springframework.security.web.server.SecurityWebFilterChain
 
 @Configuration
 @EnableWebFluxSecurity
-@EnableReactiveMethodSecurity
+@EnableReactiveMethodSecurity(useAuthorizationManager = false)
 @EnableR2dbcRepositories
 class ReactiveResourceServerConfiguration {
 

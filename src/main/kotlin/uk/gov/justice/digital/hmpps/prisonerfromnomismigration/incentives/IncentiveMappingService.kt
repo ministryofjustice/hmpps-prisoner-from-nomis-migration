@@ -24,7 +24,7 @@ class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webC
       .uri(
         "/mapping/incentives/nomis-booking-id/{nomisBookingId}/nomis-incentive-sequence/{nomisIncentiveSequence}",
         nomisBookingId,
-        nomisIncentiveSequence
+        nomisIncentiveSequence,
       )
       .retrieve()
       .bodyToMono(IncentiveNomisMapping::class.java)
@@ -36,25 +36,25 @@ class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webC
     nomisBookingId: Long,
     nomisIncentiveSequence: Long,
     incentiveId: Long,
-    migrationId: String
+    migrationId: String,
   ) {
     createNomisIncentiveMapping(
       nomisBookingId = nomisBookingId,
       nomisIncentiveSequence = nomisIncentiveSequence,
       incentiveId = incentiveId,
       migrationId = migrationId,
-      mappingType = "MIGRATED"
+      mappingType = "MIGRATED",
     )
   }
 
   suspend fun createNomisIncentiveSynchronisationMapping(
-    incentiveNomisMapping: IncentiveNomisMapping
+    incentiveNomisMapping: IncentiveNomisMapping,
   ) {
     createNomisIncentiveMapping(
       nomisBookingId = incentiveNomisMapping.nomisBookingId,
       nomisIncentiveSequence = incentiveNomisMapping.nomisIncentiveSequence,
       incentiveId = incentiveNomisMapping.incentiveId,
-      mappingType = incentiveNomisMapping.mappingType
+      mappingType = incentiveNomisMapping.mappingType,
     )
   }
 
@@ -63,7 +63,7 @@ class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webC
     nomisIncentiveSequence: Long,
     incentiveId: Long,
     mappingType: String,
-    migrationId: String? = null
+    migrationId: String? = null,
   ) {
     webClient.post()
       .uri("/mapping/incentives")
@@ -73,8 +73,8 @@ class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webC
           nomisIncentiveSequence = nomisIncentiveSequence,
           incentiveId = incentiveId,
           label = migrationId,
-          mappingType = mappingType
-        )
+          mappingType = mappingType,
+        ),
       )
       .retrieve()
       .bodyToMono(Unit::class.java)
@@ -128,5 +128,5 @@ data class IncentiveNomisMapping(
   val nomisIncentiveSequence: Long,
   val incentiveId: Long,
   val label: String? = null,
-  val mappingType: String
+  val mappingType: String,
 )

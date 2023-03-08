@@ -28,14 +28,14 @@ class IncentivesMigrationService(
   auditService: AuditService,
   private val incentivesService: IncentivesService,
   private val incentiveMappingService: IncentiveMappingService,
-  @Value("\${sentencing.page.size:1000}") private val pageSize: Long
+  @Value("\${sentencing.page.size:1000}") private val pageSize: Long,
 ) : MigrationService<IncentivesMigrationFilter, IncentiveId, NomisIncentive, IncentiveNomisMapping>(
   queueService = queueService,
   auditService = auditService,
   migrationHistoryService = migrationHistoryService,
   telemetryClient = telemetryClient,
   migrationType = INCENTIVES,
-  pageSize = pageSize
+  pageSize = pageSize,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -54,7 +54,7 @@ class IncentivesMigrationService(
     return mapOf(
       "migrationType" to "Incentives",
       "fromDate" to migrationFilter.fromDate.asStringOrBlank(),
-      "toDate" to migrationFilter.toDate.asStringOrBlank()
+      "toDate" to migrationFilter.toDate.asStringOrBlank(),
     )
   }
 
@@ -82,7 +82,7 @@ class IncentivesMigrationService(
               bookingId,
               nomisIncentiveSequence = sequence,
               incentiveId = it.id,
-              context = context
+              context = context,
             )
           }
         telemetryClient.trackEvent(
@@ -94,7 +94,7 @@ class IncentivesMigrationService(
             "incentiveId" to migratedIncentive.id.toString(),
             "level" to iep.iepLevel.code,
           ),
-          null
+          null,
         )
       }
   }
@@ -133,16 +133,16 @@ class IncentivesMigrationService(
                 bookingId = nomisBookingId,
                 nomisIncentiveSequence = nomisSequence,
                 incentiveId = it.id,
-                context = context
+                context = context,
               )
             }
         telemetryClient.trackEvent(
           "nomis-migration-incentive-migrated",
           mapOf(
             "incentiveId" to incentiveIEPResponse.id.toString(),
-            "migrationId" to context.migrationId
+            "migrationId" to context.migrationId,
           ) + getTelemetryFromNomisEntity(nomisAdjustment),
-          null
+          null,
         )
       }
   }
@@ -162,7 +162,7 @@ class IncentivesMigrationService(
   } catch (e: Exception) {
     log.error(
       "Failed to create mapping for incentive $bookingId, sequence $nomisIncentiveSequence, Incentive id $incentiveId",
-      e
+      e,
     )
     queueService.sendMessage(
       MigrationMessageType.RETRY_MIGRATION_MAPPING,
@@ -172,9 +172,9 @@ class IncentivesMigrationService(
           nomisBookingId = bookingId,
           nomisIncentiveSequence = nomisIncentiveSequence,
           incentiveId = incentiveId,
-          mappingType = "MIGRATED"
-        )
-      )
+          mappingType = "MIGRATED",
+        ),
+      ),
     )
   }
 }

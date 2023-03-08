@@ -30,7 +30,7 @@ import java.time.LocalDateTime
 @RequestMapping("/migrate", produces = [MediaType.APPLICATION_JSON_VALUE])
 class IncentiveMigrationResource(
   private val incentivesMigrationService: IncentivesMigrationService,
-  private val migrationHistoryService: MigrationHistoryService
+  private val migrationHistoryService: MigrationHistoryService,
 ) {
   @PreAuthorize("hasRole('ROLE_MIGRATE_INCENTIVES')")
   @PostMapping("/incentives")
@@ -42,9 +42,9 @@ class IncentiveMigrationResource(
       content = [
         Content(
           mediaType = "application/json",
-          schema = Schema(implementation = IncentivesMigrationFilter::class)
-        )
-      ]
+          schema = Schema(implementation = IncentivesMigrationFilter::class),
+        ),
+      ],
     ),
     responses = [
       ApiResponse(
@@ -54,16 +54,19 @@ class IncentiveMigrationResource(
       ApiResponse(
         responseCode = "401",
         description = "Unauthorized to access this endpoint",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
       ),
       ApiResponse(
         responseCode = "403",
         description = "Incorrect permissions to start migration",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
-      )
-    ]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+    ],
   )
-  suspend fun migrateIncentives(@RequestBody @Valid migrationFilter: IncentivesMigrationFilter) =
+  suspend fun migrateIncentives(
+    @RequestBody @Valid
+    migrationFilter: IncentivesMigrationFilter,
+  ) =
     incentivesMigrationService.startMigration(migrationFilter)
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_INCENTIVES')")
@@ -78,21 +81,21 @@ class IncentiveMigrationResource(
         content = [
           Content(
             mediaType = "application/json",
-            array = ArraySchema(schema = Schema(implementation = MigrationHistory::class))
-          )
+            array = ArraySchema(schema = Schema(implementation = MigrationHistory::class)),
+          ),
         ],
       ),
       ApiResponse(
         responseCode = "401",
         description = "Unauthorized to access this endpoint",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
       ),
       ApiResponse(
         responseCode = "403",
         description = "Incorrect permissions to access this endpoint",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
-      )
-    ]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+    ],
   )
   suspend fun getAll(
     @Parameter(
@@ -100,14 +103,16 @@ class IncentiveMigrationResource(
       example = "2020-03-23T12:00:00",
     )
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-    @RequestParam fromDateTime: LocalDateTime? = null,
+    @RequestParam
+    fromDateTime: LocalDateTime? = null,
 
     @Parameter(
       description = "Only include migrations started before this date time",
       example = "2020-03-24T12:00:00",
     )
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-    @RequestParam toDateTime: LocalDateTime? = null,
+    @RequestParam
+    toDateTime: LocalDateTime? = null,
 
     @Parameter(
       description = "When true only include migrations that had at least one failure",
@@ -120,7 +125,7 @@ class IncentiveMigrationResource(
       fromDateTime = fromDateTime,
       toDateTime = toDateTime,
       includeOnlyFailures = includeOnlyFailures,
-    )
+    ),
   )
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_INCENTIVES')")
@@ -135,31 +140,31 @@ class IncentiveMigrationResource(
         content = [
           Content(
             mediaType = "application/json",
-            schema = Schema(implementation = MigrationHistory::class)
-          )
-        ]
+            schema = Schema(implementation = MigrationHistory::class),
+          ),
+        ],
       ),
       ApiResponse(
         responseCode = "401",
         description = "Unauthorized to access this endpoint",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
       ),
       ApiResponse(
         responseCode = "403",
         description = "Incorrect permissions to access this endpoint",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
       ),
       ApiResponse(
         responseCode = "404",
         description = "Migration not found",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
-      )
-    ]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+    ],
   )
   suspend fun get(
     @PathVariable
     @Schema(description = "Migration Id", example = "2020-03-24T12:00:00", required = true)
-    migrationId: String
+    migrationId: String,
   ) = migrationHistoryService.get(migrationId)
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_INCENTIVES')")
@@ -176,23 +181,23 @@ class IncentiveMigrationResource(
       ApiResponse(
         responseCode = "401",
         description = "Unauthorized to access this endpoint",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
       ),
       ApiResponse(
         responseCode = "403",
         description = "Incorrect permissions to access this endpoint",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
       ),
       ApiResponse(
         responseCode = "404",
         description = "No running migration found with migration id",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
-      )
-    ]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+    ],
   )
   suspend fun cancel(
     @PathVariable
     @Schema(description = "Migration Id", example = "2020-03-24T12:00:00", required = true)
-    migrationId: String
+    migrationId: String,
   ) = incentivesMigrationService.cancel(migrationId)
 }
