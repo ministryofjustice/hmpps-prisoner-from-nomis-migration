@@ -48,15 +48,13 @@ class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webC
   }
 
   suspend fun createNomisIncentiveSynchronisationMapping(
-    nomisBookingId: Long,
-    nomisIncentiveSequence: Long,
-    incentiveId: Long,
+    incentiveNomisMapping: IncentiveNomisMapping
   ) {
     createNomisIncentiveMapping(
-      nomisBookingId = nomisBookingId,
-      nomisIncentiveSequence = nomisIncentiveSequence,
-      incentiveId = incentiveId,
-      mappingType = "NOMIS_CREATED"
+      nomisBookingId = incentiveNomisMapping.nomisBookingId,
+      nomisIncentiveSequence = incentiveNomisMapping.nomisIncentiveSequence,
+      incentiveId = incentiveNomisMapping.incentiveId,
+      mappingType = incentiveNomisMapping.mappingType
     )
   }
 

@@ -100,7 +100,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
 
       await atMost Duration.ofSeconds(60) untilAsserted {
         verify(telemetryClient).trackEvent(
-          eq("nomis-migration-incentives-completed"),
+          eq("nomis-migration-completed"),
           any(),
           isNull()
         )
@@ -146,13 +146,13 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
 
       await atMost Duration.ofSeconds(60) untilAsserted {
         verify(telemetryClient).trackEvent(
-          eq("nomis-migration-incentives-completed"),
+          eq("nomis-migration-completed"),
           any(),
           isNull()
         )
       }
 
-      verify(telemetryClient).trackEvent(eq("nomis-migration-incentives-started"), any(), isNull())
+      verify(telemetryClient).trackEvent(eq("nomis-migration-started"), any(), isNull())
       verify(telemetryClient, times(26)).trackEvent(eq("nomis-migration-incentive-migrated"), any(), isNull())
 
       await untilAsserted {

@@ -18,9 +18,11 @@ import java.util.concurrent.CompletableFuture
 @Service
 class SentencingAdjustmentsMigrationMessageListener(
   objectMapper: ObjectMapper,
-  sentencingAdjustmentsMigrationService: SentencingAdjustmentsMigrationService,
-  sentencingAdjustmentsSynchronisationService: SentencingAdjustmentsSynchronisationService
-) : MigrationMessageListener<SentencingMigrationFilter, NomisAdjustmentId, NomisAdjustment, SentencingAdjustmentNomisMapping>(objectMapper, sentencingAdjustmentsMigrationService, sentencingAdjustmentsSynchronisationService) {
+  sentencingAdjustmentsMigrationService: SentencingAdjustmentsMigrationService
+) : MigrationMessageListener<SentencingMigrationFilter, NomisAdjustmentId, NomisAdjustment, SentencingAdjustmentNomisMapping>(
+  objectMapper,
+  sentencingAdjustmentsMigrationService
+) {
 
   @SqsListener(SENTENCING_ADJUSTMENTS_QUEUE_ID, factory = "hmppsQueueContainerFactoryProxy")
   @WithSpan(value = "dps-syscon-migration_sentencing_queue", kind = SpanKind.SERVER)

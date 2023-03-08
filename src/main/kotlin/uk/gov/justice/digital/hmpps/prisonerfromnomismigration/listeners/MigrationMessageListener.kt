@@ -15,7 +15,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Migrati
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_ENTITY
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_STATUS_CHECK
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.RETRY_MIGRATION_MAPPING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustmentsSynchronisationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.LocalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
@@ -24,8 +23,7 @@ import java.util.concurrent.CompletableFuture
 
 abstract class MigrationMessageListener<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
   internal val objectMapper: ObjectMapper,
-  private val migrationService: MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>,
-  private val sentencingAdjustmentsSynchronisationService: SentencingAdjustmentsSynchronisationService
+  private val migrationService: MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>
 ) {
 
   private companion object {

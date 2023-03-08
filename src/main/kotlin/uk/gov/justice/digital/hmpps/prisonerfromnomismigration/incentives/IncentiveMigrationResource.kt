@@ -64,7 +64,7 @@ class IncentiveMigrationResource(
     ]
   )
   suspend fun migrateIncentives(@RequestBody @Valid migrationFilter: IncentivesMigrationFilter) =
-    incentivesMigrationService.migrateIncentives(migrationFilter)
+    incentivesMigrationService.startMigration(migrationFilter)
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_INCENTIVES')")
   @GetMapping("/incentives/history")

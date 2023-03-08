@@ -29,19 +29,21 @@ import org.mockito.kotlin.whenever
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.CANCEL_MIGRATE_INCENTIVES
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.MIGRATE_INCENTIVE
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.MIGRATE_INCENTIVES
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.MIGRATE_INCENTIVES_BY_PAGE
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.MIGRATE_INCENTIVES_STATUS_CHECK
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.IncentiveMessages.RETRY_INCENTIVE_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.ReviewType.MIGRATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.CANCEL_MIGRATION
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_BY_PAGE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_ENTITIES
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_ENTITY
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_STATUS_CHECK
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.RETRY_MIGRATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.IncentiveId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatusCheck
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.INCENTIVES
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisCodeDescription
@@ -106,7 +108,7 @@ internal class IncentivesMigrationServiceTest {
     @Test
     internal fun `will pass filter through to get total count along with a tiny page count`() {
       runBlocking {
-        service.migrateIncentives(
+        service.startMigration(
           IncentivesMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
@@ -130,7 +132,7 @@ internal class IncentivesMigrationServiceTest {
         pages(23)
 
       runBlocking {
-        service.migrateIncentives(
+        service.startMigration(
           IncentivesMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
@@ -138,7 +140,7 @@ internal class IncentivesMigrationServiceTest {
         )
 
         verify(queueService).sendMessage(
-          message = eq(MIGRATE_INCENTIVES),
+          message = eq(MIGRATE_ENTITIES),
           context = check<MigrationContext<IncentivesMigrationFilter>> {
             assertThat(it.estimatedCount).isEqualTo(23)
             assertThat(it.body.fromDate).isEqualTo(LocalDate.parse("2020-01-01"))
@@ -160,7 +162,7 @@ internal class IncentivesMigrationServiceTest {
         pages(23)
 
       runBlocking {
-        service.migrateIncentives(
+        service.startMigration(
           incentivesMigrationFilter
         )
       }
@@ -190,7 +192,7 @@ internal class IncentivesMigrationServiceTest {
         pages(23)
 
       runBlocking {
-        service.migrateIncentives(
+        service.startMigration(
           IncentivesMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
@@ -199,7 +201,7 @@ internal class IncentivesMigrationServiceTest {
       }
 
       verify(telemetryClient).trackEvent(
-        eq("nomis-migration-incentives-started"),
+        eq("nomis-migration-started"),
         check {
           assertThat(it["migrationId"]).isNotNull
           assertThat(it["estimatedCount"]).isEqualTo("23")
@@ -223,13 +225,13 @@ internal class IncentivesMigrationServiceTest {
         pages(23)
 
       runBlocking {
-        service.migrateIncentives(
+        service.startMigration(
           IncentivesMigrationFilter()
         )
       }
 
       verify(telemetryClient).trackEvent(
-        eq("nomis-migration-incentives-started"),
+        eq("nomis-migration-started"),
         check {
           assertThat(it["migrationId"]).isNotNull
           assertThat(it["estimatedCount"]).isEqualTo("23")
@@ -242,7 +244,7 @@ internal class IncentivesMigrationServiceTest {
   }
 
   @Nested
-  @DisplayName("divideIncentivesByPage")
+  @DisplayName("divideEntitiesByPage")
   inner class DivideIncentivesByPage {
 
     @BeforeEach
@@ -254,7 +256,7 @@ internal class IncentivesMigrationServiceTest {
 
     @Test
     internal fun `will send a page message for every page (200) of incentives `(): Unit = runBlocking {
-      service.divideIncentivesByPage(
+      service.divideEntitiesByPage(
         MigrationContext(
           type = INCENTIVES,
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
@@ -266,13 +268,13 @@ internal class IncentivesMigrationServiceTest {
       )
 
       verify(queueService, times(100_200 / 200)).sendMessage(
-        eq(MIGRATE_INCENTIVES_BY_PAGE), any(), delaySeconds = eq(0)
+        eq(MIGRATE_BY_PAGE), any(), delaySeconds = eq(0)
       )
     }
 
     @Test
     internal fun `will also send a single MIGRATION_STATUS_CHECK message`(): Unit = runBlocking {
-      service.divideIncentivesByPage(
+      service.divideEntitiesByPage(
         MigrationContext(
           type = INCENTIVES,
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
@@ -284,13 +286,13 @@ internal class IncentivesMigrationServiceTest {
       )
 
       verify(queueService).sendMessage(
-        eq(MIGRATE_INCENTIVES_STATUS_CHECK), any(), any()
+        eq(MIGRATE_STATUS_CHECK), any(), any()
       )
     }
 
     @Test
     internal fun `each page with have the filter and context attached`(): Unit = runBlocking {
-      service.divideIncentivesByPage(
+      service.divideEntitiesByPage(
         MigrationContext(
           type = INCENTIVES,
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
@@ -302,8 +304,8 @@ internal class IncentivesMigrationServiceTest {
       )
 
       verify(queueService, times(100_200 / 200)).sendMessage(
-        message = eq(MIGRATE_INCENTIVES_BY_PAGE),
-        context = check<MigrationContext<IncentivesPage>> {
+        message = eq(MIGRATE_BY_PAGE),
+        context = check<MigrationContext<MigrationPage<IncentivesMigrationFilter>>> {
           assertThat(it.estimatedCount).isEqualTo(100_200)
           assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
           assertThat(it.body.filter.fromDate).isEqualTo(LocalDate.parse("2020-01-01"))
@@ -315,9 +317,9 @@ internal class IncentivesMigrationServiceTest {
 
     @Test
     internal fun `each page will contain page number and page size`(): Unit = runBlocking {
-      val context: KArgumentCaptor<MigrationContext<IncentivesPage>> = argumentCaptor()
+      val context: KArgumentCaptor<MigrationContext<MigrationPage<IncentivesMigrationFilter>>> = argumentCaptor()
 
-      service.divideIncentivesByPage(
+      service.divideEntitiesByPage(
         MigrationContext(
           type = INCENTIVES,
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
@@ -329,9 +331,9 @@ internal class IncentivesMigrationServiceTest {
       )
 
       verify(queueService, times(100_200 / 200)).sendMessage(
-        eq(MIGRATE_INCENTIVES_BY_PAGE), context.capture(), delaySeconds = eq(0)
+        eq(MIGRATE_BY_PAGE), context.capture(), delaySeconds = eq(0)
       )
-      val allContexts: List<MigrationContext<IncentivesPage>> = context.allValues
+      val allContexts: List<MigrationContext<MigrationPage<IncentivesMigrationFilter>>> = context.allValues
 
       val (firstPage, secondPage, thirdPage) = allContexts
       val lastPage = allContexts.last()
@@ -363,35 +365,35 @@ internal class IncentivesMigrationServiceTest {
 
       @Test
       internal fun `will check again in 10 seconds`(): Unit = runBlocking {
-        service.migrateIncentivesStatusCheck(
+        service.migrateStatusCheck(
           MigrationContext(
             type = INCENTIVES,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = IncentiveMigrationStatusCheck()
+            body = MigrationStatusCheck()
           )
         )
 
         verify(queueService).sendMessage(
-          eq(MIGRATE_INCENTIVES_STATUS_CHECK), any(), eq(10)
+          eq(MIGRATE_STATUS_CHECK), any(), eq(10)
         )
       }
 
       @Test
       internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit =
         runBlocking {
-          service.migrateIncentivesStatusCheck(
+          service.migrateStatusCheck(
             MigrationContext(
               type = INCENTIVES,
               migrationId = "2020-05-23T11:30:00",
               estimatedCount = 100_200,
-              body = IncentiveMigrationStatusCheck(checkCount = 4)
+              body = MigrationStatusCheck(checkCount = 4)
             )
           )
 
           verify(queueService).sendMessage(
-            message = eq(MIGRATE_INCENTIVES_STATUS_CHECK),
-            context = check<MigrationContext<IncentiveMigrationStatusCheck>> {
+            message = eq(MIGRATE_STATUS_CHECK),
+            context = check<MigrationContext<MigrationStatusCheck>> {
               assertThat(it.body.checkCount).isEqualTo(0)
             },
             delaySeconds = eq(10)
@@ -411,18 +413,18 @@ internal class IncentivesMigrationServiceTest {
 
       @Test
       internal fun `will increment check count and try again a second when only checked 9 times`(): Unit = runBlocking {
-        service.migrateIncentivesStatusCheck(
+        service.migrateStatusCheck(
           MigrationContext(
             type = INCENTIVES,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = IncentiveMigrationStatusCheck(checkCount = 9)
+            body = MigrationStatusCheck(checkCount = 9)
           )
         )
 
         verify(queueService).sendMessage(
-          message = eq(MIGRATE_INCENTIVES_STATUS_CHECK),
-          context = check<MigrationContext<IncentiveMigrationStatusCheck>> {
+          message = eq(MIGRATE_STATUS_CHECK),
+          context = check<MigrationContext<MigrationStatusCheck>> {
             assertThat(it.body.checkCount).isEqualTo(10)
           },
           delaySeconds = eq(1)
@@ -431,33 +433,33 @@ internal class IncentivesMigrationServiceTest {
 
       @Test
       internal fun `will finish off when checked 10 times previously`(): Unit = runBlocking {
-        service.migrateIncentivesStatusCheck(
+        service.migrateStatusCheck(
           MigrationContext(
             type = INCENTIVES,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = IncentiveMigrationStatusCheck(checkCount = 10)
+            body = MigrationStatusCheck(checkCount = 10)
           )
         )
 
         verify(queueService, never()).sendMessage(
-          message = eq(MIGRATE_INCENTIVES_STATUS_CHECK), context = any(), delaySeconds = any()
+          message = eq(MIGRATE_STATUS_CHECK), context = any(), delaySeconds = any()
         )
       }
 
       @Test
       internal fun `will add completed telemetry when finishing off`(): Unit = runBlocking {
-        service.migrateIncentivesStatusCheck(
+        service.migrateStatusCheck(
           MigrationContext(
             type = INCENTIVES,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 23,
-            body = IncentiveMigrationStatusCheck(checkCount = 10)
+            body = MigrationStatusCheck(checkCount = 10)
           )
         )
 
         verify(telemetryClient).trackEvent(
-          eq("nomis-migration-incentives-completed"),
+          eq("nomis-migration-completed"),
           check {
             assertThat(it["migrationId"]).isNotNull
             assertThat(it["estimatedCount"]).isEqualTo("23")
@@ -472,12 +474,12 @@ internal class IncentivesMigrationServiceTest {
         whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(2)
         whenever(incentiveMappingService.getMigrationCount("2020-05-23T11:30:00")).thenReturn(21)
 
-        service.migrateIncentivesStatusCheck(
+        service.migrateStatusCheck(
           MigrationContext(
             type = INCENTIVES,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 23,
-            body = IncentiveMigrationStatusCheck(checkCount = 10)
+            body = MigrationStatusCheck(checkCount = 10)
           )
         )
 
@@ -491,7 +493,7 @@ internal class IncentivesMigrationServiceTest {
   }
 
   @Nested
-  @DisplayName("cancelMigrateIncentivesStatusCheck")
+  @DisplayName("cancelMigrateStatusCheck")
   inner class CancelMigrateIncentivesStatusCheck {
     @Nested
     @DisplayName("when there are still messages on the queue")
@@ -503,37 +505,37 @@ internal class IncentivesMigrationServiceTest {
 
       @Test
       internal fun `will check again in 10 seconds`(): Unit = runBlocking {
-        service.cancelMigrateIncentivesStatusCheck(
+        service.cancelMigrateStatusCheck(
           MigrationContext(
             type = INCENTIVES,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = IncentiveMigrationStatusCheck()
+            body = MigrationStatusCheck()
           )
         )
 
         verify(queueService).purgeAllMessages(any())
         verify(queueService).sendMessage(
-          eq(CANCEL_MIGRATE_INCENTIVES), any(), eq(10)
+          eq(CANCEL_MIGRATION), any(), eq(10)
         )
       }
 
       @Test
       internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit =
         runBlocking {
-          service.cancelMigrateIncentivesStatusCheck(
+          service.cancelMigrateStatusCheck(
             MigrationContext(
               type = INCENTIVES,
               migrationId = "2020-05-23T11:30:00",
               estimatedCount = 100_200,
-              body = IncentiveMigrationStatusCheck(checkCount = 4)
+              body = MigrationStatusCheck(checkCount = 4)
             )
           )
 
           verify(queueService).purgeAllMessages(any())
           verify(queueService).sendMessage(
-            message = eq(CANCEL_MIGRATE_INCENTIVES),
-            context = check<MigrationContext<IncentiveMigrationStatusCheck>> {
+            message = eq(CANCEL_MIGRATION),
+            context = check<MigrationContext<MigrationStatusCheck>> {
               assertThat(it.body.checkCount).isEqualTo(0)
             },
             delaySeconds = eq(10)
@@ -553,20 +555,20 @@ internal class IncentivesMigrationServiceTest {
 
       @Test
       internal fun `will increment check count and try again a second when only checked 9 times`(): Unit = runBlocking {
-        service.cancelMigrateIncentivesStatusCheck(
+        service.cancelMigrateStatusCheck(
           MigrationContext(
             type = INCENTIVES,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = IncentiveMigrationStatusCheck(checkCount = 9)
+            body = MigrationStatusCheck(checkCount = 9)
           )
         )
 
         verify(queueService).purgeAllMessages(check { assertThat(it).isEqualTo(INCENTIVES) })
 
         verify(queueService).sendMessage(
-          message = eq(CANCEL_MIGRATE_INCENTIVES),
-          context = check<MigrationContext<IncentiveMigrationStatusCheck>> {
+          message = eq(CANCEL_MIGRATION),
+          context = check<MigrationContext<MigrationStatusCheck>> {
             assertThat(it.body.checkCount).isEqualTo(10)
           },
           delaySeconds = eq(1)
@@ -575,34 +577,34 @@ internal class IncentivesMigrationServiceTest {
 
       @Test
       internal fun `will finish off when checked 10 times previously`(): Unit = runBlocking {
-        service.cancelMigrateIncentivesStatusCheck(
+        service.cancelMigrateStatusCheck(
           MigrationContext(
             type = INCENTIVES,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = IncentiveMigrationStatusCheck(checkCount = 10)
+            body = MigrationStatusCheck(checkCount = 10)
           )
         )
 
         verify(queueService, never()).purgeAllMessages(check { assertThat(it).isEqualTo(INCENTIVES) })
         verify(queueService, never()).sendMessage(
-          message = eq(CANCEL_MIGRATE_INCENTIVES), context = any(), delaySeconds = any()
+          message = eq(CANCEL_MIGRATION), context = any(), delaySeconds = any()
         )
       }
 
       @Test
       internal fun `will add completed telemetry when finishing off`(): Unit = runBlocking {
-        service.cancelMigrateIncentivesStatusCheck(
+        service.cancelMigrateStatusCheck(
           MigrationContext(
             type = INCENTIVES,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 23,
-            body = IncentiveMigrationStatusCheck(checkCount = 10)
+            body = MigrationStatusCheck(checkCount = 10)
           )
         )
 
         verify(telemetryClient).trackEvent(
-          eq("nomis-migration-incentives-cancelled"),
+          eq("nomis-migration-cancelled"),
           check {
             assertThat(it["migrationId"]).isNotNull
             assertThat(it["estimatedCount"]).isEqualTo("23")
@@ -617,12 +619,12 @@ internal class IncentivesMigrationServiceTest {
         whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(2)
         whenever(incentiveMappingService.getMigrationCount("2020-05-23T11:30:00")).thenReturn(21)
 
-        service.cancelMigrateIncentivesStatusCheck(
+        service.cancelMigrateStatusCheck(
           MigrationContext(
             type = INCENTIVES,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 23,
-            body = IncentiveMigrationStatusCheck(checkCount = 10)
+            body = MigrationStatusCheck(checkCount = 10)
           )
         )
 
@@ -636,7 +638,7 @@ internal class IncentivesMigrationServiceTest {
   }
 
   @Nested
-  @DisplayName("migrateIncentivesForPage")
+  @DisplayName("migrateEntitiesForPage")
   inner class MigrateIncentivesForPage {
     @BeforeEach
     internal fun setUp(): Unit = runBlocking {
@@ -648,11 +650,11 @@ internal class IncentivesMigrationServiceTest {
 
     @Test
     internal fun `will pass filter through to get total count along with a tiny page count`(): Unit = runBlocking {
-      service.migrateIncentivesForPage(
+      service.migrateEntitiesForPage(
         MigrationContext(
           type = INCENTIVES,
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
-          body = IncentivesPage(
+          body = MigrationPage(
             filter = IncentivesMigrationFilter(
               fromDate = LocalDate.parse("2020-01-01"),
               toDate = LocalDate.parse("2020-01-02"),
@@ -671,12 +673,12 @@ internal class IncentivesMigrationServiceTest {
     }
 
     @Test
-    internal fun `will send MIGRATE_INCENTIVE with context for each incentive`(): Unit = runBlocking {
-      service.migrateIncentivesForPage(
+    internal fun `will send MIGRATE_ENTITY with context for each incentive`(): Unit = runBlocking {
+      service.migrateEntitiesForPage(
         MigrationContext(
           type = INCENTIVES,
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
-          body = IncentivesPage(
+          body = MigrationPage(
             filter = IncentivesMigrationFilter(
               fromDate = LocalDate.parse("2020-01-01"),
               toDate = LocalDate.parse("2020-01-02"),
@@ -687,7 +689,7 @@ internal class IncentivesMigrationServiceTest {
       )
 
       verify(queueService, times(15)).sendMessage(
-        message = eq(MIGRATE_INCENTIVE),
+        message = eq(MIGRATE_ENTITY),
         context = check<MigrationContext<IncentivesMigrationFilter>> {
           assertThat(it.estimatedCount).isEqualTo(100_200)
           assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
@@ -697,7 +699,7 @@ internal class IncentivesMigrationServiceTest {
     }
 
     @Test
-    internal fun `will send MIGRATE_INCENTIVE with bookingId for each incentive`(): Unit = runBlocking {
+    internal fun `will send MIGRATE_ENTITY with bookingId for each incentive`(): Unit = runBlocking {
 
       val context: KArgumentCaptor<MigrationContext<IncentiveId>> = argumentCaptor()
 
@@ -707,11 +709,11 @@ internal class IncentivesMigrationServiceTest {
         )
       )
 
-      service.migrateIncentivesForPage(
+      service.migrateEntitiesForPage(
         MigrationContext(
           type = INCENTIVES,
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
-          body = IncentivesPage(
+          body = MigrationPage(
             filter = IncentivesMigrationFilter(
               fromDate = LocalDate.parse("2020-01-01"),
               toDate = LocalDate.parse("2020-01-02"),
@@ -722,7 +724,7 @@ internal class IncentivesMigrationServiceTest {
       )
 
       verify(queueService, times(15)).sendMessage(
-        eq(MIGRATE_INCENTIVE), context.capture(), delaySeconds = eq(0)
+        eq(MIGRATE_ENTITY), context.capture(), delaySeconds = eq(0)
 
       )
       val allContexts: List<MigrationContext<IncentiveId>> = context.allValues
@@ -737,7 +739,7 @@ internal class IncentivesMigrationServiceTest {
     }
 
     @Test
-    internal fun `will not send MIGRATE_INCENTIVE when cancelling`(): Unit = runBlocking {
+    internal fun `will not send MIGRATE_ENTITY when cancelling`(): Unit = runBlocking {
       whenever(migrationHistoryService.isCancelling(any())).thenReturn(true)
 
       whenever(nomisApiService.getIncentives(any(), any(), any(), any())).thenReturn(
@@ -746,11 +748,11 @@ internal class IncentivesMigrationServiceTest {
         )
       )
 
-      service.migrateIncentivesForPage(
+      service.migrateEntitiesForPage(
         MigrationContext(
           type = INCENTIVES,
           migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
-          body = IncentivesPage(
+          body = MigrationPage(
             filter = IncentivesMigrationFilter(
               fromDate = LocalDate.parse("2020-01-01"),
               toDate = LocalDate.parse("2020-01-02"),
@@ -913,8 +915,8 @@ internal class IncentivesMigrationServiceTest {
         )
 
         verify(queueService).sendMessage(
-          message = eq(RETRY_INCENTIVE_MAPPING),
-          context = check<MigrationContext<IncentiveMapping>> {
+          message = eq(RETRY_MIGRATION_MAPPING),
+          context = check<MigrationContext<IncentiveNomisMapping>> {
             assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
             assertThat(it.body.nomisBookingId).isEqualTo(123)
             assertThat(it.body.nomisIncentiveSequence).isEqualTo(2)

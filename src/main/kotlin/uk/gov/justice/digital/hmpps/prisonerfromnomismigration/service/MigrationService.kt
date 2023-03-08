@@ -31,7 +31,7 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
 
   abstract suspend fun retryCreateMapping(context: MigrationContext<MAPPING>)
 
-  suspend fun migrateAdjustments(migrationFilter: FILTER): MigrationContext<FILTER> {
+  suspend fun startMigration(migrationFilter: FILTER): MigrationContext<FILTER> {
     val count = getIds(
       migrationFilter,
       pageSize = 1,
