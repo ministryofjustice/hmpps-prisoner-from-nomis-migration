@@ -5,6 +5,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.ReviewType.REVIEW
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisIncentive
@@ -42,7 +43,7 @@ class IncentivesSynchronisationService(
           // nomis allows an IEP creation and updates to other IEPs in the same transaction. This delay will mitigate against an update being
           // processed before a create request (and potentially creating a duplicate in nomis)
           queueService.sendMessage(
-            messageType = IncentiveMessages.SYNCHRONISE_CURRENT_INCENTIVE.name,
+            messageType = IncentiveSynchronisationMessageType.SYNCHRONISE_CURRENT_INCENTIVE.name,
             synchronisationType = SynchronisationType.INCENTIVES,
             message = IncentiveBooking(
               nomisBookingId = iepEvent.bookingId
@@ -155,9 +156,12 @@ class IncentivesSynchronisationService(
   ) {
     try {
       mappingService.createNomisIncentiveSynchronisationMapping(
-        nomisBookingId = nomisIncentive.bookingId,
-        nomisIncentiveSequence = nomisIncentive.incentiveSequence,
-        incentiveId = it.id
+        IncentiveNomisMapping(
+          nomisBookingId = nomisIncentive.bookingId,
+          nomisIncentiveSequence = nomisIncentive.incentiveSequence,
+          incentiveId = it.id,
+          mappingType = "NOMIS_CREATED"
+        )
       )
     } catch (e: Exception) {
       log.error(
@@ -165,23 +169,22 @@ class IncentivesSynchronisationService(
         e
       )
       queueService.sendMessage(
-        IncentiveMessages.RETRY_INCENTIVE_SYNCHRONISATION_MAPPING.name,
+        SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING.name,
         SynchronisationType.INCENTIVES,
-        IncentiveMapping(
+        IncentiveNomisMapping(
           nomisBookingId = nomisIncentive.bookingId,
           nomisIncentiveSequence = nomisIncentive.incentiveSequence,
-          incentiveId = it.id
+          incentiveId = it.id,
+          mappingType = "NOMIS_CREATED"
         )
       )
     }
   }
 
-  suspend fun retryCreateIncentiveMapping(internalMessage: InternalMessage<IncentiveMapping>) {
+  suspend fun retryCreateIncentiveMapping(internalMessage: InternalMessage<IncentiveNomisMapping>) {
     log.info("Retrying mapping creation for booking id: ${internalMessage.body.nomisBookingId}, noms seq: ${internalMessage.body.nomisIncentiveSequence}, incentive id : ${internalMessage.body.incentiveId}")
     mappingService.createNomisIncentiveSynchronisationMapping(
-      nomisBookingId = internalMessage.body.nomisBookingId,
-      nomisIncentiveSequence = internalMessage.body.nomisIncentiveSequence,
-      incentiveId = internalMessage.body.incentiveId,
+      incentiveNomisMapping = internalMessage.body
     )
   }
 }

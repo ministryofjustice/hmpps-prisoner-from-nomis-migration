@@ -107,7 +107,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
     @Test
     internal fun `will pass filter through to get total count along with a tiny page count`() {
       runBlocking {
-        service.migrateAdjustments(
+        service.startMigration(
           SentencingMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
@@ -131,7 +131,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
         pages(23)
 
       runBlocking {
-        service.migrateAdjustments(
+        service.startMigration(
           SentencingMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
@@ -161,7 +161,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
         pages(23)
 
       runBlocking {
-        service.migrateAdjustments(
+        service.startMigration(
           sentencingMigrationFilter
         )
       }
@@ -191,7 +191,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
         pages(23)
 
       runBlocking {
-        service.migrateAdjustments(
+        service.startMigration(
           SentencingMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
@@ -225,7 +225,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
         pages(23)
 
       runBlocking {
-        service.migrateAdjustments(
+        service.startMigration(
           SentencingMigrationFilter()
         )
       }

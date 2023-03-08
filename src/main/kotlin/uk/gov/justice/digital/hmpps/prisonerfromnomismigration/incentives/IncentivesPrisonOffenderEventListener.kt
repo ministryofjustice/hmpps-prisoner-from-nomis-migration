@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
 import java.util.concurrent.CompletableFuture
 
 private const val NOMIS_IEP_UI_SCREEN = "OIDOIEPS"
@@ -63,11 +64,11 @@ class IncentivesPrisonOffenderEventListener(
           }
         }
 
-        IncentiveMessages.SYNCHRONISE_CURRENT_INCENTIVE.name -> incentivesSynchronisationService.handleSynchroniseCurrentIncentiveMessage(
+        IncentiveSynchronisationMessageType.SYNCHRONISE_CURRENT_INCENTIVE.name -> incentivesSynchronisationService.handleSynchroniseCurrentIncentiveMessage(
           sqsMessage.Message.fromJson()
         )
 
-        IncentiveMessages.RETRY_INCENTIVE_SYNCHRONISATION_MAPPING.name -> incentivesSynchronisationService.retryCreateIncentiveMapping(
+        SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING.name -> incentivesSynchronisationService.retryCreateIncentiveMapping(
           sqsMessage.Message.fromJson()
         )
       }
@@ -94,3 +95,7 @@ data class IncentiveDeletedOffenderEvent(val offenderIdDisplay: String, val book
 data class IncentiveBooking(
   val nomisBookingId: Long
 )
+
+enum class IncentiveSynchronisationMessageType {
+  SYNCHRONISE_CURRENT_INCENTIVE
+}
