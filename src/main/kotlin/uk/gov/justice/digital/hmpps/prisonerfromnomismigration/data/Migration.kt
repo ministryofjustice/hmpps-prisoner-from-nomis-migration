@@ -13,5 +13,5 @@ data class MigrationDetails(
 }
 
 data class MigratedItem(
-  val whenCreated: LocalDateTime
+  val whenCreated: LocalDateTime,
 )

@@ -29,7 +29,7 @@ class SentencingAdjustmentsSynchronisationService(
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent(
         "sentence-adjustment-synchronisation-skipped",
-        event.toTelemetryProperties()
+        event.toTelemetryProperties(),
       )
       return
     }
@@ -37,12 +37,12 @@ class SentencingAdjustmentsSynchronisationService(
       ?.also { nomisAdjustment ->
         sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMapping(
           nomisAdjustmentId = event.adjustmentId,
-          nomisAdjustmentCategory = "SENTENCE"
+          nomisAdjustmentCategory = "SENTENCE",
         )?.let {
           sentencingService.updateSentencingAdjustment(it.adjustmentId, nomisAdjustment.toSentencingAdjustment())
           telemetryClient.trackEvent(
             "sentence-adjustment-updated-synchronisation-success",
-            event.toTelemetryProperties(it.adjustmentId)
+            event.toTelemetryProperties(it.adjustmentId),
           )
         } ?: let {
           sentencingService.createSentencingAdjustment(nomisAdjustment.toSentencingAdjustment()).also { adjustment ->
@@ -57,7 +57,7 @@ class SentencingAdjustmentsSynchronisationService(
       } ?: also {
       telemetryClient.trackEvent(
         "sentence-adjustment-hidden-synchronisation-skipped",
-        event.toTelemetryProperties()
+        event.toTelemetryProperties(),
       )
     }
   }
@@ -66,24 +66,24 @@ class SentencingAdjustmentsSynchronisationService(
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent(
         "sentence-adjustment-delete-synchronisation-skipped",
-        event.toTelemetryProperties()
+        event.toTelemetryProperties(),
       )
       return
     }
     sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMapping(
       nomisAdjustmentId = event.adjustmentId,
-      nomisAdjustmentCategory = "SENTENCE"
+      nomisAdjustmentCategory = "SENTENCE",
     )?.let {
       sentencingService.deleteSentencingAdjustment(it.adjustmentId)
       sentencingAdjustmentsMappingService.deleteNomisSentenceAdjustmentMapping(it.adjustmentId)
       telemetryClient.trackEvent(
         "sentence-adjustment-delete-synchronisation-success",
-        event.toTelemetryProperties(adjustmentId = it.adjustmentId)
+        event.toTelemetryProperties(adjustmentId = it.adjustmentId),
       )
     } ?: let {
       telemetryClient.trackEvent(
         "sentence-adjustment-delete-synchronisation-ignored",
-        event.toTelemetryProperties()
+        event.toTelemetryProperties(),
       )
     }
   }
@@ -92,19 +92,19 @@ class SentencingAdjustmentsSynchronisationService(
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent(
         "key-date-adjustment-synchronisation-skipped",
-        event.toTelemetryProperties()
+        event.toTelemetryProperties(),
       )
       return
     }
     val nomisAdjustment = nomisApiService.getKeyDateAdjustment(event.adjustmentId)
     sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMapping(
       nomisAdjustmentId = event.adjustmentId,
-      nomisAdjustmentCategory = "KEY-DATE"
+      nomisAdjustmentCategory = "KEY-DATE",
     )?.let {
       sentencingService.updateSentencingAdjustment(it.adjustmentId, nomisAdjustment.toSentencingAdjustment())
       telemetryClient.trackEvent(
         "key-date-adjustment-updated-synchronisation-success",
-        event.toTelemetryProperties(it.adjustmentId)
+        event.toTelemetryProperties(it.adjustmentId),
       )
     } ?: let {
       sentencingService.createSentencingAdjustment(nomisAdjustment.toSentencingAdjustment()).also { adjustment ->
@@ -122,42 +122,42 @@ class SentencingAdjustmentsSynchronisationService(
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent(
         "key-date-adjustment-delete-synchronisation-skipped",
-        event.toTelemetryProperties()
+        event.toTelemetryProperties(),
       )
       return
     }
     sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMapping(
       nomisAdjustmentId = event.adjustmentId,
-      nomisAdjustmentCategory = "KEY-DATE"
+      nomisAdjustmentCategory = "KEY-DATE",
     )?.let {
       sentencingService.deleteSentencingAdjustment(it.adjustmentId)
       sentencingAdjustmentsMappingService.deleteNomisSentenceAdjustmentMapping(it.adjustmentId)
       telemetryClient.trackEvent(
         "key-date-adjustment-delete-synchronisation-success",
-        event.toTelemetryProperties(adjustmentId = it.adjustmentId)
+        event.toTelemetryProperties(adjustmentId = it.adjustmentId),
       )
     } ?: let {
       telemetryClient.trackEvent(
         "key-date-adjustment-delete-synchronisation-ignored",
-        event.toTelemetryProperties()
+        event.toTelemetryProperties(),
       )
     }
   }
 
   enum class MappingResponse {
     MAPPING_CREATED,
-    MAPPING_FAILED
+    MAPPING_FAILED,
   }
 
   suspend fun tryToCreateSentenceMapping(
     event: SentenceAdjustmentOffenderEvent,
-    adjustmentId: String
+    adjustmentId: String,
   ): MappingResponse =
     try {
       sentencingAdjustmentsMappingService.createNomisSentencingAdjustmentSynchronisationMapping(
         nomisAdjustmentId = event.adjustmentId,
         nomisAdjustmentCategory = "SENTENCE",
-        adjustmentId = adjustmentId
+        adjustmentId = adjustmentId,
       ).also {
         if (it.isError) {
           val duplicateErrorDetails = it.errorResponse!!.moreInfo
@@ -169,9 +169,9 @@ class SentencingAdjustmentsSynchronisationService(
               "duplicateNomisAdjustmentCategory" to duplicateErrorDetails.duplicateAdjustment.nomisAdjustmentCategory,
               "existingAdjustmentId" to duplicateErrorDetails.existingAdjustment.adjustmentId,
               "existingNomisAdjustmentId" to duplicateErrorDetails.existingAdjustment.nomisAdjustmentId.toString(),
-              "existingNomisAdjustmentCategory" to duplicateErrorDetails.existingAdjustment.nomisAdjustmentCategory
+              "existingNomisAdjustmentCategory" to duplicateErrorDetails.existingAdjustment.nomisAdjustmentCategory,
             ),
-            null
+            null,
           )
         }
       }
@@ -179,7 +179,7 @@ class SentencingAdjustmentsSynchronisationService(
     } catch (e: Exception) {
       log.error(
         "Failed to create mapping for adjustment id $adjustmentId, nomisAdjustmentId ${event.adjustmentId}, nomisAdjustmentCategory SENTENCE",
-        e
+        e,
       )
       queueService.sendMessage(
         messageType = SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING.name,
@@ -188,28 +188,28 @@ class SentencingAdjustmentsSynchronisationService(
           nomisAdjustmentId = event.adjustmentId,
           nomisAdjustmentCategory = "SENTENCE",
           adjustmentId = adjustmentId,
-          mappingType = "NOMIS_CREATED"
+          mappingType = "NOMIS_CREATED",
         ),
-        telemetryAttributes = event.toTelemetryProperties(adjustmentId)
+        telemetryAttributes = event.toTelemetryProperties(adjustmentId),
       )
       MAPPING_FAILED
     }
 
   suspend fun tryToCreateKeyDateMapping(
     event: KeyDateAdjustmentOffenderEvent,
-    adjustmentId: String
+    adjustmentId: String,
   ): MappingResponse =
     try {
       sentencingAdjustmentsMappingService.createNomisSentencingAdjustmentSynchronisationMapping(
         nomisAdjustmentId = event.adjustmentId,
         nomisAdjustmentCategory = "KEY-DATE",
-        adjustmentId = adjustmentId
+        adjustmentId = adjustmentId,
       )
       MAPPING_CREATED
     } catch (e: Exception) {
       log.error(
         "Failed to create mapping for adjustment id $adjustmentId, nomisAdjustmentId ${event.adjustmentId}, nomisAdjustmentCategory KEY-DATE",
-        e
+        e,
       )
       queueService.sendMessage(
         messageType = SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING.name,
@@ -218,9 +218,9 @@ class SentencingAdjustmentsSynchronisationService(
           nomisAdjustmentId = event.adjustmentId,
           nomisAdjustmentCategory = "KEY-DATE",
           adjustmentId = adjustmentId,
-          mappingType = "NOMIS_CREATED"
+          mappingType = "NOMIS_CREATED",
         ),
-        telemetryAttributes = event.toTelemetryProperties(adjustmentId)
+        telemetryAttributes = event.toTelemetryProperties(adjustmentId),
       )
       MAPPING_FAILED
     }
@@ -229,11 +229,11 @@ class SentencingAdjustmentsSynchronisationService(
     sentencingAdjustmentsMappingService.createNomisSentencingAdjustmentSynchronisationMapping(
       nomisAdjustmentId = retryMessage.body.nomisAdjustmentId,
       nomisAdjustmentCategory = retryMessage.body.nomisAdjustmentCategory,
-      adjustmentId = retryMessage.body.adjustmentId
+      adjustmentId = retryMessage.body.adjustmentId,
     ).also {
       telemetryClient.trackEvent(
         "adjustment-mapping-created-synchronisation-success",
-        retryMessage.telemetryAttributes
+        retryMessage.telemetryAttributes,
       )
     }
   }

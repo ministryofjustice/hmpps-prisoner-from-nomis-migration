@@ -18,7 +18,7 @@ class IncentivesSynchronisationService(
   private val telemetryClient: TelemetryClient,
   private val mappingService: IncentiveMappingService,
   private val incentiveService: IncentivesService,
-  private val queueService: SynchronisationQueueService
+  private val queueService: SynchronisationQueueService,
 ) {
 
   private companion object {
@@ -27,12 +27,11 @@ class IncentivesSynchronisationService(
 
   suspend fun synchroniseIncentive(iepEvent: IncentiveUpsertedOffenderEvent) {
     nomisApiService.getIncentive(iepEvent.bookingId, iepEvent.iepSeq).run {
-
       log.debug("received nomis incentive: ${this@run}")
 
       mappingService.findNomisIncentiveMapping(
         nomisBookingId = bookingId,
-        nomisIncentiveSequence = incentiveSequence
+        nomisIncentiveSequence = incentiveSequence,
       )?.let { incentiveMapping ->
         log.debug("found nomis incentive mapping: $incentiveMapping")
         updateIncentiveService(this@run, incentiveMapping)
@@ -46,9 +45,9 @@ class IncentivesSynchronisationService(
             messageType = IncentiveSynchronisationMessageType.SYNCHRONISE_CURRENT_INCENTIVE.name,
             synchronisationType = SynchronisationType.INCENTIVES,
             message = IncentiveBooking(
-              nomisBookingId = iepEvent.bookingId
+              nomisBookingId = iepEvent.bookingId,
             ),
-            delaySeconds = 5
+            delaySeconds = 5,
           )
         }
       } ?: run {
@@ -61,16 +60,16 @@ class IncentivesSynchronisationService(
   suspend fun synchroniseDeletedIncentive(iepEvent: IncentiveDeletedOffenderEvent) {
     mappingService.findNomisIncentiveMapping(
       nomisBookingId = iepEvent.bookingId,
-      nomisIncentiveSequence = iepEvent.iepSeq
+      nomisIncentiveSequence = iepEvent.iepSeq,
     )?.let {
       log.debug("found incentive mapping that requires deleting: $it")
       resynchroniseCurrentIncentive(iepEvent.bookingId)
       incentiveService.synchroniseDeleteIncentive(
         bookingId = it.nomisBookingId,
-        incentiveId = it.incentiveId
+        incentiveId = it.incentiveId,
       )
       mappingService.deleteIncentiveMapping(
-        incentiveId = it.incentiveId
+        incentiveId = it.incentiveId,
       )
       telemetryClient.trackEvent(
         "incentive-delete-synchronisation",
@@ -79,7 +78,7 @@ class IncentivesSynchronisationService(
           "incentiveSequence" to iepEvent.iepSeq.toString(),
           "incentiveId" to it.incentiveId.toString(),
         ),
-        null
+        null,
       )
     } ?: run {
       log.warn("no incentive mapping found, ignoring the delete for ${iepEvent.bookingId} / ${iepEvent.iepSeq}")
@@ -89,7 +88,7 @@ class IncentivesSynchronisationService(
           "bookingId" to iepEvent.bookingId.toString(),
           "incentiveSequence" to iepEvent.iepSeq.toString(),
         ),
-        null
+        null,
       )
     }
   }
@@ -103,7 +102,7 @@ class IncentivesSynchronisationService(
       // get mapping for current IEP
       mappingService.findNomisIncentiveMapping(
         nomisBookingId = currentIep.bookingId,
-        nomisIncentiveSequence = currentIep.incentiveSequence
+        nomisIncentiveSequence = currentIep.incentiveSequence,
       )?.let { currentIepMapping ->
         log.debug("found mapping for current IEP $currentIep ")
         updateIncentiveService(currentIep, currentIepMapping)
@@ -122,20 +121,21 @@ class IncentivesSynchronisationService(
         mapOf(
           "bookingId" to nomisIncentive.bookingId.toString(),
           "incentiveSequence" to nomisIncentive.incentiveSequence.toString(),
-          "incentiveId" to it.id.toString()
+          "incentiveId" to it.id.toString(),
         ),
-        null
+        null,
       )
     }
   }
 
   private suspend fun updateIncentiveService(
     nomisIep: NomisIncentive,
-    iepMapping: IncentiveNomisMapping
+    iepMapping: IncentiveNomisMapping,
   ) {
     incentiveService.synchroniseUpdateIncentive(
-      nomisIep.bookingId, iepMapping.incentiveId,
-      nomisIep.toUpdateIncentive()
+      nomisIep.bookingId,
+      iepMapping.incentiveId,
+      nomisIep.toUpdateIncentive(),
     )
 
     telemetryClient.trackEvent(
@@ -144,15 +144,15 @@ class IncentivesSynchronisationService(
         "bookingId" to nomisIep.bookingId.toString(),
         "incentiveSequence" to nomisIep.incentiveSequence.toString(),
         "incentiveId" to iepMapping.incentiveId.toString(),
-        "currentIep" to nomisIep.currentIep.toString()
+        "currentIep" to nomisIep.currentIep.toString(),
       ),
-      null
+      null,
     )
   }
 
   private suspend fun createIncentiveMapping(
     nomisIncentive: NomisIncentive,
-    it: CreateIncentiveIEPResponse
+    it: CreateIncentiveIEPResponse,
   ) {
     try {
       mappingService.createNomisIncentiveSynchronisationMapping(
@@ -160,13 +160,13 @@ class IncentivesSynchronisationService(
           nomisBookingId = nomisIncentive.bookingId,
           nomisIncentiveSequence = nomisIncentive.incentiveSequence,
           incentiveId = it.id,
-          mappingType = "NOMIS_CREATED"
-        )
+          mappingType = "NOMIS_CREATED",
+        ),
       )
     } catch (e: Exception) {
       log.error(
         "Failed to create mapping for incentive id ${it.id}, nomisBookingId ${nomisIncentive.bookingId}, nomsSequence ${nomisIncentive.incentiveSequence}",
-        e
+        e,
       )
       queueService.sendMessage(
         SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING.name,
@@ -175,8 +175,8 @@ class IncentivesSynchronisationService(
           nomisBookingId = nomisIncentive.bookingId,
           nomisIncentiveSequence = nomisIncentive.incentiveSequence,
           incentiveId = it.id,
-          mappingType = "NOMIS_CREATED"
-        )
+          mappingType = "NOMIS_CREATED",
+        ),
       )
     }
   }
@@ -184,7 +184,7 @@ class IncentivesSynchronisationService(
   suspend fun retryCreateIncentiveMapping(internalMessage: InternalMessage<IncentiveNomisMapping>) {
     log.info("Retrying mapping creation for booking id: ${internalMessage.body.nomisBookingId}, noms seq: ${internalMessage.body.nomisIncentiveSequence}, incentive id : ${internalMessage.body.incentiveId}")
     mappingService.createNomisIncentiveSynchronisationMapping(
-      incentiveNomisMapping = internalMessage.body
+      incentiveNomisMapping = internalMessage.body,
     )
   }
 }

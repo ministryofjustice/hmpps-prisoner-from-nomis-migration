@@ -13,5 +13,5 @@ data class VisitRoomUsageResponse(
   @Schema(description = "VSIP room mapping")
   val vsipRoom: String?,
   @Schema(description = "The nomis prison id")
-  val prisonId: String
+  val prisonId: String,
 )

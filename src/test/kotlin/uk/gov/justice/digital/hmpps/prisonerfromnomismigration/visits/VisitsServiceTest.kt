@@ -35,8 +35,8 @@ internal class VisitsServiceTest {
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.CREATED.value())
-            .withBody("654321")
-        )
+            .withBody("654321"),
+        ),
       )
     }
 
@@ -53,16 +53,16 @@ internal class VisitsServiceTest {
           visitRoom = "SOCIAL_CENTRE_1",
           contactList = listOf(
             VsipVisitor(nomisPersonId = 5668),
-            VsipVisitor(nomisPersonId = 5678)
+            VsipVisitor(nomisPersonId = 5678),
           ),
           visitRestriction = VisitRestriction.OPEN,
-          createDateTime = LocalDateTime.parse("2020-01-01T08:00:00")
-        )
+          createDateTime = LocalDateTime.parse("2020-01-01T08:00:00"),
+        ),
       )
 
       visitsApi.verify(
         postRequestedFor(urlEqualTo("/migrate-visits"))
-          .withHeader("Authorization", equalTo("Bearer ABCDE"))
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
@@ -79,14 +79,14 @@ internal class VisitsServiceTest {
           visitRoom = "SOCIAL_CENTRE_1",
           contactList = listOf(
             VsipVisitor(nomisPersonId = 5668),
-            VsipVisitor(nomisPersonId = 5678)
+            VsipVisitor(nomisPersonId = 5678),
           ),
           legacyData = VsipLegacyData(leadVisitorId = 123),
           visitRestriction = VisitRestriction.OPEN,
           visitContact = VsipLegacyContactOnVisit("James Flack"),
           createDateTime = LocalDateTime.parse("2020-01-01T08:00:00"),
-          modifyDateTime = LocalDateTime.parse("2020-01-01T14:00:00")
-        )
+          modifyDateTime = LocalDateTime.parse("2020-01-01T14:00:00"),
+        ),
       )
 
       visitsApi.verify(
@@ -122,9 +122,9 @@ internal class VisitsServiceTest {
               "createDateTime": "2020-01-01T08:00:00",
               "modifyDateTime": "2020-01-01T14:00:00"
             }
-              """.trimIndent()
-            )
-          )
+              """.trimIndent(),
+            ),
+          ),
       )
     }
 
@@ -141,11 +141,11 @@ internal class VisitsServiceTest {
           visitRoom = "SOCIAL_CENTRE_1",
           contactList = listOf(
             VsipVisitor(nomisPersonId = 5668),
-            VsipVisitor(nomisPersonId = 5678)
+            VsipVisitor(nomisPersonId = 5678),
           ),
           visitRestriction = VisitRestriction.OPEN,
-          createDateTime = LocalDateTime.parse("2020-01-01T08:00:00")
-        )
+          createDateTime = LocalDateTime.parse("2020-01-01T08:00:00"),
+        ),
       )
       assertThat(visitId).isEqualTo("654321")
     }

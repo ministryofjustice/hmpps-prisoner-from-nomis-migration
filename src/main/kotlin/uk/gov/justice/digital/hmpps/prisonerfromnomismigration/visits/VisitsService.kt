@@ -52,11 +52,11 @@ data class CreateVsipVisit(
   @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
   val createDateTime: LocalDateTime,
   @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-  val modifyDateTime: LocalDateTime? = null
+  val modifyDateTime: LocalDateTime? = null,
 )
 
 data class VsipLegacyData(
-  val leadVisitorId: Long
+  val leadVisitorId: Long,
 )
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -66,12 +66,12 @@ data class VsipLegacyContactOnVisit(
 )
 
 data class VsipVisitor(
-  val nomisPersonId: Long
+  val nomisPersonId: Long,
 )
 
 class VsipVisitNote(
   val type: VsipVisitNoteType,
-  val text: String
+  val text: String,
 )
 
 enum class VsipVisitNoteType {
@@ -84,10 +84,10 @@ enum class VisitRestriction(
 ) {
   OPEN("Open"),
   CLOSED("Closed"),
-  UNKNOWN("Unknown")
+  UNKNOWN("Unknown"),
 }
 
 class VsipOutcomeDto(
   val outcomeStatus: VsipOutcome,
-  val text: String? = null
+  val text: String? = null,
 )

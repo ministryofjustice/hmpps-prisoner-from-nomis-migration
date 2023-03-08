@@ -47,8 +47,8 @@ class IncentivesApiMockServer : WireMockServer(WIREMOCK_PORT) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody(if (status == 200) "pong" else "some error")
-          .withStatus(status)
-      )
+          .withStatus(status),
+      ),
     )
   }
 
@@ -58,8 +58,8 @@ class IncentivesApiMockServer : WireMockServer(WIREMOCK_PORT) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.CREATED.value())
-          .withBody("""{"id": $incentiveId}""")
-      )
+          .withBody("""{"id": $incentiveId}"""),
+      ),
     )
   }
 
@@ -69,8 +69,8 @@ class IncentivesApiMockServer : WireMockServer(WIREMOCK_PORT) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.CREATED.value())
-          .withBody("""{"id": 654321}""")
-      )
+          .withBody("""{"id": 654321}"""),
+      ),
     )
   }
 
@@ -79,8 +79,8 @@ class IncentivesApiMockServer : WireMockServer(WIREMOCK_PORT) {
       patch(urlMatching("/iep/sync/booking/\\d*/id/\\d*")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-      )
+          .withStatus(HttpStatus.OK.value()),
+      ),
     )
   }
 
@@ -89,8 +89,8 @@ class IncentivesApiMockServer : WireMockServer(WIREMOCK_PORT) {
       patch(urlPathEqualTo("/iep/sync/booking/$bookingId/id/$incentivesId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-      )
+          .withStatus(HttpStatus.OK.value()),
+      ),
     )
   }
 
@@ -99,8 +99,8 @@ class IncentivesApiMockServer : WireMockServer(WIREMOCK_PORT) {
       delete(urlPathEqualTo("/iep/sync/booking/$bookingId/id/$incentivesId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-      )
+          .withStatus(HttpStatus.OK.value()),
+      ),
     )
   }
 
@@ -108,8 +108,8 @@ class IncentivesApiMockServer : WireMockServer(WIREMOCK_PORT) {
     verify(
       times,
       patchRequestedFor(
-        urlMatching("/iep/sync/booking/\\d*/id/\\d*")
-      )
+        urlMatching("/iep/sync/booking/\\d*/id/\\d*"),
+      ),
     )
   }
 
@@ -117,8 +117,8 @@ class IncentivesApiMockServer : WireMockServer(WIREMOCK_PORT) {
     verify(
       times,
       patchRequestedFor(
-        urlMatching("/iep/sync/booking/$bookingId/id/\\d*")
-      )
+        urlMatching("/iep/sync/booking/$bookingId/id/\\d*"),
+      ),
     )
   }
 
@@ -126,32 +126,32 @@ class IncentivesApiMockServer : WireMockServer(WIREMOCK_PORT) {
     verify(
       times,
       deleteRequestedFor(
-        urlMatching("/iep/sync/booking/\\d*/id/\\d*")
-      )
+        urlMatching("/iep/sync/booking/\\d*/id/\\d*"),
+      ),
     )
   }
 
   fun verifyUpdateSynchroniseIncentive(bookingId: Long, incentivesId: Long) {
     verify(
       patchRequestedFor(
-        urlPathEqualTo("/iep/sync/booking/$bookingId/id/$incentivesId")
-      )
+        urlPathEqualTo("/iep/sync/booking/$bookingId/id/$incentivesId"),
+      ),
     )
   }
 
   fun verifyDeleteSynchroniseIncentive(bookingId: Long, incentivesId: Long) {
     verify(
       deleteRequestedFor(
-        urlPathEqualTo("/iep/sync/booking/$bookingId/id/$incentivesId")
-      )
+        urlPathEqualTo("/iep/sync/booking/$bookingId/id/$incentivesId"),
+      ),
     )
   }
 
   fun verifyCreateSynchroniseIncentive() {
     verify(
       postRequestedFor(
-        urlMatching("/iep/sync/booking/\\d*")
-      )
+        urlMatching("/iep/sync/booking/\\d*"),
+      ),
     )
   }
 

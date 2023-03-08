@@ -43,7 +43,7 @@ class ReactiveAuthAwareTokenConverter : Converter<Jwt, Mono<AuthAwareAuthenticat
 class AuthAwareAuthenticationToken(
   jwt: Jwt,
   private val aPrincipal: String,
-  authorities: Collection<GrantedAuthority>
+  authorities: Collection<GrantedAuthority>,
 ) : JwtAuthenticationToken(jwt, authorities) {
   override fun getPrincipal(): String {
     return aPrincipal

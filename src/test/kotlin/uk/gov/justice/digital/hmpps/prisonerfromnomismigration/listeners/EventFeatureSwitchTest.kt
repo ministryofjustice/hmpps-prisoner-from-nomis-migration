@@ -10,7 +10,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIn
   properties = [
     "feature.event.IEP_UPSERTED=true",
     "feature.event.OTHER_EVENT=false",
-  ]
+  ],
 )
 internal class EventFeatureSwitchTest : SqsIntegrationTestBase() {
 

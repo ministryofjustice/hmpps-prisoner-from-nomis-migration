@@ -67,7 +67,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
     auditService = auditService,
     sentencingService = sentencingService,
     sentencingAdjustmentsMappingService = sentencingAdjustmentsMappingService,
-    pageSize = 200
+    pageSize = 200,
   )
 
   @Nested
@@ -88,7 +88,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
       auditService = auditService,
       sentencingService = sentencingService,
       sentencingAdjustmentsMappingService = sentencingAdjustmentsMappingService,
-      pageSize = 200
+      pageSize = 200,
     )
 
     @BeforeEach
@@ -99,7 +99,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
       coEvery {
         auditService.sendAuditEvent(
           what = capture(auditWhatParam),
-          details = capture(auditDetailsParam)
+          details = capture(auditDetailsParam),
         )
       } just runs
     }
@@ -111,7 +111,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
           SentencingMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
-          )
+          ),
         )
       }
 
@@ -120,7 +120,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
           fromDate = LocalDate.parse("2020-01-01"),
           toDate = LocalDate.parse("2020-01-02"),
           pageNumber = 0,
-          pageSize = 1
+          pageSize = 1,
         )
       }
     }
@@ -135,7 +135,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
           SentencingMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
-          )
+          ),
         )
       }
 
@@ -146,7 +146,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
           assertThat(it.body.fromDate).isEqualTo(LocalDate.parse("2020-01-01"))
           assertThat(it.body.toDate).isEqualTo(LocalDate.parse("2020-01-02"))
         },
-        delaySeconds = eq(0)
+        delaySeconds = eq(0),
       )
     }
 
@@ -162,7 +162,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
 
       runBlocking {
         service.startMigration(
-          sentencingMigrationFilter
+          sentencingMigrationFilter,
         )
       }
 
@@ -174,7 +174,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
           filter = coWithArg<SentencingMigrationFilter> {
             assertThat(it.fromDate).isEqualTo(LocalDate.parse("2020-01-01"))
             assertThat(it.toDate).isEqualTo(LocalDate.parse("2020-01-02"))
-          }
+          },
         )
       }
 
@@ -195,7 +195,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
           SentencingMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
-          )
+          ),
         )
       }
 
@@ -208,7 +208,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
           assertThat(it["fromDate"]).isEqualTo("2020-01-01")
           assertThat(it["toDate"]).isEqualTo("2020-01-02")
         },
-        eq(null)
+        eq(null),
       )
     }
 
@@ -219,14 +219,14 @@ internal class SentencingAdjustmentsMigrationServiceTest {
           fromDate = isNull(),
           toDate = isNull(),
           pageNumber = any(),
-          pageSize = any()
+          pageSize = any(),
         )
       } returns
         pages(23)
 
       runBlocking {
         service.startMigration(
-          SentencingMigrationFilter()
+          SentencingMigrationFilter(),
         )
       }
 
@@ -239,7 +239,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
           assertThat(it["fromDate"]).isEqualTo("")
           assertThat(it["toDate"]).isEqualTo("")
         },
-        eq(null)
+        eq(null),
       )
     }
   }
@@ -251,7 +251,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
     @BeforeEach
     internal fun setUp(): Unit = runBlocking {
       whenever(nomisApiService.getSentencingAdjustmentIds(any(), any(), any(), any())).thenReturn(
-        pages(100_200)
+        pages(100_200),
       )
     }
 
@@ -260,16 +260,19 @@ internal class SentencingAdjustmentsMigrationServiceTest {
       service.divideEntitiesByPage(
         MigrationContext(
           type = SENTENCING_ADJUSTMENTS,
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
           body = SentencingMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
-          )
-        )
+          ),
+        ),
       )
 
       verify(queueService, times(100_200 / 200)).sendMessage(
-        eq(MIGRATE_BY_PAGE), any(), delaySeconds = eq(0)
+        eq(MIGRATE_BY_PAGE),
+        any(),
+        delaySeconds = eq(0),
       )
     }
 
@@ -278,16 +281,19 @@ internal class SentencingAdjustmentsMigrationServiceTest {
       service.divideEntitiesByPage(
         MigrationContext(
           type = SENTENCING_ADJUSTMENTS,
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
           body = SentencingMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
-          )
-        )
+          ),
+        ),
       )
 
       verify(queueService).sendMessage(
-        eq(MIGRATE_STATUS_CHECK), any(), any()
+        eq(MIGRATE_STATUS_CHECK),
+        any(),
+        any(),
       )
     }
 
@@ -296,12 +302,13 @@ internal class SentencingAdjustmentsMigrationServiceTest {
       service.divideEntitiesByPage(
         MigrationContext(
           type = SENTENCING_ADJUSTMENTS,
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
           body = SentencingMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
-          )
-        )
+          ),
+        ),
       )
 
       verify(queueService, times(100_200 / 200)).sendMessage(
@@ -312,7 +319,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
           assertThat(it.body.filter.fromDate).isEqualTo(LocalDate.parse("2020-01-01"))
           assertThat(it.body.filter.toDate).isEqualTo(LocalDate.parse("2020-01-02"))
         },
-        delaySeconds = eq(0)
+        delaySeconds = eq(0),
       )
     }
 
@@ -323,16 +330,19 @@ internal class SentencingAdjustmentsMigrationServiceTest {
       service.divideEntitiesByPage(
         MigrationContext(
           type = SENTENCING_ADJUSTMENTS,
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
           body = SentencingMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
-          )
-        )
+          ),
+        ),
       )
 
       verify(queueService, times(100_200 / 200)).sendMessage(
-        eq(MIGRATE_BY_PAGE), context.capture(), delaySeconds = eq(0)
+        eq(MIGRATE_BY_PAGE),
+        context.capture(),
+        delaySeconds = eq(0),
       )
       val allContexts: List<MigrationContext<MigrationPage<SentencingMigrationFilter>>> = context.allValues
 
@@ -371,12 +381,14 @@ internal class SentencingAdjustmentsMigrationServiceTest {
             type = SENTENCING_ADJUSTMENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = MigrationStatusCheck()
-          )
+            body = MigrationStatusCheck(),
+          ),
         )
 
         verify(queueService).sendMessage(
-          eq(MIGRATE_STATUS_CHECK), any(), eq(10)
+          eq(MIGRATE_STATUS_CHECK),
+          any(),
+          eq(10),
         )
       }
 
@@ -388,8 +400,8 @@ internal class SentencingAdjustmentsMigrationServiceTest {
               type = SENTENCING_ADJUSTMENTS,
               migrationId = "2020-05-23T11:30:00",
               estimatedCount = 100_200,
-              body = MigrationStatusCheck(checkCount = 4)
-            )
+              body = MigrationStatusCheck(checkCount = 4),
+            ),
           )
 
           verify(queueService).sendMessage(
@@ -397,7 +409,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
             context = check<MigrationContext<MigrationStatusCheck>> {
               assertThat(it.body.checkCount).isEqualTo(0)
             },
-            delaySeconds = eq(10)
+            delaySeconds = eq(10),
           )
         }
     }
@@ -419,8 +431,8 @@ internal class SentencingAdjustmentsMigrationServiceTest {
             type = SENTENCING_ADJUSTMENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = MigrationStatusCheck(checkCount = 9)
-          )
+            body = MigrationStatusCheck(checkCount = 9),
+          ),
         )
 
         verify(queueService).sendMessage(
@@ -428,7 +440,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
           context = check<MigrationContext<MigrationStatusCheck>> {
             assertThat(it.body.checkCount).isEqualTo(10)
           },
-          delaySeconds = eq(1)
+          delaySeconds = eq(1),
         )
       }
 
@@ -439,12 +451,14 @@ internal class SentencingAdjustmentsMigrationServiceTest {
             type = SENTENCING_ADJUSTMENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = MigrationStatusCheck(checkCount = 10)
-          )
+            body = MigrationStatusCheck(checkCount = 10),
+          ),
         )
 
         verify(queueService, never()).sendMessage(
-          message = eq(MIGRATE_STATUS_CHECK), context = any(), delaySeconds = any()
+          message = eq(MIGRATE_STATUS_CHECK),
+          context = any(),
+          delaySeconds = any(),
         )
       }
 
@@ -455,8 +469,8 @@ internal class SentencingAdjustmentsMigrationServiceTest {
             type = SENTENCING_ADJUSTMENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 23,
-            body = MigrationStatusCheck(checkCount = 10)
-          )
+            body = MigrationStatusCheck(checkCount = 10),
+          ),
         )
 
         verify(telemetryClient).trackEvent(
@@ -466,7 +480,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
             assertThat(it["estimatedCount"]).isEqualTo("23")
             assertThat(it["durationMinutes"]).isNotNull()
           },
-          eq(null)
+          eq(null),
         )
       }
 
@@ -480,14 +494,14 @@ internal class SentencingAdjustmentsMigrationServiceTest {
             type = SENTENCING_ADJUSTMENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 23,
-            body = MigrationStatusCheck(checkCount = 10)
-          )
+            body = MigrationStatusCheck(checkCount = 10),
+          ),
         )
 
         verify(migrationHistoryService).recordMigrationCompleted(
           migrationId = eq("2020-05-23T11:30:00"),
           recordsFailed = eq(2),
-          recordsMigrated = eq(21)
+          recordsMigrated = eq(21),
         )
       }
     }
@@ -511,13 +525,15 @@ internal class SentencingAdjustmentsMigrationServiceTest {
             type = SENTENCING_ADJUSTMENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = MigrationStatusCheck()
-          )
+            body = MigrationStatusCheck(),
+          ),
         )
 
         verify(queueService).purgeAllMessages(any())
         verify(queueService).sendMessage(
-          eq(CANCEL_MIGRATION), any(), eq(10)
+          eq(CANCEL_MIGRATION),
+          any(),
+          eq(10),
         )
       }
 
@@ -529,8 +545,8 @@ internal class SentencingAdjustmentsMigrationServiceTest {
               type = SENTENCING_ADJUSTMENTS,
               migrationId = "2020-05-23T11:30:00",
               estimatedCount = 100_200,
-              body = MigrationStatusCheck(checkCount = 4)
-            )
+              body = MigrationStatusCheck(checkCount = 4),
+            ),
           )
 
           verify(queueService).purgeAllMessages(any())
@@ -539,7 +555,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
             context = check<MigrationContext<MigrationStatusCheck>> {
               assertThat(it.body.checkCount).isEqualTo(0)
             },
-            delaySeconds = eq(10)
+            delaySeconds = eq(10),
           )
         }
     }
@@ -561,8 +577,8 @@ internal class SentencingAdjustmentsMigrationServiceTest {
             type = SENTENCING_ADJUSTMENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = MigrationStatusCheck(checkCount = 9)
-          )
+            body = MigrationStatusCheck(checkCount = 9),
+          ),
         )
 
         verify(queueService).purgeAllMessages(check { assertThat(it).isEqualTo(SENTENCING_ADJUSTMENTS) })
@@ -572,7 +588,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
           context = check<MigrationContext<MigrationStatusCheck>> {
             assertThat(it.body.checkCount).isEqualTo(10)
           },
-          delaySeconds = eq(1)
+          delaySeconds = eq(1),
         )
       }
 
@@ -583,13 +599,15 @@ internal class SentencingAdjustmentsMigrationServiceTest {
             type = SENTENCING_ADJUSTMENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = MigrationStatusCheck(checkCount = 10)
-          )
+            body = MigrationStatusCheck(checkCount = 10),
+          ),
         )
 
         verify(queueService, never()).purgeAllMessages(check { assertThat(it).isEqualTo(SENTENCING_ADJUSTMENTS) })
         verify(queueService, never()).sendMessage(
-          message = eq(CANCEL_MIGRATION), context = any(), delaySeconds = any()
+          message = eq(CANCEL_MIGRATION),
+          context = any(),
+          delaySeconds = any(),
         )
       }
 
@@ -600,8 +618,8 @@ internal class SentencingAdjustmentsMigrationServiceTest {
             type = SENTENCING_ADJUSTMENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 23,
-            body = MigrationStatusCheck(checkCount = 10)
-          )
+            body = MigrationStatusCheck(checkCount = 10),
+          ),
         )
 
         verify(telemetryClient).trackEvent(
@@ -611,7 +629,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
             assertThat(it["estimatedCount"]).isEqualTo("23")
             assertThat(it["durationMinutes"]).isNotNull()
           },
-          eq(null)
+          eq(null),
         )
       }
 
@@ -625,14 +643,14 @@ internal class SentencingAdjustmentsMigrationServiceTest {
             type = SENTENCING_ADJUSTMENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 23,
-            body = MigrationStatusCheck(checkCount = 10)
-          )
+            body = MigrationStatusCheck(checkCount = 10),
+          ),
         )
 
         verify(migrationHistoryService).recordMigrationCancelled(
           migrationId = eq("2020-05-23T11:30:00"),
           recordsFailed = eq(2),
-          recordsMigrated = eq(21)
+          recordsMigrated = eq(21),
         )
       }
     }
@@ -645,7 +663,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
     internal fun setUp(): Unit = runBlocking {
       whenever(migrationHistoryService.isCancelling(any())).thenReturn(false)
       whenever(nomisApiService.getSentencingAdjustmentIds(any(), any(), any(), any())).thenReturn(
-        pages(15)
+        pages(15),
       )
     }
 
@@ -654,22 +672,24 @@ internal class SentencingAdjustmentsMigrationServiceTest {
       service.migrateEntitiesForPage(
         MigrationContext(
           type = SENTENCING_ADJUSTMENTS,
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
           body = MigrationPage(
             filter = SentencingMigrationFilter(
               fromDate = LocalDate.parse("2020-01-01"),
               toDate = LocalDate.parse("2020-01-02"),
             ),
-            pageNumber = 13, pageSize = 15
-          )
-        )
+            pageNumber = 13,
+            pageSize = 15,
+          ),
+        ),
       )
 
       verify(nomisApiService).getSentencingAdjustmentIds(
         fromDate = LocalDate.parse("2020-01-01"),
         toDate = LocalDate.parse("2020-01-02"),
         pageNumber = 13,
-        pageSize = 15
+        pageSize = 15,
       )
     }
 
@@ -679,15 +699,17 @@ internal class SentencingAdjustmentsMigrationServiceTest {
         service.migrateEntitiesForPage(
           MigrationContext(
             type = SENTENCING_ADJUSTMENTS,
-            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
             body = MigrationPage(
               filter = SentencingMigrationFilter(
                 fromDate = LocalDate.parse("2020-01-01"),
                 toDate = LocalDate.parse("2020-01-02"),
               ),
-              pageNumber = 13, pageSize = 15
-            )
-          )
+              pageNumber = 13,
+              pageSize = 15,
+            ),
+          ),
         )
 
         verify(queueService, times(15)).sendMessage(
@@ -696,38 +718,42 @@ internal class SentencingAdjustmentsMigrationServiceTest {
             assertThat(it.estimatedCount).isEqualTo(100_200)
             assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
           },
-          delaySeconds = eq(0)
+          delaySeconds = eq(0),
         )
       }
 
     @Test
     internal fun `will send MIGRATE_SENTENCE_ADJUSTMENT with bookingId for each sentence adjustment`(): Unit =
       runBlocking {
-
         val context: KArgumentCaptor<MigrationContext<NomisAdjustmentId>> = argumentCaptor()
 
         whenever(nomisApiService.getSentencingAdjustmentIds(any(), any(), any(), any())).thenReturn(
           pages(
-            15, startId = 1000
-          )
+            15,
+            startId = 1000,
+          ),
         )
 
         service.migrateEntitiesForPage(
           MigrationContext(
             type = SENTENCING_ADJUSTMENTS,
-            migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
             body = MigrationPage(
               filter = SentencingMigrationFilter(
                 fromDate = LocalDate.parse("2020-01-01"),
                 toDate = LocalDate.parse("2020-01-02"),
               ),
-              pageNumber = 13, pageSize = 15
-            )
-          )
+              pageNumber = 13,
+              pageSize = 15,
+            ),
+          ),
         )
 
         verify(queueService, times(15)).sendMessage(
-          eq(MIGRATE_ENTITY), context.capture(), delaySeconds = eq(0)
+          eq(MIGRATE_ENTITY),
+          context.capture(),
+          delaySeconds = eq(0),
 
         )
         val allContexts: List<MigrationContext<NomisAdjustmentId>> = context.allValues
@@ -747,22 +773,25 @@ internal class SentencingAdjustmentsMigrationServiceTest {
 
       whenever(nomisApiService.getSentencingAdjustmentIds(any(), any(), any(), any())).thenReturn(
         pages(
-          15, startId = 1000
-        )
+          15,
+          startId = 1000,
+        ),
       )
 
       service.migrateEntitiesForPage(
         MigrationContext(
           type = SENTENCING_ADJUSTMENTS,
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
           body = MigrationPage(
             filter = SentencingMigrationFilter(
               fromDate = LocalDate.parse("2020-01-01"),
               toDate = LocalDate.parse("2020-01-02"),
             ),
-            pageNumber = 13, pageSize = 15
-          )
-        )
+            pageNumber = 13,
+            pageSize = 15,
+          ),
+        ),
       )
 
       verifyNoInteractions(queueService)
@@ -777,7 +806,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
     internal fun setUp(): Unit = runBlocking {
       whenever(sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMapping(any(), any())).thenReturn(null)
       whenever(nomisApiService.getSentenceAdjustment(any())).thenReturn(
-        aNomisSentenceAdjustment()
+        aNomisSentenceAdjustment(),
       )
 
       whenever(sentencingService.migrateSentencingAdjustment(any())).thenReturn(CreateSentencingAdjustmentResponse("999"))
@@ -790,8 +819,8 @@ internal class SentencingAdjustmentsMigrationServiceTest {
           type = SENTENCING_ADJUSTMENTS,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
-          body = NomisAdjustmentId(123, "SENTENCE")
-        )
+          body = NomisAdjustmentId(123, "SENTENCE"),
+        ),
       )
 
       verify(nomisApiService).getSentenceAdjustment(123)
@@ -802,7 +831,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
       val adjustmentDate = LocalDate.parse("2020-01-01")
       val adjustmentFromDate = LocalDate.parse("2020-02-01")
       whenever(nomisApiService.getSentenceAdjustment(any())).thenReturn(
-        aNomisSentenceAdjustment()
+        aNomisSentenceAdjustment(),
       )
 
       service.migrateNomisEntity(
@@ -810,8 +839,8 @@ internal class SentencingAdjustmentsMigrationServiceTest {
           type = SENTENCING_ADJUSTMENTS,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
-          body = NomisAdjustmentId(123, "SENTENCE")
-        )
+          body = NomisAdjustmentId(123, "SENTENCE"),
+        ),
       )
 
       verify(sentencingService).migrateSentencingAdjustment(
@@ -824,9 +853,9 @@ internal class SentencingAdjustmentsMigrationServiceTest {
             sentenceSequence = 2,
             comment = "a comment",
             active = true,
-            adjustmentType = "ADA"
-          )
-        )
+            adjustmentType = "ADA",
+          ),
+        ),
       )
     }
 
@@ -834,7 +863,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
     internal fun `will create a mapping between a new Sentence Adjustment and a NOMIS Sentence Adjustment`(): Unit =
       runBlocking {
         whenever(nomisApiService.getSentenceAdjustment(any())).thenReturn(
-          aNomisSentenceAdjustment()
+          aNomisSentenceAdjustment(),
         )
         whenever(sentencingService.migrateSentencingAdjustment(any())).thenReturn(CreateSentencingAdjustmentResponse("999"))
 
@@ -843,8 +872,8 @@ internal class SentencingAdjustmentsMigrationServiceTest {
             type = SENTENCING_ADJUSTMENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = NomisAdjustmentId(123, "SENTENCE")
-          )
+            body = NomisAdjustmentId(123, "SENTENCE"),
+          ),
         )
 
         verify(sentencingAdjustmentsMappingService).createNomisSentencingAdjustmentMigrationMapping(
@@ -859,7 +888,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
     internal fun `will not throw exception (and place message back on queue) but create a new retry message`(): Unit =
       runBlocking {
         whenever(nomisApiService.getSentenceAdjustment(any())).thenReturn(
-          aNomisSentenceAdjustment()
+          aNomisSentenceAdjustment(),
         )
         whenever(sentencingService.migrateSentencingAdjustment(any())).thenReturn(CreateSentencingAdjustmentResponse("999"))
 
@@ -868,10 +897,10 @@ internal class SentencingAdjustmentsMigrationServiceTest {
             any(),
             any(),
             any(),
-            any()
-          )
+            any(),
+          ),
         ).thenThrow(
-          RuntimeException("something went wrong")
+          RuntimeException("something went wrong"),
         )
 
         service.migrateNomisEntity(
@@ -879,8 +908,8 @@ internal class SentencingAdjustmentsMigrationServiceTest {
             type = SENTENCING_ADJUSTMENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = NomisAdjustmentId(123, "SENTENCE")
-          )
+            body = NomisAdjustmentId(123, "SENTENCE"),
+          ),
         )
 
         verify(queueService).sendMessage(
@@ -891,7 +920,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
             assertThat(it.body.nomisAdjustmentCategory).isEqualTo("SENTENCE")
             assertThat(it.body.adjustmentId).isEqualTo("999")
           },
-          delaySeconds = eq(0)
+          delaySeconds = eq(0),
         )
       }
 
@@ -905,20 +934,19 @@ internal class SentencingAdjustmentsMigrationServiceTest {
             nomisAdjustmentCategory = "SENTENCE",
             adjustmentId = "54321",
             mappingType = "MIGRATION",
-          )
+          ),
         )
       }
 
       @Test
       internal fun `will do nothing`(): Unit = runBlocking {
-
         service.migrateNomisEntity(
           MigrationContext(
             type = SENTENCING_ADJUSTMENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = NomisAdjustmentId(123, "SENTENCE")
-          )
+            body = NomisAdjustmentId(123, "SENTENCE"),
+          ),
         )
 
         verifyNoInteractions(sentencingService)
@@ -937,7 +965,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
           whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
           migrationType = SENTENCING_ADJUSTMENTS,
           estimatedRecordCount = 100,
-        )
+        ),
       )
 
       service.cancel("123-2020-01-01")
@@ -976,9 +1004,11 @@ fun aNomisSentenceAdjustment(
   adjustmentDays = adjustmentDays,
   comment = comment,
   active = active,
-  hiddenFromUsers = false
+  hiddenFromUsers = false,
 )
 
 fun pages(total: Long, startId: Long = 1): PageImpl<NomisAdjustmentId> = PageImpl<NomisAdjustmentId>(
-  (startId..total - 1 + startId).map { NomisAdjustmentId(it, "SENTENCE") }, Pageable.ofSize(10), total
+  (startId..total - 1 + startId).map { NomisAdjustmentId(it, "SENTENCE") },
+  Pageable.ofSize(10),
+  total,
 )

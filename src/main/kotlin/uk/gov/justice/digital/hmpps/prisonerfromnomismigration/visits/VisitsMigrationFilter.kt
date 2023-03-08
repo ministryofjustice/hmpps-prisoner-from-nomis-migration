@@ -13,7 +13,7 @@ data class VisitsMigrationFilter(
   @Schema(
     description = "List of visit types to migrate",
     example = "[\"SCON\", \"OFFI\"]",
-    defaultValue = "[\"SCON\"]"
+    defaultValue = "[\"SCON\"]",
   )
   val visitTypes: List<String> = listOf("SCON"),
 
@@ -32,7 +32,7 @@ data class VisitsMigrationFilter(
   @Schema(
     description = "When true exclude visits without an associated room (visits created during the VSIP synchronisation process), defaults to false. Only required during testing when mapping records are manually deleted",
     example = "false",
-    defaultValue = "false"
+    defaultValue = "false",
   )
   val ignoreMissingRoom: Boolean = false,
 )

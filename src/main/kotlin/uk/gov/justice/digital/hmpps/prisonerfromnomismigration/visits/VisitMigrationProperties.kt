@@ -14,7 +14,7 @@ import uk.gov.justice.hmpps.sqs.HmppsQueueService
 @Component
 class VisitMigrationProperties(
   private val hmppsQueueService: HmppsQueueService,
-  private val visitMappingService: VisitMappingService
+  private val visitMappingService: VisitMappingService,
 ) : InfoContributor {
 
   internal val queue by lazy { hmppsQueueService.findByQueueId(VISITS_QUEUE_ID) as HmppsQueue }
@@ -38,25 +38,25 @@ class VisitMigrationProperties(
       mapOf<String, Any?>(
         "id" to it.migrationId,
         "records migrated" to details.count,
-        "started" to details.startedDateTime
+        "started" to details.startedDateTime,
       )
     } ?: mapOf()
 
     builder.withDetail(
       "last visits migration",
-      queueProperties + failureQueueProperties + migrationProperties
+      queueProperties + failureQueueProperties + migrationProperties,
     )
   }
 
   private suspend fun HmppsQueue.getQueueAttributes() = runCatching {
     this.sqsClient.getQueueAttributes(
-      GetQueueAttributesRequest.builder().queueUrl(this.queueUrl).attributeNames(QueueAttributeName.ALL).build()
+      GetQueueAttributesRequest.builder().queueUrl(this.queueUrl).attributeNames(QueueAttributeName.ALL).build(),
     ).await()
   }
 
   private suspend fun HmppsQueue.getDlqAttributes() = runCatching {
     this.sqsDlqClient!!.getQueueAttributes(
-      GetQueueAttributesRequest.builder().queueUrl(this.dlqUrl).attributeNames(QueueAttributeName.ALL).build()
+      GetQueueAttributesRequest.builder().queueUrl(this.dlqUrl).attributeNames(QueueAttributeName.ALL).build(),
     ).await()
   }
 }

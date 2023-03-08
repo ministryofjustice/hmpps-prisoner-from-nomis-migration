@@ -18,10 +18,10 @@ import java.util.concurrent.CompletableFuture
 @Service
 class SentencingAdjustmentsMigrationMessageListener(
   objectMapper: ObjectMapper,
-  sentencingAdjustmentsMigrationService: SentencingAdjustmentsMigrationService
+  sentencingAdjustmentsMigrationService: SentencingAdjustmentsMigrationService,
 ) : MigrationMessageListener<SentencingMigrationFilter, NomisAdjustmentId, NomisAdjustment, SentencingAdjustmentNomisMapping>(
   objectMapper,
-  sentencingAdjustmentsMigrationService
+  sentencingAdjustmentsMigrationService,
 ) {
 
   @SqsListener(SENTENCING_ADJUSTMENTS_QUEUE_ID, factory = "hmppsQueueContainerFactoryProxy")

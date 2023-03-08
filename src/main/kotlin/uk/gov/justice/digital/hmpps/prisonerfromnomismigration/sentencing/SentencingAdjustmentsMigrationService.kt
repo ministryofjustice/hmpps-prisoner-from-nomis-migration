@@ -29,14 +29,14 @@ class SentencingAdjustmentsMigrationService(
   auditService: AuditService,
   private val sentencingService: SentencingService,
   private val sentencingAdjustmentsMappingService: SentencingAdjustmentsMappingService,
-  @Value("\${sentencing.page.size:1000}") private val pageSize: Long
+  @Value("\${sentencing.page.size:1000}") private val pageSize: Long,
 ) : MigrationService<SentencingMigrationFilter, NomisAdjustmentId, NomisAdjustment, SentencingAdjustmentNomisMapping>(
   queueService = queueService,
   auditService = auditService,
   migrationHistoryService = migrationHistoryService,
   telemetryClient = telemetryClient,
   migrationType = SENTENCING_ADJUSTMENTS,
-  pageSize = pageSize
+  pageSize = pageSize,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -55,7 +55,7 @@ class SentencingAdjustmentsMigrationService(
     return mapOf(
       "migrationType" to "Sentencing Adjustments",
       "fromDate" to migrationFilter.fromDate.asStringOrBlank(),
-      "toDate" to migrationFilter.toDate.asStringOrBlank()
+      "toDate" to migrationFilter.toDate.asStringOrBlank(),
     )
   }
 
@@ -94,8 +94,11 @@ class SentencingAdjustmentsMigrationService(
     }
       ?: run {
         val nomisAdjustment =
-          if (nomisAdjustmentCategory == "SENTENCE") nomisApiService.getSentenceAdjustment(nomisAdjustmentId)
-          else nomisApiService.getKeyDateAdjustment(nomisAdjustmentId)
+          if (nomisAdjustmentCategory == "SENTENCE") {
+            nomisApiService.getSentenceAdjustment(nomisAdjustmentId)
+          } else {
+            nomisApiService.getKeyDateAdjustment(nomisAdjustmentId)
+          }
 
         val migratedSentenceAdjustment =
           sentencingService.migrateSentencingAdjustment(nomisAdjustment.toSentencingAdjustment())
@@ -104,7 +107,7 @@ class SentencingAdjustmentsMigrationService(
                 nomisAdjustmentId = nomisAdjustmentId,
                 nomisAdjustmentCategory = nomisAdjustmentCategory,
                 adjustmentId = it.id,
-                context = context
+                context = context,
               )
             }
         telemetryClient.trackEvent(
@@ -115,7 +118,7 @@ class SentencingAdjustmentsMigrationService(
             "adjustmentId" to migratedSentenceAdjustment.id,
             "migrationId" to context.migrationId,
           ),
-          null
+          null,
         )
       }
   }
@@ -124,7 +127,7 @@ class SentencingAdjustmentsMigrationService(
     nomisAdjustmentId: Long,
     nomisAdjustmentCategory: String,
     adjustmentId: String,
-    context: MigrationContext<*>
+    context: MigrationContext<*>,
   ) = try {
     sentencingAdjustmentsMappingService.createNomisSentencingAdjustmentMigrationMapping(
       nomisAdjustmentId = nomisAdjustmentId,
@@ -144,16 +147,16 @@ class SentencingAdjustmentsMigrationService(
             "existingAdjustmentId" to duplicateErrorDetails.existingAdjustment.adjustmentId,
             "existingNomisAdjustmentId" to duplicateErrorDetails.existingAdjustment.nomisAdjustmentId.toString(),
             "existingNomisAdjustmentCategory" to duplicateErrorDetails.existingAdjustment.nomisAdjustmentCategory,
-            "durationMinutes" to context.durationMinutes().toString()
+            "durationMinutes" to context.durationMinutes().toString(),
           ),
-          null
+          null,
         )
       }
     }
   } catch (e: Exception) {
     log.error(
       "Failed to create mapping for  adjustment nomis id: $nomisAdjustmentId and type $nomisAdjustmentCategory, sentence adjustment id $adjustmentId",
-      e
+      e,
     )
     queueService.sendMessage(
       MigrationMessageType.RETRY_MIGRATION_MAPPING,
@@ -163,9 +166,9 @@ class SentencingAdjustmentsMigrationService(
           nomisAdjustmentId = nomisAdjustmentId,
           nomisAdjustmentCategory = nomisAdjustmentCategory,
           adjustmentId = adjustmentId,
-          mappingType = "MIGRATED"
-        )
-      )
+          mappingType = "MIGRATED",
+        ),
+      ),
     )
   }
 }

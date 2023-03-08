@@ -28,7 +28,7 @@ internal class IncentiveSynchronisationServiceTest {
     queueService = queueService,
     mappingService = incentivesMappingService,
     incentiveService = incentivesService,
-    telemetryClient = telemetryClient
+    telemetryClient = telemetryClient,
   )
 
   @Test
@@ -38,8 +38,8 @@ internal class IncentiveSynchronisationServiceTest {
         nomisBookingId = 1000L,
         nomisIncentiveSequence = 1L,
         incentiveId = 111L,
-        mappingType = "NOMIS_CREATED"
-      )
+        mappingType = "NOMIS_CREATED",
+      ),
     )
 
     runBlocking {
@@ -55,7 +55,7 @@ internal class IncentiveSynchronisationServiceTest {
           currentIep = true,
           offenderNo = "A1234AA",
           whenCreated = LocalDateTime.parse("2020-01-01T00:00:55"),
-        )
+        ),
       )
 
       service.synchroniseIncentive(anIncentiveEvent())
@@ -63,7 +63,7 @@ internal class IncentiveSynchronisationServiceTest {
       verify(incentivesService).synchroniseUpdateIncentive(
         1000,
         111,
-        UpdateIncentiveIEP(iepTime = LocalDateTime.parse("2020-01-01T00:00:55"), comment = "Doing well", current = true)
+        UpdateIncentiveIEP(iepTime = LocalDateTime.parse("2020-01-01T00:00:55"), comment = "Doing well", current = true),
       )
     }
   }
@@ -86,13 +86,13 @@ internal class IncentiveSynchronisationServiceTest {
             currentIep = true,
             offenderNo = "A1234AA",
             whenCreated = LocalDateTime.parse("2020-01-01T12:20:10"),
-          )
+          ),
         )
         whenever(
           incentivesService.synchroniseCreateIncentive(
             any(),
-            any()
-          )
+            any(),
+          ),
         ).thenReturn(CreateIncentiveIEPResponse(999L))
 
         service.synchroniseIncentive(anIncentiveEvent())
@@ -105,9 +105,9 @@ internal class IncentiveSynchronisationServiceTest {
             current = true,
             userId = "JANE_SMITH",
             iepLevel = "ENH",
-            reviewType = ReviewType.REVIEW
+            reviewType = ReviewType.REVIEW,
           ),
-          1000
+          1000,
         )
       }
     }
@@ -130,13 +130,13 @@ internal class IncentiveSynchronisationServiceTest {
             currentIep = true,
             offenderNo = "A1234AA",
             whenCreated = LocalDateTime.parse("2020-01-01T12:21:10"),
-          )
+          ),
         )
         whenever(
           incentivesService.synchroniseCreateIncentive(
             any(),
-            any()
-          )
+            any(),
+          ),
         ).thenReturn(CreateIncentiveIEPResponse(999L))
 
         service.synchroniseIncentive(anIncentiveEvent())
@@ -149,9 +149,9 @@ internal class IncentiveSynchronisationServiceTest {
             current = true,
             userId = "JANE_SMITH",
             iepLevel = "ENH",
-            reviewType = ReviewType.REVIEW
+            reviewType = ReviewType.REVIEW,
           ),
-          1000
+          1000,
         )
       }
     }
@@ -161,10 +161,10 @@ fun anIncentiveEvent(
   offenderIdDisplay: String = "A1234AA",
   bookingId: Long = 1000,
   iepSeq: Long = 1,
-  auditModuleName: String = "NOMIS_SOMEWHERE"
+  auditModuleName: String = "NOMIS_SOMEWHERE",
 ) = IncentiveUpsertedOffenderEvent(
   offenderIdDisplay = offenderIdDisplay,
   bookingId = bookingId,
   iepSeq = iepSeq,
-  auditModuleName = auditModuleName
+  auditModuleName = auditModuleName,
 )

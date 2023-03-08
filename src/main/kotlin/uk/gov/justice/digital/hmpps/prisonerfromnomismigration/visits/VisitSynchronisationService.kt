@@ -21,18 +21,17 @@ class VisitSynchronisationService(
 
   suspend fun cancelVisit(visitCancelledEvent: VisitCancelledOffenderEvent) {
     nomisApiService.getVisit(visitCancelledEvent.visitId).run {
-
       log.debug("received nomis visit: ${this@run}")
 
       if (nomisCancellation()) {
         mappingService.findNomisVisitMapping(
-          visitCancelledEvent.visitId
+          visitCancelledEvent.visitId,
         )?.let { visitMapping ->
           log.debug("found nomis visit mapping: $visitMapping")
           val vsipOutcome = getVsipOutcome(this@run) ?: VsipOutcome.CANCELLATION
           visitService.cancelVisit(
             visitReference = visitMapping.vsipId,
-            outcome = VsipOutcomeDto(vsipOutcome, "Cancelled by NOMIS")
+            outcome = VsipOutcomeDto(vsipOutcome, "Cancelled by NOMIS"),
           )
 
           telemetryClient.trackEvent(
@@ -41,9 +40,9 @@ class VisitSynchronisationService(
               "offenderNo" to this.offenderNo,
               "vsipId" to visitMapping.vsipId,
               "nomisVisitId" to visitMapping.nomisId.toString(),
-              "vsipOutcome" to vsipOutcome.name
+              "vsipOutcome" to vsipOutcome.name,
             ),
-            null
+            null,
           )
         } ?: let {
           log.debug("Ignoring visit cancellation event for ${this@run} as no nomis visit mapping found")

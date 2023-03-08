@@ -8,13 +8,13 @@ class MigrationContext<T>(
   val type: MigrationType,
   val migrationId: String,
   val estimatedCount: Long,
-  val body: T
+  val body: T,
 ) {
   constructor(context: MigrationContext<*>, body: T) : this(
     context.type,
     context.migrationId,
     context.estimatedCount,
-    body
+    body,
   )
 }
 
@@ -23,5 +23,5 @@ fun generateBatchId(): String = LocalDateTime.now().withNano(0).format(DateTimeF
 class SynchronisationContext<T>(
   val type: MigrationType,
   val telemetryProperties: Map<String, String> = emptyMap(),
-  val body: T
+  val body: T,
 )

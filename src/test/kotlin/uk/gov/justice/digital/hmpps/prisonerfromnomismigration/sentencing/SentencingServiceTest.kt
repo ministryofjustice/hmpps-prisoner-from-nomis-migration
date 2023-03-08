@@ -43,7 +43,7 @@ internal class SentencingServiceTest {
             adjustmentDays = 99,
             comment = "Remand added",
             active = true,
-          )
+          ),
         )
       }
     }
@@ -52,7 +52,7 @@ internal class SentencingServiceTest {
     fun `should call api with OAuth2 token`() {
       sentencingApi.verify(
         postRequestedFor(urlEqualTo("/migration/sentencing/adjustments"))
-          .withHeader("Authorization", equalTo("Bearer ABCDE"))
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
@@ -67,7 +67,7 @@ internal class SentencingServiceTest {
           .withRequestBody(WireMock.matchingJsonPath("adjustmentDays", equalTo("99")))
           .withRequestBody(WireMock.matchingJsonPath("adjustmentFromDate", equalTo("2021-07-01")))
           .withRequestBody(WireMock.matchingJsonPath("comment", equalTo("Remand added")))
-          .withRequestBody(WireMock.matchingJsonPath("active", equalTo("true")))
+          .withRequestBody(WireMock.matchingJsonPath("active", equalTo("true"))),
       )
     }
   }
@@ -89,7 +89,7 @@ internal class SentencingServiceTest {
             adjustmentDays = 99,
             comment = "Remand added",
             active = true,
-          )
+          ),
         )
       }
     }
@@ -98,7 +98,7 @@ internal class SentencingServiceTest {
     fun `should call api with OAuth2 token`() {
       sentencingApi.verify(
         postRequestedFor(urlEqualTo("/synchronisation/sentencing/adjustments"))
-          .withHeader("Authorization", equalTo("Bearer ABCDE"))
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
@@ -113,7 +113,7 @@ internal class SentencingServiceTest {
           .withRequestBody(WireMock.matchingJsonPath("adjustmentDays", equalTo("99")))
           .withRequestBody(WireMock.matchingJsonPath("adjustmentFromDate", equalTo("2021-07-01")))
           .withRequestBody(WireMock.matchingJsonPath("comment", equalTo("Remand added")))
-          .withRequestBody(WireMock.matchingJsonPath("active", equalTo("true")))
+          .withRequestBody(WireMock.matchingJsonPath("active", equalTo("true"))),
       )
     }
   }
@@ -136,7 +136,7 @@ internal class SentencingServiceTest {
             adjustmentDays = 99,
             comment = "Remand added",
             active = true,
-          )
+          ),
         )
       }
     }
@@ -145,7 +145,7 @@ internal class SentencingServiceTest {
     fun `should call api with OAuth2 token`() {
       sentencingApi.verify(
         putRequestedFor(urlEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID"))
-          .withHeader("Authorization", equalTo("Bearer ABCDE"))
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
@@ -160,7 +160,7 @@ internal class SentencingServiceTest {
           .withRequestBody(WireMock.matchingJsonPath("adjustmentDays", equalTo("99")))
           .withRequestBody(WireMock.matchingJsonPath("adjustmentFromDate", equalTo("2021-07-01")))
           .withRequestBody(WireMock.matchingJsonPath("comment", equalTo("Remand added")))
-          .withRequestBody(WireMock.matchingJsonPath("active", equalTo("true")))
+          .withRequestBody(WireMock.matchingJsonPath("active", equalTo("true"))),
       )
     }
   }
@@ -182,7 +182,7 @@ internal class SentencingServiceTest {
     fun `should call api with OAuth2 token`() {
       sentencingApi.verify(
         deleteRequestedFor(urlEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID"))
-          .withHeader("Authorization", equalTo("Bearer ABCDE"))
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
   }

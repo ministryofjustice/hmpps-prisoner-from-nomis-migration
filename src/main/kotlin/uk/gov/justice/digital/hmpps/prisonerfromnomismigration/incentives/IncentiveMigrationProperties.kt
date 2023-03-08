@@ -13,5 +13,5 @@ class IncentiveMigrationProperties(
 ) : MigrationProperties(
   hmppsQueueService,
   incentiveMappingService,
-  MigrationType.INCENTIVES
+  MigrationType.INCENTIVES,
 )

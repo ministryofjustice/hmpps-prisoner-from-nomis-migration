@@ -68,7 +68,7 @@ internal class IncentivesMigrationServiceTest {
     auditService = auditService,
     incentivesService = incentivesService,
     incentiveMappingService = incentiveMappingService,
-    pageSize = 200
+    pageSize = 200,
   )
 
   @Nested
@@ -89,7 +89,7 @@ internal class IncentivesMigrationServiceTest {
       auditService = auditService,
       incentivesService = incentivesService,
       incentiveMappingService = incentiveMappingService,
-      pageSize = 200
+      pageSize = 200,
     )
 
     @BeforeEach
@@ -100,7 +100,7 @@ internal class IncentivesMigrationServiceTest {
       coEvery {
         auditService.sendAuditEvent(
           what = capture(auditWhatParam),
-          details = capture(auditDetailsParam)
+          details = capture(auditDetailsParam),
         )
       } just runs
     }
@@ -112,7 +112,7 @@ internal class IncentivesMigrationServiceTest {
           IncentivesMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
-          )
+          ),
         )
       }
 
@@ -121,7 +121,7 @@ internal class IncentivesMigrationServiceTest {
           fromDate = LocalDate.parse("2020-01-01"),
           toDate = LocalDate.parse("2020-01-02"),
           pageNumber = 0,
-          pageSize = 1
+          pageSize = 1,
         )
       }
     }
@@ -136,7 +136,7 @@ internal class IncentivesMigrationServiceTest {
           IncentivesMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
-          )
+          ),
         )
 
         verify(queueService).sendMessage(
@@ -146,7 +146,7 @@ internal class IncentivesMigrationServiceTest {
             assertThat(it.body.fromDate).isEqualTo(LocalDate.parse("2020-01-01"))
             assertThat(it.body.toDate).isEqualTo(LocalDate.parse("2020-01-02"))
           },
-          delaySeconds = eq(0)
+          delaySeconds = eq(0),
         )
       }
     }
@@ -163,7 +163,7 @@ internal class IncentivesMigrationServiceTest {
 
       runBlocking {
         service.startMigration(
-          incentivesMigrationFilter
+          incentivesMigrationFilter,
         )
       }
 
@@ -175,7 +175,7 @@ internal class IncentivesMigrationServiceTest {
           filter = coWithArg<IncentivesMigrationFilter> {
             assertThat(it.fromDate).isEqualTo(LocalDate.parse("2020-01-01"))
             assertThat(it.toDate).isEqualTo(LocalDate.parse("2020-01-02"))
-          }
+          },
         )
       }
 
@@ -196,7 +196,7 @@ internal class IncentivesMigrationServiceTest {
           IncentivesMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
-          )
+          ),
         )
       }
 
@@ -208,7 +208,7 @@ internal class IncentivesMigrationServiceTest {
           assertThat(it["fromDate"]).isEqualTo("2020-01-01")
           assertThat(it["toDate"]).isEqualTo("2020-01-02")
         },
-        eq(null)
+        eq(null),
       )
     }
 
@@ -219,14 +219,14 @@ internal class IncentivesMigrationServiceTest {
           fromDate = isNull(),
           toDate = isNull(),
           pageNumber = any(),
-          pageSize = any()
+          pageSize = any(),
         )
       } returns
         pages(23)
 
       runBlocking {
         service.startMigration(
-          IncentivesMigrationFilter()
+          IncentivesMigrationFilter(),
         )
       }
 
@@ -238,7 +238,7 @@ internal class IncentivesMigrationServiceTest {
           assertThat(it["fromDate"]).isEqualTo("")
           assertThat(it["toDate"]).isEqualTo("")
         },
-        eq(null)
+        eq(null),
       )
     }
   }
@@ -250,7 +250,7 @@ internal class IncentivesMigrationServiceTest {
     @BeforeEach
     internal fun setUp(): Unit = runBlocking {
       whenever(nomisApiService.getIncentives(any(), any(), any(), any())).thenReturn(
-        pages(100_200)
+        pages(100_200),
       )
     }
 
@@ -259,16 +259,19 @@ internal class IncentivesMigrationServiceTest {
       service.divideEntitiesByPage(
         MigrationContext(
           type = INCENTIVES,
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
           body = IncentivesMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
-          )
-        )
+          ),
+        ),
       )
 
       verify(queueService, times(100_200 / 200)).sendMessage(
-        eq(MIGRATE_BY_PAGE), any(), delaySeconds = eq(0)
+        eq(MIGRATE_BY_PAGE),
+        any(),
+        delaySeconds = eq(0),
       )
     }
 
@@ -277,16 +280,19 @@ internal class IncentivesMigrationServiceTest {
       service.divideEntitiesByPage(
         MigrationContext(
           type = INCENTIVES,
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
           body = IncentivesMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
-          )
-        )
+          ),
+        ),
       )
 
       verify(queueService).sendMessage(
-        eq(MIGRATE_STATUS_CHECK), any(), any()
+        eq(MIGRATE_STATUS_CHECK),
+        any(),
+        any(),
       )
     }
 
@@ -295,12 +301,13 @@ internal class IncentivesMigrationServiceTest {
       service.divideEntitiesByPage(
         MigrationContext(
           type = INCENTIVES,
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
           body = IncentivesMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
-          )
-        )
+          ),
+        ),
       )
 
       verify(queueService, times(100_200 / 200)).sendMessage(
@@ -311,7 +318,7 @@ internal class IncentivesMigrationServiceTest {
           assertThat(it.body.filter.fromDate).isEqualTo(LocalDate.parse("2020-01-01"))
           assertThat(it.body.filter.toDate).isEqualTo(LocalDate.parse("2020-01-02"))
         },
-        delaySeconds = eq(0)
+        delaySeconds = eq(0),
       )
     }
 
@@ -322,16 +329,19 @@ internal class IncentivesMigrationServiceTest {
       service.divideEntitiesByPage(
         MigrationContext(
           type = INCENTIVES,
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
           body = IncentivesMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
-          )
-        )
+          ),
+        ),
       )
 
       verify(queueService, times(100_200 / 200)).sendMessage(
-        eq(MIGRATE_BY_PAGE), context.capture(), delaySeconds = eq(0)
+        eq(MIGRATE_BY_PAGE),
+        context.capture(),
+        delaySeconds = eq(0),
       )
       val allContexts: List<MigrationContext<MigrationPage<IncentivesMigrationFilter>>> = context.allValues
 
@@ -370,12 +380,14 @@ internal class IncentivesMigrationServiceTest {
             type = INCENTIVES,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = MigrationStatusCheck()
-          )
+            body = MigrationStatusCheck(),
+          ),
         )
 
         verify(queueService).sendMessage(
-          eq(MIGRATE_STATUS_CHECK), any(), eq(10)
+          eq(MIGRATE_STATUS_CHECK),
+          any(),
+          eq(10),
         )
       }
 
@@ -387,8 +399,8 @@ internal class IncentivesMigrationServiceTest {
               type = INCENTIVES,
               migrationId = "2020-05-23T11:30:00",
               estimatedCount = 100_200,
-              body = MigrationStatusCheck(checkCount = 4)
-            )
+              body = MigrationStatusCheck(checkCount = 4),
+            ),
           )
 
           verify(queueService).sendMessage(
@@ -396,7 +408,7 @@ internal class IncentivesMigrationServiceTest {
             context = check<MigrationContext<MigrationStatusCheck>> {
               assertThat(it.body.checkCount).isEqualTo(0)
             },
-            delaySeconds = eq(10)
+            delaySeconds = eq(10),
           )
         }
     }
@@ -418,8 +430,8 @@ internal class IncentivesMigrationServiceTest {
             type = INCENTIVES,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = MigrationStatusCheck(checkCount = 9)
-          )
+            body = MigrationStatusCheck(checkCount = 9),
+          ),
         )
 
         verify(queueService).sendMessage(
@@ -427,7 +439,7 @@ internal class IncentivesMigrationServiceTest {
           context = check<MigrationContext<MigrationStatusCheck>> {
             assertThat(it.body.checkCount).isEqualTo(10)
           },
-          delaySeconds = eq(1)
+          delaySeconds = eq(1),
         )
       }
 
@@ -438,12 +450,14 @@ internal class IncentivesMigrationServiceTest {
             type = INCENTIVES,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = MigrationStatusCheck(checkCount = 10)
-          )
+            body = MigrationStatusCheck(checkCount = 10),
+          ),
         )
 
         verify(queueService, never()).sendMessage(
-          message = eq(MIGRATE_STATUS_CHECK), context = any(), delaySeconds = any()
+          message = eq(MIGRATE_STATUS_CHECK),
+          context = any(),
+          delaySeconds = any(),
         )
       }
 
@@ -454,8 +468,8 @@ internal class IncentivesMigrationServiceTest {
             type = INCENTIVES,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 23,
-            body = MigrationStatusCheck(checkCount = 10)
-          )
+            body = MigrationStatusCheck(checkCount = 10),
+          ),
         )
 
         verify(telemetryClient).trackEvent(
@@ -465,7 +479,7 @@ internal class IncentivesMigrationServiceTest {
             assertThat(it["estimatedCount"]).isEqualTo("23")
             assertThat(it["durationMinutes"]).isNotNull()
           },
-          eq(null)
+          eq(null),
         )
       }
 
@@ -479,14 +493,14 @@ internal class IncentivesMigrationServiceTest {
             type = INCENTIVES,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 23,
-            body = MigrationStatusCheck(checkCount = 10)
-          )
+            body = MigrationStatusCheck(checkCount = 10),
+          ),
         )
 
         verify(migrationHistoryService).recordMigrationCompleted(
           migrationId = eq("2020-05-23T11:30:00"),
           recordsFailed = eq(2),
-          recordsMigrated = eq(21)
+          recordsMigrated = eq(21),
         )
       }
     }
@@ -510,13 +524,15 @@ internal class IncentivesMigrationServiceTest {
             type = INCENTIVES,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = MigrationStatusCheck()
-          )
+            body = MigrationStatusCheck(),
+          ),
         )
 
         verify(queueService).purgeAllMessages(any())
         verify(queueService).sendMessage(
-          eq(CANCEL_MIGRATION), any(), eq(10)
+          eq(CANCEL_MIGRATION),
+          any(),
+          eq(10),
         )
       }
 
@@ -528,8 +544,8 @@ internal class IncentivesMigrationServiceTest {
               type = INCENTIVES,
               migrationId = "2020-05-23T11:30:00",
               estimatedCount = 100_200,
-              body = MigrationStatusCheck(checkCount = 4)
-            )
+              body = MigrationStatusCheck(checkCount = 4),
+            ),
           )
 
           verify(queueService).purgeAllMessages(any())
@@ -538,7 +554,7 @@ internal class IncentivesMigrationServiceTest {
             context = check<MigrationContext<MigrationStatusCheck>> {
               assertThat(it.body.checkCount).isEqualTo(0)
             },
-            delaySeconds = eq(10)
+            delaySeconds = eq(10),
           )
         }
     }
@@ -560,8 +576,8 @@ internal class IncentivesMigrationServiceTest {
             type = INCENTIVES,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = MigrationStatusCheck(checkCount = 9)
-          )
+            body = MigrationStatusCheck(checkCount = 9),
+          ),
         )
 
         verify(queueService).purgeAllMessages(check { assertThat(it).isEqualTo(INCENTIVES) })
@@ -571,7 +587,7 @@ internal class IncentivesMigrationServiceTest {
           context = check<MigrationContext<MigrationStatusCheck>> {
             assertThat(it.body.checkCount).isEqualTo(10)
           },
-          delaySeconds = eq(1)
+          delaySeconds = eq(1),
         )
       }
 
@@ -582,13 +598,15 @@ internal class IncentivesMigrationServiceTest {
             type = INCENTIVES,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = MigrationStatusCheck(checkCount = 10)
-          )
+            body = MigrationStatusCheck(checkCount = 10),
+          ),
         )
 
         verify(queueService, never()).purgeAllMessages(check { assertThat(it).isEqualTo(INCENTIVES) })
         verify(queueService, never()).sendMessage(
-          message = eq(CANCEL_MIGRATION), context = any(), delaySeconds = any()
+          message = eq(CANCEL_MIGRATION),
+          context = any(),
+          delaySeconds = any(),
         )
       }
 
@@ -599,8 +617,8 @@ internal class IncentivesMigrationServiceTest {
             type = INCENTIVES,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 23,
-            body = MigrationStatusCheck(checkCount = 10)
-          )
+            body = MigrationStatusCheck(checkCount = 10),
+          ),
         )
 
         verify(telemetryClient).trackEvent(
@@ -610,7 +628,7 @@ internal class IncentivesMigrationServiceTest {
             assertThat(it["estimatedCount"]).isEqualTo("23")
             assertThat(it["durationMinutes"]).isNotNull()
           },
-          eq(null)
+          eq(null),
         )
       }
 
@@ -624,14 +642,14 @@ internal class IncentivesMigrationServiceTest {
             type = INCENTIVES,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 23,
-            body = MigrationStatusCheck(checkCount = 10)
-          )
+            body = MigrationStatusCheck(checkCount = 10),
+          ),
         )
 
         verify(migrationHistoryService).recordMigrationCancelled(
           migrationId = eq("2020-05-23T11:30:00"),
           recordsFailed = eq(2),
-          recordsMigrated = eq(21)
+          recordsMigrated = eq(21),
         )
       }
     }
@@ -644,7 +662,7 @@ internal class IncentivesMigrationServiceTest {
     internal fun setUp(): Unit = runBlocking {
       whenever(migrationHistoryService.isCancelling(any())).thenReturn(false)
       whenever(nomisApiService.getIncentives(any(), any(), any(), any())).thenReturn(
-        pages(15)
+        pages(15),
       )
     }
 
@@ -653,22 +671,24 @@ internal class IncentivesMigrationServiceTest {
       service.migrateEntitiesForPage(
         MigrationContext(
           type = INCENTIVES,
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
           body = MigrationPage(
             filter = IncentivesMigrationFilter(
               fromDate = LocalDate.parse("2020-01-01"),
               toDate = LocalDate.parse("2020-01-02"),
             ),
-            pageNumber = 13, pageSize = 15
-          )
-        )
+            pageNumber = 13,
+            pageSize = 15,
+          ),
+        ),
       )
 
       verify(nomisApiService).getIncentives(
         fromDate = LocalDate.parse("2020-01-01"),
         toDate = LocalDate.parse("2020-01-02"),
         pageNumber = 13,
-        pageSize = 15
+        pageSize = 15,
       )
     }
 
@@ -677,15 +697,17 @@ internal class IncentivesMigrationServiceTest {
       service.migrateEntitiesForPage(
         MigrationContext(
           type = INCENTIVES,
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
           body = MigrationPage(
             filter = IncentivesMigrationFilter(
               fromDate = LocalDate.parse("2020-01-01"),
               toDate = LocalDate.parse("2020-01-02"),
             ),
-            pageNumber = 13, pageSize = 15
-          )
-        )
+            pageNumber = 13,
+            pageSize = 15,
+          ),
+        ),
       )
 
       verify(queueService, times(15)).sendMessage(
@@ -694,37 +716,41 @@ internal class IncentivesMigrationServiceTest {
           assertThat(it.estimatedCount).isEqualTo(100_200)
           assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
         },
-        delaySeconds = eq(0)
+        delaySeconds = eq(0),
       )
     }
 
     @Test
     internal fun `will send MIGRATE_ENTITY with bookingId for each incentive`(): Unit = runBlocking {
-
       val context: KArgumentCaptor<MigrationContext<IncentiveId>> = argumentCaptor()
 
       whenever(nomisApiService.getIncentives(any(), any(), any(), any())).thenReturn(
         pages(
-          15, startId = 1000
-        )
+          15,
+          startId = 1000,
+        ),
       )
 
       service.migrateEntitiesForPage(
         MigrationContext(
           type = INCENTIVES,
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
           body = MigrationPage(
             filter = IncentivesMigrationFilter(
               fromDate = LocalDate.parse("2020-01-01"),
               toDate = LocalDate.parse("2020-01-02"),
             ),
-            pageNumber = 13, pageSize = 15
-          )
-        )
+            pageNumber = 13,
+            pageSize = 15,
+          ),
+        ),
       )
 
       verify(queueService, times(15)).sendMessage(
-        eq(MIGRATE_ENTITY), context.capture(), delaySeconds = eq(0)
+        eq(MIGRATE_ENTITY),
+        context.capture(),
+        delaySeconds = eq(0),
 
       )
       val allContexts: List<MigrationContext<IncentiveId>> = context.allValues
@@ -744,22 +770,25 @@ internal class IncentivesMigrationServiceTest {
 
       whenever(nomisApiService.getIncentives(any(), any(), any(), any())).thenReturn(
         pages(
-          15, startId = 1000
-        )
+          15,
+          startId = 1000,
+        ),
       )
 
       service.migrateEntitiesForPage(
         MigrationContext(
           type = INCENTIVES,
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
           body = MigrationPage(
             filter = IncentivesMigrationFilter(
               fromDate = LocalDate.parse("2020-01-01"),
               toDate = LocalDate.parse("2020-01-02"),
             ),
-            pageNumber = 13, pageSize = 15
-          )
-        )
+            pageNumber = 13,
+            pageSize = 15,
+          ),
+        ),
       )
 
       verifyNoInteractions(queueService)
@@ -785,7 +814,7 @@ internal class IncentivesMigrationServiceTest {
           currentIep = true,
           offenderNo = "A1234AA",
           whenCreated = LocalDateTime.parse("2020-01-01T00:00:55"),
-        )
+        ),
       )
 
       whenever(incentivesService.migrateIncentive(any(), any())).thenReturn(CreateIncentiveIEPResponse(999L))
@@ -798,8 +827,8 @@ internal class IncentivesMigrationServiceTest {
           type = INCENTIVES,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
-          body = IncentiveId(123, 2)
-        )
+          body = IncentiveId(123, 2),
+        ),
       )
 
       verify(nomisApiService).getIncentive(123, 2)
@@ -819,7 +848,7 @@ internal class IncentivesMigrationServiceTest {
           currentIep = true,
           offenderNo = "A1234AA",
           whenCreated = LocalDateTime.parse("2020-12-12T13:10:45"),
-        )
+        ),
       )
 
       service.migrateIncentive(
@@ -827,8 +856,8 @@ internal class IncentivesMigrationServiceTest {
           type = INCENTIVES,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
-          body = IncentiveId(123, 2)
-        )
+          body = IncentiveId(123, 2),
+        ),
       )
 
       verify(incentivesService).migrateIncentive(
@@ -840,10 +869,10 @@ internal class IncentivesMigrationServiceTest {
             prisonId = "HEI",
             userId = "JANE_SMITH",
             current = true,
-            reviewType = MIGRATED
-          )
+            reviewType = MIGRATED,
+          ),
         ),
-        eq(123)
+        eq(123),
       )
     }
 
@@ -861,7 +890,7 @@ internal class IncentivesMigrationServiceTest {
           currentIep = true,
           offenderNo = "A1234AA",
           whenCreated = LocalDateTime.parse("2020-01-01T00:00:15"),
-        )
+        ),
       )
       whenever(incentivesService.migrateIncentive(any(), eq(123))).thenReturn(CreateIncentiveIEPResponse(999L))
 
@@ -870,8 +899,8 @@ internal class IncentivesMigrationServiceTest {
           type = INCENTIVES,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
-          body = IncentiveId(123, 2)
-        )
+          body = IncentiveId(123, 2),
+        ),
       )
 
       verify(incentiveMappingService).createNomisIncentiveMigrationMapping(
@@ -896,13 +925,13 @@ internal class IncentivesMigrationServiceTest {
             userId = "JANE_SMITH",
             currentIep = true,
             offenderNo = "A1234AA",
-            whenCreated = LocalDateTime.parse("2020-11-11T13:10:11")
-          )
+            whenCreated = LocalDateTime.parse("2020-11-11T13:10:11"),
+          ),
         )
         whenever(incentivesService.migrateIncentive(any(), any())).thenReturn(CreateIncentiveIEPResponse(999L))
 
         whenever(incentiveMappingService.createNomisIncentiveMigrationMapping(any(), any(), any(), any())).thenThrow(
-          RuntimeException("something went wrong")
+          RuntimeException("something went wrong"),
         )
 
         service.migrateIncentive(
@@ -910,8 +939,8 @@ internal class IncentivesMigrationServiceTest {
             type = INCENTIVES,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = IncentiveId(123, 2)
-          )
+            body = IncentiveId(123, 2),
+          ),
         )
 
         verify(queueService).sendMessage(
@@ -922,7 +951,7 @@ internal class IncentivesMigrationServiceTest {
             assertThat(it.body.nomisIncentiveSequence).isEqualTo(2)
             assertThat(it.body.incentiveId).isEqualTo(999)
           },
-          delaySeconds = eq(0)
+          delaySeconds = eq(0),
         )
       }
 
@@ -936,20 +965,19 @@ internal class IncentivesMigrationServiceTest {
             nomisIncentiveSequence = 2,
             incentiveId = 54321,
             mappingType = "MIGRATION",
-          )
+          ),
         )
       }
 
       @Test
       internal fun `will do nothing`(): Unit = runBlocking {
-
         service.migrateIncentive(
           MigrationContext(
             type = INCENTIVES,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = IncentiveId(123, 2)
-          )
+            body = IncentiveId(123, 2),
+          ),
         )
 
         verifyNoInteractions(incentivesService)
@@ -968,7 +996,7 @@ internal class IncentivesMigrationServiceTest {
           whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
           migrationType = INCENTIVES,
           estimatedRecordCount = 100,
-        )
+        ),
       )
 
       service.cancel("123-2020-01-01")
@@ -986,5 +1014,7 @@ internal class IncentivesMigrationServiceTest {
 }
 
 fun pages(total: Long, startId: Long = 1): PageImpl<IncentiveId> = PageImpl<IncentiveId>(
-  (startId..total - 1 + startId).map { IncentiveId(it, 1) }, Pageable.ofSize(10), total
+  (startId..total - 1 + startId).map { IncentiveId(it, 1) },
+  Pageable.ofSize(10),
+  total,
 )

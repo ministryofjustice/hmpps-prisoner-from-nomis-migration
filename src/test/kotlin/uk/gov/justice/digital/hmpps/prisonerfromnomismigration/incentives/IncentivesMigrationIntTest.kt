@@ -92,8 +92,8 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
               "fromDate": "2020-01-01",
               "toDate": "2020-01-02"
             }
-            """.trimIndent()
-          )
+            """.trimIndent(),
+          ),
         )
         .exchange()
         .expectStatus().isAccepted
@@ -102,14 +102,14 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
         verify(telemetryClient).trackEvent(
           eq("nomis-migration-completed"),
           any(),
-          isNull()
+          isNull(),
         )
       }
 
       // check filter matches what is passed in
       nomisApi.verifyGetIncentivesFilter(
         fromDate = "2020-01-01",
-        toDate = "2020-01-02"
+        toDate = "2020-01-02",
       )
 
       await untilAsserted {
@@ -138,8 +138,8 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
             """
             {
             }
-            """.trimIndent()
-          )
+            """.trimIndent(),
+          ),
         )
         .exchange()
         .expectStatus().isAccepted
@@ -148,7 +148,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
         verify(telemetryClient).trackEvent(
           eq("nomis-migration-completed"),
           any(),
-          isNull()
+          isNull(),
         )
       }
 
@@ -191,8 +191,8 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
             """
             {
             }
-            """.trimIndent()
-          )
+            """.trimIndent(),
+          ),
         )
         .exchange()
         .expectStatus().isAccepted
@@ -213,7 +213,6 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
   inner class GetAll {
     @BeforeEach
     internal fun createHistoryRecords() {
-
       runBlocking {
         migrationHistoryRepository.deleteAll()
         migrationHistoryRepository.save(
@@ -226,8 +225,8 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = INCENTIVES
-          )
+            migrationType = INCENTIVES,
+          ),
         )
         migrationHistoryRepository.save(
           MigrationHistory(
@@ -239,8 +238,8 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = INCENTIVES
-          )
+            migrationType = INCENTIVES,
+          ),
         )
         migrationHistoryRepository.save(
           MigrationHistory(
@@ -252,8 +251,8 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = INCENTIVES
-          )
+            migrationType = INCENTIVES,
+          ),
         )
         migrationHistoryRepository.save(
           MigrationHistory(
@@ -265,8 +264,8 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = INCENTIVES
-          )
+            migrationType = INCENTIVES,
+          ),
         )
       }
     }
@@ -384,7 +383,6 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
   inner class Get {
     @BeforeEach
     internal fun createHistoryRecords() {
-
       runBlocking {
         migrationHistoryRepository.deleteAll()
         migrationHistoryRepository.save(
@@ -397,8 +395,8 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = INCENTIVES
-          )
+            migrationType = INCENTIVES,
+          ),
         )
       }
     }
@@ -495,8 +493,8 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
               "fromDate": "2020-01-01",
               "toDate": "2020-01-02"
             }
-            """.trimIndent()
-          )
+            """.trimIndent(),
+          ),
         )
         .exchange()
         .expectStatus().isAccepted
@@ -536,5 +534,5 @@ fun someMigrationFilter(): BodyInserter<String, ReactiveHttpOutputMessage> = Bod
   """
   {
   }
-  """.trimIndent()
+  """.trimIndent(),
 )

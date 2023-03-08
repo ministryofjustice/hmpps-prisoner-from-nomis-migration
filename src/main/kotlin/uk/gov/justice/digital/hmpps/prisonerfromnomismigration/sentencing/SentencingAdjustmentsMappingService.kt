@@ -38,14 +38,14 @@ class SentencingAdjustmentsMappingService(@Qualifier("mappingApiWebClient") priv
     nomisAdjustmentId: Long,
     nomisAdjustmentCategory: String,
     adjustmentId: String,
-    migrationId: String
+    migrationId: String,
   ) =
     createNomisSentenceAdjustmentMapping(
       nomisAdjustmentId = nomisAdjustmentId,
       nomisAdjustmentCategory = nomisAdjustmentCategory,
       adjustmentId = adjustmentId,
       migrationId = migrationId,
-      mappingType = "MIGRATED"
+      mappingType = "MIGRATED",
     )
 
   suspend fun createNomisSentencingAdjustmentSynchronisationMapping(
@@ -57,12 +57,12 @@ class SentencingAdjustmentsMappingService(@Qualifier("mappingApiWebClient") priv
       nomisAdjustmentId = nomisAdjustmentId,
       nomisAdjustmentCategory = nomisAdjustmentCategory,
       adjustmentId = adjustmentId,
-      mappingType = "NOMIS_CREATED"
+      mappingType = "NOMIS_CREATED",
     )
 
   data class CreateMappingResult(
     /* currently, only interested in the error response as success doesn't return a body*/
-    val errorResponse: DuplicateAdjustmentErrorResponse? = null
+    val errorResponse: DuplicateAdjustmentErrorResponse? = null,
   ) {
     val isError
       get() = errorResponse != null
@@ -73,7 +73,7 @@ class SentencingAdjustmentsMappingService(@Qualifier("mappingApiWebClient") priv
     nomisAdjustmentCategory: String,
     adjustmentId: String,
     mappingType: String,
-    migrationId: String? = null
+    migrationId: String? = null,
   ): CreateMappingResult {
     return webClient.post()
       .uri("/mapping/sentencing/adjustments")
@@ -83,8 +83,8 @@ class SentencingAdjustmentsMappingService(@Qualifier("mappingApiWebClient") priv
           nomisAdjustmentCategory = nomisAdjustmentCategory,
           adjustmentId = adjustmentId,
           label = migrationId,
-          mappingType = mappingType
-        )
+          mappingType = mappingType,
+        ),
       )
       .retrieve()
       .bodyToMono(Unit::class.java)
@@ -141,11 +141,11 @@ data class SentencingAdjustmentNomisMapping(
   val nomisAdjustmentCategory: String,
   val adjustmentId: String,
   val label: String? = null,
-  val mappingType: String
+  val mappingType: String,
 )
 
 class DuplicateAdjustmentErrorResponse(
-  val moreInfo: DuplicateAdjustmentErrorContent
+  val moreInfo: DuplicateAdjustmentErrorContent,
 )
 
 data class DuplicateAdjustmentErrorContent(

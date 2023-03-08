@@ -23,7 +23,7 @@ import java.util.concurrent.CompletableFuture
 
 abstract class MigrationMessageListener<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
   internal val objectMapper: ObjectMapper,
-  private val migrationService: MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>
+  private val migrationService: MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>,
 ) {
 
   private companion object {
@@ -38,15 +38,15 @@ abstract class MigrationMessageListener<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>
         when (migrationMessage.type) {
           MIGRATE_ENTITIES -> migrationService.divideEntitiesByPage(migrationContextFilter(parseContextFilter(message)))
           MIGRATE_BY_PAGE -> migrationService.migrateEntitiesForPage(
-            migrationContextFilter(parseContextPageFilter(message))
+            migrationContextFilter(parseContextPageFilter(message)),
           )
           MIGRATE_ENTITY -> migrationService.migrateNomisEntity(migrationContextFilter(parseContextNomisId(message)))
           MIGRATE_STATUS_CHECK -> migrationService.migrateStatusCheck(migrationContext(message.fromJson()))
           CANCEL_MIGRATION -> migrationService.cancelMigrateStatusCheck(migrationContext(message.fromJson()))
           RETRY_MIGRATION_MAPPING -> migrationService.retryCreateMapping(
             migrationContextFilter(
-              parseContextMapping(message)
-            )
+              parseContextMapping(message),
+            ),
           )
         }
       }.onFailure {

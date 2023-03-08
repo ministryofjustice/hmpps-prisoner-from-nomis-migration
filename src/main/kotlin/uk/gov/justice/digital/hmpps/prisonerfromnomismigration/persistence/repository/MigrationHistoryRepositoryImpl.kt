@@ -22,7 +22,7 @@ class MigrationHistoryRepositoryImpl(private val template: R2dbcEntityTemplate) 
       .from("migration_history")
       .matching(
         buildQuery(filter)
-          .sort(Sort.by("when_started").descending())
+          .sort(Sort.by("when_started").descending()),
       )
       .flow()
   }
@@ -46,8 +46,8 @@ class MigrationHistoryRepositoryImpl(private val template: R2dbcEntityTemplate) 
           this and filter.filterContains?.let {
             where("filter").like("%$it%")
           }
-        }
-      )
+        },
+      ),
     )
 }
 

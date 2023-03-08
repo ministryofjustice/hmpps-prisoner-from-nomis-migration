@@ -68,7 +68,7 @@ internal class VisitsMigrationServiceTest {
     migrationHistoryService = migrationHistoryService,
     telemetryClient = telemetryClient,
     auditService = auditService,
-    pageSize = 200
+    pageSize = 200,
   )
 
   @Nested
@@ -87,7 +87,7 @@ internal class VisitsMigrationServiceTest {
       migrationHistoryService = migrationHistoryService,
       telemetryClient = telemetryClient,
       auditService = auditService,
-      pageSize = 200
+      pageSize = 200,
     )
     private val auditWhatParam = slot<String>()
     private val auditDetailsParam = slot<Map<*, *>>()
@@ -100,7 +100,7 @@ internal class VisitsMigrationServiceTest {
       coEvery {
         auditService.sendAuditEvent(
           what = capture(auditWhatParam), // makes mock match calls with any value for `speed` and record it in a slot
-          details = capture(auditDetailsParam) // makes mock and capturing only match calls with specific `direction`. Use `any()` to match calls with any `direction`
+          details = capture(auditDetailsParam), // makes mock and capturing only match calls with specific `direction`. Use `any()` to match calls with any `direction`
         )
       } just runs
     }
@@ -114,7 +114,7 @@ internal class VisitsMigrationServiceTest {
             visitTypes = listOf("SCON"),
             fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
             toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
-          )
+          ),
         )
       }
 
@@ -126,7 +126,7 @@ internal class VisitsMigrationServiceTest {
           toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
           ignoreMissingRoom = false,
           pageNumber = 0,
-          pageSize = 1
+          pageSize = 1,
         )
       }
     }
@@ -143,7 +143,7 @@ internal class VisitsMigrationServiceTest {
             visitTypes = listOf("SCON"),
             fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
             toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
-          )
+          ),
         )
       }
 
@@ -156,7 +156,7 @@ internal class VisitsMigrationServiceTest {
           assertThat(it.body.fromDateTime).isEqualTo(LocalDateTime.parse("2020-01-01T00:00:00"))
           assertThat(it.body.toDateTime).isEqualTo(LocalDateTime.parse("2020-01-02T23:00:00"))
         },
-        delaySeconds = eq(0)
+        delaySeconds = eq(0),
       )
     }
 
@@ -174,7 +174,7 @@ internal class VisitsMigrationServiceTest {
 
       runBlocking {
         service.migrateVisits(
-          visitsMigrationFilter
+          visitsMigrationFilter,
         )
       }
 
@@ -188,7 +188,7 @@ internal class VisitsMigrationServiceTest {
             assertThat(it.visitTypes).containsExactly("SCON")
             assertThat(it.fromDateTime).isEqualTo(LocalDateTime.parse("2020-01-01T00:00:00"))
             assertThat(it.toDateTime).isEqualTo(LocalDateTime.parse("2020-01-02T23:00:00"))
-          }
+          },
         )
       }
 
@@ -210,7 +210,7 @@ internal class VisitsMigrationServiceTest {
             visitTypes = listOf("SCON"),
             fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
             toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
-          )
+          ),
         )
       }
 
@@ -224,7 +224,7 @@ internal class VisitsMigrationServiceTest {
           assertThat(it["fromDateTime"]).isEqualTo("2020-01-01T00:00:00")
           assertThat(it["toDateTime"]).isEqualTo("2020-01-02T23:00:00")
         },
-        eq(null)
+        eq(null),
       )
     }
 
@@ -238,14 +238,14 @@ internal class VisitsMigrationServiceTest {
           toDateTime = isNull(),
           ignoreMissingRoom = any(),
           pageNumber = any(),
-          pageSize = any()
+          pageSize = any(),
         )
       } returns
         pages(23)
 
       runBlocking {
         service.migrateVisits(
-          VisitsMigrationFilter(visitTypes = listOf())
+          VisitsMigrationFilter(visitTypes = listOf()),
         )
       }
 
@@ -260,7 +260,7 @@ internal class VisitsMigrationServiceTest {
           assertThat(it["fromDateTime"]).isEqualTo("")
           assertThat(it["toDateTime"]).isEqualTo("")
         },
-        eq(null)
+        eq(null),
       )
     }
   }
@@ -272,7 +272,7 @@ internal class VisitsMigrationServiceTest {
     @BeforeEach
     internal fun setUp(): Unit = runBlocking {
       whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any())).thenReturn(
-        pages(100_200)
+        pages(100_200),
       )
     }
 
@@ -281,18 +281,21 @@ internal class VisitsMigrationServiceTest {
       service.divideVisitsByPage(
         MigrationContext(
           type = VISITS,
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
           body = VisitsMigrationFilter(
             prisonIds = listOf("LEI", "BXI"),
             visitTypes = listOf("SCON"),
             fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
             toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
-          )
-        )
+          ),
+        ),
       )
 
       verify(queueService, times(100_200 / 200)).sendMessage(
-        eq(MIGRATE_VISITS_BY_PAGE), any(), delaySeconds = eq(0)
+        eq(MIGRATE_VISITS_BY_PAGE),
+        any(),
+        delaySeconds = eq(0),
       )
     }
 
@@ -301,18 +304,21 @@ internal class VisitsMigrationServiceTest {
       service.divideVisitsByPage(
         MigrationContext(
           type = VISITS,
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
           body = VisitsMigrationFilter(
             prisonIds = listOf("LEI", "BXI"),
             visitTypes = listOf("SCON"),
             fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
             toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
-          )
-        )
+          ),
+        ),
       )
 
       verify(queueService).sendMessage(
-        eq(MIGRATE_VISITS_STATUS_CHECK), any(), any()
+        eq(MIGRATE_VISITS_STATUS_CHECK),
+        any(),
+        any(),
       )
     }
 
@@ -321,14 +327,15 @@ internal class VisitsMigrationServiceTest {
       service.divideVisitsByPage(
         MigrationContext(
           type = VISITS,
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
           body = VisitsMigrationFilter(
             prisonIds = listOf("LEI", "BXI"),
             visitTypes = listOf("SCON"),
             fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
             toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
-          )
-        )
+          ),
+        ),
       )
 
       verify(queueService, times(100_200 / 200)).sendMessage(
@@ -341,7 +348,7 @@ internal class VisitsMigrationServiceTest {
           assertThat(it.body.filter.fromDateTime).isEqualTo(LocalDateTime.parse("2020-01-01T00:00:00"))
           assertThat(it.body.filter.toDateTime).isEqualTo(LocalDateTime.parse("2020-01-02T23:00:00"))
         },
-        delaySeconds = eq(0)
+        delaySeconds = eq(0),
       )
     }
 
@@ -352,18 +359,21 @@ internal class VisitsMigrationServiceTest {
       service.divideVisitsByPage(
         MigrationContext(
           type = VISITS,
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
           body = VisitsMigrationFilter(
             prisonIds = listOf("LEI", "BXI"),
             visitTypes = listOf("SCON"),
             fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
             toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
-          )
-        )
+          ),
+        ),
       )
 
       verify(queueService, times(100_200 / 200)).sendMessage(
-        eq(MIGRATE_VISITS_BY_PAGE), context.capture(), delaySeconds = eq(0)
+        eq(MIGRATE_VISITS_BY_PAGE),
+        context.capture(),
+        delaySeconds = eq(0),
       )
       val allContexts: List<MigrationContext<VisitsPage>> = context.allValues
 
@@ -402,12 +412,14 @@ internal class VisitsMigrationServiceTest {
             type = VISITS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = VisitMigrationStatusCheck()
-          )
+            body = VisitMigrationStatusCheck(),
+          ),
         )
 
         verify(queueService).sendMessage(
-          eq(MIGRATE_VISITS_STATUS_CHECK), any(), eq(10)
+          eq(MIGRATE_VISITS_STATUS_CHECK),
+          any(),
+          eq(10),
         )
       }
 
@@ -418,8 +430,8 @@ internal class VisitsMigrationServiceTest {
             type = VISITS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = VisitMigrationStatusCheck(checkCount = 4)
-          )
+            body = VisitMigrationStatusCheck(checkCount = 4),
+          ),
         )
 
         verify(queueService).sendMessage(
@@ -427,7 +439,7 @@ internal class VisitsMigrationServiceTest {
           context = check<MigrationContext<VisitMigrationStatusCheck>> {
             assertThat(it.body.checkCount).isEqualTo(0)
           },
-          delaySeconds = eq(10)
+          delaySeconds = eq(10),
         )
       }
     }
@@ -449,8 +461,8 @@ internal class VisitsMigrationServiceTest {
             type = VISITS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = VisitMigrationStatusCheck(checkCount = 9)
-          )
+            body = VisitMigrationStatusCheck(checkCount = 9),
+          ),
         )
 
         verify(queueService).sendMessage(
@@ -458,7 +470,7 @@ internal class VisitsMigrationServiceTest {
           context = check<MigrationContext<VisitMigrationStatusCheck>> {
             assertThat(it.body.checkCount).isEqualTo(10)
           },
-          delaySeconds = eq(1)
+          delaySeconds = eq(1),
         )
       }
 
@@ -469,12 +481,14 @@ internal class VisitsMigrationServiceTest {
             type = VISITS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = VisitMigrationStatusCheck(checkCount = 10)
-          )
+            body = VisitMigrationStatusCheck(checkCount = 10),
+          ),
         )
 
         verify(queueService, never()).sendMessage(
-          message = eq(MIGRATE_VISITS_STATUS_CHECK), context = any(), delaySeconds = any()
+          message = eq(MIGRATE_VISITS_STATUS_CHECK),
+          context = any(),
+          delaySeconds = any(),
         )
       }
 
@@ -485,8 +499,8 @@ internal class VisitsMigrationServiceTest {
             type = VISITS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 23,
-            body = VisitMigrationStatusCheck(checkCount = 10)
-          )
+            body = VisitMigrationStatusCheck(checkCount = 10),
+          ),
         )
 
         verify(telemetryClient).trackEvent(
@@ -496,7 +510,7 @@ internal class VisitsMigrationServiceTest {
             assertThat(it["estimatedCount"]).isEqualTo("23")
             assertThat(it["durationMinutes"]).isNotNull()
           },
-          eq(null)
+          eq(null),
         )
       }
 
@@ -510,12 +524,14 @@ internal class VisitsMigrationServiceTest {
             type = VISITS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 23,
-            body = VisitMigrationStatusCheck(checkCount = 10)
-          )
+            body = VisitMigrationStatusCheck(checkCount = 10),
+          ),
         )
 
         verify(migrationHistoryService).recordMigrationCompleted(
-          migrationId = eq("2020-05-23T11:30:00"), recordsFailed = eq(2), recordsMigrated = eq(21)
+          migrationId = eq("2020-05-23T11:30:00"),
+          recordsFailed = eq(2),
+          recordsMigrated = eq(21),
         )
       }
     }
@@ -539,13 +555,15 @@ internal class VisitsMigrationServiceTest {
             type = VISITS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = VisitMigrationStatusCheck()
-          )
+            body = VisitMigrationStatusCheck(),
+          ),
         )
 
         verify(queueService).purgeAllMessages(any())
         verify(queueService).sendMessage(
-          eq(CANCEL_MIGRATE_VISITS), any(), eq(10)
+          eq(CANCEL_MIGRATE_VISITS),
+          any(),
+          eq(10),
         )
       }
 
@@ -556,8 +574,8 @@ internal class VisitsMigrationServiceTest {
             type = VISITS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = VisitMigrationStatusCheck(checkCount = 4)
-          )
+            body = VisitMigrationStatusCheck(checkCount = 4),
+          ),
         )
 
         verify(queueService).purgeAllMessages(any())
@@ -566,7 +584,7 @@ internal class VisitsMigrationServiceTest {
           context = check<MigrationContext<VisitMigrationStatusCheck>> {
             assertThat(it.body.checkCount).isEqualTo(0)
           },
-          delaySeconds = eq(10)
+          delaySeconds = eq(10),
         )
       }
     }
@@ -588,8 +606,8 @@ internal class VisitsMigrationServiceTest {
             type = VISITS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = VisitMigrationStatusCheck(checkCount = 9)
-          )
+            body = VisitMigrationStatusCheck(checkCount = 9),
+          ),
         )
 
         verify(queueService).purgeAllMessages(check { assertThat(it).isEqualTo(VISITS) })
@@ -599,7 +617,7 @@ internal class VisitsMigrationServiceTest {
           context = check<MigrationContext<VisitMigrationStatusCheck>> {
             assertThat(it.body.checkCount).isEqualTo(10)
           },
-          delaySeconds = eq(1)
+          delaySeconds = eq(1),
         )
       }
 
@@ -610,13 +628,15 @@ internal class VisitsMigrationServiceTest {
             type = VISITS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = VisitMigrationStatusCheck(checkCount = 10)
-          )
+            body = VisitMigrationStatusCheck(checkCount = 10),
+          ),
         )
 
         verify(queueService, never()).purgeAllMessages(check { assertThat(it).isEqualTo(VISITS) })
         verify(queueService, never()).sendMessage(
-          message = eq(CANCEL_MIGRATE_VISITS), context = any(), delaySeconds = any()
+          message = eq(CANCEL_MIGRATE_VISITS),
+          context = any(),
+          delaySeconds = any(),
         )
       }
 
@@ -627,8 +647,8 @@ internal class VisitsMigrationServiceTest {
             type = VISITS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 23,
-            body = VisitMigrationStatusCheck(checkCount = 10)
-          )
+            body = VisitMigrationStatusCheck(checkCount = 10),
+          ),
         )
 
         verify(telemetryClient).trackEvent(
@@ -638,7 +658,7 @@ internal class VisitsMigrationServiceTest {
             assertThat(it["estimatedCount"]).isEqualTo("23")
             assertThat(it["durationMinutes"]).isNotNull()
           },
-          eq(null)
+          eq(null),
         )
       }
 
@@ -652,12 +672,14 @@ internal class VisitsMigrationServiceTest {
             type = VISITS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 23,
-            body = VisitMigrationStatusCheck(checkCount = 10)
-          )
+            body = VisitMigrationStatusCheck(checkCount = 10),
+          ),
         )
 
         verify(migrationHistoryService).recordMigrationCancelled(
-          migrationId = eq("2020-05-23T11:30:00"), recordsFailed = eq(2), recordsMigrated = eq(21)
+          migrationId = eq("2020-05-23T11:30:00"),
+          recordsFailed = eq(2),
+          recordsMigrated = eq(21),
         )
       }
     }
@@ -670,7 +692,7 @@ internal class VisitsMigrationServiceTest {
     internal fun setUp(): Unit = runBlocking {
       whenever(migrationHistoryService.isCancelling(any())).thenReturn(false)
       whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any())).thenReturn(
-        pages(15)
+        pages(15),
       )
     }
 
@@ -679,7 +701,8 @@ internal class VisitsMigrationServiceTest {
       service.migrateVisitsForPage(
         MigrationContext(
           type = VISITS,
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
           body = VisitsPage(
             filter = VisitsMigrationFilter(
               prisonIds = listOf("LEI", "BXI"),
@@ -688,9 +711,10 @@ internal class VisitsMigrationServiceTest {
               fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
               toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
             ),
-            pageNumber = 13, pageSize = 15
-          )
-        )
+            pageNumber = 13,
+            pageSize = 15,
+          ),
+        ),
       )
 
       verify(nomisApiService).getVisits(
@@ -700,7 +724,7 @@ internal class VisitsMigrationServiceTest {
         toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
         ignoreMissingRoom = true,
         pageNumber = 13,
-        pageSize = 15
+        pageSize = 15,
       )
     }
 
@@ -709,7 +733,8 @@ internal class VisitsMigrationServiceTest {
       service.migrateVisitsForPage(
         MigrationContext(
           type = VISITS,
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
           body = VisitsPage(
             filter = VisitsMigrationFilter(
               prisonIds = listOf("LEI", "BXI"),
@@ -717,9 +742,10 @@ internal class VisitsMigrationServiceTest {
               fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
               toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
             ),
-            pageNumber = 13, pageSize = 15
-          )
-        )
+            pageNumber = 13,
+            pageSize = 15,
+          ),
+        ),
       )
 
       verify(queueService, times(15)).sendMessage(
@@ -728,25 +754,26 @@ internal class VisitsMigrationServiceTest {
           assertThat(it.estimatedCount).isEqualTo(100_200)
           assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
         },
-        delaySeconds = eq(0)
+        delaySeconds = eq(0),
       )
     }
 
     @Test
     internal fun `will send MIGRATE_VISIT with visitId for each visit`(): Unit = runBlocking {
-
       val context: KArgumentCaptor<MigrationContext<VisitId>> = argumentCaptor()
 
       whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any())).thenReturn(
         pages(
-          15, startId = 1000
-        )
+          15,
+          startId = 1000,
+        ),
       )
 
       service.migrateVisitsForPage(
         MigrationContext(
           type = VISITS,
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
           body = VisitsPage(
             filter = VisitsMigrationFilter(
               prisonIds = listOf("LEI", "BXI"),
@@ -754,13 +781,16 @@ internal class VisitsMigrationServiceTest {
               fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
               toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
             ),
-            pageNumber = 13, pageSize = 15
-          )
-        )
+            pageNumber = 13,
+            pageSize = 15,
+          ),
+        ),
       )
 
       verify(queueService, times(15)).sendMessage(
-        eq(MIGRATE_VISIT), context.capture(), delaySeconds = eq(0)
+        eq(MIGRATE_VISIT),
+        context.capture(),
+        delaySeconds = eq(0),
 
       )
       val allContexts: List<MigrationContext<VisitId>> = context.allValues
@@ -780,14 +810,16 @@ internal class VisitsMigrationServiceTest {
 
       whenever(nomisApiService.getVisits(any(), any(), any(), any(), any(), any(), any())).thenReturn(
         pages(
-          15, startId = 1000
-        )
+          15,
+          startId = 1000,
+        ),
       )
 
       service.migrateVisitsForPage(
         MigrationContext(
           type = VISITS,
-          migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
           body = VisitsPage(
             filter = VisitsMigrationFilter(
               prisonIds = listOf("LEI", "BXI"),
@@ -795,9 +827,10 @@ internal class VisitsMigrationServiceTest {
               fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
               toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
             ),
-            pageNumber = 13, pageSize = 15
-          )
-        )
+            pageNumber = 13,
+            pageSize = 15,
+          ),
+        ),
       )
 
       verifyNoInteractions(queueService)
@@ -830,28 +863,31 @@ internal class VisitsMigrationServiceTest {
             ),
             NomisVisitor(
               personId = 4729580,
-            )
+            ),
           ),
           visitType = NomisCodeDescription("SCON", "Social Contact"),
           visitStatus = NomisCodeDescription("CANC", "cancelled"),
           leadVisitor = NomisLeadVisitor(
-            personId = 4729570, fullName = "Simon Mine", telephones = listOf("000 11111", "000 22222")
+            personId = 4729570,
+            fullName = "Simon Mine",
+            telephones = listOf("000 11111", "000 22222"),
           ),
           visitOutcome = NomisCodeDescription(NomisCancellationOutcome.NO_ID.name, "No Id"),
           commentText = "This is a comment",
           visitorConcernText = "I'm concerned",
           whenCreated = LocalDateTime.parse("2020-01-01T09:00:00"),
           whenUpdated = LocalDateTime.parse("2020-01-02T14:00:00"),
-        )
+        ),
       )
       whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
         RoomMapping(
-          vsipId = "VSIP-ROOM-ID", isOpen = true
-        )
+          vsipId = "VSIP-ROOM-ID",
+          isOpen = true,
+        ),
       )
 
       whenever(visitsService.createVisit(any())).thenReturn(
-        "654321"
+        "654321",
       )
     }
 
@@ -862,8 +898,8 @@ internal class VisitsMigrationServiceTest {
           type = VISITS,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
-          body = VisitId(123)
-        )
+          body = VisitId(123),
+        ),
       )
 
       verify(nomisApiService).getVisit(123)
@@ -876,8 +912,8 @@ internal class VisitsMigrationServiceTest {
           prisonId = "BXI",
           agencyInternalLocation = NomisCodeDescription("OFF_VIS", "MDI-VISITS-OFF_VIS"),
           prisonerId = "A1234AA",
-          startDateTime = LocalDateTime.now().plusDays(5)
-        )
+          startDateTime = LocalDateTime.now().plusDays(5),
+        ),
       )
 
       service.migrateVisit(
@@ -885,13 +921,13 @@ internal class VisitsMigrationServiceTest {
           type = VISITS,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
-          body = VisitId(123)
-        )
+          body = VisitId(123),
+        ),
       )
 
       verify(visitMappingService).findRoomMapping(
         prisonId = "BXI",
-        agencyInternalLocationCode = "MDI-VISITS-OFF_VIS"
+        agencyInternalLocationCode = "MDI-VISITS-OFF_VIS",
       )
     }
 
@@ -904,7 +940,7 @@ internal class VisitsMigrationServiceTest {
           prisonerId = "A1234AA",
           visitId = 123456,
           startDateTime = tomorrowDateTime,
-        )
+        ),
       )
 
       whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(null)
@@ -913,8 +949,11 @@ internal class VisitsMigrationServiceTest {
         runBlocking {
           service.migrateVisit(
             MigrationContext(
-              type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
-            )
+              type = VISITS,
+              migrationId = "2020-05-23T11:30:00",
+              estimatedCount = 100_200,
+              body = VisitId(123),
+            ),
           )
         }
       }.isInstanceOf(NoRoomMappingFoundException::class.java)
@@ -929,7 +968,7 @@ internal class VisitsMigrationServiceTest {
           assertThat(LocalDateTime.parse(it["startDateTime"])).isEqualTo(tomorrowDateTime)
           assertThat(it["agencyInternalLocation"]).isEqualTo("MDI-VISITS-OFF_VIS")
         },
-        eq(null)
+        eq(null),
       )
     }
 
@@ -942,17 +981,20 @@ internal class VisitsMigrationServiceTest {
           prisonerId = "A1234AA",
           visitId = 123456,
           startDateTime = yesterdayDateTime,
-        )
+        ),
       )
 
       whenever(visitsService.createVisit(any())).thenReturn(
-        "654321"
+        "654321",
       )
 
       service.migrateVisit(
         MigrationContext(
-          type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
-        )
+          type = VISITS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = VisitId(123),
+        ),
       )
 
       verify(telemetryClient).trackEvent(
@@ -966,7 +1008,7 @@ internal class VisitsMigrationServiceTest {
           assertThat(LocalDateTime.parse(it["startDateTime"])).isEqualTo(yesterdayDateTime)
           assertThat(it["room"]).isEqualTo("MDI-VISITS-OFF_VIS")
         },
-        eq(null)
+        eq(null),
       )
 
       verify(visitMappingService, never()).findRoomMapping(any(), any())
@@ -981,17 +1023,20 @@ internal class VisitsMigrationServiceTest {
           prisonerId = "A1234AA",
           visitId = 123456,
           startDateTime = inTwoYearsDateTime,
-        )
+        ),
       )
 
       whenever(visitsService.createVisit(any())).thenReturn(
-        "654321"
+        "654321",
       )
 
       service.migrateVisit(
         MigrationContext(
-          type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
-        )
+          type = VISITS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = VisitId(123),
+        ),
       )
 
       verify(telemetryClient).trackEvent(
@@ -1005,7 +1050,7 @@ internal class VisitsMigrationServiceTest {
           assertThat(LocalDateTime.parse(it["startDateTime"])).isEqualTo(inTwoYearsDateTime)
           assertThat(it["room"]).isEqualTo("MDI-VISITS-OFF_VIS")
         },
-        eq(null)
+        eq(null),
       )
 
       verify(visitMappingService, never()).findRoomMapping(any(), any())
@@ -1016,16 +1061,19 @@ internal class VisitsMigrationServiceTest {
       whenever(nomisApiService.getVisit(any())).thenReturn(
         aVisit(
           agencyInternalLocation = null,
-          startDateTime = tomorrowDateTime
-        )
+          startDateTime = tomorrowDateTime,
+        ),
       )
 
       assertThatThrownBy {
         runBlocking {
           service.migrateVisit(
             MigrationContext(
-              type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
-            )
+              type = VISITS,
+              migrationId = "2020-05-23T11:30:00",
+              estimatedCount = 100_200,
+              body = VisitId(123),
+            ),
           )
         }
       }.isInstanceOf(NoRoomMappingFoundException::class.java)
@@ -1036,18 +1084,21 @@ internal class VisitsMigrationServiceTest {
       whenever(nomisApiService.getVisit(any())).thenReturn(
         aVisit(
           agencyInternalLocation = null,
-          startDateTime = yesterdayDateTime
-        )
+          startDateTime = yesterdayDateTime,
+        ),
       )
 
       whenever(visitsService.createVisit(any())).thenReturn(
-        "654321"
+        "654321",
       )
 
       service.migrateVisit(
         MigrationContext(
-          type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
-        )
+          type = VISITS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = VisitId(123),
+        ),
       )
 
       verify(telemetryClient).trackEvent(
@@ -1056,7 +1107,7 @@ internal class VisitsMigrationServiceTest {
           assertThat(LocalDateTime.parse(it["startDateTime"])).isEqualTo(yesterdayDateTime)
           assertThat(it["room"]).isEqualTo("UNKNOWN")
         },
-        eq(null)
+        eq(null),
       )
     }
 
@@ -1064,8 +1115,11 @@ internal class VisitsMigrationServiceTest {
     internal fun `will create a visit in VSIP`(): Unit = runBlocking {
       service.migrateVisit(
         MigrationContext(
-          type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
-        )
+          type = VISITS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = VisitId(123),
+        ),
       )
 
       verify(visitsService).createVisit(any())
@@ -1080,21 +1134,24 @@ internal class VisitsMigrationServiceTest {
           prisonerId = "A1234AA",
           visitId = 123456,
           startDateTime = tomorrowDateTimeMorning,
-          endDateTime = tomorrowDateTimeMorning.plusHours(2)
-        )
+          endDateTime = tomorrowDateTimeMorning.plusHours(2),
+        ),
       )
 
       service.migrateVisit(
         MigrationContext(
-          type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
-        )
+          type = VISITS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = VisitId(123),
+        ),
       )
 
       verify(visitsService).createVisit(
         check {
           assertThat(it.startTimestamp).isEqualTo(tomorrowDateTimeMorning.toLocalDate().atTime(9, 0))
           assertThat(it.endTimestamp).isEqualTo(tomorrowDateTimeMorning.toLocalDate().atTime(10, 0))
-        }
+        },
       )
     }
 
@@ -1107,21 +1164,24 @@ internal class VisitsMigrationServiceTest {
           prisonerId = "A1234AA",
           visitId = 123456,
           startDateTime = tomorrowDateTimeAfternoon,
-          endDateTime = tomorrowDateTimeAfternoon.plusHours(2)
-        )
+          endDateTime = tomorrowDateTimeAfternoon.plusHours(2),
+        ),
       )
 
       service.migrateVisit(
         MigrationContext(
-          type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
-        )
+          type = VISITS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = VisitId(123),
+        ),
       )
 
       verify(visitsService).createVisit(
         check {
           assertThat(it.startTimestamp).isEqualTo(tomorrowDateTimeAfternoon.toLocalDate().atTime(13, 45))
           assertThat(it.endTimestamp).isEqualTo(tomorrowDateTimeAfternoon.toLocalDate().atTime(14, 45))
-        }
+        },
       )
     }
 
@@ -1134,21 +1194,24 @@ internal class VisitsMigrationServiceTest {
           prisonerId = "A1234AA",
           visitId = 123456,
           startDateTime = yesterdayDateTime,
-          endDateTime = yesterdayDateTime.plusHours(2)
-        )
+          endDateTime = yesterdayDateTime.plusHours(2),
+        ),
       )
 
       service.migrateVisit(
         MigrationContext(
-          type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
-        )
+          type = VISITS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = VisitId(123),
+        ),
       )
 
       verify(visitsService).createVisit(
         check {
           assertThat(it.startTimestamp).isEqualTo(yesterdayDateTime)
           assertThat(it.endTimestamp).isEqualTo(yesterdayDateTime.plusHours(2))
-        }
+        },
       )
     }
 
@@ -1163,18 +1226,22 @@ internal class VisitsMigrationServiceTest {
             prisonerId = "A1234AA",
             startDateTime = LocalDateTime.parse("2020-01-01T10:00:00"),
             endDateTime = LocalDateTime.parse("2020-01-02T12:00:00"),
-          )
+          ),
         )
         whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
           RoomMapping(
-            vsipId = "VSIP-ROOM-ID", isOpen = true
-          )
+            vsipId = "VSIP-ROOM-ID",
+            isOpen = true,
+          ),
         )
 
         service.migrateVisit(
           MigrationContext(
-            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
-          )
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitId(123),
+          ),
         )
       }
 
@@ -1183,7 +1250,7 @@ internal class VisitsMigrationServiceTest {
         verify(visitsService).createVisit(
           check {
             assertThat(it.prisonId).isEqualTo("BXI")
-          }
+          },
         )
       }
 
@@ -1192,7 +1259,7 @@ internal class VisitsMigrationServiceTest {
         verify(visitsService).createVisit(
           check {
             assertThat(it.prisonerId).isEqualTo("A1234AA")
-          }
+          },
         )
       }
 
@@ -1201,7 +1268,7 @@ internal class VisitsMigrationServiceTest {
         verify(visitsService).createVisit(
           check {
             assertThat(it.startTimestamp).isEqualTo(LocalDateTime.parse("2020-01-01T10:00:00"))
-          }
+          },
         )
       }
 
@@ -1210,7 +1277,7 @@ internal class VisitsMigrationServiceTest {
         verify(visitsService).createVisit(
           check {
             assertThat(it.endTimestamp).isEqualTo(LocalDateTime.parse("2020-01-02T12:00:00"))
-          }
+          },
         )
       }
 
@@ -1219,7 +1286,7 @@ internal class VisitsMigrationServiceTest {
         verify(visitsService).createVisit(
           check {
             assertThat(it.createDateTime).isEqualTo(LocalDateTime.parse("2020-01-01T09:00:00"))
-          }
+          },
         )
       }
 
@@ -1228,7 +1295,7 @@ internal class VisitsMigrationServiceTest {
         verify(visitsService).createVisit(
           check {
             assertThat(it.modifyDateTime).isEqualTo(LocalDateTime.parse("2020-01-02T14:00:00"))
-          }
+          },
         )
       }
 
@@ -1237,7 +1304,7 @@ internal class VisitsMigrationServiceTest {
         verify(visitsService).createVisit(
           check {
             assertThat(it.visitContact).isEqualTo(VsipLegacyContactOnVisit("Vince Hoyland", "0000 11111"))
-          }
+          },
         )
       }
 
@@ -1246,7 +1313,7 @@ internal class VisitsMigrationServiceTest {
         verify(visitsService).createVisit(
           check {
             assertThat(it.legacyData).isEqualTo(VsipLegacyData(4729570))
-          }
+          },
         )
       }
 
@@ -1255,7 +1322,7 @@ internal class VisitsMigrationServiceTest {
         verify(visitsService).createVisit(
           check {
             assertThat(it.outcomeStatus).isNull()
-          }
+          },
         )
       }
     }
@@ -1270,25 +1337,29 @@ internal class VisitsMigrationServiceTest {
             agencyInternalLocation = NomisCodeDescription("VSIP-ROOM-ID", "An open room"),
             startDateTime = LocalDateTime.now().minusDays(1),
             endDateTime = LocalDateTime.now().minusDays(1).plusHours(1),
-          )
+          ),
         )
 
         whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
           RoomMapping(
-            vsipId = "VSIP-ROOM-ID", isOpen = true
-          )
+            vsipId = "VSIP-ROOM-ID",
+            isOpen = true,
+          ),
         )
 
         service.migrateVisit(
           MigrationContext(
-            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
-          )
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitId(123),
+          ),
         )
 
         verify(visitsService).createVisit(
           check {
             assertThat(it.visitRestriction).isEqualTo(VisitRestriction.UNKNOWN)
-          }
+          },
         )
       }
 
@@ -1299,25 +1370,29 @@ internal class VisitsMigrationServiceTest {
             agencyInternalLocation = NomisCodeDescription("VSIP-ROOM-ID", "An open room"),
             startDateTime = LocalDateTime.now(),
             endDateTime = LocalDateTime.now().plusHours(1),
-          )
+          ),
         )
 
         whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
           RoomMapping(
-            vsipId = "VSIP-ROOM-ID", isOpen = true
-          )
+            vsipId = "VSIP-ROOM-ID",
+            isOpen = true,
+          ),
         )
 
         service.migrateVisit(
           MigrationContext(
-            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
-          )
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitId(123),
+          ),
         )
 
         verify(visitsService).createVisit(
           check {
             assertThat(it.visitRestriction).isEqualTo(VisitRestriction.OPEN)
-          }
+          },
         )
       }
 
@@ -1328,25 +1403,29 @@ internal class VisitsMigrationServiceTest {
             agencyInternalLocation = NomisCodeDescription("VSIP-ROOM-ID", "A closed room"),
             startDateTime = LocalDateTime.now().plusDays(5),
             endDateTime = LocalDateTime.now().plusDays(5).plusHours(1),
-          )
+          ),
         )
 
         whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
           RoomMapping(
-            vsipId = "VSIP-ROOM-ID", isOpen = false
-          )
+            vsipId = "VSIP-ROOM-ID",
+            isOpen = false,
+          ),
         )
 
         service.migrateVisit(
           MigrationContext(
-            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
-          )
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitId(123),
+          ),
         )
 
         verify(visitsService).createVisit(
           check {
             assertThat(it.visitRestriction).isEqualTo(VisitRestriction.CLOSED)
-          }
+          },
         )
       }
     }
@@ -1360,25 +1439,29 @@ internal class VisitsMigrationServiceTest {
           aVisit(
             startDateTime = LocalDateTime.now().minusDays(1),
             endDateTime = LocalDateTime.now().minusDays(1).plusHours(1),
-          )
+          ),
         )
 
         whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
           RoomMapping(
-            vsipId = "VSIP-ROOM-ID", isOpen = true
-          )
+            vsipId = "VSIP-ROOM-ID",
+            isOpen = true,
+          ),
         )
 
         service.migrateVisit(
           MigrationContext(
-            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
-          )
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitId(123),
+          ),
         )
 
         verify(visitsService).createVisit(
           check {
             assertThat(it.visitNotes).isEmpty()
-          }
+          },
         )
       }
 
@@ -1388,30 +1471,35 @@ internal class VisitsMigrationServiceTest {
           aVisit(
             startDateTime = LocalDateTime.now(),
             endDateTime = LocalDateTime.now().plusHours(1),
-          )
+          ),
         )
 
         whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
           RoomMapping(
-            vsipId = "VSIP-ROOM-ID", isOpen = true
-          )
+            vsipId = "VSIP-ROOM-ID",
+            isOpen = true,
+          ),
         )
 
         service.migrateVisit(
           MigrationContext(
-            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
-          )
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitId(123),
+          ),
         )
 
         verify(visitsService).createVisit(
           check {
             assertThat(it.visitNotes).extracting("text", "type").contains(
               tuple(
-                "This is a comment", VsipVisitNoteType.VISIT_COMMENT
+                "This is a comment",
+                VsipVisitNoteType.VISIT_COMMENT,
               ),
-              tuple("this is concerning", VsipVisitNoteType.VISITOR_CONCERN)
+              tuple("this is concerning", VsipVisitNoteType.VISITOR_CONCERN),
             )
-          }
+          },
         )
       }
 
@@ -1421,30 +1509,35 @@ internal class VisitsMigrationServiceTest {
           aVisit(
             startDateTime = LocalDateTime.now().plusDays(5),
             endDateTime = LocalDateTime.now().plusDays(5).plusHours(1),
-          )
+          ),
         )
 
         whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
           RoomMapping(
-            vsipId = "VSIP-ROOM-ID", isOpen = false
-          )
+            vsipId = "VSIP-ROOM-ID",
+            isOpen = false,
+          ),
         )
 
         service.migrateVisit(
           MigrationContext(
-            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
-          )
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitId(123),
+          ),
         )
 
         verify(visitsService).createVisit(
           check {
             assertThat(it.visitNotes).extracting("text", "type").contains(
               tuple(
-                "This is a comment", VsipVisitNoteType.VISIT_COMMENT
+                "This is a comment",
+                VsipVisitNoteType.VISIT_COMMENT,
               ),
-              tuple("this is concerning", VsipVisitNoteType.VISITOR_CONCERN)
+              tuple("this is concerning", VsipVisitNoteType.VISITOR_CONCERN),
             )
-          }
+          },
         )
       }
     }
@@ -1460,25 +1553,29 @@ internal class VisitsMigrationServiceTest {
           endDateTime = LocalDateTime.now().minusDays(1).plusHours(1),
         )
         whenever(nomisApiService.getVisit(any())).thenReturn(
-          aVisit
+          aVisit,
         )
 
         whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
           RoomMapping(
-            vsipId = "VSIP-ROOM-ID", isOpen = true
-          )
+            vsipId = "VSIP-ROOM-ID",
+            isOpen = true,
+          ),
         )
 
         service.migrateVisit(
           MigrationContext(
-            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
-          )
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitId(123),
+          ),
         )
 
         verify(visitsService).createVisit(
           check {
             assertThat(it.visitRoom).isEqualTo("NOMIS-ROOM-DESC")
-          }
+          },
         )
       }
 
@@ -1489,25 +1586,29 @@ internal class VisitsMigrationServiceTest {
             agencyInternalLocation = NomisCodeDescription("NOMIS-ROOM-CODE", "NOMIS-ROOM-DESC"),
             startDateTime = LocalDateTime.now(),
             endDateTime = LocalDateTime.now().plusHours(1),
-          )
+          ),
         )
 
         whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
           RoomMapping(
-            vsipId = "VSIP-ROOM-ID", isOpen = true
-          )
+            vsipId = "VSIP-ROOM-ID",
+            isOpen = true,
+          ),
         )
 
         service.migrateVisit(
           MigrationContext(
-            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
-          )
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitId(123),
+          ),
         )
 
         verify(visitsService).createVisit(
           check {
             assertThat(it.visitRoom).isEqualTo("VSIP-ROOM-ID")
-          }
+          },
         )
       }
 
@@ -1518,25 +1619,29 @@ internal class VisitsMigrationServiceTest {
             agencyInternalLocation = NomisCodeDescription("NOMIS-ROOM-CODE", "NOMIS-ROOM-DESC"),
             startDateTime = LocalDateTime.now().plusDays(5),
             endDateTime = LocalDateTime.now().plusDays(5).plusHours(1),
-          )
+          ),
         )
 
         whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
           RoomMapping(
-            vsipId = "VSIP-ROOM-ID", isOpen = false
-          )
+            vsipId = "VSIP-ROOM-ID",
+            isOpen = false,
+          ),
         )
 
         service.migrateVisit(
           MigrationContext(
-            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
-          )
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitId(123),
+          ),
         )
 
         verify(visitsService).createVisit(
           check {
             assertThat(it.visitRoom).isEqualTo("VSIP-ROOM-ID")
-          }
+          },
         )
       }
     }
@@ -1548,8 +1653,9 @@ internal class VisitsMigrationServiceTest {
       internal fun setUp(): Unit = runBlocking {
         whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
           RoomMapping(
-            vsipId = "VSIP-ROOM-ID", isOpen = true
-          )
+            vsipId = "VSIP-ROOM-ID",
+            isOpen = true,
+          ),
         )
       }
 
@@ -1557,20 +1663,23 @@ internal class VisitsMigrationServiceTest {
       internal fun `cancelled is mapped to vsip cancelled status`(): Unit = runBlocking {
         whenever(nomisApiService.getVisit(any())).thenReturn(
           aVisit(
-            visitStatus = NomisCodeDescription("CANC", "Cancelled")
-          )
+            visitStatus = NomisCodeDescription("CANC", "Cancelled"),
+          ),
         )
 
         service.migrateVisit(
           MigrationContext(
-            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
-          )
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitId(123),
+          ),
         )
 
         verify(visitsService).createVisit(
           check {
             assertThat(it.visitStatus).isEqualTo(VsipStatus.CANCELLED)
-          }
+          },
         )
       }
 
@@ -1578,20 +1687,23 @@ internal class VisitsMigrationServiceTest {
       internal fun `all other statuses are mapped to booked`(): Unit = runBlocking {
         whenever(nomisApiService.getVisit(any())).thenReturn(
           aVisit(
-            visitStatus = NomisCodeDescription("SCH", "Scheduled")
-          )
+            visitStatus = NomisCodeDescription("SCH", "Scheduled"),
+          ),
         )
 
         service.migrateVisit(
           MigrationContext(
-            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
-          )
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitId(123),
+          ),
         )
 
         verify(visitsService).createVisit(
           check {
             assertThat(it.visitStatus).isEqualTo(VsipStatus.BOOKED)
-          }
+          },
         )
       }
 
@@ -1599,20 +1711,23 @@ internal class VisitsMigrationServiceTest {
       internal fun `even completed is mapped to booked`(): Unit = runBlocking {
         whenever(nomisApiService.getVisit(any())).thenReturn(
           aVisit(
-            visitStatus = NomisCodeDescription("COMP", "Completed")
-          )
+            visitStatus = NomisCodeDescription("COMP", "Completed"),
+          ),
         )
 
         service.migrateVisit(
           MigrationContext(
-            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
-          )
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitId(123),
+          ),
         )
 
         verify(visitsService).createVisit(
           check {
             assertThat(it.visitStatus).isEqualTo(VsipStatus.BOOKED)
-          }
+          },
         )
       }
     }
@@ -1624,8 +1739,9 @@ internal class VisitsMigrationServiceTest {
       internal fun setUp(): Unit = runBlocking {
         whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
           RoomMapping(
-            vsipId = "VSIP-ROOM-ID", isOpen = true
-          )
+            vsipId = "VSIP-ROOM-ID",
+            isOpen = true,
+          ),
         )
       }
 
@@ -1633,20 +1749,23 @@ internal class VisitsMigrationServiceTest {
       internal fun `social type is mapped to standard social`(): Unit = runBlocking {
         whenever(nomisApiService.getVisit(any())).thenReturn(
           aVisit(
-            visitType = NomisCodeDescription("SCON", "Social Contact")
-          )
+            visitType = NomisCodeDescription("SCON", "Social Contact"),
+          ),
         )
 
         service.migrateVisit(
           MigrationContext(
-            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
-          )
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitId(123),
+          ),
         )
 
         verify(visitsService).createVisit(
           check {
             assertThat(it.visitType).isEqualTo("SOCIAL")
-          }
+          },
         )
       }
 
@@ -1654,20 +1773,23 @@ internal class VisitsMigrationServiceTest {
       internal fun `official type is mapped to official`(): Unit = runBlocking {
         whenever(nomisApiService.getVisit(any())).thenReturn(
           aVisit(
-            visitType = NomisCodeDescription("OFFI", "Official Visit")
-          )
+            visitType = NomisCodeDescription("OFFI", "Official Visit"),
+          ),
         )
 
         service.migrateVisit(
           MigrationContext(
-            type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123)
-          )
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitId(123),
+          ),
         )
 
         verify(visitsService).createVisit(
           check {
             assertThat(it.visitType).isEqualTo("OFFICIAL")
-          }
+          },
         )
       }
     }
@@ -1676,17 +1798,20 @@ internal class VisitsMigrationServiceTest {
     internal fun `will create mapping between VSIP and NOMIS visit`(): Unit = runBlocking {
       whenever(nomisApiService.getVisit(any())).thenReturn(
         aVisit(
-          visitId = 123456
-        )
+          visitId = 123456,
+        ),
       )
       whenever(visitsService.createVisit(any())).thenReturn(
-        "654321"
+        "654321",
       )
 
       service.migrateVisit(
         MigrationContext(
-          type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123456)
-        )
+          type = VISITS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = VisitId(123456),
+        ),
       )
 
       verify(visitMappingService).createNomisVisitMapping(123456, "654321", "2020-05-23T11:30:00")
@@ -1696,21 +1821,24 @@ internal class VisitsMigrationServiceTest {
     internal fun `will not throw exception (and place message back on queue) but create a new retry message`(): Unit = runBlocking {
       whenever(nomisApiService.getVisit(any())).thenReturn(
         aVisit(
-          visitId = 123456
-        )
+          visitId = 123456,
+        ),
       )
       whenever(visitsService.createVisit(any())).thenReturn(
-        "654321"
+        "654321",
       )
 
       whenever(visitMappingService.createNomisVisitMapping(any(), any(), any())).thenThrow(
-        RuntimeException("something went wrong")
+        RuntimeException("something went wrong"),
       )
 
       service.migrateVisit(
         MigrationContext(
-          type = VISITS, migrationId = "2020-05-23T11:30:00", estimatedCount = 100_200, body = VisitId(123456)
-        )
+          type = VISITS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = VisitId(123456),
+        ),
       )
 
       verify(queueService).sendMessage(
@@ -1720,7 +1848,7 @@ internal class VisitsMigrationServiceTest {
           assertThat(it.body.nomisVisitId).isEqualTo(123456)
           assertThat(it.body.vsipVisitId).isEqualTo("654321")
         },
-        delaySeconds = eq(0)
+        delaySeconds = eq(0),
       )
     }
 
@@ -1736,16 +1864,17 @@ internal class VisitsMigrationServiceTest {
             prisonerId = "A1234AA",
             visitId = 123456,
             startDateTime = LocalDateTime.parse("2018-05-23T11:30:00"),
-          )
+          ),
         )
         whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
           RoomMapping(
-            vsipId = "VSIP-ROOM-ID", isOpen = true
-          )
+            vsipId = "VSIP-ROOM-ID",
+            isOpen = true,
+          ),
         )
 
         whenever(visitsService.createVisit(any())).thenReturn(
-          "654321"
+          "654321",
         )
 
         service.migrateVisit(
@@ -1753,8 +1882,8 @@ internal class VisitsMigrationServiceTest {
             type = VISITS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = VisitId(123)
-          )
+            body = VisitId(123),
+          ),
         )
 
         verify(telemetryClient).trackEvent(
@@ -1768,7 +1897,7 @@ internal class VisitsMigrationServiceTest {
             assertThat(it["startDateTime"]).isEqualTo("2018-05-23T11:30:00")
             assertThat(it["room"]).isEqualTo("NOMIS_ROOM_DESCRIPTION")
           },
-          eq(null)
+          eq(null),
         )
       }
     }
@@ -1779,8 +1908,11 @@ internal class VisitsMigrationServiceTest {
       internal fun setUp(): Unit = runBlocking {
         whenever(visitMappingService.findNomisVisitMapping(any())).thenReturn(
           VisitNomisMapping(
-            nomisId = 123, vsipId = "456", label = "2020-01-01T00:00:00", mappingType = "MIGRATED"
-          )
+            nomisId = 123,
+            vsipId = "456",
+            label = "2020-01-01T00:00:00",
+            mappingType = "MIGRATED",
+          ),
         )
       }
 
@@ -1791,8 +1923,8 @@ internal class VisitsMigrationServiceTest {
             type = VISITS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = VisitId(123)
-          )
+            body = VisitId(123),
+          ),
         )
 
         verify(visitMappingService, never()).createNomisVisitMapping(any(), any(), any())
@@ -1811,7 +1943,7 @@ internal class VisitsMigrationServiceTest {
           whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
           migrationType = VISITS,
           estimatedRecordCount = 100,
-        )
+        ),
       )
 
       service.cancel("123-2020-01-01")
@@ -1829,7 +1961,9 @@ internal class VisitsMigrationServiceTest {
 }
 
 fun pages(total: Long, startId: Long = 1): PageImpl<VisitId> = PageImpl<VisitId>(
-  (startId..total - 1 + startId).map { VisitId(it) }, Pageable.ofSize(10), total
+  (startId..total - 1 + startId).map { VisitId(it) },
+  Pageable.ofSize(10),
+  total,
 )
 
 fun aVisit(
@@ -1842,7 +1976,7 @@ fun aVisit(
   whenUpdated: LocalDateTime = LocalDateTime.parse("2020-01-02T14:00:00"),
   visitType: NomisCodeDescription = NomisCodeDescription("SCON", "Social Contact"),
   visitStatus: NomisCodeDescription = NomisCodeDescription("SCH", "Scheduled"),
-  visitId: Long = 123
+  visitId: Long = 123,
 ) = NomisVisit(
   offenderNo = prisonerId,
   visitId = visitId,
@@ -1856,7 +1990,7 @@ fun aVisit(
     ),
     NomisVisitor(
       personId = 4729580,
-    )
+    ),
   ),
   visitType = visitType,
   visitStatus = visitStatus,
@@ -1865,5 +1999,5 @@ fun aVisit(
   /* no outcome as only visits with a status of Cancelled will have an outcome returned from nomis */
   leadVisitor = NomisLeadVisitor(4729570, fullName = "Vince Hoyland", telephones = listOf("0000 11111", "0000 22222")),
   whenUpdated = whenUpdated,
-  whenCreated = whenCreated
+  whenCreated = whenCreated,
 )

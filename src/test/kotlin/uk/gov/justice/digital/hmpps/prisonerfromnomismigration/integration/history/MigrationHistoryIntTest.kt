@@ -23,7 +23,6 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
   inner class GetAll {
     @BeforeEach
     internal fun createHistoryRecords() {
-
       runBlocking {
         migrationHistoryRepository.deleteAll()
         migrationHistoryRepository.save(
@@ -44,8 +43,8 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
             """.trimIndent(),
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = VISITS
-          )
+            migrationType = VISITS,
+          ),
         )
         migrationHistoryRepository.save(
           MigrationHistory(
@@ -65,8 +64,8 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
             """.trimIndent(),
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = VISITS
-          )
+            migrationType = VISITS,
+          ),
         )
         migrationHistoryRepository.save(
           MigrationHistory(
@@ -86,8 +85,8 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
             """.trimIndent(),
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = VISITS
-          )
+            migrationType = VISITS,
+          ),
         )
         migrationHistoryRepository.save(
           MigrationHistory(
@@ -107,8 +106,8 @@ class MigrationHistoryIntTest : SqsIntegrationTestBase() {
             """.trimIndent(),
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = VISITS
-          )
+            migrationType = VISITS,
+          ),
         )
       }
     }

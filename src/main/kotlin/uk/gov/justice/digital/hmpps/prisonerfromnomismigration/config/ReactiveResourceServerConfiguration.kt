@@ -10,7 +10,7 @@ import org.springframework.security.web.server.SecurityWebFilterChain
 
 @Configuration
 @EnableWebFluxSecurity
-@EnableReactiveMethodSecurity
+@EnableReactiveMethodSecurity(useAuthorizationManager = false)
 @EnableR2dbcRepositories
 class ReactiveResourceServerConfiguration {
 
@@ -23,7 +23,7 @@ class ReactiveResourceServerConfiguration {
           "/webjars/**", "/favicon.ico", "/csrf",
           "/health/**", "/info", "/h2-console/**",
           "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
-          "/queue-admin/retry-all-dlqs"
+          "/queue-admin/retry-all-dlqs",
         ).permitAll()
           .anyExchange().authenticated()
       }

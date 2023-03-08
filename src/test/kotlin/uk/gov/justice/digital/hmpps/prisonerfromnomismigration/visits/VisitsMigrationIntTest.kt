@@ -101,8 +101,8 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
               "fromDateTime": "2020-01-01T01:30:00",
               "toDateTime": "2020-01-02T23:30:00"
             }
-            """.trimIndent()
-          )
+            """.trimIndent(),
+          ),
         )
         .exchange()
         .expectStatus().isAccepted
@@ -115,7 +115,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
         prisonIds = listOf("MDI", "BXI"),
         visitTypes = listOf("SCON", "OFFI"),
         fromDateTime = "2020-01-01T01:30",
-        toDateTime = "2020-01-02T23:30"
+        toDateTime = "2020-01-02T23:30",
       )
 
       // check that each visit is created in VSIP
@@ -155,8 +155,8 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
                 "SCON"
               ]
             }
-            """.trimIndent()
-          )
+            """.trimIndent(),
+          ),
         )
         .exchange()
         .expectStatus().isAccepted
@@ -176,7 +176,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
         verify(telemetryClient).trackEvent(
           eq("nomis-migration-visits-completed"),
           any(),
-          isNull()
+          isNull(),
         )
       }
 
@@ -215,7 +215,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
         .header("Content-Type", "application/json")
         .body(
-          BodyInserters.fromValue("{}")
+          BodyInserters.fromValue("{}"),
         )
         .exchange()
         .expectStatus().isAccepted
@@ -236,7 +236,6 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
   inner class GetAll {
     @BeforeEach
     internal fun createHistoryRecords() {
-
       runBlocking {
         migrationHistoryRepository.deleteAll()
         migrationHistoryRepository.save(
@@ -249,8 +248,8 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
             filter = """"prisonIds":["HEI"],"visitTypes":["SCON"],"ignoreMissingRoom":false""",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = VISITS
-          )
+            migrationType = VISITS,
+          ),
         )
         migrationHistoryRepository.save(
           MigrationHistory(
@@ -262,8 +261,8 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
             filter = """"prisonIds":["WWI"],"visitTypes":["SCON"],"ignoreMissingRoom":false""",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = VISITS
-          )
+            migrationType = VISITS,
+          ),
         )
         migrationHistoryRepository.save(
           MigrationHistory(
@@ -275,8 +274,8 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
             filter = """"prisonIds":["BXI"],"visitTypes":["SCON"],"ignoreMissingRoom":false""",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = VISITS
-          )
+            migrationType = VISITS,
+          ),
         )
         migrationHistoryRepository.save(
           MigrationHistory(
@@ -288,8 +287,8 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
             filter = """"prisonIds":["BXI"],"visitTypes":["SCON"],"ignoreMissingRoom":false""",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = VISITS
-          )
+            migrationType = VISITS,
+          ),
         )
       }
     }
@@ -423,7 +422,6 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
   inner class Get {
     @BeforeEach
     internal fun createHistoryRecords() {
-
       runBlocking {
         migrationHistoryRepository.deleteAll()
         migrationHistoryRepository.save(
@@ -436,8 +434,8 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
             filter = """"prisonIds":["HEI"],"visitTypes":["SCON"],"ignoreMissingRoom":false""",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = VISITS
-          )
+            migrationType = VISITS,
+          ),
         )
       }
     }
@@ -511,7 +509,6 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `malformed date returns bad request`() {
-
       webTestClient.get().uri {
         it.path("migrate/visits/rooms/usage")
           .queryParam("fromDateTime", "202-10-01T09:00:00")
@@ -528,7 +525,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
         webTestClient.get().uri("migrate/visits/rooms/usage")
           .headers(setAuthorisation(roles = listOf("ROLE_BLA")))
           .exchange()
-          .expectStatus().isForbidden
+          .expectStatus().isForbidden,
       )
     }
 
@@ -537,7 +534,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
       assertThat(
         webTestClient.get().uri("/visits/rooms/usage")
           .exchange()
-          .expectStatus().isUnauthorized
+          .expectStatus().isUnauthorized,
       )
     }
   }
@@ -610,8 +607,8 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
               "fromDateTime": "2020-01-01T01:30:00",
               "toDateTime": "2020-01-02T23:30:00"
             }
-            """.trimIndent()
-          )
+            """.trimIndent(),
+          ),
         )
         .exchange()
         .expectStatus().isAccepted
@@ -655,5 +652,5 @@ fun someMigrationFilter(): BodyInserter<String, ReactiveHttpOutputMessage> = Bod
       "BXI"
     ]
   }
-  """.trimIndent()
+  """.trimIndent(),
 )

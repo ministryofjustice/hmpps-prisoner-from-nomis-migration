@@ -37,21 +37,21 @@ class MigrationHistoryResource(private val migrationHistoryService: MigrationHis
         content = [
           Content(
             mediaType = "application/json",
-            array = ArraySchema(schema = Schema(implementation = MigrationHistory::class))
-          )
+            array = ArraySchema(schema = Schema(implementation = MigrationHistory::class)),
+          ),
         ],
       ),
       ApiResponse(
         responseCode = "401",
         description = "Unauthorized to access this endpoint",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
       ),
       ApiResponse(
         responseCode = "403",
         description = "Incorrect permissions to access this endpoint",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
-      )
-    ]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+    ],
   )
   fun getAll(
     @Parameter(
@@ -64,14 +64,16 @@ class MigrationHistoryResource(private val migrationHistoryService: MigrationHis
       example = "2020-03-23T12:00:00",
     )
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-    @RequestParam fromDateTime: LocalDateTime? = null,
+    @RequestParam
+    fromDateTime: LocalDateTime? = null,
 
     @Parameter(
       description = "Only include migrations started before this date time",
       example = "2020-03-24T12:00:00",
     )
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-    @RequestParam toDateTime: LocalDateTime? = null,
+    @RequestParam
+    toDateTime: LocalDateTime? = null,
 
     @Parameter(
       description = "When true only include migrations that had at least one failure",
@@ -88,8 +90,8 @@ class MigrationHistoryResource(private val migrationHistoryService: MigrationHis
       fromDateTime = fromDateTime,
       toDateTime = toDateTime,
       includeOnlyFailures = includeOnlyFailures,
-      filterContains = filterContains
-    )
+      filterContains = filterContains,
+    ),
   )
 
   @PreAuthorize("hasRole('ROLE_MIGRATION_ADMIN')")
@@ -106,14 +108,14 @@ class MigrationHistoryResource(private val migrationHistoryService: MigrationHis
       ApiResponse(
         responseCode = "401",
         description = "Unauthorized to access this endpoint",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
       ),
       ApiResponse(
         responseCode = "403",
         description = "Incorrect permissions to access this endpoint",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
-      )
-    ]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+    ],
   )
   suspend fun deleteAll() =
     migrationHistoryService.deleteAll()

@@ -21,7 +21,7 @@ class MigrationIncentivesMessageListener(
   incentivesMigrationService: IncentivesMigrationService,
 ) : MigrationMessageListener<IncentivesMigrationFilter, IncentiveId, NomisIncentive, IncentiveNomisMapping>(
   objectMapper,
-  incentivesMigrationService
+  incentivesMigrationService,
 ) {
 
   @SqsListener(INCENTIVES_QUEUE_ID, factory = "hmppsQueueContainerFactoryProxy")

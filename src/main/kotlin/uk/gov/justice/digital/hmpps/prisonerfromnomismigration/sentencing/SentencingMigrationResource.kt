@@ -30,7 +30,7 @@ import java.time.LocalDateTime
 @RequestMapping("/migrate", produces = [MediaType.APPLICATION_JSON_VALUE])
 class SentencingMigrationResource(
   private val sentencingAdjustmentsMigrationService: SentencingAdjustmentsMigrationService,
-  private val migrationHistoryService: MigrationHistoryService
+  private val migrationHistoryService: MigrationHistoryService,
 ) {
   @PreAuthorize("hasRole('ROLE_MIGRATE_SENTENCING')")
   @PostMapping("/sentencing")
@@ -42,9 +42,9 @@ class SentencingMigrationResource(
       content = [
         Content(
           mediaType = "application/json",
-          schema = Schema(implementation = SentencingMigrationFilter::class)
-        )
-      ]
+          schema = Schema(implementation = SentencingMigrationFilter::class),
+        ),
+      ],
     ),
     responses = [
       ApiResponse(
@@ -54,16 +54,19 @@ class SentencingMigrationResource(
       ApiResponse(
         responseCode = "401",
         description = "Unauthorized to access this endpoint",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
       ),
       ApiResponse(
         responseCode = "403",
         description = "Incorrect permissions to start migration",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
-      )
-    ]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+    ],
   )
-  suspend fun migrateSentencing(@RequestBody @Valid migrationFilter: SentencingMigrationFilter) =
+  suspend fun migrateSentencing(
+    @RequestBody @Valid
+    migrationFilter: SentencingMigrationFilter,
+  ) =
     // TODO determine which sentencing entity is being migrated - assume adjustments for now
     sentencingAdjustmentsMigrationService.startMigration(migrationFilter)
 
@@ -79,21 +82,21 @@ class SentencingMigrationResource(
         content = [
           Content(
             mediaType = "application/json",
-            array = ArraySchema(schema = Schema(implementation = MigrationHistory::class))
-          )
+            array = ArraySchema(schema = Schema(implementation = MigrationHistory::class)),
+          ),
         ],
       ),
       ApiResponse(
         responseCode = "401",
         description = "Unauthorized to access this endpoint",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
       ),
       ApiResponse(
         responseCode = "403",
         description = "Incorrect permissions to access this endpoint",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
-      )
-    ]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+    ],
   )
   suspend fun getAll(
     @Parameter(
@@ -101,14 +104,16 @@ class SentencingMigrationResource(
       example = "2020-03-23T12:00:00",
     )
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-    @RequestParam fromDateTime: LocalDateTime? = null,
+    @RequestParam
+    fromDateTime: LocalDateTime? = null,
 
     @Parameter(
       description = "Only include migrations started before this date time",
       example = "2020-03-24T12:00:00",
     )
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-    @RequestParam toDateTime: LocalDateTime? = null,
+    @RequestParam
+    toDateTime: LocalDateTime? = null,
 
     @Parameter(
       description = "When true only include migrations that had at least one failure",
@@ -120,7 +125,7 @@ class SentencingMigrationResource(
       fromDateTime = fromDateTime,
       toDateTime = toDateTime,
       includeOnlyFailures = includeOnlyFailures,
-    )
+    ),
   )
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_SENTENCING')")
@@ -135,31 +140,31 @@ class SentencingMigrationResource(
         content = [
           Content(
             mediaType = "application/json",
-            schema = Schema(implementation = MigrationHistory::class)
-          )
-        ]
+            schema = Schema(implementation = MigrationHistory::class),
+          ),
+        ],
       ),
       ApiResponse(
         responseCode = "401",
         description = "Unauthorized to access this endpoint",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
       ),
       ApiResponse(
         responseCode = "403",
         description = "Incorrect permissions to access this endpoint",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
       ),
       ApiResponse(
         responseCode = "404",
         description = "Migration not found",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
-      )
-    ]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+    ],
   )
   suspend fun get(
     @PathVariable
     @Schema(description = "Migration Id", example = "2020-03-24T12:00:00", required = true)
-    migrationId: String
+    migrationId: String,
   ) = migrationHistoryService.get(migrationId)
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_SENTENCING')")
@@ -176,23 +181,23 @@ class SentencingMigrationResource(
       ApiResponse(
         responseCode = "401",
         description = "Unauthorized to access this endpoint",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
       ),
       ApiResponse(
         responseCode = "403",
         description = "Incorrect permissions to access this endpoint",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
       ),
       ApiResponse(
         responseCode = "404",
         description = "No running migration found with migration id",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))]
-      )
-    ]
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+    ],
   )
   suspend fun cancel(
     @PathVariable
     @Schema(description = "Migration Id", example = "2020-03-24T12:00:00", required = true)
-    migrationId: String
+    migrationId: String,
   ) = sentencingAdjustmentsMigrationService.cancel(migrationId)
 }

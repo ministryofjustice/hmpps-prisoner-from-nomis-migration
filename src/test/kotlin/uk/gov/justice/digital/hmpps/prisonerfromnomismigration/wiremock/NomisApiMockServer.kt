@@ -42,29 +42,29 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     stubFor(
       get("/health/ping").willReturn(
         aResponse().withHeader("Content-Type", "application/json").withBody(if (status == 200) "pong" else "some error")
-          .withStatus(status)
-      )
+          .withStatus(status),
+      ),
     )
   }
 
   fun stubGetVisitsInitialCount(totalElements: Long) {
     nomisApi.stubFor(
       get(
-        urlPathEqualTo("/visits/ids")
+        urlPathEqualTo("/visits/ids"),
       )
         .withQueryParam("page", equalTo("0"))
         .withQueryParam("size", equalTo("1"))
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(visitPagedResponse(totalElements = totalElements))
-        )
+            .withBody(visitPagedResponse(totalElements = totalElements)),
+        ),
     )
   }
 
   fun stubGetVisitsRoomUsage() {
     nomisApi.stubFor(
       get(
-        urlPathEqualTo("/visits/rooms/usage-count")
+        urlPathEqualTo("/visits/rooms/usage-count"),
       )
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
@@ -85,9 +85,9 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
         "agencyInternalLocationDescription": "AKI-VISITS-3RD SECTOR",
         "count": 390,
         "prisonId": "AKI"
-    }]"""
-            )
-        )
+    }]""",
+            ),
+        ),
     )
   }
 
@@ -100,7 +100,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
       val endVisitId = min((page * pageSize) + pageSize, totalElements)
       nomisApi.stubFor(
         get(
-          urlPathEqualTo("/visits/ids")
+          urlPathEqualTo("/visits/ids"),
         )
           .withQueryParam("page", equalTo(page.toString()))
           .willReturn(
@@ -110,10 +110,10 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
                   totalElements = totalElements,
                   visitIds = (startVisitId..endVisitId).map { it },
                   pageNumber = page,
-                  pageSize = pageSize
+                  pageSize = pageSize,
                 ),
-              )
-          )
+              ),
+          ),
       )
     }
   }
@@ -122,12 +122,12 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     (1..totalElements).forEach {
       nomisApi.stubFor(
         get(
-          urlPathEqualTo("/visits/$it")
+          urlPathEqualTo("/visits/$it"),
         )
           .willReturn(
             aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-              .withBody(visitResponse(it))
-          )
+              .withBody(visitResponse(it)),
+          ),
       )
     }
   }
@@ -135,32 +135,32 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubGetVisit(nomisVisitId: Long) {
     nomisApi.stubFor(
       get(
-        urlPathEqualTo("/visits/$nomisVisitId")
+        urlPathEqualTo("/visits/$nomisVisitId"),
       )
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(visitResponse(nomisVisitId))
-        )
+            .withBody(visitResponse(nomisVisitId)),
+        ),
     )
   }
 
   fun verifyGetVisit(nomisVisitId: Long) {
     nomisApi.verify(
       getRequestedFor(
-        urlPathEqualTo("/visits/$nomisVisitId")
-      )
+        urlPathEqualTo("/visits/$nomisVisitId"),
+      ),
     )
   }
 
   fun stubGetCancelledVisit(nomisVisitId: Long, modifyUserId: String = "transfer-staff-id") {
     nomisApi.stubFor(
       get(
-        urlPathEqualTo("/visits/$nomisVisitId")
+        urlPathEqualTo("/visits/$nomisVisitId"),
       )
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(visitCancelledResponse(nomisVisitId, modifyUserId))
-        )
+            .withBody(visitCancelledResponse(nomisVisitId, modifyUserId)),
+        ),
     )
   }
 
@@ -168,30 +168,30 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     prisonIds: List<String>,
     visitTypes: List<String>,
     fromDateTime: String,
-    toDateTime: String
+    toDateTime: String,
   ) {
     nomisApi.verify(
       getRequestedFor(
-        urlPathEqualTo("/visits/ids")
+        urlPathEqualTo("/visits/ids"),
       )
         .withQueryParam("fromDateTime", equalTo(fromDateTime))
-        .withQueryParam("toDateTime", equalTo(toDateTime))
+        .withQueryParam("toDateTime", equalTo(toDateTime)),
     )
     // verify each parameter one at a time
     prisonIds.forEach {
       nomisApi.verify(
         getRequestedFor(
-          urlPathEqualTo("/visits/ids")
+          urlPathEqualTo("/visits/ids"),
         )
-          .withQueryParam("prisonIds", equalTo(it))
+          .withQueryParam("prisonIds", equalTo(it)),
       )
     }
     visitTypes.forEach {
       nomisApi.verify(
         getRequestedFor(
-          urlPathEqualTo("/visits/ids")
+          urlPathEqualTo("/visits/ids"),
         )
-          .withQueryParam("visitTypes", equalTo(it))
+          .withQueryParam("visitTypes", equalTo(it)),
       )
     }
   }
@@ -199,14 +199,14 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubGetIncentivesInitialCount(totalElements: Long) {
     nomisApi.stubFor(
       get(
-        urlPathEqualTo("/incentives/ids")
+        urlPathEqualTo("/incentives/ids"),
       )
         .withQueryParam("page", equalTo("0"))
         .withQueryParam("size", equalTo("1"))
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(incentivePagedResponse(totalElements = totalElements))
-        )
+            .withBody(incentivePagedResponse(totalElements = totalElements)),
+        ),
     )
   }
 
@@ -219,7 +219,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
       val endBookingId = min((page * pageSize) + pageSize, totalElements)
       nomisApi.stubFor(
         get(
-          urlPathEqualTo("/incentives/ids")
+          urlPathEqualTo("/incentives/ids"),
         )
           .withQueryParam("page", equalTo(page.toString()))
           .willReturn(
@@ -229,10 +229,10 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
                   totalElements = totalElements,
                   bookingIds = (startBookingId..endBookingId).map { it },
                   pageNumber = page,
-                  pageSize = pageSize
+                  pageSize = pageSize,
                 ),
-              )
-          )
+              ),
+          ),
       )
     }
   }
@@ -241,12 +241,12 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     (1..totalElements).forEach {
       nomisApi.stubFor(
         get(
-          urlPathEqualTo("/incentives/booking-id/$it/incentive-sequence/1")
+          urlPathEqualTo("/incentives/booking-id/$it/incentive-sequence/1"),
         )
           .willReturn(
             aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-              .withBody(incentiveResponse(it, 1))
-          )
+              .withBody(incentiveResponse(it, 1)),
+          ),
       )
     }
   }
@@ -254,17 +254,17 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun verifyGetIncentivesFilter(fromDate: String, toDate: String) {
     nomisApi.verify(
       getRequestedFor(
-        urlPathEqualTo("/incentives/ids")
+        urlPathEqualTo("/incentives/ids"),
       )
         .withQueryParam("fromDate", equalTo(fromDate))
-        .withQueryParam("toDate", equalTo(toDate))
+        .withQueryParam("toDate", equalTo(toDate)),
     )
   }
 
   fun stubGetIncentive(bookingId: Long, incentiveSequence: Long, currentIep: Boolean = true) {
     nomisApi.stubFor(
       get(
-        urlPathEqualTo("/incentives/booking-id/$bookingId/incentive-sequence/$incentiveSequence")
+        urlPathEqualTo("/incentives/booking-id/$bookingId/incentive-sequence/$incentiveSequence"),
       )
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
@@ -272,17 +272,17 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
               incentiveResponse(
                 bookingId = bookingId,
                 incentiveSequence = incentiveSequence,
-                currentIep = currentIep
-              )
-            )
-        )
+                currentIep = currentIep,
+              ),
+            ),
+        ),
     )
   }
 
   fun stubGetCurrentIncentive(bookingId: Long, incentiveSequence: Long) {
     nomisApi.stubFor(
       get(
-        urlPathEqualTo("/incentives/booking-id/$bookingId/current")
+        urlPathEqualTo("/incentives/booking-id/$bookingId/current"),
       )
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
@@ -290,35 +290,35 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
               incentiveResponse(
                 bookingId = bookingId,
                 incentiveSequence = incentiveSequence,
-                currentIep = true
-              )
-            )
-        )
+                currentIep = true,
+              ),
+            ),
+        ),
     )
   }
 
   fun stubGetCurrentIncentiveNotFound(bookingId: Long) {
     nomisApi.stubFor(
       get(
-        urlPathEqualTo("/incentives/booking-id/$bookingId/current")
+        urlPathEqualTo("/incentives/booking-id/$bookingId/current"),
       )
         .willReturn(
-          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.NOT_FOUND.value())
-        )
+          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.NOT_FOUND.value()),
+        ),
     )
   }
 
   fun stubGetSentenceAdjustmentsInitialCount(totalElements: Long) {
     nomisApi.stubFor(
       get(
-        urlPathEqualTo("/adjustments/ids")
+        urlPathEqualTo("/adjustments/ids"),
       )
         .withQueryParam("page", equalTo("0"))
         .withQueryParam("size", equalTo("1"))
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(adjustmentIdsPagedResponse(totalElements = totalElements))
-        )
+            .withBody(adjustmentIdsPagedResponse(totalElements = totalElements)),
+        ),
     )
   }
 
@@ -331,7 +331,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
       val endBSentenceAdjustmentId = min((page * pageSize) + pageSize, totalElements)
       nomisApi.stubFor(
         get(
-          urlPathEqualTo("/adjustments/ids")
+          urlPathEqualTo("/adjustments/ids"),
         )
           .withQueryParam("page", equalTo(page.toString()))
           .willReturn(
@@ -341,10 +341,10 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
                   totalElements = totalElements,
                   adjustmentIds = (startSentenceAdjustmentId..endBSentenceAdjustmentId).map { it },
                   pageNumber = page,
-                  pageSize = pageSize
+                  pageSize = pageSize,
                 ),
-              )
-          )
+              ),
+          ),
       )
     }
   }
@@ -353,12 +353,12 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     (intProgression).forEach {
       nomisApi.stubFor(
         get(
-          urlPathEqualTo("/sentence-adjustments/$it")
+          urlPathEqualTo("/sentence-adjustments/$it"),
         )
           .willReturn(
             aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-              .withBody(sentenceAdjustmentResponse(it.toLong()))
-          )
+              .withBody(sentenceAdjustmentResponse(it.toLong())),
+          ),
       )
     }
   }
@@ -367,12 +367,12 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     (intProgression).forEach {
       nomisApi.stubFor(
         get(
-          urlPathEqualTo("/key-date-adjustments/$it")
+          urlPathEqualTo("/key-date-adjustments/$it"),
         )
           .willReturn(
             aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-              .withBody(keyDateAdjustmentResponse(it.toLong()))
-          )
+              .withBody(keyDateAdjustmentResponse(it.toLong())),
+          ),
       )
     }
   }
@@ -380,38 +380,38 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun verifyGetAdjustmentsIdsCount(fromDate: String, toDate: String) {
     nomisApi.verify(
       getRequestedFor(
-        urlPathEqualTo("/adjustments/ids")
+        urlPathEqualTo("/adjustments/ids"),
       )
         .withQueryParam("fromDate", equalTo(fromDate))
-        .withQueryParam("toDate", equalTo(toDate))
+        .withQueryParam("toDate", equalTo(toDate)),
     )
   }
 
   fun stubGetSentenceAdjustment(adjustmentId: Long, hiddenForUsers: Boolean = false) {
     nomisApi.stubFor(
       get(
-        urlPathEqualTo("/sentence-adjustments/$adjustmentId")
+        urlPathEqualTo("/sentence-adjustments/$adjustmentId"),
       )
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
             .withBody(
-              sentenceAdjustmentResponse(sentenceAdjustmentId = adjustmentId, hiddenForUsers = hiddenForUsers)
-            )
-        )
+              sentenceAdjustmentResponse(sentenceAdjustmentId = adjustmentId, hiddenForUsers = hiddenForUsers),
+            ),
+        ),
     )
   }
 
   fun stubGetKeyDateAdjustment(adjustmentId: Long) {
     nomisApi.stubFor(
       get(
-        urlPathEqualTo("/key-date-adjustments/$adjustmentId")
+        urlPathEqualTo("/key-date-adjustments/$adjustmentId"),
       )
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
-            .withBody(keyDateAdjustmentResponse(keyDateAdjustmentId = adjustmentId))
-        )
+            .withBody(keyDateAdjustmentResponse(keyDateAdjustmentId = adjustmentId)),
+        ),
     )
   }
 }
