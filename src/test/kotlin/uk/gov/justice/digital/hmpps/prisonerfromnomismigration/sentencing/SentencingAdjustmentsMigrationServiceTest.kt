@@ -180,7 +180,6 @@ internal class SentencingAdjustmentsMigrationServiceTest {
 
       with(auditDetailsParam.captured) {
         assertThat(this).extracting("migrationId").isNotNull
-        assertThat(this).extracting("migrationType").isEqualTo("SENTENCING_ADJUSTMENTS")
         assertThat(this).extracting("filter").isEqualTo(sentencingMigrationFilter)
       }
     }
@@ -200,11 +199,10 @@ internal class SentencingAdjustmentsMigrationServiceTest {
       }
 
       verify(telemetryClient).trackEvent(
-        eq("nomis-migration-started"),
+        eq("sentencing-adjustments-migration-started"),
         check {
           assertThat(it["migrationId"]).isNotNull
           assertThat(it["estimatedCount"]).isEqualTo("23")
-          assertThat(it["migrationType"]).isEqualTo("Sentencing Adjustments")
           assertThat(it["fromDate"]).isEqualTo("2020-01-01")
           assertThat(it["toDate"]).isEqualTo("2020-01-02")
         },
@@ -231,13 +229,12 @@ internal class SentencingAdjustmentsMigrationServiceTest {
       }
 
       verify(telemetryClient).trackEvent(
-        eq("nomis-migration-started"),
+        eq("sentencing-adjustments-migration-started"),
         check {
           assertThat(it["migrationId"]).isNotNull
           assertThat(it["estimatedCount"]).isEqualTo("23")
-          assertThat(it["migrationType"]).isEqualTo("Sentencing Adjustments")
-          assertThat(it["fromDate"]).isEqualTo("")
-          assertThat(it["toDate"]).isEqualTo("")
+          assertThat(it["fromDate"]).isNull()
+          assertThat(it["toDate"]).isNull()
         },
         eq(null),
       )
@@ -474,7 +471,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
         )
 
         verify(telemetryClient).trackEvent(
-          eq("nomis-migration-completed"),
+          eq("sentencing-adjustments-migration-completed"),
           check {
             assertThat(it["migrationId"]).isNotNull
             assertThat(it["estimatedCount"]).isEqualTo("23")
@@ -623,7 +620,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
         )
 
         verify(telemetryClient).trackEvent(
-          eq("nomis-migration-cancelled"),
+          eq("sentencing-adjustments-migration-cancelled"),
           check {
             assertThat(it["migrationId"]).isNotNull
             assertThat(it["estimatedCount"]).isEqualTo("23")
@@ -876,11 +873,14 @@ internal class SentencingAdjustmentsMigrationServiceTest {
           ),
         )
 
-        verify(sentencingAdjustmentsMappingService).createNomisSentencingAdjustmentMigrationMapping(
-          nomisAdjustmentId = 123,
-          nomisAdjustmentCategory = "SENTENCE",
-          adjustmentId = "999",
-          migrationId = "2020-05-23T11:30:00",
+        verify(sentencingAdjustmentsMappingService).createMapping(
+          SentencingAdjustmentNomisMapping(
+            nomisAdjustmentId = 123,
+            nomisAdjustmentCategory = "SENTENCE",
+            adjustmentId = "999",
+            label = "2020-05-23T11:30:00",
+            mappingType = "MIGRATED",
+          ),
         )
       }
 
@@ -893,10 +893,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
         whenever(sentencingService.migrateSentencingAdjustment(any())).thenReturn(CreateSentencingAdjustmentResponse("999"))
 
         whenever(
-          sentencingAdjustmentsMappingService.createNomisSentencingAdjustmentMigrationMapping(
-            any(),
-            any(),
-            any(),
+          sentencingAdjustmentsMappingService.createMapping(
             any(),
           ),
         ).thenThrow(

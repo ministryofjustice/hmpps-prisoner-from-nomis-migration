@@ -123,6 +123,48 @@ class IncentivesSynchronisationIntTest : SqsIntegrationTestBase() {
         )
       }
     }
+
+    @Nested
+    inner class WhenDuplicate {
+
+      @Test
+      internal fun `it will not retry after a 409 (duplicate incentive written to Incentives API)`() {
+        val message = validIepCreatedMessageWithNomisIds(123, 1)
+
+        nomisApi.stubGetIncentive(bookingId = 123, incentiveSequence = 1)
+        incentivesApi.stubCreateSynchroniseIncentive(11)
+        mappingApi.stubIncentiveCreateConflict()
+
+        awsSqsIncentivesOffenderEventsClient.sendMessage(
+          incentivesQueueOffenderEventsUrl,
+          message,
+        )
+
+        // wait for all mappings to be created before verifying
+        await untilCallTo { mappingApi.createIncentiveMappingCount() } matches { it == 1 }
+
+        // check that one incentive is created
+        Assertions.assertThat(incentivesApi.createIncentiveSynchronisationCount())
+          .isEqualTo(1)
+
+        // doesn't retry
+        mappingApi.verifyCreateMappingIncentiveIds(arrayOf(11), times = 1)
+
+        verify(telemetryClient).trackEvent(
+          eq("from-nomis-synch-incentive-duplicate"),
+          check {
+            Assertions.assertThat(it["migrationId"]).isNull()
+            Assertions.assertThat(it["existingIncentiveId"]).isEqualTo("10")
+            Assertions.assertThat(it["duplicateIncentiveId"]).isEqualTo("11")
+            Assertions.assertThat(it["existingNomisBookingId"]).isEqualTo("123")
+            Assertions.assertThat(it["duplicateNomisBookingId"]).isEqualTo("123")
+            Assertions.assertThat(it["existingNomisSequence"]).isEqualTo("1")
+            Assertions.assertThat(it["duplicateNomisSequence"]).isEqualTo("1")
+          },
+          isNull(),
+        )
+      }
+    }
   }
 
   @Nested

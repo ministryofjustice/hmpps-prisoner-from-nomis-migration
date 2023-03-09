@@ -63,13 +63,13 @@ class IncentivesApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubCreateSynchroniseIncentive() {
+  fun stubCreateSynchroniseIncentive(id: Long = 654321) {
     stubFor(
       post(urlMatching("/iep/sync/booking/\\d*")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.CREATED.value())
-          .withBody("""{"id": 654321}"""),
+          .withBody("""{"id": $id}"""),
       ),
     )
   }

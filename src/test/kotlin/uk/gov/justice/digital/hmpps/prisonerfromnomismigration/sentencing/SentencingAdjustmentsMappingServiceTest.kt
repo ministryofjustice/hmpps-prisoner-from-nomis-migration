@@ -28,10 +28,13 @@ class SentencingAdjustmentsMappingServiceTest {
       mappingApi.stubSentenceAdjustmentMappingCreate()
 
       runBlocking {
-        sentencingAdjustmentsMappingService.createNomisSentencingAdjustmentSynchronisationMapping(
-          nomisAdjustmentId = 1234L,
-          nomisAdjustmentCategory = "SENTENCE",
-          adjustmentId = ADJUSTMENT_ID,
+        sentencingAdjustmentsMappingService.createMapping(
+          SentencingAdjustmentNomisMapping(
+            nomisAdjustmentId = 1234L,
+            nomisAdjustmentCategory = "SENTENCE",
+            adjustmentId = ADJUSTMENT_ID,
+            mappingType = "NOMIS_CREATED",
+          ),
         )
       }
 
@@ -47,10 +50,13 @@ class SentencingAdjustmentsMappingServiceTest {
       mappingApi.stubSentenceAdjustmentMappingCreate()
 
       runBlocking {
-        sentencingAdjustmentsMappingService.createNomisSentencingAdjustmentSynchronisationMapping(
-          nomisAdjustmentId = 1234L,
-          nomisAdjustmentCategory = "SENTENCE",
-          adjustmentId = ADJUSTMENT_ID,
+        sentencingAdjustmentsMappingService.createMapping(
+          SentencingAdjustmentNomisMapping(
+            nomisAdjustmentId = 1234L,
+            nomisAdjustmentCategory = "SENTENCE",
+            adjustmentId = ADJUSTMENT_ID,
+            mappingType = "NOMIS_CREATED",
+          ),
         )
       }
 

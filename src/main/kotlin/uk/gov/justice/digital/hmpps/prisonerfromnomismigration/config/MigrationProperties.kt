@@ -11,9 +11,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
 
-abstract class MigrationProperties(
+abstract class MigrationProperties<MAPPING : Any>(
   private val hmppsQueueService: HmppsQueueService,
-  private val mappingService: MigrationMapping,
+  private val mappingService: MigrationMapping<MAPPING>,
   private val migrationType: MigrationType,
 ) : InfoContributor {
 

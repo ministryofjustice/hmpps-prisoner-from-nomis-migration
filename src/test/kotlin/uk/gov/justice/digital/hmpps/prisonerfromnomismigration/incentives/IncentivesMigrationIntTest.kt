@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives
 
 import kotlinx.coroutines.runBlocking
+import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
@@ -100,7 +101,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
 
       await atMost Duration.ofSeconds(60) untilAsserted {
         verify(telemetryClient).trackEvent(
-          eq("nomis-migration-completed"),
+          eq("incentives-migration-completed"),
           any(),
           isNull(),
         )
@@ -146,13 +147,13 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
 
       await atMost Duration.ofSeconds(60) untilAsserted {
         verify(telemetryClient).trackEvent(
-          eq("nomis-migration-completed"),
+          eq("incentives-migration-completed"),
           any(),
           isNull(),
         )
       }
 
-      verify(telemetryClient).trackEvent(eq("nomis-migration-started"), any(), isNull())
+      verify(telemetryClient).trackEvent(eq("incentives-migration-started"), any(), isNull())
       verify(telemetryClient, times(26)).trackEvent(eq("nomis-migration-incentive-migrated"), any(), isNull())
 
       await untilAsserted {
@@ -205,6 +206,53 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
 
       // should retry to create mapping twice
       mappingApi.verifyCreateMappingIncentiveIds(arrayOf(654321), times = 2)
+    }
+
+    @Test
+    internal fun `it will not retry after a 409 (duplicate incentive written to Incentives API)`() {
+      nomisApi.stubGetIncentivesInitialCount(1)
+      nomisApi.stubMultipleGetIncentivesCounts(totalElements = 1, pageSize = 10)
+      nomisApi.stubMultipleGetIncentives(totalElements = 1)
+      mappingApi.stubIncentiveCreateConflict(existingIncentiveId = 12, duplicateIncentiveId = 654321, nomisBookingId = 2)
+      incentivesApi.stubCreateIncentive(654321)
+
+      webTestClient.post().uri("/migrate/incentives")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCENTIVES")))
+        .header("Content-Type", "application/json")
+        .body(
+          BodyInserters.fromValue(
+            """
+            {
+            }
+            """.trimIndent(),
+          ),
+        )
+        .exchange()
+        .expectStatus().isAccepted
+
+      // wait for all mappings to be created before verifying
+      await untilCallTo { mappingApi.createIncentiveMappingCount() } matches { it == 1 }
+
+      // check that one incentive is created
+      Assertions.assertThat(incentivesApi.createIncentiveCount())
+        .isEqualTo(1)
+
+      // doesn't retry
+      mappingApi.verifyCreateMappingIncentiveIds(arrayOf(654321), times = 1)
+
+      verify(telemetryClient).trackEvent(
+        eq("nomis-migration-incentive-duplicate"),
+        org.mockito.kotlin.check {
+          assertThat(it["migrationId"]).isNotNull
+          assertThat(it["existingIncentiveId"]).isEqualTo("12")
+          assertThat(it["duplicateIncentiveId"]).isEqualTo("654321")
+          assertThat(it["existingNomisBookingId"]).isEqualTo("2")
+          assertThat(it["duplicateNomisBookingId"]).isEqualTo("2")
+          assertThat(it["existingNomisSequence"]).isEqualTo("1")
+          assertThat(it["duplicateNomisSequence"]).isEqualTo("1")
+        },
+        isNull(),
+      )
     }
   }
 

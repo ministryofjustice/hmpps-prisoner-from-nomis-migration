@@ -9,7 +9,7 @@ import uk.gov.justice.hmpps.sqs.HmppsQueueService
 class SentencingMigrationProperties(
   hmppsQueueService: HmppsQueueService,
   sentencingAdjustmentsMappingService: SentencingAdjustmentsMappingService,
-) : MigrationProperties(
+) : MigrationProperties<SentencingAdjustmentNomisMapping>(
   hmppsQueueService,
   sentencingAdjustmentsMappingService,
   MigrationType.SENTENCING_ADJUSTMENTS,

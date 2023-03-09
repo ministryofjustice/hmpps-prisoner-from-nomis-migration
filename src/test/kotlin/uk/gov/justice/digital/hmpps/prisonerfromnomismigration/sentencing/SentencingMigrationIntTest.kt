@@ -102,7 +102,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
 
       await atMost Duration.ofSeconds(60) untilAsserted {
         verify(telemetryClient).trackEvent(
-          eq("nomis-migration-completed"),
+          eq("sentencing-adjustments-migration-completed"),
           any(),
           isNull(),
         )
@@ -151,14 +151,14 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
 
       await atMost Duration.ofSeconds(60) untilAsserted {
         verify(telemetryClient).trackEvent(
-          eq("nomis-migration-completed"),
+          eq("sentencing-adjustments-migration-completed"),
           any(),
           isNull(),
         )
       }
 
-      verify(telemetryClient).trackEvent(eq("nomis-migration-started"), any(), isNull())
-      verify(telemetryClient, times(26)).trackEvent(eq("nomis-migration-sentencing-adjustment-migrated"), any(), isNull())
+      verify(telemetryClient).trackEvent(eq("sentencing-adjustments-migration-started"), any(), isNull())
+      verify(telemetryClient, times(26)).trackEvent(eq("sentencing-adjustment-migration-entity-migrated"), any(), isNull())
 
       await untilAsserted {
         webTestClient.get().uri("/migrate/sentencing/history")
