@@ -17,7 +17,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.INCENTIVES
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisIncentive
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.asStringOrBlank
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.asMap
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationMinutes
 
 @Service
 class IncentivesMigrationService(
@@ -28,11 +29,12 @@ class IncentivesMigrationService(
   auditService: AuditService,
   private val incentivesService: IncentivesService,
   private val incentiveMappingService: IncentiveMappingService,
-  @Value("\${sentencing.page.size:1000}") private val pageSize: Long,
+  @Value("\${incentives.page.size:1000}") private val pageSize: Long,
 ) : MigrationService<IncentivesMigrationFilter, IncentiveId, NomisIncentive, IncentiveNomisMapping>(
   queueService = queueService,
   auditService = auditService,
   migrationHistoryService = migrationHistoryService,
+  mappingService = incentiveMappingService,
   telemetryClient = telemetryClient,
   migrationType = INCENTIVES,
   pageSize = pageSize,
@@ -41,30 +43,16 @@ class IncentivesMigrationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  override suspend fun getIds(migrationFilter: IncentivesMigrationFilter, pageSize: Long, pageNumber: Long): PageImpl<IncentiveId> {
+  override suspend fun getIds(
+    migrationFilter: IncentivesMigrationFilter,
+    pageSize: Long,
+    pageNumber: Long,
+  ): PageImpl<IncentiveId> {
     return nomisApiService.getIncentives(
       fromDate = migrationFilter.fromDate,
       toDate = migrationFilter.toDate,
       pageNumber = pageNumber,
       pageSize = pageSize,
-    )
-  }
-
-  override fun getTelemetryFromFilter(migrationFilter: IncentivesMigrationFilter): Map<String, String> {
-    return mapOf(
-      "migrationType" to "Incentives",
-      "fromDate" to migrationFilter.fromDate.asStringOrBlank(),
-      "toDate" to migrationFilter.toDate.asStringOrBlank(),
-    )
-  }
-
-  override fun getTelemetryFromNomisEntity(nomisEntity: NomisIncentive): Map<String, String> {
-    return mapOf(
-      "migrationType" to "Incentives",
-      "nomisSequence" to nomisEntity.incentiveSequence.toString(),
-      "bookingId" to nomisEntity.bookingId.toString(),
-      "sequence" to nomisEntity.incentiveSequence.toString(),
-      "level" to nomisEntity.iepLevel.code,
     )
   }
 
@@ -86,7 +74,7 @@ class IncentivesMigrationService(
             )
           }
         telemetryClient.trackEvent(
-          "nomis-migration-incentive-migrated",
+          "incentives-migration-entity-migrated",
           mapOf(
             "migrationId" to context.migrationId,
             "bookingId" to bookingId.toString(),
@@ -97,21 +85,6 @@ class IncentivesMigrationService(
           null,
         )
       }
-  }
-
-  override fun getMigrationType() = INCENTIVES
-
-  override suspend fun getMigrationCount(migrationId: String): Long {
-    return incentiveMappingService.getMigrationCount(migrationId)
-  }
-
-  override suspend fun retryCreateMapping(context: MigrationContext<IncentiveNomisMapping>) {
-    incentiveMappingService.createNomisIncentiveMigrationMapping(
-      nomisBookingId = context.body.nomisBookingId,
-      nomisIncentiveSequence = context.body.nomisIncentiveSequence,
-      incentiveId = context.body.incentiveId,
-      migrationId = context.migrationId,
-    )
   }
 
   override suspend fun migrateNomisEntity(context: MigrationContext<IncentiveId>) {
@@ -141,7 +114,7 @@ class IncentivesMigrationService(
           mapOf(
             "incentiveId" to incentiveIEPResponse.id.toString(),
             "migrationId" to context.migrationId,
-          ) + getTelemetryFromNomisEntity(nomisAdjustment),
+          ) + nomisAdjustment.asMap(),
           null,
         )
       }
@@ -153,12 +126,33 @@ class IncentivesMigrationService(
     incentiveId: Long,
     context: MigrationContext<*>,
   ) = try {
-    incentiveMappingService.createNomisIncentiveMigrationMapping(
-      nomisBookingId = bookingId,
-      nomisIncentiveSequence = nomisIncentiveSequence,
-      incentiveId = incentiveId,
-      migrationId = context.migrationId,
-    )
+    incentiveMappingService.createMapping(
+      IncentiveNomisMapping(
+        nomisBookingId = bookingId,
+        nomisIncentiveSequence = nomisIncentiveSequence,
+        incentiveId = incentiveId,
+        label = context.migrationId,
+        mappingType = "MIGRATED",
+      ),
+    ).also {
+      if (it.isError) {
+        val duplicateErrorDetails = (it.errorResponse as DuplicateIncentiveErrorResponse).moreInfo
+        telemetryClient.trackEvent(
+          "nomis-migration-incentive-duplicate",
+          mapOf<String, String>(
+            "migrationId" to context.migrationId,
+            "duplicateIncentiveId" to duplicateErrorDetails.duplicateIncentive.incentiveId.toString(),
+            "duplicateNomisBookingId" to duplicateErrorDetails.duplicateIncentive.nomisBookingId.toString(),
+            "duplicateNomisSequence" to duplicateErrorDetails.duplicateIncentive.nomisIncentiveSequence.toString(),
+            "existingIncentiveId" to duplicateErrorDetails.existingIncentive.incentiveId.toString(),
+            "existingNomisBookingId" to duplicateErrorDetails.existingIncentive.nomisBookingId.toString(),
+            "existingNomisSequence" to duplicateErrorDetails.existingIncentive.nomisIncentiveSequence.toString(),
+            "durationMinutes" to context.durationMinutes().toString(),
+          ),
+          null,
+        )
+      }
+    }
   } catch (e: Exception) {
     log.error(
       "Failed to create mapping for incentive $bookingId, sequence $nomisIncentiveSequence, Incentive id $incentiveId",

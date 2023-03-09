@@ -4,13 +4,15 @@ import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.data.domain.PageImpl
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatchId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import java.time.Duration
 import java.time.LocalDateTime
 
-abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
+abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, NOMIS_ENTITY : Any, MAPPING : Any>(
   private val queueService: MigrationQueueService,
   private val migrationHistoryService: MigrationHistoryService,
+  private val mappingService: MigrationMapping<MAPPING>,
   private val telemetryClient: TelemetryClient,
   private val auditService: AuditService,
   private val migrationType: MigrationType,
@@ -19,17 +21,11 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
 
   abstract suspend fun getIds(migrationFilter: FILTER, pageSize: Long, pageNumber: Long): PageImpl<NOMIS_ID>
 
-  abstract fun getTelemetryFromFilter(migrationFilter: FILTER): Map<String, String>
-
-  abstract fun getTelemetryFromNomisEntity(nomisEntity: NOMIS_ENTITY): Map<String, String>
-
-  abstract fun getMigrationType(): MigrationType
-
-  abstract suspend fun getMigrationCount(migrationId: String): Long
-
   abstract suspend fun migrateNomisEntity(context: MigrationContext<NOMIS_ID>)
 
-  abstract suspend fun retryCreateMapping(context: MigrationContext<MAPPING>)
+  suspend fun getMigrationCount(migrationId: String): Long {
+    return mappingService.getMigrationCount(migrationId)
+  }
 
   suspend fun startMigration(migrationFilter: FILTER): MigrationContext<FILTER> {
     val count = getIds(
@@ -47,11 +43,11 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
       queueService.sendMessage(MigrationMessageType.MIGRATE_ENTITIES, this)
     }.also {
       telemetryClient.trackEvent(
-        "nomis-migration-started",
+        "${migrationType.telemetryName}-migration-started",
         mapOf<String, String>(
           "migrationId" to it.migrationId,
           "estimatedCount" to it.estimatedCount.toString(),
-        ) + getTelemetryFromFilter(migrationFilter),
+        ) + migrationFilter.asMap(),
         null,
       )
       migrationHistoryService.recordMigrationStarted(
@@ -114,10 +110,9 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
     } else {
       if (context.body.hasCheckedAReasonableNumberOfTimes()) {
         telemetryClient.trackEvent(
-          "nomis-migration-completed",
+          "${migrationType.telemetryName}-migration-completed",
           mapOf<String, String>(
             "migrationId" to context.migrationId,
-            "migrationType" to context.type.name,
             "estimatedCount" to context.estimatedCount.toString(),
             "durationMinutes" to context.durationMinutes().toString(),
           ),
@@ -159,10 +154,9 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
     } else {
       if (context.body.hasCheckedAReasonableNumberOfTimes()) {
         telemetryClient.trackEvent(
-          "nomis-migration-cancelled",
+          "${migrationType.telemetryName}-migration-cancelled",
           mapOf<String, String>(
             "migrationId" to context.migrationId,
-            "migrationType" to context.type.name,
             "estimatedCount" to context.estimatedCount.toString(),
             "durationMinutes" to context.durationMinutes().toString(),
           ),
@@ -190,7 +184,7 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
   suspend fun cancel(migrationId: String) {
     val migration = migrationHistoryService.get(migrationId)
     telemetryClient.trackEvent(
-      "nomis-migration-cancel-requested",
+      "${migrationType.telemetryName}-migration-cancel-requested",
       mapOf<String, String>(
         "migrationId" to migration.migrationId,
       ),
@@ -207,6 +201,12 @@ abstract class MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
         body = MigrationStatusCheck(),
       ),
       message = MigrationMessageType.CANCEL_MIGRATION,
+    )
+  }
+
+  suspend fun retryCreateMapping(context: MigrationContext<MAPPING>) {
+    mappingService.createMapping(
+      context.body,
     )
   }
 }

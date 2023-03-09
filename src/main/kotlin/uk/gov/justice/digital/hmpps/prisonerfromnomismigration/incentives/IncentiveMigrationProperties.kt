@@ -10,7 +10,7 @@ class IncentiveMigrationProperties(
   hmppsQueueService: HmppsQueueService,
   incentiveMappingService: IncentiveMappingService,
 
-) : MigrationProperties(
+) : MigrationProperties<IncentiveNomisMapping>(
   hmppsQueueService,
   incentiveMappingService,
   MigrationType.INCENTIVES,

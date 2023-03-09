@@ -21,7 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import java.util.concurrent.CompletableFuture
 
-abstract class MigrationMessageListener<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>(
+abstract class MigrationMessageListener<FILTER : Any, NOMIS_ID : Any, NOMIS_ENTITY : Any, MAPPING : Any>(
   internal val objectMapper: ObjectMapper,
   private val migrationService: MigrationService<FILTER, NOMIS_ID, NOMIS_ENTITY, MAPPING>,
 ) {

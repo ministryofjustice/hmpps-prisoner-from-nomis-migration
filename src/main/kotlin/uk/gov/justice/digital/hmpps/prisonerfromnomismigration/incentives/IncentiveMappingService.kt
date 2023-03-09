@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives
 
+import kotlinx.coroutines.reactive.awaitFirstOrDefault
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.slf4j.Logger
@@ -11,10 +12,11 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.LatestMigration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationDetails
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 
 @Service
-class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webClient: WebClient) : MigrationMapping {
+class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webClient: WebClient) : MigrationMapping<IncentiveNomisMapping> {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
@@ -32,53 +34,21 @@ class IncentiveMappingService(@Qualifier("mappingApiWebClient") private val webC
         Mono.empty()
       }.awaitSingleOrNull()
 
-  suspend fun createNomisIncentiveMigrationMapping(
-    nomisBookingId: Long,
-    nomisIncentiveSequence: Long,
-    incentiveId: Long,
-    migrationId: String,
-  ) {
-    createNomisIncentiveMapping(
-      nomisBookingId = nomisBookingId,
-      nomisIncentiveSequence = nomisIncentiveSequence,
-      incentiveId = incentiveId,
-      migrationId = migrationId,
-      mappingType = "MIGRATED",
-    )
-  }
-
-  suspend fun createNomisIncentiveSynchronisationMapping(
-    incentiveNomisMapping: IncentiveNomisMapping,
-  ) {
-    createNomisIncentiveMapping(
-      nomisBookingId = incentiveNomisMapping.nomisBookingId,
-      nomisIncentiveSequence = incentiveNomisMapping.nomisIncentiveSequence,
-      incentiveId = incentiveNomisMapping.incentiveId,
-      mappingType = incentiveNomisMapping.mappingType,
-    )
-  }
-
-  private suspend fun createNomisIncentiveMapping(
-    nomisBookingId: Long,
-    nomisIncentiveSequence: Long,
-    incentiveId: Long,
-    mappingType: String,
-    migrationId: String? = null,
-  ) {
-    webClient.post()
+  override suspend fun createMapping(
+    mapping: IncentiveNomisMapping,
+  ): CreateMappingResult {
+    return webClient.post()
       .uri("/mapping/incentives")
       .bodyValue(
-        IncentiveNomisMapping(
-          nomisBookingId = nomisBookingId,
-          nomisIncentiveSequence = nomisIncentiveSequence,
-          incentiveId = incentiveId,
-          label = migrationId,
-          mappingType = mappingType,
-        ),
+        mapping,
       )
       .retrieve()
       .bodyToMono(Unit::class.java)
-      .awaitSingleOrNull()
+      .map { CreateMappingResult() }
+      .onErrorResume(WebClientResponseException.Conflict::class.java) {
+        Mono.just(CreateMappingResult(it.getResponseBodyAs(DuplicateIncentiveErrorResponse::class.java)))
+      }
+      .awaitFirstOrDefault(CreateMappingResult())
   }
 
   override suspend fun findLatestMigration(): LatestMigration? = webClient.get()
@@ -129,4 +99,13 @@ data class IncentiveNomisMapping(
   val incentiveId: Long,
   val label: String? = null,
   val mappingType: String,
+)
+
+class DuplicateIncentiveErrorResponse(
+  val moreInfo: DuplicateIncentiveErrorContent,
+)
+
+data class DuplicateIncentiveErrorContent(
+  val duplicateIncentive: IncentiveNomisMapping,
+  val existingIncentive: IncentiveNomisMapping,
 )

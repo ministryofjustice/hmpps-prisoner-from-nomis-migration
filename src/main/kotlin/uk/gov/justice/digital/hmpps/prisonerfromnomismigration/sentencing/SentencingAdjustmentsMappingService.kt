@@ -11,11 +11,12 @@ import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.LatestMigration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationDetails
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 
 @Service
 class SentencingAdjustmentsMappingService(@Qualifier("mappingApiWebClient") private val webClient: WebClient) :
-  MigrationMapping {
+  MigrationMapping<SentencingAdjustmentNomisMapping> {
   suspend fun findNomisSentencingAdjustmentMapping(
     nomisAdjustmentId: Long,
     nomisAdjustmentCategory: String,
@@ -34,57 +35,13 @@ class SentencingAdjustmentsMappingService(@Qualifier("mappingApiWebClient") priv
       .awaitSingleOrNull()
   }
 
-  suspend fun createNomisSentencingAdjustmentMigrationMapping(
-    nomisAdjustmentId: Long,
-    nomisAdjustmentCategory: String,
-    adjustmentId: String,
-    migrationId: String,
-  ) =
-    createNomisSentenceAdjustmentMapping(
-      nomisAdjustmentId = nomisAdjustmentId,
-      nomisAdjustmentCategory = nomisAdjustmentCategory,
-      adjustmentId = adjustmentId,
-      migrationId = migrationId,
-      mappingType = "MIGRATED",
-    )
-
-  suspend fun createNomisSentencingAdjustmentSynchronisationMapping(
-    nomisAdjustmentId: Long,
-    nomisAdjustmentCategory: String,
-    adjustmentId: String,
-  ) =
-    createNomisSentenceAdjustmentMapping(
-      nomisAdjustmentId = nomisAdjustmentId,
-      nomisAdjustmentCategory = nomisAdjustmentCategory,
-      adjustmentId = adjustmentId,
-      mappingType = "NOMIS_CREATED",
-    )
-
-  data class CreateMappingResult(
-    /* currently, only interested in the error response as success doesn't return a body*/
-    val errorResponse: DuplicateAdjustmentErrorResponse? = null,
-  ) {
-    val isError
-      get() = errorResponse != null
-  }
-
-  private suspend fun createNomisSentenceAdjustmentMapping(
-    nomisAdjustmentId: Long,
-    nomisAdjustmentCategory: String,
-    adjustmentId: String,
-    mappingType: String,
-    migrationId: String? = null,
+  override suspend fun createMapping(
+    mapping: SentencingAdjustmentNomisMapping,
   ): CreateMappingResult {
     return webClient.post()
       .uri("/mapping/sentencing/adjustments")
       .bodyValue(
-        SentencingAdjustmentNomisMapping(
-          nomisAdjustmentId = nomisAdjustmentId,
-          nomisAdjustmentCategory = nomisAdjustmentCategory,
-          adjustmentId = adjustmentId,
-          label = migrationId,
-          mappingType = mappingType,
-        ),
+        mapping,
       )
       .retrieve()
       .bodyToMono(Unit::class.java)

@@ -201,7 +201,7 @@ internal class IncentivesMigrationServiceTest {
       }
 
       verify(telemetryClient).trackEvent(
-        eq("nomis-migration-started"),
+        eq("incentives-migration-started"),
         check {
           assertThat(it["migrationId"]).isNotNull
           assertThat(it["estimatedCount"]).isEqualTo("23")
@@ -231,12 +231,12 @@ internal class IncentivesMigrationServiceTest {
       }
 
       verify(telemetryClient).trackEvent(
-        eq("nomis-migration-started"),
+        eq("incentives-migration-started"),
         check {
           assertThat(it["migrationId"]).isNotNull
           assertThat(it["estimatedCount"]).isEqualTo("23")
-          assertThat(it["fromDate"]).isEqualTo("")
-          assertThat(it["toDate"]).isEqualTo("")
+          assertThat(it["fromDate"]).isNull()
+          assertThat(it["toDate"]).isNull()
         },
         eq(null),
       )
@@ -473,7 +473,7 @@ internal class IncentivesMigrationServiceTest {
         )
 
         verify(telemetryClient).trackEvent(
-          eq("nomis-migration-completed"),
+          eq("incentives-migration-completed"),
           check {
             assertThat(it["migrationId"]).isNotNull
             assertThat(it["estimatedCount"]).isEqualTo("23")
@@ -622,7 +622,7 @@ internal class IncentivesMigrationServiceTest {
         )
 
         verify(telemetryClient).trackEvent(
-          eq("nomis-migration-cancelled"),
+          eq("incentives-migration-cancelled"),
           check {
             assertThat(it["migrationId"]).isNotNull
             assertThat(it["estimatedCount"]).isEqualTo("23")
@@ -903,11 +903,14 @@ internal class IncentivesMigrationServiceTest {
         ),
       )
 
-      verify(incentiveMappingService).createNomisIncentiveMigrationMapping(
-        nomisBookingId = 123,
-        nomisIncentiveSequence = 2,
-        incentiveId = 999,
-        migrationId = "2020-05-23T11:30:00",
+      verify(incentiveMappingService).createMapping(
+        IncentiveNomisMapping(
+          nomisBookingId = 123,
+          nomisIncentiveSequence = 2,
+          incentiveId = 999,
+          label = "2020-05-23T11:30:00",
+          mappingType = "MIGRATED",
+        ),
       )
     }
 
@@ -930,7 +933,7 @@ internal class IncentivesMigrationServiceTest {
         )
         whenever(incentivesService.migrateIncentive(any(), any())).thenReturn(CreateIncentiveIEPResponse(999L))
 
-        whenever(incentiveMappingService.createNomisIncentiveMigrationMapping(any(), any(), any(), any())).thenThrow(
+        whenever(incentiveMappingService.createMapping(any())).thenThrow(
           RuntimeException("something went wrong"),
         )
 

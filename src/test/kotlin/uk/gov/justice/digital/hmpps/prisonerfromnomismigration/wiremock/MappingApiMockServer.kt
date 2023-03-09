@@ -465,6 +465,45 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubIncentiveCreateConflict(
+    existingIncentiveId: Long = 10,
+    duplicateIncentiveId: Long = 11,
+    nomisBookingId: Long = 123,
+    nomisSequence: Long = 1,
+  ) {
+    stubFor(
+      post(urlPathEqualTo("/mapping/incentives"))
+        .willReturn(
+          aResponse()
+            .withStatus(409)
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
+              "moreInfo": 
+              {
+                "existingIncentive" :  {
+                  "incentiveId": $existingIncentiveId,
+                  "nomisBookingId": $nomisBookingId,
+                  "nomisIncentiveSequence": $nomisSequence,
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "MIGRATED"
+                 },
+                 "duplicateIncentive" : {
+                  "incentiveId": $duplicateIncentiveId,
+                  "nomisBookingId": $nomisBookingId,
+                  "nomisIncentiveSequence": $nomisSequence,
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "MIGRATED"
+                  }
+              }
+              }""",
+            ),
+        ),
+    )
+  }
+
   fun stubGetNomisSentencingAdjustment(
     adjustmentCategory: String = "SENTENCE",
     nomisAdjustmentId: Long = 987L,

@@ -155,14 +155,30 @@ class IncentivesSynchronisationService(
     it: CreateIncentiveIEPResponse,
   ) {
     try {
-      mappingService.createNomisIncentiveSynchronisationMapping(
+      mappingService.createMapping(
         IncentiveNomisMapping(
           nomisBookingId = nomisIncentive.bookingId,
           nomisIncentiveSequence = nomisIncentive.incentiveSequence,
           incentiveId = it.id,
           mappingType = "NOMIS_CREATED",
         ),
-      )
+      ).also {
+        if (it.isError) {
+          val duplicateErrorDetails = (it.errorResponse as DuplicateIncentiveErrorResponse).moreInfo
+          telemetryClient.trackEvent(
+            "from-nomis-synch-incentive-duplicate",
+            mapOf<String, String>(
+              "duplicateIncentiveId" to duplicateErrorDetails.duplicateIncentive.incentiveId.toString(),
+              "duplicateNomisBookingId" to duplicateErrorDetails.duplicateIncentive.nomisBookingId.toString(),
+              "duplicateNomisSequence" to duplicateErrorDetails.duplicateIncentive.nomisIncentiveSequence.toString(),
+              "existingIncentiveId" to duplicateErrorDetails.existingIncentive.incentiveId.toString(),
+              "existingNomisBookingId" to duplicateErrorDetails.existingIncentive.nomisBookingId.toString(),
+              "existingNomisSequence" to duplicateErrorDetails.existingIncentive.nomisIncentiveSequence.toString(),
+            ),
+            null,
+          )
+        }
+      }
     } catch (e: Exception) {
       log.error(
         "Failed to create mapping for incentive id ${it.id}, nomisBookingId ${nomisIncentive.bookingId}, nomsSequence ${nomisIncentive.incentiveSequence}",
@@ -183,8 +199,8 @@ class IncentivesSynchronisationService(
 
   suspend fun retryCreateIncentiveMapping(internalMessage: InternalMessage<IncentiveNomisMapping>) {
     log.info("Retrying mapping creation for booking id: ${internalMessage.body.nomisBookingId}, noms seq: ${internalMessage.body.nomisIncentiveSequence}, incentive id : ${internalMessage.body.incentiveId}")
-    mappingService.createNomisIncentiveSynchronisationMapping(
-      incentiveNomisMapping = internalMessage.body,
+    mappingService.createMapping(
+      mapping = internalMessage.body,
     )
   }
 }

@@ -152,15 +152,19 @@ class SentencingAdjustmentsSynchronisationService(
   suspend fun tryToCreateSentenceMapping(
     event: SentenceAdjustmentOffenderEvent,
     adjustmentId: String,
-  ): MappingResponse =
+  ): MappingResponse {
+    val mapping = SentencingAdjustmentNomisMapping(
+      nomisAdjustmentId = event.adjustmentId,
+      nomisAdjustmentCategory = "SENTENCE",
+      adjustmentId = adjustmentId,
+      mappingType = "NOMIS_CREATED",
+    )
     try {
-      sentencingAdjustmentsMappingService.createNomisSentencingAdjustmentSynchronisationMapping(
-        nomisAdjustmentId = event.adjustmentId,
-        nomisAdjustmentCategory = "SENTENCE",
-        adjustmentId = adjustmentId,
+      sentencingAdjustmentsMappingService.createMapping(
+        mapping,
       ).also {
         if (it.isError) {
-          val duplicateErrorDetails = it.errorResponse!!.moreInfo
+          val duplicateErrorDetails = (it.errorResponse as DuplicateAdjustmentErrorResponse).moreInfo
           telemetryClient.trackEvent(
             "from-nomis-synch-adjustment-duplicate",
             mapOf<String, String>(
@@ -175,7 +179,7 @@ class SentencingAdjustmentsSynchronisationService(
           )
         }
       }
-      MAPPING_CREATED
+      return MAPPING_CREATED
     } catch (e: Exception) {
       log.error(
         "Failed to create mapping for adjustment id $adjustmentId, nomisAdjustmentId ${event.adjustmentId}, nomisAdjustmentCategory SENTENCE",
@@ -184,28 +188,28 @@ class SentencingAdjustmentsSynchronisationService(
       queueService.sendMessage(
         messageType = SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING.name,
         synchronisationType = SynchronisationType.SENTENCING_ADJUSTMENTS,
-        message = SentencingAdjustmentNomisMapping(
-          nomisAdjustmentId = event.adjustmentId,
-          nomisAdjustmentCategory = "SENTENCE",
-          adjustmentId = adjustmentId,
-          mappingType = "NOMIS_CREATED",
-        ),
+        message = mapping,
         telemetryAttributes = event.toTelemetryProperties(adjustmentId),
       )
-      MAPPING_FAILED
+      return MAPPING_FAILED
     }
+  }
 
   suspend fun tryToCreateKeyDateMapping(
     event: KeyDateAdjustmentOffenderEvent,
     adjustmentId: String,
-  ): MappingResponse =
+  ): MappingResponse {
+    val mapping = SentencingAdjustmentNomisMapping(
+      nomisAdjustmentId = event.adjustmentId,
+      nomisAdjustmentCategory = "KEY-DATE",
+      adjustmentId = adjustmentId,
+      mappingType = "NOMIS_CREATED",
+    )
     try {
-      sentencingAdjustmentsMappingService.createNomisSentencingAdjustmentSynchronisationMapping(
-        nomisAdjustmentId = event.adjustmentId,
-        nomisAdjustmentCategory = "KEY-DATE",
-        adjustmentId = adjustmentId,
+      sentencingAdjustmentsMappingService.createMapping(
+        mapping,
       )
-      MAPPING_CREATED
+      return MAPPING_CREATED
     } catch (e: Exception) {
       log.error(
         "Failed to create mapping for adjustment id $adjustmentId, nomisAdjustmentId ${event.adjustmentId}, nomisAdjustmentCategory KEY-DATE",
@@ -214,22 +218,16 @@ class SentencingAdjustmentsSynchronisationService(
       queueService.sendMessage(
         messageType = SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING.name,
         synchronisationType = SynchronisationType.SENTENCING_ADJUSTMENTS,
-        message = SentencingAdjustmentNomisMapping(
-          nomisAdjustmentId = event.adjustmentId,
-          nomisAdjustmentCategory = "KEY-DATE",
-          adjustmentId = adjustmentId,
-          mappingType = "NOMIS_CREATED",
-        ),
+        message = mapping,
         telemetryAttributes = event.toTelemetryProperties(adjustmentId),
       )
-      MAPPING_FAILED
+      return MAPPING_FAILED
     }
+  }
 
   suspend fun retryCreateSentenceAdjustmentMapping(retryMessage: InternalMessage<SentencingAdjustmentNomisMapping>) {
-    sentencingAdjustmentsMappingService.createNomisSentencingAdjustmentSynchronisationMapping(
-      nomisAdjustmentId = retryMessage.body.nomisAdjustmentId,
-      nomisAdjustmentCategory = retryMessage.body.nomisAdjustmentCategory,
-      adjustmentId = retryMessage.body.adjustmentId,
+    sentencingAdjustmentsMappingService.createMapping(
+      retryMessage.body,
     ).also {
       telemetryClient.trackEvent(
         "adjustment-mapping-created-synchronisation-success",
