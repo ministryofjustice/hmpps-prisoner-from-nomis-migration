@@ -822,7 +822,7 @@ internal class IncentivesMigrationServiceTest {
 
     @Test
     internal fun `will retrieve incentive from NOMIS`(): Unit = runBlocking {
-      service.migrateIncentive(
+      service.migrateNomisEntity(
         MigrationContext(
           type = INCENTIVES,
           migrationId = "2020-05-23T11:30:00",
@@ -851,7 +851,7 @@ internal class IncentivesMigrationServiceTest {
         ),
       )
 
-      service.migrateIncentive(
+      service.migrateNomisEntity(
         MigrationContext(
           type = INCENTIVES,
           migrationId = "2020-05-23T11:30:00",
@@ -894,7 +894,7 @@ internal class IncentivesMigrationServiceTest {
       )
       whenever(incentivesService.migrateIncentive(any(), eq(123))).thenReturn(CreateIncentiveIEPResponse(999L))
 
-      service.migrateIncentive(
+      service.migrateNomisEntity(
         MigrationContext(
           type = INCENTIVES,
           migrationId = "2020-05-23T11:30:00",
@@ -937,7 +937,7 @@ internal class IncentivesMigrationServiceTest {
           RuntimeException("something went wrong"),
         )
 
-        service.migrateIncentive(
+        service.migrateNomisEntity(
           MigrationContext(
             type = INCENTIVES,
             migrationId = "2020-05-23T11:30:00",
@@ -974,7 +974,7 @@ internal class IncentivesMigrationServiceTest {
 
       @Test
       internal fun `will do nothing`(): Unit = runBlocking {
-        service.migrateIncentive(
+        service.migrateNomisEntity(
           MigrationContext(
             type = INCENTIVES,
             migrationId = "2020-05-23T11:30:00",
