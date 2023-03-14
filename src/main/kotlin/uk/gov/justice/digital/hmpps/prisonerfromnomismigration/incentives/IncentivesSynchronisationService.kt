@@ -3,8 +3,10 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives
 import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.ReviewType.REVIEW
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
@@ -162,18 +164,19 @@ class IncentivesSynchronisationService(
           incentiveId = it.id,
           mappingType = "NOMIS_CREATED",
         ),
+        object : ParameterizedTypeReference<DuplicateErrorResponse<IncentiveNomisMapping>>() {},
       ).also {
         if (it.isError) {
-          val duplicateErrorDetails = (it.errorResponse as DuplicateIncentiveErrorResponse).moreInfo
+          val duplicateErrorDetails = (it.errorResponse!!).moreInfo
           telemetryClient.trackEvent(
             "from-nomis-synch-incentive-duplicate",
             mapOf<String, String>(
-              "duplicateIncentiveId" to duplicateErrorDetails.duplicateIncentive.incentiveId.toString(),
-              "duplicateNomisBookingId" to duplicateErrorDetails.duplicateIncentive.nomisBookingId.toString(),
-              "duplicateNomisSequence" to duplicateErrorDetails.duplicateIncentive.nomisIncentiveSequence.toString(),
-              "existingIncentiveId" to duplicateErrorDetails.existingIncentive.incentiveId.toString(),
-              "existingNomisBookingId" to duplicateErrorDetails.existingIncentive.nomisBookingId.toString(),
-              "existingNomisSequence" to duplicateErrorDetails.existingIncentive.nomisIncentiveSequence.toString(),
+              "duplicateIncentiveId" to duplicateErrorDetails.duplicate.incentiveId.toString(),
+              "duplicateNomisBookingId" to duplicateErrorDetails.duplicate.nomisBookingId.toString(),
+              "duplicateNomisSequence" to duplicateErrorDetails.duplicate.nomisIncentiveSequence.toString(),
+              "existingIncentiveId" to duplicateErrorDetails.existing.incentiveId.toString(),
+              "existingNomisBookingId" to duplicateErrorDetails.existing.nomisBookingId.toString(),
+              "existingNomisSequence" to duplicateErrorDetails.existing.nomisIncentiveSequence.toString(),
             ),
             null,
           )
@@ -201,6 +204,7 @@ class IncentivesSynchronisationService(
     log.info("Retrying mapping creation for booking id: ${internalMessage.body.nomisBookingId}, noms seq: ${internalMessage.body.nomisIncentiveSequence}, incentive id : ${internalMessage.body.incentiveId}")
     mappingService.createMapping(
       mapping = internalMessage.body,
+      object : ParameterizedTypeReference<DuplicateErrorResponse<IncentiveNomisMapping>>() {},
     )
   }
 }

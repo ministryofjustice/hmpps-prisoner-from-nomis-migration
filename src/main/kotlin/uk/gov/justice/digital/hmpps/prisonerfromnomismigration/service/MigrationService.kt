@@ -1,21 +1,23 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 
 import com.microsoft.applicationinsights.TelemetryClient
+import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatchId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import java.time.Duration
 import java.time.LocalDateTime
 
 abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, NOMIS_ENTITY : Any, MAPPING : Any>(
-  private val queueService: MigrationQueueService,
-  private val migrationHistoryService: MigrationHistoryService,
-  private val mappingService: MigrationMapping<MAPPING>,
-  private val telemetryClient: TelemetryClient,
-  private val auditService: AuditService,
-  private val migrationType: MigrationType,
+  internal val queueService: MigrationQueueService,
+  internal val migrationHistoryService: MigrationHistoryService,
+  internal val mappingService: MigrationMapping<MAPPING>,
+  internal val telemetryClient: TelemetryClient,
+  internal val auditService: AuditService,
+  internal val migrationType: MigrationType,
   private val pageSize: Long,
 ) {
 
@@ -207,6 +209,7 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, NOMIS_ENTITY : Any
   suspend fun retryCreateMapping(context: MigrationContext<MAPPING>) {
     mappingService.createMapping(
       context.body,
+      object : ParameterizedTypeReference<DuplicateErrorResponse<MAPPING>>() {},
     )
   }
 }
