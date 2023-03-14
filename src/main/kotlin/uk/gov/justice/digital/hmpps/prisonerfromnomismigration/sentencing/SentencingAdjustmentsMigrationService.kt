@@ -4,9 +4,11 @@ import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
@@ -20,14 +22,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationM
 
 @Service
 class SentencingAdjustmentsMigrationService(
-  private val queueService: MigrationQueueService,
+  queueService: MigrationQueueService,
   private val nomisApiService: NomisApiService,
   migrationHistoryService: MigrationHistoryService,
-  private val telemetryClient: TelemetryClient,
+  telemetryClient: TelemetryClient,
   auditService: AuditService,
   private val sentencingService: SentencingService,
   private val sentencingAdjustmentsMappingService: SentencingAdjustmentsMappingService,
-  @Value("\${sentencing.page.size:1000}") private val pageSize: Long,
+  @Value("\${sentencing.page.size:1000}") pageSize: Long,
 ) : MigrationService<SentencingMigrationFilter, NomisAdjustmentId, NomisAdjustment, SentencingAdjustmentNomisMapping>(
   queueService = queueService,
   auditService = auditService,
@@ -108,19 +110,20 @@ class SentencingAdjustmentsMigrationService(
         label = context.migrationId,
         mappingType = "MIGRATED",
       ),
+      object : ParameterizedTypeReference<DuplicateErrorResponse<SentencingAdjustmentNomisMapping>>() {},
     ).also {
       if (it.isError) {
-        val duplicateErrorDetails = (it.errorResponse as DuplicateAdjustmentErrorResponse).moreInfo
+        val duplicateErrorDetails = (it.errorResponse!!).moreInfo
         telemetryClient.trackEvent(
           "nomis-migration-adjustment-duplicate",
           mapOf<String, String>(
             "migrationId" to context.migrationId,
-            "duplicateAdjustmentId" to duplicateErrorDetails.duplicateAdjustment.adjustmentId,
-            "duplicateNomisAdjustmentId" to duplicateErrorDetails.duplicateAdjustment.nomisAdjustmentId.toString(),
-            "duplicateNomisAdjustmentCategory" to duplicateErrorDetails.duplicateAdjustment.nomisAdjustmentCategory,
-            "existingAdjustmentId" to duplicateErrorDetails.existingAdjustment.adjustmentId,
-            "existingNomisAdjustmentId" to duplicateErrorDetails.existingAdjustment.nomisAdjustmentId.toString(),
-            "existingNomisAdjustmentCategory" to duplicateErrorDetails.existingAdjustment.nomisAdjustmentCategory,
+            "duplicateAdjustmentId" to duplicateErrorDetails.duplicate.adjustmentId,
+            "duplicateNomisAdjustmentId" to duplicateErrorDetails.duplicate.nomisAdjustmentId.toString(),
+            "duplicateNomisAdjustmentCategory" to duplicateErrorDetails.duplicate.nomisAdjustmentCategory,
+            "existingAdjustmentId" to duplicateErrorDetails.existing.adjustmentId,
+            "existingNomisAdjustmentId" to duplicateErrorDetails.existing.nomisAdjustmentId.toString(),
+            "existingNomisAdjustmentCategory" to duplicateErrorDetails.existing.nomisAdjustmentCategory,
             "durationMinutes" to context.durationMinutes().toString(),
           ),
           null,

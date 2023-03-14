@@ -3,8 +3,10 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing
 import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustmentsSynchronisationService.MappingResponse.MAPPING_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustmentsSynchronisationService.MappingResponse.MAPPING_FAILED
@@ -162,18 +164,19 @@ class SentencingAdjustmentsSynchronisationService(
     try {
       sentencingAdjustmentsMappingService.createMapping(
         mapping,
+        object : ParameterizedTypeReference<DuplicateErrorResponse<SentencingAdjustmentNomisMapping>>() {},
       ).also {
         if (it.isError) {
-          val duplicateErrorDetails = (it.errorResponse as DuplicateAdjustmentErrorResponse).moreInfo
+          val duplicateErrorDetails = (it.errorResponse!!).moreInfo
           telemetryClient.trackEvent(
             "from-nomis-synch-adjustment-duplicate",
             mapOf<String, String>(
-              "duplicateAdjustmentId" to duplicateErrorDetails.duplicateAdjustment.adjustmentId,
-              "duplicateNomisAdjustmentId" to duplicateErrorDetails.duplicateAdjustment.nomisAdjustmentId.toString(),
-              "duplicateNomisAdjustmentCategory" to duplicateErrorDetails.duplicateAdjustment.nomisAdjustmentCategory,
-              "existingAdjustmentId" to duplicateErrorDetails.existingAdjustment.adjustmentId,
-              "existingNomisAdjustmentId" to duplicateErrorDetails.existingAdjustment.nomisAdjustmentId.toString(),
-              "existingNomisAdjustmentCategory" to duplicateErrorDetails.existingAdjustment.nomisAdjustmentCategory,
+              "duplicateAdjustmentId" to duplicateErrorDetails.duplicate.adjustmentId,
+              "duplicateNomisAdjustmentId" to duplicateErrorDetails.duplicate.nomisAdjustmentId.toString(),
+              "duplicateNomisAdjustmentCategory" to duplicateErrorDetails.duplicate.nomisAdjustmentCategory,
+              "existingAdjustmentId" to duplicateErrorDetails.existing.adjustmentId,
+              "existingNomisAdjustmentId" to duplicateErrorDetails.existing.nomisAdjustmentId.toString(),
+              "existingNomisAdjustmentCategory" to duplicateErrorDetails.existing.nomisAdjustmentCategory,
             ),
             null,
           )
@@ -208,6 +211,7 @@ class SentencingAdjustmentsSynchronisationService(
     try {
       sentencingAdjustmentsMappingService.createMapping(
         mapping,
+        object : ParameterizedTypeReference<DuplicateErrorResponse<SentencingAdjustmentNomisMapping>>() {},
       )
       return MAPPING_CREATED
     } catch (e: Exception) {
@@ -228,6 +232,7 @@ class SentencingAdjustmentsSynchronisationService(
   suspend fun retryCreateSentenceAdjustmentMapping(retryMessage: InternalMessage<SentencingAdjustmentNomisMapping>) {
     sentencingAdjustmentsMappingService.createMapping(
       retryMessage.body,
+      object : ParameterizedTypeReference<DuplicateErrorResponse<SentencingAdjustmentNomisMapping>>() {},
     ).also {
       telemetryClient.trackEvent(
         "adjustment-mapping-created-synchronisation-success",

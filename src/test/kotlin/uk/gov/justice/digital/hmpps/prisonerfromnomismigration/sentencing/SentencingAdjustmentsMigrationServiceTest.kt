@@ -26,9 +26,11 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
+import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.CANCEL_MIGRATION
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_BY_PAGE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_ENTITIES
@@ -881,6 +883,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
             label = "2020-05-23T11:30:00",
             mappingType = "MIGRATED",
           ),
+          object : ParameterizedTypeReference<DuplicateErrorResponse<SentencingAdjustmentNomisMapping>>() {},
         )
       }
 
@@ -895,6 +898,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
         whenever(
           sentencingAdjustmentsMappingService.createMapping(
             any(),
+            eq(object : ParameterizedTypeReference<DuplicateErrorResponse<SentencingAdjustmentNomisMapping>>() {}),
           ),
         ).thenThrow(
           RuntimeException("something went wrong"),

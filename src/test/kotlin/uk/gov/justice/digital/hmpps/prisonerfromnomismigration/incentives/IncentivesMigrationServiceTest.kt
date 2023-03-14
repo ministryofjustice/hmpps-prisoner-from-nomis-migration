@@ -26,10 +26,12 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
+import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.ReviewType.MIGRATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.CANCEL_MIGRATION
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_BY_PAGE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_ENTITIES
@@ -911,6 +913,7 @@ internal class IncentivesMigrationServiceTest {
           label = "2020-05-23T11:30:00",
           mappingType = "MIGRATED",
         ),
+        object : ParameterizedTypeReference<DuplicateErrorResponse<IncentiveNomisMapping>>() {},
       )
     }
 
@@ -933,7 +936,7 @@ internal class IncentivesMigrationServiceTest {
         )
         whenever(incentivesService.migrateIncentive(any(), any())).thenReturn(CreateIncentiveIEPResponse(999L))
 
-        whenever(incentiveMappingService.createMapping(any())).thenThrow(
+        whenever(incentiveMappingService.createMapping(any(), any())).thenThrow(
           RuntimeException("something went wrong"),
         )
 

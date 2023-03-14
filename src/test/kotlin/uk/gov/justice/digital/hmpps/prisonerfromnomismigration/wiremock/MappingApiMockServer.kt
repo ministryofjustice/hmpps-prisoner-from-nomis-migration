@@ -481,7 +481,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
               """{
               "moreInfo": 
               {
-                "existingIncentive" :  {
+                "existing" :  {
                   "incentiveId": $existingIncentiveId,
                   "nomisBookingId": $nomisBookingId,
                   "nomisIncentiveSequence": $nomisSequence,
@@ -489,7 +489,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
                   "whenCreated": "2022-02-14T09:58:45",
                   "mappingType": "MIGRATED"
                  },
-                 "duplicateIncentive" : {
+                 "duplicate" : {
                   "incentiveId": $duplicateIncentiveId,
                   "nomisBookingId": $nomisBookingId,
                   "nomisIncentiveSequence": $nomisSequence,
@@ -643,7 +643,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
               """{
               "moreInfo": 
               {
-                "existingAdjustment" :  {
+                "existing" :  {
                   "adjustmentId": "$existingAdjustmentId",
                   "nomisAdjustmentId": $nomisAdjustmentId,
                   "nomisAdjustmentCategory": "SENTENCE",
@@ -651,7 +651,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
                   "whenCreated": "2022-02-14T09:58:45",
                   "mappingType": "MIGRATED"
                  },
-                 "duplicateAdjustment" : {
+                 "duplicate" : {
                   "adjustmentId": "$duplicateAdjustmentId",
                   "nomisAdjustmentId": $nomisAdjustmentId,
                   "nomisAdjustmentCategory": "SENTENCE",

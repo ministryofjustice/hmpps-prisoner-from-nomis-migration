@@ -10,7 +10,9 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
+import org.springframework.core.ParameterizedTypeReference
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 
 private const val ADJUSTMENT_ID = "05b332ad-58eb-4ec2-963c-c9c927856788"
@@ -35,6 +37,7 @@ class SentencingAdjustmentsMappingServiceTest {
             adjustmentId = ADJUSTMENT_ID,
             mappingType = "NOMIS_CREATED",
           ),
+          object : ParameterizedTypeReference<DuplicateErrorResponse<SentencingAdjustmentNomisMapping>>() {},
         )
       }
 
@@ -57,6 +60,7 @@ class SentencingAdjustmentsMappingServiceTest {
             adjustmentId = ADJUSTMENT_ID,
             mappingType = "NOMIS_CREATED",
           ),
+          object : ParameterizedTypeReference<DuplicateErrorResponse<SentencingAdjustmentNomisMapping>>() {},
         )
       }
 

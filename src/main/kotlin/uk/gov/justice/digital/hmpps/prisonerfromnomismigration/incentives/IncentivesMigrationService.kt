@@ -4,10 +4,12 @@ import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incentives.ReviewType.MIGRATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.IncentiveId
@@ -22,10 +24,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationM
 
 @Service
 class IncentivesMigrationService(
-  private val queueService: MigrationQueueService,
+  queueService: MigrationQueueService,
   private val nomisApiService: NomisApiService,
   migrationHistoryService: MigrationHistoryService,
-  private val telemetryClient: TelemetryClient,
+  telemetryClient: TelemetryClient,
   auditService: AuditService,
   private val incentivesService: IncentivesService,
   private val incentiveMappingService: IncentiveMappingService,
@@ -134,19 +136,20 @@ class IncentivesMigrationService(
         label = context.migrationId,
         mappingType = "MIGRATED",
       ),
+      object : ParameterizedTypeReference<DuplicateErrorResponse<IncentiveNomisMapping>>() {},
     ).also {
       if (it.isError) {
-        val duplicateErrorDetails = (it.errorResponse as DuplicateIncentiveErrorResponse).moreInfo
+        val duplicateErrorDetails = (it.errorResponse!!).moreInfo
         telemetryClient.trackEvent(
           "nomis-migration-incentive-duplicate",
           mapOf<String, String>(
             "migrationId" to context.migrationId,
-            "duplicateIncentiveId" to duplicateErrorDetails.duplicateIncentive.incentiveId.toString(),
-            "duplicateNomisBookingId" to duplicateErrorDetails.duplicateIncentive.nomisBookingId.toString(),
-            "duplicateNomisSequence" to duplicateErrorDetails.duplicateIncentive.nomisIncentiveSequence.toString(),
-            "existingIncentiveId" to duplicateErrorDetails.existingIncentive.incentiveId.toString(),
-            "existingNomisBookingId" to duplicateErrorDetails.existingIncentive.nomisBookingId.toString(),
-            "existingNomisSequence" to duplicateErrorDetails.existingIncentive.nomisIncentiveSequence.toString(),
+            "duplicateIncentiveId" to duplicateErrorDetails.duplicate.incentiveId.toString(),
+            "duplicateNomisBookingId" to duplicateErrorDetails.duplicate.nomisBookingId.toString(),
+            "duplicateNomisSequence" to duplicateErrorDetails.duplicate.nomisIncentiveSequence.toString(),
+            "existingIncentiveId" to duplicateErrorDetails.existing.incentiveId.toString(),
+            "existingNomisBookingId" to duplicateErrorDetails.existing.nomisBookingId.toString(),
+            "existingNomisSequence" to duplicateErrorDetails.existing.nomisIncentiveSequence.toString(),
             "durationMinutes" to context.durationMinutes().toString(),
           ),
           null,
