@@ -58,37 +58,6 @@ class IncentivesMigrationService(
     )
   }
 
-  suspend fun migrateIncentive(context: MigrationContext<IncentiveId>) {
-    val (bookingId, sequence) = context.body
-
-    incentiveMappingService.findNomisIncentiveMapping(bookingId, sequence)?.run {
-      log.info("Will not migrate incentive since it is migrated already, Booking id is ${context.body.bookingId}, sequence ${context.body.sequence}, incentive id is ${this.incentiveId} as part migration ${this.label ?: "NONE"} (${this.mappingType})")
-    }
-      ?: run {
-        val iep = nomisApiService.getIncentive(bookingId, sequence)
-        val migratedIncentive = incentivesService.migrateIncentive(iep.toIncentive(reviewType = MIGRATED), bookingId)
-          .also {
-            createIncentiveMapping(
-              bookingId,
-              nomisIncentiveSequence = sequence,
-              incentiveId = it.id,
-              context = context,
-            )
-          }
-        telemetryClient.trackEvent(
-          "incentives-migration-entity-migrated",
-          mapOf(
-            "migrationId" to context.migrationId,
-            "bookingId" to bookingId.toString(),
-            "sequence" to sequence.toString(),
-            "incentiveId" to migratedIncentive.id.toString(),
-            "level" to iep.iepLevel.code,
-          ),
-          null,
-        )
-      }
-  }
-
   override suspend fun migrateNomisEntity(context: MigrationContext<IncentiveId>) {
     log.info("attempting to migrate ${context.body}")
     val nomisBookingId = context.body.bookingId
