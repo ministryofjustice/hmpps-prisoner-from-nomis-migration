@@ -1005,7 +1005,7 @@ internal class VisitsMigrationServiceTest {
       )
 
       verify(telemetryClient).trackEvent(
-        eq("nomis-migration-visit-migrated"),
+        eq("visits-migration-entity-migrated"),
         check {
           assertThat(it["migrationId"]).isEqualTo("2020-05-23T11:30:00")
           assertThat(it["prisonId"]).isEqualTo("BXI")
@@ -1048,7 +1048,7 @@ internal class VisitsMigrationServiceTest {
         )
 
         verify(telemetryClient).trackEvent(
-          eq("nomis-migration-visit-migrated"),
+          eq("visits-migration-entity-migrated"),
           check {
             assertThat(it["migrationId"]).isEqualTo("2020-05-23T11:30:00")
             assertThat(it["prisonId"]).isEqualTo("BXI")
@@ -1112,7 +1112,7 @@ internal class VisitsMigrationServiceTest {
         )
 
         verify(telemetryClient).trackEvent(
-          eq("nomis-migration-visit-migrated"),
+          eq("visits-migration-entity-migrated"),
           check {
             assertThat(LocalDateTime.parse(it["startDateTime"])).isEqualTo(yesterdayDateTime)
             assertThat(it["room"]).isEqualTo("UNKNOWN")
@@ -1910,7 +1910,7 @@ internal class VisitsMigrationServiceTest {
         )
 
         verify(telemetryClient).trackEvent(
-          eq("nomis-migration-visit-migrated"),
+          eq("visits-migration-entity-migrated"),
           check {
             assertThat(it["migrationId"]).isEqualTo("2020-05-23T11:30:00")
             assertThat(it["prisonId"]).isEqualTo("BXI")
