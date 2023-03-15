@@ -84,7 +84,7 @@ class SentencingAdjustmentsMigrationService(
               )
             }
         telemetryClient.trackEvent(
-          "sentencing-adjustment-migration-entity-migrated",
+          "sentencing-adjustments-migration-entity-migrated",
           mapOf(
             "nomisAdjustmentId" to nomisAdjustmentId.toString(),
             "nomisAdjustmentCategory" to nomisAdjustmentCategory,

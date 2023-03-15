@@ -81,7 +81,7 @@ class IncentivesMigrationService(
               )
             }
         telemetryClient.trackEvent(
-          "nomis-migration-incentive-migrated",
+          "incentives-migration-entity-migrated",
           mapOf(
             "incentiveId" to incentiveIEPResponse.id.toString(),
             "migrationId" to context.migrationId,

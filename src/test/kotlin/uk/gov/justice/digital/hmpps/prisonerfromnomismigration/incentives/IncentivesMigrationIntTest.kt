@@ -154,7 +154,7 @@ class IncentivesMigrationIntTest : SqsIntegrationTestBase() {
       }
 
       verify(telemetryClient).trackEvent(eq("incentives-migration-started"), any(), isNull())
-      verify(telemetryClient, times(26)).trackEvent(eq("nomis-migration-incentive-migrated"), any(), isNull())
+      verify(telemetryClient, times(26)).trackEvent(eq("incentives-migration-entity-migrated"), any(), isNull())
 
       await untilAsserted {
         webTestClient.get().uri("/migrate/incentives/history")

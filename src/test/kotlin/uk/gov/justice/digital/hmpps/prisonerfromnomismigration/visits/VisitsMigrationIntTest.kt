@@ -165,16 +165,16 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
       await untilCallTo { mappingApi.createVisitMappingCount() } matches { it == 26 }
 
       await untilAsserted {
-        verify(telemetryClient).trackEvent(eq("nomis-migration-visits-started"), any(), isNull())
+        verify(telemetryClient).trackEvent(eq("visits-migration-started"), any(), isNull())
       }
 
       await untilAsserted {
-        verify(telemetryClient, times(26)).trackEvent(eq("nomis-migration-visit-migrated"), any(), isNull())
+        verify(telemetryClient, times(26)).trackEvent(eq("visits-migration-entity-migrated"), any(), isNull())
       }
 
       await.atMost(Duration.ofSeconds(31)) untilAsserted {
         verify(telemetryClient).trackEvent(
-          eq("nomis-migration-visits-completed"),
+          eq("visits-migration-completed"),
           any(),
           isNull(),
         )
@@ -228,6 +228,51 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
 
       // should retry to create mapping twice
       mappingApi.verifyCreateMappingVisitIds(arrayOf(1L), times = 2)
+    }
+
+    @Test
+    internal fun `it will not retry after a 409 (duplicate visit written to Visits API)`() {
+      nomisApi.stubGetVisitsInitialCount(1)
+      nomisApi.stubMultipleGetVisitsCounts(totalElements = 1, pageSize = 10)
+      nomisApi.stubMultipleGetVisits(totalElements = 1)
+      mappingApi.stubVisitsCreateConflict(existingVsipId = 12, duplicateVsipId = 654321, nomisVisitId = 1)
+      visitsApi.stubCreateVisit()
+
+      webTestClient.post().uri("/migrate/visits")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
+        .header("Content-Type", "application/json")
+        .body(
+          BodyInserters.fromValue(
+            """
+            {
+            }
+            """.trimIndent(),
+          ),
+        )
+        .exchange()
+        .expectStatus().isAccepted
+
+      // wait for all mappings to be created before verifying
+      await untilCallTo { mappingApi.createVisitMappingCount() } matches { it == 1 }
+
+      // check that one incentive is created
+      assertThat(visitsApi.createVisitCount())
+        .isEqualTo(1)
+
+      // doesn't retry
+      mappingApi.verifyCreateMappingVisitIds(arrayOf(1), times = 1)
+
+      verify(telemetryClient).trackEvent(
+        eq("nomis-migration-visit-duplicate"),
+        org.mockito.kotlin.check {
+          assertThat(it["migrationId"]).isNotNull
+          assertThat(it["existingVsipId"]).isEqualTo("12")
+          assertThat(it["duplicateVsipId"]).isEqualTo("654321")
+          assertThat(it["existingNomisId"]).isEqualTo("1")
+          assertThat(it["duplicateNomisId"]).isEqualTo("1")
+        },
+        isNull(),
+      )
     }
   }
 
