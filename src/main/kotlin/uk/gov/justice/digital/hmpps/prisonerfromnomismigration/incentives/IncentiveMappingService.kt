@@ -51,12 +51,3 @@ data class IncentiveNomisMapping(
   val label: String? = null,
   val mappingType: String,
 )
-
-class DuplicateIncentiveErrorResponse(
-  val moreInfo: DuplicateIncentiveErrorContent,
-)
-
-data class DuplicateIncentiveErrorContent(
-  val duplicateIncentive: IncentiveNomisMapping,
-  val existingIncentive: IncentiveNomisMapping,
-)

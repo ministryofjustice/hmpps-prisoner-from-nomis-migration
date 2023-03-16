@@ -504,6 +504,42 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubVisitsCreateConflict(
+    existingVsipId: Long = 10,
+    duplicateVsipId: Long = 11,
+    nomisVisitId: Long = 123,
+  ) {
+    stubFor(
+      post(urlPathEqualTo("/mapping/visits"))
+        .willReturn(
+          aResponse()
+            .withStatus(409)
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
+              "moreInfo": 
+              {
+                "existing" :  {
+                  "vsipId": $existingVsipId,
+                  "nomisId": $nomisVisitId,
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "MIGRATED"
+                 },
+                 "duplicate" : {
+                  "vsipId": $duplicateVsipId,
+                  "nomisId": $nomisVisitId,
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "MIGRATED"
+                  }
+              }
+              }""",
+            ),
+        ),
+    )
+  }
+
   fun stubGetNomisSentencingAdjustment(
     adjustmentCategory: String = "SENTENCE",
     nomisAdjustmentId: Long = 987L,

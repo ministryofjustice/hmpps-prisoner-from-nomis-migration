@@ -19,9 +19,11 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
+import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpStatus
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 
 @SpringAPIServiceTest
@@ -112,25 +114,29 @@ internal class VisitMappingServiceTest {
     }
 
     @Test
-    internal fun `will pass VSIP visit id, migration Id and MIGRATED indicator to mapping service`(): Unit = runBlocking {
-      visitMappingService.createNomisVisitMapping(1234, "5678", "2020-01-01T00:00:00")
+    internal fun `will pass VSIP visit id, migration Id and MIGRATED indicator to mapping service`(): Unit =
+      runBlocking {
+        visitMappingService.createMapping(
+          VisitNomisMapping(1234, "5678", "2020-01-01T00:00:00", mappingType = "MIGRATED"),
+          errorJavaClass = object : ParameterizedTypeReference<DuplicateErrorResponse<VisitNomisMapping>>() {},
+        )
 
-      mappingApi.verify(
-        postRequestedFor(urlEqualTo("/mapping/visits"))
-          .withRequestBody(
-            equalToJson(
-              """
+        mappingApi.verify(
+          postRequestedFor(urlEqualTo("/mapping/visits"))
+            .withRequestBody(
+              equalToJson(
+                """
             {
               "nomisId": 1234,
               "vsipId": "5678",
               "label": "2020-01-01T00:00:00",
               "mappingType": "MIGRATED"
             }
-              """.trimIndent(),
+                """.trimIndent(),
+              ),
             ),
-          ),
-      )
-    }
+        )
+      }
   }
 
   @Nested

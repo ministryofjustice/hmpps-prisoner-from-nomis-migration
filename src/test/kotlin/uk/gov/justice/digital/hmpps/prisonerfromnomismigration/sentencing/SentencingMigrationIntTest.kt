@@ -158,7 +158,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
       }
 
       verify(telemetryClient).trackEvent(eq("sentencing-adjustments-migration-started"), any(), isNull())
-      verify(telemetryClient, times(26)).trackEvent(eq("sentencing-adjustment-migration-entity-migrated"), any(), isNull())
+      verify(telemetryClient, times(26)).trackEvent(eq("sentencing-adjustments-migration-entity-migrated"), any(), isNull())
 
       await untilAsserted {
         webTestClient.get().uri("/migrate/sentencing/history")

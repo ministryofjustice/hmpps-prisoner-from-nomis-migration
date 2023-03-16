@@ -67,7 +67,7 @@ class VisitMigrationResource(
     @RequestBody @Valid
     migrationFilter: VisitsMigrationFilter,
   ) =
-    visitsMigrationService.migrateVisits(migrationFilter)
+    visitsMigrationService.startMigration(migrationFilter)
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_VISITS')")
   @GetMapping("/visits/history")

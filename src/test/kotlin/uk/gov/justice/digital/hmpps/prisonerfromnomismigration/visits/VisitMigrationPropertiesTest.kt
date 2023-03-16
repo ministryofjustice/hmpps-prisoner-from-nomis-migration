@@ -39,7 +39,7 @@ internal class VisitMigrationPropertiesTest {
     Builder()
       .apply { visitMigrationProperties.contribute(this) }
       .let {
-        it.build().details["last visits migration"] as Map<String, Any>
+        it.build().details["last VISITS migration"] as Map<String, Any>
       }
 
   @Nested
