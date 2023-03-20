@@ -12,28 +12,28 @@ import java.time.LocalDate
 class SentencingService(@Qualifier("sentencingApiWebClient") private val webClient: WebClient) {
   suspend fun migrateSentencingAdjustment(sentencingAdjustment: SentencingAdjustment): CreateSentencingAdjustmentResponse =
     webClient.post()
-      .uri("/migration/sentencing/adjustments")
+      .uri("/legacy/adjustments/migration")
       .bodyValue(sentencingAdjustment)
       .retrieve()
       .awaitBody()
 
   suspend fun createSentencingAdjustment(sentencingAdjustment: SentencingAdjustment): CreateSentencingAdjustmentResponse =
     webClient.post()
-      .uri("/synchronisation/sentencing/adjustments")
+      .uri("/legacy/adjustments")
       .bodyValue(sentencingAdjustment)
       .retrieve()
       .awaitBody()
 
   suspend fun updateSentencingAdjustment(adjustmentId: String, sentencingAdjustment: SentencingAdjustment): Unit =
     webClient.put()
-      .uri("/synchronisation/sentencing/adjustments/$adjustmentId")
+      .uri("/legacy/adjustments/$adjustmentId")
       .bodyValue(sentencingAdjustment)
       .retrieve()
       .awaitBody()
 
   suspend fun deleteSentencingAdjustment(adjustmentId: String): Unit =
     webClient.delete()
-      .uri("/synchronisation/sentencing/adjustments/$adjustmentId")
+      .uri("/legacy/adjustments/$adjustmentId")
       .retrieve()
       .awaitBody()
 }

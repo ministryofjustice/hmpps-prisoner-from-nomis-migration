@@ -26,7 +26,7 @@ class MockSentencingResource {
   }
 
   @PreAuthorize("hasRole('ROLE_SENTENCING_SYNC')")
-  @PostMapping("/migration/sentencing/adjustments")
+  @PostMapping("/legacy/adjustments/migration")
   @Operation(hidden = true)
   suspend fun createAdjustmentForMigration(
     @RequestBody @Valid
@@ -37,7 +37,7 @@ class MockSentencingResource {
     return MockCreateAdjustmentResponse(id)
   }
 
-  @PostMapping("/synchronisation/sentencing/adjustments")
+  @PostMapping("/legacy/adjustments")
   @Operation(hidden = true)
   suspend fun createAdjustmentForSynchronisation(
     @RequestBody @Valid
@@ -48,7 +48,7 @@ class MockSentencingResource {
     return MockCreateAdjustmentResponse(id)
   }
 
-  @PutMapping("/synchronisation/sentencing/adjustments/{adjustmentId}")
+  @PutMapping("/legacy/adjustments/{adjustmentId}")
   @Operation(hidden = true)
   suspend fun updateAdjustmentForSynchronisation(
     @PathVariable adjustmentId: String,
@@ -58,7 +58,7 @@ class MockSentencingResource {
     log.info("Updated adjustment for synchronisation with id $adjustmentId for booking ${adjustmentRequest.bookingId}. Request was $adjustmentRequest")
   }
 
-  @DeleteMapping("/synchronisation/sentencing/adjustments/{adjustmentId}")
+  @DeleteMapping("/legacy/adjustments/{adjustmentId}")
   @Operation(hidden = true)
   suspend fun deleteAdjustmentForSynchronisation(
     @PathVariable adjustmentId: String,
