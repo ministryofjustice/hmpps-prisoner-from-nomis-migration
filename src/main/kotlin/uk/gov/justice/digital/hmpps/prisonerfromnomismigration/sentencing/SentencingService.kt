@@ -40,10 +40,10 @@ class SentencingService(@Qualifier("sentencingApiWebClient") private val webClie
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class SentencingAdjustment(
-  // will change once Sentencing API implemented
   val bookingId: Long,
+  val offenderId: String,
   val sentenceSequence: Long? = null,
-  val adjustmentType: String,
+  val adjustmentType: String, // LegacyAdjustmentType enum in AdjustmentsApi
   @JsonFormat(pattern = "yyyy-MM-dd")
   val adjustmentDate: LocalDate?,
   @JsonFormat(pattern = "yyyy-MM-dd")

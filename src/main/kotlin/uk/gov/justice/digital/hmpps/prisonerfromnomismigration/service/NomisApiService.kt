@@ -252,6 +252,7 @@ data class NomisIncentive(
 data class NomisAdjustment(
   val id: Long,
   val bookingId: Long,
+  val offenderNo: String,
   val sentenceSequence: Long? = null,
   val adjustmentType: NomisCodeDescription,
   val adjustmentDate: LocalDate?,
@@ -271,6 +272,7 @@ data class NomisAdjustment(
     adjustmentDays = adjustmentDays,
     comment = comment,
     active = active,
+    offenderId = offenderNo,
   )
   fun getAdjustmentCategory() = sentenceSequence?.let { "SENTENCE" } ?: "KEY_DATE"
 }
