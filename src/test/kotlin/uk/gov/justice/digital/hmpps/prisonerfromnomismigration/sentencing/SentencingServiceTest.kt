@@ -43,6 +43,7 @@ internal class SentencingServiceTest {
             adjustmentDays = 99,
             comment = "Remand added",
             active = true,
+            offenderId = "G4803UT",
           ),
         )
       }
@@ -61,6 +62,7 @@ internal class SentencingServiceTest {
       sentencingApi.verify(
         postRequestedFor(urlEqualTo("/migration/sentencing/adjustments"))
           .withRequestBody(WireMock.matchingJsonPath("bookingId", equalTo("1234")))
+          .withRequestBody(WireMock.matchingJsonPath("offenderId", equalTo("G4803UT")))
           .withRequestBody(WireMock.matchingJsonPath("sentenceSequence", equalTo("2")))
           .withRequestBody(WireMock.matchingJsonPath("adjustmentType", equalTo("RX")))
           .withRequestBody(WireMock.matchingJsonPath("adjustmentDate", equalTo("2022-01-01")))
@@ -89,6 +91,7 @@ internal class SentencingServiceTest {
             adjustmentDays = 99,
             comment = "Remand added",
             active = true,
+            offenderId = "G4803UT",
           ),
         )
       }
@@ -107,6 +110,7 @@ internal class SentencingServiceTest {
       sentencingApi.verify(
         postRequestedFor(urlEqualTo("/synchronisation/sentencing/adjustments"))
           .withRequestBody(WireMock.matchingJsonPath("bookingId", equalTo("1234")))
+          .withRequestBody(WireMock.matchingJsonPath("offenderId", equalTo("G4803UT")))
           .withRequestBody(WireMock.matchingJsonPath("sentenceSequence", equalTo("2")))
           .withRequestBody(WireMock.matchingJsonPath("adjustmentType", equalTo("RX")))
           .withRequestBody(WireMock.matchingJsonPath("adjustmentDate", equalTo("2022-01-01")))
@@ -136,6 +140,7 @@ internal class SentencingServiceTest {
             adjustmentDays = 99,
             comment = "Remand added",
             active = true,
+            offenderId = "G4803UT",
           ),
         )
       }
@@ -154,6 +159,7 @@ internal class SentencingServiceTest {
       sentencingApi.verify(
         putRequestedFor(urlEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID"))
           .withRequestBody(WireMock.matchingJsonPath("bookingId", equalTo("1234")))
+          .withRequestBody(WireMock.matchingJsonPath("offenderId", equalTo("G4803UT")))
           .withRequestBody(WireMock.matchingJsonPath("sentenceSequence", equalTo("2")))
           .withRequestBody(WireMock.matchingJsonPath("adjustmentType", equalTo("RX")))
           .withRequestBody(WireMock.matchingJsonPath("adjustmentDate", equalTo("2022-01-01")))

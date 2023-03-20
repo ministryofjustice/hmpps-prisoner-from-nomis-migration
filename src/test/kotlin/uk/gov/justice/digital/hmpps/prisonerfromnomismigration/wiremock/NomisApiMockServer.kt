@@ -644,6 +644,7 @@ private fun getAdjustmentCategory(it: Long) = if (it % 2L == 0L) "KEY_DATE" else
 
 private fun sentenceAdjustmentResponse(
   bookingId: Long = 2,
+  offenderNo: String = "G4803UT",
   sentenceAdjustmentId: Long = 3,
   hiddenForUsers: Boolean = false,
 ): String {
@@ -651,6 +652,7 @@ private fun sentenceAdjustmentResponse(
 {
   "bookingId":$bookingId,
   "id":$sentenceAdjustmentId,
+  "offenderNo": "$offenderNo",
   "sentenceSequence": 0,
   "commentText":"a comment",
   "adjustmentDate":"2021-10-06",
@@ -670,11 +672,13 @@ private fun sentenceAdjustmentResponse(
 private fun keyDateAdjustmentResponse(
   bookingId: Long = 2,
   keyDateAdjustmentId: Long = 3,
+  offenderNo: String = "G4803UT",
 ): String {
   return """
 {
   "bookingId":$bookingId,
   "id":$keyDateAdjustmentId,
+  "offenderNo": "$offenderNo",
   "commentText":"a comment",
   "adjustmentDate":"2021-10-06",
   "adjustmentFromDate":"2021-10-07",

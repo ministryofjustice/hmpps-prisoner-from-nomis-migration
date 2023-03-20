@@ -853,6 +853,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
             comment = "a comment",
             active = true,
             adjustmentType = "ADA",
+            offenderId = "G4803UT",
           ),
         ),
       )
@@ -986,6 +987,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
 fun aNomisSentenceAdjustment(
   id: Long = 1,
   bookingId: Long = 606,
+  offenderNo: String = "G4803UT",
   sentenceSequence: Long = 2,
   adjustmentType: NomisCodeDescription = NomisCodeDescription(code = "ADA", "type description"),
   adjustmentDate: LocalDate = LocalDate.parse("2020-01-01"),
@@ -997,6 +999,7 @@ fun aNomisSentenceAdjustment(
 ) = NomisAdjustment(
   id = id,
   bookingId = bookingId,
+  offenderNo = offenderNo,
   sentenceSequence = sentenceSequence,
   adjustmentType = adjustmentType,
   adjustmentDate = adjustmentDate,
