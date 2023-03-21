@@ -853,7 +853,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
             comment = "a comment",
             active = true,
             adjustmentType = "ADA",
-            offenderId = "G4803UT",
+            offenderNo = "G4803UT",
           ),
         ),
       )

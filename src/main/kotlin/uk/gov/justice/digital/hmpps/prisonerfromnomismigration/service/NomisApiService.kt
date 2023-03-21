@@ -272,7 +272,7 @@ data class NomisAdjustment(
     adjustmentDays = adjustmentDays,
     comment = comment,
     active = active,
-    offenderId = offenderNo,
+    offenderNo = offenderNo,
   )
   fun getAdjustmentCategory() = sentenceSequence?.let { "SENTENCE" } ?: "KEY_DATE"
 }
