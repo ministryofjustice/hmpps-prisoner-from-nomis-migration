@@ -50,7 +50,7 @@ class SentencingApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubCreateSentencingAdjustmentForMigration(sentenceAdjustmentId: String = "654321") {
     stubFor(
-      post(WireMock.urlMatching("/migration/sentencing/adjustments")).willReturn(
+      post(WireMock.urlMatching("/legacy/adjustments/migration")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.CREATED.value())
@@ -61,7 +61,7 @@ class SentencingApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubCreateSentencingAdjustmentForSynchronisation(sentenceAdjustmentId: String = "654321") {
     stubFor(
-      post(WireMock.urlMatching("/synchronisation/sentencing/adjustments")).willReturn(
+      post(WireMock.urlMatching("/legacy/adjustments")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.CREATED.value())
@@ -72,7 +72,7 @@ class SentencingApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubUpdateSentencingAdjustmentForSynchronisation(adjustmentId: String = "654321") {
     stubFor(
-      put(WireMock.urlMatching("/synchronisation/sentencing/adjustments/$adjustmentId")).willReturn(
+      put(WireMock.urlMatching("/legacy/adjustments/$adjustmentId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value()),
@@ -82,7 +82,7 @@ class SentencingApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubDeleteSentencingAdjustmentForSynchronisation(adjustmentId: String = "654321") {
     stubFor(
-      delete(WireMock.urlMatching("/synchronisation/sentencing/adjustments/$adjustmentId")).willReturn(
+      delete(WireMock.urlMatching("/legacy/adjustments/$adjustmentId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.NO_CONTENT.value()),
@@ -91,8 +91,8 @@ class SentencingApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun createSentenceAdjustmentCount() =
-    findAll(WireMock.postRequestedFor(WireMock.urlMatching("/migration/sentencing/adjustments"))).count()
+    findAll(WireMock.postRequestedFor(WireMock.urlMatching("/legacy/adjustments/migration"))).count()
 
   fun createSentenceAdjustmentForSynchronisationCount() =
-    findAll(WireMock.postRequestedFor(WireMock.urlMatching("/synchronisation/sentencing/adjustments"))).count()
+    findAll(WireMock.postRequestedFor(WireMock.urlMatching("/legacy/adjustments"))).count()
 }

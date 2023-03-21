@@ -27,7 +27,7 @@ internal class SentencingServiceTest {
   private lateinit var sentencingService: SentencingService
 
   @Nested
-  @DisplayName("POST /migration/sentencing/adjustments")
+  @DisplayName("POST /legacy/adjustments/migration")
   inner class CreateAdjustmentForMigration {
     @BeforeEach
     internal fun setUp() {
@@ -52,7 +52,7 @@ internal class SentencingServiceTest {
     @Test
     fun `should call api with OAuth2 token`() {
       sentencingApi.verify(
-        postRequestedFor(urlEqualTo("/migration/sentencing/adjustments"))
+        postRequestedFor(urlEqualTo("/legacy/adjustments/migration"))
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
@@ -60,7 +60,7 @@ internal class SentencingServiceTest {
     @Test
     fun `will pass data to the api`() {
       sentencingApi.verify(
-        postRequestedFor(urlEqualTo("/migration/sentencing/adjustments"))
+        postRequestedFor(urlEqualTo("/legacy/adjustments/migration"))
           .withRequestBody(WireMock.matchingJsonPath("bookingId", equalTo("1234")))
           .withRequestBody(WireMock.matchingJsonPath("offenderId", equalTo("G4803UT")))
           .withRequestBody(WireMock.matchingJsonPath("sentenceSequence", equalTo("2")))
@@ -75,7 +75,7 @@ internal class SentencingServiceTest {
   }
 
   @Nested
-  @DisplayName("POST /synchronisation/sentencing/adjustments")
+  @DisplayName("POST /legacy/adjustments")
   inner class CreateAdjustmentForSynchronisation {
     @BeforeEach
     internal fun setUp() {
@@ -100,7 +100,7 @@ internal class SentencingServiceTest {
     @Test
     fun `should call api with OAuth2 token`() {
       sentencingApi.verify(
-        postRequestedFor(urlEqualTo("/synchronisation/sentencing/adjustments"))
+        postRequestedFor(urlEqualTo("/legacy/adjustments"))
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
@@ -108,7 +108,7 @@ internal class SentencingServiceTest {
     @Test
     fun `will pass data to the api`() {
       sentencingApi.verify(
-        postRequestedFor(urlEqualTo("/synchronisation/sentencing/adjustments"))
+        postRequestedFor(urlEqualTo("/legacy/adjustments"))
           .withRequestBody(WireMock.matchingJsonPath("bookingId", equalTo("1234")))
           .withRequestBody(WireMock.matchingJsonPath("offenderId", equalTo("G4803UT")))
           .withRequestBody(WireMock.matchingJsonPath("sentenceSequence", equalTo("2")))
@@ -123,7 +123,7 @@ internal class SentencingServiceTest {
   }
 
   @Nested
-  @DisplayName("PUT /synchronisation/sentencing/adjustments")
+  @DisplayName("PUT /legacy/adjustments")
   inner class UpdateAdjustmentForSynchronisation {
     @BeforeEach
     internal fun setUp() {
@@ -149,7 +149,7 @@ internal class SentencingServiceTest {
     @Test
     fun `should call api with OAuth2 token`() {
       sentencingApi.verify(
-        putRequestedFor(urlEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID"))
+        putRequestedFor(urlEqualTo("/legacy/adjustments/$ADJUSTMENT_ID"))
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
@@ -157,7 +157,7 @@ internal class SentencingServiceTest {
     @Test
     fun `will pass data to the api`() {
       sentencingApi.verify(
-        putRequestedFor(urlEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID"))
+        putRequestedFor(urlEqualTo("/legacy/adjustments/$ADJUSTMENT_ID"))
           .withRequestBody(WireMock.matchingJsonPath("bookingId", equalTo("1234")))
           .withRequestBody(WireMock.matchingJsonPath("offenderId", equalTo("G4803UT")))
           .withRequestBody(WireMock.matchingJsonPath("sentenceSequence", equalTo("2")))
@@ -172,7 +172,7 @@ internal class SentencingServiceTest {
   }
 
   @Nested
-  @DisplayName("DELETE /synchronisation/sentencing/adjustments")
+  @DisplayName("DELETE /legacy/adjustments")
   inner class DeleteAdjustmentForSynchronisation {
     @BeforeEach
     internal fun setUp() {
@@ -187,7 +187,7 @@ internal class SentencingServiceTest {
     @Test
     fun `should call api with OAuth2 token`() {
       sentencingApi.verify(
-        deleteRequestedFor(urlEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID"))
+        deleteRequestedFor(urlEqualTo("/legacy/adjustments/$ADJUSTMENT_ID"))
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }

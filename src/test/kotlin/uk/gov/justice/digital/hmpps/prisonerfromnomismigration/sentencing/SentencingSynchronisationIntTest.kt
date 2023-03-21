@@ -91,7 +91,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID")),
           )
           nomisApi.verify(exactly(0), getRequestedFor(urlPathEqualTo("/sentence-adjustments/$NOMIS_ADJUSTMENT_ID")))
-          sentencingApi.verify(exactly(0), postRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments")))
+          sentencingApi.verify(exactly(0), postRequestedFor(urlPathEqualTo("/legacy/adjustments")))
         }
       }
 
@@ -133,7 +133,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will create the adjustment in the sentencing service`() {
           await untilAsserted {
-            sentencingApi.verify(postRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments")))
+            sentencingApi.verify(postRequestedFor(urlPathEqualTo("/legacy/adjustments")))
           }
         }
 
@@ -205,7 +205,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
             sentencingApi.verify(
               exactly(1),
-              postRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments")),
+              postRequestedFor(urlPathEqualTo("/legacy/adjustments")),
             )
           }
 
@@ -279,7 +279,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
             sentencingApi.verify(
               exactly(1),
-              postRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments")),
+              postRequestedFor(urlPathEqualTo("/legacy/adjustments")),
             )
           }
 
@@ -413,7 +413,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           nomisApi.verify(exactly(0), getRequestedFor(urlPathEqualTo("/sentence-adjustments/$NOMIS_ADJUSTMENT_ID")))
           sentencingApi.verify(
             exactly(0),
-            putRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID")),
+            putRequestedFor(urlPathEqualTo("/legacy/adjustments/$ADJUSTMENT_ID")),
           )
         }
       }
@@ -455,7 +455,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will update the adjustment in the sentencing service`() {
           await untilAsserted {
-            sentencingApi.verify(putRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID")))
+            sentencingApi.verify(putRequestedFor(urlPathEqualTo("/legacy/adjustments/$ADJUSTMENT_ID")))
           }
         }
 
@@ -571,7 +571,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         sentencingApi.verify(
           exactly(0),
-          deleteRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID")),
+          deleteRequestedFor(urlPathEqualTo("/legacy/adjustments/$ADJUSTMENT_ID")),
         )
         mappingApi.verify(
           exactly(0),
@@ -625,7 +625,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
         sentencingApi.verify(
           exactly(0),
-          deleteRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID")),
+          deleteRequestedFor(urlPathEqualTo("/legacy/adjustments/$ADJUSTMENT_ID")),
         )
         mappingApi.verify(
           exactly(0),
@@ -669,7 +669,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will delete the adjustment`() {
         await untilAsserted {
-          sentencingApi.verify(deleteRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID")))
+          sentencingApi.verify(deleteRequestedFor(urlPathEqualTo("/legacy/adjustments/$ADJUSTMENT_ID")))
         }
       }
 
@@ -748,7 +748,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID")),
           )
           nomisApi.verify(exactly(0), getRequestedFor(urlPathEqualTo("/sentence-adjustments/$NOMIS_ADJUSTMENT_ID")))
-          sentencingApi.verify(exactly(0), postRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments")))
+          sentencingApi.verify(exactly(0), postRequestedFor(urlPathEqualTo("/legacy/adjustments")))
         }
       }
 
@@ -789,7 +789,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will create the adjustment in the sentencing service`() {
           await untilAsserted {
-            sentencingApi.verify(postRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments")))
+            sentencingApi.verify(postRequestedFor(urlPathEqualTo("/legacy/adjustments")))
           }
         }
 
@@ -859,7 +859,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
             sentencingApi.verify(
               exactly(1),
-              postRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments")),
+              postRequestedFor(urlPathEqualTo("/legacy/adjustments")),
             )
           }
 
@@ -930,7 +930,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
             sentencingApi.verify(
               exactly(1),
-              postRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments")),
+              postRequestedFor(urlPathEqualTo("/legacy/adjustments")),
             )
           }
 
@@ -1015,7 +1015,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           nomisApi.verify(exactly(0), getRequestedFor(urlPathEqualTo("/key-date-adjustments/$NOMIS_ADJUSTMENT_ID")))
           sentencingApi.verify(
             exactly(0),
-            putRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID")),
+            putRequestedFor(urlPathEqualTo("/legacy/adjustments/$ADJUSTMENT_ID")),
           )
         }
       }
@@ -1056,7 +1056,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will update the adjustment in the sentencing service`() {
           await untilAsserted {
-            sentencingApi.verify(putRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID")))
+            sentencingApi.verify(putRequestedFor(urlPathEqualTo("/legacy/adjustments/$ADJUSTMENT_ID")))
           }
         }
 
@@ -1121,7 +1121,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         sentencingApi.verify(
           exactly(0),
-          deleteRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID")),
+          deleteRequestedFor(urlPathEqualTo("/legacy/adjustments/$ADJUSTMENT_ID")),
         )
         mappingApi.verify(
           exactly(0),
@@ -1173,7 +1173,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
         sentencingApi.verify(
           exactly(0),
-          deleteRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID")),
+          deleteRequestedFor(urlPathEqualTo("/legacy/adjustments/$ADJUSTMENT_ID")),
         )
         mappingApi.verify(
           exactly(0),
@@ -1216,7 +1216,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will delete the adjustment`() {
         await untilAsserted {
-          sentencingApi.verify(deleteRequestedFor(urlPathEqualTo("/synchronisation/sentencing/adjustments/$ADJUSTMENT_ID")))
+          sentencingApi.verify(deleteRequestedFor(urlPathEqualTo("/legacy/adjustments/$ADJUSTMENT_ID")))
         }
       }
 
