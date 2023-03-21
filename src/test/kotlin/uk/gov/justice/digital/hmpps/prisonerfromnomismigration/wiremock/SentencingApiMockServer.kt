@@ -54,7 +54,7 @@ class SentencingApiMockServer : WireMockServer(WIREMOCK_PORT) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.CREATED.value())
-          .withBody("""{"id": "$sentenceAdjustmentId"}"""),
+          .withBody("""{"adjustmentId": "$sentenceAdjustmentId"}"""),
       ),
     )
   }
@@ -65,7 +65,7 @@ class SentencingApiMockServer : WireMockServer(WIREMOCK_PORT) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.CREATED.value())
-          .withBody("""{"id": "$sentenceAdjustmentId"}"""),
+          .withBody("""{"adjustmentId": "$sentenceAdjustmentId"}"""),
       ),
     )
   }

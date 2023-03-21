@@ -61,5 +61,5 @@ data class SentencingAdjustment(
 )
 
 data class CreateSentencingAdjustmentResponse(
-  val id: String,
+  val adjustmentId: String,
 )
