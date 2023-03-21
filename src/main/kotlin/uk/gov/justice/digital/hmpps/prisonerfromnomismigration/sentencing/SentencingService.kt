@@ -10,9 +10,14 @@ import java.time.LocalDate
 
 @Service
 class SentencingService(@Qualifier("sentencingApiWebClient") private val webClient: WebClient) {
+  companion object {
+    const val LEGACY_CONTENT_TYPE = "application/vnd.nomis-offence+json"
+  }
+
   suspend fun migrateSentencingAdjustment(sentencingAdjustment: SentencingAdjustment): CreateSentencingAdjustmentResponse =
     webClient.post()
       .uri("/legacy/adjustments/migration")
+      .header("Content-Type", LEGACY_CONTENT_TYPE)
       .bodyValue(sentencingAdjustment)
       .retrieve()
       .awaitBody()
@@ -20,6 +25,7 @@ class SentencingService(@Qualifier("sentencingApiWebClient") private val webClie
   suspend fun createSentencingAdjustment(sentencingAdjustment: SentencingAdjustment): CreateSentencingAdjustmentResponse =
     webClient.post()
       .uri("/legacy/adjustments")
+      .header("Content-Type", LEGACY_CONTENT_TYPE)
       .bodyValue(sentencingAdjustment)
       .retrieve()
       .awaitBody()
@@ -27,6 +33,7 @@ class SentencingService(@Qualifier("sentencingApiWebClient") private val webClie
   suspend fun updateSentencingAdjustment(adjustmentId: String, sentencingAdjustment: SentencingAdjustment): Unit =
     webClient.put()
       .uri("/legacy/adjustments/$adjustmentId")
+      .header("Content-Type", LEGACY_CONTENT_TYPE)
       .bodyValue(sentencingAdjustment)
       .retrieve()
       .awaitBody()
@@ -41,7 +48,7 @@ class SentencingService(@Qualifier("sentencingApiWebClient") private val webClie
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class SentencingAdjustment(
   val bookingId: Long,
-  val offenderId: String,
+  val offenderNo: String,
   val sentenceSequence: Long? = null,
   val adjustmentType: String, // LegacyAdjustmentType enum in AdjustmentsApi
   @JsonFormat(pattern = "yyyy-MM-dd")
