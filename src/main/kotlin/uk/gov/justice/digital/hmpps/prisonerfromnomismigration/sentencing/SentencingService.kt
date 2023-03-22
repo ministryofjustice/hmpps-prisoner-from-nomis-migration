@@ -41,6 +41,7 @@ class SentencingService(@Qualifier("sentencingApiWebClient") private val webClie
   suspend fun deleteSentencingAdjustment(adjustmentId: String): Unit =
     webClient.delete()
       .uri("/legacy/adjustments/$adjustmentId")
+      .header("Content-Type", LEGACY_CONTENT_TYPE)
       .retrieve()
       .awaitBody()
 }
