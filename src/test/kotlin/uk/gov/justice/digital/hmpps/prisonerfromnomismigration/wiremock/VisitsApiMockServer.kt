@@ -1,13 +1,14 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 
 import com.github.tomakehurst.wiremock.WireMockServer
-import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.put
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
@@ -62,7 +63,7 @@ class VisitsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubCancelVisit(vsipReference: String) {
     stubFor(
-      put(urlEqualTo("/visits/$vsipReference/cancel")).willReturn(
+      put(urlEqualTo("/migrate-visits/$vsipReference/cancel")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value()),
@@ -71,11 +72,9 @@ class VisitsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun verifyCancelVisit(times: Int) {
-    NomisApiExtension.nomisApi.verify(
+    verify(
       times,
-      WireMock.getRequestedFor(
-        WireMock.urlPathEqualTo("/visits/.*/cancel"),
-      ),
+      putRequestedFor(urlPathMatching("/migrate-visits/.+?/cancel")),
     )
   }
 

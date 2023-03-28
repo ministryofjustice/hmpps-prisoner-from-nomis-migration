@@ -46,6 +46,7 @@ class VisitsSynchronisationIntTest : SqsIntegrationTestBase() {
           isNull(),
         )
       }
+      visitsApi.verifyCancelVisit(times = 1)
     }
 
     @Test
