@@ -311,6 +311,7 @@ internal class NomisApiServiceTest {
                     "description": "MDI-VISITS-OFF_VIS"
                 },
                 "commentText": "Not sure if this is the right place to be",
+                "createUserId": "aUser",
                 "whenCreated": "2021-10-25T09:00:00"
               }
               """.trimIndent(),

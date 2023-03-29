@@ -31,7 +31,7 @@ class VisitSynchronisationService(
           val vsipOutcome = getVsipOutcome(this@run) ?: VsipOutcome.CANCELLATION
           visitService.cancelVisit(
             visitReference = visitMapping.vsipId,
-            outcome = VsipOutcomeDto(vsipOutcome, "Cancelled by NOMIS"),
+            outcome = VsipOutcomeDto(modifyUserId ?: createUserId, vsipOutcome, "Cancelled by NOMIS"),
           )
 
           telemetryClient.trackEvent(

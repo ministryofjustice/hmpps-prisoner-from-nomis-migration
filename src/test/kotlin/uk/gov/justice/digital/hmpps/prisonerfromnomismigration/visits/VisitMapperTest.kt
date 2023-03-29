@@ -76,6 +76,7 @@ internal class VisitMapperTest {
       visitStatus = NomisCodeDescription(nomisStatusCode, nomisStatusCode),
       visitOutcome = nomisOutcomeCode?.let { NomisCodeDescription(nomisOutcomeCode, nomisOutcomeCode) },
       agencyInternalLocation = NomisCodeDescription("LEI", "desc"),
+      createUserId = "user1",
       whenCreated = LocalDateTime.now().plusDays(1),
     )
   }
