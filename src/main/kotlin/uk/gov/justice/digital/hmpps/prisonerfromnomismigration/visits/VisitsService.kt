@@ -31,6 +31,7 @@ class VisitsService(@Qualifier("visitsApiWebClient") private val webClient: WebC
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class CreateVsipVisit(
+  val actionedBy: String,
   val prisonerId: String,
   val prisonId: String,
   @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
@@ -88,6 +89,7 @@ enum class VisitRestriction(
 }
 
 class VsipOutcomeDto(
+  val actionedBy: String,
   val outcomeStatus: VsipOutcome,
   val text: String? = null,
 )

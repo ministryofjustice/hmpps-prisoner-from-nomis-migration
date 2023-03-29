@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits
 
+import com.github.tomakehurst.wiremock.client.WireMock
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.DisplayName
@@ -27,7 +28,7 @@ class VisitsSynchronisationIntTest : SqsIntegrationTestBase() {
     fun `will synchronise a visit cancellation after a nomis visit cancellation event`() {
       val message = validVisitCancellationMessage()
 
-      nomisApi.stubGetCancelledVisit(nomisVisitId = 9)
+      nomisApi.stubGetCancelledVisit(nomisVisitId = 9, modifyUserId = "user1")
       mappingApi.stubVisitMappingByNomisVisitId(nomisVisitId = 9, vsipId = vsipId)
       visitsApi.stubCancelVisit(vsipId)
       awsSqsVisitsOffenderEventsClient.sendMessage(visitsQueueOffenderEventsUrl, message)
@@ -46,6 +47,11 @@ class VisitsSynchronisationIntTest : SqsIntegrationTestBase() {
           isNull(),
         )
       }
+
+      visitsApi.verify(
+        WireMock.putRequestedFor(WireMock.urlEqualTo("/visits/$vsipId/cancel"))
+          .withRequestBody(WireMock.matchingJsonPath("actionedBy", WireMock.equalTo("user1"))),
+      )
       visitsApi.verifyCancelVisit(times = 1)
     }
 

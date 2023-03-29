@@ -255,6 +255,7 @@ class VisitsMigrationService(
       visitNotes = visitNotesSet,
       visitors = nomisVisit.visitors.map { v -> VsipVisitor(v.personId) }.toSet(),
       visitRestriction = dateAwareRoomMapping.restriction,
+      actionedBy = nomisVisit.modifyUserId ?: nomisVisit.createUserId,
       createDateTime = nomisVisit.whenCreated,
       modifyDateTime = nomisVisit.whenUpdated,
     )

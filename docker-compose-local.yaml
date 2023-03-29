@@ -1,20 +1,17 @@
 version: "3"
 services:
   localstack:
-    image: localstack/localstack:1.2.0
+    image: localstack/localstack:1.4
     networks:
       - hmpps
     container_name: hpfnm-local-localstack
+    restart: unless-stopped
     ports:
-      - "4566-4597:4566-4597"
+      - "4566:4566"
     environment:
       - SERVICES=sqs
-      - DOCKER_HOST=unix:///var/run/docker.sock
-      - DEFAULT_REGION=eu-west-2
-      - PORT_WEB_UI=${PORT_WEB_UI- }
     volumes:
-      - "${TMPDIR:-/tmp/localstack}:/tmp/localstack"
-      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
 
   migration-db:
     image: postgres
@@ -28,7 +25,6 @@ services:
       - POSTGRES_PASSWORD=migration
       - POSTGRES_USER=migration
       - POSTGRES_DB=migration
-
 
 networks:
   hmpps:
