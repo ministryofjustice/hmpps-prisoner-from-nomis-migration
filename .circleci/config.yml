@@ -16,7 +16,7 @@ jobs:
     executor:
       name: hmpps/java_localstack_postgres
       jdk_tag: "19.0"
-      localstack_tag: "1.2.0"
+      localstack_tag: "1.4"
       postgres_tag: "14"
       postgres_username: "migration"
       postgres_password: "migration"

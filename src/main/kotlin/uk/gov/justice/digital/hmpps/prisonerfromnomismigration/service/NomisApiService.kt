@@ -203,6 +203,7 @@ data class NomisVisit(
   val commentText: String? = null,
   val visitorConcernText: String? = null,
   val leadVisitor: NomisLeadVisitor? = null,
+  val createUserId: String,
   val modifyUserId: String? = null,
   val whenCreated: LocalDateTime,
   val whenUpdated: LocalDateTime? = null,

@@ -881,6 +881,7 @@ internal class VisitsMigrationServiceTest {
           visitOutcome = NomisCodeDescription(NomisCancellationOutcome.NO_ID.name, "No Id"),
           commentText = "This is a comment",
           visitorConcernText = "I'm concerned",
+          createUserId = "user1",
           whenCreated = LocalDateTime.parse("2020-01-01T09:00:00"),
           whenUpdated = LocalDateTime.parse("2020-01-02T14:00:00"),
         ),
@@ -1236,6 +1237,8 @@ internal class VisitsMigrationServiceTest {
             prisonerId = "A1234AA",
             startDateTime = LocalDateTime.parse("2020-01-01T10:00:00"),
             endDateTime = LocalDateTime.parse("2020-01-02T12:00:00"),
+            createUserId = "create-user",
+            modifyUserId = "modify-user",
           ),
         )
         whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
@@ -1287,6 +1290,43 @@ internal class VisitsMigrationServiceTest {
         verify(visitsService).createVisit(
           check {
             assertThat(it.endTimestamp).isEqualTo(LocalDateTime.parse("2020-01-02T12:00:00"))
+          },
+        )
+      }
+
+      @Test
+      internal fun `actioned by is copied`(): Unit = runBlocking {
+        verify(visitsService).createVisit(
+          check {
+            assertThat(it.actionedBy).isEqualTo("modify-user")
+          },
+        )
+      }
+
+      @Test
+      internal fun `actioned uses create if not modified`(): Unit = runBlocking {
+        whenever(nomisApiService.getVisit(456)).thenReturn(
+          aVisit(
+            agencyInternalLocation = NomisCodeDescription("OFF_VIS", "MDI-VISITS-OFF_VIS"),
+            prisonId = "BXI",
+            prisonerId = "A1234AA",
+            startDateTime = LocalDateTime.parse("2020-01-01T10:00:00"),
+            endDateTime = LocalDateTime.parse("2020-01-02T12:00:00"),
+            createUserId = "create-user",
+            modifyUserId = null,
+          ),
+        )
+        service.migrateNomisEntity(
+          MigrationContext(
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitId(456),
+          ),
+        )
+        verify(visitsService).createVisit(
+          check {
+            assertThat(it.actionedBy).isEqualTo("create-user")
           },
         )
       }
@@ -2000,6 +2040,8 @@ fun aVisit(
   visitType: NomisCodeDescription = NomisCodeDescription("SCON", "Social Contact"),
   visitStatus: NomisCodeDescription = NomisCodeDescription("SCH", "Scheduled"),
   visitId: Long = 123,
+  createUserId: String = "user1",
+  modifyUserId: String? = "user-modified",
 ) = NomisVisit(
   offenderNo = prisonerId,
   visitId = visitId,
@@ -2021,6 +2063,8 @@ fun aVisit(
   visitorConcernText = "this is concerning",
   /* no outcome as only visits with a status of Cancelled will have an outcome returned from nomis */
   leadVisitor = NomisLeadVisitor(4729570, fullName = "Vince Hoyland", telephones = listOf("0000 11111", "0000 22222")),
+  createUserId = createUserId,
+  modifyUserId = modifyUserId,
   whenUpdated = whenUpdated,
   whenCreated = whenCreated,
 )
