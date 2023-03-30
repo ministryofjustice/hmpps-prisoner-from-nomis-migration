@@ -1,7 +1,7 @@
 // import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "5.1.3-beta"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "5.1.3-beta-2"
   kotlin("plugin.spring") version "1.8.10"
   // id("org.openapi.generator") version "6.2.1"
 }
@@ -48,7 +48,7 @@ dependencies {
 
   implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:1.24.0")
 
-  testImplementation("io.swagger.parser.v3:swagger-parser:2.1.12")
+  testImplementation("io.swagger.parser.v3:swagger-parser:2.1.13")
   testImplementation("io.jsonwebtoken:jjwt-impl:0.11.5")
   testImplementation("io.jsonwebtoken:jjwt-jackson:0.11.5")
 
