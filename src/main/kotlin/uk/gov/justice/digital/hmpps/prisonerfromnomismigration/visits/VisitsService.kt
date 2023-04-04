@@ -90,6 +90,11 @@ enum class VisitRestriction(
 
 class VsipOutcomeDto(
   val actionedBy: String,
+  val cancelOutcome: VsipCancelOutcomeDto,
+
+)
+
+class VsipCancelOutcomeDto(
   val outcomeStatus: VsipOutcome,
   val text: String? = null,
 )

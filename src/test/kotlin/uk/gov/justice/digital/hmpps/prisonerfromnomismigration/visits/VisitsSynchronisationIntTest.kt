@@ -54,10 +54,10 @@ class VisitsSynchronisationIntTest : SqsIntegrationTestBase() {
       visitsApi.verify(
         putRequestedFor(urlEqualTo("/migrate-visits/$vsipId/cancel"))
           .withRequestBody(matchingJsonPath("actionedBy", equalTo("user1")))
-          .withRequestBody(matchingJsonPath("outcomeStatus", equalTo("PRISONER_CANCELLED")))
-          .withRequestBody(matchingJsonPath("text", equalTo("Cancelled by NOMIS"))),
+          .withRequestBody(matchingJsonPath("cancelOutcome.outcomeStatus", equalTo("PRISONER_CANCELLED")))
+          .withRequestBody(matchingJsonPath("cancelOutcome.text", equalTo("Cancelled by NOMIS"))),
       )
-      visitsApi.verifyCancelVisit(times = 1) // this call checks the verify itself is correct
+      visitsApi.verifyCancelVisit(times = 1) // this call checks that the verify check itself is correct
     }
 
     @Test
