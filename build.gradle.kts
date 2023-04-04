@@ -1,7 +1,7 @@
 // import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "5.1.3-beta"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "5.1.3"
   kotlin("plugin.spring") version "1.8.10"
   // id("org.openapi.generator") version "6.2.1"
 }
@@ -22,7 +22,6 @@ configurations {
 val r2dbcPostgresVersion by extra("0.9.2.RELEASE")
 
 repositories {
-  maven { url = uri("https://repo.spring.io/milestone") }
   mavenCentral()
 }
 dependencies {
@@ -30,10 +29,10 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-security")
   implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
   implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
-  implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:2.0.0-beta-13")
+  implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:2.0.0-beta-14")
   implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
 
-  implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.0.4")
+  implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.1.0")
 
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8")
@@ -48,12 +47,13 @@ dependencies {
 
   implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:1.24.0")
 
-  testImplementation("io.swagger.parser.v3:swagger-parser:2.1.12")
+  testImplementation("io.swagger.parser.v3:swagger-parser:2.1.13")
   testImplementation("io.jsonwebtoken:jjwt-impl:0.11.5")
   testImplementation("io.jsonwebtoken:jjwt-jackson:0.11.5")
 
   testImplementation("com.github.tomakehurst:wiremock-jre8-standalone:2.35.0")
   testImplementation("org.testcontainers:localstack:1.17.6")
+  testImplementation("com.amazonaws:aws-java-sdk-core:1.12.440")
   testImplementation("org.awaitility:awaitility-kotlin:4.2.0")
   testImplementation("org.testcontainers:postgresql:1.17.6")
   testImplementation("io.mockk:mockk:1.13.4")
