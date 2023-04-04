@@ -1,6 +1,9 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits
 
-import com.github.tomakehurst.wiremock.client.WireMock
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
+import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.DisplayName
@@ -49,9 +52,12 @@ class VisitsSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       visitsApi.verify(
-        WireMock.putRequestedFor(WireMock.urlEqualTo("/visits/$vsipId/cancel"))
-          .withRequestBody(WireMock.matchingJsonPath("actionedBy", WireMock.equalTo("user1"))),
+        putRequestedFor(urlEqualTo("/migrate-visits/$vsipId/cancel"))
+          .withRequestBody(matchingJsonPath("actionedBy", equalTo("user1")))
+          .withRequestBody(matchingJsonPath("outcomeStatus", equalTo("PRISONER_CANCELLED")))
+          .withRequestBody(matchingJsonPath("text", equalTo("Cancelled by NOMIS"))),
       )
+      visitsApi.verifyCancelVisit(times = 1) // this call checks the verify itself is correct
     }
 
     @Test
