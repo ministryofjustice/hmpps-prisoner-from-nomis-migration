@@ -90,6 +90,16 @@ class SentencingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubDeleteSentencingAdjustmentForSynchronisationNotFound(adjustmentId: String = "654321") {
+    stubFor(
+      delete(WireMock.urlMatching("/legacy/adjustments/$adjustmentId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.NOT_FOUND.value()),
+      ),
+    )
+  }
+
   fun createSentenceAdjustmentCount() =
     findAll(WireMock.postRequestedFor(WireMock.urlMatching("/legacy/adjustments/migration"))).count()
 

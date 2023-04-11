@@ -174,22 +174,42 @@ internal class SentencingServiceTest {
   @Nested
   @DisplayName("DELETE /legacy/adjustments")
   inner class DeleteAdjustmentForSynchronisation {
-    @BeforeEach
-    internal fun setUp() {
-      sentencingApi.stubDeleteSentencingAdjustmentForSynchronisation(adjustmentId = ADJUSTMENT_ID)
-      runBlocking {
-        sentencingService.deleteSentencingAdjustment(
-          ADJUSTMENT_ID,
+    @Nested
+    inner class AdjustmentExists {
+      @BeforeEach
+      internal fun setUp() {
+        sentencingApi.stubDeleteSentencingAdjustmentForSynchronisation(adjustmentId = ADJUSTMENT_ID)
+        runBlocking {
+          sentencingService.deleteSentencingAdjustment(
+            ADJUSTMENT_ID,
+          )
+        }
+      }
+
+      @Test
+      fun `should call api with OAuth2 token`() {
+        sentencingApi.verify(
+          deleteRequestedFor(urlEqualTo("/legacy/adjustments/$ADJUSTMENT_ID"))
+            .withHeader("Authorization", equalTo("Bearer ABCDE")),
         )
       }
     }
 
-    @Test
-    fun `should call api with OAuth2 token`() {
-      sentencingApi.verify(
-        deleteRequestedFor(urlEqualTo("/legacy/adjustments/$ADJUSTMENT_ID"))
-          .withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
+    @Nested
+    inner class AdjustmentAlreadyDeleted {
+      @BeforeEach
+      internal fun setUp() {
+        sentencingApi.stubDeleteSentencingAdjustmentForSynchronisationNotFound(adjustmentId = ADJUSTMENT_ID)
+      }
+
+      @Test
+      fun `should ignore 404 error`() {
+        runBlocking {
+          sentencingService.deleteSentencingAdjustment(
+            ADJUSTMENT_ID,
+          )
+        }
+      }
     }
   }
 }
