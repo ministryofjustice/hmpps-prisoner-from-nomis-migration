@@ -65,13 +65,6 @@ class SentencingAdjustmentsSynchronisationService(
   }
 
   suspend fun synchroniseSentenceAdjustmentDelete(event: SentenceAdjustmentOffenderEvent) {
-    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
-      telemetryClient.trackEvent(
-        "sentence-adjustment-delete-synchronisation-skipped",
-        event.toTelemetryProperties(),
-      )
-      return
-    }
     sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMapping(
       nomisAdjustmentId = event.adjustmentId,
       nomisAdjustmentCategory = "SENTENCE",
@@ -121,13 +114,6 @@ class SentencingAdjustmentsSynchronisationService(
   }
 
   suspend fun synchroniseKeyDateAdjustmentDelete(event: KeyDateAdjustmentOffenderEvent) {
-    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
-      telemetryClient.trackEvent(
-        "key-date-adjustment-delete-synchronisation-skipped",
-        event.toTelemetryProperties(),
-      )
-      return
-    }
     sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMapping(
       nomisAdjustmentId = event.adjustmentId,
       nomisAdjustmentCategory = "KEY-DATE",
