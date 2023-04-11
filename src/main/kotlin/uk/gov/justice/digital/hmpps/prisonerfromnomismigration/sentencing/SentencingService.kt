@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNotFound
 import java.time.LocalDate
 
 @Service
@@ -38,12 +39,13 @@ class SentencingService(@Qualifier("sentencingApiWebClient") private val webClie
       .retrieve()
       .awaitBody()
 
-  suspend fun deleteSentencingAdjustment(adjustmentId: String): Unit =
+  suspend fun deleteSentencingAdjustment(adjustmentId: String) {
     webClient.delete()
       .uri("/legacy/adjustments/$adjustmentId")
       .header("Content-Type", LEGACY_CONTENT_TYPE)
       .retrieve()
-      .awaitBody()
+      .awaitBodyOrNotFound<Unit>()
+  }
 }
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
