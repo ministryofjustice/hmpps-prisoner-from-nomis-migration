@@ -4,12 +4,10 @@ server:
 api.base.url:
   nomis: http://localhost:8082
   oauth: http://localhost:8090/auth
-  # Set to ourselves until new service is ready
   visits: http://localhost:8083
   visit.mapping: http://localhost:8084
   sentencing: http://localhost:8085
   mapping: http://localhost:8083
-  incentives: http://localhost:8083
 
 spring:
   r2dbc:

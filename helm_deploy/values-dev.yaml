@@ -13,21 +13,16 @@ generic-service:
     API_BASE_URL_NOMIS: https://nomis-prsner-dev.aks-dev-1.studio-hosting.service.justice.gov.uk
     API_BASE_URL_VISITS: https://visit-scheduler-dev.prison.service.justice.gov.uk
     API_BASE_URL_MAPPING: https://nomis-sync-prisoner-mapping-dev.hmpps.service.justice.gov.uk
-    API_BASE_URL_INCENTIVES: https://incentives-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_SENTENCING: https://adjustments-api-dev.hmpps.service.justice.gov.uk
 
 generic-prometheus-alerts:
   rdsAlertsDatabases:
     cloud-platform-bb7deb71226bc52e: "prisoner nomis migration"
   sqsAlertsQueueNames:
-    - "Digital-Prison-Services-dev-prisoner_from_nomis_iep_queue"
-    - "Digital-Prison-Services-dev-prisoner_from_nomis_iep_dl_queue"
     - "Digital-Prison-Services-dev-prisoner_from_nomis_visits_queue"
     - "Digital-Prison-Services-dev-prisoner_from_nomis_visits_dl_queue"
     - "Digital-Prison-Services-dev-prisoner_from_nomis_sentencing_queue"
     - "Digital-Prison-Services-dev-prisoner_from_nomis_sentencing_dl_queue"
-    - "syscon-devs-dev-migration_incentives_queue"
-    - "syscon-devs-dev-migration_incentives_dlq"
     - "syscon-devs-dev-migration_sentencing_queue"
     - "syscon-devs-dev-migration_sentencing_dlq"
     - "syscon-devs-dev-migration_visits_queue"

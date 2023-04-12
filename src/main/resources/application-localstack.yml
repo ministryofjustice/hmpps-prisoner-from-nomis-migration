@@ -4,9 +4,6 @@ hmpps.sqs:
     migrationvisits:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
-    migrationincentives:
-      queueName: ${random.uuid}
-      dlqName: ${random.uuid}
     migrationsentencing:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
@@ -14,9 +11,6 @@ hmpps.sqs:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
     eventvisits:
-      queueName: ${random.uuid}
-      dlqName: ${random.uuid}
-    eventincentives:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
     eventsentencing:

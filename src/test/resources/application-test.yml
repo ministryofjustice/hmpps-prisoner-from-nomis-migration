@@ -10,13 +10,9 @@ api.base.url:
   oauth: http://localhost:8090/auth
   visits: http://localhost:8082
   mapping: http://localhost:8083
-  incentives: http://localhost:8084
   sentencing: http://localhost:8085
 
 visits:
-  page:
-    size: 10
-incentives:
   page:
     size: 10
 sentencing:

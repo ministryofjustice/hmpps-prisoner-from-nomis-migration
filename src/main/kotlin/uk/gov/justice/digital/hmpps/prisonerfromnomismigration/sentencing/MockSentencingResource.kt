@@ -16,7 +16,7 @@ import java.time.LocalDate
 import kotlin.random.Random
 
 /**
- * This represents the possible interface for the incentives service.
+ * This represents the possible interface for the adjustments service.
  * This can be deleted once real service is available.
  */
 @RestController

@@ -255,7 +255,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
       // wait for all mappings to be created before verifying
       await untilCallTo { mappingApi.createVisitMappingCount() } matches { it == 1 }
 
-      // check that one incentive is created
+      // check that one visit is created
       assertThat(visitsApi.createVisitCount())
         .isEqualTo(1)
 
