@@ -20,11 +20,9 @@ import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.JwtAuthHelper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.LocalStackContainer.setLocalStackProperties
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.INCENTIVES_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SENTENCING_ADJUSTMENTS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VISITS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.HmppsAuthApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.IncentivesApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.SentencingApiExtension
@@ -38,7 +36,6 @@ import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
   HmppsAuthApiExtension::class,
   VisitsApiExtension::class,
   MappingApiExtension::class,
-  IncentivesApiExtension::class,
   SentencingApiExtension::class,
 )
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -51,28 +48,20 @@ class SqsIntegrationTestBase : TestBase() {
   private lateinit var hmppsQueueService: HmppsQueueService
 
   internal val visitsMigrationQueue by lazy { hmppsQueueService.findByQueueId(VISITS_QUEUE_ID) as HmppsQueue }
-  internal val incentivesMigrationQueue by lazy { hmppsQueueService.findByQueueId(INCENTIVES_QUEUE_ID) as HmppsQueue }
   internal val sentencingMigrationQueue by lazy { hmppsQueueService.findByQueueId(SENTENCING_ADJUSTMENTS_QUEUE_ID) as HmppsQueue }
 
   internal val awsSqsVisitsMigrationClient by lazy { visitsMigrationQueue.sqsClient }
   internal val awsSqsVisitsMigrationDlqClient by lazy { visitsMigrationQueue.sqsDlqClient }
-  internal val awsSqsIncentivesMigrationClient by lazy { incentivesMigrationQueue.sqsClient }
-  internal val awsSqsIncentivesMigrationDlqClient by lazy { incentivesMigrationQueue.sqsDlqClient }
   internal val awsSqsSentencingMigrationClient by lazy { sentencingMigrationQueue.sqsClient }
   internal val awsSqsSentencingMigrationDlqClient by lazy { sentencingMigrationQueue.sqsDlqClient }
   internal val visitsMigrationQueueUrl by lazy { visitsMigrationQueue.queueUrl }
   internal val visitsMigrationDlqUrl by lazy { visitsMigrationQueue.dlqUrl }
-  internal val incentivesMigrationUrl by lazy { incentivesMigrationQueue.queueUrl }
-  internal val incentivesMigrationDlqUrl by lazy { incentivesMigrationQueue.dlqUrl }
   internal val sentencingMigrationUrl by lazy { sentencingMigrationQueue.queueUrl }
   internal val sentencingMigrationDlqUrl by lazy { sentencingMigrationQueue.dlqUrl }
 
   internal val visitsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId("eventvisits") as HmppsQueue }
   internal val visitsQueueOffenderEventsUrl by lazy { visitsOffenderEventsQueue.queueUrl }
   internal val awsSqsVisitsOffenderEventsClient by lazy { visitsOffenderEventsQueue.sqsClient }
-  internal val incentivesOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId("eventincentives") as HmppsQueue }
-  internal val incentivesQueueOffenderEventsUrl by lazy { incentivesOffenderEventsQueue.queueUrl }
-  internal val awsSqsIncentivesOffenderEventsClient by lazy { incentivesOffenderEventsQueue.sqsClient }
   internal val sentencingOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId("eventsentencing") as HmppsQueue }
   internal val sentencingQueueOffenderEventsUrl by lazy { sentencingOffenderEventsQueue.queueUrl }
   internal val sentencingQueueOffenderEventsDlqUrl by lazy { sentencingOffenderEventsQueue.dlqUrl }
@@ -82,10 +71,8 @@ class SqsIntegrationTestBase : TestBase() {
   private val allQueues by lazy {
     listOf(
       visitsMigrationQueue,
-      incentivesMigrationQueue,
       sentencingMigrationQueue,
       visitsOffenderEventsQueue,
-      incentivesOffenderEventsQueue,
       sentencingOffenderEventsQueue,
     )
   }

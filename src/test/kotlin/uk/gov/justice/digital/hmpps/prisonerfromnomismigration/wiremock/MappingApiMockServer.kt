@@ -3,7 +3,6 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
-import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
@@ -229,55 +228,6 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubIncentiveMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 278887) {
-    stubFor(
-      get(urlPathMatching("/mapping/incentives/migration-id/.*")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withBody(
-            """
-{
-    "content": [
-        {
-            "nomisId": 191747,
-            "vsipId": "6c3ce237-f519-400d-85ca-9ba3e23323d8",
-            "label": "2022-02-14T09:58:45",
-            "whenCreated": "$whenCreated",
-            "mappingType": "MIGRATED"
-        }
-    ],
-    "pageable": {
-        "sort": {
-            "empty": true,
-            "sorted": false,
-            "unsorted": true
-        },
-        "offset": 0,
-        "pageSize": 1,
-        "pageNumber": 0,
-        "paged": true,
-        "unpaged": false
-    },
-    "last": false,
-    "totalPages": 278887,
-    "totalElements": $count,
-    "size": 1,
-    "number": 0,
-    "sort": {
-        "empty": true,
-        "sorted": false,
-        "unsorted": true
-    },
-    "first": true,
-    "numberOfElements": 1,
-    "empty": false
-}            
-            """.trimIndent(),
-          ),
-      ),
-    )
-  }
-
   fun stubLatestMigration(migrationId: String) {
     stubFor(
       get(urlEqualTo("/mapping/visits/migrated/latest")).willReturn(
@@ -312,136 +262,6 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubIncentiveMappingCreate() {
-    stubFor(
-      post(urlEqualTo("/mapping/incentives")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.CREATED.value()),
-      ),
-    )
-  }
-
-  fun stubIncentiveMappingByNomisIds(nomisBookingId: Long, nomisIncentiveSequence: Long, incentiveId: Long = 3) {
-    stubFor(
-      get(
-        urlPathEqualTo("/mapping/incentives/nomis-booking-id/$nomisBookingId/nomis-incentive-sequence/$nomisIncentiveSequence"),
-      )
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withBody(
-              """
-        {
-            "nomisBookingId": $nomisBookingId,
-            "nomisIncentiveSequence": $nomisIncentiveSequence,
-            "incentiveId": $incentiveId,
-            "label": "2022-02-14T09:58:45",
-            "whenCreated": "2022-02-16T16:21:15.589091",
-            "mappingType": "MIGRATED"
-        }         
-              """.trimIndent(),
-            ),
-        ),
-    )
-  }
-
-  fun stubDeleteIncentiveMapping(incentiveId: Long) {
-    stubFor(
-      delete(
-        urlPathEqualTo("/mapping/incentives/incentive-id/$incentiveId"),
-      )
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.NO_CONTENT.value()),
-        ),
-    )
-  }
-
-  fun stubNomisIncentiveMappingNotFound(nomisBookingId: Long, nomisIncentiveSequence: Long) {
-    stubFor(
-      get(
-        urlPathEqualTo("/mapping/incentives/nomis-booking-id/$nomisBookingId/nomis-incentive-sequence/$nomisIncentiveSequence"),
-      ).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.NOT_FOUND.value())
-          .withBody("""{"message":"Not found"}"""),
-      ),
-    )
-  }
-
-  fun stubAllNomisIncentiveMappingNotFound() {
-    stubFor(
-      get(
-        urlPathMatching("/mapping/incentives/nomis-booking-id/\\d*/nomis-incentive-sequence/\\d*"),
-      ).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.NOT_FOUND.value())
-          .withBody("""{"message":"Not found"}"""),
-      ),
-    )
-  }
-
-  fun stubIncentiveMappingCreateFailureFollowedBySuccess() {
-    stubFor(
-      post(urlPathEqualTo("/mapping/incentives"))
-        .inScenario("Retry Incentive Scenario")
-        .whenScenarioStateIs(STARTED)
-        .willReturn(
-          aResponse()
-            .withStatus(500) // request unsuccessful with status code 500
-            .withHeader("Content-Type", "application/json"),
-        )
-        .willSetStateTo("Cause Incentive Success"),
-    )
-
-    stubFor(
-      post(urlPathEqualTo("/mapping/incentives"))
-        .inScenario("Retry Incentive Scenario")
-        .whenScenarioStateIs("Cause Incentive Success")
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.CREATED.value()),
-        )
-        .willSetStateTo(STARTED),
-    )
-  }
-
-  fun createIncentiveMappingCount() =
-    findAll(postRequestedFor(urlPathEqualTo("/mapping/incentives"))).count()
-
-  fun verifyCreateMappingIncentiveIds(nomsIncentiveIds: Array<Long>, times: Int = 1) = nomsIncentiveIds.forEach {
-    verify(
-      times,
-      postRequestedFor(urlPathEqualTo("/mapping/incentives")).withRequestBody(
-        matchingJsonPath(
-          "incentiveId",
-          equalTo("$it"),
-        ),
-      ),
-    )
-  }
-
-  fun verifyDeleteIncentiveMapping(incentiveId: Long) {
-    verify(
-      deleteRequestedFor(
-        urlPathEqualTo("/mapping/incentives/incentive-id/$incentiveId"),
-      ),
-    )
-  }
-
-  fun verifyCreateIncentiveMapping() {
-    verify(
-      postRequestedFor(
-        urlPathEqualTo("/mapping/incentives"),
-      ),
-    )
-  }
-
   fun stubAllNomisSentencingAdjustmentsMappingNotFound() {
     stubFor(
       get(
@@ -462,45 +282,6 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withStatus(HttpStatus.NOT_FOUND.value())
           .withBody("""{"message":"Not found"}"""),
       ),
-    )
-  }
-
-  fun stubIncentiveCreateConflict(
-    existingIncentiveId: Long = 10,
-    duplicateIncentiveId: Long = 11,
-    nomisBookingId: Long = 123,
-    nomisSequence: Long = 1,
-  ) {
-    stubFor(
-      post(urlPathEqualTo("/mapping/incentives"))
-        .willReturn(
-          aResponse()
-            .withStatus(409)
-            .withHeader("Content-Type", "application/json")
-            .withBody(
-              """{
-              "moreInfo": 
-              {
-                "existing" :  {
-                  "incentiveId": $existingIncentiveId,
-                  "nomisBookingId": $nomisBookingId,
-                  "nomisIncentiveSequence": $nomisSequence,
-                  "label": "2022-02-14T09:58:45",
-                  "whenCreated": "2022-02-14T09:58:45",
-                  "mappingType": "MIGRATED"
-                 },
-                 "duplicate" : {
-                  "incentiveId": $duplicateIncentiveId,
-                  "nomisBookingId": $nomisBookingId,
-                  "nomisIncentiveSequence": $nomisSequence,
-                  "label": "2022-02-14T09:58:45",
-                  "whenCreated": "2022-02-14T09:58:45",
-                  "mappingType": "MIGRATED"
-                  }
-              }
-              }""",
-            ),
-        ),
     )
   }
 

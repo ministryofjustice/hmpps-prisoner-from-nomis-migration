@@ -238,7 +238,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               isNull(),
             )
             await untilCallTo {
-              awsSqsIncentivesMigrationDlqClient?.countAllMessagesOnQueue(sentencingMigrationDlqUrl!!)
+              awsSqsSentencingMigrationDlqClient?.countAllMessagesOnQueue(sentencingMigrationDlqUrl!!)
                 ?.get()
             } matches { it == 0 }
           }
@@ -321,7 +321,10 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       internal fun `it will not retry after a 409 (duplicate adjustment written to Sentencing API)`() {
         nomisApi.stubGetSentenceAdjustment(adjustmentId = NOMIS_ADJUSTMENT_ID)
         sentencingApi.stubCreateSentencingAdjustmentForSynchronisation(sentenceAdjustmentId = ADJUSTMENT_ID)
-        mappingApi.stubSentenceAdjustmentMappingCreateConflict(duplicateAdjustmentId = ADJUSTMENT_ID, nomisAdjustmentId = NOMIS_ADJUSTMENT_ID)
+        mappingApi.stubSentenceAdjustmentMappingCreateConflict(
+          duplicateAdjustmentId = ADJUSTMENT_ID,
+          nomisAdjustmentId = NOMIS_ADJUSTMENT_ID,
+        )
 
         awsSqsSentencingOffenderEventsClient.sendMessage(
           sentencingQueueOffenderEventsUrl,
@@ -1002,7 +1005,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               isNull(),
             )
             await untilCallTo {
-              awsSqsIncentivesMigrationDlqClient?.countAllMessagesOnQueue(sentencingMigrationDlqUrl!!)
+              awsSqsSentencingMigrationDlqClient?.countAllMessagesOnQueue(sentencingMigrationDlqUrl!!)
                 ?.get()
             } matches { it == 0 }
           }
