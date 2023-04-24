@@ -1,8 +1,8 @@
 // import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "5.1.4-beta-2"
-  kotlin("plugin.spring") version "1.8.10"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "5.1.4-beta-3"
+  kotlin("plugin.spring") version "1.8.20"
   // id("org.openapi.generator") version "6.2.1"
 }
 
@@ -38,7 +38,7 @@ dependencies {
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8")
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk9")
 
-  implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.14.2")
+  implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.0")
 
   runtimeOnly("org.postgresql:r2dbc-postgresql:$r2dbcPostgresVersion")
   runtimeOnly("org.springframework.boot:spring-boot-starter-jdbc")
@@ -53,7 +53,7 @@ dependencies {
 
   testImplementation("com.github.tomakehurst:wiremock-jre8-standalone:2.35.0")
   testImplementation("org.testcontainers:localstack:1.18.0")
-  testImplementation("com.amazonaws:aws-java-sdk-core:1.12.451")
+  testImplementation("com.amazonaws:aws-java-sdk-core:1.12.454")
   testImplementation("org.awaitility:awaitility-kotlin:4.2.0")
   testImplementation("org.testcontainers:postgresql:1.18.0")
   testImplementation("io.mockk:mockk:1.13.5")
