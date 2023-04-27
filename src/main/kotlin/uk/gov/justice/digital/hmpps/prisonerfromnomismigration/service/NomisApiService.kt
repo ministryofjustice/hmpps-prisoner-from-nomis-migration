@@ -10,6 +10,7 @@ import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.CreateAppointmentRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomUsageResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationFilter
@@ -104,6 +105,34 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       .retrieve()
       .bodyToMono(NomisAdjustment::class.java)
       .awaitSingle()
+
+  suspend fun getAppointment(nomisEventId: Long): AppointmentResponse =
+    webClient.get()
+      .uri("/appointments/{nomisEventId}", nomisEventId)
+      .retrieve()
+      .bodyToMono(AppointmentResponse::class.java)
+      .awaitSingle()
+
+  suspend fun getAppointmentIds(
+    prisonIds: List<String>,
+    fromDate: LocalDate?,
+    toDate: LocalDate?,
+    pageNumber: Long,
+    pageSize: Long,
+  ): PageImpl<AppointmentIdResponse> =
+    webClient.get()
+      .uri {
+        it.path("/appointment/ids")
+          .queryParam("prisonIds", prisonIds)
+          .queryParam("fromDate", fromDate)
+          .queryParam("toDate", toDate)
+          .queryParam("page", pageNumber)
+          .queryParam("size", pageSize)
+          .build()
+      }
+      .retrieve()
+      .bodyToMono(typeReference<RestResponsePage<AppointmentIdResponse>>())
+      .awaitSingle()
 }
 
 data class VisitId(
@@ -176,6 +205,34 @@ data class NomisAdjustment(
 
   fun getAdjustmentCategory() = sentenceSequence?.let { "SENTENCE" } ?: "KEY_DATE"
 }
+
+data class AppointmentResponse(
+  val bookingId: Long,
+  val offenderNo: String,
+  val prisonId: String? = null,
+  val internalLocation: Long? = null,
+  val startDateTime: LocalDateTime? = null,
+  val endDateTime: LocalDateTime? = null,
+  val comment: String? = null,
+  val subtype: String,
+  val status: String,
+) {
+  fun toAppointment(): CreateAppointmentRequest = CreateAppointmentRequest(
+    bookingId = bookingId,
+    offenderNo = offenderNo,
+    prisonId = prisonId,
+    internalLocation = internalLocation,
+    startDateTime = startDateTime,
+    endDateTime = endDateTime,
+    comment = comment,
+    subtype = subtype,
+    status = status,
+  )
+}
+
+data class AppointmentIdResponse(
+  val eventId: Long,
+)
 
 class RestResponsePage<T>
 @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)

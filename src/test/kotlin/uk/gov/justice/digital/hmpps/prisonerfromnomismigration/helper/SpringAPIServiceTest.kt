@@ -12,6 +12,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.BootstrapWith
 import org.springframework.web.reactive.config.EnableWebFlux
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.WebClientConfiguration
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.HmppsAuthApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
@@ -38,6 +39,7 @@ import kotlin.annotation.AnnotationTarget.CLASS
   VisitsApiExtension::class,
   MappingApiExtension::class,
   SentencingApiExtension::class,
+  ActivitiesApiExtension::class,
 )
 @ActiveProfiles("test")
 @EnableWebFlux

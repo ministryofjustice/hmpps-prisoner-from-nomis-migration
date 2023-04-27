@@ -7,6 +7,7 @@ api.base.url:
   visits: http://localhost:8083
   visit.mapping: http://localhost:8084
   sentencing: http://localhost:8085
+  activities: http://localhost:8086
   mapping: http://localhost:8083
 
 spring:

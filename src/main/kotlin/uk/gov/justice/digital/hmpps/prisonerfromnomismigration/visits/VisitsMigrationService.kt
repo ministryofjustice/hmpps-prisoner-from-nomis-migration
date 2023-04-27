@@ -33,7 +33,7 @@ class VisitsMigrationService(
   auditService: AuditService,
   private val visitsService: VisitsService,
   private val visitMappingService: VisitMappingService,
-  @Value("\${sentencing.page.size:1000}") pageSize: Long,
+  @Value("\${visits.page.size:1000}") pageSize: Long,
 ) : MigrationService<VisitsMigrationFilter, VisitId, NomisVisit, VisitNomisMapping>(
   queueService = queueService,
   auditService = auditService,

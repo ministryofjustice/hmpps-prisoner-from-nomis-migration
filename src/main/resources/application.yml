@@ -48,6 +48,11 @@ spring:
             client-id: ${sentencing.client.id}
             client-secret: ${sentencing.client.secret}
             authorization-grant-type: client_credentials
+          activities-api:
+            provider: hmpps-auth
+            client-id: ${activities.client.id}
+            client-secret: ${activities.client.secret}
+            authorization-grant-type: client_credentials
         provider:
           hmpps-auth:
             token-uri: ${api.base.url.oauth}/oauth/token

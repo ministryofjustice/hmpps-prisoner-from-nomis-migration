@@ -20,12 +20,16 @@ class InfoTest : SqsIntegrationTestBase() {
   }
 
   @Test
-  fun `Info page reports version`() {
+  fun `Info page reports version and migration details`() {
     webTestClient.get().uri("/info")
       .exchange()
       .expectStatus().isOk
-      .expectBody().jsonPath("build.version").value<String> {
+      .expectBody()
+      .jsonPath("build.version").value<String> {
         assertThat(it).startsWith(LocalDateTime.now().format(DateTimeFormatter.ISO_DATE))
+      }
+      .jsonPath("['last APPOINTMENTS migration'].['records waiting processing']").value<String> {
+        assertThat(it).isEqualTo("0")
       }
   }
 }
