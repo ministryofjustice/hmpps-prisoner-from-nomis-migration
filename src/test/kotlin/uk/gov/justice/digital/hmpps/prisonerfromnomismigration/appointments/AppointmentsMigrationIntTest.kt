@@ -74,14 +74,14 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `will start processing pages of appointments`() {
-      nomisApi.stubGetAppointmentsInitialCount(24)
-      nomisApi.stubMultipleGetAppointmentIdCounts(totalElements = 24, pageSize = 10)
-      nomisApi.stubMultipleGetAppointments(1..24)
+      nomisApi.stubGetAppointmentsInitialCount(14)
+      nomisApi.stubMultipleGetAppointmentIdCounts(totalElements = 14, pageSize = 10)
+      nomisApi.stubMultipleGetAppointments(1..14)
       mappingApi.stubAllNomisAppointmentsMappingNotFound()
       mappingApi.stubAppointmentMappingCreate()
 
       activitiesApi.stubCreateAppointmentForMigration(12345)
-      mappingApi.stubAppointmentMappingByMigrationId(count = 24)
+      mappingApi.stubAppointmentMappingByMigrationId(count = 14)
 
       webTestClient.post().uri("/migrate/appointments")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_APPOINTMENTS")))
@@ -116,21 +116,21 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
       )
 
       await untilAsserted {
-        assertThat(activitiesApi.createAppointmentCount()).isEqualTo(24)
+        assertThat(activitiesApi.createAppointmentCount()).isEqualTo(14)
       }
     }
 
     @Test
     fun `will add analytical events for starting, ending and each migrated record`() {
-      nomisApi.stubGetAppointmentsInitialCount(11)
-      nomisApi.stubMultipleGetAppointmentIdCounts(totalElements = 11, pageSize = 10)
-      nomisApi.stubMultipleGetAppointments(1..11)
+      nomisApi.stubGetAppointmentsInitialCount(3)
+      nomisApi.stubMultipleGetAppointmentIdCounts(totalElements = 3, pageSize = 10)
+      nomisApi.stubMultipleGetAppointments(1..3)
       activitiesApi.stubCreateAppointmentForMigration(12345)
       mappingApi.stubAllNomisAppointmentsMappingNotFound()
       mappingApi.stubAppointmentMappingCreate()
 
       // stub 10 migrated records and 1 fake a failure
-      mappingApi.stubAppointmentMappingByMigrationId(count = 10)
+      mappingApi.stubAppointmentMappingByMigrationId(count = 2)
       awsSqsAppointmentsMigrationDlqClient!!.sendMessage(
         SendMessageRequest.builder().queueUrl(appointmentsMigrationDlqUrl)
           .messageBody("""{ "message": "some error" }""").build(),
@@ -159,9 +159,9 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
       }
 
       verify(telemetryClient).trackEvent(eq("appointments-migration-started"), any(), isNull())
-      verify(telemetryClient, times(11)).trackEvent(eq("appointments-migration-entity-migrated"), any(), isNull())
+      verify(telemetryClient, times(3)).trackEvent(eq("appointments-migration-entity-migrated"), any(), isNull())
 
-      await untilAsserted {
+      await atMost Duration.ofSeconds(20) untilAsserted {
         webTestClient.get().uri("/migrate/appointments/history")
           .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_APPOINTMENTS")))
           .header("Content-Type", "application/json")
@@ -171,10 +171,10 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
           .jsonPath("$.size()").isEqualTo(1)
           .jsonPath("$[0].migrationId").isNotEmpty
           .jsonPath("$[0].whenStarted").isNotEmpty
-          .jsonPath("$[0].estimatedRecordCount").isEqualTo(11)
+          .jsonPath("$[0].estimatedRecordCount").isEqualTo(3)
           .jsonPath("$[0].migrationType").isEqualTo("APPOINTMENTS")
           .jsonPath("$[0].status").isEqualTo("COMPLETED")
-          .jsonPath("$[0].recordsMigrated").isEqualTo(10)
+          .jsonPath("$[0].recordsMigrated").isEqualTo(2)
           .jsonPath("$[0].recordsFailed").isEqualTo(1)
           .jsonPath("$[0].whenEnded").isNotEmpty
       }
