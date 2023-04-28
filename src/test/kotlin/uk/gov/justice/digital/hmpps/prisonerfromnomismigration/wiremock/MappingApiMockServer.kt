@@ -461,46 +461,12 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubGetNomisAppointment(
-    nomisEventId: Long = 987L,
-    appointmentInstanceId: String = "567S",
-  ) {
-    stubFor(
-      get(urlPathMatching("/mapping/appointments/appointment-instance-id/$nomisEventId")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-          .withBody(
-            """
-            {
-            "appointmentInstanceId": "$appointmentInstanceId",
-            "nomisEventId": $nomisEventId,
-            "label": "2022-02-14T09:58:45",
-            "whenCreated": "2022-02-14T09:58:45",
-            "mappingType": "MIGRATED"
-            }
-            """.trimMargin(),
-          ),
-      ),
-    )
-  }
-
   fun stubAppointmentMappingCreate() {
     stubFor(
       post(urlEqualTo("/mapping/appointments")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.CREATED.value()),
-      ),
-    )
-  }
-
-  fun stubAppointmentMappingDelete(appointmentInstanceId: Long = 56789) {
-    stubFor(
-      delete(urlEqualTo("/mapping/appointments/appointment-instance-id/$appointmentInstanceId")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.NO_CONTENT.value()),
       ),
     )
   }
@@ -580,17 +546,6 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
               }
               }""",
             ),
-        ),
-    )
-  }
-
-  fun stubAppointmentMappingCreateFailure() {
-    stubFor(
-      post(urlPathEqualTo("/mapping/appointments"))
-        .willReturn(
-          aResponse()
-            .withStatus(500)
-            .withHeader("Content-Type", "application/json"),
         ),
     )
   }
