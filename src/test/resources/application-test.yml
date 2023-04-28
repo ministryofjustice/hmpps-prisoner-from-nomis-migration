@@ -11,11 +11,15 @@ api.base.url:
   visits: http://localhost:8082
   mapping: http://localhost:8083
   sentencing: http://localhost:8085
+  activities: http://localhost:8086
 
 visits:
   page:
     size: 10
 sentencing:
+  page:
+    size: 10
+appointments:
   page:
     size: 10
 

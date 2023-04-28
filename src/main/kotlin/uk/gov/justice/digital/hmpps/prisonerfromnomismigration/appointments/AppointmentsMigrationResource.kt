@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments
 
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -28,21 +28,21 @@ import java.time.LocalDateTime
 
 @RestController
 @RequestMapping("/migrate", produces = [MediaType.APPLICATION_JSON_VALUE])
-class SentencingMigrationResource(
-  private val sentencingAdjustmentsMigrationService: SentencingAdjustmentsMigrationService,
+class AppointmentsMigrationResource(
+  private val appointmentsMigrationService: AppointmentsMigrationService,
   private val migrationHistoryService: MigrationHistoryService,
 ) {
-  @PreAuthorize("hasRole('ROLE_MIGRATE_SENTENCING')")
-  @PostMapping("/sentencing")
+  @PreAuthorize("hasRole('ROLE_MIGRATE_APPOINTMENTS')")
+  @PostMapping("/appointments")
   @ResponseStatus(value = ACCEPTED)
   @Operation(
-    summary = "Starts a sentencing migration",
-    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>MIGRATE_SENTENCING</b>",
+    summary = "Starts an appointments migration",
+    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>MIGRATE_APPOINTMENTS</b>",
     requestBody = io.swagger.v3.oas.annotations.parameters.RequestBody(
       content = [
         Content(
           mediaType = "application/json",
-          schema = Schema(implementation = SentencingMigrationFilter::class),
+          schema = Schema(implementation = AppointmentsMigrationFilter::class),
         ),
       ],
     ),
@@ -63,22 +63,22 @@ class SentencingMigrationResource(
       ),
     ],
   )
-  suspend fun migrateSentencing(
+  suspend fun migrateAppointments(
     @RequestBody @Valid
-    migrationFilter: SentencingMigrationFilter,
+    migrationFilter: AppointmentsMigrationFilter,
   ) =
-    // TODO determine which sentencing entity is being migrated - assume adjustments for now
-    sentencingAdjustmentsMigrationService.startMigration(migrationFilter)
+    // TODO determine which entity is being migrated - assume ??? for now
+    appointmentsMigrationService.startMigration(migrationFilter)
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_SENTENCING')")
-  @GetMapping("/sentencing/history")
+  @PreAuthorize("hasRole('ROLE_MIGRATE_APPOINTMENTS')")
+  @GetMapping("/appointments/history")
   @Operation(
-    summary = "Lists all filtered migration history records un-paged for sentencing",
-    description = "The records are un-paged and requires role <b>MIGRATE_SENTENCING</b>",
+    summary = "Lists all filtered migration history records un-paged for appointments",
+    description = "The records are un-paged and requires role <b>MIGRATE_APPOINTMENTS</b>",
     responses = [
       ApiResponse(
         responseCode = "200",
-        description = "All sentencing migration history records",
+        description = "All migration history records",
         content = [
           Content(
             mediaType = "application/json",
@@ -121,22 +121,22 @@ class SentencingMigrationResource(
     ) @RequestParam includeOnlyFailures: Boolean = false,
   ) = migrationHistoryService.findAll(
     HistoryFilter(
-      migrationTypes = listOf(MigrationType.SENTENCING_ADJUSTMENTS.name),
+      migrationTypes = listOf(MigrationType.APPOINTMENTS.name),
       fromDateTime = fromDateTime,
       toDateTime = toDateTime,
       includeOnlyFailures = includeOnlyFailures,
     ),
   )
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_SENTENCING')")
-  @GetMapping("/sentencing/history/{migrationId}")
+  @PreAuthorize("hasRole('ROLE_MIGRATE_APPOINTMENTS')")
+  @GetMapping("/appointments/history/{migrationId}")
   @Operation(
     summary = "Gets a specific migration history record",
-    description = "Requires role <b>MIGRATE_SENTENCING</b>",
+    description = "Requires role <b>MIGRATE_APPOINTMENTS</b>",
     responses = [
       ApiResponse(
         responseCode = "200",
-        description = "The sentencing migration history record",
+        description = "The migration history record",
         content = [
           Content(
             mediaType = "application/json",
@@ -167,12 +167,12 @@ class SentencingMigrationResource(
     migrationId: String,
   ) = migrationHistoryService.get(migrationId)
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_SENTENCING')")
-  @PostMapping("/sentencing/{migrationId}/cancel")
+  @PreAuthorize("hasRole('ROLE_MIGRATE_APPOINTMENTS')")
+  @PostMapping("/appointments/{migrationId}/cancel")
   @ResponseStatus(value = ACCEPTED)
   @Operation(
     summary = "Cancels a running migration. The actual cancellation might take several minutes to complete",
-    description = "Requires role <b>MIGRATE_SENTENCING</b>",
+    description = "Requires role <b>MIGRATE_APPOINTMENTS</b>",
     responses = [
       ApiResponse(
         responseCode = "202",
@@ -199,5 +199,5 @@ class SentencingMigrationResource(
     @PathVariable
     @Schema(description = "Migration Id", example = "2020-03-24T12:00:00", required = true)
     migrationId: String,
-  ) = sentencingAdjustmentsMigrationService.cancel(migrationId)
+  ) = appointmentsMigrationService.cancel(migrationId)
 }
