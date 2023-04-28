@@ -57,6 +57,6 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun createSentenceAdjustmentCount() =
-    findAll(WireMock.postRequestedFor(WireMock.urlMatching("/legacy/adjustments/migration"))).count()
+  fun createAppointmentCount() =
+    findAll(WireMock.postRequestedFor(WireMock.urlMatching("/appointments/TODO"))).count()
 }

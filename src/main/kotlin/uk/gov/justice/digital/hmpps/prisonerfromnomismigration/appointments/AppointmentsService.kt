@@ -5,13 +5,17 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.awaitBody
 import java.time.LocalDateTime
 
 @Service
 class AppointmentsService(@Qualifier("activitiesApiWebClient") private val webClient: WebClient) {
-  fun createAppointment(createAppointmentRequest: CreateAppointmentRequest): CreateAppointmentResponse {
-    TODO()
-  }
+  suspend fun createAppointment(createAppointmentRequest: CreateAppointmentRequest): CreateAppointmentResponse =
+    webClient.post()
+      .uri("/appointments/TODO")
+      .bodyValue(createAppointmentRequest)
+      .retrieve()
+      .awaitBody()
 }
 
 @JsonInclude(JsonInclude.Include.NON_NULL)

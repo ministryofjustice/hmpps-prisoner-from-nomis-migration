@@ -66,9 +66,7 @@ class AppointmentsMigrationResource(
   suspend fun migrateAppointments(
     @RequestBody @Valid
     migrationFilter: AppointmentsMigrationFilter,
-  ) =
-    // TODO determine which entity is being migrated - assume ??? for now
-    appointmentsMigrationService.startMigration(migrationFilter)
+  ) = appointmentsMigrationService.startMigration(migrationFilter)
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_APPOINTMENTS')")
   @GetMapping("/appointments/history")

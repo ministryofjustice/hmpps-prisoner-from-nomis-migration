@@ -20,6 +20,7 @@ import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.JwtAuthHelper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.LocalStackContainer.setLocalStackProperties
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.APPOINTMENTS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SENTENCING_ADJUSTMENTS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VISITS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension
@@ -51,15 +52,20 @@ class SqsIntegrationTestBase : TestBase() {
 
   internal val visitsMigrationQueue by lazy { hmppsQueueService.findByQueueId(VISITS_QUEUE_ID) as HmppsQueue }
   internal val sentencingMigrationQueue by lazy { hmppsQueueService.findByQueueId(SENTENCING_ADJUSTMENTS_QUEUE_ID) as HmppsQueue }
+  internal val appointmentsMigrationQueue by lazy { hmppsQueueService.findByQueueId(APPOINTMENTS_QUEUE_ID) as HmppsQueue }
 
   internal val awsSqsVisitsMigrationClient by lazy { visitsMigrationQueue.sqsClient }
   internal val awsSqsVisitsMigrationDlqClient by lazy { visitsMigrationQueue.sqsDlqClient }
   internal val awsSqsSentencingMigrationClient by lazy { sentencingMigrationQueue.sqsClient }
   internal val awsSqsSentencingMigrationDlqClient by lazy { sentencingMigrationQueue.sqsDlqClient }
+  internal val awsSqsAppointmentsMigrationClient by lazy { appointmentsMigrationQueue.sqsClient }
+  internal val awsSqsAppointmentsMigrationDlqClient by lazy { appointmentsMigrationQueue.sqsDlqClient }
   internal val visitsMigrationQueueUrl by lazy { visitsMigrationQueue.queueUrl }
   internal val visitsMigrationDlqUrl by lazy { visitsMigrationQueue.dlqUrl }
   internal val sentencingMigrationUrl by lazy { sentencingMigrationQueue.queueUrl }
   internal val sentencingMigrationDlqUrl by lazy { sentencingMigrationQueue.dlqUrl }
+  internal val appointmentsMigrationUrl by lazy { appointmentsMigrationQueue.queueUrl }
+  internal val appointmentsMigrationDlqUrl by lazy { appointmentsMigrationQueue.dlqUrl }
 
   internal val visitsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId("eventvisits") as HmppsQueue }
   internal val visitsQueueOffenderEventsUrl by lazy { visitsOffenderEventsQueue.queueUrl }

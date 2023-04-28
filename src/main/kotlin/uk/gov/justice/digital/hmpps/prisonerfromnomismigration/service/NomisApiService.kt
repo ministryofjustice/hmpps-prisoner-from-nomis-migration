@@ -122,7 +122,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
   ): PageImpl<AppointmentIdResponse> =
     webClient.get()
       .uri {
-        it.path("/appointment/ids")
+        it.path("/appointments/ids")
           .queryParam("prisonIds", prisonIds)
           .queryParam("fromDate", fromDate)
           .queryParam("toDate", toDate)
