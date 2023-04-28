@@ -495,16 +495,6 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubAppointmentMappingDelete(appointmentInstanceId: Long = 56789) {
-    stubFor(
-      delete(urlEqualTo("/mapping/appointments/appointment-instance-id/$appointmentInstanceId")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.NO_CONTENT.value()),
-      ),
-    )
-  }
-
   fun stubAppointmentMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 278887) {
     val content = """{
       "appointmentInstanceId": 191747,
@@ -580,17 +570,6 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
               }
               }""",
             ),
-        ),
-    )
-  }
-
-  fun stubAppointmentMappingCreateFailure() {
-    stubFor(
-      post(urlPathEqualTo("/mapping/appointments"))
-        .willReturn(
-          aResponse()
-            .withStatus(500)
-            .withHeader("Content-Type", "application/json"),
         ),
     )
   }

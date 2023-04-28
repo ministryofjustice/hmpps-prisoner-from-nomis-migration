@@ -360,17 +360,6 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
         .withQueryParam("prisonIds", equalTo(prisonId)),
     )
   }
-
-  fun stubGetAppointment(eventId: Long) {
-    nomisApi.stubFor(
-      get(urlPathEqualTo("/appointments/$eventId"))
-        .willReturn(
-          aResponse().withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.OK.value())
-            .withBody(appointmentResponse()),
-        ),
-    )
-  }
 }
 
 private fun visitResponse(visitId: Long) = """
