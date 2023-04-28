@@ -156,49 +156,19 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubVisitMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 278887) {
+    val content = """{
+      "nomisId": 191747,
+      "vsipId": "6c3ce237-f519-400d-85ca-9ba3e23323d8",
+      "label": "2022-02-14T09:58:45",
+      "whenCreated": "$whenCreated",
+      "mappingType": "MIGRATED"
+    }"""
     stubFor(
       get(urlPathMatching("/mapping/visits/migration-id/.*")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody(
-            """
-{
-    "content": [
-        {
-            "nomisId": 191747,
-            "vsipId": "6c3ce237-f519-400d-85ca-9ba3e23323d8",
-            "label": "2022-02-14T09:58:45",
-            "whenCreated": "$whenCreated",
-            "mappingType": "MIGRATED"
-        }
-    ],
-    "pageable": {
-        "sort": {
-            "empty": true,
-            "sorted": false,
-            "unsorted": true
-        },
-        "offset": 0,
-        "pageSize": 1,
-        "pageNumber": 0,
-        "paged": true,
-        "unpaged": false
-    },
-    "last": false,
-    "totalPages": 278887,
-    "totalElements": $count,
-    "size": 1,
-    "number": 0,
-    "sort": {
-        "empty": true,
-        "sorted": false,
-        "unsorted": true
-    },
-    "first": true,
-    "numberOfElements": 1,
-    "empty": false
-}            
-            """.trimIndent(),
+            pageContent(content, count),
           ),
       ),
     )
@@ -262,29 +232,6 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubAllNomisSentencingAdjustmentsMappingNotFound() {
-    stubFor(
-      get(
-        urlPathMatching("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/\\d*"),
-      ).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.NOT_FOUND.value())
-          .withBody("""{"message":"Not found"}"""),
-      ),
-    )
-    stubFor(
-      get(
-        urlPathMatching("/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id/\\d*"),
-      ).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.NOT_FOUND.value())
-          .withBody("""{"message":"Not found"}"""),
-      ),
-    )
-  }
-
   fun stubVisitsCreateConflict(
     existingVsipId: Long = 10,
     duplicateVsipId: Long = 11,
@@ -318,6 +265,29 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
               }""",
             ),
         ),
+    )
+  }
+
+  fun stubAllNomisSentencingAdjustmentsMappingNotFound() {
+    stubFor(
+      get(
+        urlPathMatching("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/\\d*"),
+      ).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.NOT_FOUND.value())
+          .withBody("""{"message":"Not found"}"""),
+      ),
+    )
+    stubFor(
+      get(
+        urlPathMatching("/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id/\\d*"),
+      ).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.NOT_FOUND.value())
+          .withBody("""{"message":"Not found"}"""),
+      ),
     )
   }
 
@@ -370,51 +340,19 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubSentenceAdjustmentMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 278887) {
+    val content = """{
+      "adjustmentId": 191747,
+      "nomisAdjustmentId": 123,
+      "nomisAdjustmentCategory": "SENTENCE",
+      "label": "2022-02-14T09:58:45",
+      "whenCreated": "$whenCreated",
+      "mappingType": "MIGRATED"
+    }"""
     stubFor(
       get(urlPathMatching("/mapping/sentencing/adjustments/migration-id/.*")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withBody(
-            """
-{
-    "content": [
-        {
-            "adjustmentId": 191747,
-            "nomisAdjustmentId": 123,
-            "nomisAdjustmentCategory": "SENTENCE",
-            "label": "2022-02-14T09:58:45",
-            "whenCreated": "$whenCreated",
-            "mappingType": "MIGRATED"
-        }
-    ],
-    "pageable": {
-        "sort": {
-            "empty": true,
-            "sorted": false,
-            "unsorted": true
-        },
-        "offset": 0,
-        "pageSize": 1,
-        "pageNumber": 0,
-        "paged": true,
-        "unpaged": false
-    },
-    "last": false,
-    "totalPages": 278887,
-    "totalElements": $count,
-    "size": 1,
-    "number": 0,
-    "sort": {
-        "empty": true,
-        "sorted": false,
-        "unsorted": true
-    },
-    "first": true,
-    "numberOfElements": 1,
-    "empty": false
-}            
-            """.trimIndent(),
-          ),
+          .withBody(pageContent(content, count)),
       ),
     )
   }
@@ -509,4 +447,155 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
       )
     }
+
+  fun stubAllNomisAppointmentsMappingNotFound() {
+    stubFor(
+      get(
+        urlPathMatching("/mapping/appointments/appointment-instance-id/\\d*"),
+      ).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.NOT_FOUND.value())
+          .withBody("""{"message":"Not found"}"""),
+      ),
+    )
+  }
+
+  fun stubAppointmentMappingCreate() {
+    stubFor(
+      post(urlEqualTo("/mapping/appointments")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.CREATED.value()),
+      ),
+    )
+  }
+
+  fun stubAppointmentMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 278887) {
+    val content = """{
+      "appointmentInstanceId": 191747,
+      "nomisEventId": 123,
+      "label": "2022-02-14T09:58:45",
+      "whenCreated": "$whenCreated",
+      "mappingType": "MIGRATED"
+    }"""
+    stubFor(
+      get(urlPathMatching("/mapping/appointments/migration-id/.*")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(pageContent(content, count)),
+      ),
+    )
+  }
+
+  fun stubAppointmentMappingCreateFailureFollowedBySuccess() {
+    stubFor(
+      post(urlPathEqualTo("/mapping/appointments"))
+        .inScenario("Retry appointment Scenario")
+        .whenScenarioStateIs(STARTED)
+        .willReturn(
+          aResponse()
+            .withStatus(500) // request unsuccessful with status code 500
+            .withHeader("Content-Type", "application/json"),
+        )
+        .willSetStateTo("Cause appointment Success"),
+    )
+
+    stubFor(
+      post(urlPathEqualTo("/mapping/appointments"))
+        .inScenario("Retry appointment Scenario")
+        .whenScenarioStateIs("Cause appointment Success")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.CREATED.value()),
+        )
+        .willSetStateTo(STARTED),
+    )
+  }
+
+  fun stubAppointmentMappingCreateConflict(
+    existingAppointmentInstanceId: Long = 10,
+    duplicateAppointmentInstanceId: Long = 11,
+    nomisEventId: Long = 123,
+  ) {
+    stubFor(
+      post(urlPathEqualTo("/mapping/appointments"))
+        .willReturn(
+          aResponse()
+            .withStatus(409)
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
+              "moreInfo": 
+              {
+                "existing" :  {
+                  "appointmentInstanceId": $existingAppointmentInstanceId,
+                  "nomisEventId": $nomisEventId,
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "MIGRATED"
+                 },
+                 "duplicate" : {
+                  "appointmentInstanceId": $duplicateAppointmentInstanceId,
+                  "nomisEventId": $nomisEventId,
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "MIGRATED"
+                  }
+              }
+              }""",
+            ),
+        ),
+    )
+  }
+
+  fun createAppointmentMappingCount() =
+    findAll(postRequestedFor(urlPathEqualTo("/mapping/appointments"))).count()
+
+  fun verifyCreateMappingAppointmentIds(nomisAppointmentIds: Array<String>, times: Int = 1) =
+    nomisAppointmentIds.forEach {
+      verify(
+        times,
+        postRequestedFor(urlPathEqualTo("/mapping/appointments")).withRequestBody(
+          matchingJsonPath(
+            "appointmentInstanceId",
+            equalTo(it),
+          ),
+        ),
+      )
+    }
+
+  private fun pageContent(content: String, count: Int) = """
+  {
+      "content": [
+        $content
+      ],
+      "pageable": {
+          "sort": {
+              "empty": true,
+              "sorted": false,
+              "unsorted": true
+          },
+          "offset": 0,
+          "pageSize": 1,
+          "pageNumber": 0,
+          "paged": true,
+          "unpaged": false
+      },
+      "last": false,
+      "totalPages": 278887,
+      "totalElements": $count,
+      "size": 1,
+      "number": 0,
+      "sort": {
+          "empty": true,
+          "sorted": false,
+          "unsorted": true
+      },
+      "first": true,
+      "numberOfElements": 1,
+      "empty": false
+  }            
+  """.trimIndent()
 }

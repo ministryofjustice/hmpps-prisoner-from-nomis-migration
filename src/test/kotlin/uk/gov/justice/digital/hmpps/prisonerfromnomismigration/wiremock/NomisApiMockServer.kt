@@ -302,6 +302,64 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
     )
   }
+
+  fun stubGetAppointmentsInitialCount(totalElements: Long) {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/appointments/ids"))
+        .withQueryParam("page", equalTo("0"))
+        .withQueryParam("size", equalTo("1"))
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+            .withBody(appointmentIdsPagedResponse(totalElements = totalElements)),
+        ),
+    )
+  }
+
+  fun stubMultipleGetAppointmentIdCounts(totalElements: Long, pageSize: Long) {
+    // for each page create a response for each id starting from 1 up to `totalElements`
+
+    val pages = (totalElements / pageSize) + 1
+    (0..pages).forEach { page ->
+      val startId = (page * pageSize) + 1
+      val endId = min((page * pageSize) + pageSize, totalElements)
+      nomisApi.stubFor(
+        get(urlPathEqualTo("/appointments/ids"))
+          .withQueryParam("page", equalTo(page.toString()))
+          .willReturn(
+            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+              .withBody(
+                appointmentIdsPagedResponse(
+                  totalElements = totalElements,
+                  ids = (startId..endId).map { it },
+                  pageNumber = page,
+                  pageSize = pageSize,
+                ),
+              ),
+          ),
+      )
+    }
+  }
+
+  fun stubMultipleGetAppointments(intProgression: IntProgression) {
+    (intProgression).forEach {
+      nomisApi.stubFor(
+        get(urlPathEqualTo("/appointments/$it"))
+          .willReturn(
+            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+              .withBody(appointmentResponse(it.toLong())),
+          ),
+      )
+    }
+  }
+
+  fun verifyGetAppointmentsIdsCount(fromDate: String, toDate: String, prisonId: String) {
+    nomisApi.verify(
+      getRequestedFor(urlPathEqualTo("/appointments/ids"))
+        .withQueryParam("fromDate", equalTo(fromDate))
+        .withQueryParam("toDate", equalTo(toDate))
+        .withQueryParam("prisonIds", equalTo(prisonId)),
+    )
+  }
 }
 
 private fun visitResponse(visitId: Long) = """
@@ -387,39 +445,7 @@ private fun visitPagedResponse(
   pageNumber: Long = 0,
 ): String {
   val content = visitIds.map { """{ "visitId": $it }""" }.joinToString { it }
-  return """
-{
-    "content": [
-        $content
-    ],
-    "pageable": {
-        "sort": {
-            "empty": false,
-            "sorted": true,
-            "unsorted": false
-        },
-        "offset": 0,
-        "pageSize": $pageSize,
-        "pageNumber": $pageNumber,
-        "paged": true,
-        "unpaged": false
-    },
-    "last": false,
-    "totalPages": ${totalElements / pageSize + 1},
-    "totalElements": $totalElements,
-    "size": $pageSize,
-    "number": $pageNumber,
-    "sort": {
-        "empty": false,
-        "sorted": true,
-        "unsorted": false
-    },
-    "first": true,
-    "numberOfElements": ${visitIds.size},
-    "empty": false
-}                
-      
-  """.trimIndent()
+  return pageContent(content, pageSize, pageNumber, totalElements, visitIds.size)
 }
 
 private fun adjustmentIdsPagedResponse(
@@ -430,7 +456,26 @@ private fun adjustmentIdsPagedResponse(
 ): String {
   val content = adjustmentIds.map { """{ "adjustmentId": $it, "adjustmentCategory": "${getAdjustmentCategory(it)}"}""" }
     .joinToString { it }
-  return """
+  return pageContent(content, pageSize, pageNumber, totalElements, adjustmentIds.size)
+}
+
+private fun appointmentIdsPagedResponse(
+  totalElements: Long = 10,
+  ids: List<Long> = (0L..10L).toList(),
+  pageSize: Long = 10,
+  pageNumber: Long = 0,
+): String {
+  val content = ids.map { """{ "eventId": $it }""" }.joinToString { it }
+  return pageContent(content, pageSize, pageNumber, totalElements, ids.size)
+}
+
+private fun pageContent(
+  content: String,
+  pageSize: Long,
+  pageNumber: Long,
+  totalElements: Long,
+  size: Int,
+) = """
 {
     "content": [
         $content
@@ -458,12 +503,10 @@ private fun adjustmentIdsPagedResponse(
         "unsorted": false
     },
     "first": true,
-    "numberOfElements": ${adjustmentIds.size},
+    "numberOfElements": $size,
     "empty": false
-}                
-      
-  """.trimIndent()
 }
+""".trimIndent()
 
 private fun getAdjustmentCategory(it: Long) = if (it % 2L == 0L) "KEY_DATE" else "SENTENCE"
 
@@ -517,3 +560,21 @@ private fun keyDateAdjustmentResponse(
    
   """.trimIndent()
 }
+
+private fun appointmentResponse(
+  bookingId: Long = 2,
+  offenderNo: String = "G4803UT",
+): String =
+  """
+{
+  "bookingId":$bookingId,
+  "offenderNo": "$offenderNo",
+  "prisonId": "LEI",
+  "internalLocation": 23456,
+  "startDateTime":"2022-10-06T09:30:00",
+  "endDateTime":"2022-10-06T09:50:00",
+  "comment":"a comment",
+  "subtype":"VLB",
+  "status":"SCH"
+}
+  """.trimIndent()

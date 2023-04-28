@@ -24,5 +24,5 @@ data class AppointmentsMigrationFilter(
     description = "Only include appointments for these prison ids",
     example = "['MDI','LEI']",
   )
-  val prisonIds: List<String>,
+  val prisonIds: List<String> = emptyList(),
 )

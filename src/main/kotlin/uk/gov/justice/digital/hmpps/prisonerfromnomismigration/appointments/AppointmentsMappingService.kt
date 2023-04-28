@@ -5,14 +5,13 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
-import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import java.time.LocalDateTime
 
 @Service
 class AppointmentsMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) :
-  MigrationMapping<AppointmentMapping>(domainUrl = "/appointments", webClient) {
+  MigrationMapping<AppointmentMapping>(domainUrl = "/mapping/appointments", webClient) {
 
   suspend fun findNomisMapping(appointmentInstanceId: Long): AppointmentMapping? {
     return webClient.get()
@@ -27,13 +26,6 @@ class AppointmentsMappingService(@Qualifier("mappingApiWebClient") webClient: We
       }
       .awaitSingleOrNull()
   }
-
-  suspend fun deleteNomisMapping(appointmentInstanceId: Long) {
-    webClient.delete()
-      .uri("/appointments/appointment-instance-id/$appointmentInstanceId")
-      .retrieve()
-      .awaitBodilessEntity()
-  }
 }
 
 data class AppointmentMapping(
@@ -43,7 +35,3 @@ data class AppointmentMapping(
   val label: String? = null,
   val whenCreated: LocalDateTime? = null,
 )
-
-enum class MappingType {
-  MIGRATED, APPOINTMENT_CREATED
-}
