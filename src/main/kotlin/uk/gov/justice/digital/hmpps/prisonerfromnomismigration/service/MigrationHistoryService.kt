@@ -1,18 +1,24 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import kotlinx.coroutines.future.await
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import software.amazon.awssdk.services.sqs.model.GetQueueAttributesRequest
+import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.CANCELLED_REQUESTED
+import uk.gov.justice.hmpps.sqs.HmppsQueue
+import uk.gov.justice.hmpps.sqs.HmppsQueueService
 import java.time.LocalDateTime
 
 @Service
 class MigrationHistoryService(
   private val migrationHistoryRepository: MigrationHistoryRepository,
   private val objectMapper: ObjectMapper,
+  private val hmppsQueueService: HmppsQueueService,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -81,6 +87,35 @@ class MigrationHistoryService(
 
   suspend fun isCancelling(migrationId: String) =
     migrationHistoryRepository.findById(migrationId)?.status == CANCELLED_REQUESTED
+
+  suspend fun getActiveMigrationDetails(type: MigrationType): InProgressMigration {
+    val queue = hmppsQueueService.findByQueueId(type.queueId)!!
+    val migrationProperties = migrationHistoryRepository.findFirstByMigrationTypeOrderByWhenStartedDesc(type)
+
+    return InProgressMigration(
+      recordsMigrated = migrationProperties?.recordsMigrated,
+      toBeProcessedCount = queue.getQueueAttributes().map { it.attributes()[QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES]?.toInt() }.getOrNull(),
+      beingProcessedCount = queue.getQueueAttributes().map { it.attributes()[QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES_NOT_VISIBLE]?.toInt() }.getOrNull(),
+      recordsFailed = queue.getDlqAttributes().map { it.attributes()[QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES]?.toInt() }.getOrNull(),
+      whenStarted = migrationProperties?.whenStarted,
+      migrationId = migrationProperties?.migrationId,
+      status = migrationProperties?.status,
+      migrationType = migrationProperties?.migrationType,
+      estimatedRecordCount = migrationProperties?.estimatedRecordCount,
+    )
+  }
+
+  private suspend fun HmppsQueue.getQueueAttributes() = runCatching {
+    this.sqsClient.getQueueAttributes(
+      GetQueueAttributesRequest.builder().queueUrl(this.queueUrl).attributeNames(QueueAttributeName.ALL).build(),
+    ).await()
+  }
+
+  private suspend fun HmppsQueue.getDlqAttributes() = runCatching {
+    this.sqsDlqClient!!.getQueueAttributes(
+      GetQueueAttributesRequest.builder().queueUrl(this.dlqUrl).attributeNames(QueueAttributeName.ALL).build(),
+    ).await()
+  }
 }
 
 enum class MigrationStatus {
@@ -91,3 +126,15 @@ enum class MigrationStatus {
 }
 
 class NotFoundException(message: String) : RuntimeException(message)
+
+data class InProgressMigration(
+  val recordsMigrated: Long? = null,
+  val toBeProcessedCount: Int? = null,
+  val beingProcessedCount: Int? = null,
+  val recordsFailed: Int? = null,
+  val migrationId: String? = null,
+  val whenStarted: LocalDateTime? = null,
+  val estimatedRecordCount: Long? = null,
+  val migrationType: MigrationType? = null,
+  var status: MigrationStatus? = null,
+)
