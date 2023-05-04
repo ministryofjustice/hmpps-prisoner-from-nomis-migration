@@ -198,4 +198,34 @@ class AppointmentsMigrationResource(
     @Schema(description = "Migration Id", example = "2020-03-24T12:00:00", required = true)
     migrationId: String,
   ) = appointmentsMigrationService.cancel(migrationId)
+
+  @PreAuthorize("hasRole('ROLE_MIGRATE_APPOINTMENTS')")
+  @GetMapping("/appointments/active-migration")
+  @Operation(
+    summary = "Gets active/currently running migration data, using migration record and migration queues",
+    description = "Requires role <b>MIGRATE_APPOINTMENTS</b>",
+    responses = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Only called during an active migration from the UI - assumes latest migration is active",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = MigrationHistory::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "401",
+        description = "Unauthorized to access this endpoint",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+      ApiResponse(
+        responseCode = "403",
+        description = "Incorrect permissions to access this endpoint",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+    ],
+  )
+  suspend fun getActiveMigrationDetails() = migrationHistoryService.getActiveMigrationDetails(MigrationType.APPOINTMENTS)
 }
