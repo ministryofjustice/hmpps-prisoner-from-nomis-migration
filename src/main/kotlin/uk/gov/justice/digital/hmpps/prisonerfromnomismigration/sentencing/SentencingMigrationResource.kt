@@ -201,8 +201,6 @@ class SentencingMigrationResource(
     migrationId: String,
   ) = sentencingAdjustmentsMigrationService.cancel(migrationId)
 
-  /* implement domain specific endpoint to return current migration THAT DOESNT GO TO MAPPING SERVICE as it is held in DB */
-
   @PreAuthorize("hasRole('ROLE_MIGRATE_SENTENCING')")
   @GetMapping("/sentencing/active-migration")
   @Operation(
