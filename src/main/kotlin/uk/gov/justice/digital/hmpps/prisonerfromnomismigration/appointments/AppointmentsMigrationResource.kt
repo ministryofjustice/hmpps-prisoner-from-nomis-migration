@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.HistoryFilter
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InProgressMigration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import java.time.LocalDateTime
@@ -211,7 +212,7 @@ class AppointmentsMigrationResource(
         content = [
           Content(
             mediaType = "application/json",
-            schema = Schema(implementation = MigrationHistory::class),
+            schema = Schema(implementation = InProgressMigration::class),
           ),
         ],
       ),
