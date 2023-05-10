@@ -66,7 +66,7 @@ internal class AppointmentsServiceTest {
           .withRequestBody(WireMock.matchingJsonPath("startDate", WireMock.equalTo("2021-07-01")))
           .withRequestBody(WireMock.matchingJsonPath("startTime", WireMock.equalTo("00:01")))
           .withRequestBody(WireMock.matchingJsonPath("endTime", WireMock.equalTo("00:02")))
-          .withRequestBody(WireMock.matchingJsonPath("categoryCode", WireMock.equalTo("APP")))
+          .withRequestBody(WireMock.matchingJsonPath("categoryCode", WireMock.equalTo("APP"))),
       )
     }
   }
