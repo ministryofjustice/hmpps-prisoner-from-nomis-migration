@@ -10,7 +10,7 @@ import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.CreateAppointmentRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.AppointmentMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomUsageResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationFilter
@@ -217,16 +217,16 @@ data class AppointmentResponse(
   val subtype: String,
   val status: String,
 ) {
-  fun toAppointment(): CreateAppointmentRequest = CreateAppointmentRequest(
+  fun toAppointment() = AppointmentMigrateRequest(
     bookingId = bookingId,
-    offenderNo = offenderNo,
-    prisonId = prisonId,
-    internalLocation = internalLocation,
-    startDateTime = startDateTime,
-    endDateTime = endDateTime,
-    comment = comment,
-    subtype = subtype,
-    status = status,
+    prisonerNumber = offenderNo,
+    prisonCode = prisonId,
+    internalLocationId = internalLocation,
+    startDate = startDateTime?.toLocalDate(),
+    startTime = startDateTime?.toLocalTime(),
+    endTime = endDateTime?.toLocalTime(),
+    comment = comment ?: "",
+    categoryCode = subtype,
   )
 }
 

@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.Activi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension
 import java.time.LocalDate
+import java.time.LocalTime
 
 private const val APPOINTMENT_INSTANCE_ID = 1234567L
 
@@ -23,21 +24,23 @@ internal class AppointmentsServiceTest {
   private lateinit var appointmentsService: AppointmentsService
 
   @Nested
-  @DisplayName("POST /appointments/TODO")
+  @DisplayName("POST /migrate-appointment")
   inner class CreateAppointmentForMigration {
     @BeforeEach
     internal fun setUp() {
       ActivitiesApiExtension.activitiesApi.stubCreateAppointmentForMigration(appointmentInstanceId = APPOINTMENT_INSTANCE_ID)
       runBlocking {
         appointmentsService.createAppointment(
-          CreateAppointmentRequest(
+          AppointmentMigrateRequest(
             bookingId = 1234,
+            prisonCode = "MDI",
             comment = "Remand added",
-            offenderNo = "G4803UT",
-            startDateTime = LocalDate.parse("2021-07-01").atStartOfDay(),
-            endDateTime = LocalDate.parse("2021-07-01").atStartOfDay(),
-            subtype = "APP",
-            status = "SCH",
+            prisonerNumber = "G4803UT",
+            internalLocationId = 1234,
+            startDate = LocalDate.parse("2021-07-01"),
+            startTime = LocalTime.parse("00:01"),
+            endTime = LocalTime.parse("00:02"),
+            categoryCode = "APP",
           ),
         )
       }
@@ -46,7 +49,7 @@ internal class AppointmentsServiceTest {
     @Test
     fun `should call api with OAuth2 token`() {
       ActivitiesApiExtension.activitiesApi.verify(
-        WireMock.postRequestedFor(WireMock.urlEqualTo("/appointments/TODO"))
+        WireMock.postRequestedFor(WireMock.urlEqualTo("/migrate-appointment"))
           .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
       )
     }
@@ -54,14 +57,16 @@ internal class AppointmentsServiceTest {
     @Test
     fun `will pass data to the api`() {
       ActivitiesApiExtension.activitiesApi.verify(
-        WireMock.postRequestedFor(WireMock.urlEqualTo("/appointments/TODO"))
+        WireMock.postRequestedFor(WireMock.urlEqualTo("/migrate-appointment"))
           .withRequestBody(WireMock.matchingJsonPath("bookingId", WireMock.equalTo("1234")))
-          .withRequestBody(WireMock.matchingJsonPath("offenderNo", WireMock.equalTo("G4803UT")))
+          .withRequestBody(WireMock.matchingJsonPath("prisonerNumber", WireMock.equalTo("G4803UT")))
+          .withRequestBody(WireMock.matchingJsonPath("prisonCode", WireMock.equalTo("MDI")))
+          .withRequestBody(WireMock.matchingJsonPath("internalLocationId", WireMock.equalTo("1234")))
           .withRequestBody(WireMock.matchingJsonPath("comment", WireMock.equalTo("Remand added")))
-          .withRequestBody(WireMock.matchingJsonPath("startDateTime", WireMock.equalTo("2021-07-01T00:00:00")))
-          .withRequestBody(WireMock.matchingJsonPath("endDateTime", WireMock.equalTo("2021-07-01T00:00:00")))
-          .withRequestBody(WireMock.matchingJsonPath("subtype", WireMock.equalTo("APP")))
-          .withRequestBody(WireMock.matchingJsonPath("status", WireMock.equalTo("SCH"))),
+          .withRequestBody(WireMock.matchingJsonPath("startDate", WireMock.equalTo("2021-07-01")))
+          .withRequestBody(WireMock.matchingJsonPath("startTime", WireMock.equalTo("00:01")))
+          .withRequestBody(WireMock.matchingJsonPath("endTime", WireMock.equalTo("00:02")))
+          .withRequestBody(WireMock.matchingJsonPath("categoryCode", WireMock.equalTo("APP"))),
       )
     }
   }
