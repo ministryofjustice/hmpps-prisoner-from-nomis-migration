@@ -50,6 +50,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 
 @ExtendWith(MockitoExtension::class)
 internal class AppointmentsMigrationServiceTest {
@@ -849,16 +850,16 @@ internal class AppointmentsMigrationServiceTest {
 
       verify(appointmentsService).createAppointment(
         eq(
-          CreateAppointmentRequest(
+          AppointmentMigrateRequest(
             bookingId = 606,
-            offenderNo = "G4803UT",
-            prisonId = "MDI",
-            internalLocation = 2,
-            startDateTime = LocalDateTime.parse("2020-01-01T10:00:00"),
-            endDateTime = LocalDateTime.parse("2020-01-01T12:00:00"),
+            prisonerNumber = "G4803UT",
+            prisonCode = "MDI",
+            internalLocationId = 2,
+            startDate = LocalDate.parse("2020-01-01"),
+            startTime = LocalTime.parse("10:00:00"),
+            endTime = LocalTime.parse("12:00:00"),
             comment = "a comment",
-            subtype = "SUB",
-            status = "SCH",
+            categoryCode = "SUB",
           ),
         ),
       )

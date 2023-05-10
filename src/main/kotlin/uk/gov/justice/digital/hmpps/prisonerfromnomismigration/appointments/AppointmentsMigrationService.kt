@@ -73,7 +73,7 @@ class AppointmentsMigrationService(
             .also {
               createAppointmentMapping(
                 nomisEventId = eventId,
-                appointmentInstanceId = it.appointmentInstanceId,
+                appointmentInstanceId = it.id,
                 context = context,
               )
             }
@@ -81,7 +81,7 @@ class AppointmentsMigrationService(
           "appointments-migration-entity-migrated",
           mapOf(
             "nomisEventId" to eventId.toString(),
-            "appointmentInstanceId" to migratedAppointment.appointmentInstanceId.toString(),
+            "appointmentInstanceId" to migratedAppointment.id.toString(),
             "migrationId" to context.migrationId,
           ),
           null,

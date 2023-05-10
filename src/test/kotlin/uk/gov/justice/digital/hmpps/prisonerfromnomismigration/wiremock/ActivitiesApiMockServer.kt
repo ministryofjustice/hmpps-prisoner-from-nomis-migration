@@ -48,15 +48,15 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubCreateAppointmentForMigration(appointmentInstanceId: Long) {
     stubFor(
-      post(WireMock.urlMatching("/appointments/TODO")).willReturn(
+      post(WireMock.urlMatching("/migrate-appointment")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.CREATED.value())
-          .withBody("""{"appointmentInstanceId": "$appointmentInstanceId"}"""),
+          .withBody("""{"id": "$appointmentInstanceId"}"""),
       ),
     )
   }
 
   fun createAppointmentCount() =
-    findAll(WireMock.postRequestedFor(WireMock.urlMatching("/appointments/TODO"))).count()
+    findAll(WireMock.postRequestedFor(WireMock.urlMatching("/migrate-appointment"))).count()
 }
