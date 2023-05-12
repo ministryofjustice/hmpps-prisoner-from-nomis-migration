@@ -860,6 +860,11 @@ internal class AppointmentsMigrationServiceTest {
             endTime = LocalTime.parse("12:00:00"),
             comment = "a comment",
             categoryCode = "SUB",
+            isCancelled = false,
+            createdBy = "ITAG_USER",
+            created = LocalDateTime.parse("2020-01-01T10:00"),
+            updatedBy = "another user",
+            updated = LocalDateTime.parse("2020-05-05T12:00"),
           ),
         ),
       )
@@ -1005,6 +1010,10 @@ fun aNomisAppointmentResponse(
   comment = comment,
   subtype = subtype,
   status = status,
+  createdBy = "ITAG_USER",
+  createdDate = LocalDateTime.parse("2020-01-01T10:00:00"),
+  modifiedBy = "another user",
+  modifiedDate = LocalDateTime.parse("2020-05-05T12:00:00"),
 )
 
 fun pages(total: Long, startId: Long = 1): PageImpl<AppointmentIdResponse> = PageImpl<AppointmentIdResponse>(

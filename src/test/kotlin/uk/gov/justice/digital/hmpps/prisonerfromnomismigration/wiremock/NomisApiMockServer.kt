@@ -575,6 +575,10 @@ private fun appointmentResponse(
   "endDateTime":"2022-10-06T09:50:00",
   "comment":"a comment",
   "subtype":"VLB",
-  "status":"SCH"
+  "status":"SCH",
+  "createdBy": "ITAG1",
+  "createdDate": "2023-01-01T11:00:00",
+  "modifiedBy": "ITAG2",
+  "modifiedDate": "2023-02-02T12:00:00"
 }
   """.trimIndent()

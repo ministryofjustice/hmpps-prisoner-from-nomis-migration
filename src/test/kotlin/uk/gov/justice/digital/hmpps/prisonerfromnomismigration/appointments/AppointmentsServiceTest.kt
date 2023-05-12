@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.Activi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 
 private const val APPOINTMENT_INSTANCE_ID = 1234567L
@@ -41,6 +42,11 @@ internal class AppointmentsServiceTest {
             startTime = LocalTime.parse("00:01"),
             endTime = LocalTime.parse("00:02"),
             categoryCode = "APP",
+            isCancelled = false,
+            createdBy = "ITAG_USER",
+            created = LocalDateTime.parse("2020-01-01T10:00:00"),
+            updatedBy = "ITAG_USER2",
+            updated = LocalDateTime.parse("2020-02-02T12:00:00"),
           ),
         )
       }
@@ -66,7 +72,12 @@ internal class AppointmentsServiceTest {
           .withRequestBody(WireMock.matchingJsonPath("startDate", WireMock.equalTo("2021-07-01")))
           .withRequestBody(WireMock.matchingJsonPath("startTime", WireMock.equalTo("00:01")))
           .withRequestBody(WireMock.matchingJsonPath("endTime", WireMock.equalTo("00:02")))
-          .withRequestBody(WireMock.matchingJsonPath("categoryCode", WireMock.equalTo("APP"))),
+          .withRequestBody(WireMock.matchingJsonPath("categoryCode", WireMock.equalTo("APP")))
+          .withRequestBody(WireMock.matchingJsonPath("isCancelled", WireMock.equalTo("false")))
+          .withRequestBody(WireMock.matchingJsonPath("createdBy", WireMock.equalTo("ITAG_USER")))
+          .withRequestBody(WireMock.matchingJsonPath("created", WireMock.equalTo("2020-01-01T10:00")))
+          .withRequestBody(WireMock.matchingJsonPath("updatedBy", WireMock.equalTo("ITAG_USER2")))
+          .withRequestBody(WireMock.matchingJsonPath("updated", WireMock.equalTo("2020-02-02T12:00:00"))),
       )
     }
   }
