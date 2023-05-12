@@ -16,7 +16,7 @@ class AppointmentsMappingService(@Qualifier("mappingApiWebClient") webClient: We
   suspend fun findNomisMapping(appointmentInstanceId: Long): AppointmentMapping? {
     return webClient.get()
       .uri(
-        "/appointments/appointment-instance-id/{appointmentInstanceId}",
+        "/mapping/appointments/appointment-instance-id/{appointmentInstanceId}",
         appointmentInstanceId,
       )
       .retrieve()
