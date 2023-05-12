@@ -209,7 +209,7 @@ data class NomisAdjustment(
 data class AppointmentResponse(
   val bookingId: Long,
   val offenderNo: String,
-  val prisonId: String? = null,
+  val prisonId: String, // prison or toPrison is never null in existing nomis data for event_type = 'APP' (as at 11/5/2023)
   val internalLocation: Long? = null,
   val startDateTime: LocalDateTime? = null,
   val endDateTime: LocalDateTime? = null,
@@ -224,7 +224,7 @@ data class AppointmentResponse(
   fun toAppointment() = AppointmentMigrateRequest(
     bookingId = bookingId,
     prisonerNumber = offenderNo,
-    prisonCode = prisonId!!, // never null in existing nomis data for event_type = 'APP' (as at 11/5/2023)
+    prisonCode = prisonId,
     internalLocationId = internalLocation,
     startDate = startDateTime!!.toLocalDate(), // never null in existing nomis data for event_type = 'APP' (as at 11/5/2023)
     startTime = startDateTime.toLocalTime(),

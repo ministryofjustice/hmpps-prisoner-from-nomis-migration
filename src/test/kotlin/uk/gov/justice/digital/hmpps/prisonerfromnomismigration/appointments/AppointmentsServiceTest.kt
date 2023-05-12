@@ -75,7 +75,7 @@ internal class AppointmentsServiceTest {
           .withRequestBody(WireMock.matchingJsonPath("categoryCode", WireMock.equalTo("APP")))
           .withRequestBody(WireMock.matchingJsonPath("isCancelled", WireMock.equalTo("false")))
           .withRequestBody(WireMock.matchingJsonPath("createdBy", WireMock.equalTo("ITAG_USER")))
-          .withRequestBody(WireMock.matchingJsonPath("created", WireMock.equalTo("2020-01-01T10:00")))
+          .withRequestBody(WireMock.matchingJsonPath("created", WireMock.equalTo("2020-01-01T10:00:00")))
           .withRequestBody(WireMock.matchingJsonPath("updatedBy", WireMock.equalTo("ITAG_USER2")))
           .withRequestBody(WireMock.matchingJsonPath("updated", WireMock.equalTo("2020-02-02T12:00:00"))),
       )
