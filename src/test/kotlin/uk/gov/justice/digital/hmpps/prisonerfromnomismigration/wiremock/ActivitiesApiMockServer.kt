@@ -22,7 +22,7 @@ class ActivitiesApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCa
   }
 
   override fun beforeEach(context: ExtensionContext) {
-    activitiesApi.resetRequests()
+    activitiesApi.resetAll()
   }
 
   override fun afterAll(context: ExtensionContext) {
@@ -48,12 +48,13 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubCreateAppointmentForMigration(appointmentInstanceId: Long) {
     stubFor(
-      post(WireMock.urlMatching("/migrate-appointment")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.CREATED.value())
-          .withBody("""{"id": "$appointmentInstanceId"}"""),
-      ),
+      post(WireMock.urlMatching("/migrate-appointment"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.CREATED.value())
+            .withBody("""{"id": "$appointmentInstanceId"}"""),
+        ),
     )
   }
 

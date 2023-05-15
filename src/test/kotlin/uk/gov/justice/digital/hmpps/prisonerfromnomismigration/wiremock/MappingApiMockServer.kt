@@ -2,11 +2,13 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.created
 import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
+import com.github.tomakehurst.wiremock.client.WireMock.okJson
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
@@ -30,7 +32,7 @@ class MappingApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallb
   }
 
   override fun beforeEach(context: ExtensionContext) {
-    mappingApi.resetRequests()
+    mappingApi.resetAll()
   }
 
   override fun afterAll(context: ExtensionContext) {
@@ -450,14 +452,29 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubAllNomisAppointmentsMappingNotFound() {
     stubFor(
-      get(
-        urlPathMatching("/mapping/appointments/appointment-instance-id/\\d*"),
-      ).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.NOT_FOUND.value())
-          .withBody("""{"message":"Not found"}"""),
-      ),
+      get(urlPathMatching("/mapping/appointments/nomis-event-id/\\d*"))
+        .atPriority(5)
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NOT_FOUND.value())
+            .withBody("""{"message":"Not found"}"""),
+        ),
+    )
+  }
+
+  fun stubNomisAppointmentsMappingFound(id: Long) {
+    val content = """{
+      "appointmentInstanceId": 191747,
+      "nomisEventId": $id,
+      "label": "2022-02-14T09:58:45",
+      "whenCreated": "2022-10-01T11:10:00",
+      "mappingType": "MIGRATED"
+    }"""
+    stubFor(
+      get(urlPathEqualTo("/mapping/appointments/nomis-event-id/$id"))
+        .atPriority(1)
+        .willReturn(okJson(content)),
     )
   }
 
@@ -481,9 +498,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }"""
     stubFor(
       get(urlPathMatching("/mapping/appointments/migration-id/.*")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withBody(pageContent(content, count)),
+        okJson(pageContent(content, count)),
       ),
     )
   }
@@ -505,11 +520,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       post(urlPathEqualTo("/mapping/appointments"))
         .inScenario("Retry appointment Scenario")
         .whenScenarioStateIs("Cause appointment Success")
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.CREATED.value()),
-        )
+        .willReturn(created())
         .willSetStateTo(STARTED),
     )
   }
