@@ -26,7 +26,7 @@ class VisitsApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallba
   }
 
   override fun beforeEach(context: ExtensionContext) {
-    visitsApi.resetRequests()
+    visitsApi.resetAll()
   }
 
   override fun afterAll(context: ExtensionContext) {

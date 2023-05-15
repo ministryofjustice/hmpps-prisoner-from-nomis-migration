@@ -25,7 +25,7 @@ class NomisApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallbac
   }
 
   override fun beforeEach(context: ExtensionContext) {
-    nomisApi.resetRequests()
+    nomisApi.resetAll()
   }
 
   override fun afterAll(context: ExtensionContext) {

@@ -81,7 +81,7 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
       mappingApi.stubAllNomisAppointmentsMappingNotFound()
       mappingApi.stubAppointmentMappingCreate()
 
-      activitiesApi.stubCreateAppointmentForMigration(12345L..12358L)
+      activitiesApi.stubCreateAppointmentForMigration(12345)
       mappingApi.stubAppointmentMappingByMigrationId(count = 14)
 
       webTestClient.post().uri("/migrate/appointments")
@@ -126,7 +126,7 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubGetAppointmentsInitialCount(3)
       nomisApi.stubMultipleGetAppointmentIdCounts(totalElements = 3, pageSize = 10)
       nomisApi.stubMultipleGetAppointments(1..3)
-      activitiesApi.stubCreateAppointmentForMigration(12345L..12347L)
+      activitiesApi.stubCreateAppointmentForMigration(12345)
       mappingApi.stubAllNomisAppointmentsMappingNotFound()
       mappingApi.stubAppointmentMappingCreate()
 
@@ -187,7 +187,7 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubMultipleGetAppointmentIdCounts(totalElements = 1, pageSize = 10)
       nomisApi.stubMultipleGetAppointments(1..1)
       mappingApi.stubAllNomisAppointmentsMappingNotFound()
-      activitiesApi.stubCreateAppointmentForMigration(654321L..654321L)
+      activitiesApi.stubCreateAppointmentForMigration(654321L)
       mappingApi.stubAppointmentMappingCreateFailureFollowedBySuccess()
 
       webTestClient.post().uri("/migrate/appointments")
@@ -213,7 +213,7 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubMultipleGetAppointmentIdCounts(totalElements = 2, pageSize = 10)
       nomisApi.stubMultipleGetAppointments(1..2)
       mappingApi.stubAllNomisAppointmentsMappingNotFound()
-      activitiesApi.stubCreateAppointmentForMigration(123L..124L)
+      activitiesApi.stubCreateAppointmentForMigration(123)
       mappingApi.stubAppointmentMappingCreateConflict(10, 11, 1)
       mappingApi.stubNomisAppointmentsMappingFound(2)
 

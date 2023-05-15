@@ -24,7 +24,7 @@ class SentencingApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCa
   }
 
   override fun beforeEach(context: ExtensionContext) {
-    sentencingApi.resetRequests()
+    sentencingApi.resetAll()
   }
 
   override fun afterAll(context: ExtensionContext) {
