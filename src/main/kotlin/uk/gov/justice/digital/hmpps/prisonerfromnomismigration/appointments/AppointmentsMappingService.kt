@@ -13,12 +13,9 @@ import java.time.LocalDateTime
 class AppointmentsMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) :
   MigrationMapping<AppointmentMapping>(domainUrl = "/mapping/appointments", webClient) {
 
-  suspend fun findNomisMapping(appointmentInstanceId: Long): AppointmentMapping? {
+  suspend fun findNomisMapping(eventId: Long): AppointmentMapping? {
     return webClient.get()
-      .uri(
-        "/mapping/appointments/appointment-instance-id/{appointmentInstanceId}",
-        appointmentInstanceId,
-      )
+      .uri("/mapping/appointments/nomis-event-id/{eventId}", eventId)
       .retrieve()
       .bodyToMono(AppointmentMapping::class.java)
       .onErrorResume(WebClientResponseException.NotFound::class.java) {

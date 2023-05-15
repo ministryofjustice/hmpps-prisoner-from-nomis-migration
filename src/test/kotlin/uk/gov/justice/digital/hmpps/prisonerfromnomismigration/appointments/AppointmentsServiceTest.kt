@@ -29,7 +29,7 @@ internal class AppointmentsServiceTest {
   inner class CreateAppointmentForMigration {
     @BeforeEach
     internal fun setUp() {
-      ActivitiesApiExtension.activitiesApi.stubCreateAppointmentForMigration(appointmentInstanceId = APPOINTMENT_INSTANCE_ID)
+      ActivitiesApiExtension.activitiesApi.stubCreateAppointmentForMigration(APPOINTMENT_INSTANCE_ID..APPOINTMENT_INSTANCE_ID)
       runBlocking {
         appointmentsService.createAppointment(
           AppointmentMigrateRequest(

@@ -28,9 +28,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationCon
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.COMPLETED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.STARTED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.APPOINTMENTS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension.Companion.activitiesApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
@@ -82,7 +81,7 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
       mappingApi.stubAllNomisAppointmentsMappingNotFound()
       mappingApi.stubAppointmentMappingCreate()
 
-      activitiesApi.stubCreateAppointmentForMigration(12345)
+      activitiesApi.stubCreateAppointmentForMigration(12345L..12358L)
       mappingApi.stubAppointmentMappingByMigrationId(count = 14)
 
       webTestClient.post().uri("/migrate/appointments")
@@ -127,7 +126,7 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubGetAppointmentsInitialCount(3)
       nomisApi.stubMultipleGetAppointmentIdCounts(totalElements = 3, pageSize = 10)
       nomisApi.stubMultipleGetAppointments(1..3)
-      activitiesApi.stubCreateAppointmentForMigration(12345)
+      activitiesApi.stubCreateAppointmentForMigration(12345L..12347L)
       mappingApi.stubAllNomisAppointmentsMappingNotFound()
       mappingApi.stubAppointmentMappingCreate()
 
@@ -188,7 +187,7 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubMultipleGetAppointmentIdCounts(totalElements = 1, pageSize = 10)
       nomisApi.stubMultipleGetAppointments(1..1)
       mappingApi.stubAllNomisAppointmentsMappingNotFound()
-      activitiesApi.stubCreateAppointmentForMigration(654321)
+      activitiesApi.stubCreateAppointmentForMigration(654321L..654321L)
       mappingApi.stubAppointmentMappingCreateFailureFollowedBySuccess()
 
       webTestClient.post().uri("/migrate/appointments")
@@ -209,13 +208,14 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Test
-    fun `it will not retry after a 409 (duplicate appointment written to Activities API)`() {
-      nomisApi.stubGetAppointmentsInitialCount(1)
-      nomisApi.stubMultipleGetAppointmentIdCounts(totalElements = 1, pageSize = 10)
-      nomisApi.stubMultipleGetAppointments(1..1)
+    fun `it will not retry after a 409 (duplicate appointment written to Activities API) or mapping already exists`() {
+      nomisApi.stubGetAppointmentsInitialCount(2)
+      nomisApi.stubMultipleGetAppointmentIdCounts(totalElements = 2, pageSize = 10)
+      nomisApi.stubMultipleGetAppointments(1..2)
       mappingApi.stubAllNomisAppointmentsMappingNotFound()
-      activitiesApi.stubCreateAppointmentForMigration(123)
-      mappingApi.stubAppointmentMappingCreateConflict()
+      activitiesApi.stubCreateAppointmentForMigration(123L..124L)
+      mappingApi.stubAppointmentMappingCreateConflict(10, 11, 1)
+      mappingApi.stubNomisAppointmentsMappingFound(2)
 
       webTestClient.post().uri("/migrate/appointments")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_APPOINTMENTS")))
@@ -239,8 +239,8 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(it["migrationId"]).isNotNull
           assertThat(it["existingAppointmentInstanceId"]).isEqualTo("10")
           assertThat(it["duplicateAppointmentInstanceId"]).isEqualTo("11")
-          assertThat(it["existingNomisEventId"]).isEqualTo("123")
-          assertThat(it["duplicateNomisEventId"]).isEqualTo("123")
+          assertThat(it["existingNomisEventId"]).isEqualTo("1")
+          assertThat(it["duplicateNomisEventId"]).isEqualTo("1")
         },
         isNull(),
       )
@@ -581,12 +581,12 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
             migrationId = "2020-01-01T00:00:00",
             whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
             whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
-            status = MigrationStatus.STARTED,
+            status = STARTED,
             estimatedRecordCount = 123_567,
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = MigrationType.APPOINTMENTS,
+            migrationType = APPOINTMENTS,
           ),
         )
         migrationHistoryRepository.save(
@@ -594,12 +594,12 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
             migrationId = "2019-01-01T00:00:00",
             whenStarted = LocalDateTime.parse("2019-01-01T00:00:00"),
             whenEnded = LocalDateTime.parse("2019-01-01T01:00:00"),
-            status = MigrationStatus.COMPLETED,
+            status = COMPLETED,
             estimatedRecordCount = 123_567,
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = MigrationType.APPOINTMENTS,
+            migrationType = APPOINTMENTS,
           ),
         )
       }

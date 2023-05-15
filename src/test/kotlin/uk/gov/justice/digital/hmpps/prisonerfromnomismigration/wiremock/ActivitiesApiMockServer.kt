@@ -5,6 +5,7 @@ import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
@@ -23,6 +24,7 @@ class ActivitiesApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCa
 
   override fun beforeEach(context: ExtensionContext) {
     activitiesApi.resetRequests()
+    activitiesApi.resetScenarios()
   }
 
   override fun afterAll(context: ExtensionContext) {
@@ -46,15 +48,25 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubCreateAppointmentForMigration(appointmentInstanceId: Long) {
-    stubFor(
-      post(WireMock.urlMatching("/migrate-appointment")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.CREATED.value())
-          .withBody("""{"id": "$appointmentInstanceId"}"""),
-      ),
-    )
+  fun stubCreateAppointmentForMigration(appointmentInstanceIds: LongProgression) {
+    var state = STARTED
+    var count = 1
+    appointmentInstanceIds.forEach { appointmentInstanceId ->
+      stubFor(
+        post(WireMock.urlMatching("/migrate-appointment"))
+          .inScenario("Appointment creation")
+          .whenScenarioStateIs(state)
+          .willReturn(
+            aResponse()
+              .withHeader("Content-Type", "application/json")
+              .withStatus(HttpStatus.CREATED.value())
+              .withBody("""{"id": "$appointmentInstanceId"}"""),
+          )
+          .willSetStateTo(count.toString()),
+      )
+      state = count.toString()
+      count++
+    }
   }
 
   fun createAppointmentCount() =
