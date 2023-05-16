@@ -68,20 +68,19 @@ class AppointmentsMigrationService(
       ?: run {
         val appointment = nomisApiService.getAppointment(eventId)
 
-        val migratedAppointment =
-          appointmentsService.createAppointment(appointment.toAppointment())
-            .also {
-              createAppointmentMapping(
-                nomisEventId = eventId,
-                appointmentInstanceId = it.id,
-                context = context,
-              )
-            }
+        val migratedAppointment = appointmentsService.createAppointment(appointment.toAppointment())
+        val id = migratedAppointment.occurrences.first().allocations.first().id
+        createAppointmentMapping(
+          nomisEventId = eventId,
+          appointmentInstanceId = id,
+          context = context,
+        )
+
         telemetryClient.trackEvent(
           "appointments-migration-entity-migrated",
           mapOf(
             "nomisEventId" to eventId.toString(),
-            "appointmentInstanceId" to migratedAppointment.id.toString(),
+            "appointmentInstanceId" to id.toString(),
             "migrationId" to context.migrationId,
           ),
           null,

@@ -38,15 +38,15 @@ internal class AppointmentsServiceTest {
             comment = "Remand added",
             prisonerNumber = "G4803UT",
             internalLocationId = 1234,
-            startDate = LocalDate.parse("2021-07-01"),
+            startDate = "2021-07-01",
             startTime = "00:01",
             endTime = "00:02",
             categoryCode = "APP",
             isCancelled = false,
             createdBy = "ITAG_USER",
-            created = LocalDateTime.parse("2020-01-01T10:00:00"),
+            created = "2020-01-01T10:00:00",
             updatedBy = "ITAG_USER2",
-            updated = LocalDateTime.parse("2020-02-02T12:00:00"),
+            updated = "2020-02-02T12:00:00",
           ),
         )
       }
@@ -60,7 +60,7 @@ internal class AppointmentsServiceTest {
       )
     }
 
-    // TODO needs @JsonFormat in AppointmentMigrateRequest @Test
+    @Test
     fun `will pass data to the api`() {
       ActivitiesApiExtension.activitiesApi.verify(
         WireMock.postRequestedFor(WireMock.urlEqualTo("/migrate-appointment"))

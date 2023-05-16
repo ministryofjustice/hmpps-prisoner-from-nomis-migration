@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.sampleAppointment
 
 class ActivitiesApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
   companion object {
@@ -33,6 +35,7 @@ class ActivitiesApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCa
 class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
   companion object {
     private const val WIREMOCK_PORT = 8086
+    private val objectMapper = jacksonObjectMapper()
   }
 
   fun stubHealthPing(status: Int) {
@@ -47,29 +50,15 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubCreateAppointmentForMigration(appointmentInstanceId: Long) {
+    val response = objectMapper.writeValueAsString(sampleAppointment(appointmentInstanceId))
+
     stubFor(
       post(WireMock.urlMatching("/migrate-appointment"))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.CREATED.value())
-            .withBody(
-              """{
-               "id": $appointmentInstanceId,
-               "appointmentType": "INDIVIDUAL",
-               "prisonCode": "MDI",
-               "startDate": "2020-05-23",
-               "startTime": "11:30",
-               "endTime": "12:30",
-               "comment": "some comment",
-               "inCell": false,
-               "categoryCode": "",
-               "occurrences": [],
-               "created": "2020-05-23T00:00",
-               "createdBy": "ITAG_USER"
-            }
-              """.trimIndent(),
-            ),
+            .withBody(response),
         ),
     )
   }
