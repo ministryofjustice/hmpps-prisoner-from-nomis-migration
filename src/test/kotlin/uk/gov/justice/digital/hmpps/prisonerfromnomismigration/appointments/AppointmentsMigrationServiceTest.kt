@@ -29,6 +29,8 @@ import org.mockito.kotlin.whenever
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.Appointment
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.CANCEL_MIGRATION
@@ -50,7 +52,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.LocalTime
 
 @ExtendWith(MockitoExtension::class)
 internal class AppointmentsMigrationServiceTest {
@@ -818,7 +819,7 @@ internal class AppointmentsMigrationServiceTest {
         aNomisAppointmentResponse(),
       )
 
-      whenever(appointmentsService.createAppointment(any())).thenReturn(CreateAppointmentResponse(999))
+      whenever(appointmentsService.createAppointment(any())).thenReturn(sampleAppointment())
     }
 
     @Test
@@ -856,8 +857,8 @@ internal class AppointmentsMigrationServiceTest {
             prisonCode = "MDI",
             internalLocationId = 2,
             startDate = LocalDate.parse("2020-01-01"),
-            startTime = LocalTime.parse("10:00:00"),
-            endTime = LocalTime.parse("12:00:00"),
+            startTime = "10:00",
+            endTime = "12:00",
             comment = "a comment",
             categoryCode = "SUB",
             isCancelled = false,
@@ -876,7 +877,7 @@ internal class AppointmentsMigrationServiceTest {
         whenever(nomisApiService.getAppointment(any())).thenReturn(
           aNomisAppointmentResponse(),
         )
-        whenever(appointmentsService.createAppointment(any())).thenReturn(CreateAppointmentResponse(999))
+        whenever(appointmentsService.createAppointment(any())).thenReturn(sampleAppointment())
 
         service.migrateNomisEntity(
           MigrationContext(
@@ -902,7 +903,7 @@ internal class AppointmentsMigrationServiceTest {
     fun `will not throw exception (and place message back on queue) but create a new retry message`(): Unit =
       runBlocking {
         whenever(nomisApiService.getAppointment(any())).thenReturn(aNomisAppointmentResponse())
-        whenever(appointmentsService.createAppointment(any())).thenReturn(CreateAppointmentResponse(999))
+        whenever(appointmentsService.createAppointment(any())).thenReturn(sampleAppointment())
 
         whenever(
           appointmentsMappingService.createMapping(
@@ -988,6 +989,21 @@ internal class AppointmentsMigrationServiceTest {
       )
     }
   }
+
+  private fun sampleAppointment() = Appointment(
+    id = 999,
+    appointmentType = Appointment.AppointmentType.INDIVIDUAL,
+    prisonCode = "MDI",
+    startDate = LocalDate.parse("2020-05-23"),
+    startTime = "11:30",
+    endTime = "12:30",
+    comment = "some comment",
+    inCell = false,
+    categoryCode = "",
+    occurrences = emptyList(),
+    created = LocalDateTime.now(),
+    createdBy = "ITAG_USER",
+  )
 }
 
 fun aNomisAppointmentResponse(

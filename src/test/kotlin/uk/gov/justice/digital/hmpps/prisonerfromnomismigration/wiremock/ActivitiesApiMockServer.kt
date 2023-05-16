@@ -53,7 +53,23 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.CREATED.value())
-            .withBody("""{"id": "$appointmentInstanceId"}"""),
+            .withBody(
+              """{
+               "id": $appointmentInstanceId,
+               "appointmentType": "INDIVIDUAL",
+               "prisonCode": "MDI",
+               "startDate": "2020-05-23",
+               "startTime": "11:30",
+               "endTime": "12:30",
+               "comment": "some comment",
+               "inCell": false,
+               "categoryCode": "",
+               "occurrences": [],
+               "created": "2020-05-23T00:00",
+               "createdBy": "ITAG_USER"
+            }
+              """.trimIndent(),
+            ),
         ),
     )
   }

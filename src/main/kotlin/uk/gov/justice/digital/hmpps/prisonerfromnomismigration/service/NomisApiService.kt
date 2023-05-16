@@ -10,7 +10,7 @@ import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.AppointmentMigrateRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomUsageResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationFilter
@@ -225,10 +225,10 @@ data class AppointmentResponse(
     bookingId = bookingId,
     prisonerNumber = offenderNo,
     prisonCode = prisonId,
-    internalLocationId = internalLocation,
+    internalLocationId = internalLocation!!,
     startDate = startDateTime!!.toLocalDate(), // never null in existing nomis data for event_type = 'APP' (as at 11/5/2023)
-    startTime = startDateTime.toLocalTime(),
-    endTime = endDateTime?.toLocalTime(),
+    startTime = startDateTime.toLocalTime().toString(),
+    endTime = endDateTime?.toLocalTime().toString(),
     comment = comment,
     categoryCode = subtype,
     isCancelled = status == "CANC",
