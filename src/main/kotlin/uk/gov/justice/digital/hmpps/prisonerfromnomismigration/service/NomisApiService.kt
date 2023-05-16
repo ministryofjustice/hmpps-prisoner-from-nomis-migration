@@ -16,6 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomU
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationFilter
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @Service
 class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
@@ -206,6 +207,8 @@ data class NomisAdjustment(
   fun getAdjustmentCategory() = sentenceSequence?.let { "SENTENCE" } ?: "KEY_DATE"
 }
 
+private val simpleTimeFormat = DateTimeFormatter.ofPattern("HH:mm")
+
 data class AppointmentResponse(
   val bookingId: Long,
   val offenderNo: String,
@@ -226,9 +229,10 @@ data class AppointmentResponse(
     prisonerNumber = offenderNo,
     prisonCode = prisonId,
     internalLocationId = internalLocation!!,
-    startDate = startDateTime!!.toLocalDate().toString(), // never null in existing nomis data for event_type = 'APP' (as at 11/5/2023)
-    startTime = startDateTime.toLocalTime().toString(),
-    endTime = endDateTime?.toLocalTime().toString(),
+    // startDate never null in existing nomis data for event_type = 'APP' (as at 11/5/2023)
+    startDate = startDateTime!!.toLocalDate().format(DateTimeFormatter.ISO_LOCAL_DATE),
+    startTime = startDateTime.toLocalTime().format(simpleTimeFormat),
+    endTime = endDateTime?.toLocalTime()?.format(simpleTimeFormat),
     comment = comment,
     categoryCode = subtype,
     isCancelled = status == "CANC",
