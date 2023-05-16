@@ -226,15 +226,15 @@ data class AppointmentResponse(
     prisonerNumber = offenderNo,
     prisonCode = prisonId,
     internalLocationId = internalLocation!!,
-    startDate = startDateTime!!.toLocalDate(), // never null in existing nomis data for event_type = 'APP' (as at 11/5/2023)
+    startDate = startDateTime!!.toLocalDate().toString(), // never null in existing nomis data for event_type = 'APP' (as at 11/5/2023)
     startTime = startDateTime.toLocalTime().toString(),
     endTime = endDateTime?.toLocalTime().toString(),
     comment = comment,
     categoryCode = subtype,
     isCancelled = status == "CANC",
-    created = createdDate,
+    created = createdDate.toString(),
     createdBy = createdBy,
-    updated = modifiedDate,
+    updated = modifiedDate?.toString(),
     updatedBy = modifiedBy,
   )
 }

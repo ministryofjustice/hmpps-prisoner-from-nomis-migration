@@ -69,7 +69,7 @@ java {
 }
 
 tasks {
-  withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+  withType<KotlinCompile> {
     //  dependsOn("buildSentencingApiModel")
     dependsOn("buildActivityApiModel", "buildNomisSyncApiModel")
     kotlinOptions {
@@ -95,7 +95,7 @@ tasks.register("buildActivityApiModel", GenerateTask::class) {
   apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.api")
   configOptions.set(
     mapOf(
-      "dateLibrary" to "java8-localdatetime",
+      "dateLibrary" to "string",
       "serializationLibrary" to "jackson",
       "enumPropertyNaming" to "original"
     )
@@ -135,7 +135,6 @@ tasks.register("buildSentencingApiModel", GenerateTask::class) {
   configOptions.set(
     mapOf(
       "dateLibrary" to "java8-localdatetime",
-      "dateLibrary" to "java8",
       "serializationLibrary" to "jackson"
     )
   )
@@ -153,7 +152,7 @@ kotlin {
   }
 }
 
-configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+configure<KtlintExtension> {
   filter {
     exclude {
       it.file.path.contains("build/generated/src/main/")

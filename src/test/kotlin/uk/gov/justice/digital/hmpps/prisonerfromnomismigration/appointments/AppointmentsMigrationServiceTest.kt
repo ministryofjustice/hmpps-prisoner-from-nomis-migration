@@ -31,6 +31,8 @@ import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.Appointment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentMigrateRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentOccurrence
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentOccurrenceAllocation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.CANCEL_MIGRATION
@@ -819,7 +821,7 @@ internal class AppointmentsMigrationServiceTest {
         aNomisAppointmentResponse(),
       )
 
-      whenever(appointmentsService.createAppointment(any())).thenReturn(sampleAppointment())
+      whenever(appointmentsService.createAppointment(any())).thenReturn(sampleAppointment(999))
     }
 
     @Test
@@ -856,16 +858,16 @@ internal class AppointmentsMigrationServiceTest {
             prisonerNumber = "G4803UT",
             prisonCode = "MDI",
             internalLocationId = 2,
-            startDate = LocalDate.parse("2020-01-01"),
+            startDate = "2020-01-01",
             startTime = "10:00",
             endTime = "12:00",
             comment = "a comment",
             categoryCode = "SUB",
             isCancelled = false,
             createdBy = "ITAG_USER",
-            created = LocalDateTime.parse("2020-01-01T10:00"),
+            created = "2020-01-01T10:00",
             updatedBy = "another user",
-            updated = LocalDateTime.parse("2020-05-05T12:00"),
+            updated = "2020-05-05T12:00",
           ),
         ),
       )
@@ -877,7 +879,7 @@ internal class AppointmentsMigrationServiceTest {
         whenever(nomisApiService.getAppointment(any())).thenReturn(
           aNomisAppointmentResponse(),
         )
-        whenever(appointmentsService.createAppointment(any())).thenReturn(sampleAppointment())
+        whenever(appointmentsService.createAppointment(any())).thenReturn(sampleAppointment(999))
 
         service.migrateNomisEntity(
           MigrationContext(
@@ -903,7 +905,7 @@ internal class AppointmentsMigrationServiceTest {
     fun `will not throw exception (and place message back on queue) but create a new retry message`(): Unit =
       runBlocking {
         whenever(nomisApiService.getAppointment(any())).thenReturn(aNomisAppointmentResponse())
-        whenever(appointmentsService.createAppointment(any())).thenReturn(sampleAppointment())
+        whenever(appointmentsService.createAppointment(any())).thenReturn(sampleAppointment(999))
 
         whenever(
           appointmentsMappingService.createMapping(
@@ -989,22 +991,31 @@ internal class AppointmentsMigrationServiceTest {
       )
     }
   }
-
-  private fun sampleAppointment() = Appointment(
-    id = 999,
-    appointmentType = Appointment.AppointmentType.INDIVIDUAL,
-    prisonCode = "MDI",
-    startDate = LocalDate.parse("2020-05-23"),
-    startTime = "11:30",
-    endTime = "12:30",
-    comment = "some comment",
-    inCell = false,
-    categoryCode = "",
-    occurrences = emptyList(),
-    created = LocalDateTime.now(),
-    createdBy = "ITAG_USER",
-  )
 }
+
+fun sampleAppointment(appointmentInstanceId: Long) = Appointment(
+  id = 100,
+  appointmentType = Appointment.AppointmentType.INDIVIDUAL,
+  prisonCode = "MDI",
+  startDate = "2020-05-23",
+  startTime = "11:30",
+  endTime = "12:30",
+  comment = "some comment",
+  inCell = false,
+  categoryCode = "",
+  occurrences = listOf(
+    AppointmentOccurrence(
+      1,
+      1,
+      false,
+      "2020-05-23",
+      "11:30",
+      listOf(AppointmentOccurrenceAllocation(appointmentInstanceId, "A1234AA", 4567)),
+    ),
+  ),
+  created = "2023-01-01T12:00:00",
+  createdBy = "ITAG_USER",
+)
 
 fun aNomisAppointmentResponse(
   bookingId: Long = 606,
