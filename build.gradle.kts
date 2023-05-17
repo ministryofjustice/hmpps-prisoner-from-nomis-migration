@@ -95,7 +95,7 @@ tasks.register("buildActivityApiModel", GenerateTask::class) {
   apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.api")
   configOptions.set(
     mapOf(
-      "dateLibrary" to "string",
+      "dateLibrary" to "java8-localdatetime",
       "serializationLibrary" to "jackson",
       "enumPropertyNaming" to "original"
     )

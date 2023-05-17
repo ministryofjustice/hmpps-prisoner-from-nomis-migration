@@ -55,6 +55,29 @@ The first 2 of the 3 steps is required but instead of step 3
 
 Then run any of the `bash` scripts at the root of this project to send events to the local topic
 
+## Generating APi client models
+
+For some of our external API calls we use `openapi-generator` to generate the models used in the API clients. The Open API specifications used can be found in directory `openapi-specs`.
+
+### Updating the Open API specs
+
+Run the following commands to take a copy of the latest specs:
+
+```
+curl https://nomis-prsner-dev.aks-dev-1.studio-hosting.service.justice.gov.uk/v3/api-docs > openapi-specs/nomis-sync-api-docs.json
+curl https://activities-api-dev.prison.service.justice.gov.uk/v3/api-docs > openapi-specs/activities-api-docs.json
+```
+
+Go into the specs and reformat so they and the diffs are easier for humans to read.
+
+Then run another command to regenerate the models in the `build/generated/src` directory:
+
+`./gradlew clean compileKotlin`
+
+Now build the project and deal with any compile errors caused by changes to the generated models.
+
+Finally run the tests and fix any issues caused by changes to the models.
+
 ## Mock services
 
 There a circumstances where you want to run this service end to end but without the consuming service being available, for example the consuming service

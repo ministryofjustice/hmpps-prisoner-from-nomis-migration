@@ -22,41 +22,24 @@ class WebClientConfiguration(
 ) {
 
   @Bean
-  fun nomisApiHealthWebClient(): WebClient {
-    return WebClient.builder()
-      .baseUrl(nomisApiBaseUri)
-      .build()
-  }
+  fun nomisApiHealthWebClient(): WebClient = WebClient.builder().baseUrl(nomisApiBaseUri).build()
 
   @Bean
-  fun oauthApiHealthWebClient(): WebClient {
-    return WebClient.builder()
-      .baseUrl(oauthApiBaseUri)
-      .build()
-  }
+  fun mappingApiHealthWebClient(): WebClient = WebClient.builder().baseUrl(mappingApiBaseUri).build()
 
   @Bean
-  fun nomisApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager): WebClient {
+  fun oauthApiHealthWebClient(): WebClient = WebClient.builder().baseUrl(oauthApiBaseUri).build()
+
+  @Bean
+  fun nomisApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager, webClientBuilder: WebClient.Builder): WebClient {
     val oauth2Client = ServerOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager)
 
     oauth2Client.setDefaultClientRegistrationId("nomis-api")
 
-    return WebClient.builder()
+    return webClientBuilder
       .baseUrl(nomisApiBaseUri)
       .filter(oauth2Client)
       .build()
-  }
-
-  @Bean
-  fun authorizedClientManager(
-    clientRegistrationRepository: ReactiveClientRegistrationRepository,
-    oAuth2AuthorizedClientService: ReactiveOAuth2AuthorizedClientService,
-  ): ReactiveOAuth2AuthorizedClientManager? {
-    val authorizedClientProvider = ReactiveOAuth2AuthorizedClientProviderBuilder.builder().clientCredentials().build()
-    val authorizedClientManager =
-      AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(clientRegistrationRepository, oAuth2AuthorizedClientService)
-    authorizedClientManager.setAuthorizedClientProvider(authorizedClientProvider)
-    return authorizedClientManager
   }
 
   @Bean
@@ -71,10 +54,15 @@ class WebClientConfiguration(
   }
 
   @Bean
-  fun mappingApiHealthWebClient(): WebClient {
-    return WebClient.builder()
-      .baseUrl(mappingApiBaseUri)
-      .build()
+  fun authorizedClientManager(
+    clientRegistrationRepository: ReactiveClientRegistrationRepository,
+    oAuth2AuthorizedClientService: ReactiveOAuth2AuthorizedClientService,
+  ): ReactiveOAuth2AuthorizedClientManager {
+    val authorizedClientProvider = ReactiveOAuth2AuthorizedClientProviderBuilder.builder().clientCredentials().build()
+    val authorizedClientManager =
+      AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(clientRegistrationRepository, oAuth2AuthorizedClientService)
+    authorizedClientManager.setAuthorizedClientProvider(authorizedClientProvider)
+    return authorizedClientManager
   }
 
   @Component("visitMappingApi")
