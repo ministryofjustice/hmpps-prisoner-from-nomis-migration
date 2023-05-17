@@ -35,7 +35,9 @@ class ActivitiesApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCa
 class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
   companion object {
     private const val WIREMOCK_PORT = 8086
-    private val objectMapper = jacksonObjectMapper()
+    private val objectMapper = jacksonObjectMapper().apply {
+      findAndRegisterModules()
+    }
   }
 
   fun stubHealthPing(status: Int) {

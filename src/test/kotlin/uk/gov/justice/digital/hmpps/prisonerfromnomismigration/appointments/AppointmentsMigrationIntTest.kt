@@ -174,10 +174,10 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
           .jsonPath("$[0].whenStarted").isNotEmpty
           .jsonPath("$[0].estimatedRecordCount").isEqualTo(3)
           .jsonPath("$[0].migrationType").isEqualTo("APPOINTMENTS")
-          .jsonPath("$[0].status").isEqualTo("COMPLETED")
           .jsonPath("$[0].recordsMigrated").isEqualTo(2)
           .jsonPath("$[0].recordsFailed").isEqualTo(1)
           .jsonPath("$[0].whenEnded").isNotEmpty
+          .jsonPath("$[0].status").isEqualTo("COMPLETED")
       }
     }
 

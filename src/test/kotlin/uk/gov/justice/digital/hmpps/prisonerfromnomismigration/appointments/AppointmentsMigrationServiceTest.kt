@@ -34,6 +34,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentOccurrence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentOccurrenceAllocation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.CANCEL_MIGRATION
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_BY_PAGE
@@ -822,6 +823,7 @@ internal class AppointmentsMigrationServiceTest {
       )
 
       whenever(appointmentsService.createAppointment(any())).thenReturn(sampleAppointment(999))
+      whenever(appointmentsMappingService.createMapping(any(), any())).thenReturn(CreateMappingResult<AppointmentMapping>())
     }
 
     @Test
@@ -858,16 +860,16 @@ internal class AppointmentsMigrationServiceTest {
             prisonerNumber = "G4803UT",
             prisonCode = "MDI",
             internalLocationId = 2,
-            startDate = "2020-01-01",
+            startDate = LocalDate.parse("2020-01-01"),
             startTime = "10:00",
             endTime = "12:00",
             comment = "a comment",
             categoryCode = "SUB",
             isCancelled = false,
             createdBy = "ITAG_USER",
-            created = "2020-01-01T10:00",
+            created = LocalDateTime.parse("2020-01-01T10:00"),
             updatedBy = "another user",
-            updated = "2020-05-05T12:00",
+            updated = LocalDateTime.parse("2020-05-05T12:00"),
           ),
         ),
       )
@@ -997,7 +999,7 @@ fun sampleAppointment(appointmentInstanceId: Long) = Appointment(
   id = 100,
   appointmentType = Appointment.AppointmentType.INDIVIDUAL,
   prisonCode = "MDI",
-  startDate = "2020-05-23",
+  startDate = LocalDate.parse("2020-05-23"),
   startTime = "11:30",
   endTime = "12:30",
   comment = "some comment",
@@ -1008,12 +1010,12 @@ fun sampleAppointment(appointmentInstanceId: Long) = Appointment(
       1,
       1,
       false,
-      "2020-05-23",
+      LocalDate.parse("2020-05-23"),
       "11:30",
       listOf(AppointmentOccurrenceAllocation(appointmentInstanceId, "A1234AA", 4567)),
     ),
   ),
-  created = "2023-01-01T12:00:00",
+  created = LocalDateTime.parse("2023-01-01T12:00:00"),
   createdBy = "ITAG_USER",
 )
 

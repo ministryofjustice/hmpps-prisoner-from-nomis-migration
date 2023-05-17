@@ -23,11 +23,11 @@ class ActivitiesConfiguration(
   }
 
   @Bean
-  fun activitiesApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager): WebClient {
+  fun activitiesApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager, webClientBuilder: WebClient.Builder): WebClient {
     val oauth2Client = ServerOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager)
     oauth2Client.setDefaultClientRegistrationId("activities-api")
 
-    return WebClient.builder()
+    return webClientBuilder
       .baseUrl(activitiesApiBaseUri)
       .filter(oauth2Client)
       .build()
