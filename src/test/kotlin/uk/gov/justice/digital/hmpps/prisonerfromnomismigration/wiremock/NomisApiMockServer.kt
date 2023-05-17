@@ -577,8 +577,8 @@ private fun appointmentResponse(
   "subtype":"VLB",
   "status":"SCH",
   "createdBy": "ITAG1",
-  "createdDate": "2023-01-01T11:00:00",
+  "createdDate": "2023-01-01T11:00:01.234567",
   "modifiedBy": "ITAG2",
-  "modifiedDate": "2023-02-02T12:00:00"
+  "modifiedDate": "2023-02-02T12:00:03.777666"
 }
   """.trimIndent()

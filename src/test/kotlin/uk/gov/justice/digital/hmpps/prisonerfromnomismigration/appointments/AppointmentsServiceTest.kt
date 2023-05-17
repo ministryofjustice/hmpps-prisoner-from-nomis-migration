@@ -44,9 +44,9 @@ internal class AppointmentsServiceTest {
             categoryCode = "APP",
             isCancelled = false,
             createdBy = "ITAG_USER",
-            created = LocalDateTime.parse("2020-01-01T10:00:00"),
+            created = LocalDateTime.parse("2020-01-01T10:00:01.000000"),
             updatedBy = "ITAG_USER2",
-            updated = LocalDateTime.parse("2020-02-02T12:00:00"),
+            updated = LocalDateTime.parse("2020-02-02T12:00:02"),
           ),
         )
       }
@@ -75,9 +75,9 @@ internal class AppointmentsServiceTest {
           .withRequestBody(WireMock.matchingJsonPath("categoryCode", WireMock.equalTo("APP")))
           .withRequestBody(WireMock.matchingJsonPath("isCancelled", WireMock.equalTo("false")))
           .withRequestBody(WireMock.matchingJsonPath("createdBy", WireMock.equalTo("ITAG_USER")))
-          .withRequestBody(WireMock.matchingJsonPath("created", WireMock.equalTo("2020-01-01T10:00:00")))
+          .withRequestBody(WireMock.matchingJsonPath("created", WireMock.equalTo("2020-01-01T10:00:01")))
           .withRequestBody(WireMock.matchingJsonPath("updatedBy", WireMock.equalTo("ITAG_USER2")))
-          .withRequestBody(WireMock.matchingJsonPath("updated", WireMock.equalTo("2020-02-02T12:00:00"))),
+          .withRequestBody(WireMock.matchingJsonPath("updated", WireMock.equalTo("2020-02-02T12:00:02"))),
       )
     }
   }
