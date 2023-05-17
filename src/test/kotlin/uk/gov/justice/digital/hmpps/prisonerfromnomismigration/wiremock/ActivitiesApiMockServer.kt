@@ -2,10 +2,14 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
-import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
@@ -55,7 +59,7 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
     val response = objectMapper.writeValueAsString(sampleAppointment(appointmentInstanceId))
 
     stubFor(
-      post(WireMock.urlMatching("/migrate-appointment"))
+      post(urlMatching("/migrate-appointment"))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -65,6 +69,13 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun verifyCreatedDate(createdValue: String, updatedValue: String) =
+    verify(
+      postRequestedFor(urlPathEqualTo("/migrate-appointment"))
+        .withRequestBody(matchingJsonPath("created", equalTo(createdValue)))
+        .withRequestBody(matchingJsonPath("updated", equalTo(updatedValue))),
+    )
+
   fun createAppointmentCount() =
-    findAll(WireMock.postRequestedFor(WireMock.urlMatching("/migrate-appointment"))).count()
+    findAll(postRequestedFor(urlMatching("/migrate-appointment"))).count()
 }

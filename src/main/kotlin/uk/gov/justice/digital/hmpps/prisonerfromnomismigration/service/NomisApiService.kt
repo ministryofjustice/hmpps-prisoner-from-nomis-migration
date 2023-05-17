@@ -17,6 +17,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigr
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 
 @Service
 class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
@@ -236,9 +237,9 @@ data class AppointmentResponse(
     comment = comment,
     categoryCode = subtype,
     isCancelled = status == "CANC",
-    created = createdDate,
+    created = createdDate.truncatedTo(ChronoUnit.SECONDS),
     createdBy = createdBy,
-    updated = modifiedDate,
+    updated = modifiedDate?.truncatedTo(ChronoUnit.SECONDS),
     updatedBy = modifiedBy,
   )
 }

@@ -116,6 +116,8 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
         prisonId = "MDI",
       )
 
+      activitiesApi.verifyCreatedDate("2023-01-01T11:00:01", "2023-02-02T12:00:03")
+
       await untilAsserted {
         assertThat(activitiesApi.createAppointmentCount()).isEqualTo(14)
       }
