@@ -1,18 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper
 
 import org.junit.jupiter.api.extension.ExtendWith
-import org.springframework.boot.autoconfigure.security.oauth2.client.reactive.ReactiveOAuth2ClientAutoConfiguration
-import org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
-import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTestContextBootstrapper
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.BootstrapWith
 import org.springframework.web.reactive.config.EnableWebFlux
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.ActivitiesConfiguration
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.WebClientConfiguration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.HmppsAuthApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
@@ -45,6 +39,6 @@ import kotlin.annotation.AnnotationTarget.CLASS
 @ActiveProfiles("test")
 @EnableWebFlux
 @EnableWebFluxSecurity
-@SpringBootTest(classes = [ActivitiesConfiguration::class, WebClientConfiguration::class, WebClientAutoConfiguration::class, OAuth2ClientAutoConfiguration::class, SecurityAutoConfiguration::class, ReactiveOAuth2ClientAutoConfiguration::class])
+@SpringBootTest
 @BootstrapWith(SpringBootTestContextBootstrapper::class)
 annotation class SpringAPIServiceTest

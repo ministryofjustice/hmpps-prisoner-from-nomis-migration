@@ -34,6 +34,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentOccurrence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentOccurrenceAllocation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.CANCEL_MIGRATION
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_BY_PAGE
@@ -822,6 +823,7 @@ internal class AppointmentsMigrationServiceTest {
       )
 
       whenever(appointmentsService.createAppointment(any())).thenReturn(sampleAppointment(999))
+      whenever(appointmentsMappingService.createMapping(any(), any())).thenReturn(CreateMappingResult<AppointmentMapping>())
     }
 
     @Test
