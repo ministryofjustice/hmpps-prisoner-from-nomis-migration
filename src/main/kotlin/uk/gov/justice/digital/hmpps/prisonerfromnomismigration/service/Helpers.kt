@@ -24,7 +24,7 @@ class SynchronisationMessage<M, T>(
 
 const val VISITS_QUEUE_ID = "migrationvisits"
 const val SENTENCING_ADJUSTMENTS_QUEUE_ID = "migrationsentencing"
-const val APPOINTMENTS_QUEUE_ID = "migrationappointments"
+const val APPOINTMENTS_QUEUE_ID = "migration_appointments"
 
 const val VISITS_SYNC_QUEUE_ID = "eventvisits"
 const val SENTENCING_ADJUSTMENTS_SYNC_QUEUE_ID = "eventsentencing"

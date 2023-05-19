@@ -7,7 +7,7 @@ hmpps.sqs:
     migrationsentencing:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
-    migrationappointments:
+    migration_appointments:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
     audit:
