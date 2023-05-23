@@ -22,6 +22,7 @@ generic-service:
     FEATURE_EVENT_KEY_DATE_ADJUSTMENT_DELETED: false
 
 generic-prometheus-alerts:
+  businessHoursOnly: true
   rdsAlertsDatabases:
     cloud-platform-62a9415f993d9717: "prisoner nomis migration"
   sqsAlertsQueueNames:
