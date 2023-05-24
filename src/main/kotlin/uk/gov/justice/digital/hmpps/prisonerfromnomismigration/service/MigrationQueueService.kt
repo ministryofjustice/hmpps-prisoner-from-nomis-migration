@@ -18,6 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.Synchronisat
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
 import uk.gov.justice.hmpps.sqs.PurgeQueueRequest
+import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import uk.gov.justice.hmpps.sqs.countMessagesOnQueue
 import java.time.Duration
 
@@ -74,7 +75,7 @@ class MigrationQueueService(
     val queue = hmppsQueueService.findByQueueId(type.queueId)
       ?: throw IllegalStateException("Queue not found for ${type.queueId}")
 
-    return queue.sqsClient.countMessagesOnQueue(queue.queueUrl).await() > 0
+    return queue.sqsClient.countAllMessagesOnQueue(queue.queueUrl).await() > 0
   }
 
   suspend fun countMessagesThatHaveFailed(type: MigrationType): Long {
