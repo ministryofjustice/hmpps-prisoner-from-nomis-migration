@@ -229,7 +229,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubMultipleGetAdjudicationIdCounts(totalElements: Long, pageSize: Long) {
-    // for each page create a response for each sentence adjustment id starting from 1 up to `totalElements`
+    // for each page create a response for each adjudication id starting from 1 up to `totalElements`
 
     val pages = (totalElements / pageSize) + 1
     (0..pages).forEach { page ->

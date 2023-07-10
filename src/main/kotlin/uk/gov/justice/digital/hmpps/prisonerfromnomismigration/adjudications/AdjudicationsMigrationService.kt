@@ -29,7 +29,7 @@ class AdjudicationsMigrationService(
   auditService: AuditService,
   private val adjudicationsMappingService: AdjudicationsMappingService,
   private val adjudicationsService: AdjudicationsService,
-  @Value("\${appointments.page.size:1000}") pageSize: Long,
+  @Value("\${adjudications.page.size:1000}") pageSize: Long,
 ) : MigrationService<AdjudicationsMigrationFilter, AdjudicationIdResponse, AdjudicationResponse, AdjudicationMapping>(
   queueService = queueService,
   auditService = auditService,

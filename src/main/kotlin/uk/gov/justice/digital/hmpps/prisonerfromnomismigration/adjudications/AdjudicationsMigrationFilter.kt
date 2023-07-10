@@ -21,7 +21,7 @@ data class AdjudicationsMigrationFilter(
   val toDate: LocalDate? = null,
 
   @Schema(
-    description = "Only include appointments for these prison ids",
+    description = "Only include adjudications for these prison ids",
     example = "['MDI','LEI']",
   )
   val prisonIds: List<String> = emptyList(),
