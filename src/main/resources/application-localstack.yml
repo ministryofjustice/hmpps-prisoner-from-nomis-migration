@@ -10,6 +10,9 @@ hmpps.sqs:
     migrationappointments:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    migrationadjudications:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
     audit:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}

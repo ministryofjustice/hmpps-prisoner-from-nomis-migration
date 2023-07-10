@@ -12,6 +12,7 @@ api.base.url:
   mapping: http://localhost:8083
   sentencing: http://localhost:8085
   activities: http://localhost:8086
+  adjudications: http://localhost:8087
 
 visits:
   page:

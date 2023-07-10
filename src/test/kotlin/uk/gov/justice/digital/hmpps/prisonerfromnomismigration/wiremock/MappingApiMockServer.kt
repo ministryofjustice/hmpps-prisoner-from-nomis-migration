@@ -577,6 +577,22 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       )
     }
 
+  fun stubAdjudicationMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 278887) {
+    val content = """{
+      "adjudicationNumber": 191747,
+      "label": "2022-02-14T09:58:45",
+      "whenCreated": "$whenCreated",
+      "mappingType": "MIGRATED"
+    }"""
+    stubFor(
+      get(urlPathMatching("/mapping/adjudications/migration-id/.*")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(pageContent(content, count)),
+      ),
+    )
+  }
+
   private fun pageContent(content: String, count: Int) = """
   {
       "content": [
@@ -609,4 +625,27 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       "empty": false
   }            
   """.trimIndent()
+
+  fun stubAllMappingsNotFound(url: String) {
+    stubFor(
+      get(
+        urlPathMatching(url),
+      ).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.NOT_FOUND.value())
+          .withBody("""{"message":"Not found"}"""),
+      ),
+    )
+  }
+
+  fun stubMappingCreate(url: String) {
+    stubFor(
+      post(urlEqualTo(url)).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.CREATED.value()),
+      ),
+    )
+  }
 }

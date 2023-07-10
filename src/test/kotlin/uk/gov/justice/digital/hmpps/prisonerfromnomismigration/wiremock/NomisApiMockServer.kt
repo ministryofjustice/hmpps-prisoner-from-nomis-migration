@@ -210,6 +210,65 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubGetMigrationInitialCount(
+    urlPath: String,
+    totalElements: Long,
+    pagedResponse: (totalElements: Long) -> String,
+  ) {
+    nomisApi.stubFor(
+      get(
+        urlPathEqualTo(urlPath),
+      )
+        .withQueryParam("page", equalTo("0"))
+        .withQueryParam("size", equalTo("1"))
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+            .withBody(pagedResponse(totalElements)),
+        ),
+    )
+  }
+
+  fun stubMultipleGetAdjudicationIdCounts(totalElements: Long, pageSize: Long) {
+    // for each page create a response for each adjudication id starting from 1 up to `totalElements`
+
+    val pages = (totalElements / pageSize) + 1
+    (0..pages).forEach { page ->
+      val startId = (page * pageSize) + 1
+      val endId = min((page * pageSize) + pageSize, totalElements)
+      nomisApi.stubFor(
+        get(
+          urlPathEqualTo("/adjudications/ids"),
+        )
+          .withQueryParam("page", equalTo(page.toString()))
+          .willReturn(
+            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+              .withBody(
+                adjudicationsIdsPagedResponse(
+                  totalElements = totalElements,
+                  ids = (startId..endId).map { it },
+                  pageNumber = page,
+                  pageSize = pageSize,
+                ),
+              ),
+          ),
+      )
+    }
+  }
+
+  fun stubMultipleGetAdjudications(intProgression: IntProgression) {
+    (intProgression).forEach {
+      nomisApi.stubFor(
+        get(
+          urlPathEqualTo("/adjudications/adjudication-number/$it"),
+        )
+          .willReturn(
+            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+              .withBody(adjudicationResponse(adjudicationNumber = it.toLong())),
+          ),
+      )
+    }
+  }
+
   fun stubMultipleGetAdjustmentIdCounts(totalElements: Long, pageSize: Long) {
     // for each page create a response for each sentence adjustment id starting from 1 up to `totalElements`
 
@@ -360,6 +419,16 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
         .withQueryParam("prisonIds", equalTo(prisonId)),
     )
   }
+
+  fun verifyGetIdsCount(url: String, fromDate: String, toDate: String) {
+    nomisApi.verify(
+      getRequestedFor(
+        urlPathEqualTo(url),
+      )
+        .withQueryParam("fromDate", equalTo(fromDate))
+        .withQueryParam("toDate", equalTo(toDate)),
+    )
+  }
 }
 
 private fun visitResponse(visitId: Long) = """
@@ -469,6 +538,16 @@ private fun appointmentIdsPagedResponse(
   return pageContent(content, pageSize, pageNumber, totalElements, ids.size)
 }
 
+fun adjudicationsIdsPagedResponse(
+  totalElements: Long = 10,
+  ids: List<Long> = (0L..10L).toList(),
+  pageSize: Long = 10,
+  pageNumber: Long = 0,
+): String {
+  val content = ids.map { """{ "adjudicationNumber": $it, "offenderNo": "AD12345" }""" }.joinToString { it }
+  return pageContent(content, pageSize, pageNumber, totalElements, ids.size)
+}
+
 private fun pageContent(
   content: String,
   pageSize: Long,
@@ -557,6 +636,60 @@ private fun keyDateAdjustmentResponse(
     "description": "Additional days"
     }
   }
+   
+  """.trimIndent()
+}
+
+private fun adjudicationResponse(
+  offenderNo: String = "G4803UT",
+  adjudicationNumber: Long = 3,
+): String {
+  return """
+{
+  "adjudicationNumber":$adjudicationNumber,
+  "offenderNo": "$offenderNo",
+  "adjudicationSequence": 3,
+   "bookingId": 1207292,
+    "adjudicationNumber": 1525733,
+    "partyAddedDate": "2023-06-08",
+    "incident": {
+        "adjudicationIncidentId": 1503064,
+        "reportingStaff": {
+            "staffId": 485585,
+            "firstName": "LUCY",
+            "lastName": "BENNETT"
+        },
+        "incidentDate": "2023-06-08",
+        "incidentTime": "12:00:00",
+        "reportedDate": "2023-06-08",
+        "reportedTime": "14:17:20",
+        "internalLocation": {
+            "locationId": 26149,
+            "code": "GYM",
+            "description": "MDI-PROG_ACT-GYM"
+        },
+        "incidentType": {
+            "code": "GOV",
+            "description": "Governor's Report"
+        },
+        "details": "Vera incited Brian Duckworth to set fire to a lamp\r\ndamages - the lamp\r\nevidence includes something in a bag with a reference number of 1234\r\nwitnessed by amarktest",
+        "prison": {
+            "code": "MDI",
+            "description": "Moorland (HMP & YOI)"
+        },
+        "prisonerWitnesses": [],
+        "prisonerVictims": [],
+        "otherPrisonersInvolved": [],
+        "reportingOfficers": [],
+        "staffWitnesses": [],
+        "staffVictims": [],
+        "otherStaffInvolved": [],
+        "repairs": []
+    },
+    "charges": [],
+    "investigations": [],
+    "hearings": []
+}
    
   """.trimIndent()
 }

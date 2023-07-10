@@ -25,6 +25,7 @@ class SynchronisationMessage<M, T>(
 const val VISITS_QUEUE_ID = "migrationvisits"
 const val SENTENCING_ADJUSTMENTS_QUEUE_ID = "migrationsentencing"
 const val APPOINTMENTS_QUEUE_ID = "migrationappointments"
+const val ADJUDICATIONS_QUEUE_ID = "migrationadjudications"
 
 const val VISITS_SYNC_QUEUE_ID = "eventvisits"
 const val SENTENCING_ADJUSTMENTS_SYNC_QUEUE_ID = "eventsentencing"
@@ -33,6 +34,7 @@ enum class MigrationType(val queueId: String, val telemetryName: String) {
   VISITS(VISITS_QUEUE_ID, "visits"),
   SENTENCING_ADJUSTMENTS(SENTENCING_ADJUSTMENTS_QUEUE_ID, "sentencing-adjustments"),
   APPOINTMENTS(APPOINTMENTS_QUEUE_ID, "appointments"),
+  ADJUDICATIONS(ADJUDICATIONS_QUEUE_ID, "adjudications"),
 }
 
 enum class SynchronisationType(val queueId: String) {
