@@ -16,6 +16,8 @@ generic-service:
     # currently set to self for a mock API until real API is ready
     API_BASE_URL_SENTENCING: https://prisoner-nomis-migration.hmpps.service.justice.gov.uk
     API_BASE_URL_ACTIVITIES: https://prisoner-nomis-migration.hmpps.service.justice.gov.uk
+    # currently set to self for a mock API until real API is ready
+    API_BASE_URL_ADJUDICATIONS: https://prisoner-nomis-migration.hmpps.service.justice.gov.uk
     FEATURE_EVENT_SENTENCE_ADJUSTMENT_UPSERTED: false
     FEATURE_EVENT_SENTENCE_ADJUSTMENT_DELETED: false
     FEATURE_EVENT_KEY_DATE_ADJUSTMENT_UPSERTED: false
@@ -35,5 +37,7 @@ generic-prometheus-alerts:
     - "syscon-devs-prod-migration_visits_dlq"
     - "syscon-devs-prod-migration_appointments_queue"
     - "syscon-devs-prod-migration_appointments_dlq"
+    - "syscon-devs-prod-migration_adjudications_queue"
+    - "syscon-devs-prod-migration_adjudications_dlq"
   sqsAlertsOldestThreshold: 2
   sqsAlertsTotalMessagesThreshold: 1

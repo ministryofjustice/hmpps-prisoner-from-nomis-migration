@@ -11,6 +11,8 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentMigrateRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomUsageResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationFilter
@@ -134,6 +136,34 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       }
       .retrieve()
       .bodyToMono(typeReference<RestResponsePage<AppointmentIdResponse>>())
+      .awaitSingle()
+
+  suspend fun getAdjudicationIds(
+    prisonIds: List<String>,
+    fromDate: LocalDate?,
+    toDate: LocalDate?,
+    pageNumber: Long,
+    pageSize: Long,
+  ): PageImpl<AdjudicationIdResponse> =
+    webClient.get()
+      .uri {
+        it.path("/adjudications/ids")
+          .queryParam("prisonIds", prisonIds)
+          .queryParam("fromDate", fromDate)
+          .queryParam("toDate", toDate)
+          .queryParam("page", pageNumber)
+          .queryParam("size", pageSize)
+          .build()
+      }
+      .retrieve()
+      .bodyToMono(typeReference<RestResponsePage<AdjudicationIdResponse>>())
+      .awaitSingle()
+
+  suspend fun getAdjudication(adjudicationNumber: Long): AdjudicationResponse =
+    webClient.get()
+      .uri("/adjudications/adjudication-number/{adjudicationNumber}", adjudicationNumber)
+      .retrieve()
+      .bodyToMono(AdjudicationResponse::class.java)
       .awaitSingle()
 }
 
