@@ -11,6 +11,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.Activi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.APPOINTMENTS_CREATE_MAPPING_URL
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 
 private const val APPOINTMENT_INSTANCE_ID = 1234567L
 
@@ -24,7 +26,7 @@ class AppointmentsMappingServiceTest {
   inner class CreateNomisMapping {
     @Test
     fun `will pass oath2 token to service`() {
-      MappingApiExtension.mappingApi.stubAppointmentMappingCreate()
+      mappingApi.stubMappingCreate(APPOINTMENTS_CREATE_MAPPING_URL)
 
       runBlocking {
         appointmentsMappingService.createMapping(
@@ -37,7 +39,7 @@ class AppointmentsMappingServiceTest {
         )
       }
 
-      MappingApiExtension.mappingApi.verify(
+      mappingApi.verify(
         WireMock.postRequestedFor(
           WireMock.urlPathEqualTo("/mapping/appointments"),
         ).withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
@@ -46,7 +48,7 @@ class AppointmentsMappingServiceTest {
 
     @Test
     fun `will create mapping`() {
-      MappingApiExtension.mappingApi.stubAppointmentMappingCreate()
+      mappingApi.stubMappingCreate(APPOINTMENTS_CREATE_MAPPING_URL)
 
       runBlocking {
         appointmentsMappingService.createMapping(

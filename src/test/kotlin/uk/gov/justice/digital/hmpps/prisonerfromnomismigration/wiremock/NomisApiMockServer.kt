@@ -16,6 +16,11 @@ import java.lang.Long.min
 
 class NomisApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
   companion object {
+    const val ADJUDICATIONS_ID_URL = "/adjudications/ids"
+    const val VISITS_ID_URL = "/visits/ids"
+    const val APPOINTMENTS_ID_URL = "/appointments/ids"
+    const val ADJUSTMENTS_ID_URL = "/adjustments/ids"
+
     @JvmField
     val nomisApi = NomisApiMockServer()
   }
@@ -44,20 +49,6 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
         aResponse().withHeader("Content-Type", "application/json").withBody(if (status == 200) "pong" else "some error")
           .withStatus(status),
       ),
-    )
-  }
-
-  fun stubGetVisitsInitialCount(totalElements: Long) {
-    nomisApi.stubFor(
-      get(
-        urlPathEqualTo("/visits/ids"),
-      )
-        .withQueryParam("page", equalTo("0"))
-        .withQueryParam("size", equalTo("1"))
-        .willReturn(
-          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(visitPagedResponse(totalElements = totalElements)),
-        ),
     )
   }
 
@@ -196,38 +187,6 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }
   }
 
-  fun stubGetSentenceAdjustmentsInitialCount(totalElements: Long) {
-    nomisApi.stubFor(
-      get(
-        urlPathEqualTo("/adjustments/ids"),
-      )
-        .withQueryParam("page", equalTo("0"))
-        .withQueryParam("size", equalTo("1"))
-        .willReturn(
-          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(adjustmentIdsPagedResponse(totalElements = totalElements)),
-        ),
-    )
-  }
-
-  fun stubGetMigrationInitialCount(
-    urlPath: String,
-    totalElements: Long,
-    pagedResponse: (totalElements: Long) -> String,
-  ) {
-    nomisApi.stubFor(
-      get(
-        urlPathEqualTo(urlPath),
-      )
-        .withQueryParam("page", equalTo("0"))
-        .withQueryParam("size", equalTo("1"))
-        .willReturn(
-          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(pagedResponse(totalElements)),
-        ),
-    )
-  }
-
   fun stubMultipleGetAdjudicationIdCounts(totalElements: Long, pageSize: Long) {
     // for each page create a response for each adjudication id starting from 1 up to `totalElements`
 
@@ -255,6 +214,26 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }
   }
 
+  fun stubGetSingleAdjudicationId(adjudicationNumber: Long) {
+    nomisApi.stubFor(
+      get(
+        urlPathEqualTo("/adjudications/ids"),
+      )
+        .withQueryParam("page", equalTo("0"))
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+            .withBody(
+              adjudicationsIdsPagedResponse(
+                totalElements = 1,
+                ids = listOf(adjudicationNumber),
+                pageNumber = 1,
+                pageSize = 10,
+              ),
+            ),
+        ),
+    )
+  }
+
   fun stubMultipleGetAdjudications(intProgression: IntProgression) {
     (intProgression).forEach {
       nomisApi.stubFor(
@@ -267,6 +246,21 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
           ),
       )
     }
+  }
+
+  fun stubGetAdjudication(adjudicationNumber: Long) {
+    nomisApi.stubFor(
+      get(
+        urlPathEqualTo("/adjudications/adjudication-number/$adjudicationNumber"),
+      )
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(
+              adjudicationResponse(adjudicationNumber = 654321),
+            ),
+        ),
+    )
   }
 
   fun stubMultipleGetAdjustmentIdCounts(totalElements: Long, pageSize: Long) {
@@ -324,16 +318,6 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }
   }
 
-  fun verifyGetAdjustmentsIdsCount(fromDate: String, toDate: String) {
-    nomisApi.verify(
-      getRequestedFor(
-        urlPathEqualTo("/adjustments/ids"),
-      )
-        .withQueryParam("fromDate", equalTo(fromDate))
-        .withQueryParam("toDate", equalTo(toDate)),
-    )
-  }
-
   fun stubGetSentenceAdjustment(adjustmentId: Long, hiddenForUsers: Boolean = false) {
     nomisApi.stubFor(
       get(
@@ -358,18 +342,6 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse().withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
             .withBody(keyDateAdjustmentResponse(keyDateAdjustmentId = adjustmentId)),
-        ),
-    )
-  }
-
-  fun stubGetAppointmentsInitialCount(totalElements: Long) {
-    nomisApi.stubFor(
-      get(urlPathEqualTo("/appointments/ids"))
-        .withQueryParam("page", equalTo("0"))
-        .withQueryParam("size", equalTo("1"))
-        .willReturn(
-          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(appointmentIdsPagedResponse(totalElements = totalElements)),
         ),
     )
   }
@@ -411,22 +383,33 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }
   }
 
-  fun verifyGetAppointmentsIdsCount(fromDate: String, toDate: String, prisonId: String) {
-    nomisApi.verify(
-      getRequestedFor(urlPathEqualTo("/appointments/ids"))
-        .withQueryParam("fromDate", equalTo(fromDate))
-        .withQueryParam("toDate", equalTo(toDate))
-        .withQueryParam("prisonIds", equalTo(prisonId)),
+  fun stubGetInitialCount(
+    urlPath: String,
+    totalElements: Long,
+    pagedResponse: (totalElements: Long) -> String,
+  ) {
+    nomisApi.stubFor(
+      get(
+        urlPathEqualTo(urlPath),
+      )
+        .withQueryParam("page", equalTo("0"))
+        .withQueryParam("size", equalTo("1"))
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+            .withBody(pagedResponse(totalElements)),
+        ),
     )
   }
 
-  fun verifyGetIdsCount(url: String, fromDate: String, toDate: String) {
+  fun verifyGetIdsCount(url: String, fromDate: String, toDate: String, prisonId: String? = null) {
+    val request = getRequestedFor(
+      urlPathEqualTo(url),
+    )
+      .withQueryParam("fromDate", equalTo(fromDate))
+      .withQueryParam("toDate", equalTo(toDate))
+    prisonId?.let { request.withQueryParam("prisonIds", equalTo(prisonId)) }
     nomisApi.verify(
-      getRequestedFor(
-        urlPathEqualTo(url),
-      )
-        .withQueryParam("fromDate", equalTo(fromDate))
-        .withQueryParam("toDate", equalTo(toDate)),
+      request,
     )
   }
 }
@@ -507,7 +490,7 @@ private fun visitCancelledResponse(visitId: Long, modifyUserId: String) = """
               }
             """
 
-private fun visitPagedResponse(
+fun visitPagedResponse(
   totalElements: Long = 10,
   visitIds: List<Long> = listOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
   pageSize: Long = 10,
@@ -517,7 +500,7 @@ private fun visitPagedResponse(
   return pageContent(content, pageSize, pageNumber, totalElements, visitIds.size)
 }
 
-private fun adjustmentIdsPagedResponse(
+fun adjustmentIdsPagedResponse(
   totalElements: Long = 10,
   adjustmentIds: List<Long> = (0L..10L).toList(),
   pageSize: Long = 10,
@@ -528,7 +511,7 @@ private fun adjustmentIdsPagedResponse(
   return pageContent(content, pageSize, pageNumber, totalElements, adjustmentIds.size)
 }
 
-private fun appointmentIdsPagedResponse(
+fun appointmentIdsPagedResponse(
   totalElements: Long = 10,
   ids: List<Long> = (0L..10L).toList(),
   pageSize: Long = 10,
@@ -649,42 +632,41 @@ private fun adjudicationResponse(
   "adjudicationNumber":$adjudicationNumber,
   "offenderNo": "$offenderNo",
   "adjudicationSequence": 3,
-   "bookingId": 1207292,
-    "adjudicationNumber": 1525733,
-    "partyAddedDate": "2023-06-08",
-    "incident": {
-        "adjudicationIncidentId": 1503064,
-        "reportingStaff": {
-            "staffId": 485585,
-            "firstName": "LUCY",
-            "lastName": "BENNETT"
-        },
-        "incidentDate": "2023-06-08",
-        "incidentTime": "12:00:00",
-        "reportedDate": "2023-06-08",
-        "reportedTime": "14:17:20",
-        "internalLocation": {
-            "locationId": 26149,
-            "code": "GYM",
-            "description": "MDI-PROG_ACT-GYM"
-        },
-        "incidentType": {
-            "code": "GOV",
-            "description": "Governor's Report"
-        },
-        "details": "Vera incited Brian Duckworth to set fire to a lamp\r\ndamages - the lamp\r\nevidence includes something in a bag with a reference number of 1234\r\nwitnessed by amarktest",
-        "prison": {
-            "code": "MDI",
-            "description": "Moorland (HMP & YOI)"
-        },
-        "prisonerWitnesses": [],
-        "prisonerVictims": [],
-        "otherPrisonersInvolved": [],
-        "reportingOfficers": [],
-        "staffWitnesses": [],
-        "staffVictims": [],
-        "otherStaffInvolved": [],
-        "repairs": []
+  "bookingId": 1207292,
+  "partyAddedDate": "2023-06-08",
+  "incident": {
+      "adjudicationIncidentId": 1503064,
+      "reportingStaff": {
+          "staffId": 485585,
+          "firstName": "LUCY",
+          "lastName": "BENNETT"
+      },
+      "incidentDate": "2023-06-08",
+      "incidentTime": "12:00:00",
+      "reportedDate": "2023-06-08",
+      "reportedTime": "14:17:20",
+      "internalLocation": {
+          "locationId": 26149,
+          "code": "GYM",
+          "description": "MDI-PROG_ACT-GYM"
+      },
+      "incidentType": {
+          "code": "GOV",
+          "description": "Governor's Report"
+      },
+      "details": "Vera incited Brian Duckworth to set fire to a lamp\r\ndamages - the lamp\r\nevidence includes something in a bag with a reference number of 1234\r\nwitnessed by amarktest",
+      "prison": {
+          "code": "MDI",
+          "description": "Moorland (HMP & YOI)"
+      },
+      "prisonerWitnesses": [],
+      "prisonerVictims": [],
+      "otherPrisonersInvolved": [],
+      "reportingOfficers": [],
+      "staffWitnesses": [],
+      "staffVictims": [],
+      "otherStaffInvolved": [],
+      "repairs": []
     },
     "charges": [],
     "investigations": [],

@@ -32,8 +32,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.STARTED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.APPOINTMENTS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension.Companion.activitiesApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.APPOINTMENTS_CREATE_MAPPING_URL
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.APPOINTMENTS_GET_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.appointmentIdsPagedResponse
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -75,11 +79,11 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `will start processing pages of appointments`() {
-      nomisApi.stubGetAppointmentsInitialCount(14)
+      nomisApi.stubGetInitialCount(NomisApiExtension.APPOINTMENTS_ID_URL, 14) { appointmentIdsPagedResponse(it) }
       nomisApi.stubMultipleGetAppointmentIdCounts(totalElements = 14, pageSize = 10)
       nomisApi.stubMultipleGetAppointments(1..14)
-      mappingApi.stubAllNomisAppointmentsMappingNotFound()
-      mappingApi.stubAppointmentMappingCreate()
+      mappingApi.stubAllMappingsNotFound(APPOINTMENTS_GET_MAPPING_URL)
+      mappingApi.stubMappingCreate(APPOINTMENTS_CREATE_MAPPING_URL)
 
       activitiesApi.stubCreateAppointmentForMigration(12345)
       mappingApi.stubAppointmentMappingByMigrationId(count = 14)
@@ -110,7 +114,8 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
       }
 
       // check filter matches what is passed in
-      nomisApi.verifyGetAppointmentsIdsCount(
+      nomisApi.verifyGetIdsCount(
+        url = "/appointments/ids",
         fromDate = "2020-01-01",
         toDate = "2020-01-02",
         prisonId = "MDI",
@@ -125,12 +130,12 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `will add analytical events for starting, ending and each migrated record`() {
-      nomisApi.stubGetAppointmentsInitialCount(3)
+      nomisApi.stubGetInitialCount(NomisApiExtension.APPOINTMENTS_ID_URL, 3) { appointmentIdsPagedResponse(it) }
       nomisApi.stubMultipleGetAppointmentIdCounts(totalElements = 3, pageSize = 10)
       nomisApi.stubMultipleGetAppointments(1..3)
       activitiesApi.stubCreateAppointmentForMigration(12345)
-      mappingApi.stubAllNomisAppointmentsMappingNotFound()
-      mappingApi.stubAppointmentMappingCreate()
+      mappingApi.stubAllMappingsNotFound(APPOINTMENTS_GET_MAPPING_URL)
+      mappingApi.stubMappingCreate(APPOINTMENTS_CREATE_MAPPING_URL)
 
       // stub 10 migrated records and 1 fake a failure
       mappingApi.stubAppointmentMappingByMigrationId(count = 2)
@@ -185,12 +190,12 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `will retry to create a mapping, and only the mapping, if it fails first time`() {
-      nomisApi.stubGetAppointmentsInitialCount(1)
+      nomisApi.stubGetInitialCount(NomisApiExtension.APPOINTMENTS_ID_URL, 1) { appointmentIdsPagedResponse(it) }
       nomisApi.stubMultipleGetAppointmentIdCounts(totalElements = 1, pageSize = 10)
       nomisApi.stubMultipleGetAppointments(1..1)
-      mappingApi.stubAllNomisAppointmentsMappingNotFound()
+      mappingApi.stubAllMappingsNotFound(APPOINTMENTS_GET_MAPPING_URL)
       activitiesApi.stubCreateAppointmentForMigration(654321L)
-      mappingApi.stubAppointmentMappingCreateFailureFollowedBySuccess()
+      mappingApi.stubMappingCreateFailureFollowedBySuccess(APPOINTMENTS_CREATE_MAPPING_URL)
 
       webTestClient.post().uri("/migrate/appointments")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_APPOINTMENTS")))
@@ -200,7 +205,7 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().isAccepted
 
       // wait for all mappings to be created before verifying
-      await untilCallTo { mappingApi.createAppointmentMappingCount() } matches { it == 2 }
+      await untilCallTo { mappingApi.createMappingCount(APPOINTMENTS_CREATE_MAPPING_URL) } matches { it == 2 }
 
       // check that one appointment is created
       assertThat(activitiesApi.createAppointmentCount()).isEqualTo(1)
@@ -211,10 +216,10 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `it will not retry after a 409 (duplicate appointment written to Activities API) or mapping already exists`() {
-      nomisApi.stubGetAppointmentsInitialCount(2)
+      nomisApi.stubGetInitialCount(NomisApiExtension.APPOINTMENTS_ID_URL, 1) { appointmentIdsPagedResponse(it) }
       nomisApi.stubMultipleGetAppointmentIdCounts(totalElements = 2, pageSize = 10)
       nomisApi.stubMultipleGetAppointments(1..2)
-      mappingApi.stubAllNomisAppointmentsMappingNotFound()
+      mappingApi.stubAllMappingsNotFound(APPOINTMENTS_GET_MAPPING_URL)
       activitiesApi.stubCreateAppointmentForMigration(123)
       mappingApi.stubAppointmentMappingCreateConflict(10, 11, 1)
       mappingApi.stubNomisAppointmentsMappingFound(2)
@@ -227,7 +232,7 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().isAccepted
 
       // wait for all mappings to be created before verifying
-      await untilCallTo { mappingApi.createAppointmentMappingCount() } matches { it == 1 }
+      await untilCallTo { mappingApi.createMappingCount(APPOINTMENTS_CREATE_MAPPING_URL) } matches { it == 1 }
 
       // check that one appointment is created
       assertThat(activitiesApi.createAppointmentCount()).isEqualTo(1)
@@ -520,7 +525,7 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     fun `will terminate a running migration`() {
       val count = 30L
-      nomisApi.stubGetAppointmentsInitialCount(count)
+      nomisApi.stubGetInitialCount(NomisApiExtension.APPOINTMENTS_ID_URL, count) { appointmentIdsPagedResponse(it) }
       nomisApi.stubMultipleGetAppointmentIdCounts(totalElements = count, pageSize = 10)
       mappingApi.stubAppointmentMappingByMigrationId(count = count.toInt())
 

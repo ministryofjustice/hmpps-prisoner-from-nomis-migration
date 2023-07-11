@@ -30,11 +30,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repos
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.COMPLETED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.VISITS
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.VISITS_CREATE_MAPPING_URL
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.VISITS_GET_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsApiExtension.Companion.visitsApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.visitPagedResponse
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -76,12 +79,12 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will start processing pages of visits`() {
-      nomisApi.stubGetVisitsInitialCount(86)
+      nomisApi.stubGetInitialCount(NomisApiExtension.VISITS_ID_URL, 86) { visitPagedResponse(it) }
       nomisApi.stubMultipleGetVisitsCounts(totalElements = 86, pageSize = 10)
       nomisApi.stubMultipleGetVisits(totalElements = 86)
-      mappingApi.stubNomisVisitNotFound()
+      mappingApi.stubAllMappingsNotFound(VISITS_GET_MAPPING_URL)
       mappingApi.stubRoomMapping()
-      mappingApi.stubVisitMappingCreate()
+      mappingApi.stubMappingCreate(VISITS_CREATE_MAPPING_URL)
       visitsApi.stubCreateVisit()
       mappingApi.stubVisitMappingByMigrationId(count = 86)
 
@@ -110,7 +113,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().isAccepted
 
       // wait for all mappings to be created before verifying
-      await untilCallTo { mappingApi.createVisitMappingCount() } matches { it == 86 }
+      await untilCallTo { mappingApi.createMappingCount(VISITS_CREATE_MAPPING_URL) } matches { it == 86 }
 
       // check filter matches what is passed in
       nomisApi.verifyGetVisitsFilter(
@@ -131,12 +134,12 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will add analytical events for starting, ending and each migrated record`() {
-      nomisApi.stubGetVisitsInitialCount(26)
+      nomisApi.stubGetInitialCount(NomisApiExtension.VISITS_ID_URL, 26) { visitPagedResponse(it) }
       nomisApi.stubMultipleGetVisitsCounts(totalElements = 26, pageSize = 10)
       nomisApi.stubMultipleGetVisits(totalElements = 26)
-      mappingApi.stubNomisVisitNotFound()
+      mappingApi.stubAllMappingsNotFound(VISITS_GET_MAPPING_URL)
       mappingApi.stubRoomMapping()
-      mappingApi.stubVisitMappingCreate()
+      mappingApi.stubMappingCreate(VISITS_CREATE_MAPPING_URL)
       visitsApi.stubCreateVisit()
 
       // stub 25 migrated records and 1 fake a failure
@@ -164,7 +167,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().isAccepted
 
       // wait for all mappings to be created before verifying
-      await untilCallTo { mappingApi.createVisitMappingCount() } matches { it == 26 }
+      await untilCallTo { mappingApi.createMappingCount(VISITS_CREATE_MAPPING_URL) } matches { it == 26 }
 
       await untilAsserted {
         verify(telemetryClient).trackEvent(eq("visits-migration-started"), any(), isNull())
@@ -205,13 +208,13 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will retry to create a mapping, and only the mapping, if it fails first time`() {
-      nomisApi.stubGetVisitsInitialCount(1)
+      nomisApi.stubGetInitialCount(NomisApiExtension.VISITS_ID_URL, 1) { visitPagedResponse(it) }
       nomisApi.stubMultipleGetVisitsCounts(totalElements = 1, pageSize = 10)
       nomisApi.stubMultipleGetVisits(totalElements = 1)
-      mappingApi.stubNomisVisitNotFound()
+      mappingApi.stubAllMappingsNotFound(VISITS_GET_MAPPING_URL)
       mappingApi.stubRoomMapping()
       visitsApi.stubCreateVisit()
-      mappingApi.stubVisitMappingCreateFailureFollowedBySuccess()
+      mappingApi.stubMappingCreateFailureFollowedBySuccess(VISITS_CREATE_MAPPING_URL)
 
       webTestClient.post().uri("/migrate/visits")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
@@ -223,7 +226,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().isAccepted
 
       // wait for all mappings to be created before verifying
-      await untilCallTo { mappingApi.createVisitMappingCount() } matches { it == 2 }
+      await untilCallTo { mappingApi.createMappingCount(VISITS_CREATE_MAPPING_URL) } matches { it == 2 }
 
       // check that each visit is created in VSIP
       assertThat(visitsApi.createVisitCount()).isEqualTo(1)
@@ -234,7 +237,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `it will not retry after a 409 (duplicate visit written to Visits API)`() {
-      nomisApi.stubGetVisitsInitialCount(1)
+      nomisApi.stubGetInitialCount(NomisApiExtension.VISITS_ID_URL, 1) { visitPagedResponse(it) }
       nomisApi.stubMultipleGetVisitsCounts(totalElements = 1, pageSize = 10)
       nomisApi.stubMultipleGetVisits(totalElements = 1)
       mappingApi.stubVisitsCreateConflict(existingVsipId = 12, duplicateVsipId = 654321, nomisVisitId = 1)
@@ -255,7 +258,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().isAccepted
 
       // wait for all mappings to be created before verifying
-      await untilCallTo { mappingApi.createVisitMappingCount() } matches { it == 1 }
+      await untilCallTo { mappingApi.createMappingCount(VISITS_CREATE_MAPPING_URL) } matches { it == 1 }
 
       // check that one visit is created
       assertThat(visitsApi.createVisitCount())
@@ -627,12 +630,12 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     internal fun `will terminate a running migration`() {
       val count = 30L
-      nomisApi.stubGetVisitsInitialCount(count)
+      nomisApi.stubGetInitialCount(NomisApiExtension.VISITS_ID_URL, count) { visitPagedResponse(it) }
       nomisApi.stubMultipleGetVisitsCounts(totalElements = count, pageSize = 10)
       nomisApi.stubMultipleGetVisits(totalElements = count)
-      mappingApi.stubNomisVisitNotFound()
+      mappingApi.stubAllMappingsNotFound(VISITS_GET_MAPPING_URL)
       mappingApi.stubRoomMapping()
-      mappingApi.stubVisitMappingCreate()
+      mappingApi.stubMappingCreate(VISITS_CREATE_MAPPING_URL)
       visitsApi.stubCreateVisit()
       mappingApi.stubVisitMappingByMigrationId(count = count.toInt())
 
@@ -707,7 +710,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = MigrationType.VISITS,
+            migrationType = VISITS,
           ),
         )
         migrationHistoryRepository.save(
@@ -715,12 +718,12 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
             migrationId = "2019-01-01T00:00:00",
             whenStarted = LocalDateTime.parse("2019-01-01T00:00:00"),
             whenEnded = LocalDateTime.parse("2019-01-01T01:00:00"),
-            status = MigrationStatus.COMPLETED,
+            status = COMPLETED,
             estimatedRecordCount = 123_567,
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = MigrationType.VISITS,
+            migrationType = VISITS,
           ),
         )
       }

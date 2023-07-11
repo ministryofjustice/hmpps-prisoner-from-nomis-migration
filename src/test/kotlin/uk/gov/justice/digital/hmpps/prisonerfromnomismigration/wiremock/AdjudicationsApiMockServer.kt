@@ -57,6 +57,6 @@ class AdjudicationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun createAdjudicationsCount() =
+  fun createAdjudicationCount() =
     findAll(WireMock.postRequestedFor(WireMock.urlMatching("/legacy/adjudications/migration"))).count()
 }

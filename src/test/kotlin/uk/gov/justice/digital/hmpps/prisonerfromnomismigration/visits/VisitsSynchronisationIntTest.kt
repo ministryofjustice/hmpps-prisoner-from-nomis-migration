@@ -16,6 +16,7 @@ import org.mockito.kotlin.verify
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.validVisitCancellationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsApiExtension.Companion.visitsApi
@@ -65,7 +66,7 @@ class VisitsSynchronisationIntTest : SqsIntegrationTestBase() {
       val message = validVisitCancellationMessage()
 
       nomisApi.stubGetVisit(nomisVisitId = 9)
-      mappingApi.stubNomisVisitNotFound()
+      mappingApi.stubAllMappingsNotFound(MappingApiExtension.VISITS_GET_MAPPING_URL)
       awsSqsVisitsOffenderEventsClient.sendMessage(visitsQueueOffenderEventsUrl, message)
 
       await untilAsserted { mappingApi.verifyGetVisitMappingByNomisId() }
@@ -78,7 +79,7 @@ class VisitsSynchronisationIntTest : SqsIntegrationTestBase() {
       val message = validVisitCancellationMessage()
 
       nomisApi.stubGetCancelledVisit(nomisVisitId = 9, modifyUserId = "PRISONER_MANAGER_API")
-      mappingApi.stubNomisVisitNotFound()
+      mappingApi.stubAllMappingsNotFound(MappingApiExtension.VISITS_GET_MAPPING_URL)
       awsSqsVisitsOffenderEventsClient.sendMessage(visitsQueueOffenderEventsUrl, message)
 
       await untilAsserted { nomisApi.verifyGetVisit(nomisVisitId = 9) }
