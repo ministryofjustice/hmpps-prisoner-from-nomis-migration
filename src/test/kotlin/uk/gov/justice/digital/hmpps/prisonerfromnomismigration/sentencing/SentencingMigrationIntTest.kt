@@ -84,8 +84,8 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubMultipleGetAdjustmentIdCounts(totalElements = 86, pageSize = 10)
       nomisApi.stubMultipleGetSentenceAdjustments(1..86 step 2)
       nomisApi.stubMultipleGetKeyDateAdjustments(2..86 step 2)
-      mappingApi.stubAllMappingsNotFound("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id")
-      mappingApi.stubAllMappingsNotFound("/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id")
+      mappingApi.stubAllMappingsNotFound(SENTENCE_ADJUSTMENTS_GET_MAPPING_URL)
+      mappingApi.stubAllMappingsNotFound(KEYDATE_ADJUSTMENTS_GET_MAPPING_URL)
       mappingApi.stubMappingCreate(ADJUSTMENTS_CREATE_MAPPING_URL)
 
       sentencingApi.stubCreateSentencingAdjustmentForMigration()

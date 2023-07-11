@@ -36,6 +36,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingA
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.APPOINTMENTS_GET_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.APPOINTMENTS_ID_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.appointmentIdsPagedResponse
 import java.time.Duration
@@ -115,7 +116,7 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
 
       // check filter matches what is passed in
       nomisApi.verifyGetIdsCount(
-        url = "/appointments/ids",
+        url = APPOINTMENTS_ID_URL,
         fromDate = "2020-01-01",
         toDate = "2020-01-02",
         prisonId = "MDI",
