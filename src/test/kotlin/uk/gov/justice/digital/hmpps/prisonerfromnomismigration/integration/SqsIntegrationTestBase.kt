@@ -90,6 +90,7 @@ class SqsIntegrationTestBase : TestBase() {
       sentencingOffenderEventsQueue,
       adjudicationsMigrationQueue,
       appointmentsMigrationQueue,
+      sentencingMigrationQueue,
     )
   }
 
