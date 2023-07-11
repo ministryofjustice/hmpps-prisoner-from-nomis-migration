@@ -22,9 +22,19 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
 
 class MappingApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
+
   companion object {
     @JvmField
     val mappingApi = MappingApiMockServer()
+    const val VISITS_CREATE_MAPPING_URL = "/mapping/visits"
+    const val VISITS_GET_MAPPING_URL = "/mapping/visits/nomisId"
+    const val ADJUDICATIONS_CREATE_MAPPING_URL = "/mapping/adjudications"
+    const val ADJUDICATIONS_GET_MAPPING_URL = "/mapping/adjudications/adjudication-number"
+    const val APPOINTMENTS_CREATE_MAPPING_URL = "/mapping/appointments"
+    const val APPOINTMENTS_GET_MAPPING_URL = "/mapping/appointments/nomis-event-id"
+    const val SENTENCE_ADJUSTMENTS_GET_MAPPING_URL = "/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id"
+    const val KEYDATE_ADJUSTMENTS_GET_MAPPING_URL = "/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id"
+    const val ADJUSTMENTS_CREATE_MAPPING_URL = "/mapping/sentencing/adjustments"
   }
 
   override fun beforeAll(context: ExtensionContext) {
@@ -52,17 +62,6 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withHeader("Content-Type", "application/json")
           .withBody(if (status == 200) "pong" else "some error")
           .withStatus(status),
-      ),
-    )
-  }
-
-  fun stubNomisVisitNotFound() {
-    stubFor(
-      get(urlPathMatching("/mapping/visits/nomisId/.*")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.NOT_FOUND.value())
-          .withBody("""{"message":"Not found"}"""),
       ),
     )
   }
@@ -119,41 +118,6 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.NOT_FOUND.value()),
       ),
-    )
-  }
-
-  fun stubVisitMappingCreate() {
-    stubFor(
-      post(urlEqualTo("/mapping/visits")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.CREATED.value()),
-      ),
-    )
-  }
-
-  fun stubVisitMappingCreateFailureFollowedBySuccess() {
-    stubFor(
-      post(urlEqualTo("/mapping/visits"))
-        .inScenario("Retry Visit Scenario")
-        .whenScenarioStateIs(STARTED)
-        .willReturn(
-          aResponse()
-            .withStatus(500) // request unsuccessful with status code 500
-            .withHeader("Content-Type", "application/json"),
-        )
-        .willSetStateTo("Cause Visit Success"),
-    )
-
-    stubFor(
-      post(urlEqualTo("/mapping/visits"))
-        .inScenario("Retry Visit Scenario")
-        .whenScenarioStateIs("Cause Visit Success")
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.CREATED.value()),
-        ),
     )
   }
 
@@ -220,8 +184,6 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun createVisitMappingCount() = findAll(postRequestedFor(urlEqualTo("/mapping/visits"))).count()
-
   fun verifyCreateMappingVisitIds(nomsVisitIds: Array<Long>, times: Int = 1) = nomsVisitIds.forEach {
     verify(
       times,
@@ -270,29 +232,6 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubAllNomisSentencingAdjustmentsMappingNotFound() {
-    stubFor(
-      get(
-        urlPathMatching("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/\\d*"),
-      ).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.NOT_FOUND.value())
-          .withBody("""{"message":"Not found"}"""),
-      ),
-    )
-    stubFor(
-      get(
-        urlPathMatching("/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id/\\d*"),
-      ).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.NOT_FOUND.value())
-          .withBody("""{"message":"Not found"}"""),
-      ),
-    )
-  }
-
   fun stubGetNomisSentencingAdjustment(
     adjustmentCategory: String = "SENTENCE",
     nomisAdjustmentId: Long = 987L,
@@ -317,16 +256,6 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
             }
             """.trimMargin(),
           ),
-      ),
-    )
-  }
-
-  fun stubSentenceAdjustmentMappingCreate() {
-    stubFor(
-      post(urlEqualTo("/mapping/sentencing/adjustments")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.CREATED.value()),
       ),
     )
   }
@@ -356,32 +285,6 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withHeader("Content-Type", "application/json")
           .withBody(pageContent(content, count)),
       ),
-    )
-  }
-
-  fun stubSentenceAdjustmentMappingCreateFailureFollowedBySuccess() {
-    stubFor(
-      post(urlPathEqualTo("/mapping/sentencing/adjustments"))
-        .inScenario("Retry sentence-adjustment Scenario")
-        .whenScenarioStateIs(STARTED)
-        .willReturn(
-          aResponse()
-            .withStatus(500) // request unsuccessful with status code 500
-            .withHeader("Content-Type", "application/json"),
-        )
-        .willSetStateTo("Cause sentence-adjustment Success"),
-    )
-
-    stubFor(
-      post(urlPathEqualTo("/mapping/sentencing/adjustments"))
-        .inScenario("Retry sentence-adjustment Scenario")
-        .whenScenarioStateIs("Cause sentence-adjustment Success")
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.CREATED.value()),
-        )
-        .willSetStateTo(STARTED),
     )
   }
 
@@ -434,9 +337,6 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun createSentenceAdjustmentMappingCount() =
-    findAll(postRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments"))).count()
-
   fun verifyCreateMappingSentenceAdjustmentIds(nomsSentenceAdjustmentIds: Array<String>, times: Int = 1) =
     nomsSentenceAdjustmentIds.forEach {
       verify(
@@ -449,19 +349,6 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
       )
     }
-
-  fun stubAllNomisAppointmentsMappingNotFound() {
-    stubFor(
-      get(urlPathMatching("/mapping/appointments/nomis-event-id/\\d*"))
-        .atPriority(5)
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.NOT_FOUND.value())
-            .withBody("""{"message":"Not found"}"""),
-        ),
-    )
-  }
 
   fun stubNomisAppointmentsMappingFound(id: Long) {
     val content = """{
@@ -478,16 +365,6 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubAppointmentMappingCreate() {
-    stubFor(
-      post(urlEqualTo("/mapping/appointments")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.CREATED.value()),
-      ),
-    )
-  }
-
   fun stubAppointmentMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 278887) {
     val content = """{
       "appointmentInstanceId": 191747,
@@ -500,28 +377,6 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       get(urlPathMatching("/mapping/appointments/migration-id/.*")).willReturn(
         okJson(pageContent(content, count)),
       ),
-    )
-  }
-
-  fun stubAppointmentMappingCreateFailureFollowedBySuccess() {
-    stubFor(
-      post(urlPathEqualTo("/mapping/appointments"))
-        .inScenario("Retry appointment Scenario")
-        .whenScenarioStateIs(STARTED)
-        .willReturn(
-          aResponse()
-            .withStatus(500) // request unsuccessful with status code 500
-            .withHeader("Content-Type", "application/json"),
-        )
-        .willSetStateTo("Cause appointment Success"),
-    )
-
-    stubFor(
-      post(urlPathEqualTo("/mapping/appointments"))
-        .inScenario("Retry appointment Scenario")
-        .whenScenarioStateIs("Cause appointment Success")
-        .willReturn(created())
-        .willSetStateTo(STARTED),
     )
   }
 
@@ -561,9 +416,6 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun createAppointmentMappingCount() =
-    findAll(postRequestedFor(urlPathEqualTo("/mapping/appointments"))).count()
-
   fun verifyCreateMappingAppointmentIds(nomisAppointmentIds: Array<String>, times: Int = 1) =
     nomisAppointmentIds.forEach {
       verify(
@@ -592,6 +444,19 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       ),
     )
   }
+
+  fun verifyCreateMappingAdjudicationIds(adjudicationIds: Array<String>, times: Int = 1) =
+    adjudicationIds.forEach {
+      verify(
+        times,
+        postRequestedFor(urlPathEqualTo("/mapping/adjudications")).withRequestBody(
+          matchingJsonPath(
+            "adjudicationNumber",
+            equalTo(it),
+          ),
+        ),
+      )
+    }
 
   private fun pageContent(content: String, count: Int) = """
   {
@@ -629,7 +494,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubAllMappingsNotFound(url: String) {
     stubFor(
       get(
-        urlPathMatching(url),
+        urlPathMatching("$url/\\d*"),
       ).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
@@ -648,4 +513,29 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       ),
     )
   }
+
+  fun stubMappingCreateFailureFollowedBySuccess(url: String) {
+    stubFor(
+      post(urlPathEqualTo(url))
+        .inScenario("Retry create Scenario")
+        .whenScenarioStateIs(STARTED)
+        .willReturn(
+          aResponse()
+            .withStatus(500) // request unsuccessful with status code 500
+            .withHeader("Content-Type", "application/json"),
+        )
+        .willSetStateTo("Cause create Success"),
+    )
+
+    stubFor(
+      post(urlPathEqualTo(url))
+        .inScenario("Retry create Scenario")
+        .whenScenarioStateIs("Cause create Success")
+        .willReturn(created())
+        .willSetStateTo(STARTED),
+    )
+  }
+
+  fun createMappingCount(url: String) =
+    findAll(postRequestedFor(urlPathEqualTo(url))).count()
 }

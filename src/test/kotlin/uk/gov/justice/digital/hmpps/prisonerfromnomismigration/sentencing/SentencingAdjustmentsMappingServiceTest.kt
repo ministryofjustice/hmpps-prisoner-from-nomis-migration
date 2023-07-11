@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.core.ParameterizedTypeReference
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.ADJUSTMENTS_CREATE_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 
 private const val ADJUSTMENT_ID = "05b332ad-58eb-4ec2-963c-c9c927856788"
@@ -27,7 +28,7 @@ class SentencingAdjustmentsMappingServiceTest {
   inner class CreateNomisSentencingAdjustmentSynchronisationMapping {
     @Test
     internal fun `will pass oath2 token to service`() {
-      mappingApi.stubSentenceAdjustmentMappingCreate()
+      mappingApi.stubMappingCreate(ADJUSTMENTS_CREATE_MAPPING_URL)
 
       runBlocking {
         sentencingAdjustmentsMappingService.createMapping(
@@ -50,7 +51,7 @@ class SentencingAdjustmentsMappingServiceTest {
 
     @Test
     internal fun `will create mapping`() {
-      mappingApi.stubSentenceAdjustmentMappingCreate()
+      mappingApi.stubMappingCreate(ADJUSTMENTS_CREATE_MAPPING_URL)
 
       runBlocking {
         sentencingAdjustmentsMappingService.createMapping(

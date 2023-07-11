@@ -23,6 +23,9 @@ sentencing:
 appointments:
   page:
     size: 10
+adjudications:
+  page:
+    size: 10
 
 spring:
   r2dbc:

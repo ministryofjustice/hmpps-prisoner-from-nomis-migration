@@ -28,6 +28,9 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.ADJUSTMENTS_CREATE_MAPPING_URL
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.KEYDATE_ADJUSTMENTS_GET_MAPPING_URL
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.SENTENCE_ADJUSTMENTS_GET_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.SentencingApiExtension.Companion.sentencingApi
@@ -49,7 +52,8 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenNoMappingFound {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubAllNomisSentencingAdjustmentsMappingNotFound()
+        mappingApi.stubAllMappingsNotFound(SENTENCE_ADJUSTMENTS_GET_MAPPING_URL)
+        mappingApi.stubAllMappingsNotFound(KEYDATE_ADJUSTMENTS_GET_MAPPING_URL)
       }
 
       @Nested
@@ -101,7 +105,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         fun setUp() {
           nomisApi.stubGetSentenceAdjustment(adjustmentId = NOMIS_ADJUSTMENT_ID)
           sentencingApi.stubCreateSentencingAdjustmentForSynchronisation(sentenceAdjustmentId = ADJUSTMENT_ID)
-          mappingApi.stubSentenceAdjustmentMappingCreate()
+          mappingApi.stubMappingCreate(ADJUSTMENTS_CREATE_MAPPING_URL)
 
           awsSqsSentencingOffenderEventsClient.sendMessage(
             sentencingQueueOffenderEventsUrl,
@@ -174,7 +178,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         inner class WhenMappingCreateFailsOnce {
           @BeforeEach
           fun setUp() {
-            mappingApi.stubSentenceAdjustmentMappingCreateFailureFollowedBySuccess()
+            mappingApi.stubMappingCreateFailureFollowedBySuccess(ADJUSTMENTS_CREATE_MAPPING_URL)
             nomisApi.stubGetSentenceAdjustment(adjustmentId = NOMIS_ADJUSTMENT_ID)
             sentencingApi.stubCreateSentencingAdjustmentForSynchronisation(sentenceAdjustmentId = ADJUSTMENT_ID)
 
@@ -339,7 +343,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         )
 
         // wait for all mappings to be created before verifying
-        await untilCallTo { mappingApi.createSentenceAdjustmentMappingCount() } matches { it == 1 }
+        await untilCallTo { mappingApi.createMappingCount(ADJUSTMENTS_CREATE_MAPPING_URL) } matches { it == 1 }
 
         // check that one sentence-adjustment is created
         assertThat(sentencingApi.createSentenceAdjustmentForSynchronisationCount()).isEqualTo(1)
@@ -541,7 +545,8 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class WhenMappingAlreadyDeleted {
         @BeforeEach
         fun setUp() {
-          mappingApi.stubAllNomisSentencingAdjustmentsMappingNotFound()
+          mappingApi.stubAllMappingsNotFound(SENTENCE_ADJUSTMENTS_GET_MAPPING_URL)
+          mappingApi.stubAllMappingsNotFound(KEYDATE_ADJUSTMENTS_GET_MAPPING_URL)
           awsSqsSentencingOffenderEventsClient.sendMessage(
             sentencingQueueOffenderEventsUrl,
             sentencingEvent(
@@ -700,7 +705,8 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenNoMappingFound {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubAllNomisSentencingAdjustmentsMappingNotFound()
+        mappingApi.stubAllMappingsNotFound(SENTENCE_ADJUSTMENTS_GET_MAPPING_URL)
+        mappingApi.stubAllMappingsNotFound(KEYDATE_ADJUSTMENTS_GET_MAPPING_URL)
         awsSqsSentencingOffenderEventsClient.sendMessage(
           sentencingQueueOffenderEventsUrl,
           sentencingEvent(
@@ -823,7 +829,8 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenNoMappingFound {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubAllNomisSentencingAdjustmentsMappingNotFound()
+        mappingApi.stubAllMappingsNotFound(SENTENCE_ADJUSTMENTS_GET_MAPPING_URL)
+        mappingApi.stubAllMappingsNotFound(KEYDATE_ADJUSTMENTS_GET_MAPPING_URL)
       }
 
       @Nested
@@ -873,7 +880,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         fun setUp() {
           nomisApi.stubGetKeyDateAdjustment(adjustmentId = NOMIS_ADJUSTMENT_ID)
           sentencingApi.stubCreateSentencingAdjustmentForSynchronisation(sentenceAdjustmentId = ADJUSTMENT_ID)
-          mappingApi.stubSentenceAdjustmentMappingCreate()
+          mappingApi.stubMappingCreate(ADJUSTMENTS_CREATE_MAPPING_URL)
 
           awsSqsSentencingOffenderEventsClient.sendMessage(
             sentencingQueueOffenderEventsUrl,
@@ -944,7 +951,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         inner class WhenMappingCreateFailsOnce {
           @BeforeEach
           fun setUp() {
-            mappingApi.stubSentenceAdjustmentMappingCreateFailureFollowedBySuccess()
+            mappingApi.stubMappingCreateFailureFollowedBySuccess(ADJUSTMENTS_CREATE_MAPPING_URL)
             nomisApi.stubGetKeyDateAdjustment(adjustmentId = NOMIS_ADJUSTMENT_ID)
             sentencingApi.stubCreateSentencingAdjustmentForSynchronisation(sentenceAdjustmentId = ADJUSTMENT_ID)
 
@@ -1205,7 +1212,8 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class WhenMappingAlreadyDeleted {
         @BeforeEach
         fun setUp() {
-          mappingApi.stubAllNomisSentencingAdjustmentsMappingNotFound()
+          mappingApi.stubAllMappingsNotFound(SENTENCE_ADJUSTMENTS_GET_MAPPING_URL)
+          mappingApi.stubAllMappingsNotFound(KEYDATE_ADJUSTMENTS_GET_MAPPING_URL)
           awsSqsSentencingOffenderEventsClient.sendMessage(
             sentencingQueueOffenderEventsUrl,
             sentencingEvent(
@@ -1354,7 +1362,8 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenNoMappingFound {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubAllNomisSentencingAdjustmentsMappingNotFound()
+        mappingApi.stubAllMappingsNotFound(SENTENCE_ADJUSTMENTS_GET_MAPPING_URL)
+        mappingApi.stubAllMappingsNotFound(KEYDATE_ADJUSTMENTS_GET_MAPPING_URL)
         awsSqsSentencingOffenderEventsClient.sendMessage(
           sentencingQueueOffenderEventsUrl,
           sentencingEvent(

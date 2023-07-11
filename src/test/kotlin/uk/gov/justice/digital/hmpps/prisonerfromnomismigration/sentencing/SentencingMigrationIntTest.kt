@@ -31,9 +31,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repos
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.COMPLETED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.SENTENCING_ADJUSTMENTS
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.ADJUSTMENTS_CREATE_MAPPING_URL
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.KEYDATE_ADJUSTMENTS_GET_MAPPING_URL
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.SENTENCE_ADJUSTMENTS_GET_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.SentencingApiExtension.Companion.sentencingApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.adjustmentIdsPagedResponse
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -75,12 +80,13 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will start processing pages of sentence adjustments`() {
-      nomisApi.stubGetSentenceAdjustmentsInitialCount(86)
+      nomisApi.stubGetInitialCount(NomisApiExtension.ADJUSTMENTS_ID_URL, 86) { adjustmentIdsPagedResponse(it) }
       nomisApi.stubMultipleGetAdjustmentIdCounts(totalElements = 86, pageSize = 10)
       nomisApi.stubMultipleGetSentenceAdjustments(1..86 step 2)
       nomisApi.stubMultipleGetKeyDateAdjustments(2..86 step 2)
-      mappingApi.stubAllNomisSentencingAdjustmentsMappingNotFound()
-      mappingApi.stubSentenceAdjustmentMappingCreate()
+      mappingApi.stubAllMappingsNotFound(SENTENCE_ADJUSTMENTS_GET_MAPPING_URL)
+      mappingApi.stubAllMappingsNotFound(KEYDATE_ADJUSTMENTS_GET_MAPPING_URL)
+      mappingApi.stubMappingCreate(ADJUSTMENTS_CREATE_MAPPING_URL)
 
       sentencingApi.stubCreateSentencingAdjustmentForMigration()
       mappingApi.stubSentenceAdjustmentMappingByMigrationId(count = 86)
@@ -110,7 +116,8 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
       }
 
       // check filter matches what is passed in
-      nomisApi.verifyGetAdjustmentsIdsCount(
+      nomisApi.verifyGetIdsCount(
+        url = "/adjustments/ids",
         fromDate = "2020-01-01",
         toDate = "2020-01-02",
       )
@@ -122,13 +129,14 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will add analytical events for starting, ending and each migrated record`() {
-      nomisApi.stubGetSentenceAdjustmentsInitialCount(26)
+      nomisApi.stubGetInitialCount(NomisApiExtension.ADJUSTMENTS_ID_URL, 26) { adjustmentIdsPagedResponse(it) }
       nomisApi.stubMultipleGetAdjustmentIdCounts(totalElements = 26, pageSize = 10)
       nomisApi.stubMultipleGetSentenceAdjustments(1..26 step 2)
       nomisApi.stubMultipleGetKeyDateAdjustments(2..26 step 2)
       sentencingApi.stubCreateSentencingAdjustmentForMigration()
-      mappingApi.stubAllNomisSentencingAdjustmentsMappingNotFound()
-      mappingApi.stubSentenceAdjustmentMappingCreate()
+      mappingApi.stubAllMappingsNotFound(SENTENCE_ADJUSTMENTS_GET_MAPPING_URL)
+      mappingApi.stubAllMappingsNotFound(KEYDATE_ADJUSTMENTS_GET_MAPPING_URL)
+      mappingApi.stubMappingCreate(ADJUSTMENTS_CREATE_MAPPING_URL)
 
       // stub 25 migrated records and 1 fake a failure
       mappingApi.stubSentenceAdjustmentMappingByMigrationId(count = 25)
@@ -182,12 +190,13 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will retry to create a mapping, and only the mapping, if it fails first time`() {
-      nomisApi.stubGetSentenceAdjustmentsInitialCount(1)
+      nomisApi.stubGetInitialCount(NomisApiExtension.ADJUSTMENTS_ID_URL, 1) { adjustmentIdsPagedResponse(it) }
       nomisApi.stubMultipleGetAdjustmentIdCounts(totalElements = 1, pageSize = 10)
       nomisApi.stubMultipleGetSentenceAdjustments(1..1)
-      mappingApi.stubAllNomisSentencingAdjustmentsMappingNotFound()
+      mappingApi.stubAllMappingsNotFound(SENTENCE_ADJUSTMENTS_GET_MAPPING_URL)
+      mappingApi.stubAllMappingsNotFound(KEYDATE_ADJUSTMENTS_GET_MAPPING_URL)
       sentencingApi.stubCreateSentencingAdjustmentForMigration("654321")
-      mappingApi.stubSentenceAdjustmentMappingCreateFailureFollowedBySuccess()
+      mappingApi.stubMappingCreateFailureFollowedBySuccess(ADJUSTMENTS_CREATE_MAPPING_URL)
 
       webTestClient.post().uri("/migrate/sentencing")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
@@ -204,7 +213,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().isAccepted
 
       // wait for all mappings to be created before verifying
-      await untilCallTo { mappingApi.createSentenceAdjustmentMappingCount() } matches { it == 2 }
+      await untilCallTo { mappingApi.createMappingCount(ADJUSTMENTS_CREATE_MAPPING_URL) } matches { it == 2 }
 
       // check that one sentence-adjustment is created
       assertThat(sentencingApi.createSentenceAdjustmentCount()).isEqualTo(1)
@@ -215,10 +224,11 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `it will not retry after a 409 (duplicate adjustment written to Sentencing API)`() {
-      nomisApi.stubGetSentenceAdjustmentsInitialCount(1)
+      nomisApi.stubGetInitialCount(NomisApiExtension.ADJUSTMENTS_ID_URL, 1) { adjustmentIdsPagedResponse(it) }
       nomisApi.stubMultipleGetAdjustmentIdCounts(totalElements = 1, pageSize = 10)
       nomisApi.stubMultipleGetSentenceAdjustments(1..1)
-      mappingApi.stubAllNomisSentencingAdjustmentsMappingNotFound()
+      mappingApi.stubAllMappingsNotFound(SENTENCE_ADJUSTMENTS_GET_MAPPING_URL)
+      mappingApi.stubAllMappingsNotFound(KEYDATE_ADJUSTMENTS_GET_MAPPING_URL)
       sentencingApi.stubCreateSentencingAdjustmentForMigration("123")
       mappingApi.stubSentenceAdjustmentMappingCreateConflict()
 
@@ -237,7 +247,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().isAccepted
 
       // wait for all mappings to be created before verifying
-      await untilCallTo { mappingApi.createSentenceAdjustmentMappingCount() } matches { it == 1 }
+      await untilCallTo { mappingApi.createMappingCount(ADJUSTMENTS_CREATE_MAPPING_URL) } matches { it == 1 }
 
       // check that one sentence-adjustment is created
       assertThat(sentencingApi.createSentenceAdjustmentCount()).isEqualTo(1)
@@ -516,7 +526,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
             migrationId = "2019-01-01T00:00:00",
             whenStarted = LocalDateTime.parse("2019-01-01T00:00:00"),
             whenEnded = LocalDateTime.parse("2019-01-01T01:00:00"),
-            status = MigrationStatus.COMPLETED,
+            status = COMPLETED,
             estimatedRecordCount = 123_567,
             filter = "",
             recordsMigrated = 123_567,
@@ -629,7 +639,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     internal fun `will terminate a running migration`() {
       val count = 30L
-      nomisApi.stubGetSentenceAdjustmentsInitialCount(count)
+      nomisApi.stubGetInitialCount(NomisApiExtension.ADJUSTMENTS_ID_URL, count) { adjustmentIdsPagedResponse(it) }
       nomisApi.stubMultipleGetAdjustmentIdCounts(totalElements = count, pageSize = 10)
       mappingApi.stubSentenceAdjustmentMappingByMigrationId(count = count.toInt())
 
