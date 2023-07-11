@@ -88,6 +88,8 @@ class SqsIntegrationTestBase : TestBase() {
       sentencingMigrationQueue,
       visitsOffenderEventsQueue,
       sentencingOffenderEventsQueue,
+      adjudicationsMigrationQueue,
+      appointmentsMigrationQueue,
     )
   }
 
