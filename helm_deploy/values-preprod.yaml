@@ -38,5 +38,7 @@ generic-prometheus-alerts:
     - "syscon-devs-preprod-migration_visits_dlq"
     - "syscon-devs-preprod-migration_appointments_queue"
     - "syscon-devs-preprod-migration_appointments_dlq"
+    - "syscon-devs-preprod-migration_adjudications_queue"
+    - "syscon-devs-preprod-migration_adjudications_dlq"
   sqsAlertsOldestThreshold: 2
   sqsAlertsTotalMessagesThreshold: 1
