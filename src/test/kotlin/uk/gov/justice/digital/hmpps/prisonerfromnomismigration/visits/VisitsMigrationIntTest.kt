@@ -772,6 +772,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `can read active migration data`() {
+      mappingApi.stubVisitMappingByMigrationId(count = 123456)
       webTestClient.get().uri("/migrate/visits/active-migration")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
         .header("Content-Type", "application/json")
@@ -780,7 +781,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
         .expectBody()
         .jsonPath("$.migrationId").isEqualTo("2020-01-01T00:00:00")
         .jsonPath("$.whenStarted").isEqualTo("2020-01-01T00:00:00")
-        .jsonPath("$.recordsMigrated").isEqualTo(123560)
+        .jsonPath("$.recordsMigrated").isEqualTo(123456)
         .jsonPath("$.toBeProcessedCount").isEqualTo(0)
         .jsonPath("$.beingProcessedCount").isEqualTo(0)
         .jsonPath("$.recordsFailed").isEqualTo(0)

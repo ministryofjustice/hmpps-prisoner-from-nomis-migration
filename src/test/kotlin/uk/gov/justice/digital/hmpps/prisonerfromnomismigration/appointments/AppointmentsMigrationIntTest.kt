@@ -80,7 +80,7 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `will start processing pages of appointments`() {
-      nomisApi.stubGetInitialCount(NomisApiExtension.APPOINTMENTS_ID_URL, 14) { appointmentIdsPagedResponse(it) }
+      nomisApi.stubGetInitialCount(APPOINTMENTS_ID_URL, 14) { appointmentIdsPagedResponse(it) }
       nomisApi.stubMultipleGetAppointmentIdCounts(totalElements = 14, pageSize = 10)
       nomisApi.stubMultipleGetAppointments(1..14)
       mappingApi.stubAllMappingsNotFound(APPOINTMENTS_GET_MAPPING_URL)
@@ -131,7 +131,7 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `will add analytical events for starting, ending and each migrated record`() {
-      nomisApi.stubGetInitialCount(NomisApiExtension.APPOINTMENTS_ID_URL, 3) { appointmentIdsPagedResponse(it) }
+      nomisApi.stubGetInitialCount(APPOINTMENTS_ID_URL, 3) { appointmentIdsPagedResponse(it) }
       nomisApi.stubMultipleGetAppointmentIdCounts(totalElements = 3, pageSize = 10)
       nomisApi.stubMultipleGetAppointments(1..3)
       activitiesApi.stubCreateAppointmentForMigration(12345)
@@ -191,7 +191,7 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `will retry to create a mapping, and only the mapping, if it fails first time`() {
-      nomisApi.stubGetInitialCount(NomisApiExtension.APPOINTMENTS_ID_URL, 1) { appointmentIdsPagedResponse(it) }
+      nomisApi.stubGetInitialCount(APPOINTMENTS_ID_URL, 1) { appointmentIdsPagedResponse(it) }
       nomisApi.stubMultipleGetAppointmentIdCounts(totalElements = 1, pageSize = 10)
       nomisApi.stubMultipleGetAppointments(1..1)
       mappingApi.stubAllMappingsNotFound(APPOINTMENTS_GET_MAPPING_URL)
@@ -217,7 +217,7 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `it will not retry after a 409 (duplicate appointment written to Activities API) or mapping already exists`() {
-      nomisApi.stubGetInitialCount(NomisApiExtension.APPOINTMENTS_ID_URL, 1) { appointmentIdsPagedResponse(it) }
+      nomisApi.stubGetInitialCount(APPOINTMENTS_ID_URL, 1) { appointmentIdsPagedResponse(it) }
       nomisApi.stubMultipleGetAppointmentIdCounts(totalElements = 2, pageSize = 10)
       nomisApi.stubMultipleGetAppointments(1..2)
       mappingApi.stubAllMappingsNotFound(APPOINTMENTS_GET_MAPPING_URL)
@@ -526,7 +526,7 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     fun `will terminate a running migration`() {
       val count = 30L
-      nomisApi.stubGetInitialCount(NomisApiExtension.APPOINTMENTS_ID_URL, count) { appointmentIdsPagedResponse(it) }
+      nomisApi.stubGetInitialCount(APPOINTMENTS_ID_URL, count) { appointmentIdsPagedResponse(it) }
       nomisApi.stubMultipleGetAppointmentIdCounts(totalElements = count, pageSize = 10)
       mappingApi.stubAppointmentMappingByMigrationId(count = count.toInt())
 
@@ -656,6 +656,7 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `can read active migration data`() {
+      mappingApi.stubAppointmentMappingByMigrationId(count = 123456)
       webTestClient.get().uri("/migrate/appointments/active-migration")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_APPOINTMENTS")))
         .header("Content-Type", "application/json")
@@ -664,7 +665,7 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
         .expectBody()
         .jsonPath("$.migrationId").isEqualTo("2020-01-01T00:00:00")
         .jsonPath("$.whenStarted").isEqualTo("2020-01-01T00:00:00")
-        .jsonPath("$.recordsMigrated").isEqualTo(123560)
+        .jsonPath("$.recordsMigrated").isEqualTo(123456)
         .jsonPath("$.toBeProcessedCount").isEqualTo(0)
         .jsonPath("$.beingProcessedCount").isEqualTo(0)
         .jsonPath("$.recordsFailed").isEqualTo(0)

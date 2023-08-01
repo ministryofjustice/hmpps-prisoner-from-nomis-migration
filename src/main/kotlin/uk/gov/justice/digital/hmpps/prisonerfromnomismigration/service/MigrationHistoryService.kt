@@ -19,6 +19,7 @@ class MigrationHistoryService(
   private val migrationHistoryRepository: MigrationHistoryRepository,
   private val objectMapper: ObjectMapper,
   private val hmppsQueueService: HmppsQueueService,
+  private val generalMappingService: GeneralMappingService,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -90,18 +91,32 @@ class MigrationHistoryService(
 
   suspend fun getActiveMigrationDetails(type: MigrationType): InProgressMigration {
     val queue = hmppsQueueService.findByQueueId(type.queueId)!!
+
+    val toBeProcessedCount = queue.getQueueAttributes()
+      .map { it.attributes()[QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES]?.toInt() }.getOrNull()
+    val beingProcessedCount = queue.getQueueAttributes()
+      .map { it.attributes()[QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES_NOT_VISIBLE]?.toInt() }.getOrNull()
+    val recordsFailedCount =
+      queue.getDlqAttributes().map { it.attributes()[QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES]?.toInt() }
+        .getOrNull()
+
     val migrationProperties = migrationHistoryRepository.findFirstByMigrationTypeOrderByWhenStartedDesc(type)
+      ?: return InProgressMigration(
+        toBeProcessedCount = toBeProcessedCount,
+        beingProcessedCount = beingProcessedCount,
+        recordsFailed = recordsFailedCount,
+      )
 
     return InProgressMigration(
-      recordsMigrated = migrationProperties?.recordsMigrated,
-      toBeProcessedCount = queue.getQueueAttributes().map { it.attributes()[QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES]?.toInt() }.getOrNull(),
-      beingProcessedCount = queue.getQueueAttributes().map { it.attributes()[QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES_NOT_VISIBLE]?.toInt() }.getOrNull(),
-      recordsFailed = queue.getDlqAttributes().map { it.attributes()[QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES]?.toInt() }.getOrNull(),
-      whenStarted = migrationProperties?.whenStarted,
-      migrationId = migrationProperties?.migrationId,
-      status = migrationProperties?.status,
-      migrationType = migrationProperties?.migrationType,
-      estimatedRecordCount = migrationProperties?.estimatedRecordCount,
+      recordsMigrated = generalMappingService.getMigrationCount(migrationProperties.migrationId, type),
+      toBeProcessedCount = toBeProcessedCount,
+      beingProcessedCount = beingProcessedCount,
+      recordsFailed = recordsFailedCount,
+      whenStarted = migrationProperties.whenStarted,
+      migrationId = migrationProperties.migrationId,
+      status = migrationProperties.status,
+      migrationType = migrationProperties.migrationType,
+      estimatedRecordCount = migrationProperties.estimatedRecordCount,
     )
   }
 
