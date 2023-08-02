@@ -15,11 +15,12 @@ import java.time.LocalDateTime
 class AdjudicationsMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) :
   MigrationMapping<AdjudicationMapping>(domainUrl = "/mapping/adjudications", webClient) {
 
-  suspend fun findNomisMapping(adjudicationNumber: Long): AdjudicationMapping? {
+  suspend fun findNomisMapping(adjudicationNumber: Long, chargeSequence: Int): AdjudicationMapping? {
     return webClient.get()
       .uri(
-        "/mapping/adjudications/{adjudicationNumber}",
+        "/mapping/adjudications/{adjudicationNumber}/charge-sequence/{chargeSequence}",
         adjudicationNumber,
+        chargeSequence,
       )
       .retrieve()
       .bodyToMono(AdjudicationMapping::class.java)
@@ -47,6 +48,7 @@ class AdjudicationsMappingService(@Qualifier("mappingApiWebClient") webClient: W
 
 data class AdjudicationMapping(
   val adjudicationNumber: Long,
+  val chargeSequence: Int,
   val mappingType: String,
   val label: String? = null,
   val whenCreated: LocalDateTime? = null,
