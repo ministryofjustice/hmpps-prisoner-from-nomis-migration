@@ -8,7 +8,8 @@ import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
@@ -17,7 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 
-private fun AdjudicationResponse.toAdjudication(): AdjudicationMigrateRequest =
+private fun AdjudicationChargeResponse.toAdjudication(): AdjudicationMigrateRequest =
   AdjudicationMigrateRequest(this.offenderNo, this.adjudicationNumber!!)
 
 @Service
@@ -30,15 +31,16 @@ class AdjudicationsMigrationService(
   private val adjudicationsMappingService: AdjudicationsMappingService,
   private val adjudicationsService: AdjudicationsService,
   @Value("\${adjudications.page.size:1000}") pageSize: Long,
-) : MigrationService<AdjudicationsMigrationFilter, AdjudicationIdResponse, AdjudicationResponse, AdjudicationMapping>(
-  queueService = queueService,
-  auditService = auditService,
-  migrationHistoryService = migrationHistoryService,
-  mappingService = adjudicationsMappingService,
-  telemetryClient = telemetryClient,
-  migrationType = MigrationType.ADJUDICATIONS,
-  pageSize = pageSize,
-) {
+) :
+  MigrationService<AdjudicationsMigrationFilter, AdjudicationChargeIdResponse, AdjudicationResponse, AdjudicationMapping>(
+    queueService = queueService,
+    auditService = auditService,
+    migrationHistoryService = migrationHistoryService,
+    mappingService = adjudicationsMappingService,
+    telemetryClient = telemetryClient,
+    migrationType = MigrationType.ADJUDICATIONS,
+    pageSize = pageSize,
+  ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
@@ -47,7 +49,7 @@ class AdjudicationsMigrationService(
     migrationFilter: AdjudicationsMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
-  ): PageImpl<AdjudicationIdResponse> {
+  ): PageImpl<AdjudicationChargeIdResponse> {
     return nomisApiService.getAdjudicationIds(
       fromDate = migrationFilter.fromDate,
       toDate = migrationFilter.toDate,
@@ -57,20 +59,29 @@ class AdjudicationsMigrationService(
     )
   }
 
-  override suspend fun migrateNomisEntity(context: MigrationContext<AdjudicationIdResponse>) {
+  override suspend fun migrateNomisEntity(context: MigrationContext<AdjudicationChargeIdResponse>) {
     log.info("attempting to migrate ${context.body}")
     val adjudicationNumber = context.body.adjudicationNumber
+    val chargeSequence = context.body.chargeSequence
 
-    adjudicationsMappingService.findNomisMapping(adjudicationNumber = adjudicationNumber)
+    adjudicationsMappingService.findNomisMapping(
+      adjudicationNumber = adjudicationNumber,
+      chargeSequence = chargeSequence,
+    )
       ?.run {
-        log.info("Will not migrate the adjudication since it is migrated already, NOMIS adjudicationNumber is $adjudicationNumber as part of migration ${this.label ?: "NONE"} (${this.mappingType})")
+        log.info("Will not migrate the adjudication since it is migrated already, NOMIS adjudicationNumber is $adjudicationNumber/$chargeSequence as part of migration ${this.label ?: "NONE"} (${this.mappingType})")
       }
       ?: run {
-        val nomisAdjudication = nomisApiService.getAdjudication(adjudicationNumber)
+        val nomisAdjudication =
+          nomisApiService.getAdjudicationCharge(
+            adjudicationNumber = adjudicationNumber,
+            chargeSequence = chargeSequence,
+          )
 
         adjudicationsService.createAdjudication(nomisAdjudication.toAdjudication())
         createAdjudicationMapping(
           adjudicationNumber,
+          chargeSequence,
           context = context,
         )
 
@@ -87,18 +98,20 @@ class AdjudicationsMigrationService(
 
   private suspend fun createAdjudicationMapping(
     adjudicationNumber: Long,
+    chargeSequence: Int,
     context: MigrationContext<*>,
   ) = try {
     adjudicationsMappingService.createMapping(
       AdjudicationMapping(
         adjudicationNumber = adjudicationNumber,
+        chargeSequence = chargeSequence,
         label = context.migrationId,
         mappingType = "MIGRATED",
       ),
     )
   } catch (e: Exception) {
     log.error(
-      "Failed to create mapping for adjudicationNumber: $adjudicationNumber",
+      "Failed to create mapping for adjudicationNumber: $adjudicationNumber/$chargeSequence",
       e,
     )
     queueService.sendMessage(
@@ -107,6 +120,7 @@ class AdjudicationsMigrationService(
         context = context,
         body = AdjudicationMapping(
           adjudicationNumber = adjudicationNumber,
+          chargeSequence = chargeSequence,
           mappingType = "MIGRATED",
         ),
       ),

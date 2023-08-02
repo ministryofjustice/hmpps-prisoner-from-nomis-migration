@@ -16,7 +16,7 @@ import java.lang.Long.min
 
 class NomisApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
   companion object {
-    const val ADJUDICATIONS_ID_URL = "/adjudications/ids"
+    const val ADJUDICATIONS_ID_URL = "/adjudications/charges/ids"
     const val VISITS_ID_URL = "/visits/ids"
     const val APPOINTMENTS_ID_URL = "/appointments/ids"
     const val ADJUSTMENTS_ID_URL = "/adjustments/ids"
@@ -196,7 +196,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
       val endId = min((page * pageSize) + pageSize, totalElements)
       nomisApi.stubFor(
         get(
-          urlPathEqualTo("/adjudications/ids"),
+          urlPathEqualTo("/adjudications/charges/ids"),
         )
           .withQueryParam("page", equalTo(page.toString()))
           .willReturn(
@@ -217,7 +217,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubGetSingleAdjudicationId(adjudicationNumber: Long) {
     nomisApi.stubFor(
       get(
-        urlPathEqualTo("/adjudications/ids"),
+        urlPathEqualTo("/adjudications/charges/ids"),
       )
         .withQueryParam("page", equalTo("0"))
         .willReturn(
@@ -238,7 +238,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     (intProgression).forEach {
       nomisApi.stubFor(
         get(
-          urlPathEqualTo("/adjudications/adjudication-number/$it"),
+          urlPathEqualTo("/adjudications/adjudication-number/$it/charge-sequence/1"),
         )
           .willReturn(
             aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
@@ -248,10 +248,10 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }
   }
 
-  fun stubGetAdjudication(adjudicationNumber: Long) {
+  fun stubGetAdjudication(adjudicationNumber: Long, chargeSequence: Int = 1) {
     nomisApi.stubFor(
       get(
-        urlPathEqualTo("/adjudications/adjudication-number/$adjudicationNumber"),
+        urlPathEqualTo("/adjudications/adjudication-number/$adjudicationNumber/charge-sequence/$chargeSequence"),
       )
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json")
@@ -527,7 +527,10 @@ fun adjudicationsIdsPagedResponse(
   pageSize: Long = 10,
   pageNumber: Long = 0,
 ): String {
-  val content = ids.map { """{ "adjudicationNumber": $it, "offenderNo": "AD12345" }""" }.joinToString { it }
+  val content = ids.map {
+    // language=json
+    """{ "adjudicationNumber": $it, "chargeSequence": 1, "offenderNo": "AD12345" }"""
+  }.joinToString { it }
   return pageContent(content, pageSize, pageNumber, totalElements, ids.size)
 }
 
@@ -537,7 +540,9 @@ private fun pageContent(
   pageNumber: Long,
   totalElements: Long,
   size: Int,
-) = """
+) =
+  // language=json
+  """
 {
     "content": [
         $content
@@ -568,7 +573,7 @@ private fun pageContent(
     "numberOfElements": $size,
     "empty": false
 }
-""".trimIndent()
+  """.trimIndent()
 
 private fun getAdjustmentCategory(it: Long) = if (it % 2L == 0L) "KEY_DATE" else "SENTENCE"
 
@@ -627,6 +632,7 @@ private fun adjudicationResponse(
   offenderNo: String = "G4803UT",
   adjudicationNumber: Long = 3,
 ): String {
+  // language=json
   return """
 {
   "adjudicationNumber":$adjudicationNumber,
@@ -668,7 +674,18 @@ private fun adjudicationResponse(
       "otherStaffInvolved": [],
       "repairs": []
     },
-    "charges": [],
+    "charge": {
+        "offence": {
+            "code": "51:12A",
+            "description": "Has in his possession - (a) any unauthorised article, or (b) a greater quantity of any article than he is authorised to have - possession of unauthorised items",
+            "type": {
+                "code": "51",
+                "description": "Prison Rule 51"
+            }
+        },
+        "offenceId": "$adjudicationNumber/1",
+        "chargeSequence": 1
+    },
     "investigations": [],
     "hearings": []
 }

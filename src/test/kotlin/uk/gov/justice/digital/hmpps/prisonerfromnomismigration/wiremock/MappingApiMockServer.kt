@@ -432,6 +432,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubAdjudicationMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 278887) {
     val content = """{
       "adjudicationNumber": 191747,
+      "chargeSequence": 1,
       "label": "2022-02-14T09:58:45",
       "whenCreated": "$whenCreated",
       "mappingType": "MIGRATED"

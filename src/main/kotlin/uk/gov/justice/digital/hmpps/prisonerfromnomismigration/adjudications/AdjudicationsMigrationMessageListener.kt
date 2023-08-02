@@ -8,7 +8,7 @@ import io.opentelemetry.instrumentation.annotations.WithSpan
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.Message
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ADJUDICATIONS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
@@ -19,10 +19,11 @@ import java.util.concurrent.CompletableFuture
 class AdjudicationsMigrationMessageListener(
   objectMapper: ObjectMapper,
   adjudicationsMigrationService: AdjudicationsMigrationService,
-) : MigrationMessageListener<AdjudicationsMigrationFilter, AdjudicationIdResponse, AdjudicationResponse, AdjudicationMapping>(
-  objectMapper,
-  adjudicationsMigrationService,
-) {
+) :
+  MigrationMessageListener<AdjudicationsMigrationFilter, AdjudicationChargeIdResponse, AdjudicationResponse, AdjudicationMapping>(
+    objectMapper,
+    adjudicationsMigrationService,
+  ) {
 
   @SqsListener(ADJUDICATIONS_QUEUE_ID, factory = "hmppsQueueContainerFactoryProxy")
   @WithSpan(value = "dps-syscon-migration_adjudications_queue", kind = SpanKind.SERVER)
@@ -38,7 +39,7 @@ class AdjudicationsMigrationMessageListener(
     return objectMapper.readValue(json)
   }
 
-  override fun parseContextNomisId(json: String): MigrationMessage<*, AdjudicationIdResponse> {
+  override fun parseContextNomisId(json: String): MigrationMessage<*, AdjudicationChargeIdResponse> {
     return objectMapper.readValue(json)
   }
 

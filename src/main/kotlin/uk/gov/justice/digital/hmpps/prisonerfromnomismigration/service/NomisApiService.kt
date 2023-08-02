@@ -10,9 +10,10 @@ import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentMigrateRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationIdResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomUsageResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationFilter
@@ -144,10 +145,10 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     toDate: LocalDate?,
     pageNumber: Long,
     pageSize: Long,
-  ): PageImpl<AdjudicationIdResponse> =
+  ): PageImpl<AdjudicationChargeIdResponse> =
     webClient.get()
       .uri {
-        it.path("/adjudications/ids")
+        it.path("/adjudications/charges/ids")
           .queryParam("prisonIds", prisonIds)
           .queryParam("fromDate", fromDate)
           .queryParam("toDate", toDate)
@@ -156,15 +157,18 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
           .build()
       }
       .retrieve()
-      .bodyToMono(typeReference<RestResponsePage<AdjudicationIdResponse>>())
+      .bodyToMono(typeReference<RestResponsePage<AdjudicationChargeIdResponse>>())
       .awaitSingle()
 
-  suspend fun getAdjudication(adjudicationNumber: Long): AdjudicationResponse =
+  suspend fun getAdjudicationCharge(adjudicationNumber: Long, chargeSequence: Int): AdjudicationChargeResponse =
     webClient.get()
-      .uri("/adjudications/adjudication-number/{adjudicationNumber}", adjudicationNumber)
+      .uri(
+        "/adjudications/adjudication-number/{adjudicationNumber}/charge-sequence/{chargeSequence}",
+        adjudicationNumber,
+        chargeSequence,
+      )
       .retrieve()
-      .bodyToMono(AdjudicationResponse::class.java)
-      .awaitSingle()
+      .awaitBody()
 }
 
 data class VisitId(

@@ -112,7 +112,7 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
 
       // check filter matches what is passed in
       nomisApi.verifyGetIdsCount(
-        url = "/adjudications/ids",
+        url = "/adjudications/charges/ids",
         fromDate = "2020-01-01",
         toDate = "2020-01-02",
       )
@@ -124,7 +124,7 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `will add analytical events for starting, ending and each migrated record`() {
-      nomisApi.stubGetInitialCount("/adjudications/ids", 3) { adjudicationsIdsPagedResponse(it) }
+      nomisApi.stubGetInitialCount("/adjudications/charges/ids", 3) { adjudicationsIdsPagedResponse(it) }
       nomisApi.stubMultipleGetAdjudicationIdCounts(totalElements = 3, pageSize = 10)
       nomisApi.stubMultipleGetAdjudications(1..3)
       adjudicationsApi.stubCreateAdjudicationForMigration(12345)
@@ -184,7 +184,12 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `will retry to create a mapping, and only the mapping, if it fails first time`() {
-      nomisApi.stubGetInitialCount("/adjudications/ids", 3) { adjudicationsIdsPagedResponse(totalElements = it, ids = listOf(654321)) }
+      nomisApi.stubGetInitialCount("/adjudications/charges/ids", 3) {
+        adjudicationsIdsPagedResponse(
+          totalElements = it,
+          ids = listOf(654321),
+        )
+      }
       nomisApi.stubGetSingleAdjudicationId(adjudicationNumber = 654321)
       nomisApi.stubGetAdjudication(adjudicationNumber = 654321)
       mappingApi.stubAllMappingsNotFound(ADJUDICATIONS_GET_MAPPING_URL)
