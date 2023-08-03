@@ -32,8 +32,10 @@ class MappingApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallb
     const val ADJUDICATIONS_GET_MAPPING_URL = "/mapping/adjudications/adjudication-number"
     const val APPOINTMENTS_CREATE_MAPPING_URL = "/mapping/appointments"
     const val APPOINTMENTS_GET_MAPPING_URL = "/mapping/appointments/nomis-event-id"
-    const val SENTENCE_ADJUSTMENTS_GET_MAPPING_URL = "/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id"
-    const val KEYDATE_ADJUSTMENTS_GET_MAPPING_URL = "/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id"
+    const val SENTENCE_ADJUSTMENTS_GET_MAPPING_URL =
+      "/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id"
+    const val KEYDATE_ADJUSTMENTS_GET_MAPPING_URL =
+      "/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id"
     const val ADJUSTMENTS_CREATE_MAPPING_URL = "/mapping/sentencing/adjustments"
   }
 
@@ -433,6 +435,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     val content = """{
       "adjudicationNumber": 191747,
       "chargeSequence": 1,
+      "chargeNumber": "191747/1",
       "label": "2022-02-14T09:58:45",
       "whenCreated": "$whenCreated",
       "mappingType": "MIGRATED"
@@ -458,6 +461,16 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
       )
     }
+
+  fun verifyCreateMappingAdjudication(adjudicationNumber: Long, chargeSequence: Int, chargeNumber: String, times: Int = 1) {
+    verify(
+      times,
+      postRequestedFor(urlPathEqualTo("/mapping/adjudications"))
+        .withRequestBody(matchingJsonPath("adjudicationNumber", equalTo(adjudicationNumber.toString())))
+        .withRequestBody(matchingJsonPath("chargeSequence", equalTo(chargeSequence.toString())))
+        .withRequestBody(matchingJsonPath("chargeNumber", equalTo(chargeNumber))),
+    )
+  }
 
   private fun pageContent(content: String, count: Int) = """
   {

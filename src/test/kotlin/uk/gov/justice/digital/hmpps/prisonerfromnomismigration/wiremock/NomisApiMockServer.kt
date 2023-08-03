@@ -257,7 +257,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse().withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
             .withBody(
-              adjudicationResponse(adjudicationNumber = 654321),
+              adjudicationResponse(adjudicationNumber = 654321, chargeSequence = chargeSequence),
             ),
         ),
     )
@@ -631,6 +631,7 @@ private fun keyDateAdjustmentResponse(
 private fun adjudicationResponse(
   offenderNo: String = "G4803UT",
   adjudicationNumber: Long = 3,
+  chargeSequence: Int = 1,
 ): String {
   // language=json
   return """
@@ -684,7 +685,7 @@ private fun adjudicationResponse(
             }
         },
         "offenceId": "$adjudicationNumber/1",
-        "chargeSequence": 1
+        "chargeSequence": $chargeSequence
     },
     "investigations": [],
     "hearings": []

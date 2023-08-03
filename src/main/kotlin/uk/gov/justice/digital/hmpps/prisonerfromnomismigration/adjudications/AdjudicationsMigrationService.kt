@@ -80,8 +80,9 @@ class AdjudicationsMigrationService(
 
         adjudicationsService.createAdjudication(nomisAdjudication.toAdjudication())
         createAdjudicationMapping(
-          adjudicationNumber,
-          chargeSequence,
+          adjudicationNumber = adjudicationNumber,
+          chargeSequence = chargeSequence,
+          chargeNumber = "${nomisAdjudication.adjudicationNumber}/$chargeSequence", // TODO: returned by DPS but assume it made from these fields
           context = context,
         )
 
@@ -99,12 +100,14 @@ class AdjudicationsMigrationService(
   private suspend fun createAdjudicationMapping(
     adjudicationNumber: Long,
     chargeSequence: Int,
+    chargeNumber: String,
     context: MigrationContext<*>,
   ) = try {
     adjudicationsMappingService.createMapping(
       AdjudicationMapping(
         adjudicationNumber = adjudicationNumber,
         chargeSequence = chargeSequence,
+        chargeNumber = chargeNumber,
         label = context.migrationId,
         mappingType = "MIGRATED",
       ),
@@ -121,6 +124,7 @@ class AdjudicationsMigrationService(
         body = AdjudicationMapping(
           adjudicationNumber = adjudicationNumber,
           chargeSequence = chargeSequence,
+          chargeNumber = chargeNumber,
           mappingType = "MIGRATED",
         ),
       ),
