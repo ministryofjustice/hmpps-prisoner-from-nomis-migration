@@ -191,7 +191,7 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
         )
       }
       nomisApi.stubGetSingleAdjudicationId(adjudicationNumber = 654321)
-      nomisApi.stubGetAdjudication(adjudicationNumber = 654321)
+      nomisApi.stubGetAdjudication(adjudicationNumber = 654321, chargeSequence = 1)
       mappingApi.stubAllMappingsNotFound(ADJUDICATIONS_GET_MAPPING_URL)
       adjudicationsApi.stubCreateAdjudicationForMigration(654321L)
       mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/adjudications")
@@ -219,7 +219,12 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
       assertThat(adjudicationsApi.createAdjudicationCount()).isEqualTo(1)
 
       // should retry to create mapping twice
-      mappingApi.verifyCreateMappingAdjudicationIds(arrayOf("654321"), times = 2)
+      mappingApi.verifyCreateMappingAdjudication(
+        adjudicationNumber = 654321,
+        chargeSequence = 1,
+        chargeNumber = "654321/1",
+        times = 2,
+      )
     }
   }
 

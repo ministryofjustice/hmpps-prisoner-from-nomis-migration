@@ -18,7 +18,7 @@ class AdjudicationsMappingService(@Qualifier("mappingApiWebClient") webClient: W
   suspend fun findNomisMapping(adjudicationNumber: Long, chargeSequence: Int): AdjudicationMapping? {
     return webClient.get()
       .uri(
-        "/mapping/adjudications/{adjudicationNumber}/charge-sequence/{chargeSequence}",
+        "/mapping/adjudications/adjudication-number/{adjudicationNumber}/charge-sequence/{chargeSequence}",
         adjudicationNumber,
         chargeSequence,
       )
@@ -49,6 +49,7 @@ class AdjudicationsMappingService(@Qualifier("mappingApiWebClient") webClient: W
 data class AdjudicationMapping(
   val adjudicationNumber: Long,
   val chargeSequence: Int,
+  val chargeNumber: String,
   val mappingType: String,
   val label: String? = null,
   val whenCreated: LocalDateTime? = null,
