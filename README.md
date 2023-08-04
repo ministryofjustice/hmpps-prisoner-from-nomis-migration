@@ -66,6 +66,7 @@ Run the following commands to take a copy of the latest specs:
 ```
 curl https://nomis-prsner-dev.aks-dev-1.studio-hosting.service.justice.gov.uk/v3/api-docs > openapi-specs/nomis-sync-api-docs.json
 curl https://activities-api-dev.prison.service.justice.gov.uk/v3/api-docs > openapi-specs/activities-api-docs.json
+curl https://manage-adjudications-api-dev.hmpps.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/adjudications-api-docs.json
 ```
 
 Go into the specs and reformat so they and the diffs are easier for humans to read.
@@ -77,6 +78,13 @@ Then run another command to regenerate the models in the `build/generated/src` d
 Now build the project and deal with any compile errors caused by changes to the generated models.
 
 Finally run the tests and fix any issues caused by changes to the models.
+
+### Adding new Open API specs
+
+Add the instructions for the curl command above but obviously with a different file name
+
+In the build.gradle add a new task similar to the `buildActivityApiModel` task
+In the build.gradle add dependencies in the appropriate tasks e.g. in `withType<KotlinCompile>` for the new task
 
 ## Mock services
 

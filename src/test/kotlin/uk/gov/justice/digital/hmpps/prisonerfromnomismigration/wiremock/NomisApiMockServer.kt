@@ -187,7 +187,11 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }
   }
 
-  fun stubMultipleGetAdjudicationIdCounts(totalElements: Long, pageSize: Long) {
+  fun stubMultipleGetAdjudicationIdCounts(
+    totalElements: Long,
+    pageSize: Long,
+    pagedResponse: (() -> String)? = null,
+  ) {
     // for each page create a response for each adjudication id starting from 1 up to `totalElements`
 
     val pages = (totalElements / pageSize) + 1
@@ -202,7 +206,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .willReturn(
             aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
               .withBody(
-                adjudicationsIdsPagedResponse(
+                pagedResponse?.let { pagedResponse() } ?: adjudicationsIdsPagedResponse(
                   totalElements = totalElements,
                   ids = (startId..endId).map { it },
                   pageNumber = page,
@@ -248,7 +252,11 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }
   }
 
-  fun stubGetAdjudication(adjudicationNumber: Long, chargeSequence: Int = 1) {
+  fun stubGetAdjudication(
+    adjudicationNumber: Long,
+    chargeSequence: Int = 1,
+    adjudicationResponse: (() -> String)? = null,
+  ) {
     nomisApi.stubFor(
       get(
         urlPathEqualTo("/adjudications/adjudication-number/$adjudicationNumber/charge-sequence/$chargeSequence"),
@@ -257,7 +265,10 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse().withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
             .withBody(
-              adjudicationResponse(adjudicationNumber = 654321, chargeSequence = chargeSequence),
+              adjudicationResponse?.let { adjudicationResponse() } ?: adjudicationResponse(
+                adjudicationNumber = 654321,
+                chargeSequence = chargeSequence,
+              ),
             ),
         ),
     )
@@ -534,6 +545,20 @@ fun adjudicationsIdsPagedResponse(
   return pageContent(content, pageSize, pageNumber, totalElements, ids.size)
 }
 
+fun adjudicationsIdsPagedResponse(
+  adjudicationNumber: Long,
+  chargeSequence: Int,
+  offenderNo: String,
+): String {
+  return pageContent(
+    """{ "adjudicationNumber": $adjudicationNumber, "chargeSequence": $chargeSequence, "offenderNo": "$offenderNo" }""",
+    pageSize = 10,
+    pageNumber = 0,
+    totalElements = 1,
+    size = 10,
+  )
+}
+
 private fun pageContent(
   content: String,
   pageSize: Long,
@@ -628,7 +653,7 @@ private fun keyDateAdjustmentResponse(
   """.trimIndent()
 }
 
-private fun adjudicationResponse(
+fun adjudicationResponse(
   offenderNo: String = "G4803UT",
   adjudicationNumber: Long = 3,
   chargeSequence: Int = 1,

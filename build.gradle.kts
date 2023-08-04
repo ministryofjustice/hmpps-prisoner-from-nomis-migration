@@ -71,18 +71,18 @@ java {
 tasks {
   withType<KotlinCompile> {
     //  dependsOn("buildSentencingApiModel")
-    dependsOn("buildActivityApiModel", "buildNomisSyncApiModel")
+    dependsOn("buildActivityApiModel", "buildNomisSyncApiModel", "buildAdjudicationApiModel")
     kotlinOptions {
       jvmTarget = "19"
     }
   }
   withType<KtLintCheckTask> {
     // Under gradle 8 we must declare the dependency here, even if we're not going to be linting the model
-    mustRunAfter("buildActivityApiModel", "buildNomisSyncApiModel")
+    mustRunAfter("buildActivityApiModel", "buildNomisSyncApiModel", "buildAdjudicationApiModel")
   }
   withType<KtLintFormatTask> {
     // Under gradle 8 we must declare the dependency here, even if we're not going to be linting the model
-    mustRunAfter("buildActivityApiModel", "buildNomisSyncApiModel")
+    mustRunAfter("buildActivityApiModel", "buildNomisSyncApiModel", "buildAdjudicationApiModel")
   }
 }
 
@@ -122,6 +122,23 @@ tasks.register("buildNomisSyncApiModel", GenerateTask::class) {
       "models" to ""
     )
   )
+}
+
+tasks.register("buildAdjudicationApiModel", GenerateTask::class) {
+  generatorName.set("kotlin")
+  skipValidateSpec.set(true)
+  inputSpec.set("openapi-specs/adjudications-api-docs.json")
+  outputDir.set("$buildDir/generated")
+  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model")
+  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.api")
+  configOptions.set(
+    mapOf(
+      "dateLibrary" to "java8-localdatetime",
+      "serializationLibrary" to "jackson",
+      "enumPropertyNaming" to "original"
+    )
+  )
+  globalProperties.set(mapOf("models" to ""))
 }
 
 /* TODO when sentencing API created
