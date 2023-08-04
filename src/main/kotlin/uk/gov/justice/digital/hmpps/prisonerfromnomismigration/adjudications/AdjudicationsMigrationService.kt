@@ -79,10 +79,12 @@ class AdjudicationsMigrationService(
           )
 
         adjudicationsService.createAdjudication(nomisAdjudication.toAdjudication())
+        val chargeNumber =
+          "${nomisAdjudication.adjudicationNumber}/$chargeSequence" // TODO: returned by DPS but assume it made from these fields
         createAdjudicationMapping(
           adjudicationNumber = adjudicationNumber,
           chargeSequence = chargeSequence,
-          chargeNumber = "${nomisAdjudication.adjudicationNumber}/$chargeSequence", // TODO: returned by DPS but assume it made from these fields
+          chargeNumber = chargeNumber,
           context = context,
         )
 
@@ -90,6 +92,8 @@ class AdjudicationsMigrationService(
           "adjudications-migration-entity-migrated",
           mapOf(
             "adjudicationNumber" to adjudicationNumber.toString(),
+            "chargeSequence" to chargeSequence.toString(),
+            "chargeNumber" to chargeNumber,
             "migrationId" to context.migrationId,
           ),
           null,
