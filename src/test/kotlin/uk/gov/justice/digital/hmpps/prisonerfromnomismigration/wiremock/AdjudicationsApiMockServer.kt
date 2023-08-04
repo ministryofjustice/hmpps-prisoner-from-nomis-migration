@@ -48,22 +48,39 @@ class AdjudicationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubCreateAdjudicationForMigration(adjudicationNumber: Long = 654321) {
+  fun stubCreateAdjudicationForMigration(
+    adjudicationNumber: Long = 654321,
+    chargeSequence: Int = 1,
+    chargeNumber: String = "654321/1",
+  ) {
     stubFor(
-      post(WireMock.urlMatching("/legacy/adjudications/migration")).willReturn(
+      post(WireMock.urlMatching("/reported-adjudications/migrate")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.CREATED.value())
-          .withBody("""{"adjudicationNumber": $adjudicationNumber}"""),
+          .withBody(
+            // language=JSON
+            """
+            {
+              "chargeNumberMapping": {
+                "chargeNumber": "$chargeNumber",
+                "oicIncidentId": $adjudicationNumber,
+                "offenceSequence": $chargeSequence
+              },
+              "hearingMappings": [],
+              "punishmentMappings": []
+            }
+            """.trimIndent(),
+          ),
       ),
     )
   }
 
   fun verifyCreatedAdjudicationForMigration(builder: RequestPatternBuilder.() -> RequestPatternBuilder = { this }) =
     verify(
-      postRequestedFor(WireMock.urlEqualTo("/legacy/adjudications/migration")).builder(),
+      postRequestedFor(WireMock.urlEqualTo("/reported-adjudications/migrate")).builder(),
     )
 
   fun createAdjudicationCount() =
-    findAll(postRequestedFor(WireMock.urlMatching("/legacy/adjudications/migration"))).count()
+    findAll(postRequestedFor(WireMock.urlMatching("/reported-adjudications/migrate"))).count()
 }
