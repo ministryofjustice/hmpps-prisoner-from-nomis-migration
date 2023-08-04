@@ -6,6 +6,10 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.AdjudicationMigrateDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateOffence
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigratePrisoner
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.ReportingOfficer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeIdResponse
@@ -18,8 +22,28 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 
-private fun AdjudicationChargeResponse.toAdjudication(): AdjudicationMigrateRequest =
-  AdjudicationMigrateRequest(this.offenderNo, this.adjudicationNumber!!)
+private fun AdjudicationChargeResponse.toAdjudication(): AdjudicationMigrateDto =
+  AdjudicationMigrateDto(
+    agencyIncidentId = 1,
+    oicIncidentId = this.adjudicationNumber!!, // TODO looks like A mistake in NOMIS API swagger, this cannot be null
+    offenceSequence = this.charge.chargeSequence.toLong(),
+    bookingId = 1,
+    agencyId = "MDI",
+    incidentDateTime = "2021-01-01T12:00:00",
+    locationId = 1,
+    statement = "statement",
+    reportingOfficer = ReportingOfficer("M.BOB"),
+    createdByUsername = "J.KWEKU",
+    prisoner = MigratePrisoner(prisonerNumber = "A1234KL", gender = "M", currentAgencyId = "MDI"),
+    offence = MigrateOffence("51:1B"),
+    victims = emptyList(),
+    associates = emptyList(),
+    witnesses = emptyList(),
+    damages = emptyList(),
+    evidence = emptyList(),
+    punishments = emptyList(),
+    hearings = emptyList(),
+  )
 
 @Service
 class AdjudicationsMigrationService(
@@ -83,9 +107,8 @@ class AdjudicationsMigrationService(
             chargeSequence = chargeSequence,
           )
 
-        adjudicationsService.createAdjudication(nomisAdjudication.toAdjudication())
-        val chargeNumber =
-          "${nomisAdjudication.adjudicationNumber}/$chargeSequence" // TODO: returned by DPS but assume it made from these fields
+        val dpsAdjudication = adjudicationsService.createAdjudication(nomisAdjudication.toAdjudication())
+        val chargeNumber = dpsAdjudication.chargeNumberMapping.chargeNumber
         createAdjudicationMapping(
           adjudicationNumber = adjudicationNumber,
           chargeSequence = chargeSequence,

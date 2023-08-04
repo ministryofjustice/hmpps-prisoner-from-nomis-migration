@@ -8,6 +8,9 @@ import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.AdjudicationMigrateDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.ChargeNumberMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateResponse
 
 /**
  * This represents the possible interface for the adjudications service.
@@ -20,23 +23,21 @@ class MockAdjudicationsResource {
   }
 
   @PreAuthorize("hasRole('ROLE_ADJUDICATIONS_SYNC')") // todo which role?
-  @PostMapping("/legacy/adjudications/migration")
+  @PostMapping("/reported-adjudications/migrate")
   @Operation(hidden = true)
   suspend fun createAdjudicationsForMigration(
     @RequestBody @Valid
-    adjudicationRequest: MockAdjudicationRequest,
-  ): MockCreateAdjudicationResponse {
-    log.info("Created adjudication for migration with id ${adjudicationRequest.adjudicationNumber} for offender no ${adjudicationRequest.offenderNo}. Request was $adjudicationRequest")
-    return MockCreateAdjudicationResponse(adjudicationRequest.adjudicationNumber)
+    adjudicationRequest: AdjudicationMigrateDto,
+  ): MigrateResponse {
+    log.info("Created adjudication for migration with id ${adjudicationRequest.oicIncidentId} for offender no ${adjudicationRequest.prisoner.prisonerNumber}. Request was $adjudicationRequest")
+    return MigrateResponse(
+      chargeNumberMapping = ChargeNumberMapping(
+        "${adjudicationRequest.oicIncidentId}/${adjudicationRequest.offenceSequence}",
+        oicIncidentId = adjudicationRequest.oicIncidentId,
+        offenceSequence = adjudicationRequest.offenceSequence,
+      ),
+      hearingMappings = emptyList(),
+      punishmentMappings = emptyList(),
+    )
   }
 }
-
-data class MockAdjudicationRequest(
-  // will change once adjudication API implemented
-  val adjudicationNumber: Long,
-  val offenderNo: String,
-)
-
-data class MockCreateAdjudicationResponse(
-  val adjudicationNumber: Long,
-)

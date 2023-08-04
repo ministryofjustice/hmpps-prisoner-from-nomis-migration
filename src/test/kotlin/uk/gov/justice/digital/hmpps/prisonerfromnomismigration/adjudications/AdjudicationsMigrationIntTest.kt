@@ -150,7 +150,11 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
         ) // TODO build more complex adjudication
       }
       mappingApi.stubAllMappingsNotFound(ADJUDICATIONS_GET_MAPPING_URL)
-      adjudicationsApi.stubCreateAdjudicationForMigration()
+      adjudicationsApi.stubCreateAdjudicationForMigration(
+        adjudicationNumber = adjudicationNumber,
+        chargeSequence = chargeSequence,
+        chargeNumber = chargeNumber,
+      )
       mappingApi.stubMappingCreate("/mapping/adjudications")
       mappingApi.stubAdjudicationMappingByMigrationId(count = 1)
 
@@ -179,8 +183,8 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
       }
 
       adjudicationsApi.verifyCreatedAdjudicationForMigration {
-        bodyWithJson("$.adjudicationNumber", equalTo("$adjudicationNumber"))
-        bodyWithJson("$.offenderNo", equalTo(offenderNo))
+        bodyWithJson("$.oicIncidentId", equalTo("$adjudicationNumber"))
+        bodyWithJson("$.offenceSequence", equalTo("$chargeSequence"))
         // TODO more verification on what is sent to DPS
       }
 
