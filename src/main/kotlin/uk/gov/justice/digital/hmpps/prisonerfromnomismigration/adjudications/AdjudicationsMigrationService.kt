@@ -31,6 +31,8 @@ class AdjudicationsMigrationService(
   private val adjudicationsMappingService: AdjudicationsMappingService,
   private val adjudicationsService: AdjudicationsService,
   @Value("\${adjudications.page.size:1000}") pageSize: Long,
+  @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
+  @Value("\${complete-check.count}") completeCheckCount: Int,
 ) :
   MigrationService<AdjudicationsMigrationFilter, AdjudicationChargeIdResponse, AdjudicationResponse, AdjudicationMapping>(
     queueService = queueService,
@@ -40,6 +42,8 @@ class AdjudicationsMigrationService(
     telemetryClient = telemetryClient,
     migrationType = MigrationType.ADJUDICATIONS,
     pageSize = pageSize,
+    completeCheckDelaySeconds = completeCheckDelaySeconds,
+    completeCheckCount = completeCheckCount,
   ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)

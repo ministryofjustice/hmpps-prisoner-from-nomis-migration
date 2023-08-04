@@ -34,6 +34,8 @@ class VisitsMigrationService(
   private val visitsService: VisitsService,
   private val visitMappingService: VisitMappingService,
   @Value("\${visits.page.size:1000}") pageSize: Long,
+  @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
+  @Value("\${complete-check.count}") completeCheckCount: Int,
 ) : MigrationService<VisitsMigrationFilter, VisitId, NomisVisit, VisitNomisMapping>(
   queueService = queueService,
   auditService = auditService,
@@ -42,6 +44,8 @@ class VisitsMigrationService(
   telemetryClient = telemetryClient,
   migrationType = VISITS,
   pageSize = pageSize,
+  completeCheckDelaySeconds = completeCheckDelaySeconds,
+  completeCheckCount = completeCheckCount,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)

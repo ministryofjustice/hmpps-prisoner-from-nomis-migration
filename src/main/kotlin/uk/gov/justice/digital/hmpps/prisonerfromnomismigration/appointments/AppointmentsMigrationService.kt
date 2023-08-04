@@ -30,6 +30,8 @@ class AppointmentsMigrationService(
   private val appointmentsService: AppointmentsService,
   private val appointmentsMappingService: AppointmentsMappingService,
   @Value("\${appointments.page.size:1000}") pageSize: Long,
+  @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
+  @Value("\${complete-check.count}") completeCheckCount: Int,
 ) : MigrationService<AppointmentsMigrationFilter, AppointmentIdResponse, AppointmentResponse, AppointmentMapping>(
   queueService = queueService,
   auditService = auditService,
@@ -38,6 +40,8 @@ class AppointmentsMigrationService(
   telemetryClient = telemetryClient,
   migrationType = APPOINTMENTS,
   pageSize = pageSize,
+  completeCheckDelaySeconds = completeCheckDelaySeconds,
+  completeCheckCount = completeCheckCount,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)

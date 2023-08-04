@@ -74,6 +74,8 @@ internal class AppointmentsMigrationServiceTest {
     appointmentsService = appointmentsService,
     appointmentsMappingService = appointmentsMappingService,
     pageSize = 200,
+    completeCheckDelaySeconds = 10,
+    completeCheckCount = 9,
   )
 
   @Nested
@@ -94,6 +96,8 @@ internal class AppointmentsMigrationServiceTest {
       appointmentsService = appointmentsService,
       appointmentsMappingService = appointmentsMappingService,
       pageSize = 200,
+      completeCheckDelaySeconds = 10,
+      completeCheckCount = 9,
     )
 
     @BeforeEach

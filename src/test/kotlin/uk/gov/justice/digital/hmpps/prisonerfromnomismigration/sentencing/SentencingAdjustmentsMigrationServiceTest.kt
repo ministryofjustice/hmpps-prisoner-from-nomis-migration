@@ -70,6 +70,8 @@ internal class SentencingAdjustmentsMigrationServiceTest {
     sentencingService = sentencingService,
     sentencingAdjustmentsMappingService = sentencingAdjustmentsMappingService,
     pageSize = 200,
+    completeCheckDelaySeconds = 10,
+    completeCheckCount = 9,
   )
 
   @Nested
@@ -91,6 +93,8 @@ internal class SentencingAdjustmentsMigrationServiceTest {
       sentencingService = sentencingService,
       sentencingAdjustmentsMappingService = sentencingAdjustmentsMappingService,
       pageSize = 200,
+      completeCheckDelaySeconds = 10,
+      completeCheckCount = 9,
     )
 
     @BeforeEach

@@ -50,6 +50,10 @@ cancel:
     purge-frequency-time: 100ms
     purge-total-time: 5s
 
+complete-check:
+  delay-seconds: 1
+  count: 1
+
 hmpps.sqs:
   provider: localstack
   queues:
