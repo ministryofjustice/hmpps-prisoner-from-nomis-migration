@@ -1,5 +1,9 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications
 
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
+import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
+import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
+import com.github.tomakehurst.wiremock.matching.StringValuePattern
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
@@ -13,6 +17,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.times
@@ -35,6 +40,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingA
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.ADJUDICATIONS_ID_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.adjudicationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.adjudicationsIdsPagedResponse
 import java.time.Duration
 import java.time.LocalDateTime
@@ -121,6 +127,80 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
         assertThat(adjudicationsApi.createAdjudicationCount()).isEqualTo(21)
       }
       assertThat(mappingApi.createMappingCount("/mapping/adjudications")).isEqualTo(21)
+    }
+
+    @Test
+    internal fun `a migrated adjudication will create a mapping and a transformed adjudication in DPS`() {
+      val adjudicationNumber = 12345L
+      val chargeSequence = 1
+      val offenderNo = "A1234BC"
+      val chargeNumber = "12345/1"
+      val adjudicationPageResponse = adjudicationsIdsPagedResponse(
+        adjudicationNumber = adjudicationNumber,
+        chargeSequence = chargeSequence,
+        offenderNo = offenderNo,
+      )
+      nomisApi.stubGetInitialCount(ADJUDICATIONS_ID_URL, 1) { adjudicationPageResponse }
+      nomisApi.stubMultipleGetAdjudicationIdCounts(totalElements = 1, pageSize = 10) { adjudicationPageResponse }
+      nomisApi.stubGetAdjudication(adjudicationNumber = adjudicationNumber, chargeSequence = chargeSequence) {
+        adjudicationResponse(
+          offenderNo = offenderNo,
+          adjudicationNumber = adjudicationNumber,
+          chargeSequence = chargeSequence,
+        ) // TODO build more complex adjudication
+      }
+      mappingApi.stubAllMappingsNotFound(ADJUDICATIONS_GET_MAPPING_URL)
+      adjudicationsApi.stubCreateAdjudicationForMigration()
+      mappingApi.stubMappingCreate("/mapping/adjudications")
+      mappingApi.stubAdjudicationMappingByMigrationId(count = 1)
+
+      webTestClient.post().uri("/migrate/adjudications")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ADJUDICATIONS")))
+        .header("Content-Type", "application/json")
+        .body(
+          BodyInserters.fromValue(
+            """
+            {
+              "fromDate": "2020-01-01",
+              "toDate": "2020-01-02"
+            }
+            """.trimIndent(),
+          ),
+        )
+        .exchange()
+        .expectStatus().isAccepted
+
+      await atMost Duration.ofSeconds(60) untilAsserted {
+        verify(telemetryClient).trackEvent(
+          eq("adjudications-migration-completed"),
+          any(),
+          isNull(),
+        )
+      }
+
+      adjudicationsApi.verifyCreatedAdjudicationForMigration {
+        bodyWithJson("$.adjudicationNumber", equalTo("$adjudicationNumber"))
+        bodyWithJson("$.offenderNo", equalTo(offenderNo))
+        // TODO more verification on what is sent to DPS
+      }
+
+      mappingApi.verifyCreateMappingAdjudication {
+        bodyWithJson("$.adjudicationNumber", equalTo("$adjudicationNumber"))
+        bodyWithJson("$.chargeSequence", equalTo("$chargeSequence"))
+        bodyWithJson("$.chargeNumber", equalTo(chargeNumber))
+      }
+
+      verify(telemetryClient).trackEvent(
+        eq("adjudications-migration-entity-migrated"),
+        check {
+          assertThat(it["migrationId"]).isNotNull()
+          assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+          assertThat(it["adjudicationNumber"]).isEqualTo(adjudicationNumber.toString())
+          assertThat(it["chargeSequence"]).isEqualTo(chargeSequence.toString())
+          assertThat(it["chargeNumber"]).isEqualTo(chargeNumber)
+        },
+        isNull(),
+      )
     }
 
     @Test
@@ -473,7 +553,7 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `must have valid token to terminate a migration`() {
-      webTestClient.post().uri("/migrate/adjudications/{migrationId}/cqncel/", "some id")
+      webTestClient.post().uri("/migrate/adjudications/{migrationId}/cancel/", "some id")
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isUnauthorized
@@ -649,6 +729,11 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
     }
   }
 }
+
+private fun RequestPatternBuilder.bodyWithJson(jsonPath: String, value: StringValuePattern?) =
+  withRequestBody(
+    matchingJsonPath(jsonPath, value),
+  )
 
 fun someMigrationFilter(): BodyInserter<String, ReactiveHttpOutputMessage> = BodyInserters.fromValue(
   """

@@ -14,6 +14,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
+import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
@@ -28,7 +29,6 @@ class MappingApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallb
     val mappingApi = MappingApiMockServer()
     const val VISITS_CREATE_MAPPING_URL = "/mapping/visits"
     const val VISITS_GET_MAPPING_URL = "/mapping/visits/nomisId"
-    const val ADJUDICATIONS_CREATE_MAPPING_URL = "/mapping/adjudications"
     const val ADJUDICATIONS_GET_MAPPING_URL = "/mapping/adjudications/adjudication-number"
     const val APPOINTMENTS_CREATE_MAPPING_URL = "/mapping/appointments"
     const val APPOINTMENTS_GET_MAPPING_URL = "/mapping/appointments/nomis-event-id"
@@ -449,20 +449,12 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun verifyCreateMappingAdjudicationIds(adjudicationIds: Array<String>, times: Int = 1) =
-    adjudicationIds.forEach {
-      verify(
-        times,
-        postRequestedFor(urlPathEqualTo("/mapping/adjudications")).withRequestBody(
-          matchingJsonPath(
-            "adjudicationNumber",
-            equalTo(it),
-          ),
-        ),
-      )
-    }
-
-  fun verifyCreateMappingAdjudication(adjudicationNumber: Long, chargeSequence: Int, chargeNumber: String, times: Int = 1) {
+  fun verifyCreateMappingAdjudication(
+    adjudicationNumber: Long,
+    chargeSequence: Int,
+    chargeNumber: String,
+    times: Int = 1,
+  ) {
     verify(
       times,
       postRequestedFor(urlPathEqualTo("/mapping/adjudications"))
@@ -471,6 +463,11 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
         .withRequestBody(matchingJsonPath("chargeNumber", equalTo(chargeNumber))),
     )
   }
+
+  fun verifyCreateMappingAdjudication(builder: RequestPatternBuilder.() -> RequestPatternBuilder = { this }) =
+    verify(
+      postRequestedFor(urlEqualTo("/mapping/adjudications")).builder(),
+    )
 
   private fun pageContent(content: String, count: Int) = """
   {

@@ -67,6 +67,7 @@ class AdjudicationsMigrationService(
     log.info("attempting to migrate ${context.body}")
     val adjudicationNumber = context.body.adjudicationNumber
     val chargeSequence = context.body.chargeSequence
+    val offenderNo = context.body.offenderNo
 
     adjudicationsMappingService.findNomisMapping(
       adjudicationNumber = adjudicationNumber,
@@ -98,6 +99,7 @@ class AdjudicationsMigrationService(
             "adjudicationNumber" to adjudicationNumber.toString(),
             "chargeSequence" to chargeSequence.toString(),
             "chargeNumber" to chargeNumber,
+            "offenderNo" to offenderNo,
             "migrationId" to context.migrationId,
           ),
           null,

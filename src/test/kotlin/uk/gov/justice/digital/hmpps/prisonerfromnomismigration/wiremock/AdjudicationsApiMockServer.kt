@@ -5,6 +5,8 @@ import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
@@ -57,6 +59,11 @@ class AdjudicationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun verifyCreatedAdjudicationForMigration(builder: RequestPatternBuilder.() -> RequestPatternBuilder = { this }) =
+    verify(
+      postRequestedFor(WireMock.urlEqualTo("/legacy/adjudications/migration")).builder(),
+    )
+
   fun createAdjudicationCount() =
-    findAll(WireMock.postRequestedFor(WireMock.urlMatching("/legacy/adjudications/migration"))).count()
+    findAll(postRequestedFor(WireMock.urlMatching("/legacy/adjudications/migration"))).count()
 }
