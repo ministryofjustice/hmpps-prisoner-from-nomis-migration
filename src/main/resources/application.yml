@@ -110,6 +110,10 @@ cancel:
     purge-frequency-time: 200ms
     purge-total-time: 20s
 
+complete-check:
+  delay-seconds: 10
+  count: 9
+
 azure:
   application-insights:
     web:

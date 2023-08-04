@@ -19,6 +19,8 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, NOMIS_ENTITY : Any
   internal val auditService: AuditService,
   internal val migrationType: MigrationType,
   private val pageSize: Long,
+  private val completeCheckDelaySeconds: Int,
+  private val completeCheckCount: Int,
 ) {
 
   abstract suspend fun getIds(migrationFilter: FILTER, pageSize: Long, pageNumber: Long): PageImpl<NOMIS_ID>
@@ -107,10 +109,10 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, NOMIS_ENTITY : Any
           context = context,
           body = MigrationStatusCheck(),
         ),
-        delaySeconds = 10,
+        delaySeconds = completeCheckDelaySeconds,
       )
     } else {
-      if (context.body.hasCheckedAReasonableNumberOfTimes()) {
+      if (context.body.hasCheckedAReasonableNumberOfTimes(completeCheckCount)) {
         telemetryClient.trackEvent(
           "${migrationType.telemetryName}-migration-completed",
           mapOf<String, String>(
@@ -154,7 +156,7 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, NOMIS_ENTITY : Any
         delaySeconds = 10,
       )
     } else {
-      if (context.body.hasCheckedAReasonableNumberOfTimes()) {
+      if (context.body.hasCheckedAReasonableNumberOfTimes(completeCheckCount)) {
         telemetryClient.trackEvent(
           "${migrationType.telemetryName}-migration-cancelled",
           mapOf<String, String>(
@@ -220,6 +222,6 @@ fun <T> MigrationContext<T>.durationMinutes(): Long =
 class MigrationPage<FILTER>(val filter: FILTER, val pageNumber: Long, val pageSize: Long)
 
 data class MigrationStatusCheck(val checkCount: Int = 0) {
-  fun hasCheckedAReasonableNumberOfTimes() = checkCount > 9
+  fun hasCheckedAReasonableNumberOfTimes(closeDownCheckCount: Int) = checkCount > closeDownCheckCount
   fun increment() = this.copy(checkCount = checkCount + 1)
 }

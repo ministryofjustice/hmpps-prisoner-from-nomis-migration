@@ -73,6 +73,8 @@ internal class VisitsMigrationServiceTest {
     telemetryClient = telemetryClient,
     auditService = auditService,
     pageSize = 200,
+    completeCheckDelaySeconds = 10,
+    completeCheckCount = 9,
   )
 
   @Nested
@@ -92,6 +94,8 @@ internal class VisitsMigrationServiceTest {
       telemetryClient = telemetryClient,
       auditService = auditService,
       pageSize = 200,
+      completeCheckDelaySeconds = 10,
+      completeCheckCount = 9,
     )
     private val auditWhatParam = slot<String>()
     private val auditDetailsParam = slot<Map<*, *>>()

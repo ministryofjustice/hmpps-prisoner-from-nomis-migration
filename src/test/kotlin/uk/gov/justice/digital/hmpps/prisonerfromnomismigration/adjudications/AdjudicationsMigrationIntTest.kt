@@ -77,14 +77,14 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will start processing pages of adjudications`() {
-      nomisApi.stubGetInitialCount(ADJUDICATIONS_ID_URL, 86) { adjudicationsIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetAdjudicationIdCounts(totalElements = 86, pageSize = 10)
-      nomisApi.stubMultipleGetAdjudications(1..86)
+      nomisApi.stubGetInitialCount(ADJUDICATIONS_ID_URL, 21) { adjudicationsIdsPagedResponse(it) }
+      nomisApi.stubMultipleGetAdjudicationIdCounts(totalElements = 21, pageSize = 10)
+      nomisApi.stubMultipleGetAdjudications(1..21)
       mappingApi.stubAllMappingsNotFound(ADJUDICATIONS_GET_MAPPING_URL)
       mappingApi.stubMappingCreate("/mapping/adjudications")
 
       adjudicationsApi.stubCreateAdjudicationForMigration()
-      mappingApi.stubAdjudicationMappingByMigrationId(count = 86)
+      mappingApi.stubAdjudicationMappingByMigrationId(count = 21)
 
       webTestClient.post().uri("/migrate/adjudications")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ADJUDICATIONS")))
@@ -118,8 +118,9 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
       )
 
       await untilAsserted {
-        assertThat(adjudicationsApi.createAdjudicationCount()).isEqualTo(86)
+        assertThat(adjudicationsApi.createAdjudicationCount()).isEqualTo(21)
       }
+      assertThat(mappingApi.createMappingCount("/mapping/adjudications")).isEqualTo(21)
     }
 
     @Test

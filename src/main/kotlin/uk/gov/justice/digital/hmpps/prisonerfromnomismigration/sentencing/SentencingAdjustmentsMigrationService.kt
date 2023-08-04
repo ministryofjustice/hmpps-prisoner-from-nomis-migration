@@ -30,6 +30,8 @@ class SentencingAdjustmentsMigrationService(
   private val sentencingService: SentencingService,
   private val sentencingAdjustmentsMappingService: SentencingAdjustmentsMappingService,
   @Value("\${sentencing.page.size:1000}") pageSize: Long,
+  @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
+  @Value("\${complete-check.count}") completeCheckCount: Int,
 ) : MigrationService<SentencingMigrationFilter, NomisAdjustmentId, NomisAdjustment, SentencingAdjustmentNomisMapping>(
   queueService = queueService,
   auditService = auditService,
@@ -38,6 +40,8 @@ class SentencingAdjustmentsMigrationService(
   telemetryClient = telemetryClient,
   migrationType = SENTENCING_ADJUSTMENTS,
   pageSize = pageSize,
+  completeCheckDelaySeconds = completeCheckDelaySeconds,
+  completeCheckCount = completeCheckCount,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
