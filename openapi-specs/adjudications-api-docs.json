@@ -12,7 +12,7 @@
       "name": "MIT",
       "url": "https://opensource.org/license/mit-0"
     },
-    "version": "2023-08-03.7089.3e95d13"
+    "version": "2023-08-04.7101.3dabd01"
   },
   "servers": [
     {
@@ -7637,7 +7637,9 @@
             "enum": [
               "OFFICER",
               "STAFF",
-              "OTHER_PERSON"
+              "OTHER_PERSON",
+              "VICTIM",
+              "PRISONER"
             ]
           },
           "firstName": {
@@ -8507,7 +8509,9 @@
             "enum": [
               "OFFICER",
               "STAFF",
-              "OTHER_PERSON"
+              "OTHER_PERSON",
+              "VICTIM",
+              "PRISONER"
             ]
           },
           "firstName": {
@@ -9454,7 +9458,9 @@
             "enum": [
               "OFFICER",
               "STAFF",
-              "OTHER_PERSON"
+              "OTHER_PERSON",
+              "VICTIM",
+              "PRISONER"
             ]
           },
           "firstName": {
@@ -9948,7 +9954,6 @@
         "required": [
           "agencyId",
           "agencyIncidentId",
-          "associates",
           "bookingId",
           "createdByUsername",
           "damages",
@@ -9963,7 +9968,6 @@
           "punishments",
           "reportingOfficer",
           "statement",
-          "victims",
           "witnesses"
         ],
         "type": "object",
@@ -10020,20 +10024,6 @@
           "offence": {
             "$ref": "#/components/schemas/MigrateOffence"
           },
-          "victims": {
-            "type": "array",
-            "description": "optional victims",
-            "items": {
-              "$ref": "#/components/schemas/MigrateVictim"
-            }
-          },
-          "associates": {
-            "type": "array",
-            "description": "optional associates",
-            "items": {
-              "$ref": "#/components/schemas/MigrateAssociate"
-            }
-          },
           "witnesses": {
             "type": "array",
             "description": "witnesses",
@@ -10072,20 +10062,6 @@
         },
         "additionalProperties": false,
         "description": "Adjudication to migrate into service"
-      },
-      "MigrateAssociate": {
-        "required": [
-          "associatedPrisoner"
-        ],
-        "type": "object",
-        "properties": {
-          "associatedPrisoner": {
-            "type": "string",
-            "description": "associate prisoner number"
-          }
-        },
-        "additionalProperties": false,
-        "description": "incident associate"
       },
       "MigrateDamage": {
         "required": [
@@ -10318,25 +10294,6 @@
         "additionalProperties": false,
         "description": "punishment / sanction"
       },
-      "MigrateVictim": {
-        "required": [
-          "isStaff",
-          "victimIdentifier"
-        ],
-        "type": "object",
-        "properties": {
-          "victimIdentifier": {
-            "type": "string",
-            "description": "victims staff username or prisoner number"
-          },
-          "isStaff": {
-            "type": "boolean",
-            "description": "flag to indicate if staff, false means prisoner"
-          }
-        },
-        "additionalProperties": false,
-        "description": "victim"
-      },
       "MigrateWitness": {
         "required": [
           "createdBy",
@@ -10364,12 +10321,14 @@
             "enum": [
               "OFFICER",
               "STAFF",
-              "OTHER_PERSON"
+              "OTHER_PERSON",
+              "VICTIM",
+              "PRISONER"
             ]
           }
         },
         "additionalProperties": false,
-        "description": "witnesses"
+        "description": "witnesses -these can include victims and associates"
       },
       "ReportingOfficer": {
         "required": [
@@ -10969,13 +10928,13 @@
       "PageReportedAdjudicationDto": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "size": {
             "type": "integer",
@@ -11270,13 +11229,13 @@
       "PageDraftAdjudicationDto": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "size": {
             "type": "integer",
@@ -11677,13 +11636,13 @@
       "PageAdjudication": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "size": {
             "type": "integer",
