@@ -22,7 +22,7 @@ class MockAdjudicationsResource {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  @PreAuthorize("hasRole('ROLE_ADJUDICATIONS_SYNC')") // todo which role?
+  @PreAuthorize("hasRole('ROLE_MIGRATE_ADJUDICATIONS')")
   @PostMapping("/reported-adjudications/migrate")
   @Operation(hidden = true)
   suspend fun createAdjudicationsForMigration(
