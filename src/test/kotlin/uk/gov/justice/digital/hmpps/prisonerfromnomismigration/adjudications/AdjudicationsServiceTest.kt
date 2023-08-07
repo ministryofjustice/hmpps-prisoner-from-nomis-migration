@@ -44,8 +44,6 @@ internal class AdjudicationsServiceTest {
             createdByUsername = "J.KWEKU",
             prisoner = MigratePrisoner(prisonerNumber = "A1234KL", gender = "M", currentAgencyId = "MDI"),
             offence = MigrateOffence("51:1B"),
-            victims = emptyList(),
-            associates = emptyList(),
             witnesses = emptyList(),
             damages = emptyList(),
             evidence = emptyList(),

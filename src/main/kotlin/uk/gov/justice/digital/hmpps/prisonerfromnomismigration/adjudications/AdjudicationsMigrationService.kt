@@ -7,6 +7,17 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.AdjudicationMigrateDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateDamage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateDamage.DamageType.CLEANING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateDamage.DamageType.ELECTRICAL_REPAIR
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateDamage.DamageType.FURNITURE_OR_FABRIC_REPAIR
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateDamage.DamageType.LOCK_REPAIR
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateDamage.DamageType.PLUMBING_REPAIR
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateDamage.DamageType.REDECORATION
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateEvidence
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateEvidence.EvidenceCode.BAGGED_AND_TAGGED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateEvidence.EvidenceCode.CCTV
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateEvidence.EvidenceCode.PHOTO
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateOffence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigratePrisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.ReportingOfficer
@@ -15,35 +26,63 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Migrati
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Evidence
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Repair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
-private fun AdjudicationChargeResponse.toAdjudication(): AdjudicationMigrateDto =
+fun AdjudicationChargeResponse.toAdjudication(): AdjudicationMigrateDto =
   AdjudicationMigrateDto(
-    agencyIncidentId = 1,
+    agencyIncidentId = this.incident.adjudicationIncidentId,
     oicIncidentId = this.adjudicationNumber!!, // TODO looks like A mistake in NOMIS API swagger, this cannot be null
     offenceSequence = this.charge.chargeSequence.toLong(),
-    bookingId = 1,
-    agencyId = "MDI",
-    incidentDateTime = "2021-01-01T12:00:00",
-    locationId = 1,
-    statement = "statement",
+    bookingId = this.bookingId,
+    agencyId = this.incident.prison.code,
+    incidentDateTime = this.incident.reportedDate.atTime(LocalTime.parse(this.incident.reportedTime)).format(
+      DateTimeFormatter.ISO_LOCAL_DATE_TIME,
+    ),
+    locationId = this.incident.internalLocation.locationId,
+    statement = incident.details ?: "",
     reportingOfficer = ReportingOfficer("M.BOB"),
     createdByUsername = "J.KWEKU",
-    prisoner = MigratePrisoner(prisonerNumber = "A1234KL", gender = "M", currentAgencyId = "MDI"),
-    offence = MigrateOffence("51:1B"),
-    victims = emptyList(),
-    associates = emptyList(),
+    prisoner = MigratePrisoner(prisonerNumber = this.offenderNo, gender = "M", currentAgencyId = "MDI"),
+    offence = MigrateOffence(this.charge.offence.code),
     witnesses = emptyList(),
-    damages = emptyList(),
-    evidence = emptyList(),
+    damages = this.incident.repairs.map { it.toDamage() },
+    evidence = this.investigations.flatMap { investigation -> investigation.evidence.map { it.toEvidence() } },
     punishments = emptyList(),
     hearings = emptyList(),
   )
+
+private fun Evidence.toEvidence() = MigrateEvidence(
+  evidenceCode = when (this.type.code) {
+    "PHOTO" -> PHOTO
+    "EVI_BAG" -> BAGGED_AND_TAGGED
+    else -> CCTV // TODO - how to map all the codes?
+  },
+  details = this.detail,
+  reporter = "J.KWEKU", // TODO
+)
+
+private fun Repair.toDamage() = MigrateDamage(
+  damageType = when (this.type.code) {
+    "ELEC" -> ELECTRICAL_REPAIR
+    "PLUM" -> PLUMBING_REPAIR
+    "DECO" -> REDECORATION
+    "FABR" -> FURNITURE_OR_FABRIC_REPAIR
+    "CLEA" -> CLEANING
+    "LOCK" -> LOCK_REPAIR
+    else -> throw IllegalArgumentException("Unknown repair type ${this.type.code}")
+  },
+  details = this.comment,
+  createdBy = "J.KWEKU", // TODO
+)
 
 @Service
 class AdjudicationsMigrationService(
