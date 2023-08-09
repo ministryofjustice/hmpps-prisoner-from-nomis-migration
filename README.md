@@ -67,6 +67,7 @@ Run the following commands to take a copy of the latest specs:
 curl https://nomis-prsner-dev.aks-dev-1.studio-hosting.service.justice.gov.uk/v3/api-docs > openapi-specs/nomis-sync-api-docs.json
 curl https://activities-api-dev.prison.service.justice.gov.uk/v3/api-docs > openapi-specs/activities-api-docs.json
 curl https://manage-adjudications-api-dev.hmpps.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/adjudications-api-docs.json
+curl https://non-associations-api-dev.hmpps.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/non-associations-api-docs.json
 ```
 
 Go into the specs and reformat so they and the diffs are easier for humans to read.
