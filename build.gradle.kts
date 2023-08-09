@@ -143,7 +143,6 @@ tasks.register("buildAdjudicationApiModel", GenerateTask::class) {
 
 tasks.register("buildNonAssociationsApiModel", GenerateTask::class) {
   generatorName.set("kotlin")
-  skipValidateSpec.set(true)
   inputSpec.set("openapi-specs/non-associations-api-docs.json")
   outputDir.set("$buildDir/generated")
   modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.model")
