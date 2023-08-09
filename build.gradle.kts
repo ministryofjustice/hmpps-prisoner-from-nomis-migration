@@ -71,18 +71,18 @@ java {
 tasks {
   withType<KotlinCompile> {
     //  dependsOn("buildSentencingApiModel")
-    dependsOn("buildActivityApiModel", "buildNomisSyncApiModel", "buildAdjudicationApiModel")
+    dependsOn("buildActivityApiModel", "buildNomisSyncApiModel", "buildAdjudicationApiModel", "buildNonAssociationsApiModel")
     kotlinOptions {
       jvmTarget = "19"
     }
   }
   withType<KtLintCheckTask> {
     // Under gradle 8 we must declare the dependency here, even if we're not going to be linting the model
-    mustRunAfter("buildActivityApiModel", "buildNomisSyncApiModel", "buildAdjudicationApiModel")
+    mustRunAfter("buildActivityApiModel", "buildNomisSyncApiModel", "buildAdjudicationApiModel", "buildNonAssociationsApiModel")
   }
   withType<KtLintFormatTask> {
     // Under gradle 8 we must declare the dependency here, even if we're not going to be linting the model
-    mustRunAfter("buildActivityApiModel", "buildNomisSyncApiModel", "buildAdjudicationApiModel")
+    mustRunAfter("buildActivityApiModel", "buildNomisSyncApiModel", "buildAdjudicationApiModel", "buildNonAssociationsApiModel")
   }
 }
 
@@ -131,6 +131,22 @@ tasks.register("buildAdjudicationApiModel", GenerateTask::class) {
   outputDir.set("$buildDir/generated")
   modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model")
   apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.api")
+  configOptions.set(
+    mapOf(
+      "dateLibrary" to "java8-localdatetime",
+      "serializationLibrary" to "jackson",
+      "enumPropertyNaming" to "original"
+    )
+  )
+  globalProperties.set(mapOf("models" to ""))
+}
+
+tasks.register("buildNonAssociationsApiModel", GenerateTask::class) {
+  generatorName.set("kotlin")
+  inputSpec.set("openapi-specs/non-associations-api-docs.json")
+  outputDir.set("$buildDir/generated")
+  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.model")
+  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.api")
   configOptions.set(
     mapOf(
       "dateLibrary" to "java8-localdatetime",
