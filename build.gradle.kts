@@ -124,6 +124,22 @@ tasks.register("buildNomisSyncApiModel", GenerateTask::class) {
   )
 }
 
+tasks.register("buildMappingServiceApiModel", GenerateTask::class) {
+  generatorName.set("kotlin")
+  inputSpec.set("openapi-specs/nomis-mapping-service-api-docs.json")
+  outputDir.set("$buildDir/generated")
+  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model")
+  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api")
+  configOptions.set(
+    mapOf(
+      "dateLibrary" to "java8-localdatetime",
+      "serializationLibrary" to "jackson",
+      "enumPropertyNaming" to "original"
+    )
+  )
+  globalProperties.set(mapOf("models" to ""))
+}
+
 tasks.register("buildAdjudicationApiModel", GenerateTask::class) {
   generatorName.set("kotlin")
   skipValidateSpec.set(true)

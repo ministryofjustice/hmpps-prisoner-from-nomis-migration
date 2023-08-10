@@ -1017,6 +1017,7 @@ fun sampleAppointment(appointmentInstanceId: Long) = Appointment(
       LocalDate.parse("2020-05-23"),
       "11:30",
       listOf(AppointmentOccurrenceAllocation(appointmentInstanceId, "A1234AA", 4567)),
+      isCancelled = false,
     ),
   ),
   created = LocalDateTime.parse("2023-01-01T12:00:00"),
