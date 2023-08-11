@@ -12,7 +12,7 @@
       "name": "MIT",
       "url": "https://opensource.org/license/mit-0"
     },
-    "version": "2023-08-04.7101.3dabd01"
+    "version": "2023-08-10.7241.9e4fb75"
   },
   "servers": [
     {
@@ -7979,11 +7979,11 @@
           },
           "nomisCode": {
             "type": "string",
-            "description": "nomis code"
+            "description": "nomis code - not set if migrated data"
           },
           "withOthersNomisCode": {
             "type": "string",
-            "description": "with others nomis code"
+            "description": "with others nomis code, not set if migrated data"
           }
         },
         "additionalProperties": false,
@@ -8471,7 +8471,8 @@
               "PHOTO",
               "BODY_WORN_CAMERA",
               "CCTV",
-              "BAGGED_AND_TAGGED"
+              "BAGGED_AND_TAGGED",
+              "OTHER"
             ]
           },
           "identifier": {
@@ -9089,7 +9090,8 @@
               "PHOTO",
               "BODY_WORN_CAMERA",
               "CCTV",
-              "BAGGED_AND_TAGGED"
+              "BAGGED_AND_TAGGED",
+              "OTHER"
             ]
           },
           "identifier": {
@@ -9385,7 +9387,8 @@
               "PHOTO",
               "BODY_WORN_CAMERA",
               "CCTV",
-              "BAGGED_AND_TAGGED"
+              "BAGGED_AND_TAGGED",
+              "OTHER"
             ]
           },
           "identifier": {
@@ -9966,6 +9969,7 @@
           "oicIncidentId",
           "prisoner",
           "punishments",
+          "reportedDateTime",
           "reportingOfficer",
           "statement",
           "witnesses"
@@ -10000,6 +10004,12 @@
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
             "description": "the date and time of the incident",
+            "example": "2021-07-05T10:35:17"
+          },
+          "reportedDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "the reported dated time",
             "example": "2021-07-05T10:35:17"
           },
           "locationId": {
@@ -10110,7 +10120,8 @@
               "PHOTO",
               "BODY_WORN_CAMERA",
               "CCTV",
-              "BAGGED_AND_TAGGED"
+              "BAGGED_AND_TAGGED",
+              "OTHER"
             ]
           },
           "details": {
@@ -10209,13 +10220,18 @@
       },
       "MigrateOffence": {
         "required": [
-          "offenceCode"
+          "offenceCode",
+          "offenceDescription"
         ],
         "type": "object",
         "properties": {
           "offenceCode": {
             "type": "string",
             "description": "the nomis offence code"
+          },
+          "offenceDescription": {
+            "type": "string",
+            "description": "the nomis offence description, ie rule, paragraph as displayed in nomis"
           }
         },
         "additionalProperties": false,
@@ -10267,10 +10283,9 @@
             "format": "int64"
           },
           "effectiveDate": {
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
             "description": "effective date",
-            "example": "2021-07-05T10:35:17"
+            "format": "date"
           },
           "comment": {
             "type": "string",
@@ -10281,9 +10296,8 @@
             "description": "compensation amount"
           },
           "consecutiveChargeNumber": {
-            "type": "integer",
-            "description": "consecutive charge number - for nomis this needs to be the oic_incident_id for the consecutiveOffenderBookId/consecutiveSanctionSeq",
-            "format": "int64"
+            "type": "string",
+            "description": "consecutive charge number - for nomis this needs to be the oic_incident_id for the consecutiveOffenderBookId/consecutiveSanctionSeq. Note,  this will also need to include the chargeSequence, ie oic_incident_id-charge_seq"
           },
           "days": {
             "type": "integer",
@@ -10681,7 +10695,7 @@
             "type": "boolean",
             "description": "optional consecutive report number is available to view in adjudications service"
           },
-          "amount": {
+          "damagesOwedAmount": {
             "type": "number",
             "description": "optional amount - money being recovered for damages",
             "format": "double"
@@ -10692,7 +10706,6 @@
       },
       "ReportedAdjudicationDtoV2": {
         "required": [
-          "adjudicationNumber",
           "chargeNumber",
           "createdByUserId",
           "createdDateTime",
@@ -10717,11 +10730,6 @@
         ],
         "type": "object",
         "properties": {
-          "adjudicationNumber": {
-            "type": "integer",
-            "description": "The number for the reported adjudication",
-            "format": "int64"
-          },
           "chargeNumber": {
             "type": "string",
             "description": "The charge number for the reported adjudication"
@@ -10953,11 +10961,11 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "last": {
-            "type": "boolean"
-          },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
+          },
+          "last": {
+            "type": "boolean"
           },
           "first": {
             "type": "boolean"
@@ -11254,11 +11262,11 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "last": {
-            "type": "boolean"
-          },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
+          },
+          "last": {
+            "type": "boolean"
           },
           "first": {
             "type": "boolean"
@@ -11661,11 +11669,11 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "last": {
-            "type": "boolean"
-          },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
+          },
+          "last": {
+            "type": "boolean"
           },
           "first": {
             "type": "boolean"
