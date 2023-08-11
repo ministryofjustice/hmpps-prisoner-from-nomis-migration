@@ -665,18 +665,29 @@ fun adjudicationResponse(
   "offenderNo": "$offenderNo",
   "adjudicationSequence": 3,
   "bookingId": 1207292,
+  "gender": {
+    "code": "F",
+    "description": "Female"
+  },
+  "currentPrison": {
+    "code": "WWI",
+    "description": "HMP Wandsworth"
+  },
   "partyAddedDate": "2023-06-08",
   "incident": {
       "adjudicationIncidentId": 1503064,
       "reportingStaff": {
           "staffId": 485585,
           "firstName": "LUCY",
-          "lastName": "BENNETT"
+          "lastName": "BENNETT",
+          "username": "L.BENNETT"
       },
       "incidentDate": "2023-06-08",
       "incidentTime": "12:00:00",
       "reportedDate": "2023-06-08",
       "reportedTime": "14:17:20",
+      "createdByUsername": "L.BENNETT",
+      "createdDateTime": "2023-06-08T14:17:20.000000",
       "internalLocation": {
           "locationId": 26149,
           "code": "GYM",
