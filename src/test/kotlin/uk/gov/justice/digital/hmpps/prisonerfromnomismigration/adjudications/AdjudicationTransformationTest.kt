@@ -1,10 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications
 
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateDamage.DamageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateEvidence
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateWitness
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationIncident
@@ -29,6 +31,16 @@ class AdjudicationTransformationTest {
     assertThat(dpsAdjudication.oicIncidentId).isEqualTo(654321)
     assertThat(dpsAdjudication.offenceSequence).isEqualTo(2)
     assertThat(dpsAdjudication.agencyIncidentId).isEqualTo(45453)
+  }
+
+  @Test
+  fun `will user who created and reported the incident`() {
+    val nomisAdjudication =
+      nomisAdjudicationCharge(reportingStaffUsername = "F.LAST", createdByStaffUsername = "A.BEANS")
+    val dpsAdjudication = nomisAdjudication.toAdjudication()
+
+    assertThat(dpsAdjudication.reportingOfficer.username).isEqualTo("F.LAST")
+    assertThat(dpsAdjudication.createdByUsername).isEqualTo("A.BEANS")
   }
 
   @Test
@@ -300,11 +312,282 @@ class AdjudicationTransformationTest {
 
   @Test
   fun `will copy offence code`() {
-    val nomisAdjudication = nomisAdjudicationCharge(offenceCode = "51:1J", offenceDescription = "Commits any assault - assault on prison officer")
+    val nomisAdjudication = nomisAdjudicationCharge(
+      offenceCode = "51:1J",
+      offenceDescription = "Commits any assault - assault on prison officer",
+    )
     val dpsAdjudication = nomisAdjudication.toAdjudication()
 
     assertThat(dpsAdjudication.offence.offenceCode).isEqualTo("51:1J")
     assertThat(dpsAdjudication.offence.offenceDescription).isEqualTo("Commits any assault - assault on prison officer")
+  }
+
+  @Nested
+  @DisplayName("Witnesses and other parties")
+  inner class Witnesses {
+    @Test
+    fun `staff witnesses are copied`() {
+      val nomisAdjudication = nomisAdjudicationCharge(
+        createdByStaffUsername = "A.BEANS",
+        staffWitness = listOf(
+          Staff(
+            username = "J.SMITH",
+            staffId = 1,
+            firstName = "JOHN",
+            lastName = "SMITH",
+          ),
+          Staff(
+            username = "K.KOFI",
+            staffId = 2,
+            firstName = "KWEKU",
+            lastName = "KOFI",
+          ),
+        ),
+      )
+      val dpsAdjudication = nomisAdjudication.toAdjudication()
+
+      assertThat(dpsAdjudication.witnesses).hasSize(2)
+      assertThat(dpsAdjudication.witnesses).contains(
+        MigrateWitness(
+          createdBy = "A.BEANS",
+          firstName = "JOHN",
+          lastName = "SMITH",
+          witnessType = MigrateWitness.WitnessType.STAFF,
+        ),
+      )
+      assertThat(dpsAdjudication.witnesses).contains(
+        MigrateWitness(
+          createdBy = "A.BEANS",
+          firstName = "KWEKU",
+          lastName = "KOFI",
+          witnessType = MigrateWitness.WitnessType.STAFF,
+        ),
+      )
+    }
+
+    @Test
+    fun `prisoner witnesses are copied`() {
+      val nomisAdjudication = nomisAdjudicationCharge(
+        createdByStaffUsername = "A.BEANS",
+        prisonerWitnesses = listOf(
+          Prisoner(
+            offenderNo = "A1234KK",
+            firstName = "BOBBY",
+            lastName = "BALLER",
+          ),
+          Prisoner(
+            offenderNo = "A1234TT",
+            firstName = "JANE",
+            lastName = "MIKES",
+          ),
+        ),
+      )
+      val dpsAdjudication = nomisAdjudication.toAdjudication()
+
+      assertThat(dpsAdjudication.witnesses).hasSize(2)
+      assertThat(dpsAdjudication.witnesses).contains(
+        MigrateWitness(
+          createdBy = "A.BEANS",
+          firstName = "BOBBY",
+          lastName = "BALLER",
+          witnessType = MigrateWitness.WitnessType.OTHER_PERSON,
+        ),
+      )
+      assertThat(dpsAdjudication.witnesses).contains(
+        MigrateWitness(
+          createdBy = "A.BEANS",
+          firstName = "JANE",
+          lastName = "MIKES",
+          witnessType = MigrateWitness.WitnessType.OTHER_PERSON,
+        ),
+      )
+    }
+
+    @Test
+    fun `staff victims are copied`() {
+      val nomisAdjudication = nomisAdjudicationCharge(
+        createdByStaffUsername = "A.BEANS",
+        staffVictims = listOf(
+          Staff(
+            username = "J.SMITH",
+            staffId = 1,
+            firstName = "JOHN",
+            lastName = "SMITH",
+          ),
+          Staff(
+            username = "K.KOFI",
+            staffId = 2,
+            firstName = "KWEKU",
+            lastName = "KOFI",
+          ),
+        ),
+      )
+      val dpsAdjudication = nomisAdjudication.toAdjudication()
+
+      assertThat(dpsAdjudication.witnesses).hasSize(2)
+      assertThat(dpsAdjudication.witnesses).contains(
+        MigrateWitness(
+          createdBy = "A.BEANS",
+          firstName = "JOHN",
+          lastName = "SMITH",
+          witnessType = MigrateWitness.WitnessType.VICTIM,
+        ),
+      )
+      assertThat(dpsAdjudication.witnesses).contains(
+        MigrateWitness(
+          createdBy = "A.BEANS",
+          firstName = "KWEKU",
+          lastName = "KOFI",
+          witnessType = MigrateWitness.WitnessType.VICTIM,
+        ),
+      )
+    }
+
+    @Test
+    fun `prisoner victims are copied`() {
+      val nomisAdjudication = nomisAdjudicationCharge(
+        createdByStaffUsername = "A.BEANS",
+        prisonerVictims = listOf(
+          Prisoner(
+            offenderNo = "A1234KK",
+            firstName = "BOBBY",
+            lastName = "BALLER",
+          ),
+          Prisoner(
+            offenderNo = "A1234TT",
+            firstName = "JANE",
+            lastName = "MIKES",
+          ),
+        ),
+      )
+      val dpsAdjudication = nomisAdjudication.toAdjudication()
+
+      assertThat(dpsAdjudication.witnesses).hasSize(2)
+      assertThat(dpsAdjudication.witnesses).contains(
+        MigrateWitness(
+          createdBy = "A.BEANS",
+          firstName = "BOBBY",
+          lastName = "BALLER",
+          witnessType = MigrateWitness.WitnessType.VICTIM,
+        ),
+      )
+      assertThat(dpsAdjudication.witnesses).contains(
+        MigrateWitness(
+          createdBy = "A.BEANS",
+          firstName = "JANE",
+          lastName = "MIKES",
+          witnessType = MigrateWitness.WitnessType.VICTIM,
+        ),
+      )
+    }
+
+    @Test
+    fun `other prisoner suspects are copied`() {
+      val nomisAdjudication = nomisAdjudicationCharge(
+        createdByStaffUsername = "A.BEANS",
+        otherPrisonerInvolved = listOf(
+          Prisoner(
+            offenderNo = "A1234KK",
+            firstName = "BOBBY",
+            lastName = "BALLER",
+          ),
+          Prisoner(
+            offenderNo = "A1234TT",
+            firstName = "JANE",
+            lastName = "MIKES",
+          ),
+        ),
+      )
+      val dpsAdjudication = nomisAdjudication.toAdjudication()
+
+      assertThat(dpsAdjudication.witnesses).hasSize(2)
+      assertThat(dpsAdjudication.witnesses).contains(
+        MigrateWitness(
+          createdBy = "A.BEANS",
+          firstName = "BOBBY",
+          lastName = "BALLER",
+          witnessType = MigrateWitness.WitnessType.PRISONER,
+        ),
+      )
+      assertThat(dpsAdjudication.witnesses).contains(
+        MigrateWitness(
+          createdBy = "A.BEANS",
+          firstName = "JANE",
+          lastName = "MIKES",
+          witnessType = MigrateWitness.WitnessType.PRISONER,
+        ),
+      )
+    }
+
+    @Test
+    fun `all other staff types copied`() {
+      val nomisAdjudication = nomisAdjudicationCharge(
+        createdByStaffUsername = "A.BEANS",
+        reportingOfficers = listOf(
+          Staff(
+            username = "J.SMITH",
+            staffId = 1,
+            firstName = "JOHN",
+            lastName = "SMITH",
+          ),
+          Staff(
+            username = "K.KOFI",
+            staffId = 2,
+            firstName = "KWEKU",
+            lastName = "KOFI",
+          ),
+        ),
+        otherStaffInvolved = listOf(
+          Staff(
+            username = "J.BEEKS",
+            staffId = 3,
+            firstName = "JANE",
+            lastName = "SEEKS",
+          ),
+          Staff(
+            username = "S.BIGHTS",
+            staffId = 4,
+            firstName = "SARAH",
+            lastName = "BIGHTS",
+          ),
+        ),
+      )
+      val dpsAdjudication = nomisAdjudication.toAdjudication()
+
+      assertThat(dpsAdjudication.witnesses).hasSize(4)
+      assertThat(dpsAdjudication.witnesses).contains(
+        MigrateWitness(
+          createdBy = "A.BEANS",
+          firstName = "JOHN",
+          lastName = "SMITH",
+          witnessType = MigrateWitness.WitnessType.OTHER_PERSON,
+        ),
+      )
+      assertThat(dpsAdjudication.witnesses).contains(
+        MigrateWitness(
+          createdBy = "A.BEANS",
+          firstName = "KWEKU",
+          lastName = "KOFI",
+          witnessType = MigrateWitness.WitnessType.OTHER_PERSON,
+        ),
+      )
+      assertThat(dpsAdjudication.witnesses).contains(
+        MigrateWitness(
+          createdBy = "A.BEANS",
+          firstName = "JANE",
+          lastName = "SEEKS",
+          witnessType = MigrateWitness.WitnessType.OTHER_PERSON,
+        ),
+      )
+      assertThat(dpsAdjudication.witnesses).contains(
+        MigrateWitness(
+          createdBy = "A.BEANS",
+          firstName = "SARAH",
+          lastName = "BIGHTS",
+          witnessType = MigrateWitness.WitnessType.OTHER_PERSON,
+        ),
+      )
+    }
   }
 }
 
@@ -320,13 +603,13 @@ private fun nomisAdjudicationCharge(
   reportedTime: LocalTime = LocalTime.now(),
   internalLocationId: Long = 1234567,
   prisonId: String = "MDI",
-  prisonerWitnessOffenderNumbers: List<String> = emptyList(),
-  prisonerVictimOffenderNumbers: List<String> = emptyList(),
-  otherPrisonerInvolvedOffenderNumbers: List<String> = emptyList(),
-  reportingOfficersUsernames: List<String> = emptyList(),
-  staffWitnessUsernames: List<String> = emptyList(),
-  staffVictimsUsernames: List<String> = emptyList(),
-  otherStaffInvolvedUsernames: List<String> = emptyList(),
+  prisonerWitnesses: List<Prisoner> = emptyList(),
+  prisonerVictims: List<Prisoner> = emptyList(),
+  otherPrisonerInvolved: List<Prisoner> = emptyList(),
+  reportingOfficers: List<Staff> = emptyList(),
+  staffWitness: List<Staff> = emptyList(),
+  staffVictims: List<Staff> = emptyList(),
+  otherStaffInvolved: List<Staff> = emptyList(),
   repairs: List<Repair> = emptyList(),
   investigations: List<Investigation> = emptyList(),
   statementDetails: String = "Fight",
@@ -335,6 +618,8 @@ private fun nomisAdjudicationCharge(
   offenceType: String = "51",
   genderCode: String = "F",
   currentPrison: CodeDescription? = CodeDescription(prisonId, "HMP Prison"),
+  reportingStaffUsername: String = "F.LAST",
+  createdByStaffUsername: String = "A.BEANS",
 ): AdjudicationChargeResponse {
   return AdjudicationChargeResponse(
     adjudicationSequence = chargeSequence,
@@ -346,7 +631,7 @@ private fun nomisAdjudicationCharge(
     incident = AdjudicationIncident(
       adjudicationIncidentId = adjudicationIncidentId,
       reportingStaff = Staff(
-        username = "F.LAST",
+        username = reportingStaffUsername,
         staffId = 1,
         firstName = "stafffirstname",
         lastName = "stafflastname",
@@ -355,36 +640,18 @@ private fun nomisAdjudicationCharge(
       incidentTime = incidentTime.toString(),
       reportedDate = reportedDate,
       reportedTime = reportedTime.toString(),
-      createdByUsername = "A.BEANS",
+      createdByUsername = createdByStaffUsername,
       createdDateTime = "2023-04-12T10:00:00",
       internalLocation = InternalLocation(internalLocationId, "GYM", "GYM"),
       prison = CodeDescription(prisonId, "HMP Prison"),
-      prisonerWitnesses = prisonerWitnessOffenderNumbers.map {
-        Prisoner(
-          it,
-          lastName = "SURNAME",
-          firstName = "FIRSTNAME",
-        )
-      },
-      prisonerVictims = prisonerVictimOffenderNumbers.map {
-        Prisoner(
-          it,
-          lastName = "SURNAME",
-          firstName = "FIRSTNAME",
-        )
-      },
+      prisonerWitnesses = prisonerWitnesses,
+      prisonerVictims = prisonerVictims,
       incidentType = CodeDescription("GOV", "Governor's Report"),
-      otherPrisonersInvolved = otherPrisonerInvolvedOffenderNumbers.map {
-        Prisoner(
-          it,
-          lastName = "SURNAME",
-          firstName = "FIRSTNAME",
-        )
-      },
-      reportingOfficers = emptyList(), // TODO - need usernames
-      staffWitnesses = emptyList(), // TODO - need usernames
-      staffVictims = emptyList(), // TODO - need usernames
-      otherStaffInvolved = emptyList(), // TODO - need usernames
+      otherPrisonersInvolved = otherPrisonerInvolved,
+      reportingOfficers = reportingOfficers,
+      staffWitnesses = staffWitness,
+      staffVictims = staffVictims,
+      otherStaffInvolved = otherStaffInvolved,
       repairs = repairs,
       details = statementDetails,
     ),

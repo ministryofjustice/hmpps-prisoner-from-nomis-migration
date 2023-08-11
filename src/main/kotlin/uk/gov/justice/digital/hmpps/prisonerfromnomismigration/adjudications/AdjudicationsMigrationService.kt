@@ -20,6 +20,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateEvidence.EvidenceCode.PHOTO
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateOffence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigratePrisoner
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateWitness
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateWitness.WitnessType.OTHER_PERSON
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateWitness.WitnessType.PRISONER
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateWitness.WitnessType.STAFF
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateWitness.WitnessType.VICTIM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.ReportingOfficer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
@@ -52,14 +57,67 @@ fun AdjudicationChargeResponse.toAdjudication(): AdjudicationMigrateDto =
     ),
     locationId = this.incident.internalLocation.locationId,
     statement = incident.details ?: "",
-    reportingOfficer = ReportingOfficer("M.BOB"),
-    createdByUsername = "J.KWEKU",
-    prisoner = MigratePrisoner(prisonerNumber = this.offenderNo, gender = this.gender.code, currentAgencyId = this.currentPrison?.code),
+    reportingOfficer = ReportingOfficer(this.incident.reportingStaff.username),
+    createdByUsername = this.incident.createdByUsername,
+    prisoner = MigratePrisoner(
+      prisonerNumber = this.offenderNo,
+      gender = this.gender.code,
+      currentAgencyId = this.currentPrison?.code,
+    ),
     offence = MigrateOffence(
       offenceCode = this.charge.offence.code,
       offenceDescription = this.charge.offence.description,
     ),
-    witnesses = emptyList(),
+    witnesses = this.incident.staffWitnesses.map {
+      MigrateWitness(
+        firstName = it.firstName,
+        lastName = it.lastName,
+        createdBy = this.incident.createdByUsername,
+        STAFF,
+      )
+    } + this.incident.prisonerWitnesses.map {
+      MigrateWitness(
+        firstName = it.firstName ?: "",
+        lastName = it.lastName,
+        createdBy = this.incident.createdByUsername,
+        OTHER_PERSON,
+      )
+    } + this.incident.staffVictims.map {
+      MigrateWitness(
+        firstName = it.firstName,
+        lastName = it.lastName,
+        createdBy = this.incident.createdByUsername,
+        VICTIM,
+      )
+    } + this.incident.prisonerVictims.map {
+      MigrateWitness(
+        firstName = it.firstName ?: "",
+        lastName = it.lastName,
+        createdBy = this.incident.createdByUsername,
+        VICTIM,
+      )
+    } + this.incident.otherPrisonersInvolved.map {
+      MigrateWitness(
+        firstName = it.firstName ?: "",
+        lastName = it.lastName,
+        createdBy = this.incident.createdByUsername,
+        PRISONER,
+      )
+    } + this.incident.reportingOfficers.map {
+      MigrateWitness(
+        firstName = it.firstName,
+        lastName = it.lastName,
+        createdBy = this.incident.createdByUsername,
+        OTHER_PERSON,
+      )
+    } + this.incident.otherStaffInvolved.map {
+      MigrateWitness(
+        firstName = it.firstName,
+        lastName = it.lastName,
+        createdBy = this.incident.createdByUsername,
+        OTHER_PERSON,
+      )
+    },
     damages = this.incident.repairs.map { it.toDamage() },
     evidence = this.investigations.flatMap { investigation -> investigation.evidence.map { it.toEvidence() } },
     punishments = emptyList(),
