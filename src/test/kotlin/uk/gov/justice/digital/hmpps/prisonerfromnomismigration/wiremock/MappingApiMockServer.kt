@@ -569,5 +569,4 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       ),
     )
   }
-
 }

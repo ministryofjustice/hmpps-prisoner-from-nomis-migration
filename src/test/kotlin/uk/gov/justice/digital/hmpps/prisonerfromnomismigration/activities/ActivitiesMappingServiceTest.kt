@@ -129,7 +129,7 @@ class ActivitiesMappingServiceTest {
               "activityScheduleId2": "3456",
               "label": "2020-01-01T00:00:00"
             }
-            """.trimIndent(),
+              """.trimIndent(),
             ),
         ),
       )
@@ -176,7 +176,7 @@ class ActivitiesMappingServiceTest {
               "activityScheduleId2": "3456",
               "label": "2020-01-01T00:00:00"
             }
-            """.trimIndent(),
+              """.trimIndent(),
             ),
         ),
       )
