@@ -32,12 +32,21 @@ class AdjudicationTransformationTest {
   }
 
   @Test
-  fun `will copy prisoner identifiers`() {
-    val nomisAdjudication = nomisAdjudicationCharge(offenderNo = "A1234AA", bookingId = 543231)
+  fun `will copy prisoner details`() {
+    val nomisAdjudication = nomisAdjudicationCharge(
+      offenderNo = "A1234AA",
+      bookingId = 543231,
+      genderCode = "F",
+      currentPrison = CodeDescription("WWI", "Wandsworth (HMP)"),
+    )
     val dpsAdjudication = nomisAdjudication.toAdjudication()
 
     assertThat(dpsAdjudication.prisoner.prisonerNumber).isEqualTo("A1234AA")
     assertThat(dpsAdjudication.bookingId).isEqualTo(543231)
+    assertThat(dpsAdjudication.prisoner.gender).isEqualTo("F")
+    assertThat(dpsAdjudication.prisoner.currentAgencyId).isEqualTo("WWI")
+
+    assertThat(nomisAdjudicationCharge(currentPrison = null).toAdjudication().prisoner.currentAgencyId).isNull()
   }
 
   @Test
@@ -60,7 +69,8 @@ class AdjudicationTransformationTest {
       )
     val dpsAdjudication = nomisAdjudication.toAdjudication()
 
-    assertThat(dpsAdjudication.incidentDateTime).isEqualTo("2020-12-26T09:10:00")
+    assertThat(dpsAdjudication.reportedDateTime).isEqualTo("2020-12-26T09:10:00")
+    assertThat(dpsAdjudication.incidentDateTime).isEqualTo("2020-12-25T12:34:00")
   }
 
   @Test
@@ -81,10 +91,12 @@ class AdjudicationTransformationTest {
           Repair(
             type = CodeDescription(code = "PLUM", description = "Plumbing"),
             comment = "Broken toilet",
+            createdByUsername = "A.BEANS",
           ),
           Repair(
             type = CodeDescription(code = "PLUM", description = "Plumbing"),
             comment = "Broken sink",
+            createdByUsername = "B.STUFF",
           ),
         ),
       )
@@ -100,6 +112,7 @@ class AdjudicationTransformationTest {
           Repair(
             type = CodeDescription(code = "PLUM", description = "Plumbing"),
             comment = "Broken toilet",
+            createdByUsername = "A.BEANS",
           ),
         ),
       )
@@ -107,18 +120,22 @@ class AdjudicationTransformationTest {
 
       assertThat(dpsAdjudication.damages).hasSize(1)
       assertThat(dpsAdjudication.damages[0].details).isEqualTo("Broken toilet")
+      assertThat(dpsAdjudication.damages[0].createdBy).isEqualTo("A.BEANS")
     }
 
     @Test
     fun `damage type is mapped`() {
       val nomisAdjudication = nomisAdjudicationCharge(
         repairs = listOf(
-          Repair(type = CodeDescription(code = "ELEC", description = "Electrical")),
-          Repair(type = CodeDescription(code = "PLUM", description = "Plumbing")),
-          Repair(type = CodeDescription(code = "DECO", description = "Re-Decoration")),
-          Repair(type = CodeDescription(code = "FABR", description = "Fabric")),
-          Repair(type = CodeDescription(code = "CLEA", description = "Cleaning")),
-          Repair(type = CodeDescription(code = "LOCK", description = "Lock")),
+          Repair(
+            type = CodeDescription(code = "ELEC", description = "Electrical"),
+            createdByUsername = "A.BEANS",
+          ),
+          Repair(type = CodeDescription(code = "PLUM", description = "Plumbing"), createdByUsername = "A.BEANS"),
+          Repair(type = CodeDescription(code = "DECO", description = "Re-Decoration"), createdByUsername = "A.BEANS"),
+          Repair(type = CodeDescription(code = "FABR", description = "Fabric"), createdByUsername = "A.BEANS"),
+          Repair(type = CodeDescription(code = "CLEA", description = "Cleaning"), createdByUsername = "A.BEANS"),
+          Repair(type = CodeDescription(code = "LOCK", description = "Lock"), createdByUsername = "A.BEANS"),
         ),
       )
       val dpsAdjudication = nomisAdjudication.toAdjudication()
@@ -140,7 +157,7 @@ class AdjudicationTransformationTest {
       val nomisAdjudication = nomisAdjudicationCharge(
         investigations = listOf(
           Investigation(
-            investigator = Staff(1, "John", "Smith"),
+            investigator = Staff(username = "J.SMITH", staffId = 1, firstName = "John", lastName = "Smith"),
             dateAssigned = LocalDate.parse("2020-12-25"),
             comment = "some comment",
             evidence = listOf(
@@ -148,17 +165,19 @@ class AdjudicationTransformationTest {
                 type = CodeDescription(code = "BEHAV", description = "Behaviour Report"),
                 date = LocalDate.parse("2020-12-25"),
                 detail = "report detail",
+                createdByUsername = "A.BEANS",
               ),
               Evidence(
                 type = CodeDescription(code = "WITNESS", description = "Witness Statement"),
                 date = LocalDate.parse("2020-12-26"),
                 detail = "witness statement",
+                createdByUsername = "A.BEANS",
               ),
             ),
           ),
 
           Investigation(
-            investigator = Staff(67839, "DIKBLISNG", "ABBOY"),
+            investigator = Staff(username = "D.ABBOY", staffId = 67839, firstName = "DIKBLISNG", lastName = "ABBOY"),
             dateAssigned = LocalDate.parse("2023-08-07"),
             comment = "another comment",
             evidence = listOf(
@@ -166,6 +185,7 @@ class AdjudicationTransformationTest {
                 type = CodeDescription(code = "BEHAV", description = "Behaviour Report"),
                 date = LocalDate.parse("2021-12-25"),
                 detail = "another behave report",
+                createdByUsername = "A.BEANS",
               ),
             ),
           ),
@@ -181,7 +201,7 @@ class AdjudicationTransformationTest {
       val nomisAdjudication = nomisAdjudicationCharge(
         investigations = listOf(
           Investigation(
-            investigator = Staff(1, "John", "Smith"),
+            investigator = Staff(username = "J.SMITH", staffId = 1, firstName = "John", lastName = "Smith"),
             dateAssigned = LocalDate.parse("2020-12-25"),
             comment = "some comment",
             evidence = listOf(
@@ -189,6 +209,7 @@ class AdjudicationTransformationTest {
                 type = CodeDescription(code = "BEHAV", description = "Behaviour Report"),
                 date = LocalDate.parse("2020-12-25"),
                 detail = "report detail",
+                createdByUsername = "A.BEANS",
               ),
             ),
           ),
@@ -199,6 +220,7 @@ class AdjudicationTransformationTest {
 
       assertThat(dpsAdjudication.evidence).hasSize(1)
       assertThat(dpsAdjudication.evidence[0].details).isEqualTo("report detail")
+      assertThat(dpsAdjudication.evidence[0].reporter).isEqualTo("A.BEANS")
     }
 
     @Test
@@ -206,7 +228,7 @@ class AdjudicationTransformationTest {
       val nomisAdjudication = nomisAdjudicationCharge(
         investigations = listOf(
           Investigation(
-            investigator = Staff(1, "John", "Smith"),
+            investigator = Staff(username = "J.SMITH", staffId = 1, firstName = "John", lastName = "Smith"),
             dateAssigned = LocalDate.parse("2020-12-25"),
             comment = "some comment",
             evidence = listOf(
@@ -214,41 +236,49 @@ class AdjudicationTransformationTest {
                 type = CodeDescription(code = "BEHAV", description = "Behaviour Report"),
                 date = LocalDate.now(),
                 detail = "detail",
+                createdByUsername = "A.BEANS",
               ),
               Evidence(
                 type = CodeDescription(code = "WITNESS", description = "Witness Statement"),
                 date = LocalDate.now(),
                 detail = "detail",
+                createdByUsername = "A.BEANS",
               ),
               Evidence(
                 type = CodeDescription(code = "VICTIM", description = "Victim Statement"),
                 date = LocalDate.now(),
                 detail = "detail",
+                createdByUsername = "A.BEANS",
               ),
               Evidence(
                 type = CodeDescription(code = "WEAP", description = "Weapon"),
                 date = LocalDate.now(),
                 detail = "detail",
+                createdByUsername = "A.BEANS",
               ),
               Evidence(
                 type = CodeDescription(code = "PHOTO", description = "Photographic Evidence"),
                 date = LocalDate.now(),
                 detail = "detail",
+                createdByUsername = "A.BEANS",
               ),
               Evidence(
                 type = CodeDescription(code = "DRUGTEST", description = "Drug Test Report"),
                 date = LocalDate.now(),
                 detail = "detail",
+                createdByUsername = "A.BEANS",
               ),
               Evidence(
                 type = CodeDescription(code = "EVI_BAG", description = "Evidence Bag"),
                 date = LocalDate.now(),
                 detail = "detail",
+                createdByUsername = "A.BEANS",
               ),
               Evidence(
                 type = CodeDescription(code = "OTHER", description = "Other"),
                 date = LocalDate.now(),
                 detail = "detail",
+                createdByUsername = "A.BEANS",
               ),
             ),
           ),
@@ -270,10 +300,11 @@ class AdjudicationTransformationTest {
 
   @Test
   fun `will copy offence code`() {
-    val nomisAdjudication = nomisAdjudicationCharge(offenceCode = "51:1J")
+    val nomisAdjudication = nomisAdjudicationCharge(offenceCode = "51:1J", offenceDescription = "Commits any assault - assault on prison officer")
     val dpsAdjudication = nomisAdjudication.toAdjudication()
 
     assertThat(dpsAdjudication.offence.offenceCode).isEqualTo("51:1J")
+    assertThat(dpsAdjudication.offence.offenceDescription).isEqualTo("Commits any assault - assault on prison officer")
   }
 }
 
@@ -300,20 +331,32 @@ private fun nomisAdjudicationCharge(
   investigations: List<Investigation> = emptyList(),
   statementDetails: String = "Fight",
   offenceCode: String = "51:12A",
+  offenceDescription: String = "Commits any assault - assault on prison officer",
   offenceType: String = "51",
+  genderCode: String = "F",
+  currentPrison: CodeDescription? = CodeDescription(prisonId, "HMP Prison"),
 ): AdjudicationChargeResponse {
   return AdjudicationChargeResponse(
     adjudicationSequence = chargeSequence,
     offenderNo = offenderNo,
     bookingId = bookingId,
     partyAddedDate = LocalDate.now(),
+    gender = CodeDescription(genderCode, "Female"),
+    currentPrison = currentPrison,
     incident = AdjudicationIncident(
       adjudicationIncidentId = adjudicationIncidentId,
-      reportingStaff = Staff(1, "stafffirstname", "stafflastname"), // TODO - need usernames
+      reportingStaff = Staff(
+        username = "F.LAST",
+        staffId = 1,
+        firstName = "stafffirstname",
+        lastName = "stafflastname",
+      ),
       incidentDate = incidentDate,
       incidentTime = incidentTime.toString(),
       reportedDate = reportedDate,
       reportedTime = reportedTime.toString(),
+      createdByUsername = "A.BEANS",
+      createdDateTime = "2023-04-12T10:00:00",
       internalLocation = InternalLocation(internalLocationId, "GYM", "GYM"),
       prison = CodeDescription(prisonId, "HMP Prison"),
       prisonerWitnesses = prisonerWitnessOffenderNumbers.map {
@@ -352,8 +395,8 @@ private fun nomisAdjudicationCharge(
       offenceId = "$adjudicationNumber/$chargeSequence",
       offence = AdjudicationOffence(
         code = offenceCode,
-        description = "some offence",
-        type = CodeDescription(offenceType, "some offence type"),
+        description = offenceDescription,
+        type = CodeDescription(offenceType, "Prison Rule $offenceType"),
       ),
     ),
     investigations = investigations,

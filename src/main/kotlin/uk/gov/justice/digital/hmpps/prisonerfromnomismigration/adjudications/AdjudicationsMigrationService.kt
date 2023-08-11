@@ -40,19 +40,25 @@ import java.time.format.DateTimeFormatter
 fun AdjudicationChargeResponse.toAdjudication(): AdjudicationMigrateDto =
   AdjudicationMigrateDto(
     agencyIncidentId = this.incident.adjudicationIncidentId,
-    oicIncidentId = this.adjudicationNumber!!, // TODO looks like A mistake in NOMIS API swagger, this cannot be null
+    oicIncidentId = this.adjudicationNumber,
     offenceSequence = this.charge.chargeSequence.toLong(),
     bookingId = this.bookingId,
     agencyId = this.incident.prison.code,
-    incidentDateTime = this.incident.reportedDate.atTime(LocalTime.parse(this.incident.reportedTime)).format(
+    incidentDateTime = this.incident.incidentDate.atTime(LocalTime.parse(this.incident.incidentTime)).format(
+      DateTimeFormatter.ISO_LOCAL_DATE_TIME,
+    ),
+    reportedDateTime = this.incident.reportedDate.atTime(LocalTime.parse(this.incident.reportedTime)).format(
       DateTimeFormatter.ISO_LOCAL_DATE_TIME,
     ),
     locationId = this.incident.internalLocation.locationId,
     statement = incident.details ?: "",
     reportingOfficer = ReportingOfficer("M.BOB"),
     createdByUsername = "J.KWEKU",
-    prisoner = MigratePrisoner(prisonerNumber = this.offenderNo, gender = "M", currentAgencyId = "MDI"),
-    offence = MigrateOffence(this.charge.offence.code),
+    prisoner = MigratePrisoner(prisonerNumber = this.offenderNo, gender = this.gender.code, currentAgencyId = this.currentPrison?.code),
+    offence = MigrateOffence(
+      offenceCode = this.charge.offence.code,
+      offenceDescription = this.charge.offence.description,
+    ),
     witnesses = emptyList(),
     damages = this.incident.repairs.map { it.toDamage() },
     evidence = this.investigations.flatMap { investigation -> investigation.evidence.map { it.toEvidence() } },
@@ -67,7 +73,7 @@ private fun Evidence.toEvidence() = MigrateEvidence(
     else -> CCTV // TODO - how to map all the codes?
   },
   details = this.detail,
-  reporter = "J.KWEKU", // TODO
+  reporter = this.createdByUsername,
 )
 
 private fun Repair.toDamage() = MigrateDamage(
@@ -81,7 +87,7 @@ private fun Repair.toDamage() = MigrateDamage(
     else -> throw IllegalArgumentException("Unknown repair type ${this.type.code}")
   },
   details = this.comment,
-  createdBy = "J.KWEKU", // TODO
+  createdBy = this.createdByUsername,
 )
 
 @Service
