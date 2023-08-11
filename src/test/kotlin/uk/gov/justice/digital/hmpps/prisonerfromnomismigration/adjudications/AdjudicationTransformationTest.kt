@@ -6,6 +6,9 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateDamage.DamageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateEvidence
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateHearing
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateHearing.OicHearingType.GOV
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateHearing.OicHearingType.GOV_ADULT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateWitness
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeResponse
@@ -13,6 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.A
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationOffence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Evidence
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Hearing
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.InternalLocation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Investigation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Prisoner
@@ -589,6 +593,77 @@ class AdjudicationTransformationTest {
       )
     }
   }
+
+  @Nested
+  inner class Hearings {
+    @Test
+    fun `will copy core hearing details`() {
+      val nomisAdjudication = nomisAdjudicationCharge(
+        hearings = listOf(
+          Hearing(
+            hearingId = 54321,
+            hearingDate = LocalDate.parse("2021-01-01"),
+            hearingTime = "12:00:00",
+            type = CodeDescription(code = "GOV_ADULT", description = "Governor's Hearing Adult"),
+            hearingResults = emptyList(),
+            scheduleDate = LocalDate.parse("2020-12-31"),
+            scheduleTime = "11:00:00",
+            comment = "Some comment",
+            hearingStaff = Staff(
+              username = "A.JUDGE",
+              staffId = 123,
+              firstName = "A",
+              lastName = "JUDGE",
+            ),
+            internalLocation = InternalLocation(321, "A-1-1", "MDI-A-1-1"),
+            eventStatus = CodeDescription(code = "SCH", description = "Scheduled"),
+          ),
+        ),
+      )
+      val dpsAdjudication = nomisAdjudication.toAdjudication()
+
+      assertThat(dpsAdjudication.hearings).containsExactly(
+        MigrateHearing(
+          oicHearingId = 54321,
+          oicHearingType = GOV_ADULT,
+          hearingDateTime = "2021-01-01T12:00:00",
+          adjudicator = "A.JUDGE",
+          commentText = "Some comment",
+          locationId = 321,
+          hearingResult = null,
+        ),
+      )
+    }
+
+    @Test
+    fun `will copy scheduled hearing details`() {
+      val nomisAdjudication = nomisAdjudicationCharge(
+        hearings = listOf(
+          Hearing(
+            hearingId = 54321,
+            hearingDate = LocalDate.parse("2021-01-01"),
+            hearingTime = "12:00:00",
+            hearingResults = emptyList(),
+            internalLocation = InternalLocation(321, "A-1-1", "MDI-A-1-1"),
+            eventStatus = CodeDescription(code = "SCH", description = "Scheduled"),
+          ),
+        ),
+      )
+      val dpsAdjudication = nomisAdjudication.toAdjudication()
+
+      assertThat(dpsAdjudication.hearings).containsExactly(
+        MigrateHearing(
+          oicHearingId = 54321,
+          oicHearingType = GOV, // TODO - we always havce a NOMIS type so default to this until we have a decision
+          hearingDateTime = "2021-01-01T12:00:00",
+          adjudicator = null,
+          commentText = null,
+          locationId = 321,
+          hearingResult = null,
+        ),
+      )
+    }
+  }
 }
 
 private fun nomisAdjudicationCharge(
@@ -620,6 +695,7 @@ private fun nomisAdjudicationCharge(
   currentPrison: CodeDescription? = CodeDescription(prisonId, "HMP Prison"),
   reportingStaffUsername: String = "F.LAST",
   createdByStaffUsername: String = "A.BEANS",
+  hearings: List<Hearing> = emptyList(),
 ): AdjudicationChargeResponse {
   return AdjudicationChargeResponse(
     adjudicationSequence = chargeSequence,
@@ -667,7 +743,7 @@ private fun nomisAdjudicationCharge(
       ),
     ),
     investigations = investigations,
-    hearings = emptyList(),
+    hearings = hearings,
     adjudicationNumber = adjudicationNumber,
     comment = "comment",
   )
