@@ -18,6 +18,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateEvidence.EvidenceCode.BAGGED_AND_TAGGED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateEvidence.EvidenceCode.CCTV
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateEvidence.EvidenceCode.PHOTO
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateHearing
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateHearing.OicHearingType.GOV
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateHearing.OicHearingType.GOV_ADULT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateHearing.OicHearingType.GOV_YOI
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateHearing.OicHearingType.INAD_ADULT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateHearing.OicHearingType.INAD_YOI
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateOffence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigratePrisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateWitness
@@ -32,6 +38,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.A
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Evidence
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Hearing
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Repair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
@@ -121,8 +128,27 @@ fun AdjudicationChargeResponse.toAdjudication(): AdjudicationMigrateDto =
     damages = this.incident.repairs.map { it.toDamage() },
     evidence = this.investigations.flatMap { investigation -> investigation.evidence.map { it.toEvidence() } },
     punishments = emptyList(),
-    hearings = emptyList(),
+    hearings = this.hearings.map { it.toHearing() },
   )
+
+private fun Hearing.toHearing() = MigrateHearing(
+  oicHearingId = this.hearingId,
+  oicHearingType = when (this.type?.code) {
+    "GOV" -> GOV
+    "GOV_ADULT" -> GOV_ADULT
+    "GOV_YOI" -> GOV_YOI
+    "INAD_ADULT" -> INAD_ADULT
+    "INAD_YOI" -> INAD_YOI
+    else -> GOV // TODO - we can't do NULL right now until DPS API is changed
+  },
+  hearingDateTime = this.hearingDate?.atTime(LocalTime.parse(this.hearingTime))?.format(
+    DateTimeFormatter.ISO_LOCAL_DATE_TIME,
+  ) ?: throw IllegalArgumentException("Hearing must have a date time"),
+  locationId = this.internalLocation?.locationId ?: throw IllegalArgumentException("Hearing must have a location"),
+  adjudicator = this.hearingStaff?.username,
+  commentText = this.comment,
+  hearingResult = null,
+)
 
 private fun Evidence.toEvidence() = MigrateEvidence(
   evidenceCode = when (this.type.code) {
