@@ -71,23 +71,24 @@ java {
 tasks {
   withType<KotlinCompile> {
     //  dependsOn("buildSentencingApiModel")
-    dependsOn("buildActivityApiModel", "buildNomisSyncApiModel", "buildAdjudicationApiModel", "buildNonAssociationsApiModel")
+    dependsOn("buildActivityApiModel", "buildNomisSyncApiModel", "buildAdjudicationApiModel", "buildNonAssociationsApiModel", "buildMappingServiceApiModel")
     kotlinOptions {
       jvmTarget = "19"
     }
   }
   withType<KtLintCheckTask> {
     // Under gradle 8 we must declare the dependency here, even if we're not going to be linting the model
-    mustRunAfter("buildActivityApiModel", "buildNomisSyncApiModel", "buildAdjudicationApiModel", "buildNonAssociationsApiModel")
+    mustRunAfter("buildActivityApiModel", "buildNomisSyncApiModel", "buildAdjudicationApiModel", "buildNonAssociationsApiModel", "buildMappingServiceApiModel")
   }
   withType<KtLintFormatTask> {
     // Under gradle 8 we must declare the dependency here, even if we're not going to be linting the model
-    mustRunAfter("buildActivityApiModel", "buildNomisSyncApiModel", "buildAdjudicationApiModel", "buildNonAssociationsApiModel")
+    mustRunAfter("buildActivityApiModel", "buildNomisSyncApiModel", "buildAdjudicationApiModel", "buildNonAssociationsApiModel", "buildMappingServiceApiModel")
   }
 }
 
 tasks.register("buildActivityApiModel", GenerateTask::class) {
   generatorName.set("kotlin")
+  skipValidateSpec.set(true)
   inputSpec.set("openapi-specs/activities-api-docs.json")
   // remoteInputSpec.set("https://activities-api-dev.prison.service.justice.gov.uk/v3/api-docs")
   outputDir.set("$buildDir/generated")
@@ -122,6 +123,22 @@ tasks.register("buildNomisSyncApiModel", GenerateTask::class) {
       "models" to ""
     )
   )
+}
+
+tasks.register("buildMappingServiceApiModel", GenerateTask::class) {
+  generatorName.set("kotlin")
+  inputSpec.set("openapi-specs/nomis-mapping-service-api-docs.json")
+  outputDir.set("$buildDir/generated")
+  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model")
+  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api")
+  configOptions.set(
+    mapOf(
+      "dateLibrary" to "java8-localdatetime",
+      "serializationLibrary" to "jackson",
+      "enumPropertyNaming" to "original"
+    )
+  )
+  globalProperties.set(mapOf("models" to ""))
 }
 
 tasks.register("buildAdjudicationApiModel", GenerateTask::class) {
