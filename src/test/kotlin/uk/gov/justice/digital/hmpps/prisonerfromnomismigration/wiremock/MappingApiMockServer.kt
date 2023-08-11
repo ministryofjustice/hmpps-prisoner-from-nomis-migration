@@ -29,6 +29,7 @@ class MappingApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallb
     val mappingApi = MappingApiMockServer()
     const val VISITS_CREATE_MAPPING_URL = "/mapping/visits"
     const val VISITS_GET_MAPPING_URL = "/mapping/visits/nomisId"
+    const val ACTIVITIES_CREATE_MAPPING_URL = "/mapping/activities/migration"
     const val ADJUDICATIONS_GET_MAPPING_URL = "/mapping/adjudications/adjudication-number"
     const val APPOINTMENTS_CREATE_MAPPING_URL = "/mapping/appointments"
     const val APPOINTMENTS_GET_MAPPING_URL = "/mapping/appointments/nomis-event-id"
@@ -549,4 +550,24 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun createMappingCount(url: String) =
     findAll(postRequestedFor(urlPathEqualTo(url))).count()
+
+  fun stubActivitiesMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 278887) {
+    val content = """{
+      "nomisCourseActivityId": 1234,
+      "activityScheduleId": 2345,
+      "activityScheduleId2": 3456,
+      "label": "2022-02-14T09:58:45",
+      "whenCreated": "$whenCreated"
+    }"""
+    stubFor(
+      get(urlPathMatching("/mapping/activities/migration/migration-id/.*")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(
+            pageContent(content, count),
+          ),
+      ),
+    )
+  }
+
 }
