@@ -680,7 +680,8 @@ fun adjudicationResponse(
           "staffId": 485585,
           "firstName": "LUCY",
           "lastName": "BENNETT",
-          "username": "L.BENNETT"
+          "username": "L.BENNETT",
+           "createdByUsername": "AMARKE_GEN"
       },
       "incidentDate": "2023-06-08",
       "incidentTime": "12:00:00",
