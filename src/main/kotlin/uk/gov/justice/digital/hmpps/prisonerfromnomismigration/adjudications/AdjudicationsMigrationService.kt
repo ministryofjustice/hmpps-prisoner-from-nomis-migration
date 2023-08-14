@@ -49,7 +49,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
-import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
@@ -83,60 +82,60 @@ fun AdjudicationChargeResponse.toAdjudication(): AdjudicationMigrateDto =
       MigrateWitness(
         firstName = it.firstName,
         lastName = it.lastName,
-        createdBy = this.incident.createdByUsername,
+        createdBy = it.createdByUsername,
         STAFF,
       )
     } + this.incident.prisonerWitnesses.map {
       MigrateWitness(
         firstName = it.firstName ?: "",
         lastName = it.lastName,
-        createdBy = this.incident.createdByUsername,
+        createdBy = it.createdByUsername,
         OTHER_PERSON,
       )
     } + this.incident.staffVictims.map {
       MigrateWitness(
         firstName = it.firstName,
         lastName = it.lastName,
-        createdBy = this.incident.createdByUsername,
+        createdBy = it.createdByUsername,
         VICTIM,
       )
     } + this.incident.prisonerVictims.map {
       MigrateWitness(
         firstName = it.firstName ?: "",
         lastName = it.lastName,
-        createdBy = this.incident.createdByUsername,
+        createdBy = it.createdByUsername,
         VICTIM,
       )
     } + this.incident.otherPrisonersInvolved.map {
       MigrateWitness(
         firstName = it.firstName ?: "",
         lastName = it.lastName,
-        createdBy = this.incident.createdByUsername,
+        createdBy = it.createdByUsername,
         PRISONER,
       )
     } + this.incident.reportingOfficers.map {
       MigrateWitness(
         firstName = it.firstName,
         lastName = it.lastName,
-        createdBy = this.incident.createdByUsername,
+        createdBy = it.createdByUsername,
         OTHER_PERSON,
       )
     } + this.incident.otherStaffInvolved.map {
       MigrateWitness(
         firstName = it.firstName,
         lastName = it.lastName,
-        createdBy = this.incident.createdByUsername,
+        createdBy = it.createdByUsername,
         OTHER_PERSON,
       )
     },
     damages = this.incident.repairs.map { it.toDamage() },
     evidence = this.investigations.flatMap { investigation -> investigation.evidence.map { it.toEvidence() } },
-    punishments = this.hearings.flatMap { it.toHearingResultAwards(this.charge.chargeSequence) },
-    hearings = this.hearings.map { it.toHearing(this.charge.chargeSequence) },
+    punishments = this.hearings.flatMap { it.toHearingResultAwards() },
+    hearings = this.hearings.map { it.toHearing() },
   )
 
-private fun Hearing.toHearingResultAwards(chargeSequence: Int): List<MigratePunishment> =
-  this.hearingResults.filter { it.charge.chargeSequence == chargeSequence } // TODO  NOMIS API could filter these out
+private fun Hearing.toHearingResultAwards(): List<MigratePunishment> =
+  this.hearingResults
     .flatMap { hearingResult ->
       hearingResult.resultAwards.map {
         MigratePunishment(
@@ -145,7 +144,7 @@ private fun Hearing.toHearingResultAwards(chargeSequence: Int): List<MigratePuni
           sanctionStatus = it.sanctionStatus?.code
             ?: throw IllegalArgumentException("Result award must have a sanctionStatus"),
           effectiveDate = it.effectiveDate,
-          sanctionSeq = 1, // TODO - need this in NOMIS API
+          sanctionSeq = it.sequence.toLong(),
           comment = it.comment,
           compensationAmount = null, // TODO - how to created this in NOMIS API
           days = it.sanctionDays, // TODO - calculate using months
@@ -154,7 +153,7 @@ private fun Hearing.toHearingResultAwards(chargeSequence: Int): List<MigratePuni
       }
     }
 
-private fun Hearing.toHearing(chargeSequence: Int) = MigrateHearing(
+private fun Hearing.toHearing() = MigrateHearing(
   oicHearingId = this.hearingId,
   oicHearingType = when (this.type?.code) {
     "GOV" -> GOV
@@ -170,19 +169,18 @@ private fun Hearing.toHearing(chargeSequence: Int) = MigrateHearing(
   locationId = this.internalLocation?.locationId ?: throw IllegalArgumentException("Hearing must have a location"),
   adjudicator = this.hearingStaff?.username,
   commentText = this.comment,
-  hearingResult = this.hearingResults.toHearingResult(chargeSequence),
+  hearingResult = this.hearingResults.toHearingResult(),
 )
 
-private fun List<HearingResult>.toHearingResult(chargeSequence: Int): MigrateHearingResult? =
-  this.find { it.charge.chargeSequence == chargeSequence }?.let { // TODO - better if NOMIS API filtered these out
+private fun List<HearingResult>.toHearingResult(): MigrateHearingResult? =
+  this.firstOrNull()?.let {
     MigrateHearingResult(
       plea = it.pleaFindingType?.code
         ?: throw IllegalArgumentException("Hearing result must have a plea"), // Never null in NOMIS though schema allows it
       finding = it.findingType?.code
         ?: throw IllegalArgumentException("Hearing result must have a finding"), // Never null in NOMIS though schema allows it
-      createdDateTime = LocalDateTime.now()
-        .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME), // TODO - need these in NOMIS API
-      createdBy = "A.TODO", // TODO - need these in NOMIS API
+      createdDateTime = it.createdDateTime,
+      createdBy = it.createdByUsername,
     )
   }
 
