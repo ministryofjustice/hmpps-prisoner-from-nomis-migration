@@ -104,6 +104,7 @@ class SqsIntegrationTestBase : TestBase() {
 
   @BeforeEach
   fun setUp() {
+    Awaitility.setDefaultPollDelay(1, TimeUnit.MILLISECONDS)
     Awaitility.setDefaultPollInterval(10, TimeUnit.MILLISECONDS)
     reset(telemetryClient)
     allQueues.forEach { it.purgeAndWait() }
