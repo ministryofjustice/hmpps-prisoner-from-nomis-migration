@@ -48,7 +48,7 @@ spring:
 cancel:
   queue:
     purge-frequency-time: 20ms
-    purge-total-time: 1s
+    purge-total-time: 2s
 
 complete-check:
   delay-seconds: 1
