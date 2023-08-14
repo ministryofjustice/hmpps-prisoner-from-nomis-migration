@@ -19,6 +19,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.web.reactive.function.client.WebClientResponseException.NotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveActivityIdsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveAllocationIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.math.BigDecimal
 import java.net.HttpURLConnection
@@ -648,6 +649,213 @@ internal class NomisApiServiceTest {
         assertThatThrownBy {
           runBlocking {
             nomisService.getActivity(courseActivityId = 3333)
+          }
+        }.isInstanceOf(NotFound::class.java)
+      }
+    }
+  }
+
+  @Nested
+  inner class GetAllocations {
+    @BeforeEach
+    internal fun setUp() {
+      nomisApi.stubFor(
+        get(
+          urlPathEqualTo("/allocations/ids"),
+        ).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpURLConnection.HTTP_OK)
+            .withBody(allocationsPagedResponse()),
+        ),
+      )
+    }
+
+    @Test
+    internal fun `will supply authentication token`() {
+      runBlocking {
+        nomisService.getAllocationIds(
+          prisonId = "BXI",
+          excludeProgramCodes = listOf("PROGRAM1", "PROGRAM2"),
+          pageNumber = 0,
+          pageSize = 3,
+        )
+      }
+      nomisApi.verify(
+        getRequestedFor(
+          urlPathEqualTo("/allocations/ids"),
+        )
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass all filters when present`() {
+      runBlocking {
+        nomisService.getAllocationIds(
+          prisonId = "BXI",
+          excludeProgramCodes = listOf("PROGRAM1", "PROGRAM2"),
+          pageNumber = 0,
+          pageSize = 3,
+        )
+      }
+      nomisApi.verify(
+        getRequestedFor(
+          urlEqualTo("/allocations/ids?prisonId=BXI&excludeProgramCode=PROGRAM1&excludeProgramCode=PROGRAM2&page=0&size=3"),
+        ),
+      )
+    }
+
+    @Test
+    internal fun `will return paging info along with the activity ids`() {
+      nomisApi.stubFor(
+        get(
+          urlPathEqualTo("/allocations/ids"),
+        ).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpURLConnection.HTTP_OK)
+            .withBody(allocationsPagedResponse()),
+        ),
+      )
+
+      val allocations = runBlocking {
+        nomisService.getAllocationIds(
+          prisonId = "BXI",
+          excludeProgramCodes = listOf("PROGRAM1", "PROGRAM2"),
+          pageNumber = 0,
+          pageSize = 3,
+        )
+      }
+
+      assertThat(allocations.content).hasSize(3)
+      assertThat(allocations.content).extracting<Long>(FindActiveAllocationIdsResponse::allocationId).containsExactly(1, 2, 3)
+      assertThat(allocations.totalPages).isEqualTo(2)
+      assertThat(allocations.pageable.pageNumber).isEqualTo(0)
+      assertThat(allocations.totalElements).isEqualTo(4)
+    }
+
+    private fun allocationsPagedResponse() = """
+{
+    "content": [
+      {
+        "allocationId": 1
+      },
+      {
+        "allocationId": 2
+      },
+      {
+        "allocationId": 3
+      }
+    ],
+    "pageable": {
+        "sort": {
+            "empty": false,
+            "sorted": true,
+            "unsorted": false
+        },
+        "offset": 0,
+        "pageSize": 3,
+        "pageNumber": 1,
+        "paged": true,
+        "unpaged": false
+    },
+    "last": false,
+    "totalPages": 2,
+    "totalElements": 4,
+    "size": 3,
+    "number": 0,
+    "sort": {
+        "empty": false,
+        "sorted": true,
+        "unsorted": false
+    },
+    "first": true,
+    "numberOfElements": 3,
+    "empty": false
+}                
+      
+    """.trimIndent()
+  }
+
+  @Nested
+  inner class GetAllocation {
+    @BeforeEach
+    internal fun setUp() {
+      nomisApi.stubFor(
+        get(
+          urlPathMatching("/allocations/[0-9]+"),
+        ).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpURLConnection.HTTP_OK)
+            .withBody(
+              """
+                {
+                  "nomisId": "A1234BC",
+                  "bookingId": 12345,
+                  "startDate": "2023-03-12",
+                  "endDate": "2023-05-26",
+                  "endComment": "Removed due to schedule clash",
+                  "endReasonCode": "WDRAWN",
+                  "suspended": false,
+                  "payBand": "1",
+                  "livingUnitDescription": "RSI-A-1-001"
+                }
+              """.trimIndent(),
+            ),
+        ),
+      )
+    }
+
+    @Test
+    internal fun `should supply authentication token`(): Unit = runBlocking {
+      nomisService.getAllocation(allocationId = 3333)
+
+      nomisApi.verify(
+        getRequestedFor(
+          urlPathEqualTo("/allocations/3333"),
+        )
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `should return allocation data`(): Unit = runBlocking {
+      val allocation = nomisService.getAllocation(allocationId = 3333)
+
+      assertThat(allocation.nomisId).isEqualTo("A1234BC")
+      assertThat(allocation.bookingId).isEqualTo(12345)
+      assertThat(allocation.startDate).isEqualTo("2023-03-12")
+      assertThat(allocation.endDate).isEqualTo("2023-05-26")
+      assertThat(allocation.endComment).isEqualTo("Removed due to schedule clash")
+      assertThat(allocation.endReasonCode).isEqualTo("WDRAWN")
+      assertThat(allocation.suspended).isEqualTo(false)
+      assertThat(allocation.payBand).isEqualTo("1")
+      assertThat(allocation.livingUnitDescription).isEqualTo("RSI-A-1-001")
+    }
+
+    @Nested
+    @DisplayName("should return not found")
+    inner class WhenNotFound {
+      @BeforeEach
+      internal fun setUp() {
+        nomisApi.stubFor(
+          get(
+            urlPathMatching("/allocations/[0-9]+"),
+          ).willReturn(
+            aResponse()
+              .withHeader("Content-Type", "application/json")
+              .withStatus(HttpURLConnection.HTTP_NOT_FOUND),
+          ),
+        )
+      }
+
+      @Test
+      internal fun `will throw an exception`() {
+        assertThatThrownBy {
+          runBlocking {
+            nomisService.getAllocation(allocationId = 3333)
           }
         }.isInstanceOf(NotFound::class.java)
       }

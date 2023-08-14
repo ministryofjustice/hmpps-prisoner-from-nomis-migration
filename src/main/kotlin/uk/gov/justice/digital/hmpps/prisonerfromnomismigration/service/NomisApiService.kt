@@ -16,7 +16,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveActivityIdsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveAllocationIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetActivityResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetAllocationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomUsageResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationFilter
@@ -197,6 +199,32 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       }
       .retrieve()
       .bodyToMono(typeReference<RestResponsePage<FindActiveActivityIdsResponse>>())
+      .awaitSingle()
+
+  suspend fun getAllocation(allocationId: Long): GetAllocationResponse =
+    webClient.get()
+      .uri("/allocations/{allocationId}", allocationId)
+      .retrieve()
+      .bodyToMono(GetAllocationResponse::class.java)
+      .awaitSingle()
+
+  suspend fun getAllocationIds(
+    prisonId: String,
+    excludeProgramCodes: List<String>,
+    pageNumber: Long,
+    pageSize: Long,
+  ): PageImpl<FindActiveAllocationIdsResponse> =
+    webClient.get()
+      .uri {
+        it.path("/allocations/ids")
+          .queryParam("prisonId", prisonId)
+          .queryParams(LinkedMultiValueMap<String, String>().apply { addAll("excludeProgramCode", excludeProgramCodes) })
+          .queryParam("page", pageNumber)
+          .queryParam("size", pageSize)
+          .build()
+      }
+      .retrieve()
+      .bodyToMono(typeReference<RestResponsePage<FindActiveAllocationIdsResponse>>())
       .awaitSingle()
 }
 
