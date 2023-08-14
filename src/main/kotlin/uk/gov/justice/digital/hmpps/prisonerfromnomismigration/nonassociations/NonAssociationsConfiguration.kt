@@ -12,7 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.health.HealthChec
 
 @Configuration
 class NonAssociationsConfiguration(
-  @Value("\${api.base.url.non.associations}") val nonAssociationsApiBaseUri: String,
+  @Value("\${api.base.url.non-associations}") val nonAssociationsApiBaseUri: String,
 ) {
 
   @Bean
