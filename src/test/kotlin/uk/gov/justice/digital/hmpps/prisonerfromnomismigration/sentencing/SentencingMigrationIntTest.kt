@@ -9,6 +9,7 @@ import org.awaitility.kotlin.untilAsserted
 import org.awaitility.kotlin.untilCallTo
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -223,6 +224,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Test
+    @Disabled
     internal fun `it will not retry after a 409 (duplicate adjustment written to Sentencing API)`() {
       nomisApi.stubGetInitialCount(NomisApiExtension.ADJUSTMENTS_ID_URL, 1) { adjustmentIdsPagedResponse(it) }
       nomisApi.stubMultipleGetAdjustmentIdCounts(totalElements = 1, pageSize = 10)

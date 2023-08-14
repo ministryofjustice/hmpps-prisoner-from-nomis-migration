@@ -49,8 +49,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
+import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 
 fun AdjudicationChargeResponse.toAdjudication(): AdjudicationMigrateDto =
   AdjudicationMigrateDto(
@@ -147,11 +149,21 @@ private fun Hearing.toHearingResultAwards(): List<MigratePunishment> =
           sanctionSeq = it.sequence.toLong(),
           comment = it.comment,
           compensationAmount = null, // TODO - how to created this in NOMIS API
-          days = it.sanctionDays, // TODO - calculate using months
+          days = it.sanctionDays + it.sanctionMonths.asDays(it.effectiveDate),
           consecutiveChargeNumber = null, // TODO - need sequence in awards
         )
       }
     }
+
+private operator fun Int?.plus(second: Int?): Int? = when {
+  this == null && second == null -> null
+  this == null -> second
+  second == null -> this
+  else -> this + second
+}
+
+private fun Int?.asDays(effectiveDate: LocalDate): Int? =
+  this?.let { ChronoUnit.DAYS.between(effectiveDate, effectiveDate.plusMonths(this.toLong())).toInt() }
 
 private fun Hearing.toHearing() = MigrateHearing(
   oicHearingId = this.hearingId,

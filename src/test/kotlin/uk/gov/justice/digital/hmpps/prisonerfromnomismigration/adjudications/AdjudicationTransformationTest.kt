@@ -4,6 +4,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateDamage.DamageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateEvidence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateHearing
@@ -26,6 +29,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.R
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Staff
 import java.time.LocalDate
 import java.time.LocalTime
+import java.util.stream.Stream
 
 class AdjudicationTransformationTest {
   @Test
@@ -785,6 +789,7 @@ class AdjudicationTransformationTest {
 
       @Nested
       inner class Punishments {
+
         @Test
         fun `will copy award for the charge punishment`() {
           val charge = nomisAdjudicationCharge().charge.copy(chargeSequence = 2)
@@ -845,7 +850,85 @@ class AdjudicationTransformationTest {
           assertThat(dpsAdjudication.punishments[0].sanctionSeq).isEqualTo(23)
           assertThat(dpsAdjudication.punishments[0].sanctionStatus).isEqualTo("IMMEDIATE")
         }
+
+        @ParameterizedTest
+        @MethodSource("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.AdjudicationTransformationTest#getAwardDayMonthData")
+        fun `days and months are added together`(
+          days: Int?,
+          months: Int?,
+          effectiveDate: String,
+          calculatedDays: Int?,
+        ) {
+          val charge = nomisAdjudicationCharge().charge.copy(chargeSequence = 2)
+          val nomisAdjudication = nomisAdjudicationCharge(
+            chargeSequence = charge.chargeSequence,
+            hearings = listOf(
+              Hearing(
+                hearingId = 54321,
+                hearingDate = LocalDate.parse("2021-01-01"),
+                hearingTime = "12:00:00",
+                type = CodeDescription(code = "GOV_ADULT", description = "Governor's Hearing Adult"),
+                hearingResults = listOf(
+                  HearingResult(
+                    charge = charge,
+                    offence = charge.offence,
+                    resultAwards = listOf(
+                      HearingResultAward(
+                        effectiveDate = LocalDate.parse(effectiveDate),
+                        sanctionType = CodeDescription(code = "CC", description = "Cellular Confinement"),
+                        sanctionStatus = CodeDescription(code = "IMMEDIATE", description = "Immediate"),
+                        comment = "Remain in cell",
+                        statusDate = LocalDate.parse("2021-01-02"),
+                        sanctionDays = days,
+                        sanctionMonths = months,
+                        compensationAmount = null,
+                        consecutiveAward = null,
+                        sequence = 23,
+                      ),
+                    ),
+                    pleaFindingType = CodeDescription(code = "GUILTY", description = "Guilty"),
+                    findingType = CodeDescription(code = "S", description = "Suspended"),
+                    createdByUsername = "A.BEANS",
+                    createdDateTime = "2020-12-31T10:00:00",
+                  ),
+                ),
+                hearingStaff = Staff(
+                  username = "A.JUDGE",
+                  staffId = 123,
+                  firstName = "A",
+                  lastName = "JUDGE",
+                  createdByUsername = "A.BEANS",
+                ),
+                internalLocation = InternalLocation(321, "A-1-1", "MDI-A-1-1"),
+                eventStatus = CodeDescription(code = "SCH", description = "Scheduled"),
+                createdByUsername = "A.BEANS",
+                createdDateTime = "2020-12-31T10:00:00",
+              ),
+            ),
+          )
+          val dpsAdjudication = nomisAdjudication.toAdjudication()
+          assertThat(dpsAdjudication.punishments).hasSize(1)
+          assertThat(dpsAdjudication.punishments[0].days).isEqualTo(calculatedDays)
+        }
       }
+    }
+  }
+
+  companion object {
+    @JvmStatic
+    fun getAwardDayMonthData(): Stream<Arguments> {
+      // days, months, effect date and expected days
+      return Stream.of(
+        Arguments.of(null, null, "2020-01-01", null),
+        Arguments.of(1, null, "2020-01-01", 1),
+        Arguments.of(null, 1, "2020-01-01", 31),
+        Arguments.of(null, 1, "2020-02-01", 29), // leap year
+        Arguments.of(null, 1, "2021-02-01", 28),
+        Arguments.of(10, 1, "2020-02-01", 39),
+        Arguments.of(null, 6, "2020-01-01", 182),
+        Arguments.of(null, 24, "2020-01-01", 731),
+        Arguments.of(null, 24, "2021-01-01", 730),
+      )
     }
   }
 }
