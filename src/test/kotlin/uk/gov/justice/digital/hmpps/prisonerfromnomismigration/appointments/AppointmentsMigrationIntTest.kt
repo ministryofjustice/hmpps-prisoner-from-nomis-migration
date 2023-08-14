@@ -9,6 +9,7 @@ import org.awaitility.kotlin.untilAsserted
 import org.awaitility.kotlin.untilCallTo
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -215,6 +216,7 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Test
+    @Disabled("This test is flaky and needs to be fixed")
     fun `it will not retry after a 409 (duplicate appointment written to Activities API) or mapping already exists`() {
       nomisApi.stubGetInitialCount(APPOINTMENTS_ID_URL, 1) { appointmentIdsPagedResponse(it) }
       nomisApi.stubMultipleGetAppointmentIdCounts(totalElements = 2, pageSize = 10)

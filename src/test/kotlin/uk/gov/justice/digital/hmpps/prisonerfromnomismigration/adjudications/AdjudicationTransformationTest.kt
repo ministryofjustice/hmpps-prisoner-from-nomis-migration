@@ -17,6 +17,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.A
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Evidence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Hearing
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.HearingResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.HearingResultAward
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.InternalLocation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Investigation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Prisoner
@@ -654,7 +656,7 @@ class AdjudicationTransformationTest {
       assertThat(dpsAdjudication.hearings).containsExactly(
         MigrateHearing(
           oicHearingId = 54321,
-          oicHearingType = GOV, // TODO - we always havce a NOMIS type so default to this until we have a decision
+          oicHearingType = GOV, // TODO - we always have a NOMIS type so default to this until we have a decision
           hearingDateTime = "2021-01-01T12:00:00",
           adjudicator = null,
           commentText = null,
@@ -662,6 +664,160 @@ class AdjudicationTransformationTest {
           hearingResult = null,
         ),
       )
+    }
+
+    @Nested
+    inner class HearingResults {
+      @Test
+      fun `will copy result for this charge ignoring others`() {
+        val charge1 = nomisAdjudicationCharge().charge.copy(chargeSequence = 1)
+        val charge2 = nomisAdjudicationCharge().charge.copy(chargeSequence = 2)
+        val nomisAdjudication = nomisAdjudicationCharge(
+          chargeSequence = charge2.chargeSequence,
+          hearings = listOf(
+            Hearing(
+              hearingId = 54321,
+              hearingDate = LocalDate.parse("2021-01-01"),
+              hearingTime = "12:00:00",
+              type = CodeDescription(code = "GOV_ADULT", description = "Governor's Hearing Adult"),
+              hearingResults = listOf(
+                HearingResult(
+                  charge = charge1,
+                  offence = charge1.offence,
+                  resultAwards = emptyList(),
+                  pleaFindingType = CodeDescription(code = "NOT_GUILTY", description = "Not Guilty"),
+                  findingType = CodeDescription(code = "Q", description = "Quashed"),
+                ), // TODO NOMIS API should filter these out
+                HearingResult(
+                  charge = charge2,
+                  offence = charge2.offence,
+                  resultAwards = emptyList(),
+                  pleaFindingType = CodeDescription(code = "GUILTY", description = "Guilty"),
+                  findingType = CodeDescription(code = "S", description = "Suspended"),
+                ),
+              ),
+              hearingStaff = Staff(
+                username = "A.JUDGE",
+                staffId = 123,
+                firstName = "A",
+                lastName = "JUDGE",
+              ),
+              internalLocation = InternalLocation(321, "A-1-1", "MDI-A-1-1"),
+              eventStatus = CodeDescription(code = "SCH", description = "Scheduled"),
+            ),
+          ),
+        )
+        val dpsAdjudication = nomisAdjudication.toAdjudication()
+        assertThat(dpsAdjudication.hearings).hasSize(1)
+        assertThat(dpsAdjudication.hearings[0].hearingResult).isNotNull
+        assertThat(dpsAdjudication.hearings[0].hearingResult?.finding).isEqualTo("S")
+        assertThat(dpsAdjudication.hearings[0].hearingResult?.plea).isEqualTo("GUILTY")
+        assertThat(dpsAdjudication.hearings[0].hearingResult?.createdBy).isNotNull() // TODO
+        assertThat(dpsAdjudication.hearings[0].hearingResult?.createdDateTime).isNotNull() // TODO
+      }
+
+      @Test
+      fun `result can be null when not present`() {
+        val charge1 = nomisAdjudicationCharge().charge.copy(chargeSequence = 1)
+        val charge2 = nomisAdjudicationCharge().charge.copy(chargeSequence = 2)
+        val nomisAdjudication = nomisAdjudicationCharge(
+          chargeSequence = charge2.chargeSequence,
+          hearings = listOf(
+            Hearing(
+              hearingId = 54321,
+              hearingDate = LocalDate.parse("2021-01-01"),
+              hearingTime = "12:00:00",
+              type = CodeDescription(code = "GOV_ADULT", description = "Governor's Hearing Adult"),
+              hearingResults = listOf(
+                HearingResult(
+                  charge = charge1,
+                  offence = charge1.offence,
+                  resultAwards = emptyList(),
+                  pleaFindingType = CodeDescription(code = "NOT_GUILTY", description = "Not Guilty"),
+                  findingType = CodeDescription(code = "Q", description = "Quashed"),
+                ), // TODO NOMIS API should filter these out
+              ),
+              hearingStaff = Staff(
+                username = "A.JUDGE",
+                staffId = 123,
+                firstName = "A",
+                lastName = "JUDGE",
+              ),
+              internalLocation = InternalLocation(321, "A-1-1", "MDI-A-1-1"),
+              eventStatus = CodeDescription(code = "SCH", description = "Scheduled"),
+            ),
+          ),
+        )
+        val dpsAdjudication = nomisAdjudication.toAdjudication()
+        assertThat(dpsAdjudication.hearings).hasSize(1)
+        assertThat(dpsAdjudication.hearings[0].hearingResult).isNull()
+      }
+
+      @Nested
+      inner class Punishments {
+        @Test
+        fun `will copy award for the charge punishment`() {
+          val charge1 = nomisAdjudicationCharge().charge.copy(chargeSequence = 1)
+          val charge2 = nomisAdjudicationCharge().charge.copy(chargeSequence = 2)
+          val nomisAdjudication = nomisAdjudicationCharge(
+            chargeSequence = charge2.chargeSequence,
+            hearings = listOf(
+              Hearing(
+                hearingId = 54321,
+                hearingDate = LocalDate.parse("2021-01-01"),
+                hearingTime = "12:00:00",
+                type = CodeDescription(code = "GOV_ADULT", description = "Governor's Hearing Adult"),
+                hearingResults = listOf(
+                  HearingResult(
+                    charge = charge1,
+                    offence = charge1.offence,
+                    resultAwards = emptyList(),
+                    pleaFindingType = CodeDescription(code = "NOT_GUILTY", description = "Not Guilty"),
+                    findingType = CodeDescription(code = "Q", description = "Quashed"),
+                  ), // TODO NOMIS API should filter these out
+                  HearingResult(
+                    charge = charge2,
+                    offence = charge2.offence,
+                    resultAwards = listOf(
+                      HearingResultAward(
+                        effectiveDate = LocalDate.parse("2021-01-01"),
+                        sanctionType = CodeDescription(code = "CC", description = "Cellular Confinement"),
+                        sanctionStatus = CodeDescription(code = "IMMEDIATE", description = "Immediate"),
+                        comment = "Remain in cell",
+                        statusDate = LocalDate.parse("2021-01-02"),
+                        sanctionDays = 2,
+                        sanctionMonths = null,
+                        compensationAmount = null,
+                        consecutiveAward = null,
+                      ),
+                    ),
+                    pleaFindingType = CodeDescription(code = "GUILTY", description = "Guilty"),
+                    findingType = CodeDescription(code = "S", description = "Suspended"),
+                  ),
+                ),
+                hearingStaff = Staff(
+                  username = "A.JUDGE",
+                  staffId = 123,
+                  firstName = "A",
+                  lastName = "JUDGE",
+                ),
+                internalLocation = InternalLocation(321, "A-1-1", "MDI-A-1-1"),
+                eventStatus = CodeDescription(code = "SCH", description = "Scheduled"),
+              ),
+            ),
+          )
+          val dpsAdjudication = nomisAdjudication.toAdjudication()
+          assertThat(dpsAdjudication.punishments).hasSize(1)
+          assertThat(dpsAdjudication.punishments[0].comment).isEqualTo("Remain in cell")
+          assertThat(dpsAdjudication.punishments[0].compensationAmount).isNull()
+          assertThat(dpsAdjudication.punishments[0].days).isEqualTo(2)
+          assertThat(dpsAdjudication.punishments[0].effectiveDate).isEqualTo("2021-01-01")
+          assertThat(dpsAdjudication.punishments[0].consecutiveChargeNumber).isNull()
+          assertThat(dpsAdjudication.punishments[0].sanctionCode).isEqualTo("CC")
+          assertThat(dpsAdjudication.punishments[0].sanctionSeq).isEqualTo(1) // TODO - can we get this from NOMIS
+          assertThat(dpsAdjudication.punishments[0].sanctionStatus).isEqualTo("IMMEDIATE")
+        }
+      }
     }
   }
 }
