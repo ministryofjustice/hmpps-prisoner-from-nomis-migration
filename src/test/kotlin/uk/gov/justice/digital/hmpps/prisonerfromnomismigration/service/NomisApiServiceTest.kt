@@ -16,10 +16,14 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
-import org.springframework.web.reactive.function.client.WebClientResponseException
+import org.springframework.web.reactive.function.client.WebClientResponseException.NotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveActivityIdsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveAllocationIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
+import java.math.BigDecimal
 import java.net.HttpURLConnection
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 @SpringAPIServiceTest
@@ -372,7 +376,488 @@ internal class NomisApiServiceTest {
               nomisVisitId = 10309617,
             )
           }
-        }.isInstanceOf(WebClientResponseException.NotFound::class.java)
+        }.isInstanceOf(NotFound::class.java)
+      }
+    }
+  }
+
+  @Nested
+  inner class GetActivities {
+    @BeforeEach
+    internal fun setUp() {
+      nomisApi.stubFor(
+        get(
+          urlPathEqualTo("/activities/ids"),
+        ).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpURLConnection.HTTP_OK)
+            .withBody(activitiesPagedResponse()),
+        ),
+      )
+    }
+
+    @Test
+    internal fun `will supply authentication token`() {
+      runBlocking {
+        nomisService.getActivityIds(
+          prisonId = "BXI",
+          excludeProgramCodes = listOf("PROGRAM1", "PROGRAM2"),
+          pageNumber = 0,
+          pageSize = 3,
+        )
+      }
+      nomisApi.verify(
+        getRequestedFor(
+          urlPathEqualTo("/activities/ids"),
+        )
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass all filters when present`() {
+      runBlocking {
+        nomisService.getActivityIds(
+          prisonId = "BXI",
+          excludeProgramCodes = listOf("PROGRAM1", "PROGRAM2"),
+          pageNumber = 0,
+          pageSize = 3,
+        )
+      }
+      nomisApi.verify(
+        getRequestedFor(
+          urlEqualTo("/activities/ids?prisonId=BXI&excludeProgramCode=PROGRAM1&excludeProgramCode=PROGRAM2&page=0&size=3"),
+        ),
+      )
+    }
+
+    @Test
+    internal fun `will return paging info along with the activity ids`() {
+      nomisApi.stubFor(
+        get(
+          urlPathEqualTo("/activities/ids"),
+        ).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpURLConnection.HTTP_OK)
+            .withBody(activitiesPagedResponse()),
+        ),
+      )
+
+      val activities = runBlocking {
+        nomisService.getActivityIds(
+          prisonId = "BXI",
+          excludeProgramCodes = listOf("PROGRAM1", "PROGRAM2"),
+          pageNumber = 0,
+          pageSize = 3,
+        )
+      }
+
+      assertThat(activities.content).hasSize(3)
+      assertThat(activities.content).extracting<Long>(FindActiveActivityIdsResponse::courseActivityId).containsExactly(1, 2, 3)
+      assertThat(activities.totalPages).isEqualTo(2)
+      assertThat(activities.pageable.pageNumber).isEqualTo(0)
+      assertThat(activities.totalElements).isEqualTo(4)
+    }
+
+    private fun activitiesPagedResponse() = """
+{
+    "content": [
+      {
+        "courseActivityId": 1
+      },
+      {
+        "courseActivityId": 2
+      },
+      {
+        "courseActivityId": 3
+      }
+    ],
+    "pageable": {
+        "sort": {
+            "empty": false,
+            "sorted": true,
+            "unsorted": false
+        },
+        "offset": 0,
+        "pageSize": 3,
+        "pageNumber": 1,
+        "paged": true,
+        "unpaged": false
+    },
+    "last": false,
+    "totalPages": 2,
+    "totalElements": 4,
+    "size": 3,
+    "number": 0,
+    "sort": {
+        "empty": false,
+        "sorted": true,
+        "unsorted": false
+    },
+    "first": true,
+    "numberOfElements": 3,
+    "empty": false
+}                
+      
+    """.trimIndent()
+  }
+
+  @Nested
+  inner class GetActivity {
+    @BeforeEach
+    internal fun setUp() {
+      nomisApi.stubFor(
+        get(
+          urlPathMatching("/activities/[0-9]+"),
+        ).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpURLConnection.HTTP_OK)
+            .withBody(
+              """
+                {
+                  "courseActivityId": 3333,
+                  "programCode": "INDUCTION",
+                  "prisonId": "BXI",
+                  "startDate": "${LocalDate.now().minusDays(1)}",
+                  "endDate": "${LocalDate.now().plusDays(1)}",
+                  "internalLocationId": 1234,
+                  "internalLocationCode": "KITCH",
+                  "internalLocationDescription": "BXI-WORK_IND-KITCH",
+                  "capacity": 10,
+                  "description": "Kitchen work",
+                  "minimumIncentiveLevel": "BAS",
+                  "excludeBankHolidays": true,
+                  "payPerSession": "H",
+                  "scheduleRules": [
+                    {
+                      "startTime": "09:00",
+                      "endTime": "11:30",
+                      "monday": true,
+                      "tuesday": true,
+                      "wednesday": true,
+                      "thursday": true,
+                      "friday": true,
+                      "saturday": true,
+                      "sunday": true
+                    },
+                    {
+                      "startTime": "13:00",
+                      "endTime": "16:30",
+                      "monday": true,
+                      "tuesday": true,
+                      "wednesday": true,
+                      "thursday": true,
+                      "friday": true,
+                      "saturday": true,
+                      "sunday": true
+                    }
+                  ],
+                  "payRates": [
+                    {
+                      "incentiveLevelCode": "BAS",
+                      "payBand": "1",
+                      "rate": 3.2
+                    },    
+                    {
+                      "incentiveLevelCode": "BAS",
+                      "payBand": "2",
+                      "rate": 3.6
+                    }
+                  ]
+                }
+              """.trimIndent(),
+            ),
+        ),
+      )
+    }
+
+    @Test
+    internal fun `should supply authentication token`(): Unit = runBlocking {
+      nomisService.getActivity(courseActivityId = 3333)
+
+      nomisApi.verify(
+        getRequestedFor(
+          urlPathEqualTo("/activities/3333"),
+        )
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `should return activities data`(): Unit = runBlocking {
+      val activity = nomisService.getActivity(courseActivityId = 3333)
+
+      assertThat(activity.courseActivityId).isEqualTo(3333)
+      assertThat(activity.programCode).isEqualTo("INDUCTION")
+      assertThat(activity.prisonId).isEqualTo("BXI")
+      assertThat(activity.startDate).isEqualTo(LocalDate.now().minusDays(1))
+      assertThat(activity.endDate).isEqualTo(LocalDate.now().plusDays(1))
+      assertThat(activity.internalLocationId).isEqualTo(1234)
+      assertThat(activity.internalLocationCode).isEqualTo("KITCH")
+      assertThat(activity.internalLocationDescription).isEqualTo("BXI-WORK_IND-KITCH")
+      assertThat(activity.capacity).isEqualTo(10)
+      assertThat(activity.description).isEqualTo("Kitchen work")
+      assertThat(activity.minimumIncentiveLevel).isEqualTo("BAS")
+      assertThat(activity.excludeBankHolidays).isEqualTo(true)
+      assertThat(activity.payPerSession).isEqualTo("H")
+      assertThat(activity.scheduleRules[0].startTime).isEqualTo("09:00")
+      assertThat(activity.scheduleRules[0].endTime).isEqualTo("11:30")
+      assertThat(activity.scheduleRules[0].monday).isEqualTo(true)
+      assertThat(activity.scheduleRules[0].tuesday).isEqualTo(true)
+      assertThat(activity.scheduleRules[0].wednesday).isEqualTo(true)
+      assertThat(activity.scheduleRules[0].thursday).isEqualTo(true)
+      assertThat(activity.scheduleRules[0].friday).isEqualTo(true)
+      assertThat(activity.scheduleRules[0].saturday).isEqualTo(true)
+      assertThat(activity.scheduleRules[1].startTime).isEqualTo("13:00")
+      assertThat(activity.scheduleRules[1].endTime).isEqualTo("16:30")
+      assertThat(activity.scheduleRules[1].monday).isEqualTo(true)
+      assertThat(activity.scheduleRules[1].tuesday).isEqualTo(true)
+      assertThat(activity.scheduleRules[1].wednesday).isEqualTo(true)
+      assertThat(activity.scheduleRules[1].thursday).isEqualTo(true)
+      assertThat(activity.scheduleRules[1].friday).isEqualTo(true)
+      assertThat(activity.scheduleRules[1].saturday).isEqualTo(true)
+      assertThat(activity.scheduleRules[1].sunday).isEqualTo(true)
+      assertThat(activity.payRates[0].incentiveLevelCode).isEqualTo("BAS")
+      assertThat(activity.payRates[0].payBand).isEqualTo("1")
+      assertThat(activity.payRates[0].rate).isEqualTo(BigDecimal.valueOf(3.2))
+      assertThat(activity.payRates[1].incentiveLevelCode).isEqualTo("BAS")
+      assertThat(activity.payRates[1].payBand).isEqualTo("2")
+      assertThat(activity.payRates[1].rate).isEqualTo(BigDecimal.valueOf(3.6))
+    }
+
+    @Nested
+    @DisplayName("should return not found")
+    inner class WhenNotFound {
+      @BeforeEach
+      internal fun setUp() {
+        nomisApi.stubFor(
+          get(
+            urlPathMatching("/activities/[0-9]+"),
+          ).willReturn(
+            aResponse()
+              .withHeader("Content-Type", "application/json")
+              .withStatus(HttpURLConnection.HTTP_NOT_FOUND),
+          ),
+        )
+      }
+
+      @Test
+      internal fun `will throw an exception`() {
+        assertThatThrownBy {
+          runBlocking {
+            nomisService.getActivity(courseActivityId = 3333)
+          }
+        }.isInstanceOf(NotFound::class.java)
+      }
+    }
+  }
+
+  @Nested
+  inner class GetAllocations {
+    @BeforeEach
+    internal fun setUp() {
+      nomisApi.stubFor(
+        get(
+          urlPathEqualTo("/allocations/ids"),
+        ).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpURLConnection.HTTP_OK)
+            .withBody(allocationsPagedResponse()),
+        ),
+      )
+    }
+
+    @Test
+    internal fun `will supply authentication token`() {
+      runBlocking {
+        nomisService.getAllocationIds(
+          prisonId = "BXI",
+          excludeProgramCodes = listOf("PROGRAM1", "PROGRAM2"),
+          pageNumber = 0,
+          pageSize = 3,
+        )
+      }
+      nomisApi.verify(
+        getRequestedFor(
+          urlPathEqualTo("/allocations/ids"),
+        )
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass all filters when present`() {
+      runBlocking {
+        nomisService.getAllocationIds(
+          prisonId = "BXI",
+          excludeProgramCodes = listOf("PROGRAM1", "PROGRAM2"),
+          pageNumber = 0,
+          pageSize = 3,
+        )
+      }
+      nomisApi.verify(
+        getRequestedFor(
+          urlEqualTo("/allocations/ids?prisonId=BXI&excludeProgramCode=PROGRAM1&excludeProgramCode=PROGRAM2&page=0&size=3"),
+        ),
+      )
+    }
+
+    @Test
+    internal fun `will return paging info along with the activity ids`() {
+      nomisApi.stubFor(
+        get(
+          urlPathEqualTo("/allocations/ids"),
+        ).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpURLConnection.HTTP_OK)
+            .withBody(allocationsPagedResponse()),
+        ),
+      )
+
+      val allocations = runBlocking {
+        nomisService.getAllocationIds(
+          prisonId = "BXI",
+          excludeProgramCodes = listOf("PROGRAM1", "PROGRAM2"),
+          pageNumber = 0,
+          pageSize = 3,
+        )
+      }
+
+      assertThat(allocations.content).hasSize(3)
+      assertThat(allocations.content).extracting<Long>(FindActiveAllocationIdsResponse::allocationId).containsExactly(1, 2, 3)
+      assertThat(allocations.totalPages).isEqualTo(2)
+      assertThat(allocations.pageable.pageNumber).isEqualTo(0)
+      assertThat(allocations.totalElements).isEqualTo(4)
+    }
+
+    private fun allocationsPagedResponse() = """
+{
+    "content": [
+      {
+        "allocationId": 1
+      },
+      {
+        "allocationId": 2
+      },
+      {
+        "allocationId": 3
+      }
+    ],
+    "pageable": {
+        "sort": {
+            "empty": false,
+            "sorted": true,
+            "unsorted": false
+        },
+        "offset": 0,
+        "pageSize": 3,
+        "pageNumber": 1,
+        "paged": true,
+        "unpaged": false
+    },
+    "last": false,
+    "totalPages": 2,
+    "totalElements": 4,
+    "size": 3,
+    "number": 0,
+    "sort": {
+        "empty": false,
+        "sorted": true,
+        "unsorted": false
+    },
+    "first": true,
+    "numberOfElements": 3,
+    "empty": false
+}                
+      
+    """.trimIndent()
+  }
+
+  @Nested
+  inner class GetAllocation {
+    @BeforeEach
+    internal fun setUp() {
+      nomisApi.stubFor(
+        get(
+          urlPathMatching("/allocations/[0-9]+"),
+        ).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpURLConnection.HTTP_OK)
+            .withBody(
+              """
+                {
+                  "nomisId": "A1234BC",
+                  "bookingId": 12345,
+                  "startDate": "2023-03-12",
+                  "endDate": "2023-05-26",
+                  "endComment": "Removed due to schedule clash",
+                  "endReasonCode": "WDRAWN",
+                  "suspended": false,
+                  "payBand": "1",
+                  "livingUnitDescription": "RSI-A-1-001"
+                }
+              """.trimIndent(),
+            ),
+        ),
+      )
+    }
+
+    @Test
+    internal fun `should supply authentication token`(): Unit = runBlocking {
+      nomisService.getAllocation(allocationId = 3333)
+
+      nomisApi.verify(
+        getRequestedFor(
+          urlPathEqualTo("/allocations/3333"),
+        )
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `should return allocation data`(): Unit = runBlocking {
+      val allocation = nomisService.getAllocation(allocationId = 3333)
+
+      assertThat(allocation.nomisId).isEqualTo("A1234BC")
+      assertThat(allocation.bookingId).isEqualTo(12345)
+      assertThat(allocation.startDate).isEqualTo("2023-03-12")
+      assertThat(allocation.endDate).isEqualTo("2023-05-26")
+      assertThat(allocation.endComment).isEqualTo("Removed due to schedule clash")
+      assertThat(allocation.endReasonCode).isEqualTo("WDRAWN")
+      assertThat(allocation.suspended).isEqualTo(false)
+      assertThat(allocation.payBand).isEqualTo("1")
+      assertThat(allocation.livingUnitDescription).isEqualTo("RSI-A-1-001")
+    }
+
+    @Nested
+    @DisplayName("should return not found")
+    inner class WhenNotFound {
+      @BeforeEach
+      internal fun setUp() {
+        nomisApi.stubFor(
+          get(
+            urlPathMatching("/allocations/[0-9]+"),
+          ).willReturn(
+            aResponse()
+              .withHeader("Content-Type", "application/json")
+              .withStatus(HttpURLConnection.HTTP_NOT_FOUND),
+          ),
+        )
+      }
+
+      @Test
+      internal fun `will throw an exception`() {
+        assertThatThrownBy {
+          runBlocking {
+            nomisService.getAllocation(allocationId = 3333)
+          }
+        }.isInstanceOf(NotFound::class.java)
       }
     }
   }

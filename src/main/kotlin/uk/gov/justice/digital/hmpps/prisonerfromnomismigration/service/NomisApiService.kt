@@ -9,11 +9,16 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
+import org.springframework.util.LinkedMultiValueMap
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveActivityIdsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveAllocationIdsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetActivityResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetAllocationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomUsageResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationFilter
@@ -169,6 +174,58 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       )
       .retrieve()
       .awaitBody()
+
+  suspend fun getActivity(courseActivityId: Long): GetActivityResponse =
+    webClient.get()
+      .uri("/activities/{courseActivityId}", courseActivityId)
+      .retrieve()
+      .bodyToMono(GetActivityResponse::class.java)
+      .awaitSingle()
+
+  suspend fun getActivityIds(
+    prisonId: String,
+    excludeProgramCodes: List<String>,
+    pageNumber: Long,
+    pageSize: Long,
+  ): PageImpl<FindActiveActivityIdsResponse> =
+    webClient.get()
+      .uri {
+        it.path("/activities/ids")
+          .queryParam("prisonId", prisonId)
+          .queryParams(LinkedMultiValueMap<String, String>().apply { addAll("excludeProgramCode", excludeProgramCodes) })
+          .queryParam("page", pageNumber)
+          .queryParam("size", pageSize)
+          .build()
+      }
+      .retrieve()
+      .bodyToMono(typeReference<RestResponsePage<FindActiveActivityIdsResponse>>())
+      .awaitSingle()
+
+  suspend fun getAllocation(allocationId: Long): GetAllocationResponse =
+    webClient.get()
+      .uri("/allocations/{allocationId}", allocationId)
+      .retrieve()
+      .bodyToMono(GetAllocationResponse::class.java)
+      .awaitSingle()
+
+  suspend fun getAllocationIds(
+    prisonId: String,
+    excludeProgramCodes: List<String>,
+    pageNumber: Long,
+    pageSize: Long,
+  ): PageImpl<FindActiveAllocationIdsResponse> =
+    webClient.get()
+      .uri {
+        it.path("/allocations/ids")
+          .queryParam("prisonId", prisonId)
+          .queryParams(LinkedMultiValueMap<String, String>().apply { addAll("excludeProgramCode", excludeProgramCodes) })
+          .queryParam("page", pageNumber)
+          .queryParam("size", pageSize)
+          .build()
+      }
+      .retrieve()
+      .bodyToMono(typeReference<RestResponsePage<FindActiveAllocationIdsResponse>>())
+      .awaitSingle()
 }
 
 data class VisitId(
