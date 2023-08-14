@@ -58,6 +58,8 @@ generic-service:
       ACTIVITIES_CLIENT_SECRET: "ACTIVITIES_CLIENT_SECRET"
       ADJUDICATIONS_CLIENT_ID: "ADJUDICATIONS_CLIENT_ID"
       ADJUDICATIONS_CLIENT_SECRET: "ADJUDICATIONS_CLIENT_SECRET"
+      NON_ASSOCIATIONS_CLIENT_ID: "NON_ASSOCIATIONS_CLIENT_ID"
+      NON_ASSOCIATIONS_CLIENT_SECRET: "NON_ASSOCIATIONS_CLIENT_SECRET"
     sqs-migration-visits-queue:
       HMPPS_SQS_QUEUES_MIGRATIONVISITS_QUEUE_NAME: "sqs_name"
     sqs-migration-visits-dlq:
@@ -82,7 +84,6 @@ generic-service:
       HMPPS_SQS_QUEUES_EVENTSENTENCING_QUEUE_NAME: "sqs_name"
     prisoner-from-nomis-sentencing-dl-queue:
       HMPPS_SQS_QUEUES_EVENTSENTENCING_DLQ_NAME: "sqs_name"
-
     rds-database:
       SPRING_FLYWAY_USER: "database_username"
       SPRING_FLYWAY_PASSWORD: "database_password"
