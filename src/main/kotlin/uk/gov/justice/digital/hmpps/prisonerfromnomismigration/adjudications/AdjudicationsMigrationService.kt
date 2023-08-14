@@ -24,8 +24,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateHearing.OicHearingType.GOV_YOI
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateHearing.OicHearingType.INAD_ADULT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateHearing.OicHearingType.INAD_YOI
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateHearingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateOffence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigratePrisoner
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigratePunishment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateWitness
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateWitness.WitnessType.OTHER_PERSON
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateWitness.WitnessType.PRISONER
@@ -39,6 +41,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.A
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Evidence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Hearing
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.HearingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Repair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
@@ -46,6 +49,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
@@ -127,11 +131,30 @@ fun AdjudicationChargeResponse.toAdjudication(): AdjudicationMigrateDto =
     },
     damages = this.incident.repairs.map { it.toDamage() },
     evidence = this.investigations.flatMap { investigation -> investigation.evidence.map { it.toEvidence() } },
-    punishments = emptyList(),
-    hearings = this.hearings.map { it.toHearing() },
+    punishments = this.hearings.flatMap { it.toHearingResultAwards(this.charge.chargeSequence) },
+    hearings = this.hearings.map { it.toHearing(this.charge.chargeSequence) },
   )
 
-private fun Hearing.toHearing() = MigrateHearing(
+private fun Hearing.toHearingResultAwards(chargeSequence: Int): List<MigratePunishment> =
+  this.hearingResults.filter { it.charge.chargeSequence == chargeSequence } // TODO  NOMIS API could filter these out
+    .flatMap { hearingResult ->
+      hearingResult.resultAwards.map {
+        MigratePunishment(
+          sanctionCode = it.sanctionType?.code
+            ?: throw IllegalArgumentException("Result award must have a sanctionType"),
+          sanctionStatus = it.sanctionStatus?.code
+            ?: throw IllegalArgumentException("Result award must have a sanctionStatus"),
+          effectiveDate = it.effectiveDate,
+          sanctionSeq = 1, // TODO - need this in NOMIS API
+          comment = it.comment,
+          compensationAmount = null, // TODO - how to created this in NOMIS API
+          days = it.sanctionDays, // TODO - calculate using months
+          consecutiveChargeNumber = null, // TODO - need sequence in awards
+        )
+      }
+    }
+
+private fun Hearing.toHearing(chargeSequence: Int) = MigrateHearing(
   oicHearingId = this.hearingId,
   oicHearingType = when (this.type?.code) {
     "GOV" -> GOV
@@ -147,8 +170,21 @@ private fun Hearing.toHearing() = MigrateHearing(
   locationId = this.internalLocation?.locationId ?: throw IllegalArgumentException("Hearing must have a location"),
   adjudicator = this.hearingStaff?.username,
   commentText = this.comment,
-  hearingResult = null,
+  hearingResult = this.hearingResults.toHearingResult(chargeSequence),
 )
+
+private fun List<HearingResult>.toHearingResult(chargeSequence: Int): MigrateHearingResult? =
+  this.find { it.charge.chargeSequence == chargeSequence }?.let { // TODO - better if NOMIS API filtered these out
+    MigrateHearingResult(
+      plea = it.pleaFindingType?.code
+        ?: throw IllegalArgumentException("Hearing result must have a plea"), // Never null in NOMIS though schema allows it
+      finding = it.findingType?.code
+        ?: throw IllegalArgumentException("Hearing result must have a finding"), // Never null in NOMIS though schema allows it
+      createdDateTime = LocalDateTime.now()
+        .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME), // TODO - need these in NOMIS API
+      createdBy = "A.TODO", // TODO - need these in NOMIS API
+    )
+  }
 
 private fun Evidence.toEvidence() = MigrateEvidence(
   evidenceCode = when (this.type.code) {
