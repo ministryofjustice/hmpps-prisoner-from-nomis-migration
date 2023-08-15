@@ -36,7 +36,7 @@ enum class MigrationType(val queueId: String, val telemetryName: String) {
   SENTENCING_ADJUSTMENTS(SENTENCING_ADJUSTMENTS_QUEUE_ID, "sentencing-adjustments"),
   APPOINTMENTS(APPOINTMENTS_QUEUE_ID, "appointments"),
   ADJUDICATIONS(ADJUDICATIONS_QUEUE_ID, "adjudications"),
-  ACTIVITIES(ACTIVITIES_QUEUE_ID, "activities"),
+  ACTIVITIES(ACTIVITIES_QUEUE_ID, "activity"),
 }
 
 enum class SynchronisationType(val queueId: String) {

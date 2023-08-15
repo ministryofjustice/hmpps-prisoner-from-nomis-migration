@@ -19,7 +19,9 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -41,9 +43,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditServ
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatusCheck
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationFilter
 import java.math.BigDecimal
 import java.time.LocalDate
 
@@ -69,7 +71,7 @@ class ActivitiesMigrationServiceTest {
   )
 
   @Nested
-  inner class MigrateActivities {
+  inner class StartMigration {
     private val nomisApiService = mockk<NomisApiService>()
     private val auditService = mockk<AuditService>(relaxed = true)
     private val migrationHistoryService = mockk<MigrationHistoryService>(relaxed = true)
@@ -125,7 +127,7 @@ class ActivitiesMigrationServiceTest {
     }
 
     @Test
-    internal fun `will pass visit count and filter to queue`(): Unit = runBlocking {
+    internal fun `will pass activity count and filter to queue`(): Unit = runBlocking {
       coEvery { nomisApiService.getActivityIds(any(), any(), any(), any()) } returns
         pages(totalEntities = 7)
 
@@ -179,7 +181,7 @@ class ActivitiesMigrationServiceTest {
       }
 
       verify(telemetryClient).trackEvent(
-        eq("activities-migration-started"),
+        eq("activity-migration-started"),
         check {
           assertThat(it["migrationId"]).isNotNull
           assertThat(it["estimatedCount"]).isEqualTo("7")
@@ -191,7 +193,7 @@ class ActivitiesMigrationServiceTest {
   }
 
   @Nested
-  inner class DivideByPage {
+  inner class DivideEntitiesByPage {
 
     @BeforeEach
     internal fun setUp(): Unit = runBlocking {
@@ -293,7 +295,7 @@ class ActivitiesMigrationServiceTest {
   }
 
   @Nested
-  inner class MigrateForPage {
+  inner class MigrateEntitiesForPage {
     @BeforeEach
     internal fun setUp(): Unit = runBlocking {
       whenever(migrationHistoryService.isCancelling(any())).thenReturn(false)
@@ -343,7 +345,7 @@ class ActivitiesMigrationServiceTest {
 
       verify(queueService, times(7)).sendMessage(
         message = eq(MigrationMessageType.MIGRATE_ENTITY),
-        context = check<MigrationContext<VisitsMigrationFilter>> {
+        context = check<MigrationContext<ActivitiesMigrationFilter>> {
           assertThat(it.estimatedCount).isEqualTo(7)
           assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
         },
@@ -391,7 +393,7 @@ class ActivitiesMigrationServiceTest {
     }
 
     @Test
-    internal fun `will not send MIGRATE_VISIT when cancelling`(): Unit = runBlocking {
+    internal fun `will not send MIGRATE_ACTIVITIES when cancelling`(): Unit = runBlocking {
       whenever(migrationHistoryService.isCancelling(any())).thenReturn(true)
 
       whenever(nomisApiService.getActivityIds(any(), any(), any(), any())).thenReturn(
@@ -418,7 +420,7 @@ class ActivitiesMigrationServiceTest {
   }
 
   @Nested
-  inner class Migration {
+  inner class MigrateNomisEntity {
 
     private val today = LocalDate.now()
     private val yesterday = today.minusDays(1)
@@ -672,6 +674,320 @@ class ActivitiesMigrationServiceTest {
       )
 
       verifyNoInteractions(activitiesApiService)
+    }
+
+    @Test
+    fun `will publish telemetry when migration successful`() = runBlocking {
+      service.migrateNomisEntity(
+        MigrationContext(
+          type = MigrationType.ACTIVITIES,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 7,
+          body = FindActiveActivityIdsResponse(123),
+        ),
+      )
+
+      verify(telemetryClient).trackEvent(
+        eq("activity-migration-entity-migrated"),
+        check<Map<String, String>> {
+          assertThat(it).containsExactlyInAnyOrderEntriesOf(
+            mapOf(
+              "nomisCourseActivityId" to "123",
+              "activityScheduleId" to "456",
+              "activityScheduleId2" to "789",
+              "migrationId" to "2020-05-23T11:30:00",
+            ),
+          )
+        },
+        isNull(),
+      )
+    }
+  }
+
+  @Nested
+  inner class MigrateStatusCheck {
+    @Nested
+    inner class MessagesOnQueue {
+      @BeforeEach
+      internal fun setUp(): Unit = runBlocking {
+        whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed(any())).thenReturn(true)
+      }
+
+      @Test
+      internal fun `will check again in 10 seconds`(): Unit = runBlocking {
+        service.migrateStatusCheck(
+          MigrationContext(
+            type = MigrationType.ACTIVITIES,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 7,
+            body = MigrationStatusCheck(),
+          ),
+        )
+
+        verify(queueService).sendMessage(
+          eq(MigrationMessageType.MIGRATE_STATUS_CHECK),
+          any(),
+          eq(10),
+        )
+      }
+
+      @Test
+      internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit =
+        runBlocking {
+          service.migrateStatusCheck(
+            MigrationContext(
+              type = MigrationType.ACTIVITIES,
+              migrationId = "2020-05-23T11:30:00",
+              estimatedCount = 7,
+              body = MigrationStatusCheck(checkCount = 4),
+            ),
+          )
+
+          verify(queueService).sendMessage(
+            message = eq(MigrationMessageType.MIGRATE_STATUS_CHECK),
+            context = check<MigrationContext<MigrationStatusCheck>> {
+              assertThat(it.body.checkCount).isEqualTo(0)
+            },
+            delaySeconds = eq(10),
+          )
+        }
+    }
+
+    @Nested
+    inner class NoMessagesOnQueue {
+      @BeforeEach
+      internal fun setUp(): Unit = runBlocking {
+        whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed(any())).thenReturn(false)
+        whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(0)
+        whenever(mappingService.getMigrationCount(any())).thenReturn(0)
+      }
+
+      @Test
+      internal fun `will increment check count and try again a second when only checked 9 times`(): Unit = runBlocking {
+        service.migrateStatusCheck(
+          MigrationContext(
+            type = MigrationType.ACTIVITIES,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 7,
+            body = MigrationStatusCheck(checkCount = 9),
+          ),
+        )
+
+        verify(queueService).sendMessage(
+          message = eq(MigrationMessageType.MIGRATE_STATUS_CHECK),
+          context = check<MigrationContext<MigrationStatusCheck>> {
+            assertThat(it.body.checkCount).isEqualTo(10)
+          },
+          delaySeconds = eq(1),
+        )
+      }
+
+      @Test
+      internal fun `will finish off when checked 10 times previously`(): Unit = runBlocking {
+        service.migrateStatusCheck(
+          MigrationContext(
+            type = MigrationType.ACTIVITIES,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 7,
+            body = MigrationStatusCheck(checkCount = 10),
+          ),
+        )
+
+        verify(queueService, never()).sendMessage(
+          message = eq(MigrationMessageType.MIGRATE_STATUS_CHECK),
+          context = any(),
+          delaySeconds = any(),
+        )
+      }
+
+      @Test
+      internal fun `will add completed telemetry when finishing off`(): Unit = runBlocking {
+        service.migrateStatusCheck(
+          MigrationContext(
+            type = MigrationType.ACTIVITIES,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 7,
+            body = MigrationStatusCheck(checkCount = 10),
+          ),
+        )
+
+        verify(telemetryClient).trackEvent(
+          eq("activity-migration-completed"),
+          check {
+            assertThat(it["migrationId"]).isNotNull
+            assertThat(it["estimatedCount"]).isEqualTo("7")
+            assertThat(it["durationMinutes"]).isNotNull()
+          },
+          eq(null),
+        )
+      }
+
+      @Test
+      internal fun `will update migration history record when finishing off`(): Unit = runBlocking {
+        whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(2)
+        whenever(mappingService.getMigrationCount("2020-05-23T11:30:00")).thenReturn(5)
+
+        service.migrateStatusCheck(
+          MigrationContext(
+            type = MigrationType.ACTIVITIES,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 7,
+            body = MigrationStatusCheck(checkCount = 10),
+          ),
+        )
+
+        verify(migrationHistoryService).recordMigrationCompleted(
+          migrationId = eq("2020-05-23T11:30:00"),
+          recordsFailed = eq(2),
+          recordsMigrated = eq(5),
+        )
+      }
+    }
+  }
+
+  @Nested
+  inner class CancelMigrationStatusCheck {
+    @Nested
+    inner class MessagesOnQueue {
+      @BeforeEach
+      internal fun setUp(): Unit = runBlocking {
+        whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed(any())).thenReturn(true)
+      }
+
+      @Test
+      internal fun `will check again in 10 seconds`(): Unit = runBlocking {
+        service.cancelMigrateStatusCheck(
+          MigrationContext(
+            type = MigrationType.ACTIVITIES,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 7,
+            body = MigrationStatusCheck(),
+          ),
+        )
+
+        verify(queueService).purgeAllMessages(any())
+        verify(queueService).sendMessage(
+          eq(MigrationMessageType.CANCEL_MIGRATION),
+          any(),
+          eq(10),
+        )
+      }
+
+      @Test
+      internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit =
+        runBlocking {
+          service.cancelMigrateStatusCheck(
+            MigrationContext(
+              type = MigrationType.ACTIVITIES,
+              migrationId = "2020-05-23T11:30:00",
+              estimatedCount = 7,
+              body = MigrationStatusCheck(checkCount = 4),
+            ),
+          )
+
+          verify(queueService).purgeAllMessages(any())
+          verify(queueService).sendMessage(
+            message = eq(MigrationMessageType.CANCEL_MIGRATION),
+            context = check<MigrationContext<MigrationStatusCheck>> {
+              assertThat(it.body.checkCount).isEqualTo(0)
+            },
+            delaySeconds = eq(10),
+          )
+        }
+    }
+
+    @Nested
+    inner class NoMessagesOnQueue {
+      @BeforeEach
+      internal fun setUp(): Unit = runBlocking {
+        whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed(any())).thenReturn(false)
+        whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(0)
+        whenever(mappingService.getMigrationCount(any())).thenReturn(0)
+      }
+
+      @Test
+      internal fun `will increment check count and try again a second when only checked 9 times`(): Unit = runBlocking {
+        service.cancelMigrateStatusCheck(
+          MigrationContext(
+            type = MigrationType.ACTIVITIES,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 7,
+            body = MigrationStatusCheck(checkCount = 9),
+          ),
+        )
+
+        verify(queueService).purgeAllMessages(check { assertThat(it).isEqualTo(MigrationType.ACTIVITIES) })
+
+        verify(queueService).sendMessage(
+          message = eq(MigrationMessageType.CANCEL_MIGRATION),
+          context = check<MigrationContext<MigrationStatusCheck>> {
+            assertThat(it.body.checkCount).isEqualTo(10)
+          },
+          delaySeconds = eq(1),
+        )
+      }
+
+      @Test
+      internal fun `will finish off when checked 10 times previously`(): Unit = runBlocking {
+        service.cancelMigrateStatusCheck(
+          MigrationContext(
+            type = MigrationType.ACTIVITIES,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 7,
+            body = MigrationStatusCheck(checkCount = 10),
+          ),
+        )
+
+        verify(queueService, never()).purgeAllMessages(check { assertThat(it).isEqualTo(MigrationType.ACTIVITIES) })
+        verify(queueService, never()).sendMessage(
+          message = eq(MigrationMessageType.CANCEL_MIGRATION),
+          context = any(),
+          delaySeconds = any(),
+        )
+      }
+
+      @Test
+      internal fun `will add completed telemetry when finishing off`(): Unit = runBlocking {
+        service.cancelMigrateStatusCheck(
+          MigrationContext(
+            type = MigrationType.ACTIVITIES,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 7,
+            body = MigrationStatusCheck(checkCount = 10),
+          ),
+        )
+
+        verify(telemetryClient).trackEvent(
+          eq("activity-migration-cancelled"),
+          check {
+            assertThat(it["migrationId"]).isNotNull
+            assertThat(it["estimatedCount"]).isEqualTo("7")
+            assertThat(it["durationMinutes"]).isNotNull()
+          },
+          eq(null),
+        )
+      }
+
+      @Test
+      internal fun `will update migration history record when cancelling`(): Unit = runBlocking {
+        whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(2)
+        whenever(mappingService.getMigrationCount("2020-05-23T11:30:00")).thenReturn(5)
+
+        service.cancelMigrateStatusCheck(
+          MigrationContext(
+            type = MigrationType.ACTIVITIES,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 7,
+            body = MigrationStatusCheck(checkCount = 10),
+          ),
+        )
+
+        verify(migrationHistoryService).recordMigrationCancelled(
+          migrationId = eq("2020-05-23T11:30:00"),
+          recordsFailed = eq(2),
+          recordsMigrated = eq(5),
+        )
+      }
     }
   }
 }

@@ -103,7 +103,7 @@ class ActivitiesMigrationService(
 
   private suspend fun ActivityMigrationMappingDto.publishTelemetry() =
     telemetryClient.trackEvent(
-      "activities-migration-entity-migrated",
+      "activity-migration-entity-migrated",
       mapOf(
         "nomisCourseActivityId" to nomisCourseActivityId.toString(),
         "activityScheduleId" to activityScheduleId.toString(),
