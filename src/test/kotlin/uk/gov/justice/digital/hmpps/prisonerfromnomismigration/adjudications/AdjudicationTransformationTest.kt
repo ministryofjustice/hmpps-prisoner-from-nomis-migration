@@ -27,6 +27,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.I
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Prisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Repair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Staff
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalTime
 import java.util.stream.Stream
@@ -814,7 +815,7 @@ class AdjudicationTransformationTest {
                         statusDate = LocalDate.parse("2021-01-02"),
                         sanctionDays = 2,
                         sanctionMonths = null,
-                        compensationAmount = null,
+                        compensationAmount = BigDecimal.valueOf(23.67),
                         consecutiveAward = null,
                         sequence = 23,
                         chargeSequence = charge.chargeSequence,
@@ -843,7 +844,7 @@ class AdjudicationTransformationTest {
           val dpsAdjudication = nomisAdjudication.toAdjudication()
           assertThat(dpsAdjudication.punishments).hasSize(1)
           assertThat(dpsAdjudication.punishments[0].comment).isEqualTo("Remain in cell")
-          assertThat(dpsAdjudication.punishments[0].compensationAmount).isNull()
+          assertThat(dpsAdjudication.punishments[0].compensationAmount).isEqualTo(BigDecimal.valueOf(23.67))
           assertThat(dpsAdjudication.punishments[0].days).isEqualTo(2)
           assertThat(dpsAdjudication.punishments[0].effectiveDate).isEqualTo("2021-01-01")
           assertThat(dpsAdjudication.punishments[0].consecutiveChargeNumber).isNull()

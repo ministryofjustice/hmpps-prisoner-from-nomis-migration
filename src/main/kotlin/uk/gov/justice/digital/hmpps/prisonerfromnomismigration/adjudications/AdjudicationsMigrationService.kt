@@ -149,7 +149,7 @@ private fun Hearing.toHearingResultAwards(adjudicationNumber: Long): List<Migrat
           effectiveDate = it.effectiveDate,
           sanctionSeq = it.sequence.toLong(),
           comment = it.comment,
-          compensationAmount = null, // TODO - how to created this in NOMIS API
+          compensationAmount = it.compensationAmount,
           days = it.sanctionDays + it.sanctionMonths.asDays(it.effectiveDate),
           consecutiveChargeNumber = it.consecutiveAward.toConsecutiveChargeNumber(adjudicationNumber),
         )
