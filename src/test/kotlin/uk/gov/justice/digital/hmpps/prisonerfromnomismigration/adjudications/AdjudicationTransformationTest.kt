@@ -334,14 +334,14 @@ class AdjudicationTransformationTest {
       val dpsAdjudication = nomisAdjudication.toAdjudication()
 
       assertThat(dpsAdjudication.evidence).hasSize(8)
-      assertThat(dpsAdjudication.evidence[0].evidenceCode).isEqualTo(MigrateEvidence.EvidenceCode.CCTV) // TODO
-      assertThat(dpsAdjudication.evidence[1].evidenceCode).isEqualTo(MigrateEvidence.EvidenceCode.CCTV) // TODO
-      assertThat(dpsAdjudication.evidence[2].evidenceCode).isEqualTo(MigrateEvidence.EvidenceCode.CCTV) // TODO
-      assertThat(dpsAdjudication.evidence[3].evidenceCode).isEqualTo(MigrateEvidence.EvidenceCode.CCTV) // TODO
+      assertThat(dpsAdjudication.evidence[0].evidenceCode).isEqualTo(MigrateEvidence.EvidenceCode.OTHER)
+      assertThat(dpsAdjudication.evidence[1].evidenceCode).isEqualTo(MigrateEvidence.EvidenceCode.OTHER)
+      assertThat(dpsAdjudication.evidence[2].evidenceCode).isEqualTo(MigrateEvidence.EvidenceCode.OTHER)
+      assertThat(dpsAdjudication.evidence[3].evidenceCode).isEqualTo(MigrateEvidence.EvidenceCode.OTHER)
       assertThat(dpsAdjudication.evidence[4].evidenceCode).isEqualTo(MigrateEvidence.EvidenceCode.PHOTO)
-      assertThat(dpsAdjudication.evidence[5].evidenceCode).isEqualTo(MigrateEvidence.EvidenceCode.CCTV) // TODO
+      assertThat(dpsAdjudication.evidence[5].evidenceCode).isEqualTo(MigrateEvidence.EvidenceCode.OTHER)
       assertThat(dpsAdjudication.evidence[6].evidenceCode).isEqualTo(MigrateEvidence.EvidenceCode.BAGGED_AND_TAGGED)
-      assertThat(dpsAdjudication.evidence[7].evidenceCode).isEqualTo(MigrateEvidence.EvidenceCode.CCTV) // TODO
+      assertThat(dpsAdjudication.evidence[7].evidenceCode).isEqualTo(MigrateEvidence.EvidenceCode.OTHER)
     }
   }
 
