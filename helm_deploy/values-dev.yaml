@@ -15,6 +15,7 @@ generic-service:
     API_BASE_URL_MAPPING: https://nomis-sync-prisoner-mapping-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_SENTENCING: https://adjustments-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_ACTIVITIES: https://activities-api-dev.prison.service.justice.gov.uk
+    API_BASE_URL_NON_ASSOCIATIONS: https://non-associations-api-dev.hmpps.service.justice.gov.uk
     # currently set to self for a mock API until real API is ready
     API_BASE_URL_ADJUDICATIONS: https://prisoner-nomis-migration-dev.hmpps.service.justice.gov.uk
 
