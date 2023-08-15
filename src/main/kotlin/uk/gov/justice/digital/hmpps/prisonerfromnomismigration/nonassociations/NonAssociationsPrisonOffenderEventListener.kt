@@ -26,7 +26,7 @@ class NonAssociationsPrisonOffenderEventListener(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  @SqsListener("eventnon-associations", factory = "hmppsQueueContainerFactoryProxy")
+  @SqsListener("eventnonassociations", factory = "hmppsQueueContainerFactoryProxy")
   @WithSpan(value = "Digital-Prison-Services-prisoner_from_nomis_non_associations_queue", kind = SpanKind.SERVER)
   fun onMessage(message: String): CompletableFuture<Void> {
     log.debug("Received offender event message {}", message)
