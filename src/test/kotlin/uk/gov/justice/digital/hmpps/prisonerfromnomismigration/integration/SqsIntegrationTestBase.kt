@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration
 
 import com.microsoft.applicationinsights.TelemetryClient
+import org.awaitility.Awaitility
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilCallTo
@@ -29,11 +30,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.Adjudica
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.HmppsAuthApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NonAssociationsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.SentencingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsApiExtension
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
+import java.util.concurrent.TimeUnit
 
 @ExtendWith(
   NomisApiExtension::class,
@@ -43,6 +46,7 @@ import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
   SentencingApiExtension::class,
   AdjudicationsApiExtension::class,
   ActivitiesApiExtension::class,
+  NonAssociationsApiExtension::class,
 )
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -102,8 +106,11 @@ class SqsIntegrationTestBase : TestBase() {
 
   @BeforeEach
   fun setUp() {
+    Awaitility.setDefaultPollDelay(1, TimeUnit.MILLISECONDS)
+    Awaitility.setDefaultPollInterval(10, TimeUnit.MILLISECONDS)
     reset(telemetryClient)
     allQueues.forEach { it.purgeAndWait() }
+    Awaitility.setDefaultPollInterval(50, TimeUnit.MILLISECONDS)
   }
 
   internal fun setAuthorisation(

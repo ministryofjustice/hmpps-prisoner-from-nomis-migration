@@ -4,6 +4,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateDamage.DamageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateEvidence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateHearing
@@ -26,6 +29,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.R
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Staff
 import java.time.LocalDate
 import java.time.LocalTime
+import java.util.stream.Stream
 
 class AdjudicationTransformationTest {
   @Test
@@ -175,7 +179,13 @@ class AdjudicationTransformationTest {
       val nomisAdjudication = nomisAdjudicationCharge(
         investigations = listOf(
           Investigation(
-            investigator = Staff(username = "J.SMITH", staffId = 1, firstName = "John", lastName = "Smith"),
+            investigator = Staff(
+              username = "J.SMITH",
+              staffId = 1,
+              firstName = "John",
+              lastName = "Smith",
+              createdByUsername = "B.BATTS",
+            ),
             dateAssigned = LocalDate.parse("2020-12-25"),
             comment = "some comment",
             evidence = listOf(
@@ -195,7 +205,13 @@ class AdjudicationTransformationTest {
           ),
 
           Investigation(
-            investigator = Staff(username = "D.ABBOY", staffId = 67839, firstName = "DIKBLISNG", lastName = "ABBOY"),
+            investigator = Staff(
+              username = "D.ABBOY",
+              staffId = 67839,
+              firstName = "DIKBLISNG",
+              lastName = "ABBOY",
+              createdByUsername = "B.BATTS",
+            ),
             dateAssigned = LocalDate.parse("2023-08-07"),
             comment = "another comment",
             evidence = listOf(
@@ -219,7 +235,13 @@ class AdjudicationTransformationTest {
       val nomisAdjudication = nomisAdjudicationCharge(
         investigations = listOf(
           Investigation(
-            investigator = Staff(username = "J.SMITH", staffId = 1, firstName = "John", lastName = "Smith"),
+            investigator = Staff(
+              username = "J.SMITH",
+              staffId = 1,
+              firstName = "John",
+              lastName = "Smith",
+              createdByUsername = "B.BATTS",
+            ),
             dateAssigned = LocalDate.parse("2020-12-25"),
             comment = "some comment",
             evidence = listOf(
@@ -246,7 +268,13 @@ class AdjudicationTransformationTest {
       val nomisAdjudication = nomisAdjudicationCharge(
         investigations = listOf(
           Investigation(
-            investigator = Staff(username = "J.SMITH", staffId = 1, firstName = "John", lastName = "Smith"),
+            investigator = Staff(
+              username = "J.SMITH",
+              staffId = 1,
+              firstName = "John",
+              lastName = "Smith",
+              createdByUsername = "B.BATTS",
+            ),
             dateAssigned = LocalDate.parse("2020-12-25"),
             comment = "some comment",
             evidence = listOf(
@@ -341,12 +369,14 @@ class AdjudicationTransformationTest {
             staffId = 1,
             firstName = "JOHN",
             lastName = "SMITH",
+            createdByUsername = "B.BATTS",
           ),
           Staff(
             username = "K.KOFI",
             staffId = 2,
             firstName = "KWEKU",
             lastName = "KOFI",
+            createdByUsername = "J.TOMS",
           ),
         ),
       )
@@ -355,7 +385,7 @@ class AdjudicationTransformationTest {
       assertThat(dpsAdjudication.witnesses).hasSize(2)
       assertThat(dpsAdjudication.witnesses).contains(
         MigrateWitness(
-          createdBy = "A.BEANS",
+          createdBy = "B.BATTS",
           firstName = "JOHN",
           lastName = "SMITH",
           witnessType = MigrateWitness.WitnessType.STAFF,
@@ -363,7 +393,7 @@ class AdjudicationTransformationTest {
       )
       assertThat(dpsAdjudication.witnesses).contains(
         MigrateWitness(
-          createdBy = "A.BEANS",
+          createdBy = "J.TOMS",
           firstName = "KWEKU",
           lastName = "KOFI",
           witnessType = MigrateWitness.WitnessType.STAFF,
@@ -380,11 +410,13 @@ class AdjudicationTransformationTest {
             offenderNo = "A1234KK",
             firstName = "BOBBY",
             lastName = "BALLER",
+            createdByUsername = "B.BATTS",
           ),
           Prisoner(
             offenderNo = "A1234TT",
             firstName = "JANE",
             lastName = "MIKES",
+            createdByUsername = "A.AMRK",
           ),
         ),
       )
@@ -393,7 +425,7 @@ class AdjudicationTransformationTest {
       assertThat(dpsAdjudication.witnesses).hasSize(2)
       assertThat(dpsAdjudication.witnesses).contains(
         MigrateWitness(
-          createdBy = "A.BEANS",
+          createdBy = "B.BATTS",
           firstName = "BOBBY",
           lastName = "BALLER",
           witnessType = MigrateWitness.WitnessType.OTHER_PERSON,
@@ -401,7 +433,7 @@ class AdjudicationTransformationTest {
       )
       assertThat(dpsAdjudication.witnesses).contains(
         MigrateWitness(
-          createdBy = "A.BEANS",
+          createdBy = "A.AMRK",
           firstName = "JANE",
           lastName = "MIKES",
           witnessType = MigrateWitness.WitnessType.OTHER_PERSON,
@@ -412,19 +444,20 @@ class AdjudicationTransformationTest {
     @Test
     fun `staff victims are copied`() {
       val nomisAdjudication = nomisAdjudicationCharge(
-        createdByStaffUsername = "A.BEANS",
         staffVictims = listOf(
           Staff(
             username = "J.SMITH",
             staffId = 1,
             firstName = "JOHN",
             lastName = "SMITH",
+            createdByUsername = "B.BATTS",
           ),
           Staff(
             username = "K.KOFI",
             staffId = 2,
             firstName = "KWEKU",
             lastName = "KOFI",
+            createdByUsername = "B.BATTS",
           ),
         ),
       )
@@ -433,7 +466,7 @@ class AdjudicationTransformationTest {
       assertThat(dpsAdjudication.witnesses).hasSize(2)
       assertThat(dpsAdjudication.witnesses).contains(
         MigrateWitness(
-          createdBy = "A.BEANS",
+          createdBy = "B.BATTS",
           firstName = "JOHN",
           lastName = "SMITH",
           witnessType = MigrateWitness.WitnessType.VICTIM,
@@ -441,7 +474,7 @@ class AdjudicationTransformationTest {
       )
       assertThat(dpsAdjudication.witnesses).contains(
         MigrateWitness(
-          createdBy = "A.BEANS",
+          createdBy = "B.BATTS",
           firstName = "KWEKU",
           lastName = "KOFI",
           witnessType = MigrateWitness.WitnessType.VICTIM,
@@ -452,17 +485,18 @@ class AdjudicationTransformationTest {
     @Test
     fun `prisoner victims are copied`() {
       val nomisAdjudication = nomisAdjudicationCharge(
-        createdByStaffUsername = "A.BEANS",
         prisonerVictims = listOf(
           Prisoner(
             offenderNo = "A1234KK",
             firstName = "BOBBY",
             lastName = "BALLER",
+            createdByUsername = "B.BATTS",
           ),
           Prisoner(
             offenderNo = "A1234TT",
             firstName = "JANE",
             lastName = "MIKES",
+            createdByUsername = "B.BATTS",
           ),
         ),
       )
@@ -471,7 +505,7 @@ class AdjudicationTransformationTest {
       assertThat(dpsAdjudication.witnesses).hasSize(2)
       assertThat(dpsAdjudication.witnesses).contains(
         MigrateWitness(
-          createdBy = "A.BEANS",
+          createdBy = "B.BATTS",
           firstName = "BOBBY",
           lastName = "BALLER",
           witnessType = MigrateWitness.WitnessType.VICTIM,
@@ -479,7 +513,7 @@ class AdjudicationTransformationTest {
       )
       assertThat(dpsAdjudication.witnesses).contains(
         MigrateWitness(
-          createdBy = "A.BEANS",
+          createdBy = "B.BATTS",
           firstName = "JANE",
           lastName = "MIKES",
           witnessType = MigrateWitness.WitnessType.VICTIM,
@@ -490,17 +524,18 @@ class AdjudicationTransformationTest {
     @Test
     fun `other prisoner suspects are copied`() {
       val nomisAdjudication = nomisAdjudicationCharge(
-        createdByStaffUsername = "A.BEANS",
         otherPrisonerInvolved = listOf(
           Prisoner(
             offenderNo = "A1234KK",
             firstName = "BOBBY",
             lastName = "BALLER",
+            createdByUsername = "B.BATTS",
           ),
           Prisoner(
             offenderNo = "A1234TT",
             firstName = "JANE",
             lastName = "MIKES",
+            createdByUsername = "B.BATTS",
           ),
         ),
       )
@@ -509,7 +544,7 @@ class AdjudicationTransformationTest {
       assertThat(dpsAdjudication.witnesses).hasSize(2)
       assertThat(dpsAdjudication.witnesses).contains(
         MigrateWitness(
-          createdBy = "A.BEANS",
+          createdBy = "B.BATTS",
           firstName = "BOBBY",
           lastName = "BALLER",
           witnessType = MigrateWitness.WitnessType.PRISONER,
@@ -517,7 +552,7 @@ class AdjudicationTransformationTest {
       )
       assertThat(dpsAdjudication.witnesses).contains(
         MigrateWitness(
-          createdBy = "A.BEANS",
+          createdBy = "B.BATTS",
           firstName = "JANE",
           lastName = "MIKES",
           witnessType = MigrateWitness.WitnessType.PRISONER,
@@ -528,19 +563,20 @@ class AdjudicationTransformationTest {
     @Test
     fun `all other staff types copied`() {
       val nomisAdjudication = nomisAdjudicationCharge(
-        createdByStaffUsername = "A.BEANS",
         reportingOfficers = listOf(
           Staff(
             username = "J.SMITH",
             staffId = 1,
             firstName = "JOHN",
             lastName = "SMITH",
+            createdByUsername = "A.BEANS",
           ),
           Staff(
             username = "K.KOFI",
             staffId = 2,
             firstName = "KWEKU",
             lastName = "KOFI",
+            createdByUsername = "A.BEANS",
           ),
         ),
         otherStaffInvolved = listOf(
@@ -549,12 +585,14 @@ class AdjudicationTransformationTest {
             staffId = 3,
             firstName = "JANE",
             lastName = "SEEKS",
+            createdByUsername = "A.BEANS",
           ),
           Staff(
             username = "S.BIGHTS",
             staffId = 4,
             firstName = "SARAH",
             lastName = "BIGHTS",
+            createdByUsername = "A.BEANS",
           ),
         ),
       )
@@ -616,9 +654,12 @@ class AdjudicationTransformationTest {
               staffId = 123,
               firstName = "A",
               lastName = "JUDGE",
+              createdByUsername = "A.BEANS",
             ),
             internalLocation = InternalLocation(321, "A-1-1", "MDI-A-1-1"),
             eventStatus = CodeDescription(code = "SCH", description = "Scheduled"),
+            createdByUsername = "A.BEANS",
+            createdDateTime = "2020-12-31T10:00:00",
           ),
         ),
       )
@@ -648,6 +689,8 @@ class AdjudicationTransformationTest {
             hearingResults = emptyList(),
             internalLocation = InternalLocation(321, "A-1-1", "MDI-A-1-1"),
             eventStatus = CodeDescription(code = "SCH", description = "Scheduled"),
+            createdByUsername = "A.BEANS",
+            createdDateTime = "2020-12-31T10:00:00",
           ),
         ),
       )
@@ -669,11 +712,10 @@ class AdjudicationTransformationTest {
     @Nested
     inner class HearingResults {
       @Test
-      fun `will copy result for this charge ignoring others`() {
-        val charge1 = nomisAdjudicationCharge().charge.copy(chargeSequence = 1)
-        val charge2 = nomisAdjudicationCharge().charge.copy(chargeSequence = 2)
+      fun `will copy results`() {
+        val charge = nomisAdjudicationCharge().charge.copy(chargeSequence = 2)
         val nomisAdjudication = nomisAdjudicationCharge(
-          chargeSequence = charge2.chargeSequence,
+          chargeSequence = charge.chargeSequence,
           hearings = listOf(
             Hearing(
               hearingId = 54321,
@@ -682,18 +724,13 @@ class AdjudicationTransformationTest {
               type = CodeDescription(code = "GOV_ADULT", description = "Governor's Hearing Adult"),
               hearingResults = listOf(
                 HearingResult(
-                  charge = charge1,
-                  offence = charge1.offence,
-                  resultAwards = emptyList(),
-                  pleaFindingType = CodeDescription(code = "NOT_GUILTY", description = "Not Guilty"),
-                  findingType = CodeDescription(code = "Q", description = "Quashed"),
-                ), // TODO NOMIS API should filter these out
-                HearingResult(
-                  charge = charge2,
-                  offence = charge2.offence,
+                  charge = charge,
+                  offence = charge.offence,
                   resultAwards = emptyList(),
                   pleaFindingType = CodeDescription(code = "GUILTY", description = "Guilty"),
                   findingType = CodeDescription(code = "S", description = "Suspended"),
+                  createdByUsername = "A.BEANS",
+                  createdDateTime = "2020-12-31T10:00:00",
                 ),
               ),
               hearingStaff = Staff(
@@ -701,9 +738,12 @@ class AdjudicationTransformationTest {
                 staffId = 123,
                 firstName = "A",
                 lastName = "JUDGE",
+                createdByUsername = "A.BEANS",
               ),
               internalLocation = InternalLocation(321, "A-1-1", "MDI-A-1-1"),
               eventStatus = CodeDescription(code = "SCH", description = "Scheduled"),
+              createdByUsername = "A.BEANS",
+              createdDateTime = "2020-12-30T10:00:00",
             ),
           ),
         )
@@ -712,39 +752,33 @@ class AdjudicationTransformationTest {
         assertThat(dpsAdjudication.hearings[0].hearingResult).isNotNull
         assertThat(dpsAdjudication.hearings[0].hearingResult?.finding).isEqualTo("S")
         assertThat(dpsAdjudication.hearings[0].hearingResult?.plea).isEqualTo("GUILTY")
-        assertThat(dpsAdjudication.hearings[0].hearingResult?.createdBy).isNotNull() // TODO
-        assertThat(dpsAdjudication.hearings[0].hearingResult?.createdDateTime).isNotNull() // TODO
+        assertThat(dpsAdjudication.hearings[0].hearingResult?.createdBy).isEqualTo("A.BEANS")
+        assertThat(dpsAdjudication.hearings[0].hearingResult?.createdDateTime).isEqualTo("2020-12-31T10:00:00")
       }
 
       @Test
       fun `result can be null when not present`() {
-        val charge1 = nomisAdjudicationCharge().charge.copy(chargeSequence = 1)
-        val charge2 = nomisAdjudicationCharge().charge.copy(chargeSequence = 2)
+        val charge = nomisAdjudicationCharge().charge.copy(chargeSequence = 2)
         val nomisAdjudication = nomisAdjudicationCharge(
-          chargeSequence = charge2.chargeSequence,
+          chargeSequence = charge.chargeSequence,
           hearings = listOf(
             Hearing(
               hearingId = 54321,
               hearingDate = LocalDate.parse("2021-01-01"),
               hearingTime = "12:00:00",
               type = CodeDescription(code = "GOV_ADULT", description = "Governor's Hearing Adult"),
-              hearingResults = listOf(
-                HearingResult(
-                  charge = charge1,
-                  offence = charge1.offence,
-                  resultAwards = emptyList(),
-                  pleaFindingType = CodeDescription(code = "NOT_GUILTY", description = "Not Guilty"),
-                  findingType = CodeDescription(code = "Q", description = "Quashed"),
-                ), // TODO NOMIS API should filter these out
-              ),
+              hearingResults = listOf(),
               hearingStaff = Staff(
                 username = "A.JUDGE",
                 staffId = 123,
                 firstName = "A",
                 lastName = "JUDGE",
+                createdByUsername = "A.BEANS",
               ),
               internalLocation = InternalLocation(321, "A-1-1", "MDI-A-1-1"),
               eventStatus = CodeDescription(code = "SCH", description = "Scheduled"),
+              createdByUsername = "A.BEANS",
+              createdDateTime = "2020-12-31T10:00:00",
             ),
           ),
         )
@@ -755,12 +789,12 @@ class AdjudicationTransformationTest {
 
       @Nested
       inner class Punishments {
+
         @Test
         fun `will copy award for the charge punishment`() {
-          val charge1 = nomisAdjudicationCharge().charge.copy(chargeSequence = 1)
-          val charge2 = nomisAdjudicationCharge().charge.copy(chargeSequence = 2)
+          val charge = nomisAdjudicationCharge().charge.copy(chargeSequence = 2)
           val nomisAdjudication = nomisAdjudicationCharge(
-            chargeSequence = charge2.chargeSequence,
+            chargeSequence = charge.chargeSequence,
             hearings = listOf(
               Hearing(
                 hearingId = 54321,
@@ -769,15 +803,8 @@ class AdjudicationTransformationTest {
                 type = CodeDescription(code = "GOV_ADULT", description = "Governor's Hearing Adult"),
                 hearingResults = listOf(
                   HearingResult(
-                    charge = charge1,
-                    offence = charge1.offence,
-                    resultAwards = emptyList(),
-                    pleaFindingType = CodeDescription(code = "NOT_GUILTY", description = "Not Guilty"),
-                    findingType = CodeDescription(code = "Q", description = "Quashed"),
-                  ), // TODO NOMIS API should filter these out
-                  HearingResult(
-                    charge = charge2,
-                    offence = charge2.offence,
+                    charge = charge,
+                    offence = charge.offence,
                     resultAwards = listOf(
                       HearingResultAward(
                         effectiveDate = LocalDate.parse("2021-01-01"),
@@ -789,10 +816,13 @@ class AdjudicationTransformationTest {
                         sanctionMonths = null,
                         compensationAmount = null,
                         consecutiveAward = null,
+                        sequence = 23,
                       ),
                     ),
                     pleaFindingType = CodeDescription(code = "GUILTY", description = "Guilty"),
                     findingType = CodeDescription(code = "S", description = "Suspended"),
+                    createdByUsername = "A.BEANS",
+                    createdDateTime = "2020-12-31T10:00:00",
                   ),
                 ),
                 hearingStaff = Staff(
@@ -800,9 +830,12 @@ class AdjudicationTransformationTest {
                   staffId = 123,
                   firstName = "A",
                   lastName = "JUDGE",
+                  createdByUsername = "A.BEANS",
                 ),
                 internalLocation = InternalLocation(321, "A-1-1", "MDI-A-1-1"),
                 eventStatus = CodeDescription(code = "SCH", description = "Scheduled"),
+                createdByUsername = "A.BEANS",
+                createdDateTime = "2020-12-31T10:00:00",
               ),
             ),
           )
@@ -814,10 +847,88 @@ class AdjudicationTransformationTest {
           assertThat(dpsAdjudication.punishments[0].effectiveDate).isEqualTo("2021-01-01")
           assertThat(dpsAdjudication.punishments[0].consecutiveChargeNumber).isNull()
           assertThat(dpsAdjudication.punishments[0].sanctionCode).isEqualTo("CC")
-          assertThat(dpsAdjudication.punishments[0].sanctionSeq).isEqualTo(1) // TODO - can we get this from NOMIS
+          assertThat(dpsAdjudication.punishments[0].sanctionSeq).isEqualTo(23)
           assertThat(dpsAdjudication.punishments[0].sanctionStatus).isEqualTo("IMMEDIATE")
         }
+
+        @ParameterizedTest
+        @MethodSource("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.AdjudicationTransformationTest#getAwardDayMonthData")
+        fun `days and months are added together`(
+          days: Int?,
+          months: Int?,
+          effectiveDate: String,
+          calculatedDays: Int?,
+        ) {
+          val charge = nomisAdjudicationCharge().charge.copy(chargeSequence = 2)
+          val nomisAdjudication = nomisAdjudicationCharge(
+            chargeSequence = charge.chargeSequence,
+            hearings = listOf(
+              Hearing(
+                hearingId = 54321,
+                hearingDate = LocalDate.parse("2021-01-01"),
+                hearingTime = "12:00:00",
+                type = CodeDescription(code = "GOV_ADULT", description = "Governor's Hearing Adult"),
+                hearingResults = listOf(
+                  HearingResult(
+                    charge = charge,
+                    offence = charge.offence,
+                    resultAwards = listOf(
+                      HearingResultAward(
+                        effectiveDate = LocalDate.parse(effectiveDate),
+                        sanctionType = CodeDescription(code = "CC", description = "Cellular Confinement"),
+                        sanctionStatus = CodeDescription(code = "IMMEDIATE", description = "Immediate"),
+                        comment = "Remain in cell",
+                        statusDate = LocalDate.parse("2021-01-02"),
+                        sanctionDays = days,
+                        sanctionMonths = months,
+                        compensationAmount = null,
+                        consecutiveAward = null,
+                        sequence = 23,
+                      ),
+                    ),
+                    pleaFindingType = CodeDescription(code = "GUILTY", description = "Guilty"),
+                    findingType = CodeDescription(code = "S", description = "Suspended"),
+                    createdByUsername = "A.BEANS",
+                    createdDateTime = "2020-12-31T10:00:00",
+                  ),
+                ),
+                hearingStaff = Staff(
+                  username = "A.JUDGE",
+                  staffId = 123,
+                  firstName = "A",
+                  lastName = "JUDGE",
+                  createdByUsername = "A.BEANS",
+                ),
+                internalLocation = InternalLocation(321, "A-1-1", "MDI-A-1-1"),
+                eventStatus = CodeDescription(code = "SCH", description = "Scheduled"),
+                createdByUsername = "A.BEANS",
+                createdDateTime = "2020-12-31T10:00:00",
+              ),
+            ),
+          )
+          val dpsAdjudication = nomisAdjudication.toAdjudication()
+          assertThat(dpsAdjudication.punishments).hasSize(1)
+          assertThat(dpsAdjudication.punishments[0].days).isEqualTo(calculatedDays)
+        }
       }
+    }
+  }
+
+  companion object {
+    @JvmStatic
+    fun getAwardDayMonthData(): Stream<Arguments> {
+      // days, months, effect date and expected days
+      return Stream.of(
+        Arguments.of(null, null, "2020-01-01", null),
+        Arguments.of(1, null, "2020-01-01", 1),
+        Arguments.of(null, 1, "2020-01-01", 31),
+        Arguments.of(null, 1, "2020-02-01", 29), // leap year
+        Arguments.of(null, 1, "2021-02-01", 28),
+        Arguments.of(10, 1, "2020-02-01", 39),
+        Arguments.of(null, 6, "2020-01-01", 182),
+        Arguments.of(null, 24, "2020-01-01", 731),
+        Arguments.of(null, 24, "2021-01-01", 730),
+      )
     }
   }
 }
@@ -867,6 +978,7 @@ private fun nomisAdjudicationCharge(
         staffId = 1,
         firstName = "stafffirstname",
         lastName = "stafflastname",
+        createdByUsername = "A.BEANS",
       ),
       incidentDate = incidentDate,
       incidentTime = incidentTime.toString(),
