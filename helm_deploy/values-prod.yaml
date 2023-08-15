@@ -16,6 +16,7 @@ generic-service:
     # currently set to self for a mock API until real API is ready
     API_BASE_URL_SENTENCING: https://prisoner-nomis-migration.hmpps.service.justice.gov.uk
     API_BASE_URL_ACTIVITIES: https://activities-api.prison.service.justice.gov.uk
+    API_BASE_URL_NON_ASSOCIATIONS: https://non-associations-api.hmpps.service.justice.gov.uk
     # currently set to self for a mock API until real API is ready
     API_BASE_URL_ADJUDICATIONS: https://prisoner-nomis-migration.hmpps.service.justice.gov.uk
     FEATURE_EVENT_SENTENCE_ADJUSTMENT_UPSERTED: false

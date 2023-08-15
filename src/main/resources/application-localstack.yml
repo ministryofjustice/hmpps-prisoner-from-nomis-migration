@@ -25,3 +25,6 @@ hmpps.sqs:
     eventsentencing:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    eventnonassociations:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}

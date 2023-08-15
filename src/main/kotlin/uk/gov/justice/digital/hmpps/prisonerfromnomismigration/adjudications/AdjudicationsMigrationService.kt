@@ -16,7 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateDamage.DamageType.REDECORATION
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateEvidence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateEvidence.EvidenceCode.BAGGED_AND_TAGGED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateEvidence.EvidenceCode.CCTV
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateEvidence.EvidenceCode.OTHER
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateEvidence.EvidenceCode.PHOTO
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateHearing
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateHearing.OicHearingType.GOV
@@ -42,6 +42,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.A
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Evidence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Hearing
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.HearingResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.HearingResultAward
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Repair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
@@ -132,11 +133,11 @@ fun AdjudicationChargeResponse.toAdjudication(): AdjudicationMigrateDto =
     },
     damages = this.incident.repairs.map { it.toDamage() },
     evidence = this.investigations.flatMap { investigation -> investigation.evidence.map { it.toEvidence() } },
-    punishments = this.hearings.flatMap { it.toHearingResultAwards() },
+    punishments = this.hearings.flatMap { it.toHearingResultAwards(this.adjudicationNumber) },
     hearings = this.hearings.map { it.toHearing() },
   )
 
-private fun Hearing.toHearingResultAwards(): List<MigratePunishment> =
+private fun Hearing.toHearingResultAwards(adjudicationNumber: Long): List<MigratePunishment> =
   this.hearingResults
     .flatMap { hearingResult ->
       hearingResult.resultAwards.map {
@@ -148,12 +149,15 @@ private fun Hearing.toHearingResultAwards(): List<MigratePunishment> =
           effectiveDate = it.effectiveDate,
           sanctionSeq = it.sequence.toLong(),
           comment = it.comment,
-          compensationAmount = null, // TODO - how to created this in NOMIS API
+          compensationAmount = it.compensationAmount,
           days = it.sanctionDays + it.sanctionMonths.asDays(it.effectiveDate),
-          consecutiveChargeNumber = null, // TODO - need sequence in awards
+          consecutiveChargeNumber = it.consecutiveAward.toConsecutiveChargeNumber(adjudicationNumber),
         )
       }
     }
+
+private fun HearingResultAward?.toConsecutiveChargeNumber(adjudicationNumber: Long): String? =
+  this?.let { "$adjudicationNumber-$chargeSequence" }
 
 private operator fun Int?.plus(second: Int?): Int? = when {
   this == null && second == null -> null
@@ -200,7 +204,7 @@ private fun Evidence.toEvidence() = MigrateEvidence(
   evidenceCode = when (this.type.code) {
     "PHOTO" -> PHOTO
     "EVI_BAG" -> BAGGED_AND_TAGGED
-    else -> CCTV // TODO - how to map all the codes?
+    else -> OTHER
   },
   details = this.detail,
   reporter = this.createdByUsername,
