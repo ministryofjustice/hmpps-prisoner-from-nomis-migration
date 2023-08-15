@@ -24,6 +24,9 @@ sentencing:
 appointments:
   page:
     size: 10
+activities:
+  page:
+    size: 3
 adjudications:
   page:
     size: 10

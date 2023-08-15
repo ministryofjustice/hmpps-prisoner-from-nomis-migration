@@ -16,7 +16,7 @@ class ActivitiesApiService(@Qualifier("activitiesApiWebClient") private val webC
 
   suspend fun migrateActivity(migrateRequest: ActivityMigrateRequest): ActivityMigrateResponse =
     webClient.post()
-      .uri("/migrate/activity")
+      .uri("/migrate-activity")
       .bodyValue(migrateRequest)
       .retrieve()
       .bodyToMono(ActivityMigrateResponse::class.java)
@@ -24,7 +24,7 @@ class ActivitiesApiService(@Qualifier("activitiesApiWebClient") private val webC
 
   suspend fun migrateAllocation(migrateRequest: AllocationMigrateRequest): AllocationMigrateResponse =
     webClient.post()
-      .uri("/migrate/allocation")
+      .uri("/migrate-allocation")
       .bodyValue(migrateRequest)
       .retrieve()
       .bodyToMono(AllocationMigrateResponse::class.java)
