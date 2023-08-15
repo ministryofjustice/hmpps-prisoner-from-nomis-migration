@@ -42,6 +42,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.A
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Evidence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Hearing
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.HearingResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.HearingResultAward
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Repair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
@@ -132,11 +133,11 @@ fun AdjudicationChargeResponse.toAdjudication(): AdjudicationMigrateDto =
     },
     damages = this.incident.repairs.map { it.toDamage() },
     evidence = this.investigations.flatMap { investigation -> investigation.evidence.map { it.toEvidence() } },
-    punishments = this.hearings.flatMap { it.toHearingResultAwards() },
+    punishments = this.hearings.flatMap { it.toHearingResultAwards(this.adjudicationNumber) },
     hearings = this.hearings.map { it.toHearing() },
   )
 
-private fun Hearing.toHearingResultAwards(): List<MigratePunishment> =
+private fun Hearing.toHearingResultAwards(adjudicationNumber: Long): List<MigratePunishment> =
   this.hearingResults
     .flatMap { hearingResult ->
       hearingResult.resultAwards.map {
@@ -150,10 +151,13 @@ private fun Hearing.toHearingResultAwards(): List<MigratePunishment> =
           comment = it.comment,
           compensationAmount = null, // TODO - how to created this in NOMIS API
           days = it.sanctionDays + it.sanctionMonths.asDays(it.effectiveDate),
-          consecutiveChargeNumber = null, // TODO - need sequence in awards
+          consecutiveChargeNumber = it.consecutiveAward.toConsecutiveChargeNumber(adjudicationNumber),
         )
       }
     }
+
+private fun HearingResultAward?.toConsecutiveChargeNumber(adjudicationNumber: Long): String? =
+  this?.let { "$adjudicationNumber-$chargeSequence" }
 
 private operator fun Int?.plus(second: Int?): Int? = when {
   this == null && second == null -> null
