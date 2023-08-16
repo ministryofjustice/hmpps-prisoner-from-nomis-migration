@@ -100,6 +100,9 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
 
       waitUntilCompleted()
 
+      // check filter values passed to get activity ids call
+      nomisApi.verifyActivitiesGetIds("/activities/ids", "BXI")
+
       // all mappings should be created
       assertThat(mappingApi.createMappingCount(ACTIVITIES_CREATE_MAPPING_URL)).isEqualTo(7)
 
@@ -108,6 +111,39 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
 
       // Check each activity has a mapping (each activity will be a unique number starting from 1)
       mappingApi.verifyCreateMappingActivitiesIds(1L..7L)
+    }
+
+    @Test
+    fun `will start processing a single course activity`() {
+      nomisApi.stubGetInitialCount(ACTIVITIES_ID_URL, 1) { activitiesIdsPagedResponse(it) }
+      nomisApi.stubMultipleGetActivitiesIdCounts(totalElements = 1, pageSize = 3)
+      nomisApi.stubMultipleGetActivities(1..1)
+      mappingApi.stubAllMappingsNotFound(ACTIVITIES_GET_MAPPING_URL)
+      mappingApi.stubMappingCreate(ACTIVITIES_CREATE_MAPPING_URL)
+      activitiesApi.stubCreateActivityForMigration()
+      activitiesApi.stubGetActivityCategories()
+      mappingApi.stubActivitiesMappingByMigrationId(count = 1)
+
+      webTestClient.post().uri("/migrate/activities")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+        .header("Content-Type", "application/json")
+        .body(BodyInserters.fromValue("""{ "prisonId": "BXI", "courseActivityId": 1 }"""))
+        .exchange()
+        .expectStatus().isAccepted
+
+      waitUntilCompleted()
+
+      // check course activity id included when retrieving ids
+      nomisApi.verifyActivitiesGetIds("/activities/ids", "BXI", 1)
+
+      // single mapping created
+      assertThat(mappingApi.createMappingCount(ACTIVITIES_CREATE_MAPPING_URL)).isEqualTo(1)
+
+      // single activity created
+      assertThat(activitiesApi.createActivitiesCount()).isEqualTo(1)
+
+      // Created the correct mapping
+      mappingApi.verifyCreateMappingActivitiesIds(1L..1L)
     }
 
     @Test
