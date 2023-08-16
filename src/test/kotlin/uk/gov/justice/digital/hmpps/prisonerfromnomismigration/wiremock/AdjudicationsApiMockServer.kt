@@ -51,7 +51,7 @@ class AdjudicationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubCreateAdjudicationForMigration(
     adjudicationNumber: Long = 654321,
     chargeSequence: Int = 1,
-    chargeNumber: String = "654321/1",
+    chargeNumber: String = "654321-1",
   ) {
     stubFor(
       post(WireMock.urlMatching("/reported-adjudications/migrate")).willReturn(

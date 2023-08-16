@@ -28,6 +28,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateOffence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigratePrisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigratePunishment
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateWitness
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateWitness.WitnessType.OTHER_PERSON
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateWitness.WitnessType.PRISONER
@@ -286,21 +287,15 @@ class AdjudicationsMigrationService(
             chargeSequence = chargeSequence,
           )
 
-        val dpsAdjudication = adjudicationsService.createAdjudication(nomisAdjudication.toAdjudication())
-        val chargeNumber = dpsAdjudication.chargeNumberMapping.chargeNumber
-        createAdjudicationMapping(
-          adjudicationNumber = adjudicationNumber,
-          chargeSequence = chargeSequence,
-          chargeNumber = chargeNumber,
-          context = context,
-        )
+        val mapping = adjudicationsService.createAdjudication(nomisAdjudication.toAdjudication())
+        createAdjudicationMapping(mapping, context = context)
 
         telemetryClient.trackEvent(
           "adjudications-migration-entity-migrated",
           mapOf(
             "adjudicationNumber" to adjudicationNumber.toString(),
             "chargeSequence" to chargeSequence.toString(),
-            "chargeNumber" to chargeNumber,
+            "chargeNumber" to mapping.chargeNumberMapping.chargeNumber,
             "offenderNo" to offenderNo,
             "migrationId" to context.migrationId,
           ),
@@ -310,36 +305,29 @@ class AdjudicationsMigrationService(
   }
 
   private suspend fun createAdjudicationMapping(
-    adjudicationNumber: Long,
-    chargeSequence: Int,
-    chargeNumber: String,
+    mapping: MigrateResponse,
     context: MigrationContext<*>,
-  ) = try {
-    adjudicationsMappingService.createMapping(
-      AdjudicationMapping(
-        adjudicationNumber = adjudicationNumber,
-        chargeSequence = chargeSequence,
-        chargeNumber = chargeNumber,
-        label = context.migrationId,
-        mappingType = "MIGRATED",
-      ),
-    )
-  } catch (e: Exception) {
-    log.error(
-      "Failed to create mapping for adjudicationNumber: $adjudicationNumber/$chargeSequence",
-      e,
-    )
-    queueService.sendMessage(
-      MigrationMessageType.RETRY_MIGRATION_MAPPING,
-      MigrationContext(
-        context = context,
-        body = AdjudicationMapping(
-          adjudicationNumber = adjudicationNumber,
-          chargeSequence = chargeSequence,
-          chargeNumber = chargeNumber,
-          mappingType = "MIGRATED",
+  ) = AdjudicationMapping(
+    adjudicationNumber = mapping.chargeNumberMapping.oicIncidentId,
+    chargeSequence = mapping.chargeNumberMapping.offenceSequence.toInt(),
+    chargeNumber = mapping.chargeNumberMapping.chargeNumber,
+    label = context.migrationId,
+    mappingType = "MIGRATED",
+  ).run {
+    try {
+      adjudicationsMappingService.createMapping(this)
+    } catch (e: Exception) {
+      log.error(
+        "Failed to create mapping for adjudicationNumber: ${mapping.chargeNumberMapping.oicIncidentId}/${mapping.chargeNumberMapping.offenceSequence}",
+        e,
+      )
+      queueService.sendMessage(
+        MigrationMessageType.RETRY_MIGRATION_MAPPING,
+        MigrationContext(
+          context = context,
+          body = this,
         ),
-      ),
-    )
+      )
+    }
   }
 }

@@ -134,7 +134,7 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
       val adjudicationNumber = 12345L
       val chargeSequence = 1
       val offenderNo = "A1234BC"
-      val chargeNumber = "12345/1"
+      val chargeNumber = "12345-1"
       val adjudicationPageResponse = adjudicationsIdsPagedResponse(
         adjudicationNumber = adjudicationNumber,
         chargeSequence = chargeSequence,
@@ -307,7 +307,7 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
       mappingApi.verifyCreateMappingAdjudication(
         adjudicationNumber = 654321,
         chargeSequence = 1,
-        chargeNumber = "654321/1",
+        chargeNumber = "654321-1",
         times = 2,
       )
     }
