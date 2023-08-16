@@ -99,6 +99,7 @@ class SqsIntegrationTestBase : TestBase() {
       visitsOffenderEventsQueue,
       sentencingOffenderEventsQueue,
       adjudicationsMigrationQueue,
+      activitiesMigrationQueue,
       appointmentsMigrationQueue,
       sentencingMigrationQueue,
     )
