@@ -113,6 +113,11 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, NOMIS_ENTITY : Any
       )
     } else {
       if (context.body.hasCheckedAReasonableNumberOfTimes(completeCheckCount)) {
+        migrationHistoryService.recordMigrationCompleted(
+          migrationId = context.migrationId,
+          recordsFailed = queueService.countMessagesThatHaveFailed(context.type),
+          recordsMigrated = getMigrationCount(context.migrationId),
+        )
         telemetryClient.trackEvent(
           "${migrationType.telemetryName}-migration-completed",
           mapOf<String, String>(
@@ -121,11 +126,6 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, NOMIS_ENTITY : Any
             "durationMinutes" to context.durationMinutes().toString(),
           ),
           null,
-        )
-        migrationHistoryService.recordMigrationCompleted(
-          migrationId = context.migrationId,
-          recordsFailed = queueService.countMessagesThatHaveFailed(context.type),
-          recordsMigrated = getMigrationCount(context.migrationId),
         )
       } else {
         queueService.sendMessage(
