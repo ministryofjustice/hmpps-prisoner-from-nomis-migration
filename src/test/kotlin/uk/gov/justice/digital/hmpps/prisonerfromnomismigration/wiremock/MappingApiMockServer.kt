@@ -30,6 +30,7 @@ class MappingApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallb
     const val VISITS_CREATE_MAPPING_URL = "/mapping/visits"
     const val VISITS_GET_MAPPING_URL = "/mapping/visits/nomisId"
     const val ACTIVITIES_CREATE_MAPPING_URL = "/mapping/activities/migration"
+    const val ACTIVITIES_GET_MAPPING_URL = "/mapping/activities/migration/nomis-course-activity-id"
     const val ADJUDICATIONS_GET_MAPPING_URL = "/mapping/adjudications/adjudication-number"
     const val APPOINTMENTS_CREATE_MAPPING_URL = "/mapping/appointments"
     const val APPOINTMENTS_GET_MAPPING_URL = "/mapping/appointments/nomis-event-id"
@@ -432,6 +433,34 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       )
     }
 
+  fun stubActivitiesMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 7) {
+    val content = """{
+      "nomisCourseActivityId": 123,
+      "activityScheduleId": 456,
+      "activityScheduleId2": 789,
+      "label": "2022-02-14T09:58:45",
+      "whenCreated": "$whenCreated"
+    }"""
+    stubFor(
+      get(urlPathMatching("/mapping/activities/migration/migration-id/.*")).willReturn(
+        okJson(pageContent(content, count)),
+      ),
+    )
+  }
+
+  fun verifyCreateMappingActivitiesIds(nomisCourseActivityIds: LongRange, times: Int = 1) =
+    nomisCourseActivityIds.forEach {
+      verify(
+        times,
+        postRequestedFor(urlPathEqualTo("/mapping/activities/migration")).withRequestBody(
+          matchingJsonPath(
+            "nomisCourseActivityId",
+            equalTo(it.toString()),
+          ),
+        ),
+      )
+    }
+
   fun stubAdjudicationMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 278887) {
     val content = """{
       "adjudicationNumber": 191747,
@@ -548,25 +577,40 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun createMappingCount(url: String) =
-    findAll(postRequestedFor(urlPathEqualTo(url))).count()
-
-  fun stubActivitiesMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 278887) {
-    val content = """{
-      "nomisCourseActivityId": 1234,
-      "activityScheduleId": 2345,
-      "activityScheduleId2": 3456,
-      "label": "2022-02-14T09:58:45",
-      "whenCreated": "$whenCreated"
-    }"""
+  fun stubActivityMappingCreateConflict(
+    existingActivityScheduleId: Long = 457,
+    duplicateActivityScheduleId: Long = 456,
+    nomisCourseActivityId: Long = 123,
+  ) {
     stubFor(
-      get(urlPathMatching("/mapping/activities/migration/migration-id/.*")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withBody(
-            pageContent(content, count),
-          ),
-      ),
+      post(urlPathEqualTo("/mapping/activities/migration"))
+        .willReturn(
+          aResponse()
+            .withStatus(409)
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
+              "moreInfo": 
+              {
+                "existing" :  {
+                  "activityScheduleId": $existingActivityScheduleId,
+                  "nomisCourseActivityId": $nomisCourseActivityId,
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45"
+                 },
+                 "duplicate" : {
+                  "activityScheduleId": $duplicateActivityScheduleId,
+                  "nomisCourseActivityId": $nomisCourseActivityId,
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45"
+                  }
+              }
+              }""",
+            ),
+        ),
     )
   }
+
+  fun createMappingCount(url: String) =
+    findAll(postRequestedFor(urlPathEqualTo(url))).count()
 }

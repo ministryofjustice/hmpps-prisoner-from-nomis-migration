@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
@@ -78,4 +79,55 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun createAppointmentCount() =
     findAll(postRequestedFor(urlMatching("/migrate-appointment"))).count()
+
+  fun stubCreateActivityForMigration(activityScheduleId: Long = 4444, activityScheduleId2: Long? = 5555) {
+    stubFor(
+      post(urlMatching("/migrate-activity"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.CREATED.value())
+            .withBody(
+              """
+              {
+                "prisonCode": "BXI",
+                "activityId": $activityScheduleId,
+                "splitRegimeActivityId": $activityScheduleId2
+              }
+              """.trimIndent(),
+            ),
+        ),
+    )
+  }
+
+  fun stubGetActivityCategories() {
+    ActivitiesApiExtension.activitiesApi.stubFor(
+      get(WireMock.urlEqualTo("/activity-categories")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(
+            """
+                [
+                  {
+                     "id": 1,
+                     "code": "SAA_EDUCATION",
+                     "name": "Education",
+                     "description": "Education"
+                  },
+                  {
+                     "id": 2,
+                     "code": "SAA_INDUCTION",
+                     "name": "Induction",
+                     "description": "Induction"
+                  }
+                ]
+            """.trimIndent(),
+          ),
+      ),
+    )
+  }
+
+  fun createActivitiesCount() =
+    findAll(postRequestedFor(urlMatching("/migrate-activity"))).count()
 }

@@ -20,6 +20,7 @@ class NomisApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallbac
     const val VISITS_ID_URL = "/visits/ids"
     const val APPOINTMENTS_ID_URL = "/appointments/ids"
     const val ADJUSTMENTS_ID_URL = "/adjustments/ids"
+    const val ACTIVITIES_ID_URL = "/activities/ids"
 
     @JvmField
     val nomisApi = NomisApiMockServer()
@@ -394,6 +395,43 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }
   }
 
+  fun stubMultipleGetActivitiesIdCounts(totalElements: Long, pageSize: Long) {
+    // for each page create a response for each id starting from 1 up to `totalElements`
+
+    val pages = (totalElements / pageSize) + 1
+    (0..pages).forEach { page ->
+      val startId = (page * pageSize) + 1
+      val endId = min((page * pageSize) + pageSize, totalElements)
+      nomisApi.stubFor(
+        get(urlPathEqualTo("/activities/ids"))
+          .withQueryParam("page", equalTo(page.toString()))
+          .willReturn(
+            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+              .withBody(
+                activitiesIdsPagedResponse(
+                  totalElements = totalElements,
+                  ids = (startId..endId).map { it },
+                  pageNumber = page,
+                  pageSize = pageSize,
+                ),
+              ),
+          ),
+      )
+    }
+  }
+
+  fun stubMultipleGetActivities(intProgression: IntProgression) {
+    (intProgression).forEach {
+      nomisApi.stubFor(
+        get(urlPathEqualTo("/activities/$it"))
+          .willReturn(
+            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+              .withBody(activitiesResponse(it.toLong())),
+          ),
+      )
+    }
+  }
+
   fun stubGetInitialCount(
     urlPath: String,
     totalElements: Long,
@@ -529,6 +567,16 @@ fun appointmentIdsPagedResponse(
   pageNumber: Long = 0,
 ): String {
   val content = ids.map { """{ "eventId": $it }""" }.joinToString { it }
+  return pageContent(content, pageSize, pageNumber, totalElements, ids.size)
+}
+
+fun activitiesIdsPagedResponse(
+  totalElements: Long = 10,
+  ids: List<Long> = (0L..10L).toList(),
+  pageSize: Long = 10,
+  pageNumber: Long = 0,
+): String {
+  val content = ids.map { """{ "courseActivityId": $it }""" }.joinToString { it }
   return pageContent(content, pageSize, pageNumber, totalElements, ids.size)
 }
 
@@ -750,5 +798,62 @@ private fun appointmentResponse(
   "createdDate": "2023-01-01T11:00:01.234567",
   "modifiedBy": "ITAG2",
   "modifiedDate": "2023-02-02T12:00:03.777666"
+}
+  """.trimIndent()
+
+private fun activitiesResponse(
+  courseActivityId: Long = 123,
+): String =
+  """
+{
+  "courseActivityId": $courseActivityId,
+  "programCode": "INDUCTION",
+  "prisonId": "BXI",
+  "startDate": "2020-04-11",
+  "endDate": "2023-11-15",
+  "internalLocationId": 1234,
+  "internalLocationCode": "KITCH",
+  "internalLocationDescription": "RSI-WORK_IND-KITCH",
+  "capacity": 10,
+  "description": "Kitchen work",
+  "minimumIncentiveLevel": "BAS",
+  "excludeBankHolidays": false,
+  "payPerSession": "H",
+  "scheduleRules": [
+    {
+      "startTime": "09:00",
+      "endTime": "11:00",
+      "monday": true,
+      "tuesday": true,
+      "wednesday": true,
+      "thursday": true,
+      "friday": true,
+      "saturday": true,
+      "sunday": true
+    },
+    {
+      "startTime": "13:00",
+      "endTime": "15:30",
+      "monday": true,
+      "tuesday": true,
+      "wednesday": true,
+      "thursday": true,
+      "friday": true,
+      "saturday": false,
+      "sunday": false
+    }
+  ],
+  "payRates": [
+    {
+      "incentiveLevelCode": "BAS",
+      "payBand": "1",
+      "rate": 3.2
+    },    
+    {
+      "incentiveLevelCode": "BAS",
+      "payBand": "2",
+      "rate": 3.4
+    }
+  ]
 }
   """.trimIndent()
