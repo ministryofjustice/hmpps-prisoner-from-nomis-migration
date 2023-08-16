@@ -8,6 +8,7 @@ import io.opentelemetry.instrumentation.annotations.WithSpan
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.Message
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AdjudicationAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ADJUDICATIONS_QUEUE_ID
@@ -20,7 +21,7 @@ class AdjudicationsMigrationMessageListener(
   objectMapper: ObjectMapper,
   adjudicationsMigrationService: AdjudicationsMigrationService,
 ) :
-  MigrationMessageListener<AdjudicationsMigrationFilter, AdjudicationChargeIdResponse, AdjudicationResponse, AdjudicationMapping>(
+  MigrationMessageListener<AdjudicationsMigrationFilter, AdjudicationChargeIdResponse, AdjudicationResponse, AdjudicationAllMappingDto>(
     objectMapper,
     adjudicationsMigrationService,
   ) {
@@ -43,7 +44,7 @@ class AdjudicationsMigrationMessageListener(
     return objectMapper.readValue(json)
   }
 
-  override fun parseContextMapping(json: String): MigrationMessage<*, AdjudicationMapping> {
+  override fun parseContextMapping(json: String): MigrationMessage<*, AdjudicationAllMappingDto> {
     return objectMapper.readValue(json)
   }
 }

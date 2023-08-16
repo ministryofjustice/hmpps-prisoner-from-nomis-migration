@@ -14,6 +14,8 @@ abstract class MigrationMapping<MAPPING : Any>(
   val domainUrl: String,
   internal val webClient: WebClient,
 ) {
+  open fun createMappingUrl() = domainUrl
+
   open suspend fun findLatestMigration(): LatestMigration? = webClient.get()
     .uri("$domainUrl/migrated/latest")
     .retrieve()
@@ -51,7 +53,7 @@ abstract class MigrationMapping<MAPPING : Any>(
     errorJavaClass: ParameterizedTypeReference<DuplicateErrorResponse<MAPPING>>,
   ): CreateMappingResult<MAPPING> {
     return webClient.post()
-      .uri(domainUrl)
+      .uri(createMappingUrl())
       .bodyValue(
         mapping,
       )

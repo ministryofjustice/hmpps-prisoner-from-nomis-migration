@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2023-08-10.2694.07bc7cc"
+    "version": "2023-08-16.2738.6d0da08"
   },
   "servers": [
     {
@@ -136,7 +136,7 @@
         ],
         "summary": "Creates a new activity mapping",
         "description": "Creates a mapping between nomis id and Activity service id. Requires NOMIS_ACTIVITIES",
-        "operationId": "createMapping_6",
+        "operationId": "createMapping_7",
         "requestBody": {
           "content": {
             "application/json": {
@@ -662,6 +662,96 @@
         }
       }
     },
+    "/mapping/allocation/migration": {
+      "post": {
+        "tags": [
+          "allocation-migration-resource"
+        ],
+        "summary": "Creates a new allocation migration mapping",
+        "description": "Creates a mapping between nomis allocation id and Actvities allocation id. Requires NOMIS_ACTIVITIES",
+        "operationId": "createMapping_4",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AllocationMigrationMappingDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Mapping entry created"
+          },
+          "400": {
+            "description": "Nomis or activity schedule ids already exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/adjudications/all": {
+      "post": {
+        "tags": [
+          "adjudications-mapping-resource"
+        ],
+        "summary": "Creates a new adjudication mapping along with associated hearings and punishments",
+        "description": "Creates a record of a adjudication number, hearing and punishment. Requires NOMIS_ADJUDICATIONS",
+        "operationId": "createAllMappings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdjudicationAllMappingDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Mapping entry created"
+          },
+          "409": {
+            "description": "Adjudication with charge sequence already exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/adjudications": {
       "get": {
         "tags": [
@@ -702,7 +792,7 @@
         ],
         "summary": "Creates a new adjudication mapping",
         "description": "Creates a record of a adjudication number. Requires NOMIS_ADJUDICATIONS",
-        "operationId": "createMapping_4",
+        "operationId": "createMapping_5",
         "requestBody": {
           "content": {
             "application/json": {
@@ -747,7 +837,7 @@
         ],
         "summary": "Creates a new activity migration mapping",
         "description": "Creates a mapping between nomis id and up to 2 Activity service ids. Requires NOMIS_ACTIVITIES",
-        "operationId": "createMapping_5",
+        "operationId": "createMapping_6",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1881,6 +1971,158 @@
         }
       }
     },
+    "/mapping/allocations/migration/nomis-allocation-id/{nomisAllocationId}": {
+      "get": {
+        "tags": [
+          "allocation-migration-resource"
+        ],
+        "summary": "get mapping for an allocation migration",
+        "description": "Retrieves an allocation migration mapping by the nomis id. Requires role NOMIS_ACTIVITIES",
+        "operationId": "getMapping",
+        "parameters": [
+          {
+            "name": "nomisAllocationId",
+            "in": "path",
+            "description": "Nomis allocation Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Nomis allocation Id",
+              "example": 12345
+            },
+            "example": 12345
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllocationMigrationMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/allocations/migration/migration-id/{migrationId}": {
+      "get": {
+        "tags": [
+          "allocation-migration-resource"
+        ],
+        "summary": "get paged mappings by migration id",
+        "description": "Retrieve all allocation migration mappings for the given migration id (identifies a single migration run). Results are paged.",
+        "operationId": "getMigratedAllocationMappings",
+        "parameters": [
+          {
+            "name": "pageRequest",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          },
+          {
+            "name": "migrationId",
+            "in": "path",
+            "description": "Migration Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Migration Id",
+              "example": "2020-03-24T12:00:00"
+            },
+            "example": "2020-03-24T12:00:00"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping page returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllocationMigrationMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/allocations/migrated/latest": {
+      "get": {
+        "tags": [
+          "allocation-migration-resource"
+        ],
+        "summary": "get the latest mapping for an allocation migration",
+        "description": "Requires role NOMIS_ACTIVITIES",
+        "operationId": "getLatestMigratedMapping",
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllocationMigrationMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No mappings found at all for any migration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/adjudications/migration-id/{migrationId}": {
       "get": {
         "tags": [
@@ -2145,7 +2387,7 @@
         ],
         "summary": "get mapping for an activity migration",
         "description": "Retrieves an activity migration mapping by course activity id. Requires role NOMIS_ACTIVITIES",
-        "operationId": "getMapping",
+        "operationId": "getMapping_1",
         "parameters": [
           {
             "name": "courseActivityId",
@@ -2255,7 +2497,7 @@
         ],
         "summary": "get the latest mapping for a migration",
         "description": "Requires role NOMIS_ACTIVITIES",
-        "operationId": "getLatestMigratedMapping",
+        "operationId": "getLatestMigratedMapping_1",
         "responses": {
           "200": {
             "description": "Mapping Information Returned",
@@ -2499,6 +2741,45 @@
         "responses": {
           "204": {
             "description": "Mapping deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/adjudications/all/migration-id/{migrationId}": {
+      "delete": {
+        "tags": [
+          "adjudications-mapping-resource"
+        ],
+        "summary": "Delete all adjudication related mapping entries for the given migration id",
+        "description": "Delete mapping entries created during a single migration for adjudications and associated hearings and punishments",
+        "operationId": "deleteMappingsByMigrationId",
+        "parameters": [
+          {
+            "name": "migrationId",
+            "in": "path",
+            "description": "Migration Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Migration Id",
+              "example": "2020-03-24T12:00:00"
+            },
+            "example": "2020-03-24T12:00:00"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Adjudication mappings deleted"
           },
           "401": {
             "description": "Unauthorized to access this endpoint",
@@ -2911,6 +3192,135 @@
         },
         "description": "NOMIS to Appointment mapping"
       },
+      "AllocationMigrationMappingDto": {
+        "required": [
+          "activityAllocationId",
+          "activityScheduleId",
+          "label",
+          "nomisAllocationId"
+        ],
+        "type": "object",
+        "properties": {
+          "nomisAllocationId": {
+            "type": "integer",
+            "description": "NOMIS allocation id",
+            "format": "int64"
+          },
+          "activityAllocationId": {
+            "type": "integer",
+            "description": "Activity allocation id",
+            "format": "int64"
+          },
+          "activityScheduleId": {
+            "type": "integer",
+            "description": "Activity schedule id",
+            "format": "int64"
+          },
+          "label": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": "string",
+            "description": "Label (a timestamp for migrated ids)"
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "Date-time the mapping was created",
+            "example": "2021-07-05T10:35:17"
+          }
+        },
+        "description": "NOMIS to Activities allocation mapping"
+      },
+      "AdjudicationAllMappingDto": {
+        "required": [
+          "adjudicationId",
+          "hearings",
+          "label",
+          "punishments"
+        ],
+        "type": "object",
+        "properties": {
+          "adjudicationId": {
+            "$ref": "#/components/schemas/AdjudicationMappingDto"
+          },
+          "hearings": {
+            "type": "array",
+            "description": "Adjudication hearing mapping",
+            "items": {
+              "$ref": "#/components/schemas/AdjudicationHearingMappingDto"
+            }
+          },
+          "punishments": {
+            "type": "array",
+            "description": "Adjudication punishment mapping",
+            "items": {
+              "$ref": "#/components/schemas/AdjudicationPunishmentMappingDto"
+            }
+          },
+          "label": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": "string",
+            "description": "Label (a timestamp for migrated ids)"
+          },
+          "mappingType": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": "string",
+            "description": "Mapping type",
+            "default": "MIGRATED",
+            "enum": [
+              "MIGRATED",
+              "ADJUDICATION_CREATED"
+            ]
+          }
+        },
+        "description": "Adjudication mapping for all entities in an adjudication"
+      },
+      "AdjudicationHearingMappingDto": {
+        "required": [
+          "dpsHearingId",
+          "nomisHearingId"
+        ],
+        "type": "object",
+        "properties": {
+          "nomisHearingId": {
+            "type": "integer",
+            "description": "NOMIS hearing id",
+            "format": "int64",
+            "example": 123456
+          },
+          "dpsHearingId": {
+            "type": "string",
+            "description": "DPS hearing id",
+            "example": "123456"
+          },
+          "label": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": "string",
+            "description": "Label (a timestamp for migrated ids)"
+          },
+          "mappingType": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": "string",
+            "description": "Mapping type",
+            "default": "ADJUDICATION_CREATED",
+            "enum": [
+              "MIGRATED",
+              "ADJUDICATION_CREATED"
+            ]
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "Date-time the mapping was created",
+            "example": "2021-07-05T10:35:17"
+          }
+        },
+        "description": "Adjudication hearing mapping"
+      },
       "AdjudicationMappingDto": {
         "required": [
           "adjudicationNumber",
@@ -2961,6 +3371,57 @@
           }
         },
         "description": "Adjudication mapping (same value for NOMIS and DPS)"
+      },
+      "AdjudicationPunishmentMappingDto": {
+        "required": [
+          "dpsPunishmentId",
+          "nomisBookingId",
+          "nomisSanctionSequence"
+        ],
+        "type": "object",
+        "properties": {
+          "nomisBookingId": {
+            "type": "integer",
+            "description": "NOMIS booking id",
+            "format": "int64",
+            "example": 123456
+          },
+          "nomisSanctionSequence": {
+            "type": "integer",
+            "description": "NOMIS sanction sequence",
+            "format": "int32",
+            "example": 4
+          },
+          "dpsPunishmentId": {
+            "type": "string",
+            "description": "DPS punishment id",
+            "example": "123456"
+          },
+          "label": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": "string",
+            "description": "Label (a timestamp for migrated ids)"
+          },
+          "mappingType": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": "string",
+            "description": "Mapping type",
+            "default": "ADJUDICATION_CREATED",
+            "enum": [
+              "MIGRATED",
+              "ADJUDICATION_CREATED"
+            ]
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "Date-time the mapping was created",
+            "example": "2021-07-05T10:35:17"
+          }
+        },
+        "description": "Adjudication punishment (aka award) mapping"
       },
       "ActivityMigrationMappingDto": {
         "required": [

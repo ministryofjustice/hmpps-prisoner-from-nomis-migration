@@ -37,6 +37,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.ReportingOfficer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AdjudicationAllMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AdjudicationAllMappingDto.MappingType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AdjudicationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationResponse
@@ -238,7 +241,7 @@ class AdjudicationsMigrationService(
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
 ) :
-  MigrationService<AdjudicationsMigrationFilter, AdjudicationChargeIdResponse, AdjudicationResponse, AdjudicationMapping>(
+  MigrationService<AdjudicationsMigrationFilter, AdjudicationChargeIdResponse, AdjudicationResponse, AdjudicationAllMappingDto>(
     queueService = queueService,
     auditService = auditService,
     migrationHistoryService = migrationHistoryService,
@@ -307,12 +310,16 @@ class AdjudicationsMigrationService(
   private suspend fun createAdjudicationMapping(
     mapping: MigrateResponse,
     context: MigrationContext<*>,
-  ) = AdjudicationMapping(
-    adjudicationNumber = mapping.chargeNumberMapping.oicIncidentId,
-    chargeSequence = mapping.chargeNumberMapping.offenceSequence.toInt(),
-    chargeNumber = mapping.chargeNumberMapping.chargeNumber,
+  ) = AdjudicationAllMappingDto(
+    adjudicationId = AdjudicationMappingDto(
+      adjudicationNumber = mapping.chargeNumberMapping.oicIncidentId,
+      chargeSequence = mapping.chargeNumberMapping.offenceSequence.toInt(),
+      chargeNumber = mapping.chargeNumberMapping.chargeNumber,
+    ),
+    hearings = emptyList(),
+    punishments = emptyList(),
     label = context.migrationId,
-    mappingType = "MIGRATED",
+    mappingType = MappingType.MIGRATED,
   ).run {
     try {
       adjudicationsMappingService.createMapping(this)

@@ -9,13 +9,18 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
-import java.time.LocalDateTime
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AdjudicationAllMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AdjudicationMappingDto
 
 @Service
 class AdjudicationsMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) :
-  MigrationMapping<AdjudicationMapping>(domainUrl = "/mapping/adjudications", webClient) {
+  MigrationMapping<AdjudicationAllMappingDto>(domainUrl = "/mapping/adjudications", webClient) {
 
-  suspend fun findNomisMapping(adjudicationNumber: Long, chargeSequence: Int): AdjudicationMapping? {
+  override fun createMappingUrl(): String {
+    return super.createMappingUrl() + "/all"
+  }
+
+  suspend fun findNomisMapping(adjudicationNumber: Long, chargeSequence: Int): AdjudicationMappingDto? {
     return webClient.get()
       .uri(
         "/mapping/adjudications/adjudication-number/{adjudicationNumber}/charge-sequence/{chargeSequence}",
@@ -23,34 +28,24 @@ class AdjudicationsMappingService(@Qualifier("mappingApiWebClient") webClient: W
         chargeSequence,
       )
       .retrieve()
-      .bodyToMono(AdjudicationMapping::class.java)
+      .bodyToMono(AdjudicationMappingDto::class.java)
       .onErrorResume(WebClientResponseException.NotFound::class.java) {
         Mono.empty()
       }
       .awaitSingleOrNull()
   }
 
-  // overiding for now as adjudications will not have a problem with duplicates until mapping of lower level ids
   suspend fun createMapping(
-    mapping: AdjudicationMapping,
-  ): CreateMappingResult<AdjudicationMapping> {
+    mapping: AdjudicationAllMappingDto,
+  ): CreateMappingResult<AdjudicationAllMappingDto> {
     return webClient.post()
-      .uri(domainUrl)
+      .uri(createMappingUrl())
       .bodyValue(
         mapping,
       )
       .retrieve()
       .bodyToMono(Unit::class.java)
-      .map { CreateMappingResult<AdjudicationMapping>() }
-      .awaitFirstOrDefault(CreateMappingResult<AdjudicationMapping>())
+      .map { CreateMappingResult<AdjudicationAllMappingDto>() }
+      .awaitFirstOrDefault(CreateMappingResult())
   }
 }
-
-data class AdjudicationMapping(
-  val adjudicationNumber: Long,
-  val chargeSequence: Int,
-  val chargeNumber: String,
-  val mappingType: String,
-  val label: String? = null,
-  val whenCreated: LocalDateTime? = null,
-)
