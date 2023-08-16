@@ -88,9 +88,9 @@ generic-service:
       HMPPS_SQS_QUEUES_EVENTSENTENCING_QUEUE_NAME: "sqs_name"
     prisoner-from-nomis-sentencing-dl-queue:
       HMPPS_SQS_QUEUES_EVENTSENTENCING_DLQ_NAME: "sqs_name"
-    prisoner-from-nomis-non-associations-queue:
+    prisoner-from-nomis-nonassociations-queue:
       HMPPS_SQS_QUEUES_EVENTNONASSOCIATIONS_QUEUE_NAME: "sqs_name"
-    prisoner-from-nomis-non-associations-dl-queue:
+    prisoner-from-nomis-nonassociations-dl-queue:
       HMPPS_SQS_QUEUES_EVENTNONASSOCIATIONS_DLQ_NAME: "sqs_name"
     rds-database:
       SPRING_FLYWAY_USER: "database_username"
