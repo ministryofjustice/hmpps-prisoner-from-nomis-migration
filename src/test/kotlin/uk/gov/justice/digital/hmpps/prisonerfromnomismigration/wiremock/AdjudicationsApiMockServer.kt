@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
@@ -12,6 +13,10 @@ import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.ChargeNumberMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.HearingMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.PunishmentMapping
 
 class AdjudicationsApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
   companion object {
@@ -52,6 +57,9 @@ class AdjudicationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     adjudicationNumber: Long = 654321,
     chargeSequence: Int = 1,
     chargeNumber: String = "654321-1",
+    bookingId: Long = 87654,
+    hearingIds: List<Pair<Long, Long>> = listOf(),
+    punishmentIds: List<Pair<Int, Long>> = listOf(),
   ) {
     stubFor(
       post(WireMock.urlMatching("/reported-adjudications/migrate")).willReturn(
@@ -59,18 +67,26 @@ class AdjudicationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.CREATED.value())
           .withBody(
-            // language=JSON
-            """
-            {
-              "chargeNumberMapping": {
-                "chargeNumber": "$chargeNumber",
-                "oicIncidentId": $adjudicationNumber,
-                "offenceSequence": $chargeSequence
+            MigrateResponse(
+              chargeNumberMapping = ChargeNumberMapping(
+                chargeNumber = chargeNumber,
+                oicIncidentId = adjudicationNumber,
+                offenceSequence = chargeSequence.toLong(),
+              ),
+              hearingMappings = hearingIds.map { (nomisHearingId, dpsHearingId) ->
+                HearingMapping(
+                  oicHearingId = nomisHearingId,
+                  hearingId = dpsHearingId,
+                )
               },
-              "hearingMappings": [],
-              "punishmentMappings": []
-            }
-            """.trimIndent(),
+              punishmentMappings = punishmentIds.map { (sanctionSequence, dpsPunishmentId) ->
+                PunishmentMapping(
+                  bookingId = bookingId,
+                  sanctionSeq = sanctionSequence.toLong(),
+                  punishmentId = dpsPunishmentId,
+                )
+              },
+            ).toJson(),
           ),
       ),
     )
@@ -84,3 +100,5 @@ class AdjudicationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun createAdjudicationCount() =
     findAll(postRequestedFor(WireMock.urlMatching("/reported-adjudications/migrate"))).count()
 }
+
+fun Any.toJson(): String = ObjectMapper().writeValueAsString(this)
