@@ -40,7 +40,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingA
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.ADJUDICATIONS_ID_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.adjudicationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.adjudicationsIdsPagedResponse
 import java.time.Duration
 import java.time.LocalDateTime
@@ -133,8 +132,12 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
     internal fun `a migrated adjudication will create a mapping and a transformed adjudication in DPS`() {
       val adjudicationNumber = 12345L
       val chargeSequence = 1
+      val bookingId = 6543L
       val offenderNo = "A1234BC"
       val chargeNumber = "12345-1"
+      val nomisHearingId = 2012708L
+      val sanctionSequence1 = 10
+      val sanctionSequence2 = 11
       val adjudicationPageResponse = adjudicationsIdsPagedResponse(
         adjudicationNumber = adjudicationNumber,
         chargeSequence = chargeSequence,
@@ -143,17 +146,259 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubGetInitialCount(ADJUDICATIONS_ID_URL, 1) { adjudicationPageResponse }
       nomisApi.stubMultipleGetAdjudicationIdCounts(totalElements = 1, pageSize = 10) { adjudicationPageResponse }
       nomisApi.stubGetAdjudication(adjudicationNumber = adjudicationNumber, chargeSequence = chargeSequence) {
-        adjudicationResponse(
-          offenderNo = offenderNo,
-          adjudicationNumber = adjudicationNumber,
-          chargeSequence = chargeSequence,
-        ) // TODO build more complex adjudication
+        // language=json
+        """
+{
+    "adjudicationSequence": 1,
+    "offenderNo": "$offenderNo",
+    "bookingId": $bookingId,
+    "adjudicationNumber": $adjudicationNumber,
+    "gender": {
+        "code": "M",
+        "description": "Male"
+    },
+    "currentPrison": {
+        "code": "BXI",
+        "description": "BRIXTON (HMP)"
+    },
+    "partyAddedDate": "2023-08-07",
+    "incident": {
+        "adjudicationIncidentId": 1503234,
+        "reportingStaff": {
+            "username": "AMARKE_GEN",
+            "staffId": 485887,
+            "firstName": "ANDY",
+            "lastName": "MARKE",
+            "createdByUsername": "AMARKE_GEN"
+        },
+        "incidentDate": "2023-08-07",
+        "incidentTime": "11:23:00",
+        "reportedDate": "2023-08-07",
+        "reportedTime": "11:20:00",
+        "createdByUsername": "AMARKE_GEN",
+        "createdDateTime": "2023-08-07T11:24:10.501959",
+        "internalLocation": {
+            "locationId": 172315,
+            "code": "W/SHOP13",
+            "description": "WWI-EDUC-W/SHOP13"
+        },
+        "incidentType": {
+            "code": "GOV",
+            "description": "Governor's Report"
+        },
+        "details": "some incident",
+        "prison": {
+            "code": "WWI",
+            "description": "WANDSWORTH (HMP)"
+        },
+        "prisonerWitnesses": [],
+        "prisonerVictims": [],
+        "otherPrisonersInvolved": [],
+        "reportingOfficers": [],
+        "staffWitnesses": [],
+        "staffVictims": [],
+        "otherStaffInvolved": [],
+        "repairs": [
+            {
+                "type": {
+                    "code": "ELEC",
+                    "description": "Electrical"
+                },
+                "createdByUsername": "AMARKE_GEN"
+            },
+            {
+                "type": {
+                    "code": "PLUM",
+                    "description": "Plumbing"
+                },
+                "comment": "plum",
+                "createdByUsername": "AMARKE_GEN"
+            }
+        ]
+    },
+    "charge": {
+        "offence": {
+            "code": "51:2D",
+            "description": "Detains any person against his will - detention against will of staff (not prison offr)",
+            "type": {
+                "code": "51",
+                "description": "Prison Rule 51"
+            }
+        },
+        "offenceId": "1525933/2",
+        "chargeSequence": $chargeSequence
+    },
+    "investigations": [
+        {
+            "investigator": {
+                "username": "KQG94Y",
+                "staffId": 67362,
+                "firstName": "EKSINRN",
+                "lastName": "AALYLE",
+                "createdByUsername": "AMARKE_GEN"
+            },
+            "comment": "comment one",
+            "dateAssigned": "2023-08-07",
+            "evidence": [
+                {
+                    "type": {
+                        "code": "EVI_BAG",
+                        "description": "Evidence Bag"
+                    },
+                    "date": "2023-08-07",
+                    "detail": "evidence bag",
+                    "createdByUsername": "AMARKE_GEN"
+                },
+                {
+                    "type": {
+                        "code": "OTHER",
+                        "description": "Other"
+                    },
+                    "date": "2023-08-07",
+                    "detail": "other stuff",
+                    "createdByUsername": "AMARKE_GEN"
+                }
+            ]
+        },
+        {
+            "investigator": {
+                "username": "HQZ33B",
+                "staffId": 67839,
+                "firstName": "DIKBLISNG",
+                "lastName": "ABBOY",
+                "createdByUsername": "AMARKE_GEN"
+            },
+            "comment": "another comment",
+            "dateAssigned": "2023-08-07",
+            "evidence": [
+                {
+                    "type": {
+                        "code": "BEHAV",
+                        "description": "Behaviour Report"
+                    },
+                    "date": "2023-08-07",
+                    "detail": "report",
+                    "createdByUsername": "AMARKE_GEN"
+                }
+            ]
+        }
+    ],
+    "hearings": [
+        {
+            "hearingId": $nomisHearingId,
+            "type": {
+                "code": "GOV_ADULT",
+                "description": "Governor's Hearing Adult"
+            },
+            "hearingDate": "2023-08-07",
+            "hearingTime": "16:55:00",
+            "internalLocation": {
+                "locationId": 176776,
+                "code": "ADJR",
+                "description": "WWI-RES-CSU-ADJR"
+            },
+            "eventStatus": {
+                "code": "EXP",
+                "description": "Expired"
+            },
+            "hearingResults": [
+                {
+                    "pleaFindingType": {
+                        "code": "GUILTY",
+                        "description": "Guilty"
+                    },
+                    "findingType": {
+                        "code": "PROVED",
+                        "description": "Charge Proved"
+                    },
+                    "charge": {
+                        "offence": {
+                            "code": "51:2D",
+                            "description": "Detains any person against his will - detention against will of staff (not prison offr)",
+                            "type": {
+                                "code": "51",
+                                "description": "Prison Rule 51"
+                            }
+                        },
+                        "offenceId": "1525933/2",
+                        "chargeSequence": 2
+                    },
+                    "offence": {
+                        "code": "51:2D",
+                        "description": "Detains any person against his will - detention against will of staff (not prison offr)",
+                        "type": {
+                            "code": "51",
+                            "description": "Prison Rule 51"
+                        }
+                    },
+                    "resultAwards": [
+                        {
+                            "sequence": $sanctionSequence1,
+                            "sanctionType": {
+                                "code": "FORFEIT",
+                                "description": "Forfeiture of Privileges"
+                            },
+                            "sanctionStatus": {
+                                "code": "IMMEDIATE",
+                                "description": "Immediate"
+                            },
+                            "effectiveDate": "2023-08-15",
+                            "statusDate": "2023-08-15",
+                            "sanctionDays": 3,
+                            "consecutiveAward": {
+                                "sequence": 2,
+                                "sanctionType": {
+                                    "code": "ADA",
+                                    "description": "Additional Days Added"
+                                },
+                                "sanctionStatus": {
+                                    "code": "IMMEDIATE",
+                                    "description": "Immediate"
+                                },
+                                "effectiveDate": "2023-08-07",
+                                "statusDate": "2023-08-07",
+                                "sanctionDays": 2,
+                                "sanctionMonths": 1,
+                                "chargeSequence": 1
+                            },
+                            "chargeSequence": 2
+                        },
+                        {
+                            "sequence": $sanctionSequence2,
+                            "sanctionType": {
+                                "code": "STOP_PCT",
+                                "description": "Stoppage of Earnings (%)"
+                            },
+                            "sanctionStatus": {
+                                "code": "IMMEDIATE",
+                                "description": "Immediate"
+                            },
+                            "effectiveDate": "2023-08-15",
+                            "statusDate": "2023-08-15",
+                            "sanctionMonths": 2,
+                            "compensationAmount": 120.12,
+                            "chargeSequence": 2
+                        }
+                    ],
+                    "createdDateTime": "2023-08-15T08:58:08.015285",
+                    "createdByUsername": "AMARKE_GEN"
+                }
+            ],
+            "createdDateTime": "2023-08-07T16:56:17.018049",
+            "createdByUsername": "AMARKE_GEN"
+        }
+    ]
+}    
+  """
       }
       mappingApi.stubAllMappingsNotFound(ADJUDICATIONS_GET_MAPPING_URL)
       adjudicationsApi.stubCreateAdjudicationForMigration(
         adjudicationNumber = adjudicationNumber,
         chargeSequence = chargeSequence,
         chargeNumber = chargeNumber,
+        bookingId = bookingId,
+        hearingIds = listOf(nomisHearingId to 9876),
+        punishmentIds = listOf(sanctionSequence1 to 1234, sanctionSequence2 to 1235),
       )
       mappingApi.stubMappingCreate("/mapping/adjudications/all")
       mappingApi.stubAdjudicationMappingByMigrationId(count = 1)
@@ -185,13 +430,25 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
       adjudicationsApi.verifyCreatedAdjudicationForMigration {
         bodyWithJson("$.oicIncidentId", equalTo("$adjudicationNumber"))
         bodyWithJson("$.offenceSequence", equalTo("$chargeSequence"))
-        // TODO more verification on what is sent to DPS
+        bodyWithJson("$.bookingId", equalTo("$bookingId"))
+        bodyWithJson("$.hearings.length()", equalTo("1"))
+        bodyWithJson("$.punishments.length()", equalTo("2"))
+        bodyWithJson("$.evidence.length()", equalTo("3"))
+        bodyWithJson("$.damages.length()", equalTo("2"))
       }
 
       mappingApi.verifyCreateMappingAdjudication {
         bodyWithJson("adjudicationId.adjudicationNumber", equalTo("$adjudicationNumber"))
         bodyWithJson("adjudicationId.chargeSequence", equalTo("$chargeSequence"))
         bodyWithJson("adjudicationId.chargeNumber", equalTo(chargeNumber))
+        bodyWithJson("hearings[0].nomisHearingId", equalTo("$nomisHearingId"))
+        bodyWithJson("hearings[0].dpsHearingId", equalTo("9876"))
+        bodyWithJson("punishments[0].nomisBookingId", equalTo("$bookingId"))
+        bodyWithJson("punishments[0].nomisSanctionSequence", equalTo("$sanctionSequence1"))
+        bodyWithJson("punishments[0].dpsPunishmentId", equalTo("1234"))
+        bodyWithJson("punishments[1].nomisBookingId", equalTo("$bookingId"))
+        bodyWithJson("punishments[1].nomisSanctionSequence", equalTo("$sanctionSequence2"))
+        bodyWithJson("punishments[1].dpsPunishmentId", equalTo("1235"))
       }
 
       verify(telemetryClient).trackEvent(

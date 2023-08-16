@@ -720,73 +720,278 @@ fun adjudicationResponse(
   // language=json
   return """
 {
-  "adjudicationNumber":$adjudicationNumber,
-  "offenderNo": "$offenderNo",
-  "adjudicationSequence": 3,
-  "bookingId": 1207292,
-  "gender": {
-    "code": "F",
-    "description": "Female"
-  },
-  "currentPrison": {
-    "code": "WWI",
-    "description": "HMP Wandsworth"
-  },
-  "partyAddedDate": "2023-06-08",
-  "incident": {
-      "adjudicationIncidentId": 1503064,
-      "reportingStaff": {
-          "staffId": 485585,
-          "firstName": "LUCY",
-          "lastName": "BENNETT",
-          "username": "L.BENNETT",
-           "createdByUsername": "AMARKE_GEN"
-      },
-      "incidentDate": "2023-06-08",
-      "incidentTime": "12:00:00",
-      "reportedDate": "2023-06-08",
-      "reportedTime": "14:17:20",
-      "createdByUsername": "L.BENNETT",
-      "createdDateTime": "2023-06-08T14:17:20.000000",
-      "internalLocation": {
-          "locationId": 26149,
-          "code": "GYM",
-          "description": "MDI-PROG_ACT-GYM"
-      },
-      "incidentType": {
-          "code": "GOV",
-          "description": "Governor's Report"
-      },
-      "details": "Vera incited Brian Duckworth to set fire to a lamp\r\ndamages - the lamp\r\nevidence includes something in a bag with a reference number of 1234\r\nwitnessed by amarktest",
-      "prison": {
-          "code": "MDI",
-          "description": "Moorland (HMP & YOI)"
-      },
-      "prisonerWitnesses": [],
-      "prisonerVictims": [],
-      "otherPrisonersInvolved": [],
-      "reportingOfficers": [],
-      "staffWitnesses": [],
-      "staffVictims": [],
-      "otherStaffInvolved": [],
-      "repairs": []
+    "adjudicationSequence": 1,
+    "offenderNo": "$offenderNo",
+    "bookingId": 1201725,
+    "adjudicationNumber": $adjudicationNumber,
+    "gender": {
+        "code": "M",
+        "description": "Male"
+    },
+    "currentPrison": {
+        "code": "BXI",
+        "description": "BRIXTON (HMP)"
+    },
+    "partyAddedDate": "2023-08-07",
+    "incident": {
+        "adjudicationIncidentId": 1503234,
+        "reportingStaff": {
+            "username": "AMARKE_GEN",
+            "staffId": 485887,
+            "firstName": "ANDY",
+            "lastName": "MARKE",
+            "createdByUsername": "AMARKE_GEN"
+        },
+        "incidentDate": "2023-08-07",
+        "incidentTime": "11:23:00",
+        "reportedDate": "2023-08-07",
+        "reportedTime": "11:20:00",
+        "createdByUsername": "AMARKE_GEN",
+        "createdDateTime": "2023-08-07T11:24:10.501959",
+        "internalLocation": {
+            "locationId": 172315,
+            "code": "W/SHOP13",
+            "description": "WWI-EDUC-W/SHOP13"
+        },
+        "incidentType": {
+            "code": "GOV",
+            "description": "Governor's Report"
+        },
+        "details": "some incident",
+        "prison": {
+            "code": "WWI",
+            "description": "WANDSWORTH (HMP)"
+        },
+        "prisonerWitnesses": [],
+        "prisonerVictims": [],
+        "otherPrisonersInvolved": [],
+        "reportingOfficers": [],
+        "staffWitnesses": [],
+        "staffVictims": [],
+        "otherStaffInvolved": [],
+        "repairs": [
+            {
+                "type": {
+                    "code": "ELEC",
+                    "description": "Electrical"
+                },
+                "createdByUsername": "AMARKE_GEN"
+            },
+            {
+                "type": {
+                    "code": "PLUM",
+                    "description": "Plumbing"
+                },
+                "comment": "plum",
+                "createdByUsername": "AMARKE_GEN"
+            },
+            {
+                "type": {
+                    "code": "DECO",
+                    "description": "Re-Decoration"
+                },
+                "comment": "dec",
+                "createdByUsername": "AMARKE_GEN"
+            },
+            {
+                "type": {
+                    "code": "FABR",
+                    "description": "Fabric"
+                },
+                "comment": "fab",
+                "createdByUsername": "AMARKE_GEN"
+            },
+            {
+                "type": {
+                    "code": "CLEA",
+                    "description": "Cleaning"
+                },
+                "comment": "clea",
+                "createdByUsername": "AMARKE_GEN"
+            },
+            {
+                "type": {
+                    "code": "LOCK",
+                    "description": "Lock"
+                },
+                "comment": "lock",
+                "createdByUsername": "AMARKE_GEN"
+            }
+        ]
     },
     "charge": {
         "offence": {
-            "code": "51:12A",
-            "description": "Has in his possession - (a) any unauthorised article, or (b) a greater quantity of any article than he is authorised to have - possession of unauthorised items",
+            "code": "51:2D",
+            "description": "Detains any person against his will - detention against will of staff (not prison offr)",
             "type": {
                 "code": "51",
                 "description": "Prison Rule 51"
             }
         },
-        "offenceId": "$adjudicationNumber/1",
+        "offenceId": "1525933/2",
         "chargeSequence": $chargeSequence
     },
-    "investigations": [],
-    "hearings": []
-}
-   
+    "investigations": [
+        {
+            "investigator": {
+                "username": "KQG94Y",
+                "staffId": 67362,
+                "firstName": "EKSINRN",
+                "lastName": "AALYLE",
+                "createdByUsername": "AMARKE_GEN"
+            },
+            "comment": "comment one",
+            "dateAssigned": "2023-08-07",
+            "evidence": [
+                {
+                    "type": {
+                        "code": "EVI_BAG",
+                        "description": "Evidence Bag"
+                    },
+                    "date": "2023-08-07",
+                    "detail": "evidence bag",
+                    "createdByUsername": "AMARKE_GEN"
+                },
+                {
+                    "type": {
+                        "code": "OTHER",
+                        "description": "Other"
+                    },
+                    "date": "2023-08-07",
+                    "detail": "other stuff",
+                    "createdByUsername": "AMARKE_GEN"
+                }
+            ]
+        },
+        {
+            "investigator": {
+                "username": "HQZ33B",
+                "staffId": 67839,
+                "firstName": "DIKBLISNG",
+                "lastName": "ABBOY",
+                "createdByUsername": "AMARKE_GEN"
+            },
+            "comment": "another comment",
+            "dateAssigned": "2023-08-07",
+            "evidence": [
+                {
+                    "type": {
+                        "code": "BEHAV",
+                        "description": "Behaviour Report"
+                    },
+                    "date": "2023-08-07",
+                    "detail": "report",
+                    "createdByUsername": "AMARKE_GEN"
+                }
+            ]
+        }
+    ],
+    "hearings": [
+        {
+            "hearingId": 2012708,
+            "type": {
+                "code": "GOV_ADULT",
+                "description": "Governor's Hearing Adult"
+            },
+            "hearingDate": "2023-08-07",
+            "hearingTime": "16:55:00",
+            "internalLocation": {
+                "locationId": 176776,
+                "code": "ADJR",
+                "description": "WWI-RES-CSU-ADJR"
+            },
+            "eventStatus": {
+                "code": "EXP",
+                "description": "Expired"
+            },
+            "hearingResults": [
+                {
+                    "pleaFindingType": {
+                        "code": "GUILTY",
+                        "description": "Guilty"
+                    },
+                    "findingType": {
+                        "code": "PROVED",
+                        "description": "Charge Proved"
+                    },
+                    "charge": {
+                        "offence": {
+                            "code": "51:2D",
+                            "description": "Detains any person against his will - detention against will of staff (not prison offr)",
+                            "type": {
+                                "code": "51",
+                                "description": "Prison Rule 51"
+                            }
+                        },
+                        "offenceId": "1525933/2",
+                        "chargeSequence": 2
+                    },
+                    "offence": {
+                        "code": "51:2D",
+                        "description": "Detains any person against his will - detention against will of staff (not prison offr)",
+                        "type": {
+                            "code": "51",
+                            "description": "Prison Rule 51"
+                        }
+                    },
+                    "resultAwards": [
+                        {
+                            "sequence": 6,
+                            "sanctionType": {
+                                "code": "FORFEIT",
+                                "description": "Forfeiture of Privileges"
+                            },
+                            "sanctionStatus": {
+                                "code": "IMMEDIATE",
+                                "description": "Immediate"
+                            },
+                            "effectiveDate": "2023-08-15",
+                            "statusDate": "2023-08-15",
+                            "sanctionDays": 3,
+                            "consecutiveAward": {
+                                "sequence": 2,
+                                "sanctionType": {
+                                    "code": "ADA",
+                                    "description": "Additional Days Added"
+                                },
+                                "sanctionStatus": {
+                                    "code": "IMMEDIATE",
+                                    "description": "Immediate"
+                                },
+                                "effectiveDate": "2023-08-07",
+                                "statusDate": "2023-08-07",
+                                "sanctionDays": 2,
+                                "sanctionMonths": 1,
+                                "chargeSequence": 1
+                            },
+                            "chargeSequence": 2
+                        },
+                        {
+                            "sequence": 7,
+                            "sanctionType": {
+                                "code": "STOP_PCT",
+                                "description": "Stoppage of Earnings (%)"
+                            },
+                            "sanctionStatus": {
+                                "code": "IMMEDIATE",
+                                "description": "Immediate"
+                            },
+                            "effectiveDate": "2023-08-15",
+                            "statusDate": "2023-08-15",
+                            "sanctionMonths": 2,
+                            "compensationAmount": 120.12,
+                            "chargeSequence": 2
+                        }
+                    ],
+                    "createdDateTime": "2023-08-15T08:58:08.015285",
+                    "createdByUsername": "AMARKE_GEN"
+                }
+            ],
+            "createdDateTime": "2023-08-07T16:56:17.018049",
+            "createdByUsername": "AMARKE_GEN"
+        }
+    ]
+}    
   """.trimIndent()
 }
 
