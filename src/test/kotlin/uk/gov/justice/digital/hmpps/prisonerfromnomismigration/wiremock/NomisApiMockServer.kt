@@ -420,6 +420,17 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }
   }
 
+  fun verifyActivitiesGetIds(url: String, prisonId: String, courseActivityId: Long? = null) {
+    val request = getRequestedFor(
+      urlPathEqualTo(url),
+    )
+      .withQueryParam("prisonId", equalTo(prisonId))
+      .apply { courseActivityId?.run { withQueryParam("courseActivityId", equalTo(courseActivityId.toString())) } }
+    nomisApi.verify(
+      request,
+    )
+  }
+
   fun stubMultipleGetActivities(intProgression: IntProgression) {
     (intProgression).forEach {
       nomisApi.stubFor(

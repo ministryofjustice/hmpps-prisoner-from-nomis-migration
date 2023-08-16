@@ -421,13 +421,14 @@ internal class NomisApiServiceTest {
         nomisService.getActivityIds(
           prisonId = "BXI",
           excludeProgramCodes = listOf("PROGRAM1", "PROGRAM2"),
+          courseActivityId = 123,
           pageNumber = 0,
           pageSize = 3,
         )
       }
       nomisApi.verify(
         getRequestedFor(
-          urlEqualTo("/activities/ids?prisonId=BXI&excludeProgramCode=PROGRAM1&excludeProgramCode=PROGRAM2&page=0&size=3"),
+          urlEqualTo("/activities/ids?prisonId=BXI&excludeProgramCode=PROGRAM1&excludeProgramCode=PROGRAM2&courseActivityId=123&page=0&size=3"),
         ),
       )
     }
@@ -695,13 +696,14 @@ internal class NomisApiServiceTest {
         nomisService.getAllocationIds(
           prisonId = "BXI",
           excludeProgramCodes = listOf("PROGRAM1", "PROGRAM2"),
+          courseActivityId = 123,
           pageNumber = 0,
           pageSize = 3,
         )
       }
       nomisApi.verify(
         getRequestedFor(
-          urlEqualTo("/allocations/ids?prisonId=BXI&excludeProgramCode=PROGRAM1&excludeProgramCode=PROGRAM2&page=0&size=3"),
+          urlEqualTo("/allocations/ids?prisonId=BXI&excludeProgramCode=PROGRAM1&excludeProgramCode=PROGRAM2&courseActivityId=123&page=0&size=3"),
         ),
       )
     }

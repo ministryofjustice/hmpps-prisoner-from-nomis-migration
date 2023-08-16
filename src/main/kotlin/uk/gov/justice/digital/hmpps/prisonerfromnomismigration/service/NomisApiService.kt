@@ -185,6 +185,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
   suspend fun getActivityIds(
     prisonId: String,
     excludeProgramCodes: List<String>,
+    courseActivityId: Long? = null,
     pageNumber: Long,
     pageSize: Long,
   ): PageImpl<FindActiveActivityIdsResponse> =
@@ -193,6 +194,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
         it.path("/activities/ids")
           .queryParam("prisonId", prisonId)
           .queryParams(LinkedMultiValueMap<String, String>().apply { addAll("excludeProgramCode", excludeProgramCodes) })
+          .apply { courseActivityId?.run { queryParam("courseActivityId", courseActivityId) } }
           .queryParam("page", pageNumber)
           .queryParam("size", pageSize)
           .build()
@@ -211,6 +213,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
   suspend fun getAllocationIds(
     prisonId: String,
     excludeProgramCodes: List<String>,
+    courseActivityId: Long? = null,
     pageNumber: Long,
     pageSize: Long,
   ): PageImpl<FindActiveAllocationIdsResponse> =
@@ -219,6 +222,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
         it.path("/allocations/ids")
           .queryParam("prisonId", prisonId)
           .queryParams(LinkedMultiValueMap<String, String>().apply { addAll("excludeProgramCode", excludeProgramCodes) })
+          .apply { courseActivityId?.run { queryParam("courseActivityId", courseActivityId) } }
           .queryParam("page", pageNumber)
           .queryParam("size", pageSize)
           .build()

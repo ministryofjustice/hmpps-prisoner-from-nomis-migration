@@ -16,6 +16,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
@@ -95,7 +96,7 @@ class ActivitiesMigrationServiceTest {
 
     @BeforeEach
     internal fun setUp() {
-      coEvery { nomisApiService.getActivityIds(any(), any(), any(), any()) } returns
+      coEvery { nomisApiService.getActivityIds(any(), any(), any(), any(), any()) } returns
         pages(1)
 
       coEvery {
@@ -128,7 +129,7 @@ class ActivitiesMigrationServiceTest {
 
     @Test
     internal fun `will pass activity count and filter to queue`(): Unit = runBlocking {
-      coEvery { nomisApiService.getActivityIds(any(), any(), any(), any()) } returns
+      coEvery { nomisApiService.getActivityIds(any(), any(), any(), any(), any()) } returns
         pages(totalEntities = 7)
 
       service.startMigration(ActivitiesMigrationFilter(prisonId = "BXI"))
@@ -147,7 +148,7 @@ class ActivitiesMigrationServiceTest {
     internal fun `will write migration history record`() {
       val activitiesMigrationFilter = ActivitiesMigrationFilter(prisonId = "BXI")
 
-      coEvery { nomisApiService.getActivityIds(any(), any(), any(), any()) } returns
+      coEvery { nomisApiService.getActivityIds(any(), any(), any(), any(), any()) } returns
         pages(totalEntities = 7)
 
       runBlocking {
@@ -174,7 +175,7 @@ class ActivitiesMigrationServiceTest {
 
     @Test
     internal fun `will write analytic with estimated count and filter`() {
-      coEvery { nomisApiService.getActivityIds(any(), any(), any(), any()) } returns pages(totalEntities = 7)
+      coEvery { nomisApiService.getActivityIds(any(), any(), any(), any(), any()) } returns pages(totalEntities = 7)
 
       runBlocking {
         service.startMigration(ActivitiesMigrationFilter(prisonId = "BXI"))
@@ -197,7 +198,7 @@ class ActivitiesMigrationServiceTest {
 
     @BeforeEach
     internal fun setUp(): Unit = runBlocking {
-      whenever(nomisApiService.getActivityIds(any(), any(), any(), any())).thenReturn(
+      whenever(nomisApiService.getActivityIds(any(), any(), anyOrNull(), any(), any())).thenReturn(
         pages(totalEntities = 7, pageSize = 3),
       )
     }
@@ -299,7 +300,7 @@ class ActivitiesMigrationServiceTest {
     @BeforeEach
     internal fun setUp(): Unit = runBlocking {
       whenever(migrationHistoryService.isCancelling(any())).thenReturn(false)
-      whenever(nomisApiService.getActivityIds(any(), any(), any(), any())).thenReturn(
+      whenever(nomisApiService.getActivityIds(any(), any(), anyOrNull(), any(), any())).thenReturn(
         pages(totalEntities = 7, pageSize = 3),
       )
       whenever(activitiesApiService.getActivityCategories()).thenReturn(listOf("SAA_INDUCTION"))
@@ -357,7 +358,7 @@ class ActivitiesMigrationServiceTest {
     internal fun `will send MIGRATE_ACTIVITIES with courseActivityId for each activity`(): Unit = runBlocking {
       val context: KArgumentCaptor<MigrationContext<FindActiveActivityIdsResponse>> = argumentCaptor()
 
-      whenever(nomisApiService.getActivityIds(any(), any(), any(), any())).thenReturn(
+      whenever(nomisApiService.getActivityIds(any(), any(), anyOrNull(), any(), any())).thenReturn(
         pages(totalEntities = 7, pageSize = 3, startId = 1000),
       )
 
@@ -396,7 +397,7 @@ class ActivitiesMigrationServiceTest {
     internal fun `will not send MIGRATE_ACTIVITIES when cancelling`(): Unit = runBlocking {
       whenever(migrationHistoryService.isCancelling(any())).thenReturn(true)
 
-      whenever(nomisApiService.getActivityIds(any(), any(), any(), any())).thenReturn(
+      whenever(nomisApiService.getActivityIds(any(), any(), anyOrNull(), any(), any())).thenReturn(
         pages(totalEntities = 7, pageSize = 3, startId = 1000),
       )
 
