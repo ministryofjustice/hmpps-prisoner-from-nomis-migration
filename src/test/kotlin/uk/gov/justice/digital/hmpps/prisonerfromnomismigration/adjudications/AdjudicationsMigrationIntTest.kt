@@ -87,7 +87,7 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubMultipleGetAdjudicationIdCounts(totalElements = 21, pageSize = 10)
       nomisApi.stubMultipleGetAdjudications(1..21)
       mappingApi.stubAllMappingsNotFound(ADJUDICATIONS_GET_MAPPING_URL)
-      mappingApi.stubMappingCreate("/mapping/adjudications")
+      mappingApi.stubMappingCreate("/mapping/adjudications/all")
 
       adjudicationsApi.stubCreateAdjudicationForMigration()
       mappingApi.stubAdjudicationMappingByMigrationId(count = 21)
@@ -126,7 +126,7 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
       await untilAsserted {
         assertThat(adjudicationsApi.createAdjudicationCount()).isEqualTo(21)
       }
-      assertThat(mappingApi.createMappingCount("/mapping/adjudications")).isEqualTo(21)
+      assertThat(mappingApi.createMappingCount("/mapping/adjudications/all")).isEqualTo(21)
     }
 
     @Test
@@ -134,7 +134,7 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
       val adjudicationNumber = 12345L
       val chargeSequence = 1
       val offenderNo = "A1234BC"
-      val chargeNumber = "12345/1"
+      val chargeNumber = "12345-1"
       val adjudicationPageResponse = adjudicationsIdsPagedResponse(
         adjudicationNumber = adjudicationNumber,
         chargeSequence = chargeSequence,
@@ -155,7 +155,7 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
         chargeSequence = chargeSequence,
         chargeNumber = chargeNumber,
       )
-      mappingApi.stubMappingCreate("/mapping/adjudications")
+      mappingApi.stubMappingCreate("/mapping/adjudications/all")
       mappingApi.stubAdjudicationMappingByMigrationId(count = 1)
 
       webTestClient.post().uri("/migrate/adjudications")
@@ -189,9 +189,9 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
       }
 
       mappingApi.verifyCreateMappingAdjudication {
-        bodyWithJson("$.adjudicationNumber", equalTo("$adjudicationNumber"))
-        bodyWithJson("$.chargeSequence", equalTo("$chargeSequence"))
-        bodyWithJson("$.chargeNumber", equalTo(chargeNumber))
+        bodyWithJson("adjudicationId.adjudicationNumber", equalTo("$adjudicationNumber"))
+        bodyWithJson("adjudicationId.chargeSequence", equalTo("$chargeSequence"))
+        bodyWithJson("adjudicationId.chargeNumber", equalTo(chargeNumber))
       }
 
       verify(telemetryClient).trackEvent(
@@ -214,7 +214,7 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubMultipleGetAdjudications(1..3)
       adjudicationsApi.stubCreateAdjudicationForMigration(12345)
       mappingApi.stubAllMappingsNotFound(ADJUDICATIONS_GET_MAPPING_URL)
-      mappingApi.stubMappingCreate("/mapping/adjudications")
+      mappingApi.stubMappingCreate("/mapping/adjudications/all")
 
       // stub 10 migrated records and 1 fake a failure
       mappingApi.stubAdjudicationMappingByMigrationId(count = 2)
@@ -279,7 +279,7 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubGetAdjudication(adjudicationNumber = 654321, chargeSequence = 1)
       mappingApi.stubAllMappingsNotFound(ADJUDICATIONS_GET_MAPPING_URL)
       adjudicationsApi.stubCreateAdjudicationForMigration(654321L)
-      mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/adjudications")
+      mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/adjudications/all")
 
       webTestClient.post().uri("/migrate/adjudications")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ADJUDICATIONS")))
@@ -298,7 +298,7 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().isAccepted
 
       // wait for all mappings to be created before verifying
-      await untilCallTo { mappingApi.createMappingCount("/mapping/adjudications") } matches { it == 2 }
+      await untilCallTo { mappingApi.createMappingCount("/mapping/adjudications/all") } matches { it == 2 }
 
       // check that one adjudication is created
       assertThat(adjudicationsApi.createAdjudicationCount()).isEqualTo(1)
@@ -307,7 +307,7 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
       mappingApi.verifyCreateMappingAdjudication(
         adjudicationNumber = 654321,
         chargeSequence = 1,
-        chargeNumber = "654321/1",
+        chargeNumber = "654321-1",
         times = 2,
       )
     }

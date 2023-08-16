@@ -487,16 +487,16 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
   ) {
     verify(
       times,
-      postRequestedFor(urlPathEqualTo("/mapping/adjudications"))
-        .withRequestBody(matchingJsonPath("adjudicationNumber", equalTo(adjudicationNumber.toString())))
-        .withRequestBody(matchingJsonPath("chargeSequence", equalTo(chargeSequence.toString())))
-        .withRequestBody(matchingJsonPath("chargeNumber", equalTo(chargeNumber))),
+      postRequestedFor(urlPathEqualTo("/mapping/adjudications/all"))
+        .withRequestBody(matchingJsonPath("adjudicationId.adjudicationNumber", equalTo(adjudicationNumber.toString())))
+        .withRequestBody(matchingJsonPath("adjudicationId.chargeSequence", equalTo(chargeSequence.toString())))
+        .withRequestBody(matchingJsonPath("adjudicationId.chargeNumber", equalTo(chargeNumber))),
     )
   }
 
   fun verifyCreateMappingAdjudication(builder: RequestPatternBuilder.() -> RequestPatternBuilder = { this }) =
     verify(
-      postRequestedFor(urlEqualTo("/mapping/adjudications")).builder(),
+      postRequestedFor(urlEqualTo("/mapping/adjudications/all")).builder(),
     )
 
   private fun pageContent(content: String, count: Int) = """
