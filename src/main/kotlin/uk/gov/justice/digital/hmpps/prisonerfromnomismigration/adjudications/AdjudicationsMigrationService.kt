@@ -39,7 +39,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationCon
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AdjudicationAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AdjudicationAllMappingDto.MappingType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AdjudicationHearingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AdjudicationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AdjudicationPunishmentMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationResponse
@@ -316,8 +318,19 @@ class AdjudicationsMigrationService(
       chargeSequence = mapping.chargeNumberMapping.offenceSequence.toInt(),
       chargeNumber = mapping.chargeNumberMapping.chargeNumber,
     ),
-    hearings = emptyList(),
-    punishments = emptyList(),
+    hearings = mapping.hearingMappings?.map {
+      AdjudicationHearingMappingDto(
+        dpsHearingId = it.hearingId.toString(),
+        nomisHearingId = it.oicHearingId,
+      )
+    } ?: emptyList(),
+    punishments = mapping.punishmentMappings?.map {
+      AdjudicationPunishmentMappingDto(
+        dpsPunishmentId = it.punishmentId.toString(),
+        nomisBookingId = it.bookingId,
+        nomisSanctionSequence = it.sanctionSeq.toInt(),
+      )
+    } ?: emptyList(),
     label = context.migrationId,
     mappingType = MappingType.MIGRATED,
   ).run {
