@@ -28,7 +28,7 @@ class AllocationsMigrationResource(
   @PreAuthorize("hasRole('ROLE_MIGRATE_ACTIVITIES')")
   @GetMapping("/allocations/history")
   @Operation(
-    summary = "Lists all filtered migration history records un-paged for activities",
+    summary = "Lists all filtered migration history records un-paged for allocations",
     description = "The records are un-paged and requires role <b>MIGRATE_ACTIVITIES</b>",
     responses = [
       ApiResponse(
