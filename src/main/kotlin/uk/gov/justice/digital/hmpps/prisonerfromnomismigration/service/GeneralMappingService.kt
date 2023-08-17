@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.ActivitiesMappingService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.AllocationsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.AdjudicationsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.AppointmentsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustmentsMappingService
@@ -14,6 +15,7 @@ class GeneralMappingService(
   private val sentencingAdjustmentsMappingService: SentencingAdjustmentsMappingService,
   private val visitMappingService: VisitMappingService,
   private val activityMappingService: ActivitiesMappingService,
+  private val allocationsMappingService: AllocationsMappingService,
 ) {
   suspend fun getMigrationCount(migrationId: String, migrationType: MigrationType): Long? =
     when (migrationType) {
@@ -22,5 +24,6 @@ class GeneralMappingService(
       MigrationType.SENTENCING_ADJUSTMENTS -> sentencingAdjustmentsMappingService.getMigrationCount(migrationId)
       MigrationType.VISITS -> visitMappingService.getMigrationCount(migrationId)
       MigrationType.ACTIVITIES -> activityMappingService.getMigrationCount(migrationId)
+      MigrationType.ALLOCATIONS -> allocationsMappingService.getMigrationCount(migrationId)
     }
 }
