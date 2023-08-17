@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2023-08-16.2738.6d0da08"
+    "version": "2023-08-16.2751.90219dc"
   },
   "servers": [
     {
@@ -2490,7 +2490,7 @@
         }
       }
     },
-    "/mapping/activities/migrated/latest": {
+    "/mapping/activities/migration/migrated/latest": {
       "get": {
         "tags": [
           "activity-migration-resource"
