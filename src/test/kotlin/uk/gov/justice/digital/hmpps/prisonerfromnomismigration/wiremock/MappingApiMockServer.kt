@@ -31,6 +31,8 @@ class MappingApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallb
     const val VISITS_GET_MAPPING_URL = "/mapping/visits/nomisId"
     const val ACTIVITIES_CREATE_MAPPING_URL = "/mapping/activities/migration"
     const val ACTIVITIES_GET_MAPPING_URL = "/mapping/activities/migration/nomis-course-activity-id"
+    const val ALLOCATIONS_CREATE_MAPPING_URL = "/mapping/allocations/migration"
+    const val ALLOCATIONS_GET_MAPPING_URL = "/mapping/allocations/migration/nomis-allocation-id"
     const val ADJUDICATIONS_GET_MAPPING_URL = "/mapping/adjudications/adjudication-number"
     const val APPOINTMENTS_CREATE_MAPPING_URL = "/mapping/appointments"
     const val APPOINTMENTS_GET_MAPPING_URL = "/mapping/appointments/nomis-event-id"
@@ -443,6 +445,21 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }"""
     stubFor(
       get(urlPathMatching("/mapping/activities/migration/migration-id/.*")).willReturn(
+        okJson(pageContent(content, count)),
+      ),
+    )
+  }
+
+  fun stubAllocationsMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 7) {
+    val content = """{
+      "nomisAllocationId": 123,
+      "activityAllocationId": 456,
+      "activityScheduleId": 789,
+      "label": "2022-02-14T09:58:45",
+      "whenCreated": "$whenCreated"
+    }"""
+    stubFor(
+      get(urlPathMatching("/mapping/allocations/migration/migration-id/.*")).willReturn(
         okJson(pageContent(content, count)),
       ),
     )

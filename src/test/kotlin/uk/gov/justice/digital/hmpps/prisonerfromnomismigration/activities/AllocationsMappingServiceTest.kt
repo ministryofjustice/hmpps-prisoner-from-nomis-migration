@@ -24,63 +24,63 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import org.springframework.web.reactive.function.client.WebClientResponseException.NotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ActivityMigrationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AllocationMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 
 @SpringAPIServiceTest
-@Import(ActivitiesMappingService::class, ActivitiesConfiguration::class)
-class ActivitiesMappingServiceTest {
+@Import(AllocationsMappingService::class, ActivitiesConfiguration::class)
+class AllocationsMappingServiceTest {
 
   @Autowired
-  private lateinit var activitiesMappingService: ActivitiesMappingService
+  private lateinit var allocationsMappingService: AllocationsMappingService
 
   @Nested
   inner class CreateNomisMapping {
     @Test
     fun `should provide oath2 token`() {
-      mappingApi.stubMappingCreate(MappingApiExtension.ACTIVITIES_CREATE_MAPPING_URL)
+      mappingApi.stubMappingCreate(MappingApiExtension.ALLOCATIONS_CREATE_MAPPING_URL)
 
       runBlocking {
-        activitiesMappingService.createMapping(
-          ActivityMigrationMappingDto(
-            nomisCourseActivityId = 1234L,
-            activityScheduleId = 2345L,
-            activityScheduleId2 = null,
+        allocationsMappingService.createMapping(
+          AllocationMigrationMappingDto(
+            nomisAllocationId = 1234L,
+            activityAllocationId = 2345L,
+            activityScheduleId = 3456L,
             label = "some-migration-id",
           ),
-          object : ParameterizedTypeReference<DuplicateErrorResponse<ActivityMigrationMappingDto>>() {},
+          object : ParameterizedTypeReference<DuplicateErrorResponse<AllocationMigrationMappingDto>>() {},
         )
       }
 
       mappingApi.verify(
         postRequestedFor(
-          urlPathEqualTo("/mapping/activities/migration"),
+          urlPathEqualTo("/mapping/allocations/migration"),
         ).withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
     @Test
     fun `should create mapping`() {
-      mappingApi.stubMappingCreate(MappingApiExtension.ACTIVITIES_CREATE_MAPPING_URL)
+      mappingApi.stubMappingCreate(MappingApiExtension.ALLOCATIONS_CREATE_MAPPING_URL)
 
       runBlocking {
-        activitiesMappingService.createMapping(
-          ActivityMigrationMappingDto(
-            nomisCourseActivityId = 1234L,
-            activityScheduleId = 2345L,
-            activityScheduleId2 = 3456L,
+        allocationsMappingService.createMapping(
+          AllocationMigrationMappingDto(
+            nomisAllocationId = 1234L,
+            activityAllocationId = 2345L,
+            activityScheduleId = 3456L,
             label = "some-migration-id",
           ),
-          object : ParameterizedTypeReference<DuplicateErrorResponse<ActivityMigrationMappingDto>>() {},
+          object : ParameterizedTypeReference<DuplicateErrorResponse<AllocationMigrationMappingDto>>() {},
         )
       }
 
       mappingApi.verify(
-        postRequestedFor(urlPathEqualTo("/mapping/activities/migration"))
-          .withRequestBody(matchingJsonPath("nomisCourseActivityId", equalTo("1234")))
-          .withRequestBody(matchingJsonPath("activityScheduleId", equalTo("2345")))
-          .withRequestBody(matchingJsonPath("activityScheduleId2", equalTo("3456")))
+        postRequestedFor(urlPathEqualTo("/mapping/allocations/migration"))
+          .withRequestBody(matchingJsonPath("nomisAllocationId", equalTo("1234")))
+          .withRequestBody(matchingJsonPath("activityAllocationId", equalTo("2345")))
+          .withRequestBody(matchingJsonPath("activityScheduleId", equalTo("3456")))
           .withRequestBody(matchingJsonPath("label", equalTo("some-migration-id"))),
       )
     }
@@ -88,7 +88,7 @@ class ActivitiesMappingServiceTest {
     @Test
     fun `should throw exception for any error`() {
       mappingApi.stubFor(
-        post(urlPathMatching("/mapping/activities/migration")).willReturn(
+        post(urlPathMatching("/mapping/allocations/migration")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
@@ -98,14 +98,14 @@ class ActivitiesMappingServiceTest {
 
       assertThatThrownBy {
         runBlocking {
-          activitiesMappingService.createMapping(
-            ActivityMigrationMappingDto(
-              nomisCourseActivityId = 1234L,
-              activityScheduleId = 2345L,
-              activityScheduleId2 = 3456L,
+          allocationsMappingService.createMapping(
+            AllocationMigrationMappingDto(
+              nomisAllocationId = 1234L,
+              activityAllocationId = 2345L,
+              activityScheduleId = 3456L,
               label = "some-migration-id",
             ),
-            object : ParameterizedTypeReference<DuplicateErrorResponse<ActivityMigrationMappingDto>>() {},
+            object : ParameterizedTypeReference<DuplicateErrorResponse<AllocationMigrationMappingDto>>() {},
           )
         }
       }.isInstanceOf(InternalServerError::class.java)
@@ -117,16 +117,16 @@ class ActivitiesMappingServiceTest {
     @Test
     fun `should provide oath2 token`() {
       mappingApi.stubFor(
-        get(urlPathMatching("/mapping/activities/migration/nomis-course-activity-id/.*")).willReturn(
+        get(urlPathMatching("/mapping/allocations/migration/nomis-allocation-id/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
             .withBody(
               """
             {
-              "nomisCourseActivityId": 1234,
-              "activityScheduleId": "2345",
-              "activityScheduleId2": "3456",
+              "nomisAllocationId": 1234,
+              "activityAllocationId": "2345",
+              "activityScheduleId": "3456",
               "label": "2020-01-01T00:00:00"
             }
               """.trimIndent(),
@@ -135,12 +135,12 @@ class ActivitiesMappingServiceTest {
       )
 
       runBlocking {
-        activitiesMappingService.findNomisMapping(1234)
+        allocationsMappingService.findNomisMapping(1234)
       }
 
       mappingApi.verify(
         getRequestedFor(
-          urlPathEqualTo("/mapping/activities/migration/nomis-course-activity-id/1234"),
+          urlPathEqualTo("/mapping/allocations/migration/nomis-allocation-id/1234"),
         ).withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
@@ -148,7 +148,7 @@ class ActivitiesMappingServiceTest {
     @Test
     fun `should return null when not found`() {
       mappingApi.stubFor(
-        get(urlPathMatching("/mapping/activities/migration/nomis-course-activity-id/.*")).willReturn(
+        get(urlPathMatching("/mapping/allocations/migration/nomis-allocation-id/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
@@ -157,41 +157,41 @@ class ActivitiesMappingServiceTest {
       )
 
       assertThat(
-        runBlocking { activitiesMappingService.findNomisMapping(1234) },
+        runBlocking { allocationsMappingService.findNomisMapping(1234) },
       ).isNull()
     }
 
     @Test
     fun `should return the mapping when found`(): Unit = runBlocking {
       mappingApi.stubFor(
-        get(urlPathMatching("/mapping/activities/migration/nomis-course-activity-id/.*")).willReturn(
+        get(urlPathMatching("/mapping/allocations/migration/nomis-allocation-id/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
             .withBody(
               """
             {
-              "nomisCourseActivityId": 1234,
-              "activityScheduleId": "2345",
-              "activityScheduleId2": "3456",
+              "nomisAllocationId": 1234,
+              "activityAllocationId": "2345",
+              "activityScheduleId": "3456",
               "label": "2020-01-01T00:00:00"
             }
               """.trimIndent(),
             ),
         ),
       )
-      val mapping = activitiesMappingService.findNomisMapping(1234)
+      val mapping = allocationsMappingService.findNomisMapping(1234)
       assertThat(mapping).isNotNull
-      assertThat(mapping!!.nomisCourseActivityId).isEqualTo(1234)
-      assertThat(mapping.activityScheduleId).isEqualTo(2345)
-      assertThat(mapping.activityScheduleId2).isEqualTo(3456)
+      assertThat(mapping!!.nomisAllocationId).isEqualTo(1234)
+      assertThat(mapping.activityAllocationId).isEqualTo(2345)
+      assertThat(mapping.activityScheduleId).isEqualTo(3456)
       assertThat(mapping.label).isEqualTo("2020-01-01T00:00:00")
     }
 
     @Test
     fun `should throw exception for any other error`() {
       mappingApi.stubFor(
-        get(urlPathMatching("/mapping/activities/migration/nomis-course-activity-id/.*")).willReturn(
+        get(urlPathMatching("/mapping/allocations/migration/nomis-allocation-id/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
@@ -201,7 +201,7 @@ class ActivitiesMappingServiceTest {
 
       assertThatThrownBy {
         runBlocking {
-          activitiesMappingService.findNomisMapping(1234)
+          allocationsMappingService.findNomisMapping(1234)
         }
       }.isInstanceOf(InternalServerError::class.java)
     }
@@ -216,11 +216,11 @@ class ActivitiesMappingServiceTest {
 
     @Test
     internal fun `should supply authentication token`(): Unit = runBlocking {
-      activitiesMappingService.findLatestMigration()
+      allocationsMappingService.findLatestMigration()
 
       mappingApi.verify(
         getRequestedFor(
-          urlPathEqualTo("/mapping/activities/migration/migrated/latest"),
+          urlPathEqualTo("/mapping/allocations/migration/migrated/latest"),
         )
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
@@ -229,7 +229,7 @@ class ActivitiesMappingServiceTest {
     @Test
     internal fun `should return null when not found`(): Unit = runBlocking {
       mappingApi.stubFor(
-        get(urlPathEqualTo("/mapping/activities/migration/migrated/latest")).willReturn(
+        get(urlPathEqualTo("/mapping/allocations/migration/migrated/latest")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
@@ -237,21 +237,21 @@ class ActivitiesMappingServiceTest {
         ),
       )
 
-      assertThat(activitiesMappingService.findLatestMigration()).isNull()
+      assertThat(allocationsMappingService.findLatestMigration()).isNull()
     }
 
     @Test
     internal fun `should return the mapping when found`(): Unit = runBlocking {
       mappingApi.stubFor(
-        get(WireMock.urlEqualTo("/mapping/activities/migration/migrated/latest")).willReturn(
+        get(WireMock.urlEqualTo("/mapping/allocations/migration/migrated/latest")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withBody(
               """
                 {
-                  "nomisCourseActivityId": 1234,
-                  "activityScheduleId": "2345",
-                  "activityScheduleId2": "3456",
+                  "nomisAllocationId": 1234,
+                  "activityAllocationId": "2345",
+                  "activityScheduleId": "3456",
                   "label": "2022-02-16T14:20:15",
                   "whenCreated": "2022-02-16T16:21:15.589091"
                 }
@@ -260,7 +260,7 @@ class ActivitiesMappingServiceTest {
         ),
       )
 
-      val mapping = activitiesMappingService.findLatestMigration()
+      val mapping = allocationsMappingService.findLatestMigration()
       assertThat(mapping).isNotNull
       assertThat(mapping?.migrationId).isEqualTo("2022-02-16T14:20:15")
     }
@@ -268,7 +268,7 @@ class ActivitiesMappingServiceTest {
     @Test
     internal fun `should throw exception for any other error`() {
       mappingApi.stubFor(
-        get(urlPathMatching("/mapping/activities/migration/migrated/latest")).willReturn(
+        get(urlPathMatching("/mapping/allocations/migration/migrated/latest")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
@@ -278,7 +278,7 @@ class ActivitiesMappingServiceTest {
 
       assertThatThrownBy {
         runBlocking {
-          activitiesMappingService.findLatestMigration()
+          allocationsMappingService.findLatestMigration()
         }
       }.isInstanceOf(InternalServerError::class.java)
     }
@@ -288,16 +288,16 @@ class ActivitiesMappingServiceTest {
   inner class GetMigrationDetails {
     @BeforeEach
     internal fun setUp() {
-      mappingApi.stubActivitiesMappingByMigrationId("2020-01-01T11:10:00")
+      mappingApi.stubAllocationsMappingByMigrationId("2020-01-01T11:10:00")
     }
 
     @Test
     internal fun `should supply authentication token`(): Unit = runBlocking {
-      activitiesMappingService.getMigrationDetails("2020-01-01T10:00:00")
+      allocationsMappingService.getMigrationDetails("2020-01-01T10:00:00")
 
       mappingApi.verify(
         getRequestedFor(
-          urlPathMatching("/mapping/activities/migration/migration-id/.*"),
+          urlPathMatching("/mapping/allocations/migration/migration-id/.*"),
         )
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
@@ -306,7 +306,7 @@ class ActivitiesMappingServiceTest {
     @Test
     internal fun `should throw error when not found`() {
       mappingApi.stubFor(
-        get(urlPathMatching("/mapping/activities/migration/migration-id/.*")).willReturn(
+        get(urlPathMatching("/mapping/allocations/migration/migration-id/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
@@ -316,19 +316,19 @@ class ActivitiesMappingServiceTest {
 
       assertThatThrownBy {
         runBlocking {
-          activitiesMappingService.getMigrationDetails("2020-01-01T10:00:00")
+          allocationsMappingService.getMigrationDetails("2020-01-01T10:00:00")
         }
       }.isInstanceOf(NotFound::class.java)
     }
 
     @Test
     internal fun `should return the mapping when found`(): Unit = runBlocking {
-      mappingApi.stubActivitiesMappingByMigrationId(
+      mappingApi.stubAllocationsMappingByMigrationId(
         whenCreated = "2020-01-01T11:10:00",
         count = 56_766,
       )
 
-      val mapping = activitiesMappingService.getMigrationDetails("2020-01-01T10:00:00")
+      val mapping = allocationsMappingService.getMigrationDetails("2020-01-01T10:00:00")
       assertThat(mapping).isNotNull
       assertThat(mapping.startedDateTime).isEqualTo("2020-01-01T11:10:00")
       assertThat(mapping.count).isEqualTo(56766)
@@ -337,7 +337,7 @@ class ActivitiesMappingServiceTest {
     @Test
     internal fun `should throw exception for any other error`() {
       mappingApi.stubFor(
-        get(urlPathMatching("/mapping/activities/migration/migration-id/.*")).willReturn(
+        get(urlPathMatching("/mapping/allocations/migration/migration-id/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
@@ -347,7 +347,7 @@ class ActivitiesMappingServiceTest {
 
       assertThatThrownBy {
         runBlocking {
-          activitiesMappingService.getMigrationDetails("2020-01-01T10:00:00")
+          allocationsMappingService.getMigrationDetails("2020-01-01T10:00:00")
         }
       }.isInstanceOf(InternalServerError::class.java)
     }
@@ -355,13 +355,14 @@ class ActivitiesMappingServiceTest {
 
   @Nested
   inner class GetMigrationCount {
+
     @Test
     internal fun `should supply authentication token`(): Unit = runBlocking {
-      activitiesMappingService.getMigrationCount("2020-01-01T10:00:00")
+      allocationsMappingService.getMigrationCount("2020-01-01T10:00:00")
 
       mappingApi.verify(
         getRequestedFor(
-          urlPathMatching("/mapping/activities/migration/migration-id/.*"),
+          urlPathMatching("/mapping/allocations/migration/migration-id/.*"),
         )
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
@@ -370,7 +371,7 @@ class ActivitiesMappingServiceTest {
     @Test
     internal fun `should return zero when not found`(): Unit = runBlocking {
       mappingApi.stubFor(
-        get(urlPathMatching("/mapping/activities/migration/migration-id/.*")).willReturn(
+        get(urlPathMatching("/mapping/alloations/migration/migration-id/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
@@ -378,23 +379,23 @@ class ActivitiesMappingServiceTest {
         ),
       )
 
-      assertThat(activitiesMappingService.getMigrationCount("2020-01-01T10:00:00")).isEqualTo(0)
+      assertThat(allocationsMappingService.getMigrationCount("2020-01-01T10:00:00")).isEqualTo(0)
     }
 
     @Test
     internal fun `should return the mapping count when found`(): Unit = runBlocking {
-      mappingApi.stubActivitiesMappingByMigrationId(
+      mappingApi.stubAllocationsMappingByMigrationId(
         whenCreated = "2020-01-01T11:10:00",
         count = 56_766,
       )
 
-      assertThat(activitiesMappingService.getMigrationCount("2020-01-01T10:00:00")).isEqualTo(56_766)
+      assertThat(allocationsMappingService.getMigrationCount("2020-01-01T10:00:00")).isEqualTo(56_766)
     }
 
     @Test
     internal fun `should throw exception for any other error`() {
       mappingApi.stubFor(
-        get(urlPathMatching("/mapping/activities/migration/migration-id/.*")).willReturn(
+        get(urlPathMatching("/mapping/allocations/migration/migration-id/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
@@ -404,7 +405,7 @@ class ActivitiesMappingServiceTest {
 
       assertThatThrownBy {
         runBlocking {
-          activitiesMappingService.getMigrationCount("2020-01-01T10:00:00")
+          allocationsMappingService.getMigrationCount("2020-01-01T10:00:00")
         }
       }.isInstanceOf(InternalServerError::class.java)
     }
