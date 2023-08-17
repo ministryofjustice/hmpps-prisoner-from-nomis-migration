@@ -794,6 +794,8 @@ internal class NomisApiServiceTest {
             .withBody(
               """
                 {
+                  "prisonId": "BXI",
+                  "courseActivityId": 123,
                   "nomisId": "A1234BC",
                   "bookingId": 12345,
                   "startDate": "2023-03-12",
