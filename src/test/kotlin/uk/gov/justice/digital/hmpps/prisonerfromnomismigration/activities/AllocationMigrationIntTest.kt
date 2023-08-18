@@ -16,6 +16,7 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.web.reactive.function.BodyInserters
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
@@ -49,7 +50,32 @@ class AllocationMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().is2xxSuccessful
     }
 
-    // Call this after each migration is started - it means we can make immediate assertions, and we know the next test has a clean slate
+    private fun stubMigrationDependencies(
+      entities: Int = 1,
+      stubGetActivityMappings: () -> Unit = { mappingApi.stubMultipleGetActivityMappings(entities) },
+      stubCreateMapping: () -> Unit = { mappingApi.stubMappingCreate(MappingApiExtension.ALLOCATIONS_CREATE_MAPPING_URL) },
+    ) {
+      activitiesApi.stubGetActivityCategories()
+      nomisApi.stubGetInitialCount(NomisApiExtension.ALLOCATIONS_ID_URL, entities.toLong()) { allocationsIdsPagedResponse(it) }
+      nomisApi.stubMultipleGetAllocationsIdCounts(totalElements = entities.toLong(), pageSize = 3)
+      mappingApi.stubAllMappingsNotFound(MappingApiExtension.ALLOCATIONS_GET_MAPPING_URL)
+      nomisApi.stubMultipleGetAllocations(entities)
+      stubGetActivityMappings()
+      activitiesApi.stubCreateAllocationForMigration(entities)
+      stubCreateMapping()
+    }
+
+    private fun WebTestClient.performMigration(body: String = """{ "prisonId": "BXI" }""") =
+      post().uri("/migrate/allocations")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+        .header("Content-Type", "application/json")
+        .body(BodyInserters.fromValue(body))
+        .exchange()
+        .expectStatus().isAccepted
+        .also {
+          waitUntilCompleted()
+        }
+
     private fun waitUntilCompleted() =
       await.atMost(Duration.ofSeconds(31)) untilAsserted {
         verify(telemetryClient).trackEvent(
@@ -80,23 +106,9 @@ class AllocationMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `will migrate several pages of allocations`() {
-      activitiesApi.stubGetActivityCategories()
-      nomisApi.stubGetInitialCount(NomisApiExtension.ALLOCATIONS_ID_URL, 7) { allocationsIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetAllocationsIdCounts(totalElements = 7, pageSize = 3)
-      mappingApi.stubAllMappingsNotFound(MappingApiExtension.ALLOCATIONS_GET_MAPPING_URL)
-      nomisApi.stubMultipleGetAllocations(7)
-      mappingApi.stubMultipleGetActivityMappings(7)
-      activitiesApi.stubCreateAllocationForMigration(7)
-      mappingApi.stubMappingCreate(MappingApiExtension.ALLOCATIONS_CREATE_MAPPING_URL)
+      stubMigrationDependencies(7)
 
-      webTestClient.post().uri("/migrate/allocations")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
-        .header("Content-Type", "application/json")
-        .body(BodyInserters.fromValue("""{ "prisonId": "BXI" }"""))
-        .exchange()
-        .expectStatus().isAccepted
-
-      waitUntilCompleted()
+      webTestClient.performMigration()
 
       // check filter values passed to get allocation ids call
       nomisApi.verifyActivitiesGetIds("/allocations/ids", "BXI", listOf("SAA_EDUCATION", "SAA_INDUCTION"))
@@ -112,24 +124,10 @@ class AllocationMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `will migrate allocations for a single course activity`() {
-      activitiesApi.stubGetActivityCategories()
-      nomisApi.stubGetInitialCount(NomisApiExtension.ALLOCATIONS_ID_URL, 3) { allocationsIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetAllocationsIdCounts(totalElements = 3, pageSize = 3)
-      mappingApi.stubAllMappingsNotFound(MappingApiExtension.ALLOCATIONS_GET_MAPPING_URL)
-      nomisApi.stubMultipleGetAllocations(3)
-      mappingApi.stubMultipleGetActivityMappings(3)
-      activitiesApi.stubCreateAllocationForMigration(3)
-      mappingApi.stubMappingCreate(MappingApiExtension.ALLOCATIONS_CREATE_MAPPING_URL)
+      stubMigrationDependencies(3)
 
       // Pass a course activity id into the migrate request
-      webTestClient.post().uri("/migrate/allocations")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
-        .header("Content-Type", "application/json")
-        .body(BodyInserters.fromValue("""{ "prisonId": "BXI", "courseActivityId": 1 }"""))
-        .exchange()
-        .expectStatus().isAccepted
-
-      waitUntilCompleted()
+      webTestClient.performMigration("""{ "prisonId": "BXI", "courseActivityId": 1 }""")
 
       // check course activity is included when retrieving ids
       nomisApi.verifyActivitiesGetIds("/allocations/ids", "BXI", listOf("SAA_EDUCATION", "SAA_INDUCTION"), courseActivityId = 1)
@@ -141,26 +139,12 @@ class AllocationMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `will migrate allocation with a null split activity mapping`() {
-      activitiesApi.stubGetActivityCategories()
-      nomisApi.stubGetInitialCount(NomisApiExtension.ALLOCATIONS_ID_URL, 1) { allocationsIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetAllocationsIdCounts(totalElements = 1, pageSize = 3)
-      mappingApi.stubAllMappingsNotFound(MappingApiExtension.ALLOCATIONS_GET_MAPPING_URL)
-      nomisApi.stubMultipleGetAllocations(1)
-      mappingApi.stubMappingCreate(MappingApiExtension.ALLOCATIONS_CREATE_MAPPING_URL)
-      activitiesApi.stubCreateAllocationForMigration(1)
+      stubMigrationDependencies(
+        // The 2nd activity schedule id returned after creating the DPS allocation is null
+        stubGetActivityMappings = { mappingApi.stubMultipleGetActivityMappings(1, activityScheduleId2 = null) },
+      )
 
-      // The 2nd activity schedule id returned after creating the DPS allocation is null
-      mappingApi.stubMultipleGetActivityMappings(1, activityScheduleId2 = null)
-
-      // Pass a course activity id into the migrate request
-      webTestClient.post().uri("/migrate/allocations")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
-        .header("Content-Type", "application/json")
-        .body(BodyInserters.fromValue("""{ "prisonId": "BXI" }"""))
-        .exchange()
-        .expectStatus().isAccepted
-
-      waitUntilCompleted()
+      webTestClient.performMigration()
 
       // the null 2nd activity id is included when creating the DPS allocation
       activitiesApi.verifyCreateAllocationsForMigration(1, activityScheduleId2 = null)
@@ -168,32 +152,19 @@ class AllocationMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `will add analytical events and history`() {
-      activitiesApi.stubGetActivityCategories()
-      nomisApi.stubGetInitialCount(NomisApiExtension.ALLOCATIONS_ID_URL, 3) { allocationsIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetAllocationsIdCounts(totalElements = 3, pageSize = 3)
-      mappingApi.stubAllMappingsNotFound(MappingApiExtension.ALLOCATIONS_GET_MAPPING_URL)
-      nomisApi.stubMultipleGetAllocations(3)
-      mappingApi.stubMultipleGetActivityMappings(3)
-      activitiesApi.stubCreateAllocationForMigration(3)
-      mappingApi.stubMappingCreate(MappingApiExtension.ALLOCATIONS_CREATE_MAPPING_URL)
+      stubMigrationDependencies(3)
 
       // stub 2 migrated records and 1 failure for the history
       mappingApi.stubAllocationsMappingByMigrationId(count = 2)
       awsSqsAllocationsMigrationDlqClient!!.sendMessage(allocationsMigrationDlqUrl!!, """{ "message": "some error" }""")
 
-      webTestClient.post().uri("/migrate/allocations")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
-        .header("Content-Type", "application/json")
-        .body(BodyInserters.fromValue("""{ "prisonId": "BXI" }"""))
-        .exchange()
-        .expectStatus().isAccepted
+      webTestClient.performMigration()
 
-      waitUntilCompleted()
-
+      // check telemetry published
       verify(telemetryClient).trackEvent(eq("allocations-migration-started"), any(), isNull())
-
       verify(telemetryClient, times(3)).trackEvent(eq("allocation-migration-entity-migrated"), any(), isNull())
 
+      // check history correct
       webTestClient.get().uri("/migrate/allocations/history")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
         .header("Content-Type", "application/json")
@@ -214,25 +185,12 @@ class AllocationMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `will retry to create a mapping, and only the mapping, if it fails first time`() {
-      activitiesApi.stubGetActivityCategories()
-      nomisApi.stubGetInitialCount(NomisApiExtension.ALLOCATIONS_ID_URL, 1) { allocationsIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetAllocationsIdCounts(totalElements = 1, pageSize = 3)
-      mappingApi.stubAllMappingsNotFound(MappingApiExtension.ALLOCATIONS_GET_MAPPING_URL)
-      nomisApi.stubMultipleGetAllocations(1)
-      mappingApi.stubMultipleGetActivityMappings(1)
-      activitiesApi.stubCreateAllocationForMigration(1)
+      stubMigrationDependencies(
+        // Force a retry of the mapping creation
+        stubCreateMapping = { mappingApi.stubMappingCreateFailureFollowedBySuccess(MappingApiExtension.ALLOCATIONS_CREATE_MAPPING_URL) },
+      )
 
-      // Force a retry of the mapping creation
-      mappingApi.stubMappingCreateFailureFollowedBySuccess(MappingApiExtension.ALLOCATIONS_CREATE_MAPPING_URL)
-
-      webTestClient.post().uri("/migrate/allocations")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
-        .header("Content-Type", "application/json")
-        .body(BodyInserters.fromValue("""{ "prisonId": "BXI" }"""))
-        .exchange()
-        .expectStatus().isAccepted
-
-      waitUntilCompleted()
+      webTestClient.performMigration()
 
       // should have retried the create mapping
       assertThat(mappingApi.createMappingCount(MappingApiExtension.ALLOCATIONS_CREATE_MAPPING_URL)).isEqualTo(2)
@@ -244,29 +202,18 @@ class AllocationMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `will not retry after a 409 (duplicate mapping written to mapping service)`() {
-      activitiesApi.stubGetActivityCategories()
-      nomisApi.stubGetInitialCount(NomisApiExtension.ALLOCATIONS_ID_URL, 1) { allocationsIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetAllocationsIdCounts(totalElements = 1, pageSize = 3)
-      mappingApi.stubAllMappingsNotFound(MappingApiExtension.ALLOCATIONS_GET_MAPPING_URL)
-      nomisApi.stubMultipleGetAllocations(1)
-      mappingApi.stubMultipleGetActivityMappings(1)
-      activitiesApi.stubCreateAllocationForMigration(1)
-
-      // Emulate mapping already exists when trying to create
-      mappingApi.stubAllocationMappingCreateConflict(
-        existingAllocationId = 4444,
-        duplicateAllocationId = 5555,
-        nomisAllocationId = 123,
+      stubMigrationDependencies(
+        stubCreateMapping = {
+          // Emulate mapping already exists when trying to create
+          mappingApi.stubAllocationMappingCreateConflict(
+            existingAllocationId = 4444,
+            duplicateAllocationId = 5555,
+            nomisAllocationId = 123,
+          )
+        },
       )
 
-      webTestClient.post().uri("/migrate/allocations")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
-        .header("Content-Type", "application/json")
-        .body(BodyInserters.fromValue("""{ "prisonId": "BXI" }"""))
-        .exchange()
-        .expectStatus().isAccepted
-
-      waitUntilCompleted()
+      webTestClient.performMigration()
 
       verify(telemetryClient).trackEvent(
         eq("nomis-migration-allocation-duplicate"),
