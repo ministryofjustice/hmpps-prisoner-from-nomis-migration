@@ -465,16 +465,22 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun verifyCreateMappingActivitiesIds(nomisCourseActivityIds: LongRange, times: Int = 1) =
-    nomisCourseActivityIds.forEach {
+  fun verifyCreateActivityMappings(count: Int, times: Int = 1) =
+    repeat(count) { offset ->
       verify(
         times,
         postRequestedFor(urlPathEqualTo("/mapping/activities/migration")).withRequestBody(
-          matchingJsonPath(
-            "nomisCourseActivityId",
-            equalTo(it.toString()),
-          ),
+          matchingJsonPath("nomisCourseActivityId", equalTo((offset + 1).toString())),
         ),
+      )
+    }
+
+  fun verifyCreateAllocationMappings(count: Int, times: Int = 1) =
+    repeat(count) { offset ->
+      verify(
+        times,
+        postRequestedFor(urlPathEqualTo("/mapping/allocations/migration"))
+          .withRequestBody(matchingJsonPath("nomisAllocationId", equalTo((offset + 1).toString()))),
       )
     }
 
@@ -594,6 +600,31 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubMultipleGetActivityMappings(
+    count: Int,
+    activityScheduleId: Long = 4444,
+    activityScheduleId2: Long? = 5555,
+  ) {
+    repeat(count) { offset ->
+      stubFor(
+        get(urlPathEqualTo("/mapping/activities/migration/nomis-course-activity-id/${1 + offset}"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(
+                """{
+                "nomisCourseActivityId": ${1 + offset},
+                "activityScheduleId": ${activityScheduleId + offset},
+                "activityScheduleId2": ${activityScheduleId2?.let { it + offset }},
+                "label": "some old activity migration"
+              }""",
+              ),
+          ),
+      )
+    }
+  }
+
   fun stubActivityMappingCreateConflict(
     existingActivityScheduleId: Long = 457,
     duplicateActivityScheduleId: Long = 456,
@@ -618,6 +649,42 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
                  "duplicate" : {
                   "activityScheduleId": $duplicateActivityScheduleId,
                   "nomisCourseActivityId": $nomisCourseActivityId,
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45"
+                  }
+              }
+              }""",
+            ),
+        ),
+    )
+  }
+
+  fun stubAllocationMappingCreateConflict(
+    existingAllocationId: Long,
+    duplicateAllocationId: Long,
+    nomisAllocationId: Long,
+  ) {
+    stubFor(
+      post(urlPathEqualTo("/mapping/allocations/migration"))
+        .willReturn(
+          aResponse()
+            .withStatus(409)
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
+              "moreInfo": 
+              {
+                "existing" :  {
+                  "nomisAllocationId": $nomisAllocationId,
+                  "activityAllocationId": $existingAllocationId,
+                  "activityScheduleId": 123,
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45"
+                 },
+                 "duplicate" : {
+                  "nomisAllocationId": $nomisAllocationId,
+                  "activityAllocationId": $duplicateAllocationId,
+                  "activityScheduleId": 123,
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45"
                   }

@@ -27,6 +27,9 @@ appointments:
 activities:
   page:
     size: 3
+allocations:
+  page:
+    size: 3
 adjudications:
   page:
     size: 10
