@@ -7,6 +7,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
+import com.github.tomakehurst.wiremock.client.WireMock.notMatching
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
@@ -100,6 +101,41 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubCreateAllocationForMigration(count: Int, allocationId: Long = 4444, activityScheduleId: Long = 5555) {
+    repeat(count) { offset ->
+      stubFor(
+        post(urlMatching("/migrate-allocation"))
+          .willReturn(
+            aResponse()
+              .withHeader("Content-Type", "application/json")
+              .withStatus(HttpStatus.CREATED.value())
+              .withBody(
+                """
+              {
+                "allocationId": ${allocationId + offset},
+                "activityScheduleId": ${activityScheduleId + offset }}
+              }
+                """.trimIndent(),
+              ),
+          ),
+      )
+    }
+  }
+
+  fun verifyCreateAllocationsForMigration(count: Int, activityScheduleId: Long = 4444, activityScheduleId2: Long? = 5555) {
+    repeat(count) { offset ->
+      verify(
+        postRequestedFor(urlPathEqualTo("/migrate-allocation"))
+          .withRequestBody(matchingJsonPath("activityId", equalTo((activityScheduleId + offset).toString())))
+          .apply {
+            activityScheduleId2
+              ?.run { withRequestBody(matchingJsonPath("splitRegimeActivityId", equalTo((activityScheduleId2.let { (offset + it).toString() })))) }
+              ?: run { withRequestBody(notMatching("splitRegimeActivityId")) }
+          },
+      )
+    }
+  }
+
   fun stubGetActivityCategories() {
     ActivitiesApiExtension.activitiesApi.stubFor(
       get(WireMock.urlEqualTo("/activity-categories")).willReturn(
@@ -130,4 +166,7 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun createActivitiesCount() =
     findAll(postRequestedFor(urlMatching("/migrate-activity"))).count()
+
+  fun createAllocationsCount() =
+    findAll(postRequestedFor(urlMatching("/migrate-allocation"))).count()
 }

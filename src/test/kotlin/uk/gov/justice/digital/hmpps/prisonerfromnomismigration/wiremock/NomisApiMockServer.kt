@@ -21,6 +21,7 @@ class NomisApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallbac
     const val APPOINTMENTS_ID_URL = "/appointments/ids"
     const val ADJUSTMENTS_ID_URL = "/adjustments/ids"
     const val ACTIVITIES_ID_URL = "/activities/ids"
+    const val ALLOCATIONS_ID_URL = "/allocations/ids"
 
     @JvmField
     val nomisApi = NomisApiMockServer()
@@ -420,24 +421,62 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }
   }
 
-  fun verifyActivitiesGetIds(url: String, prisonId: String, courseActivityId: Long? = null) {
+  fun stubMultipleGetAllocationsIdCounts(totalElements: Long, pageSize: Long) {
+    // for each page create a response for each id starting from 1 up to `totalElements`
+
+    val pages = (totalElements / pageSize) + 1
+    (0..pages).forEach { page ->
+      val startId = (page * pageSize) + 1
+      val endId = min((page * pageSize) + pageSize, totalElements)
+      nomisApi.stubFor(
+        get(urlPathEqualTo("/allocations/ids"))
+          .withQueryParam("page", equalTo(page.toString()))
+          .willReturn(
+            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+              .withBody(
+                allocationsIdsPagedResponse(
+                  totalElements = totalElements,
+                  ids = (startId..endId).map { it },
+                  pageNumber = page,
+                  pageSize = pageSize,
+                ),
+              ),
+          ),
+      )
+    }
+  }
+
+  fun verifyActivitiesGetIds(url: String, prisonId: String, excludeProgramCodes: List<String> = listOf(), courseActivityId: Long? = null) {
     val request = getRequestedFor(
       urlPathEqualTo(url),
     )
       .withQueryParam("prisonId", equalTo(prisonId))
+      .apply { excludeProgramCodes.forEach { withQueryParam("excludeProgramCode", equalTo(it)) } }
       .apply { courseActivityId?.run { withQueryParam("courseActivityId", equalTo(courseActivityId.toString())) } }
     nomisApi.verify(
       request,
     )
   }
 
-  fun stubMultipleGetActivities(intProgression: IntProgression) {
-    (intProgression).forEach {
+  fun stubMultipleGetActivities(count: Int) {
+    repeat(count) { offset ->
       nomisApi.stubFor(
-        get(urlPathEqualTo("/activities/$it"))
+        get(urlPathEqualTo("/activities/${1 + offset}"))
           .willReturn(
             aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-              .withBody(activitiesResponse(it.toLong())),
+              .withBody(activitiesResponse((1 + offset).toLong())),
+          ),
+      )
+    }
+  }
+
+  fun stubMultipleGetAllocations(count: Int) {
+    repeat(count) { offset ->
+      nomisApi.stubFor(
+        get(urlPathEqualTo("/allocations/${1 + offset}"))
+          .willReturn(
+            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+              .withBody(allocationsResponse((1 + offset).toLong())),
           ),
       )
     }
@@ -588,6 +627,16 @@ fun activitiesIdsPagedResponse(
   pageNumber: Long = 0,
 ): String {
   val content = ids.map { """{ "courseActivityId": $it }""" }.joinToString { it }
+  return pageContent(content, pageSize, pageNumber, totalElements, ids.size)
+}
+
+fun allocationsIdsPagedResponse(
+  totalElements: Long = 10,
+  ids: List<Long> = (0L..10L).toList(),
+  pageSize: Long = 10,
+  pageNumber: Long = 0,
+): String {
+  val content = ids.map { """{ "allocationId": $it }""" }.joinToString { it }
   return pageContent(content, pageSize, pageNumber, totalElements, ids.size)
 }
 
@@ -1071,5 +1120,24 @@ private fun activitiesResponse(
       "rate": 3.4
     }
   ]
+}
+  """.trimIndent()
+
+private fun allocationsResponse(
+  courseActivityId: Long = 123,
+): String =
+  """
+{
+    "prisonId": "BXI",
+    "courseActivityId": $courseActivityId,
+    "nomisId": "A1234AA",
+    "bookingId": 4321,
+    "startDate": "2020-04-11",
+    "endDate": "2023-11-15",
+    "suspended": false,
+    "endComment": "Ended",
+    "endReasonCode": "WDRAWN",
+    "payBand": "1",
+    "livingUnitDescription": "BXI-A-1-01"
 }
   """.trimIndent()
