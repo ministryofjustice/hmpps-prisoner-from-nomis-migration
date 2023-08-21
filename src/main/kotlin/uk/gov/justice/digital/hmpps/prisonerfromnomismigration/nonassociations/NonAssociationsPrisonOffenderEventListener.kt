@@ -13,11 +13,11 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
 import java.util.concurrent.CompletableFuture
 
 @Service
 class NonAssociationsPrisonOffenderEventListener(
+  private val nonAssociationsSynchronisationService: NonAssociationsSynchronisationService,
   private val objectMapper: ObjectMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
 ) {
@@ -37,11 +37,10 @@ class NonAssociationsPrisonOffenderEventListener(
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
           if (eventFeatureSwitch.isEnabled(eventType)) {
             when (eventType) {
-              "NON_ASSOCIATION_DETAIL_UPSERTED" -> log.debug(
-                "NON_ASSOCIATION_DETAIL_UPSERTED received",
-                // nonAssociationsSynchronisationService.synchroniseNonAssociationsCreateOrUpdate(
-                (sqsMessage.Message.fromJson()),
-              )
+              "NON_ASSOCIATION_DETAIL-UPSERTED" ->
+                nonAssociationsSynchronisationService.synchroniseNonAssociationCreateOrUpdate(
+                  (sqsMessage.Message.fromJson()),
+                )
 
               "NON_ASSOCIATION_DETAIL_DELETED" -> log.debug(
                 "NON_ASSOCIATION_DETAIL_DELETED received",
@@ -69,10 +68,20 @@ class NonAssociationsPrisonOffenderEventListener(
     objectMapper.readValue(this)
 }
 
+data class NonAssociationsOffenderEvent(
+  val offenderIdDisplay: String,
+  val nsOffenderIdDisplay: String,
+  val auditModuleName: String?,
+)
+
 private fun asCompletableFuture(
   process: suspend () -> Unit,
 ): CompletableFuture<Void> {
   return CoroutineScope(Dispatchers.Default).future {
     process()
   }.thenAccept { }
+}
+
+enum class SynchronisationMessageType {
+  RETRY_SYNCHRONISATION_MAPPING,
 }

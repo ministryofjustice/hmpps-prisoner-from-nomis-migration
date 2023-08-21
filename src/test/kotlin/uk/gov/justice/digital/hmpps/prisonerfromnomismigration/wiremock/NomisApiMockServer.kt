@@ -511,6 +511,19 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
       request,
     )
   }
+
+  fun stubGetNonAssociation(offenderNo: String, nsOffenderNo: String) {
+    nomisApi.stubFor(
+      get(
+        urlPathEqualTo("/non-associations/offender/$offenderNo/ns-offender/$nsOffenderNo"),
+      )
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(nonAssociationResponse(offenderNo = offenderNo, nsOffenderNo = nsOffenderNo)),
+        ),
+    )
+  }
 }
 
 private fun visitResponse(visitId: Long) = """
@@ -1041,6 +1054,25 @@ fun adjudicationResponse(
         }
     ]
 }    
+  """.trimIndent()
+}
+
+private fun nonAssociationResponse(
+  offenderNo: String = "A1234BC",
+  nsOffenderNo: String = "D5678EF",
+): String {
+  return """
+  {
+    "offenderNo": "$offenderNo",
+    "nsOffenderNo": "$nsOffenderNo",
+    "reason": "VIC",
+    "recipReason": "PER",
+    "type": "WING",
+    "authorisedBy": "Jim Smith",
+    "effectiveDate": "2023-10-25",
+    "expiryDate": "2023-10-26",
+    "comment": "Fight on Wing C"
+  }
   """.trimIndent()
 }
 
