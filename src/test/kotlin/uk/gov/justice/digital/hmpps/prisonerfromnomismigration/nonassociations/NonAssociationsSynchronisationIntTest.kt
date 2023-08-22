@@ -11,7 +11,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito
+import org.mockito.Mockito.eq
+import org.mockito.internal.verification.Times
 import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
@@ -20,9 +21,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NonAssociationsApiExtension.Companion.nonAssociationsApi
 
-private const val OFFENDER_NUMBER = "G4803UT"
-private const val NS_OFFENDER_NUMBER = "A4803BG"
-private const val nomisApiUrl = "/non-associations/offender/$OFFENDER_NUMBER/ns-offender/$NS_OFFENDER_NUMBER"
+private const val OFFENDER_A = "A4803BG"
+private const val OFFENDER_B = "G4803UT"
+private const val nomisApiUrl = "/non-associations/offender/$OFFENDER_A/ns-offender/$OFFENDER_B"
+// private const val nonApiUrlRegex = "/non-associations/offender/[A-Z]\\d{4}[A-Z]{2}/ns-offender/[A-Z]\\d{4}[A-Z]{2}"
 
 class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
@@ -43,8 +45,8 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
               eventType = "NON_ASSOCIATION_DETAIL-UPSERTED",
               auditModuleName = "DPS_SYNCHRONISATION",
 
-              offenderIdDisplay = OFFENDER_NUMBER,
-              nsOffenderIdDisplay = NS_OFFENDER_NUMBER,
+              offenderIdDisplay = OFFENDER_A,
+              nsOffenderIdDisplay = OFFENDER_B,
             ),
           )
         }
@@ -53,10 +55,10 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `the event is ignored`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              Mockito.eq("non-association-synchronisation-skipped"),
+              eq("non-association-synchronisation-skipped"),
               check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_NUMBER)
-                assertThat(it["nsOffenderNo"]).isEqualTo(NS_OFFENDER_NUMBER)
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_A)
+                assertThat(it["nsOffenderNo"]).isEqualTo(OFFENDER_B)
                 assertThat(it["nonAssociationsId"]).isNull()
               },
               isNull(),
@@ -68,19 +70,19 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Nested
-      inner class WhenCreateByNomis {
+      inner class WhenCreateByNomisSuccess {
         @BeforeEach
         fun setUp() {
-          nomisApi.stubGetNonAssociation(offenderNo = OFFENDER_NUMBER, nsOffenderNo = NS_OFFENDER_NUMBER)
-          nonAssociationsApi.stubCreateNonAssociationForSynchronisation(firstOffenderNo = OFFENDER_NUMBER, secondOffenderNo = NS_OFFENDER_NUMBER)
+          nomisApi.stubGetNonAssociation(offenderNo = OFFENDER_A, nsOffenderNo = OFFENDER_B)
+          nonAssociationsApi.stubCreateNonAssociationForSynchronisation(firstOffenderNo = OFFENDER_A, secondOffenderNo = OFFENDER_B)
 
           nonAssociationsOffenderEventsClient.sendMessage(
             nonAssociationsQueueOffenderEventsUrl,
             nonAssociationEvent(
               eventType = "NON_ASSOCIATION_DETAIL-UPSERTED",
               auditModuleName = "OIDSENAD",
-              offenderIdDisplay = OFFENDER_NUMBER,
-              nsOffenderIdDisplay = NS_OFFENDER_NUMBER,
+              offenderIdDisplay = OFFENDER_A,
+              nsOffenderIdDisplay = OFFENDER_B,
             ),
           )
         }
@@ -103,14 +105,147 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create telemetry tracking the create`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              Mockito.eq("non-association-created-synchronisation-success"),
+              eq("non-association-created-synchronisation-success"),
               check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_NUMBER)
-                assertThat(it["nsOffenderNo"]).isEqualTo(NS_OFFENDER_NUMBER)
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_A)
+                assertThat(it["nsOffenderNo"]).isEqualTo(OFFENDER_B)
               },
               isNull(),
             )
           }
+        }
+      }
+
+      @Nested
+      inner class WhenOffenderOrderingInNonAssociationNotAlphabetical {
+        @BeforeEach
+        fun setUp() {
+          nonAssociationsOffenderEventsClient.sendMessage(
+            nonAssociationsQueueOffenderEventsUrl,
+            nonAssociationEvent(
+              eventType = "NON_ASSOCIATION_DETAIL-UPSERTED",
+              auditModuleName = "OIDSENAD",
+              offenderIdDisplay = OFFENDER_B,
+              nsOffenderIdDisplay = OFFENDER_A,
+            ),
+          )
+        }
+
+        @Test
+        fun `will not retrieve details about the non-association from NOMIS`() {
+          nomisApi.verify(exactly(0), getRequestedFor(urlPathEqualTo(nomisApiUrl)))
+          nomisApi.verify(exactly(0), getRequestedFor(urlPathEqualTo("/non-associations/offender/$OFFENDER_B/ns-offender/$OFFENDER_A")))
+        }
+
+        @Test
+        fun `will not create the non-association in the non-associations service`() {
+          nonAssociationsApi.verify(exactly(0), postRequestedFor(urlPathEqualTo("/sync")))
+        }
+
+        @Test
+        fun `will not create telemetry tracking`() {
+          verify(telemetryClient, Times(0)).trackEvent(
+            eq("non-association-created-synchronisation-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_A)
+              assertThat(it["nsOffenderNo"]).isEqualTo(OFFENDER_B)
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      inner class WhenTwoRelatedNonAssociationsReceived {
+        @BeforeEach
+        fun setUp() {
+          nomisApi.stubGetNonAssociation(offenderNo = OFFENDER_A, nsOffenderNo = OFFENDER_B)
+          nonAssociationsApi.stubCreateNonAssociationForSynchronisation(firstOffenderNo = OFFENDER_A, secondOffenderNo = OFFENDER_B)
+
+          nonAssociationsOffenderEventsClient.sendMessage(
+            nonAssociationsQueueOffenderEventsUrl,
+            nonAssociationEvent(
+              eventType = "NON_ASSOCIATION_DETAIL-UPSERTED",
+              auditModuleName = "OIDSENAD",
+              offenderIdDisplay = OFFENDER_A,
+              nsOffenderIdDisplay = OFFENDER_B,
+            ),
+          )
+          nonAssociationsOffenderEventsClient.sendMessage(
+            nonAssociationsQueueOffenderEventsUrl,
+            nonAssociationEvent(
+              eventType = "NON_ASSOCIATION_DETAIL-UPSERTED",
+              auditModuleName = "OIDSENAD",
+              offenderIdDisplay = OFFENDER_B,
+              nsOffenderIdDisplay = OFFENDER_A,
+            ),
+          )
+        }
+
+        @Test
+        fun `will retrieve details about one non-association from NOMIS`() {
+          await untilAsserted {
+            nomisApi.verify(exactly(1), getRequestedFor(urlPathEqualTo(nomisApiUrl)))
+          }
+        }
+
+        @Test
+        fun `will create one non-association in the non-associations service`() {
+          await untilAsserted {
+            nonAssociationsApi.verify(exactly(1), postRequestedFor(urlPathEqualTo("/sync")))
+          }
+        }
+
+        @Test
+        fun `will create one telemetry tracking the create`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("non-association-created-synchronisation-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_A)
+                assertThat(it["nsOffenderNo"]).isEqualTo(OFFENDER_B)
+              },
+              isNull(),
+            )
+          }
+          verify(telemetryClient, Times(0)).trackEvent(
+            eq("non-association-created-synchronisation-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_B)
+              assertThat(it["nsOffenderNo"]).isEqualTo(OFFENDER_A)
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      inner class WhenNomisHasNoNonAssociation {
+        @BeforeEach
+        fun setUp() {
+          nomisApi.stubGetNonAssociationNotFound(offenderNo = OFFENDER_A, nsOffenderNo = OFFENDER_B)
+
+          nonAssociationsOffenderEventsClient.sendMessage(
+            nonAssociationsQueueOffenderEventsUrl,
+            nonAssociationEvent(
+              eventType = "NON_ASSOCIATION_DETAIL-UPSERTED",
+              auditModuleName = "OIDSENAD",
+              offenderIdDisplay = OFFENDER_A,
+              nsOffenderIdDisplay = OFFENDER_B,
+            ),
+          )
+        }
+
+        @Test
+        fun `will not create telemetry tracking`() {
+          verify(telemetryClient, Times(0)).trackEvent(
+            eq("non-association-created-synchronisation-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_A)
+              assertThat(it["nsOffenderNo"]).isEqualTo(OFFENDER_B)
+            },
+            isNull(),
+          )
         }
       }
     }
@@ -119,8 +254,8 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
 fun nonAssociationEvent(
   eventType: String,
-  offenderIdDisplay: String = OFFENDER_NUMBER,
-  nsOffenderIdDisplay: String = NS_OFFENDER_NUMBER,
+  offenderIdDisplay: String = OFFENDER_A,
+  nsOffenderIdDisplay: String = OFFENDER_B,
   auditModuleName: String = "OIDSENAD",
 ) = """{
     "Type" : "Notification",
