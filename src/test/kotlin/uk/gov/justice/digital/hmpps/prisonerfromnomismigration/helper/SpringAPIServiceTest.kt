@@ -19,6 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.Adjudica
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.HmppsAuthApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NonAssociationsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.SentencingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsApiExtension
 import java.lang.annotation.Inherited
@@ -44,6 +45,7 @@ import kotlin.annotation.AnnotationTarget.CLASS
   SentencingApiExtension::class,
   ActivitiesApiExtension::class,
   AdjudicationsApiExtension::class,
+  NonAssociationsApiExtension::class,
 )
 @ActiveProfiles("test")
 @EnableWebFlux

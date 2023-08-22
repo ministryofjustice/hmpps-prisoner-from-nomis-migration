@@ -101,4 +101,4 @@ class AdjudicationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     findAll(postRequestedFor(WireMock.urlMatching("/reported-adjudications/migrate"))).count()
 }
 
-fun Any.toJson(): String = ObjectMapper().writeValueAsString(this)
+private fun Any.toJson(): String = ObjectMapper().writeValueAsString(this)

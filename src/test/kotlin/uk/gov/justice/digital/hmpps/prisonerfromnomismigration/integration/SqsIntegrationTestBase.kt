@@ -70,6 +70,7 @@ class SqsIntegrationTestBase : TestBase() {
   internal val awsSqsVisitsMigrationDlqClient by lazy { visitsMigrationQueue.sqsDlqClient }
   internal val awsSqsSentencingMigrationClient by lazy { sentencingMigrationQueue.sqsClient }
   internal val awsSqsSentencingMigrationDlqClient by lazy { sentencingMigrationQueue.sqsDlqClient }
+
   internal val awsSqsAppointmentsMigrationClient by lazy { appointmentsMigrationQueue.sqsClient }
   internal val awsSqsAppointmentsMigrationDlqClient by lazy { appointmentsMigrationQueue.sqsDlqClient }
   internal val awsSqsActivitiesMigrationClient by lazy { activitiesMigrationQueue.sqsClient }
@@ -81,6 +82,7 @@ class SqsIntegrationTestBase : TestBase() {
   internal val visitsMigrationDlqUrl by lazy { visitsMigrationQueue.dlqUrl }
   internal val sentencingMigrationUrl by lazy { sentencingMigrationQueue.queueUrl }
   internal val sentencingMigrationDlqUrl by lazy { sentencingMigrationQueue.dlqUrl }
+
   internal val appointmentsMigrationUrl by lazy { appointmentsMigrationQueue.queueUrl }
   internal val appointmentsMigrationDlqUrl by lazy { appointmentsMigrationQueue.dlqUrl }
   internal val activitiesMigrationUrl by lazy { activitiesMigrationQueue.queueUrl }
@@ -98,11 +100,16 @@ class SqsIntegrationTestBase : TestBase() {
   internal val awsSqsSentencingOffenderEventsClient by lazy { sentencingOffenderEventsQueue.sqsClient }
   internal val awsSqsSentencingOffenderEventsDlqClient by lazy { sentencingOffenderEventsQueue.sqsDlqClient }
 
+  internal val nonAssociationsOffenderEventsClient by lazy { nonAssociationsOffenderEventsQueue.sqsClient }
+  internal val nonAssociationsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId("eventnonassociations") as HmppsQueue }
+  internal val nonAssociationsQueueOffenderEventsUrl by lazy { nonAssociationsOffenderEventsQueue.queueUrl }
+
   private val allQueues by lazy {
     listOf(
       visitsMigrationQueue,
       sentencingMigrationQueue,
       visitsOffenderEventsQueue,
+      nonAssociationsOffenderEventsQueue,
       sentencingOffenderEventsQueue,
       adjudicationsMigrationQueue,
       activitiesMigrationQueue,

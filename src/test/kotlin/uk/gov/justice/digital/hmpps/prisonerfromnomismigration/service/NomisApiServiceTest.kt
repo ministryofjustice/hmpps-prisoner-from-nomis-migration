@@ -865,4 +865,98 @@ internal class NomisApiServiceTest {
       }
     }
   }
+
+  @Nested
+  @DisplayName("getNonAssociation")
+  inner class GetNonAssociation {
+    val nonAssociationUrl = "/non-associations/offender/[A-Z]\\d{4}[A-Z]{2}/ns-offender/[A-Z]\\d{4}[A-Z]{2}"
+
+    @BeforeEach
+    internal fun setUp() {
+      nomisApi.stubFor(
+        get(
+          urlPathMatching(nonAssociationUrl),
+        ).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpURLConnection.HTTP_OK)
+            .withBody(
+              """
+              {
+              "offenderNo": "A1234BC",
+              "nsOffenderNo": "D5678EF",
+              "reason": "VIC",
+              "recipReason": "PER",
+              "type": "WING",
+              "authorisedBy": "Jim Smith",
+              "effectiveDate": "2023-10-25",
+              "expiryDate": "2023-10-26",
+              "comment": "Fight on Wing C"
+            }
+              """.trimIndent(),
+            ),
+        ),
+      )
+    }
+
+    @Test
+    internal fun `will supply authentication token`(): Unit = runBlocking {
+      nomisService.getNonAssociation(
+        offenderNo = "A1234BC",
+        nsOffenderNo = "D5678EF",
+      )
+      nomisApi.verify(
+        getRequestedFor(
+          urlPathEqualTo("/non-associations/offender/A1234BC/ns-offender/D5678EF"),
+        )
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will return non-association data`(): Unit = runBlocking {
+      val nonAssociation = nomisService.getNonAssociation(
+        offenderNo = "A1234BC",
+        nsOffenderNo = "D5678EF",
+      )
+      assertThat(nonAssociation.offenderNo).isEqualTo("A1234BC")
+      assertThat(nonAssociation.nsOffenderNo).isEqualTo("D5678EF")
+      assertThat(nonAssociation.reason).isEqualTo("VIC")
+      assertThat(nonAssociation.recipReason).isEqualTo("PER")
+      assertThat(nonAssociation.type).isEqualTo("WING")
+      assertThat(nonAssociation.authorisedBy).isEqualTo("Jim Smith")
+      assertThat(nonAssociation.effectiveDate).isEqualTo(LocalDate.parse("2023-10-25"))
+      assertThat(nonAssociation.expiryDate).isEqualTo(LocalDate.parse("2023-10-26"))
+      assertThat(nonAssociation.comment).isEqualTo("Fight on Wing C")
+    }
+
+    @Nested
+    @DisplayName("when non-association does not exist in NOMIS")
+    inner class WhenNotFound {
+      @BeforeEach
+      internal fun setUp() {
+        nomisApi.stubFor(
+          get(
+            urlPathMatching(nonAssociationUrl),
+          ).willReturn(
+            aResponse()
+              .withHeader("Content-Type", "application/json")
+              .withStatus(HttpURLConnection.HTTP_NOT_FOUND),
+          ),
+        )
+      }
+
+      @Test
+      internal fun `will throw an exception`() {
+        assertThatThrownBy {
+          runBlocking {
+            nomisService.getNonAssociation(
+              offenderNo = "A1234BC",
+              nsOffenderNo = "D5678EF",
+            )
+          }
+        }.isInstanceOf(NotFound::class.java)
+      }
+    }
+  }
 }
