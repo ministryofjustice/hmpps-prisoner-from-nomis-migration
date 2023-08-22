@@ -72,7 +72,7 @@ class ActivitiesMigrationService(
 
     activitiesMappingService.findNomisMapping(courseActivityId)
       ?.run {
-        log.info("Will not migrate the courseActivityId=$courseActivityId since it was already mapped to activityIds ${this.activityScheduleId} and ${this.activityScheduleId2} during migration ${this.label}")
+        log.info("Will not migrate the courseActivityId=$courseActivityId since it was already mapped to activityIds ${this.activityId} and ${this.activityId2} during migration ${this.label}")
       }
       ?: run {
         nomisApiService.getActivity(courseActivityId)
@@ -90,7 +90,7 @@ class ActivitiesMigrationService(
         .also { it.handleError(context) }
     } catch (e: Exception) {
       log.error(
-        "Failed to create activity mapping for nomisCourseActivityId: $nomisCourseActivityId, activityIds $activityScheduleId and $activityScheduleId2 for migration ${this.label}",
+        "Failed to create activity mapping for nomisCourseActivityId: $nomisCourseActivityId, activityIds $activityId and $activityId2 for migration ${this.label}",
         e,
       )
       queueService.sendMessage(
@@ -107,8 +107,8 @@ class ActivitiesMigrationService(
       "activity-migration-entity-migrated",
       mapOf(
         "nomisCourseActivityId" to nomisCourseActivityId.toString(),
-        "activityScheduleId" to activityScheduleId.toString(),
-        "activityScheduleId2" to activityScheduleId2?.toString(),
+        "activityId" to activityId.toString(),
+        "activityId2" to activityId2?.toString(),
         "migrationId" to this.label,
       ),
       null,
@@ -123,11 +123,11 @@ class ActivitiesMigrationService(
           mapOf(
             "migrationId" to context.migrationId,
             "duplicateNomisCourseActivityId" to it.duplicate.nomisCourseActivityId.toString(),
-            "duplicateActivityScheduleId" to it.duplicate.activityScheduleId.toString(),
-            "duplicateActivityScheduleId2" to it.duplicate.activityScheduleId2.toString(),
+            "duplicateActivityId" to it.duplicate.activityId.toString(),
+            "duplicateActivityId2" to it.duplicate.activityId2.toString(),
             "existingNomisCourseActivityId" to it.existing.nomisCourseActivityId.toString(),
-            "existingActivityScheduleId" to it.existing.activityScheduleId.toString(),
-            "existingActivityScheduleId2" to it.existing.activityScheduleId2.toString(),
+            "existingActivityId" to it.existing.activityId.toString(),
+            "existingActivityId2" to it.existing.activityId2.toString(),
           ),
           null,
         )
@@ -150,6 +150,7 @@ private fun GetActivityResponse.toActivityMigrateRequest(): ActivityMigrateReque
     internalLocationDescription = internalLocationDescription,
     scheduleRules = scheduleRules.map { it.toNomisScheduleRule() },
     payRates = payRates.map { it.toNomisPayRate() },
+    outsideWork = true,
   )
 
 private fun ScheduleRulesResponse.toNomisScheduleRule(): NomisScheduleRule =
@@ -175,7 +176,7 @@ private fun PayRatesResponse.toNomisPayRate(): NomisPayRate =
 private fun ActivityMigrateResponse.toActivityMigrateMappingDto(courseActivityId: Long, migrationId: String) =
   ActivityMigrationMappingDto(
     nomisCourseActivityId = courseActivityId,
-    activityScheduleId = activityId,
-    activityScheduleId2 = splitRegimeActivityId,
+    activityId = activityId,
+    activityId2 = splitRegimeActivityId,
     label = migrationId,
   )

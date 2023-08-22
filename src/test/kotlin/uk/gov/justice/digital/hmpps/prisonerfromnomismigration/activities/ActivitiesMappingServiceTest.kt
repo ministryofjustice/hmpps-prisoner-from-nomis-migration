@@ -45,8 +45,8 @@ class ActivitiesMappingServiceTest {
         activitiesMappingService.createMapping(
           ActivityMigrationMappingDto(
             nomisCourseActivityId = 1234L,
-            activityScheduleId = 2345L,
-            activityScheduleId2 = null,
+            activityId = 2345L,
+            activityId2 = null,
             label = "some-migration-id",
           ),
           object : ParameterizedTypeReference<DuplicateErrorResponse<ActivityMigrationMappingDto>>() {},
@@ -68,8 +68,8 @@ class ActivitiesMappingServiceTest {
         activitiesMappingService.createMapping(
           ActivityMigrationMappingDto(
             nomisCourseActivityId = 1234L,
-            activityScheduleId = 2345L,
-            activityScheduleId2 = 3456L,
+            activityId = 2345L,
+            activityId2 = 3456L,
             label = "some-migration-id",
           ),
           object : ParameterizedTypeReference<DuplicateErrorResponse<ActivityMigrationMappingDto>>() {},
@@ -79,8 +79,8 @@ class ActivitiesMappingServiceTest {
       mappingApi.verify(
         postRequestedFor(urlPathEqualTo("/mapping/activities/migration"))
           .withRequestBody(matchingJsonPath("nomisCourseActivityId", equalTo("1234")))
-          .withRequestBody(matchingJsonPath("activityScheduleId", equalTo("2345")))
-          .withRequestBody(matchingJsonPath("activityScheduleId2", equalTo("3456")))
+          .withRequestBody(matchingJsonPath("activityId", equalTo("2345")))
+          .withRequestBody(matchingJsonPath("activityId2", equalTo("3456")))
           .withRequestBody(matchingJsonPath("label", equalTo("some-migration-id"))),
       )
     }
@@ -101,8 +101,8 @@ class ActivitiesMappingServiceTest {
           activitiesMappingService.createMapping(
             ActivityMigrationMappingDto(
               nomisCourseActivityId = 1234L,
-              activityScheduleId = 2345L,
-              activityScheduleId2 = 3456L,
+              activityId = 2345L,
+              activityId2 = 3456L,
               label = "some-migration-id",
             ),
             object : ParameterizedTypeReference<DuplicateErrorResponse<ActivityMigrationMappingDto>>() {},
@@ -125,8 +125,8 @@ class ActivitiesMappingServiceTest {
               """
             {
               "nomisCourseActivityId": 1234,
-              "activityScheduleId": "2345",
-              "activityScheduleId2": "3456",
+              "activityId": "2345",
+              "activityId2": "3456",
               "label": "2020-01-01T00:00:00"
             }
               """.trimIndent(),
@@ -172,8 +172,8 @@ class ActivitiesMappingServiceTest {
               """
             {
               "nomisCourseActivityId": 1234,
-              "activityScheduleId": "2345",
-              "activityScheduleId2": "3456",
+              "activityId": "2345",
+              "activityId2": "3456",
               "label": "2020-01-01T00:00:00"
             }
               """.trimIndent(),
@@ -183,8 +183,8 @@ class ActivitiesMappingServiceTest {
       val mapping = activitiesMappingService.findNomisMapping(1234)
       assertThat(mapping).isNotNull
       assertThat(mapping!!.nomisCourseActivityId).isEqualTo(1234)
-      assertThat(mapping.activityScheduleId).isEqualTo(2345)
-      assertThat(mapping.activityScheduleId2).isEqualTo(3456)
+      assertThat(mapping.activityId).isEqualTo(2345)
+      assertThat(mapping.activityId2).isEqualTo(3456)
       assertThat(mapping.label).isEqualTo("2020-01-01T00:00:00")
     }
 
@@ -250,8 +250,8 @@ class ActivitiesMappingServiceTest {
               """
                 {
                   "nomisCourseActivityId": 1234,
-                  "activityScheduleId": "2345",
-                  "activityScheduleId2": "3456",
+                  "activityId": "2345",
+                  "activityId2": "3456",
                   "label": "2022-02-16T14:20:15",
                   "whenCreated": "2022-02-16T16:21:15.589091"
                 }
