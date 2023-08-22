@@ -65,15 +65,12 @@ class SqsIntegrationTestBase : TestBase() {
   internal val activitiesMigrationQueue by lazy { hmppsQueueService.findByQueueId(ACTIVITIES_QUEUE_ID) as HmppsQueue }
   internal val allocationsMigrationQueue by lazy { hmppsQueueService.findByQueueId(ALLOCATIONS_QUEUE_ID) as HmppsQueue }
   internal val adjudicationsMigrationQueue by lazy { hmppsQueueService.findByQueueId(ADJUDICATIONS_QUEUE_ID) as HmppsQueue }
-  // internal val nonAssociationsMigrationQueue by lazy { hmppsQueueService.findByQueueId(NON_ASSOCIATIONS_QUEUE_ID) as HmppsQueue }
 
   internal val awsSqsVisitsMigrationClient by lazy { visitsMigrationQueue.sqsClient }
   internal val awsSqsVisitsMigrationDlqClient by lazy { visitsMigrationQueue.sqsDlqClient }
   internal val awsSqsSentencingMigrationClient by lazy { sentencingMigrationQueue.sqsClient }
   internal val awsSqsSentencingMigrationDlqClient by lazy { sentencingMigrationQueue.sqsDlqClient }
 
-  // internal val awsSqsNonAssociationsMigrationClient by lazy { nonAssociationsMigrationQueue.sqsClient }
-  // internal val awsSqsSNonAssociationsMigrationDlqClient by lazy { nonAssociationsMigrationQueue.sqsDlqClient }
   internal val awsSqsAppointmentsMigrationClient by lazy { appointmentsMigrationQueue.sqsClient }
   internal val awsSqsAppointmentsMigrationDlqClient by lazy { appointmentsMigrationQueue.sqsDlqClient }
   internal val awsSqsActivitiesMigrationClient by lazy { activitiesMigrationQueue.sqsClient }
@@ -86,8 +83,6 @@ class SqsIntegrationTestBase : TestBase() {
   internal val sentencingMigrationUrl by lazy { sentencingMigrationQueue.queueUrl }
   internal val sentencingMigrationDlqUrl by lazy { sentencingMigrationQueue.dlqUrl }
 
-  // internal val nonAssociationsMigrationUrl by lazy { nonAssociationsMigrationQueue.queueUrl }
-  // internal val nonAssociationsMigrationDlqUrl by lazy { nonAssociationsMigrationQueue.dlqUrl }
   internal val appointmentsMigrationUrl by lazy { appointmentsMigrationQueue.queueUrl }
   internal val appointmentsMigrationDlqUrl by lazy { appointmentsMigrationQueue.dlqUrl }
   internal val activitiesMigrationUrl by lazy { activitiesMigrationQueue.queueUrl }
