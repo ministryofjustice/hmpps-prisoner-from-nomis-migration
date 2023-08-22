@@ -24,7 +24,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NonAssoc
 private const val OFFENDER_A = "A4803BG"
 private const val OFFENDER_B = "G4803UT"
 private const val nomisApiUrl = "/non-associations/offender/$OFFENDER_A/ns-offender/$OFFENDER_B"
-// private const val nonApiUrlRegex = "/non-associations/offender/[A-Z]\\d{4}[A-Z]{2}/ns-offender/[A-Z]\\d{4}[A-Z]{2}"
 
 class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
