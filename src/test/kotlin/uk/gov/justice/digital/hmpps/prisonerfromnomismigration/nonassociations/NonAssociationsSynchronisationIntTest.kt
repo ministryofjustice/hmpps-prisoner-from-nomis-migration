@@ -116,6 +116,53 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Nested
+      inner class WhenCreateByNomisWithMinimalDataSuccess {
+        @BeforeEach
+        fun setUp() {
+          nomisApi.stubGetNonAssociationWithMinimalData(offenderNo = OFFENDER_A, nsOffenderNo = OFFENDER_B)
+          nonAssociationsApi.stubCreateNonAssociationForSynchronisation(firstOffenderNo = OFFENDER_A, secondOffenderNo = OFFENDER_B)
+
+          nonAssociationsOffenderEventsClient.sendMessage(
+            nonAssociationsQueueOffenderEventsUrl,
+            nonAssociationEvent(
+              eventType = "NON_ASSOCIATION_DETAIL-UPSERTED",
+              auditModuleName = "OIDSENAD",
+              offenderIdDisplay = OFFENDER_A,
+              nsOffenderIdDisplay = OFFENDER_B,
+            ),
+          )
+        }
+
+        @Test
+        fun `will retrieve details about the non-association from NOMIS`() {
+          await untilAsserted {
+            nomisApi.verify(getRequestedFor(urlPathEqualTo(nomisApiUrl)))
+          }
+        }
+
+        @Test
+        fun `will create the non-association in the non-associations service`() {
+          await untilAsserted {
+            nonAssociationsApi.verify(postRequestedFor(urlPathEqualTo("/sync")))
+          }
+        }
+
+        @Test
+        fun `will create telemetry tracking the create`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("non-association-created-synchronisation-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_A)
+                assertThat(it["nsOffenderNo"]).isEqualTo(OFFENDER_B)
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
       inner class WhenOffenderOrderingInNonAssociationNotAlphabetical {
         @BeforeEach
         fun setUp() {
@@ -233,6 +280,11 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
               nsOffenderIdDisplay = OFFENDER_B,
             ),
           )
+        }
+
+        @Test
+        fun `will not create the non-association in the non-associations service`() {
+          nonAssociationsApi.verify(exactly(0), postRequestedFor(urlPathEqualTo("/sync")))
         }
 
         @Test
