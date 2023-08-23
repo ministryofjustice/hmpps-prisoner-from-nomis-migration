@@ -615,8 +615,8 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
               .withBody(
                 """{
                 "nomisCourseActivityId": ${1 + offset},
-                "activityScheduleId": ${activityScheduleId + offset},
-                "activityScheduleId2": ${activityScheduleId2?.let { it + offset }},
+                "activityId": ${activityScheduleId + offset},
+                "activityId2": ${activityScheduleId2?.let { it + offset }},
                 "label": "some old activity migration"
               }""",
               ),
@@ -626,8 +626,8 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubActivityMappingCreateConflict(
-    existingActivityScheduleId: Long = 457,
-    duplicateActivityScheduleId: Long = 456,
+    existingActivityId: Long = 457,
+    duplicateActivityId: Long = 456,
     nomisCourseActivityId: Long = 123,
   ) {
     stubFor(
@@ -641,13 +641,13 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
               "moreInfo": 
               {
                 "existing" :  {
-                  "activityScheduleId": $existingActivityScheduleId,
+                  "activityId": $existingActivityId,
                   "nomisCourseActivityId": $nomisCourseActivityId,
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45"
                  },
                  "duplicate" : {
-                  "activityScheduleId": $duplicateActivityScheduleId,
+                  "activityId": $duplicateActivityId,
                   "nomisCourseActivityId": $nomisCourseActivityId,
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45"
