@@ -31,6 +31,7 @@ const val ALLOCATIONS_QUEUE_ID = "migrationallocations"
 
 const val VISITS_SYNC_QUEUE_ID = "eventvisits"
 const val SENTENCING_ADJUSTMENTS_SYNC_QUEUE_ID = "eventsentencing"
+const val NON_ASSOCIATIONS_SYNC_QUEUE_ID = "eventnonassociations"
 
 enum class MigrationType(val queueId: String, val telemetryName: String) {
   VISITS(VISITS_QUEUE_ID, "visits"),
