@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2023-08-16.2751.90219dc"
+    "version": "2023-08-22"
   },
   "servers": [
     {
@@ -662,7 +662,7 @@
         }
       }
     },
-    "/mapping/allocation/migration": {
+    "/mapping/allocations/migration": {
       "post": {
         "tags": [
           "allocation-migration-resource"
@@ -3195,7 +3195,7 @@
       "AllocationMigrationMappingDto": {
         "required": [
           "activityAllocationId",
-          "activityScheduleId",
+          "activityId",
           "label",
           "nomisAllocationId"
         ],
@@ -3211,9 +3211,9 @@
             "description": "Activity allocation id",
             "format": "int64"
           },
-          "activityScheduleId": {
+          "activityId": {
             "type": "integer",
-            "description": "Activity schedule id",
+            "description": "Activity id",
             "format": "int64"
           },
           "label": {
@@ -3425,7 +3425,7 @@
       },
       "ActivityMigrationMappingDto": {
         "required": [
-          "activityScheduleId",
+          "activityId",
           "label",
           "nomisCourseActivityId"
         ],
@@ -3436,14 +3436,14 @@
             "description": "NOMIS course activity id",
             "format": "int64"
           },
-          "activityScheduleId": {
+          "activityId": {
             "type": "integer",
-            "description": "Activity schedule id",
+            "description": "Activity id",
             "format": "int64"
           },
-          "activityScheduleId2": {
+          "activityId2": {
             "type": "integer",
-            "description": "2nd Activity schedule id",
+            "description": "2nd Activity id",
             "format": "int64"
           },
           "label": {

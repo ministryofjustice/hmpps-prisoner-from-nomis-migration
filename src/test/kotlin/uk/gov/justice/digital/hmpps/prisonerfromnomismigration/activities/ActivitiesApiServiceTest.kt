@@ -74,6 +74,7 @@ internal class ActivitiesApiServiceTest {
         internalLocationDescription = "BXI-A-1-01",
         internalLocationCode = "CELL-01",
         internalLocationId = 123,
+        outsideWork = true,
         scheduleRules = listOf(
           NomisScheduleRule(
             startTime = LocalDate.now().atTime(8, 0).toString(),
@@ -144,6 +145,7 @@ internal class ActivitiesApiServiceTest {
               "internalLocationDescription": "BXI-A-1-01",
               "internalLocationCode": "CELL-01",
               "internalLocationId": 123,
+              "outsideWork": true,
               "scheduleRules": [
                 {
                   "startTime": "${LocalDate.now().atTime(8, 0)}",
