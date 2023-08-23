@@ -21,7 +21,7 @@ class NonAssociationsSynchronisationService(
       return
     }
 
-    if (event.isNotNonAssociationPrimary()) {
+    if (event.isNotPrimaryNonAssociation()) {
       telemetryClient.trackEvent(
         "non-association-synchronisation-duplicate-skipped",
         event.toTelemetryProperties(),
@@ -41,7 +41,7 @@ class NonAssociationsSynchronisationService(
 }
 
 // Two non-association events occur for each non-association relationship - use the offenderIds to uniquely identify each pair
-private fun NonAssociationsOffenderEvent.isNotNonAssociationPrimary(): Boolean = offenderIdDisplay > nsOffenderIdDisplay
+private fun NonAssociationsOffenderEvent.isNotPrimaryNonAssociation(): Boolean = offenderIdDisplay > nsOffenderIdDisplay
 
 private fun NonAssociationsOffenderEvent.toTelemetryProperties(
   nonAssociationId: String? = null,
