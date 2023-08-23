@@ -106,7 +106,7 @@ class AllocationsMigrationService(
 
   private suspend fun AllocationMigrationMappingDto.publishTelemetry() =
     telemetryClient.trackEvent(
-      "allocation-migration-entity-migrated",
+      "${MigrationType.ALLOCATIONS.telemetryName}-migration-entity-migrated",
       mapOf(
         "nomisAllocationId" to nomisAllocationId.toString(),
         "activityAllocationId" to activityAllocationId.toString(),
@@ -121,7 +121,7 @@ class AllocationsMigrationService(
       ?.let { it.errorResponse?.moreInfo }
       ?.also {
         telemetryClient.trackEvent(
-          "nomis-migration-allocation-duplicate",
+          "${MigrationType.ALLOCATIONS.telemetryName}-nomis-migration-duplicate",
           mapOf(
             "migrationId" to context.migrationId,
             "duplicateNomisAllocationId" to it.duplicate.nomisAllocationId.toString(),

@@ -104,7 +104,7 @@ class ActivitiesMigrationService(
 
   private suspend fun ActivityMigrationMappingDto.publishTelemetry() =
     telemetryClient.trackEvent(
-      "activity-migration-entity-migrated",
+      "${ACTIVITIES.telemetryName}-migration-entity-migrated",
       mapOf(
         "nomisCourseActivityId" to nomisCourseActivityId.toString(),
         "activityId" to activityId.toString(),
@@ -119,7 +119,7 @@ class ActivitiesMigrationService(
       ?.let { it.errorResponse?.moreInfo }
       ?.also {
         telemetryClient.trackEvent(
-          "nomis-migration-activity-duplicate",
+          "${ACTIVITIES.telemetryName}-nomis-migration-duplicate",
           mapOf(
             "migrationId" to context.migrationId,
             "duplicateNomisCourseActivityId" to it.duplicate.nomisCourseActivityId.toString(),
