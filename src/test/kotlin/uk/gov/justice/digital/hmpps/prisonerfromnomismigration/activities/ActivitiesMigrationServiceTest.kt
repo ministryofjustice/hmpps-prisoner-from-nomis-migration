@@ -445,6 +445,7 @@ class ActivitiesMigrationServiceTest {
           internalLocationDescription = "BXI-A-1-01",
           internalLocationCode = "CELL-01",
           internalLocationId = 123,
+          outsideWork = true,
           scheduleRules = listOf(
             ScheduleRulesResponse(
               startTime = "${today.atTime(8, 0)}",
@@ -534,6 +535,7 @@ class ActivitiesMigrationServiceTest {
           assertThat(it.internalLocationId).isEqualTo(123)
           assertThat(it.internalLocationCode).isEqualTo("CELL-01")
           assertThat(it.internalLocationDescription).isEqualTo("BXI-A-1-01")
+          assertThat(it.outsideWork).isEqualTo(true)
           with(it.payRates.first { it.nomisPayBand == "1" }) {
             assertThat(incentiveLevel).isEqualTo("BAS")
             assertThat(rate).isEqualTo(120)

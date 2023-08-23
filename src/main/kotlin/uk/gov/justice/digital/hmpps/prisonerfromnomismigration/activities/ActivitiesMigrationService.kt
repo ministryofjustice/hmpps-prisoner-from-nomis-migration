@@ -150,7 +150,7 @@ private fun GetActivityResponse.toActivityMigrateRequest(): ActivityMigrateReque
     internalLocationDescription = internalLocationDescription,
     scheduleRules = scheduleRules.map { it.toNomisScheduleRule() },
     payRates = payRates.map { it.toNomisPayRate() },
-    outsideWork = true,
+    outsideWork = outsideWork,
   )
 
 private fun ScheduleRulesResponse.toNomisScheduleRule(): NomisScheduleRule =
