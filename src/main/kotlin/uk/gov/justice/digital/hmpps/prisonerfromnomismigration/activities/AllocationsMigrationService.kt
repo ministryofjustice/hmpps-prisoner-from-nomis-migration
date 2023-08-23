@@ -83,7 +83,7 @@ class AllocationsMigrationService(
   private suspend fun GetAllocationResponse.toAllocationMigrateRequest(allocationId: Long): AllocationMigrateRequest {
     val activityMapping = activityMappingService.findNomisMapping(courseActivityId)
       ?: throw IllegalStateException("Cannot migrate allocation $allocationId - unable to find mapping for course activity $courseActivityId")
-    return this.toAllocationMigrateRequest(activityMapping.activityScheduleId, activityMapping.activityScheduleId2)
+    return this.toAllocationMigrateRequest(activityMapping.activityId, activityMapping.activityId2)
   }
 
   private suspend fun AllocationMigrationMappingDto.createAllocationMapping(context: MigrationContext<*>) =
@@ -110,7 +110,7 @@ class AllocationsMigrationService(
       mapOf(
         "nomisAllocationId" to nomisAllocationId.toString(),
         "activityAllocationId" to activityAllocationId.toString(),
-        "activityScheduleId" to activityScheduleId.toString(),
+        "activityId" to activityId.toString(),
         "migrationId" to this.label,
       ),
       null,
@@ -126,10 +126,10 @@ class AllocationsMigrationService(
             "migrationId" to context.migrationId,
             "duplicateNomisAllocationId" to it.duplicate.nomisAllocationId.toString(),
             "duplicateActivityAllocationId" to it.duplicate.activityAllocationId.toString(),
-            "duplicateActivityScheduleId" to it.duplicate.activityScheduleId.toString(),
+            "duplicateactivityId" to it.duplicate.activityId.toString(),
             "existingNomisAllocationId" to it.existing.nomisAllocationId.toString(),
             "existingActivityAllocationId" to it.existing.activityAllocationId.toString(),
-            "existingActivityScheduleId" to it.existing.activityScheduleId.toString(),
+            "existingactivityId" to it.existing.activityId.toString(),
           ),
           null,
         )
@@ -155,6 +155,6 @@ private fun AllocationMigrateResponse.toAllocationMigrateMappingDto(nomisAllocat
   AllocationMigrationMappingDto(
     nomisAllocationId = nomisAllocationId,
     activityAllocationId = allocationId,
-    activityScheduleId = activityId,
+    activityId = activityId,
     label = migrationId,
   )

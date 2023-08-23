@@ -646,8 +646,8 @@ class ActivitiesMigrationServiceTest {
           context = check<MigrationContext<ActivityMigrationMappingDto>> {
             assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
             assertThat(it.body.nomisCourseActivityId).isEqualTo(123)
-            assertThat(it.body.activityScheduleId).isEqualTo(456)
-            assertThat(it.body.activityScheduleId2).isEqualTo(789)
+            assertThat(it.body.activityId).isEqualTo(456)
+            assertThat(it.body.activityId2).isEqualTo(789)
           },
           delaySeconds = eq(0),
         )
@@ -659,8 +659,8 @@ class ActivitiesMigrationServiceTest {
         .thenReturn(
           ActivityMigrationMappingDto(
             nomisCourseActivityId = 123L,
-            activityScheduleId = 456,
-            activityScheduleId2 = 789,
+            activityId = 456,
+            activityId2 = 789,
             label = "An old migration",
           ),
         )
@@ -694,8 +694,8 @@ class ActivitiesMigrationServiceTest {
           assertThat(it).containsExactlyInAnyOrderEntriesOf(
             mapOf(
               "nomisCourseActivityId" to "123",
-              "activityScheduleId" to "456",
-              "activityScheduleId2" to "789",
+              "activityId" to "456",
+              "activityId2" to "789",
               "migrationId" to "2020-05-23T11:30:00",
             ),
           )

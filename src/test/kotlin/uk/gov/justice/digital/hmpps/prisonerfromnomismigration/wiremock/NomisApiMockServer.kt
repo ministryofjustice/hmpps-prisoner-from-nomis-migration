@@ -524,6 +524,18 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
     )
   }
+
+  fun stubGetNonAssociationNotFound(offenderNo: String, nsOffenderNo: String) {
+    nomisApi.stubFor(
+      get(
+        urlPathEqualTo("/non-associations/offender/$offenderNo/ns-offender/$nsOffenderNo"),
+      )
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NOT_FOUND.value()),
+        ),
+    )
+  }
 }
 
 private fun visitResponse(visitId: Long) = """

@@ -597,7 +597,7 @@ class AllocationsMigrationServiceTest {
             assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
             assertThat(it.body.nomisAllocationId).isEqualTo(123)
             assertThat(it.body.activityAllocationId).isEqualTo(456)
-            assertThat(it.body.activityScheduleId).isEqualTo(789)
+            assertThat(it.body.activityId).isEqualTo(789)
           },
           delaySeconds = eq(0),
         )
@@ -610,7 +610,7 @@ class AllocationsMigrationServiceTest {
           AllocationMigrationMappingDto(
             nomisAllocationId = 123L,
             activityAllocationId = 456,
-            activityScheduleId = 456,
+            activityId = 456,
             label = "An old migration",
           ),
         )
@@ -645,7 +645,7 @@ class AllocationsMigrationServiceTest {
             mapOf(
               "nomisAllocationId" to "123",
               "activityAllocationId" to "456",
-              "activityScheduleId" to "789",
+              "activityId" to "789",
               "migrationId" to "2020-05-23T11:30:00",
             ),
           )

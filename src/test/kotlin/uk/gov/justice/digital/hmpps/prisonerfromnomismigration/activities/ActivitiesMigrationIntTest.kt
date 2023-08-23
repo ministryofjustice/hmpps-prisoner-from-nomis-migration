@@ -190,8 +190,8 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
       stubMigrationDependencies {
         // Emulate mapping already exists when trying to create
         mappingApi.stubActivityMappingCreateConflict(
-          existingActivityScheduleId = 4444,
-          duplicateActivityScheduleId = 4445,
+          existingActivityId = 4444,
+          duplicateActivityId = 4445,
           nomisCourseActivityId = 123,
         )
       }
@@ -202,8 +202,8 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
         eq("nomis-migration-activity-duplicate"),
         check {
           assertThat(it["migrationId"]).isNotNull
-          assertThat(it["existingActivityScheduleId"]).isEqualTo("4444")
-          assertThat(it["duplicateActivityScheduleId"]).isEqualTo("4445")
+          assertThat(it["existingActivityId"]).isEqualTo("4444")
+          assertThat(it["duplicateActivityId"]).isEqualTo("4445")
           assertThat(it["existingNomisCourseActivityId"]).isEqualTo("123")
           assertThat(it["duplicateNomisCourseActivityId"]).isEqualTo("123")
         },
