@@ -1036,9 +1036,11 @@ fun adjudicationResponse(
                                 "statusDate": "2023-08-07",
                                 "sanctionDays": 2,
                                 "sanctionMonths": 1,
-                                "chargeSequence": 1
+                                "chargeSequence": 1,
+                                "adjudicationNumber": ${adjudicationNumber - 1} 
                             },
-                            "chargeSequence": 2
+                            "chargeSequence": 2,
+                            "adjudicationNumber": $adjudicationNumber
                         },
                         {
                             "sequence": 7,

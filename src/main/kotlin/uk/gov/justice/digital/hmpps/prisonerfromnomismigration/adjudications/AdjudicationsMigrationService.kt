@@ -139,11 +139,11 @@ fun AdjudicationChargeResponse.toAdjudication(): AdjudicationMigrateDto =
     },
     damages = this.incident.repairs.map { it.toDamage() },
     evidence = this.investigations.flatMap { investigation -> investigation.evidence.map { it.toEvidence() } },
-    punishments = this.hearings.flatMap { it.toHearingResultAwards(this.adjudicationNumber) },
+    punishments = this.hearings.flatMap { it.toHearingResultAwards() },
     hearings = this.hearings.map { it.toHearing() },
   )
 
-private fun Hearing.toHearingResultAwards(adjudicationNumber: Long): List<MigratePunishment> =
+private fun Hearing.toHearingResultAwards(): List<MigratePunishment> =
   this.hearingResults
     .flatMap { hearingResult ->
       hearingResult.resultAwards.map {
@@ -157,12 +157,12 @@ private fun Hearing.toHearingResultAwards(adjudicationNumber: Long): List<Migrat
           comment = it.comment,
           compensationAmount = it.compensationAmount,
           days = it.sanctionDays + it.sanctionMonths.asDays(it.effectiveDate),
-          consecutiveChargeNumber = it.consecutiveAward.toConsecutiveChargeNumber(adjudicationNumber),
+          consecutiveChargeNumber = it.consecutiveAward.toConsecutiveChargeNumber(),
         )
       }
     }
 
-private fun HearingResultAward?.toConsecutiveChargeNumber(adjudicationNumber: Long): String? =
+private fun HearingResultAward?.toConsecutiveChargeNumber(): String? =
   this?.let { "$adjudicationNumber-$chargeSequence" }
 
 private operator fun Int?.plus(second: Int?): Int? = when {
