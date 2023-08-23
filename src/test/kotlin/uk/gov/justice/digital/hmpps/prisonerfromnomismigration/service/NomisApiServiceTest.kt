@@ -882,17 +882,17 @@ internal class NomisApiServiceTest {
             .withStatus(HttpURLConnection.HTTP_OK)
             .withBody(
               """
-              {
-              "offenderNo": "A1234BC",
-              "nsOffenderNo": "D5678EF",
-              "reason": "VIC",
-              "recipReason": "PER",
-              "type": "WING",
-              "authorisedBy": "Jim Smith",
-              "effectiveDate": "2023-10-25",
-              "expiryDate": "2023-10-26",
-              "comment": "Fight on Wing C"
-            }
+                  {
+                  "offenderNo": "A1234BC",
+                  "nsOffenderNo": "D5678EF",
+                  "reason": "VIC",
+                  "recipReason": "PER",
+                  "type": "WING",
+                  "authorisedBy": "Jim Smith",
+                  "effectiveDate": "2023-10-25",
+                  "expiryDate": "2023-10-26",
+                  "comment": "Fight on Wing C"
+                }
               """.trimIndent(),
             ),
         ),
@@ -928,6 +928,52 @@ internal class NomisApiServiceTest {
       assertThat(nonAssociation.effectiveDate).isEqualTo(LocalDate.parse("2023-10-25"))
       assertThat(nonAssociation.expiryDate).isEqualTo(LocalDate.parse("2023-10-26"))
       assertThat(nonAssociation.comment).isEqualTo("Fight on Wing C")
+    }
+
+    @Nested
+    @DisplayName("when non-association with minimal data exists in NOMIS")
+    inner class WithMinimalData {
+      @BeforeEach
+      internal fun setUp() {
+        nomisApi.stubFor(
+          get(
+            urlPathMatching(nonAssociationUrl),
+          ).willReturn(
+            aResponse()
+              .withHeader("Content-Type", "application/json")
+              .withStatus(HttpURLConnection.HTTP_OK)
+              .withBody(
+                """
+                  {
+                  "offenderNo": "A1234BC",
+                  "nsOffenderNo": "D5678EF",
+                  "reason": "VIC",
+                  "recipReason": "PER",
+                  "type": "WING",
+                  "effectiveDate": "2023-10-25"
+                }
+                """.trimIndent(),
+              ),
+          ),
+        )
+      }
+
+      @Test
+      internal fun `will return non-association data and successfully map nullable fields`(): Unit = runBlocking {
+        val nonAssociation = nomisService.getNonAssociation(
+          offenderNo = "A1234BC",
+          nsOffenderNo = "D5678EF",
+        )
+        assertThat(nonAssociation.offenderNo).isEqualTo("A1234BC")
+        assertThat(nonAssociation.nsOffenderNo).isEqualTo("D5678EF")
+        assertThat(nonAssociation.reason).isEqualTo("VIC")
+        assertThat(nonAssociation.recipReason).isEqualTo("PER")
+        assertThat(nonAssociation.type).isEqualTo("WING")
+        assertThat(nonAssociation.authorisedBy).isNull()
+        assertThat(nonAssociation.effectiveDate).isEqualTo(LocalDate.parse("2023-10-25"))
+        assertThat(nonAssociation.expiryDate).isNull()
+        assertThat(nonAssociation.comment).isNull()
+      }
     }
 
     @Nested

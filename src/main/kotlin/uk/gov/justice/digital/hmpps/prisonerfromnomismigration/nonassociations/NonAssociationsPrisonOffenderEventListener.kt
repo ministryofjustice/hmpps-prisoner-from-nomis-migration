@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NON_ASSOCIATIONS_SYNC_QUEUE_ID
 import java.util.concurrent.CompletableFuture
 
 @Service
@@ -26,7 +27,7 @@ class NonAssociationsPrisonOffenderEventListener(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  @SqsListener("eventnonassociations", factory = "hmppsQueueContainerFactoryProxy")
+  @SqsListener(NON_ASSOCIATIONS_SYNC_QUEUE_ID, factory = "hmppsQueueContainerFactoryProxy")
   @WithSpan(value = "Digital-Prison-Services-prisoner_from_nomis_nonassociations_queue", kind = SpanKind.SERVER)
   fun onMessage(message: String): CompletableFuture<Void> {
     log.debug("Received offender event message {}", message)
@@ -54,12 +55,6 @@ class NonAssociationsPrisonOffenderEventListener(
             log.info("Feature switch is disabled for event {}", eventType)
           }
         }
-
-        SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING.name -> log.debug(
-          "NON_ASSOCIATION_DETAIL retry sync received",
-          // nonAssociationsSynchronisationService.retryCreateSentenceAdjustmentMapping(
-          sqsMessage.Message.fromJson(),
-        )
       }
     }
   }

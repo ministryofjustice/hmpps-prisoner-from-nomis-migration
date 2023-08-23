@@ -525,6 +525,19 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubGetNonAssociationWithMinimalData(offenderNo: String, nsOffenderNo: String) {
+    nomisApi.stubFor(
+      get(
+        urlPathEqualTo("/non-associations/offender/$offenderNo/ns-offender/$nsOffenderNo"),
+      )
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(nonAssociationResponseMinimalData(offenderNo = offenderNo, nsOffenderNo = nsOffenderNo)),
+        ),
+    )
+  }
+
   fun stubGetNonAssociationNotFound(offenderNo: String, nsOffenderNo: String) {
     nomisApi.stubFor(
       get(
@@ -1074,21 +1087,35 @@ fun adjudicationResponse(
 private fun nonAssociationResponse(
   offenderNo: String = "A1234BC",
   nsOffenderNo: String = "D5678EF",
-): String {
-  return """
-  {
-    "offenderNo": "$offenderNo",
-    "nsOffenderNo": "$nsOffenderNo",
-    "reason": "VIC",
-    "recipReason": "PER",
-    "type": "WING",
-    "authorisedBy": "Jim Smith",
-    "effectiveDate": "2023-10-25",
-    "expiryDate": "2023-10-26",
-    "comment": "Fight on Wing C"
-  }
+): String =
+  """
+    {
+      "offenderNo": "$offenderNo",
+      "nsOffenderNo": "$nsOffenderNo",
+      "reason": "VIC",
+      "recipReason": "PER",
+      "type": "WING",
+      "authorisedBy": "Jim Smith",
+      "effectiveDate": "2023-10-25",
+      "expiryDate": "2023-10-26",
+      "comment": "Fight on Wing C"
+    }
   """.trimIndent()
-}
+
+private fun nonAssociationResponseMinimalData(
+  offenderNo: String = "A1234BC",
+  nsOffenderNo: String = "D5678EF",
+): String =
+  """
+    {
+      "offenderNo": "$offenderNo",
+      "nsOffenderNo": "$nsOffenderNo",
+      "reason": "VIC",
+      "recipReason": "PER",
+      "type": "WING",
+      "effectiveDate": "2023-10-25"
+    }
+  """.trimIndent()
 
 private fun appointmentResponse(
   bookingId: Long = 2,

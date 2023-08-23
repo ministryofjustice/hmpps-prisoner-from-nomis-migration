@@ -236,8 +236,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     webClient.get()
       .uri("/non-associations/offender/{offenderNo}/ns-offender/{nsOffenderNo}", offenderNo, nsOffenderNo)
       .retrieve()
-      .bodyToMono(NonAssociationResponse::class.java)
-      .awaitSingle()
+      .awaitBody()
 }
 
 data class VisitId(
