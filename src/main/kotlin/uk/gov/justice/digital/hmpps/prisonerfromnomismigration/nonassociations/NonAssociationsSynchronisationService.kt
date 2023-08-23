@@ -23,12 +23,19 @@ class NonAssociationsSynchronisationService(
         "non-association-synchronisation-skipped",
         event.toTelemetryProperties(),
       )
+      return
+    }
 
+    if (event.isDuplicate()) {
+      telemetryClient.trackEvent(
+        "non-association-synchronisation-duplicate-skipped",
+        event.toTelemetryProperties(),
+      )
       return
     }
 
     nomisApiService.getNonAssociation(event.offenderIdDisplay, event.nsOffenderIdDisplay)
-      ?.also {
+      .also {
         nonAssociationsService.createNonAssociation(it.toCreateSyncRequest())
         telemetryClient.trackEvent(
           "non-association-created-synchronisation-success",
@@ -37,6 +44,9 @@ class NonAssociationsSynchronisationService(
       }
   }
 }
+
+// Two non-association events occur for each non-association relationship - use the offenderIds to uniquely identify each pair
+private fun NonAssociationsOffenderEvent.isDuplicate(): Boolean = offenderIdDisplay > nsOffenderIdDisplay
 
 private fun NonAssociationsOffenderEvent.toTelemetryProperties(
   nonAssociationId: String? = null,
