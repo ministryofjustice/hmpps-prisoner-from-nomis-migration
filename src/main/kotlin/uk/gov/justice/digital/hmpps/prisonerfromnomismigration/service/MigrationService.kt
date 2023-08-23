@@ -84,6 +84,12 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, NOMIS_ENTITY : Any
         context = context,
         body = MigrationStatusCheck(),
       ),
+      delaySeconds = completeCheckDelaySeconds,
+      // hold back in case none of the MIGRATE_BY_PAGE messages have actually produced any MIGRATE_ENTITY messages yet
+      // e.g. the NOMIS API call is so slow it hasn't retried any IDS yet (this is unlikely since by now Oracle should
+      // have cached some of the data making subsequent calls quicker.
+      // Note, if it takes longer than 10s + (10 * 1s) to produce the first MIGRATE_ENTITY message the migration could
+      // complete prematurely - if that happens the delay config will need amending
     )
   }
 
