@@ -43,7 +43,7 @@ internal class ActivitiesApiServiceTest {
 
     private fun stubMigrateActivity(secondActivityId: Long? = 5555) {
       activitiesApi.stubFor(
-        post(urlEqualTo("/migrate-activity")).willReturn(
+        post(urlEqualTo("/migrate/activity")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.CREATED.value())
@@ -118,7 +118,7 @@ internal class ActivitiesApiServiceTest {
       activitiesApiService.migrateActivity(migrateActivityRequest())
 
       activitiesApi.verify(
-        postRequestedFor(urlEqualTo("/migrate-activity"))
+        postRequestedFor(urlEqualTo("/migrate/activity"))
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
@@ -128,7 +128,7 @@ internal class ActivitiesApiServiceTest {
       activitiesApiService.migrateActivity(migrateActivityRequest())
 
       activitiesApi.verify(
-        postRequestedFor(urlEqualTo("/migrate-activity"))
+        postRequestedFor(urlEqualTo("/migrate/activity"))
           .withRequestBody(
             equalToJson(
               """
@@ -216,7 +216,7 @@ internal class ActivitiesApiServiceTest {
     @Test
     internal fun `should throw exception for any error`() {
       activitiesApi.stubFor(
-        post(urlPathMatching("/migrate-activity")).willReturn(
+        post(urlPathMatching("/migrate/activity")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
@@ -241,7 +241,7 @@ internal class ActivitiesApiServiceTest {
 
     private fun stubMigrateAllocation() {
       activitiesApi.stubFor(
-        post(urlEqualTo("/migrate-allocation")).willReturn(
+        post(urlEqualTo("/migrate/allocation")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.CREATED.value())
@@ -277,7 +277,7 @@ internal class ActivitiesApiServiceTest {
       activitiesApiService.migrateAllocation(migrateAllocationRequest())
 
       activitiesApi.verify(
-        postRequestedFor(urlEqualTo("/migrate-allocation"))
+        postRequestedFor(urlEqualTo("/migrate/allocation"))
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
@@ -287,7 +287,7 @@ internal class ActivitiesApiServiceTest {
       activitiesApiService.migrateAllocation(migrateAllocationRequest())
 
       activitiesApi.verify(
-        postRequestedFor(urlEqualTo("/migrate-allocation"))
+        postRequestedFor(urlEqualTo("/migrate/allocation"))
           .withRequestBody(
             equalToJson(
               """
@@ -323,7 +323,7 @@ internal class ActivitiesApiServiceTest {
     @Test
     internal fun `should throw exception for any error`() {
       activitiesApi.stubFor(
-        post(urlPathMatching("/migrate-allocation")).willReturn(
+        post(urlPathMatching("/migrate/allocation")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
