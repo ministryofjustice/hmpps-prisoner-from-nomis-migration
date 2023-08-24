@@ -47,9 +47,9 @@ class NonAssociationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubCreateNonAssociationForSynchronisation(nonAssociationId: Long = 654321, firstOffenderNo: String = "A1234BC", secondOffenderNo: String = "D5678EF") {
+  fun stubUpsertNonAssociationForSynchronisation(nonAssociationId: Long = 654321, firstOffenderNo: String = "A1234BC", secondOffenderNo: String = "D5678EF") {
     stubFor(
-      WireMock.post(WireMock.urlMatching("/sync")).willReturn(
+      WireMock.put(WireMock.urlMatching("/sync")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.CREATED.value())
@@ -58,10 +58,14 @@ class NonAssociationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
               id = nonAssociationId,
               firstPrisonerNumber = firstOffenderNo,
               firstPrisonerRole = NonAssociation.FirstPrisonerRole.VICTIM,
+              firstPrisonerRoleDescription = "Victim",
               secondPrisonerNumber = secondOffenderNo,
               secondPrisonerRole = NonAssociation.SecondPrisonerRole.PERPETRATOR,
+              secondPrisonerRoleDescription = "Perpetrator",
               reason = NonAssociation.Reason.BULLYING,
+              reasonDescription = "Bullying",
               restrictionType = NonAssociation.RestrictionType.CELL,
+              restrictionTypeDescription = "Cell",
               comment = "John and Luke always end up fighting",
               authorisedBy = "OFF3_GEN",
               whenCreated = "2023-07-05T11:12:45",

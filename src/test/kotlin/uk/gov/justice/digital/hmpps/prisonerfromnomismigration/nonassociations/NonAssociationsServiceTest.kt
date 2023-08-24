@@ -2,7 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations
 
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
-import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.model.CreateSyncRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.model.UpsertSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NonAssociationsApiExtension
 import java.time.LocalDate
 
@@ -29,16 +29,15 @@ internal class NonAssociationsServiceTest {
   inner class CreateNonAssociationForSynchronisation {
     @BeforeEach
     internal fun setUp() {
-      NonAssociationsApiExtension.nonAssociationsApi.stubCreateNonAssociationForSynchronisation(nonAssociationId = NON_ASSOCIATION_ID)
+      NonAssociationsApiExtension.nonAssociationsApi.stubUpsertNonAssociationForSynchronisation(nonAssociationId = NON_ASSOCIATION_ID)
       runBlocking {
-        nonAssociationsService.createNonAssociation(
-          CreateSyncRequest(
+        nonAssociationsService.upsertNonAssociation(
+          UpsertSyncRequest(
             firstPrisonerNumber = "A1234CD",
-            firstPrisonerReason = CreateSyncRequest.FirstPrisonerReason.VIC,
+            firstPrisonerReason = UpsertSyncRequest.FirstPrisonerReason.VIC,
             secondPrisonerNumber = "E5678EF",
-            secondPrisonerReason = CreateSyncRequest.SecondPrisonerReason.PER,
-            restrictionType = CreateSyncRequest.RestrictionType.CELL,
-            active = true,
+            secondPrisonerReason = UpsertSyncRequest.SecondPrisonerReason.PER,
+            restrictionType = UpsertSyncRequest.RestrictionType.CELL,
             comment = "Do not keep together - fighting",
             authorisedBy = "Jim Smith",
             effectiveFromDate = LocalDate.parse("2022-01-01"),
@@ -51,7 +50,7 @@ internal class NonAssociationsServiceTest {
     @Test
     fun `should call api with OAuth2 token`() {
       NonAssociationsApiExtension.nonAssociationsApi.verify(
-        postRequestedFor(WireMock.urlEqualTo("/sync"))
+        putRequestedFor(WireMock.urlEqualTo("/sync"))
           .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
       )
     }
@@ -59,13 +58,12 @@ internal class NonAssociationsServiceTest {
     @Test
     fun `will pass data to the api`() {
       NonAssociationsApiExtension.nonAssociationsApi.verify(
-        postRequestedFor(WireMock.urlEqualTo("/sync"))
+        putRequestedFor(WireMock.urlEqualTo("/sync"))
           .withRequestBody(matchingJsonPath("firstPrisonerNumber", WireMock.equalTo("A1234CD")))
           .withRequestBody(matchingJsonPath("firstPrisonerReason", WireMock.equalTo("VIC")))
           .withRequestBody(matchingJsonPath("secondPrisonerNumber", WireMock.equalTo("E5678EF")))
           .withRequestBody(matchingJsonPath("secondPrisonerReason", WireMock.equalTo("PER")))
           .withRequestBody(matchingJsonPath("restrictionType", WireMock.equalTo("CELL")))
-          .withRequestBody(matchingJsonPath("active", WireMock.equalTo("true")))
           .withRequestBody(matchingJsonPath("comment", WireMock.equalTo("Do not keep together - fighting")))
           .withRequestBody(matchingJsonPath("authorisedBy", WireMock.equalTo("Jim Smith")))
           .withRequestBody(matchingJsonPath("effectiveFromDate", WireMock.equalTo("2022-01-01")))

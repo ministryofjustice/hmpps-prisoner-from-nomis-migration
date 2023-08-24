@@ -2,7 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations
 
 import com.github.tomakehurst.wiremock.client.WireMock.exactly
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
-import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
@@ -64,7 +64,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
             )
           }
           nomisApi.verify(exactly(0), getRequestedFor(urlPathEqualTo(nomisApiUrl)))
-          nonAssociationsApi.verify(exactly(0), postRequestedFor(urlPathEqualTo("/sync")))
+          nonAssociationsApi.verify(exactly(0), putRequestedFor(urlPathEqualTo("/sync")))
         }
       }
 
@@ -73,7 +73,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           nomisApi.stubGetNonAssociation(offenderNo = OFFENDER_A, nsOffenderNo = OFFENDER_B)
-          nonAssociationsApi.stubCreateNonAssociationForSynchronisation(firstOffenderNo = OFFENDER_A, secondOffenderNo = OFFENDER_B)
+          nonAssociationsApi.stubUpsertNonAssociationForSynchronisation(firstOffenderNo = OFFENDER_A, secondOffenderNo = OFFENDER_B)
 
           nonAssociationsOffenderEventsClient.sendMessage(
             nonAssociationsQueueOffenderEventsUrl,
@@ -96,7 +96,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will create the non-association in the non-associations service`() {
           await untilAsserted {
-            nonAssociationsApi.verify(postRequestedFor(urlPathEqualTo("/sync")))
+            nonAssociationsApi.verify(putRequestedFor(urlPathEqualTo("/sync")))
           }
         }
 
@@ -104,7 +104,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create telemetry tracking the create`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("non-association-created-synchronisation-success"),
+              eq("non-association-upserted-synchronisation-success"),
               check {
                 assertThat(it["offenderNo"]).isEqualTo(OFFENDER_A)
                 assertThat(it["nsOffenderNo"]).isEqualTo(OFFENDER_B)
@@ -120,7 +120,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           nomisApi.stubGetNonAssociationWithMinimalData(offenderNo = OFFENDER_A, nsOffenderNo = OFFENDER_B)
-          nonAssociationsApi.stubCreateNonAssociationForSynchronisation(firstOffenderNo = OFFENDER_A, secondOffenderNo = OFFENDER_B)
+          nonAssociationsApi.stubUpsertNonAssociationForSynchronisation(firstOffenderNo = OFFENDER_A, secondOffenderNo = OFFENDER_B)
 
           nonAssociationsOffenderEventsClient.sendMessage(
             nonAssociationsQueueOffenderEventsUrl,
@@ -143,7 +143,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will create the non-association in the non-associations service`() {
           await untilAsserted {
-            nonAssociationsApi.verify(postRequestedFor(urlPathEqualTo("/sync")))
+            nonAssociationsApi.verify(putRequestedFor(urlPathEqualTo("/sync")))
           }
         }
 
@@ -151,7 +151,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create telemetry tracking the create`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("non-association-created-synchronisation-success"),
+              eq("non-association-upserted-synchronisation-success"),
               check {
                 assertThat(it["offenderNo"]).isEqualTo(OFFENDER_A)
                 assertThat(it["nsOffenderNo"]).isEqualTo(OFFENDER_B)
@@ -185,11 +185,11 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will not create the non-association in the non-associations service`() {
-          nonAssociationsApi.verify(exactly(0), postRequestedFor(urlPathEqualTo("/sync")))
+          nonAssociationsApi.verify(exactly(0), putRequestedFor(urlPathEqualTo("/sync")))
         }
 
         @Test
-        fun `will not create telemetry tracking`() {
+        fun `will not create telemetry tracking success`() {
           verify(telemetryClient, Times(0)).trackEvent(
             eq("non-association-created-synchronisation-success"),
             check {
@@ -199,6 +199,20 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
             isNull(),
           )
         }
+
+        @Test
+        fun `will create telemetry tracking the non-primary ignore`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("non-association-synchronisation-non-primary-skipped"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_B)
+                assertThat(it["nsOffenderNo"]).isEqualTo(OFFENDER_A)
+              },
+              isNull(),
+            )
+          }
+        }
       }
 
       @Nested
@@ -206,7 +220,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           nomisApi.stubGetNonAssociation(offenderNo = OFFENDER_A, nsOffenderNo = OFFENDER_B)
-          nonAssociationsApi.stubCreateNonAssociationForSynchronisation(firstOffenderNo = OFFENDER_A, secondOffenderNo = OFFENDER_B)
+          nonAssociationsApi.stubUpsertNonAssociationForSynchronisation(firstOffenderNo = OFFENDER_A, secondOffenderNo = OFFENDER_B)
 
           nonAssociationsOffenderEventsClient.sendMessage(
             nonAssociationsQueueOffenderEventsUrl,
@@ -238,7 +252,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will create one non-association in the non-associations service`() {
           await untilAsserted {
-            nonAssociationsApi.verify(exactly(1), postRequestedFor(urlPathEqualTo("/sync")))
+            nonAssociationsApi.verify(exactly(1), putRequestedFor(urlPathEqualTo("/sync")))
           }
         }
 
@@ -246,7 +260,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create one telemetry tracking the create`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("non-association-created-synchronisation-success"),
+              eq("non-association-upserted-synchronisation-success"),
               check {
                 assertThat(it["offenderNo"]).isEqualTo(OFFENDER_A)
                 assertThat(it["nsOffenderNo"]).isEqualTo(OFFENDER_B)
@@ -255,13 +269,27 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
             )
           }
           verify(telemetryClient, Times(0)).trackEvent(
-            eq("non-association-created-synchronisation-success"),
+            eq("non-association-upserted-synchronisation-success"),
             check {
               assertThat(it["offenderNo"]).isEqualTo(OFFENDER_B)
               assertThat(it["nsOffenderNo"]).isEqualTo(OFFENDER_A)
             },
             isNull(),
           )
+        }
+
+        @Test
+        fun `will create telemetry tracking the non-primary ignore`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("non-association-synchronisation-non-primary-skipped"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_B)
+                assertThat(it["nsOffenderNo"]).isEqualTo(OFFENDER_A)
+              },
+              isNull(),
+            )
+          }
         }
       }
 
@@ -284,13 +312,13 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will not create the non-association in the non-associations service`() {
-          nonAssociationsApi.verify(exactly(0), postRequestedFor(urlPathEqualTo("/sync")))
+          nonAssociationsApi.verify(exactly(0), putRequestedFor(urlPathEqualTo("/sync")))
         }
 
         @Test
         fun `will not create telemetry tracking`() {
           verify(telemetryClient, Times(0)).trackEvent(
-            eq("non-association-created-synchronisation-success"),
+            eq("non-association-upserted-synchronisation-success"),
             check {
               assertThat(it["offenderNo"]).isEqualTo(OFFENDER_A)
               assertThat(it["nsOffenderNo"]).isEqualTo(OFFENDER_B)
