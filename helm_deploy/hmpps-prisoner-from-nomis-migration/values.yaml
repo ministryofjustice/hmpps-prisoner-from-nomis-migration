@@ -38,6 +38,7 @@ generic-service:
     FEATURE_EVENT_KEY_DATE_ADJUSTMENT_DELETED: true
     FEATURE_EVENT_NON_ASSOCIATION_DETAIL-UPSERTED: true
     FEATURE_EVENT_NON_ASSOCIATION_DETAIL-DELETED: true
+    FEATURE_ADJUDICATIONS_REPORT_MODE: false
     HMPPS_SQS_USE_WEB_TOKEN: true
 
   # Pre-existing kubernetes secrets to load as environment variables in the deployment.

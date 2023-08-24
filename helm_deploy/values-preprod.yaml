@@ -24,6 +24,7 @@ generic-service:
     FEATURE_EVENT_KEY_DATE_ADJUSTMENT_DELETED: false
     FEATURE_EVENT_NON_ASSOCIATION_DETAIL-UPSERTED: false
     FEATURE_EVENT_NON_ASSOCIATION_DETAIL-DELETED: false
+    FEATURE_ADJUDICATIONS_REPORT_MODE: true
 
 generic-prometheus-alerts:
   businessHoursOnly: true
