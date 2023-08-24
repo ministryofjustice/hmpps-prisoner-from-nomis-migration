@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
+import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.AdjudicationMigrateDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateDamage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateDamage.DamageType.CLEANING
@@ -242,6 +243,8 @@ class AdjudicationsMigrationService(
   @Value("\${adjudications.page.size:1000}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
+  @Value("\${feature.adjudications.report.mode:false}")
+  private val reportMode: Boolean,
 ) :
   MigrationService<AdjudicationsMigrationFilter, AdjudicationChargeIdResponse, AdjudicationResponse, AdjudicationAllMappingDto>(
     queueService = queueService,
@@ -292,20 +295,41 @@ class AdjudicationsMigrationService(
             chargeSequence = chargeSequence,
           )
 
-        val mapping = adjudicationsService.createAdjudication(nomisAdjudication.toAdjudication())
-        createAdjudicationMapping(mapping, context = context)
+        try {
+          val mapping = adjudicationsService.createAdjudication(nomisAdjudication.toAdjudication())
+          createAdjudicationMapping(mapping, context = context)
 
-        telemetryClient.trackEvent(
-          "adjudications-migration-entity-migrated",
-          mapOf(
-            "adjudicationNumber" to adjudicationNumber.toString(),
-            "chargeSequence" to chargeSequence.toString(),
-            "chargeNumber" to mapping.chargeNumberMapping.chargeNumber,
-            "offenderNo" to offenderNo,
-            "migrationId" to context.migrationId,
-          ),
-          null,
-        )
+          telemetryClient.trackEvent(
+            "adjudications-migration-entity-migrated",
+            mapOf(
+              "adjudicationNumber" to adjudicationNumber.toString(),
+              "chargeSequence" to chargeSequence.toString(),
+              "prisonId" to nomisAdjudication.incident.prison.code,
+              "chargeNumber" to mapping.chargeNumberMapping.chargeNumber,
+              "offenderNo" to offenderNo,
+              "migrationId" to context.migrationId,
+            ),
+            null,
+          )
+        } catch (e: WebClientResponseException) { // only required while DPS is analysing the data failures
+          if (reportMode && e.statusCode.is4xxClientError) {
+            log.error("Ignoring error ${e.statusCode} for adjudicationNumber: $adjudicationNumber/$chargeSequence")
+            telemetryClient.trackEvent(
+              "adjudications-migration-entity-failed",
+              mapOf(
+                "adjudicationNumber" to adjudicationNumber.toString(),
+                "chargeSequence" to chargeSequence.toString(),
+                "prisonId" to nomisAdjudication.incident.prison.code,
+                "resultCode" to e.statusCode.toString(),
+                "offenderNo" to offenderNo,
+                "migrationId" to context.migrationId,
+              ),
+              null,
+            )
+          } else {
+            throw e
+          }
+        }
       }
   }
 
