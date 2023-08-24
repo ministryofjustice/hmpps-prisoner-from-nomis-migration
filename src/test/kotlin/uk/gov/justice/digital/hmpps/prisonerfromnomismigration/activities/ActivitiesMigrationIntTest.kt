@@ -199,7 +199,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
       webTestClient.performMigration()
 
       verify(telemetryClient).trackEvent(
-        eq("nomis-migration-activity-duplicate"),
+        eq("activity-nomis-migration-duplicate"),
         check {
           assertThat(it["migrationId"]).isNotNull
           assertThat(it["existingActivityId"]).isEqualTo("4444")
