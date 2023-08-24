@@ -182,7 +182,7 @@ class AllocationsMigrationServiceTest {
       }
 
       verify(telemetryClient).trackEvent(
-        eq("allocations-migration-started"),
+        eq("activity-allocations-migration-started"),
         check {
           assertThat(it["migrationId"]).isNotNull
           assertThat(it["estimatedCount"]).isEqualTo("7")
@@ -639,7 +639,7 @@ class AllocationsMigrationServiceTest {
       )
 
       verify(telemetryClient).trackEvent(
-        eq("allocation-migration-entity-migrated"),
+        eq("activity-allocations-migration-entity-migrated"),
         check<Map<String, String>> {
           assertThat(it).containsExactlyInAnyOrderEntriesOf(
             mapOf(
@@ -763,7 +763,7 @@ class AllocationsMigrationServiceTest {
         )
 
         verify(telemetryClient).trackEvent(
-          eq("allocations-migration-completed"),
+          eq("activity-allocations-migration-completed"),
           check {
             assertThat(it["migrationId"]).isNotNull
             assertThat(it["estimatedCount"]).isEqualTo("7")
@@ -909,7 +909,7 @@ class AllocationsMigrationServiceTest {
         )
 
         verify(telemetryClient).trackEvent(
-          eq("allocations-migration-cancelled"),
+          eq("activity-allocations-migration-cancelled"),
           check {
             assertThat(it["migrationId"]).isNotNull
             assertThat(it["estimatedCount"]).isEqualTo("7")
