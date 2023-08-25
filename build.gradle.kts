@@ -5,9 +5,9 @@ import org.jlleitschuh.gradle.ktlint.tasks.KtLintFormatTask
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "5.3.0-beta"
-  kotlin("plugin.spring") version "1.9.0"
-  id("org.openapi.generator") version "6.6.0"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "5.4.0"
+  kotlin("plugin.spring") version "1.9.10"
+  id("org.openapi.generator") version "7.0.0"
 }
 
 dependencyCheck {
@@ -36,7 +36,7 @@ dependencies {
   implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:2.0.1")
   implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
 
-  implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.1.0")
+  implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.2.0")
 
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8")
@@ -49,18 +49,18 @@ dependencies {
   runtimeOnly("org.postgresql:postgresql:42.6.0")
   implementation("org.flywaydb:flyway-core")
 
-  implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:1.28.0")
+  implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:1.29.0")
 
   testImplementation("io.swagger.parser.v3:swagger-parser:2.1.16")
   testImplementation("io.jsonwebtoken:jjwt-impl:0.11.5")
   testImplementation("io.jsonwebtoken:jjwt-jackson:0.11.5")
 
   testImplementation("com.github.tomakehurst:wiremock-jre8-standalone:2.35.0")
-  testImplementation("org.testcontainers:localstack:1.18.3")
-  testImplementation("com.amazonaws:aws-java-sdk-core:1.12.512")
+  testImplementation("org.testcontainers:localstack:1.19.0")
+  testImplementation("com.amazonaws:aws-java-sdk-core:1.12.537")
   testImplementation("org.awaitility:awaitility-kotlin:4.2.0")
-  testImplementation("org.testcontainers:postgresql:1.18.3")
-  testImplementation("io.mockk:mockk:1.13.5")
+  testImplementation("org.testcontainers:postgresql:1.19.0")
+  testImplementation("io.mockk:mockk:1.13.7")
   testImplementation("javax.xml.bind:jaxb-api:2.3.1")
 }
 
