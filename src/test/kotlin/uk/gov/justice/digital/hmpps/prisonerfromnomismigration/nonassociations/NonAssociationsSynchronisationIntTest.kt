@@ -6,7 +6,9 @@ import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
+import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilAsserted
+import org.awaitility.kotlin.untilCallTo
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -16,10 +18,12 @@ import org.mockito.internal.verification.Times
 import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
+import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NonAssociationsApiExtension.Companion.nonAssociationsApi
+import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 
 private const val OFFENDER_A = "A4803BG"
 private const val OFFENDER_B = "G4803UT"
@@ -38,7 +42,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class WhenCreateByDPS {
         @BeforeEach
         fun setUp() {
-          nonAssociationsOffenderEventsClient.sendMessage(
+          awsSqsNonAssociationsOffenderEventsClient.sendMessage(
             nonAssociationsQueueOffenderEventsUrl,
             nonAssociationEvent(
               eventType = "NON_ASSOCIATION_DETAIL-UPSERTED",
@@ -75,7 +79,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
           nomisApi.stubGetNonAssociation(offenderNo = OFFENDER_A, nsOffenderNo = OFFENDER_B)
           nonAssociationsApi.stubUpsertNonAssociationForSynchronisation(firstOffenderNo = OFFENDER_A, secondOffenderNo = OFFENDER_B)
 
-          nonAssociationsOffenderEventsClient.sendMessage(
+          awsSqsNonAssociationsOffenderEventsClient.sendMessage(
             nonAssociationsQueueOffenderEventsUrl,
             nonAssociationEvent(
               eventType = "NON_ASSOCIATION_DETAIL-UPSERTED",
@@ -122,7 +126,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
           nomisApi.stubGetNonAssociationWithMinimalData(offenderNo = OFFENDER_A, nsOffenderNo = OFFENDER_B)
           nonAssociationsApi.stubUpsertNonAssociationForSynchronisation(firstOffenderNo = OFFENDER_A, secondOffenderNo = OFFENDER_B)
 
-          nonAssociationsOffenderEventsClient.sendMessage(
+          awsSqsNonAssociationsOffenderEventsClient.sendMessage(
             nonAssociationsQueueOffenderEventsUrl,
             nonAssociationEvent(
               eventType = "NON_ASSOCIATION_DETAIL-UPSERTED",
@@ -166,7 +170,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class WhenOffenderOrderingInNonAssociationNotAlphabetical {
         @BeforeEach
         fun setUp() {
-          nonAssociationsOffenderEventsClient.sendMessage(
+          awsSqsNonAssociationsOffenderEventsClient.sendMessage(
             nonAssociationsQueueOffenderEventsUrl,
             nonAssociationEvent(
               eventType = "NON_ASSOCIATION_DETAIL-UPSERTED",
@@ -222,7 +226,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
           nomisApi.stubGetNonAssociation(offenderNo = OFFENDER_A, nsOffenderNo = OFFENDER_B)
           nonAssociationsApi.stubUpsertNonAssociationForSynchronisation(firstOffenderNo = OFFENDER_A, secondOffenderNo = OFFENDER_B)
 
-          nonAssociationsOffenderEventsClient.sendMessage(
+          awsSqsNonAssociationsOffenderEventsClient.sendMessage(
             nonAssociationsQueueOffenderEventsUrl,
             nonAssociationEvent(
               eventType = "NON_ASSOCIATION_DETAIL-UPSERTED",
@@ -231,7 +235,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
               nsOffenderIdDisplay = OFFENDER_B,
             ),
           )
-          nonAssociationsOffenderEventsClient.sendMessage(
+          awsSqsNonAssociationsOffenderEventsClient.sendMessage(
             nonAssociationsQueueOffenderEventsUrl,
             nonAssociationEvent(
               eventType = "NON_ASSOCIATION_DETAIL-UPSERTED",
@@ -240,6 +244,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
               nsOffenderIdDisplay = OFFENDER_A,
             ),
           )
+          awsSqsNonAssociationsOffenderEventsClient.waitForMessageCountOnQueue(nonAssociationsQueueOffenderEventsUrl, 0)
         }
 
         @Test
@@ -299,7 +304,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun setUp() {
           nomisApi.stubGetNonAssociationNotFound(offenderNo = OFFENDER_A, nsOffenderNo = OFFENDER_B)
 
-          nonAssociationsOffenderEventsClient.sendMessage(
+          awsSqsNonAssociationsOffenderEventsClient.sendMessage(
             nonAssociationsQueueOffenderEventsUrl,
             nonAssociationEvent(
               eventType = "NON_ASSOCIATION_DETAIL-UPSERTED",
@@ -308,6 +313,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
               nsOffenderIdDisplay = OFFENDER_B,
             ),
           )
+          awsSqsNonAssociationsOffenderEventDlqClient.waitForMessageCountOnQueue(nonAssociationsQueueOffenderEventsDlqUrl, 1)
         }
 
         @Test
@@ -330,6 +336,12 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
     }
   }
 }
+
+fun SqsAsyncClient.waitForMessageCountOnQueue(queueUrl: String, messageCount: Int) =
+  await untilCallTo {
+    this.countAllMessagesOnQueue(queueUrl)
+      .get()
+  } matches { it == messageCount }
 
 fun nonAssociationEvent(
   eventType: String,
