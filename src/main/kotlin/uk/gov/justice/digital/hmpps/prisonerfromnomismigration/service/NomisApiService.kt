@@ -19,7 +19,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.F
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveAllocationIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetActivityResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetAllocationResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.model.CreateSyncRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NonAssociationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.model.UpsertSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomUsageResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationFilter
@@ -366,28 +367,16 @@ constructor(
 
 inline fun <reified T> typeReference() = object : ParameterizedTypeReference<T>() {}
 
-data class NonAssociationResponse(
-  val offenderNo: String,
-  val nsOffenderNo: String,
-  val reason: String,
-  val recipReason: String,
-  val type: String,
-  val authorisedBy: String? = null,
-  val effectiveDate: LocalDate? = null,
-  val expiryDate: LocalDate? = null,
-  val comment: String? = null,
-) {
-  fun toCreateSyncRequest() =
-    CreateSyncRequest(
-      firstPrisonerNumber = offenderNo,
-      firstPrisonerReason = CreateSyncRequest.FirstPrisonerReason.valueOf(reason),
-      secondPrisonerNumber = nsOffenderNo,
-      secondPrisonerReason = CreateSyncRequest.SecondPrisonerReason.valueOf(recipReason),
-      restrictionType = CreateSyncRequest.RestrictionType.valueOf(type),
-      active = true,
-      comment = comment,
-      authorisedBy = authorisedBy,
-      effectiveFromDate = effectiveDate,
-      expiryDate = expiryDate,
-    )
-}
+fun NonAssociationResponse.toUpsertSyncRequest() =
+  UpsertSyncRequest(
+    firstPrisonerNumber = offenderNo,
+    firstPrisonerReason = UpsertSyncRequest.FirstPrisonerReason.valueOf(reason),
+    secondPrisonerNumber = nsOffenderNo,
+    secondPrisonerReason = UpsertSyncRequest.SecondPrisonerReason.valueOf(recipReason!!),
+    restrictionType = UpsertSyncRequest.RestrictionType.valueOf(type),
+    active = true, // TODO Fix
+    comment = comment,
+    authorisedBy = authorisedBy,
+    effectiveFromDate = effectiveDate,
+    expiryDate = expiryDate,
+  )

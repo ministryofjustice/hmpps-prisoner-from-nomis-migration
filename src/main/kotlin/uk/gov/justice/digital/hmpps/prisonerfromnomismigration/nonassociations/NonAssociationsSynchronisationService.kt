@@ -4,6 +4,7 @@ import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.toUpsertSyncRequest
 
 @Service
 class NonAssociationsSynchronisationService(
@@ -23,7 +24,7 @@ class NonAssociationsSynchronisationService(
 
     if (event.isNotPrimaryNonAssociation()) {
       telemetryClient.trackEvent(
-        "non-association-synchronisation-duplicate-skipped",
+        "non-association-synchronisation-non-primary-skipped",
         event.toTelemetryProperties(),
       )
       return
@@ -31,9 +32,9 @@ class NonAssociationsSynchronisationService(
 
     nomisApiService.getNonAssociation(event.offenderIdDisplay, event.nsOffenderIdDisplay)
       .also {
-        nonAssociationsService.createNonAssociation(it.toCreateSyncRequest())
+        nonAssociationsService.upsertNonAssociation(it.toUpsertSyncRequest())
         telemetryClient.trackEvent(
-          "non-association-created-synchronisation-success",
+          "non-association-upserted-synchronisation-success",
           event.toTelemetryProperties(),
         )
       }
