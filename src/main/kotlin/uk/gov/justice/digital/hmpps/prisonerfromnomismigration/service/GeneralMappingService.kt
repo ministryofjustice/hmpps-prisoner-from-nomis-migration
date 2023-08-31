@@ -5,6 +5,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.Activi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.AllocationsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.AdjudicationsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.AppointmentsMappingService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.NonAssociationsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustmentsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMappingService
 
@@ -16,6 +17,7 @@ class GeneralMappingService(
   private val visitMappingService: VisitMappingService,
   private val activityMappingService: ActivitiesMappingService,
   private val allocationsMappingService: AllocationsMappingService,
+  private val nonAssociationsMappingService: NonAssociationsMappingService,
 ) {
   suspend fun getMigrationCount(migrationId: String, migrationType: MigrationType): Long? =
     when (migrationType) {
@@ -25,5 +27,6 @@ class GeneralMappingService(
       MigrationType.VISITS -> visitMappingService.getMigrationCount(migrationId)
       MigrationType.ACTIVITIES -> activityMappingService.getMigrationCount(migrationId)
       MigrationType.ALLOCATIONS -> allocationsMappingService.getMigrationCount(migrationId)
+      MigrationType.NON_ASSOCIATIONS -> nonAssociationsMappingService.getMigrationCount(migrationId)
     }
 }

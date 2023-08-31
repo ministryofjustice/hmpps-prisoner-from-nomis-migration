@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2023-08-22"
+    "version": "2023-08-30.2868.431683f"
   },
   "servers": [
     {
@@ -136,7 +136,7 @@
         ],
         "summary": "Creates a new activity mapping",
         "description": "Creates a mapping between nomis id and Activity service id. Requires NOMIS_ACTIVITIES",
-        "operationId": "createMapping_7",
+        "operationId": "createMapping_8",
         "requestBody": {
           "content": {
             "application/json": {
@@ -476,6 +476,94 @@
         }
       }
     },
+    "/mapping/non-associations": {
+      "post": {
+        "tags": [
+          "non-associations-mapping-resource"
+        ],
+        "summary": "Creates a new Non-association mapping",
+        "description": "Creates a mapping between a Nomis non-association and non-association instance id. Requires role NOMIS_NON_ASSOCIATIONS",
+        "operationId": "createMapping_2",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NonAssociationMappingDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Mapping entry created"
+          },
+          "409": {
+            "description": "Indicates a duplicate non-association has been rejected. If Error code = 409 the body will return a DuplicateErrorResponse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateMappingErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "non-associations-mapping-resource"
+        ],
+        "summary": "Deletes non-association mappings.",
+        "description": "Deletes all rows from the non-associations mapping table. Requires role NOMIS_NON_ASSOCIATIONS",
+        "operationId": "deleteNonAssociationMappings",
+        "parameters": [
+          {
+            "name": "onlyMigrated",
+            "in": "query",
+            "description": "if true delete mapping entries created by the migration process only (synchronisation records are unaffected)",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "example": true
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Non association mappings deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/incentives": {
       "post": {
         "tags": [
@@ -483,7 +571,7 @@
         ],
         "summary": "Creates a new incentive mapping",
         "description": "Creates a mapping between nomis Incentive ids and Incentive service id. Requires ROLE_NOMIS_INCENTIVES",
-        "operationId": "createMapping_2",
+        "operationId": "createMapping_3",
         "requestBody": {
           "content": {
             "application/json": {
@@ -614,7 +702,7 @@
         ],
         "summary": "Creates a new appointment mapping",
         "description": "Creates a mapping between nomis id and Appointment instance id. Requires NOMIS_APPOINTMENTS",
-        "operationId": "createMapping_3",
+        "operationId": "createMapping_4",
         "requestBody": {
           "content": {
             "application/json": {
@@ -669,7 +757,7 @@
         ],
         "summary": "Creates a new allocation migration mapping",
         "description": "Creates a mapping between nomis allocation id and Actvities allocation id. Requires NOMIS_ACTIVITIES",
-        "operationId": "createMapping_4",
+        "operationId": "createMapping_5",
         "requestBody": {
           "content": {
             "application/json": {
@@ -750,6 +838,53 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "adjudications-mapping-resource"
+        ],
+        "summary": "Delete all adjudication related mapping entries",
+        "description": "Delete mapping entries created during any migration or synchronisation for adjudications and associated hearings and punishments",
+        "operationId": "deleteAllMappings",
+        "parameters": [
+          {
+            "name": "migrationOnly",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Migration mappings only",
+              "example": true,
+              "default": false
+            }
+          },
+          {
+            "name": "synchronisationOnly",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Synchronisation mappings only",
+              "example": true,
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Adjudication mappings deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/mapping/adjudications": {
@@ -792,7 +927,7 @@
         ],
         "summary": "Creates a new adjudication mapping",
         "description": "Creates a record of a adjudication number. Requires NOMIS_ADJUDICATIONS",
-        "operationId": "createMapping_5",
+        "operationId": "createMapping_6",
         "requestBody": {
           "content": {
             "application/json": {
@@ -837,7 +972,7 @@
         ],
         "summary": "Creates a new activity migration mapping",
         "description": "Creates a mapping between nomis id and up to 2 Activity service ids. Requires NOMIS_ACTIVITIES",
-        "operationId": "createMapping_6",
+        "operationId": "createMapping_7",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1448,6 +1583,275 @@
           },
           "401": {
             "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/non-associations/nonAssociationId/{nonAssociationId}": {
+      "get": {
+        "tags": [
+          "non-associations-mapping-resource"
+        ],
+        "summary": "get mapping",
+        "description": "Retrieves a mapping by Non-Association Id. Requires role NOMIS_NON_ASSOCIATIONS",
+        "operationId": "getNonAssociationMappingGivenNonAssociationId",
+        "parameters": [
+          {
+            "name": "nonAssociationId",
+            "in": "path",
+            "description": "Non-association id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Non-association id",
+              "example": 2
+            },
+            "example": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NonAssociationMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Non association id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "non-associations-mapping-resource"
+        ],
+        "summary": "Deletes a specific non-association mapping by nonAssociationId",
+        "description": "Deletes the non-association from the mapping table. Requires role NOMIS_NON_ASSOCIATIONS",
+        "operationId": "deleteNonAssociationMapping",
+        "parameters": [
+          {
+            "name": "nonAssociationId",
+            "in": "path",
+            "description": "Non-association Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Non-association Id",
+              "example": 12345
+            },
+            "example": 12345
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Non-association mapping deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/non-associations/migration-id/{migrationId}": {
+      "get": {
+        "tags": [
+          "non-associations-mapping-resource"
+        ],
+        "summary": "get paged mappings by migration id",
+        "description": "Retrieve all mappings of type 'MIGRATED' for the given migration id (identifies a single migration run). Results are paged.",
+        "operationId": "getNonAssociationMappingsByMigrationId",
+        "parameters": [
+          {
+            "name": "pageRequest",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          },
+          {
+            "name": "migrationId",
+            "in": "path",
+            "description": "Migration Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Migration Id",
+              "example": "2020-03-24T12:00:00"
+            },
+            "example": "2020-03-24T12:00:00"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping page returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NonAssociationMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/non-associations/migrated/latest": {
+      "get": {
+        "tags": [
+          "non-associations-mapping-resource"
+        ],
+        "summary": "get the latest mapping for a migration",
+        "description": "Requires role NOMIS_NON_ASSOCIATIONS",
+        "operationId": "getLatestMigratedNonAssociationMapping",
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NonAssociationMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No mappings found at all for any migration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/non-associations/firstOffenderNo/{firstOffenderNo}/secondOffenderNo/{secondOffenderNo}/typeSequence/{typeSequence}": {
+      "get": {
+        "tags": [
+          "non-associations-mapping-resource"
+        ],
+        "summary": "get mapping",
+        "description": "Retrieves a mapping by firstOffenderNo, secondOffenderNo and Nomis type sequence. Requires role NOMIS_NON_ASSOCIATIONS",
+        "operationId": "getNonAssociationMappingGivenNomisId",
+        "parameters": [
+          {
+            "name": "firstOffenderNo",
+            "in": "path",
+            "description": "First offender number",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "First offender number",
+              "example": "A1234BC"
+            },
+            "example": "A1234BC"
+          },
+          {
+            "name": "secondOffenderNo",
+            "in": "path",
+            "description": "Second offender number",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Second offender number",
+              "example": "D5678EF"
+            },
+            "example": "D5678EF"
+          },
+          {
+            "name": "typeSequence",
+            "in": "path",
+            "description": "Nomis type sequence",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Nomis type sequence",
+              "example": 2
+            },
+            "example": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NonAssociationMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Non association id does not exist in mapping table",
             "content": {
               "application/json": {
                 "schema": {
@@ -2850,6 +3254,11 @@
             "description": "Activity schedule id",
             "format": "int64"
           },
+          "activityId": {
+            "type": "integer",
+            "description": "Activity id",
+            "format": "int64"
+          },
           "nomisCourseActivityId": {
             "type": "integer",
             "description": "NOMIS course activity id",
@@ -3098,6 +3507,63 @@
           }
         },
         "description": "NOMIS to Sentencing mapping"
+      },
+      "NonAssociationMappingDto": {
+        "required": [
+          "firstOffenderNo",
+          "mappingType",
+          "nomisTypeSequence",
+          "nonAssociationId",
+          "secondOffenderNo"
+        ],
+        "type": "object",
+        "properties": {
+          "nonAssociationId": {
+            "type": "integer",
+            "description": "Non-Association id",
+            "format": "int64"
+          },
+          "firstOffenderNo": {
+            "type": "string",
+            "description": "First NOMIS Offender No",
+            "example": "AB1234CD"
+          },
+          "secondOffenderNo": {
+            "type": "string",
+            "description": "Second NOMIS Offender No",
+            "example": "EF5678GH"
+          },
+          "nomisTypeSequence": {
+            "type": "integer",
+            "description": "NOMIS type sequence",
+            "format": "int32"
+          },
+          "label": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": "string",
+            "description": "Label (a timestamp for migrated ids)"
+          },
+          "mappingType": {
+            "maxLength": 30,
+            "minLength": 0,
+            "type": "string",
+            "description": "Mapping type",
+            "enum": [
+              "MIGRATED",
+              "NOMIS_CREATED",
+              "NON_ASSOCIATION_CREATED",
+              "NON_ASSOCIATION_DELETED"
+            ]
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "Date-time the mapping was created",
+            "example": "2021-07-05T10:35:17"
+          }
+        },
+        "description": "Non-association mapping (same value for NOMIS and DPS)"
       },
       "IncentiveMappingDto": {
         "required": [
