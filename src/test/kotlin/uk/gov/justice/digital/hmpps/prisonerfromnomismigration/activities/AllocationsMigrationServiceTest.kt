@@ -535,6 +535,15 @@ class AllocationsMigrationServiceTest {
         }
 
         verifyNoInteractions(queueService)
+        verify(telemetryClient).trackEvent(
+          eq("activity-allocations-migration-entity-failed"),
+          check<Map<String, String>> {
+            assertThat(it["nomisAllocationId"]).isEqualTo("123")
+            assertThat(it["reason"]).contains("BadGateway")
+            assertThat(it["migrationId"]).isEqualTo("2020-05-23T11:30:00")
+          },
+          isNull(),
+        )
       }
 
     @Test
@@ -554,6 +563,15 @@ class AllocationsMigrationServiceTest {
         }
 
         verifyNoInteractions(queueService)
+        verify(telemetryClient).trackEvent(
+          eq("activity-allocations-migration-entity-failed"),
+          check<Map<String, String>> {
+            assertThat(it["nomisAllocationId"]).isEqualTo("123")
+            assertThat(it["reason"]).contains("NotFound")
+            assertThat(it["migrationId"]).contains("2020-05-23T11:30:00")
+          },
+          isNull(),
+        )
       }
 
     @Test
@@ -625,6 +643,14 @@ class AllocationsMigrationServiceTest {
       )
 
       verifyNoInteractions(activitiesApiService)
+      verify(telemetryClient).trackEvent(
+        eq("activity-allocations-migration-entity-ignored"),
+        check<Map<String, String>> {
+          assertThat(it["nomisAllocationId"]).isEqualTo("123")
+          assertThat(it["migrationId"]).isEqualTo("2020-05-23T11:30:00")
+        },
+        isNull(),
+      )
     }
 
     @Test
