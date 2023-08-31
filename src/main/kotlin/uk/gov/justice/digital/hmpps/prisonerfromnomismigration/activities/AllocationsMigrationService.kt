@@ -8,6 +8,7 @@ import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AllocationMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AllocationMigrateResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -69,8 +70,12 @@ class AllocationsMigrationService(
     allocationsMappingService.findNomisMapping(allocationId)
       ?.run {
         log.info("Will not migrate the allocationId=$allocationId since it was already mapped to DPS allocationId ${this.activityAllocationId} during migration ${this.label}")
+        telemetryClient.trackEvent(
+          "${MigrationType.ALLOCATIONS.telemetryName}-migration-entity-ignored",
+          mapOf("nomisAllocationId" to allocationId.toString(), "migrationId" to migrationId),
+        )
       }
-      ?: run {
+      ?: runCatching {
         nomisApiService.getAllocation(allocationId)
           .let { nomisResponse -> nomisResponse.toAllocationMigrateRequest(allocationId) }
           .let { allocationRequest -> activitiesApiService.migrateAllocation(allocationRequest) }
@@ -78,6 +83,13 @@ class AllocationsMigrationService(
           .also { mappingDto -> mappingDto.createAllocationMapping(context) }
           .also { mappingDto -> mappingDto.publishTelemetry() }
       }
+        .onFailure {
+          telemetryClient.trackEvent(
+            "${MigrationType.ALLOCATIONS.telemetryName}-migration-entity-failed",
+            mapOf("nomisAllocationId" to allocationId.toString(), "reason" to it.toString(), "migrationId" to migrationId),
+          )
+          throw it
+        }
   }
 
   private suspend fun GetAllocationResponse.toAllocationMigrateRequest(allocationId: Long): AllocationMigrateRequest {
