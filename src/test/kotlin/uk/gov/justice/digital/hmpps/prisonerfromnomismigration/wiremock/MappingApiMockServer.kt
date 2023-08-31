@@ -41,6 +41,8 @@ class MappingApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallb
     const val KEYDATE_ADJUSTMENTS_GET_MAPPING_URL =
       "/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id"
     const val ADJUSTMENTS_CREATE_MAPPING_URL = "/mapping/sentencing/adjustments"
+    const val NON_ASSOCIATIONS_CREATE_MAPPING_URL =
+      "/mapping/non-associations"
   }
 
   override fun beforeAll(context: ExtensionContext) {
@@ -692,6 +694,24 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
               }""",
             ),
         ),
+    )
+  }
+
+  fun stubNonAssociationsMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 54327) {
+    val content = """{
+      "nonAssociationId": 14478,
+      "firstOffenderNo": "A1234BC",                                       
+      "secondOffenderNo": "D5678EF",                   
+      "nomisTypeSequence": 1,    
+      "label": "2022-02-14T09:58:45",
+      "whenCreated": "$whenCreated",
+      "mappingType": "MIGRATED"
+    }"""
+    stubFor(
+      get(urlPathMatching("/mapping/non-associations/migration-id/.*")).willReturn(
+        okJson(pageContent(content, count)),
+      ),
+
     )
   }
 
