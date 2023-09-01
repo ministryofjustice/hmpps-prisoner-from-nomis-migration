@@ -79,7 +79,7 @@ class AllocationMigrationIntTest : SqsIntegrationTestBase() {
     private fun waitUntilCompleted() =
       await.atMost(Duration.ofSeconds(31)) untilAsserted {
         verify(telemetryClient).trackEvent(
-          eq("activity-allocations-migration-completed"),
+          eq("activity-allocation-migration-completed"),
           any(),
           isNull(),
         )
@@ -161,8 +161,8 @@ class AllocationMigrationIntTest : SqsIntegrationTestBase() {
       webTestClient.performMigration()
 
       // check telemetry published
-      verify(telemetryClient).trackEvent(eq("activity-allocations-migration-started"), any(), isNull())
-      verify(telemetryClient, times(3)).trackEvent(eq("activity-allocations-migration-entity-migrated"), any(), isNull())
+      verify(telemetryClient).trackEvent(eq("activity-allocation-migration-started"), any(), isNull())
+      verify(telemetryClient, times(3)).trackEvent(eq("activity-allocation-migration-entity-migrated"), any(), isNull())
 
       // check history correct
       webTestClient.get().uri("/migrate/allocations/history")
@@ -216,11 +216,11 @@ class AllocationMigrationIntTest : SqsIntegrationTestBase() {
       webTestClient.performMigration()
 
       verify(telemetryClient).trackEvent(
-        eq("activity-allocations-nomis-migration-duplicate"),
+        eq("activity-allocation-nomis-migration-duplicate"),
         org.mockito.kotlin.check {
           assertThat(it["migrationId"]).isNotNull
-          assertThat(it["existingActivityAllocationId"]).isEqualTo("4444")
-          assertThat(it["duplicateActivityAllocationId"]).isEqualTo("5555")
+          assertThat(it["existingDpsAllocationId"]).isEqualTo("4444")
+          assertThat(it["duplicateDpsAllocationId"]).isEqualTo("5555")
           assertThat(it["existingNomisAllocationId"]).isEqualTo("123")
           assertThat(it["duplicateNomisAllocationId"]).isEqualTo("123")
         },

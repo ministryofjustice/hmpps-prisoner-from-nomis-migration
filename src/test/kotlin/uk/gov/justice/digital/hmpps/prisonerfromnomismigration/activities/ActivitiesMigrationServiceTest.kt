@@ -606,6 +606,15 @@ class ActivitiesMigrationServiceTest {
         }
 
         verifyNoInteractions(queueService)
+        verify(telemetryClient).trackEvent(
+          eq("activity-migration-entity-failed"),
+          check<Map<String, String>> {
+            assertThat(it["nomisCourseActivityId"]).isEqualTo("123")
+            assertThat(it["reason"]).contains("BadGateway")
+            assertThat(it["migrationId"]).contains("2020-05-23T11:30:00")
+          },
+          isNull(),
+        )
       }
 
     @Test
@@ -625,6 +634,15 @@ class ActivitiesMigrationServiceTest {
         }
 
         verifyNoInteractions(queueService)
+        verify(telemetryClient).trackEvent(
+          eq("activity-migration-entity-failed"),
+          check<Map<String, String>> {
+            assertThat(it["nomisCourseActivityId"]).isEqualTo("123")
+            assertThat(it["reason"]).contains("BadGateway")
+            assertThat(it["migrationId"]).contains("2020-05-23T11:30:00")
+          },
+          isNull(),
+        )
       }
 
     @Test
@@ -653,6 +671,7 @@ class ActivitiesMigrationServiceTest {
           },
           delaySeconds = eq(0),
         )
+        verify(telemetryClient, never()).trackEvent(eq("activity-migration-entity-failed"), any(), isNull())
       }
 
     @Test
@@ -677,6 +696,14 @@ class ActivitiesMigrationServiceTest {
       )
 
       verifyNoInteractions(activitiesApiService)
+      verify(telemetryClient).trackEvent(
+        eq("activity-migration-entity-ignored"),
+        check<Map<String, String>> {
+          assertThat(it["nomisCourseActivityId"]).isEqualTo("123")
+          assertThat(it["migrationId"]).isEqualTo("2020-05-23T11:30:00")
+        },
+        isNull(),
+      )
     }
 
     @Test

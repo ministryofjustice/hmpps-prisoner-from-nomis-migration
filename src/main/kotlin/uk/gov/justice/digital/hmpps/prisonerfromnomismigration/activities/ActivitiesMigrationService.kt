@@ -10,6 +10,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.ActivityMigrateResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.NomisPayRate
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.NomisScheduleRule
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -73,8 +74,12 @@ class ActivitiesMigrationService(
     activitiesMappingService.findNomisMapping(courseActivityId)
       ?.run {
         log.info("Will not migrate the courseActivityId=$courseActivityId since it was already mapped to activityIds ${this.activityId} and ${this.activityId2} during migration ${this.label}")
+        telemetryClient.trackEvent(
+          "${ACTIVITIES.telemetryName}-migration-entity-ignored",
+          mapOf("nomisCourseActivityId" to courseActivityId.toString(), "migrationId" to migrationId),
+        )
       }
-      ?: run {
+      ?: runCatching {
         nomisApiService.getActivity(courseActivityId)
           .let { nomisResponse -> nomisResponse.toActivityMigrateRequest() }
           .let { activitiesRequest -> activitiesApiService.migrateActivity(activitiesRequest) }
@@ -82,6 +87,13 @@ class ActivitiesMigrationService(
           .also { mappingDto -> mappingDto.createActivityMapping(context) }
           .also { mappingDto -> mappingDto.publishTelemetry() }
       }
+        .onFailure {
+          telemetryClient.trackEvent(
+            "${ACTIVITIES.telemetryName}-migration-entity-failed",
+            mapOf("nomisCourseActivityId" to courseActivityId.toString(), "reason" to it.toString(), "migrationId" to migrationId),
+          )
+          throw it
+        }
   }
 
   private suspend fun ActivityMigrationMappingDto.createActivityMapping(context: MigrationContext<*>) =
