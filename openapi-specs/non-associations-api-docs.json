@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2023-08-24.1108.1d6fdfa"
+    "version": "2023-09-01.1246.4f44f42"
   },
   "servers": [
     {
@@ -442,12 +442,135 @@
         }
       }
     },
+    "/non-associations/involving": {
+      "post": {
+        "tags": [
+          "Non-Associations"
+        ],
+        "summary": "Get non-associations involving any of the given prisoners. Either person in the non-association must be in the provided list.",
+        "description": "Requires ROLE_NON_ASSOCIATIONS role.",
+        "operationId": "getNonAssociationsInvolvingPrisoners",
+        "parameters": [
+          {
+            "name": "includeOpen",
+            "in": "query",
+            "description": "Whether to include open non-associations or not",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Whether to include open non-associations or not",
+              "example": false,
+              "default": "true"
+            },
+            "example": false
+          },
+          {
+            "name": "includeClosed",
+            "in": "query",
+            "description": "Whether to include closed non-associations or not",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Whether to include closed non-associations or not",
+              "example": true,
+              "default": "false"
+            },
+            "example": true
+          },
+          {
+            "name": "prisonId",
+            "in": "query",
+            "description": "When provided return only non-associations where both prisoners are in the given prison",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "When provided return only non-associations where both prisoners are in the given prison",
+              "example": "MDI",
+              "default": "null"
+            },
+            "example": "MDI"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "minItems": 1,
+                "uniqueItems": true,
+                "type": "array",
+                "description": "One or more distinct prisoner numbers",
+                "items": {
+                  "type": "string",
+                  "description": "Prisoner number",
+                  "example": "A1234BC"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Returns the non-associations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NonAssociation"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "When fewer than one distinct prisoner numbers are provided or neither open nor closed non-associations are included",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the NON_ASSOCIATIONS role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Any of the prisoners could not be found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/non-associations/between": {
       "post": {
         "tags": [
           "Non-Associations"
         ],
-        "summary": "Get non-associations between two or more prisoners by prisoner number.",
+        "summary": "Get non-associations between two or more prisoners by prisoner number. Both people in the non-associations must be in the provided list.",
         "description": "Requires ROLE_NON_ASSOCIATIONS role.",
         "operationId": "getNonAssociationsBetweenPrisoners",
         "parameters": [
@@ -476,6 +599,19 @@
               "default": "false"
             },
             "example": true
+          },
+          {
+            "name": "prisonId",
+            "in": "query",
+            "description": "When provided return only non-associations where both prisoners are in the given prison",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "When provided return only non-associations where both prisoners are in the given prison",
+              "example": "MDI",
+              "default": "null"
+            },
+            "example": "MDI"
           }
         ],
         "requestBody": {
@@ -538,6 +674,16 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Any of the prisoners could not be found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -554,7 +700,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MigrateRequest"
+                "$ref": "#/components/schemas/UpsertSyncRequest"
               }
             }
           },
@@ -1073,6 +1219,33 @@
           }
         }
       }
+    },
+    "/constants": {
+      "get": {
+        "tags": [
+          "Non-Associations"
+        ],
+        "summary": "List codes and descriptions for enumerated field types",
+        "operationId": "constants",
+        "responses": {
+          "200": {
+            "description": "Returns codes and descriptions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Constant"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1091,14 +1264,14 @@
           },
           "errorCode": {
             "type": "integer",
-            "description": "When present, uniquely identifies the type of error making it easier for clients to discriminate without relying on error description; see `uk.gov.justice.digital.hmpps.incentivesapi.config.ErrorResponse` enumeration in hmpps-incentives-api",
+            "description": "When present, uniquely identifies the type of error making it easier for clients to discriminate without relying on error description; see `uk.gov.justice.digital.hmpps.hmppsnonassociationsapi.config.ErrorResponse` enumeration in hmpps-non-associations-api",
             "format": "int32",
-            "example": 123
+            "example": 101
           },
           "userMessage": {
             "type": "string",
             "description": "User message for the error",
-            "example": "No incentive level found for code `ABC`"
+            "example": "No non-association level found for ID `324234`"
           },
           "developerMessage": {
             "type": "string",
@@ -1115,7 +1288,7 @@
       },
       "UpsertSyncRequest": {
         "required": [
-          "active",
+          "effectiveFromDate",
           "firstPrisonerNumber",
           "firstPrisonerReason",
           "restrictionType",
@@ -1124,9 +1297,15 @@
         ],
         "type": "object",
         "properties": {
+          "id": {
+            "type": "integer",
+            "description": "ID of the non-association, if provided an update will be performed",
+            "format": "int64",
+            "example": 234233
+          },
           "firstPrisonerNumber": {
             "type": "string",
-            "description": "Prisoner number to not associate",
+            "description": "Prisoner number to not associate, this is ignored if ID is provided",
             "example": "A1234BC"
           },
           "firstPrisonerReason": {
@@ -1144,7 +1323,7 @@
           },
           "secondPrisonerNumber": {
             "type": "string",
-            "description": "Prisoner number to not associate",
+            "description": "Prisoner number to not associate, this is ignored if ID is provided",
             "example": "D5678EF"
           },
           "secondPrisonerReason": {
@@ -1181,12 +1360,6 @@
             "type": "string",
             "description": "Who authorised the non-association",
             "example": "John Smith"
-          },
-          "active": {
-            "type": "boolean",
-            "description": "Indicates that the NA is active",
-            "example": false,
-            "default": true
           },
           "effectiveFromDate": {
             "type": "string",
@@ -1551,95 +1724,6 @@
           }
         },
         "description": "Request to delete a non-association"
-      },
-      "MigrateRequest": {
-        "required": [
-          "active",
-          "firstPrisonerNumber",
-          "firstPrisonerReason",
-          "restrictionType",
-          "secondPrisonerNumber",
-          "secondPrisonerReason"
-        ],
-        "type": "object",
-        "properties": {
-          "firstPrisonerNumber": {
-            "type": "string",
-            "description": "Prisoner number to not associate",
-            "example": "A1234BC"
-          },
-          "firstPrisonerReason": {
-            "type": "string",
-            "description": "Reason why this prisoner should be kept apart from the other",
-            "example": "VICTIM",
-            "enum": [
-              "BUL",
-              "PER",
-              "RIV",
-              "VIC",
-              "NOT_REL",
-              "UNKNOWN"
-            ]
-          },
-          "secondPrisonerNumber": {
-            "type": "string",
-            "description": "Prisoner number to not associate",
-            "example": "D5678EF"
-          },
-          "secondPrisonerReason": {
-            "type": "string",
-            "description": "Reason why this prisoner should be kept apart from the other",
-            "example": "PERPETRATOR",
-            "enum": [
-              "BUL",
-              "PER",
-              "RIV",
-              "VIC",
-              "NOT_REL",
-              "UNKNOWN"
-            ]
-          },
-          "restrictionType": {
-            "type": "string",
-            "description": "Type of restriction, e.g. don't locate in the same cell",
-            "example": "CELL",
-            "enum": [
-              "CELL",
-              "LAND",
-              "NONEX",
-              "TNA",
-              "WING"
-            ]
-          },
-          "comment": {
-            "type": "string",
-            "description": "Explanation of why prisoners are non-associated",
-            "example": "John and Luke always end up fighting"
-          },
-          "authorisedBy": {
-            "type": "string",
-            "description": "Who authorised the non-association",
-            "example": "John Smith"
-          },
-          "active": {
-            "type": "boolean",
-            "description": "Indicates that the NA is active",
-            "example": false
-          },
-          "effectiveFromDate": {
-            "type": "string",
-            "description": "The date that the NA became active",
-            "format": "date",
-            "example": "2023-05-09"
-          },
-          "expiryDate": {
-            "type": "string",
-            "description": "The date that the NA became inactive",
-            "format": "date",
-            "example": "2026-05-09"
-          }
-        },
-        "description": "Migrate Request"
       },
       "PatchNonAssociationRequest": {
         "required": [
@@ -2300,6 +2384,21 @@
           }
         },
         "description": "Details about the other non-association person in NOMIS/Prison API format"
+      },
+      "Constant": {
+        "required": [
+          "code",
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
       }
     },
     "securitySchemes": {

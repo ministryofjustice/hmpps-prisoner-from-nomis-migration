@@ -200,7 +200,7 @@ internal class NonAssociationsMappingServiceTest {
     @Test
     fun `should throw exception for any error`() {
       mappingApi.stubFor(
-        post(urlPathMatching("/mapping/non-associations")).willReturn(
+        post(urlPathMatching(NON_ASSOCIATIONS_CREATE_MAPPING_URL)).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())

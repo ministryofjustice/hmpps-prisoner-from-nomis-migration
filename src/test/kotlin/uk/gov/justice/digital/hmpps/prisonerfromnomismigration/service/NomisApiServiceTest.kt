@@ -904,6 +904,7 @@ internal class NomisApiServiceTest {
       nomisService.getNonAssociation(
         offenderNo = "A1234BC",
         nsOffenderNo = "D5678EF",
+        typeSequence = 1,
       )
       nomisApi.verify(
         getRequestedFor(
@@ -918,6 +919,7 @@ internal class NomisApiServiceTest {
       val nonAssociation = nomisService.getNonAssociation(
         offenderNo = "A1234BC",
         nsOffenderNo = "D5678EF",
+        typeSequence = 1,
       )
       assertThat(nonAssociation.offenderNo).isEqualTo("A1234BC")
       assertThat(nonAssociation.nsOffenderNo).isEqualTo("D5678EF")
@@ -963,6 +965,7 @@ internal class NomisApiServiceTest {
         val nonAssociation = nomisService.getNonAssociation(
           offenderNo = "A1234BC",
           nsOffenderNo = "D5678EF",
+          typeSequence = 1,
         )
         assertThat(nonAssociation.offenderNo).isEqualTo("A1234BC")
         assertThat(nonAssociation.nsOffenderNo).isEqualTo("D5678EF")
@@ -999,6 +1002,7 @@ internal class NomisApiServiceTest {
             nomisService.getNonAssociation(
               offenderNo = "A1234BC",
               nsOffenderNo = "D5678EF",
+              typeSequence = 1,
             )
           }
         }.isInstanceOf(NotFound::class.java)
