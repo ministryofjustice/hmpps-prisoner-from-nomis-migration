@@ -20,7 +20,7 @@ class NonAssociationsMappingService(@Qualifier("mappingApiWebClient") webClient:
   ): NonAssociationMappingDto? =
     webClient.get()
       .uri(
-        "/mapping/non-associations/first-offender-no/{firstOffenderNo}/second-offender-no/{secondOffenderNo}",
+        "/mapping/non-associations/first-offender-no/{firstOffenderNo}/second-offender-no/{secondOffenderNo}/type-sequence/{typeSequence}",
         firstOffenderNo,
         secondOffenderNo,
         nomisTypeSequence,

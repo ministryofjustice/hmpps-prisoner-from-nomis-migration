@@ -869,7 +869,7 @@ internal class NomisApiServiceTest {
   @Nested
   @DisplayName("getNonAssociation")
   inner class GetNonAssociation {
-    val nonAssociationUrl = "/non-associations/offender/[A-Z]\\d{4}[A-Z]{2}/ns-offender/[A-Z]\\d{4}[A-Z]{2}"
+    val nonAssociationUrl = "/non-associations/offender/[A-Z]\\d{4}[A-Z]{2}/ns-offender/[A-Z]\\d{4}[A-Z]{2}/type-sequence/\\d"
 
     @BeforeEach
     internal fun setUp() {
@@ -908,7 +908,7 @@ internal class NomisApiServiceTest {
       )
       nomisApi.verify(
         getRequestedFor(
-          urlPathEqualTo("/non-associations/offender/A1234BC/ns-offender/D5678EF"),
+          urlPathEqualTo("/non-associations/offender/A1234BC/ns-offender/D5678EF/type-sequence/1"),
         )
           .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
       )
