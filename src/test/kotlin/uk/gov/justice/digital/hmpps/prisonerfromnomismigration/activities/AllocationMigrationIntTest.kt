@@ -219,8 +219,8 @@ class AllocationMigrationIntTest : SqsIntegrationTestBase() {
         eq("activity-allocation-nomis-migration-duplicate"),
         org.mockito.kotlin.check {
           assertThat(it["migrationId"]).isNotNull
-          assertThat(it["existingActivityAllocationId"]).isEqualTo("4444")
-          assertThat(it["duplicateActivityAllocationId"]).isEqualTo("5555")
+          assertThat(it["existingDpsAllocationId"]).isEqualTo("4444")
+          assertThat(it["duplicateDpsAllocationId"]).isEqualTo("5555")
           assertThat(it["existingNomisAllocationId"]).isEqualTo("123")
           assertThat(it["duplicateNomisAllocationId"]).isEqualTo("123")
         },

@@ -670,7 +670,7 @@ class AllocationsMigrationServiceTest {
           assertThat(it).containsExactlyInAnyOrderEntriesOf(
             mapOf(
               "nomisAllocationId" to "123",
-              "activityAllocationId" to "456",
+              "dpsAllocationId" to "456",
               "activityId" to "789",
               "migrationId" to "2020-05-23T11:30:00",
             ),
