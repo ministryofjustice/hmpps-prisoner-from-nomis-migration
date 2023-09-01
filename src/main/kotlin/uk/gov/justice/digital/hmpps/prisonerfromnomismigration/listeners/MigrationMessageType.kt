@@ -11,5 +11,4 @@ enum class MigrationMessageType {
 
 enum class SynchronisationMessageType {
   RETRY_SYNCHRONISATION_MAPPING,
-  RETRY_NON_ASSOCIATION_MAPPING,
 }
