@@ -121,7 +121,7 @@ class AllocationsMigrationService(
       "${MigrationType.ALLOCATIONS.telemetryName}-migration-entity-migrated",
       mapOf(
         "nomisAllocationId" to nomisAllocationId.toString(),
-        "activityAllocationId" to activityAllocationId.toString(),
+        "dpsAllocationId" to activityAllocationId.toString(),
         "activityId" to activityId.toString(),
         "migrationId" to this.label,
       ),
@@ -137,10 +137,10 @@ class AllocationsMigrationService(
           mapOf(
             "migrationId" to context.migrationId,
             "duplicateNomisAllocationId" to it.duplicate.nomisAllocationId.toString(),
-            "duplicateActivityAllocationId" to it.duplicate.activityAllocationId.toString(),
+            "duplicateDpsAllocationId" to it.duplicate.activityAllocationId.toString(),
             "duplicateactivityId" to it.duplicate.activityId.toString(),
             "existingNomisAllocationId" to it.existing.nomisAllocationId.toString(),
-            "existingActivityAllocationId" to it.existing.activityAllocationId.toString(),
+            "existingDpsAllocationId" to it.existing.activityAllocationId.toString(),
             "existingactivityId" to it.existing.activityId.toString(),
           ),
           null,
