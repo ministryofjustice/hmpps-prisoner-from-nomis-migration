@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NON_ASSOCIATIONS_SYNC_QUEUE_ID
 import java.util.concurrent.CompletableFuture
 
@@ -40,7 +41,7 @@ class NonAssociationsPrisonOffenderEventListener(
             when (eventType) {
               "NON_ASSOCIATION_DETAIL-UPSERTED" ->
                 nonAssociationsSynchronisationService.synchroniseNonAssociationCreateOrUpdate(
-                  (sqsMessage.Message.fromJson()),
+                  sqsMessage.Message.fromJson(),
                 )
 
               "NON_ASSOCIATION_DETAIL-DELETED" -> log.debug(
@@ -55,6 +56,10 @@ class NonAssociationsPrisonOffenderEventListener(
             log.info("Feature switch is disabled for event {}", eventType)
           }
         }
+
+        RETRY_SYNCHRONISATION_MAPPING.name -> nonAssociationsSynchronisationService.retryCreateNonAssociationMapping(
+          sqsMessage.Message.fromJson(),
+        )
       }
     }
   }
@@ -66,6 +71,7 @@ class NonAssociationsPrisonOffenderEventListener(
 data class NonAssociationsOffenderEvent(
   val offenderIdDisplay: String,
   val nsOffenderIdDisplay: String,
+  val typeSeq: Int,
   val auditModuleName: String?,
 )
 
@@ -75,8 +81,4 @@ private fun asCompletableFuture(
   return CoroutineScope(Dispatchers.Default).future {
     process()
   }.thenAccept { }
-}
-
-enum class SynchronisationMessageType {
-  RETRY_SYNCHRONISATION_MAPPING,
 }

@@ -17,10 +17,10 @@ class NonAssociationsMappingService(@Qualifier("mappingApiWebClient") webClient:
     firstOffenderNo: String,
     secondOffenderNo: String,
     nomisTypeSequence: Int,
-  ): NonAssociationMappingDto? {
-    return webClient.get()
+  ): NonAssociationMappingDto? =
+    webClient.get()
       .uri(
-        "/mapping/non-associations/firstOffenderNo/{firstOffenderNo}/secondOffenderNo/{secondOffenderNo}/typeSequence/{typeSequence}",
+        "/mapping/non-associations/first-offender-no/{firstOffenderNo}/second-offender-no/{secondOffenderNo}/type-sequence/{typeSequence}",
         firstOffenderNo,
         secondOffenderNo,
         nomisTypeSequence,
@@ -31,16 +31,15 @@ class NonAssociationsMappingService(@Qualifier("mappingApiWebClient") webClient:
         Mono.empty()
       }
       .awaitSingleOrNull()
-  }
 
-  /*
+/*
   TODO add delete mapping
   suspend fun deleteNomisNonAssociationMapping(
     nonAssociationId: Long,
   ): Unit =
     webClient.delete()
-      .uri("/mapping/non-associations/nonAssociationId/$nonAssociationId")
+      .uri("/mapping/non-associations/non-association-id/$nonAssociationId")
       .retrieve()
       .awaitBody()
-   */
+ */
 }

@@ -47,6 +47,7 @@ enum class MigrationType(val queueId: String, val telemetryName: String) {
 enum class SynchronisationType(val queueId: String) {
   VISITS(VISITS_SYNC_QUEUE_ID),
   SENTENCING_ADJUSTMENTS(SENTENCING_ADJUSTMENTS_SYNC_QUEUE_ID),
+  NON_ASSOCIATIONS(NON_ASSOCIATIONS_SYNC_QUEUE_ID),
 }
 
 fun Any.asMap(): Map<String, String> {

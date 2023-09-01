@@ -19,6 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.F
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveAllocationIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetActivityResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetAllocationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NonAssociationIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NonAssociationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.model.UpsertSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustment
@@ -233,11 +234,30 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       .bodyToMono(typeReference<RestResponsePage<FindActiveAllocationIdsResponse>>())
       .awaitSingle()
 
-  suspend fun getNonAssociation(offenderNo: String, nsOffenderNo: String): NonAssociationResponse =
+  suspend fun getNonAssociation(offenderNo: String, nsOffenderNo: String, typeSequence: Int): NonAssociationResponse =
     webClient.get()
-      .uri("/non-associations/offender/{offenderNo}/ns-offender/{nsOffenderNo}", offenderNo, nsOffenderNo)
+      .uri("/non-associations/offender/{offenderNo}/ns-offender/{nsOffenderNo}/type-sequence/{typeSequence}", offenderNo, nsOffenderNo, typeSequence)
       .retrieve()
       .awaitBody()
+
+  suspend fun getNonAssociationIds(
+    fromDate: LocalDate?,
+    toDate: LocalDate?,
+    pageNumber: Long,
+    pageSize: Long,
+  ): PageImpl<NonAssociationIdResponse> =
+    webClient.get()
+      .uri {
+        it.path("/non-association/ids")
+          .queryParam("fromDate", fromDate)
+          .queryParam("toDate", toDate)
+          .queryParam("page", pageNumber)
+          .queryParam("size", pageSize)
+          .build()
+      }
+      .retrieve()
+      .bodyToMono(typeReference<RestResponsePage<NonAssociationIdResponse>>())
+      .awaitSingle()
 }
 
 data class VisitId(
@@ -248,6 +268,14 @@ data class NomisAdjustmentId(
   val adjustmentId: Long,
   val adjustmentCategory: String,
 )
+/*
+data class NomisNonAssociationId(
+  val offenderNo: String,
+  val nsOffenderNo: String,
+  val typeSequence: Int,
+)
+
+ */
 
 data class NomisVisitor(
   val personId: Long,
@@ -367,14 +395,14 @@ constructor(
 
 inline fun <reified T> typeReference() = object : ParameterizedTypeReference<T>() {}
 
-fun NonAssociationResponse.toUpsertSyncRequest() =
+fun NonAssociationResponse.toUpsertSyncRequest(nonAssociationId: Long? = null) =
   UpsertSyncRequest(
+    id = nonAssociationId,
     firstPrisonerNumber = offenderNo,
     firstPrisonerReason = UpsertSyncRequest.FirstPrisonerReason.valueOf(reason),
     secondPrisonerNumber = nsOffenderNo,
-    secondPrisonerReason = UpsertSyncRequest.SecondPrisonerReason.valueOf(recipReason!!),
+    secondPrisonerReason = UpsertSyncRequest.SecondPrisonerReason.valueOf(recipReason),
     restrictionType = UpsertSyncRequest.RestrictionType.valueOf(type),
-    active = true, // TODO Fix
     comment = comment,
     authorisedBy = authorisedBy,
     effectiveFromDate = effectiveDate,

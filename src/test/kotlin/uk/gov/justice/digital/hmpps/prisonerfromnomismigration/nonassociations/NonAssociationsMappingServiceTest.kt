@@ -42,7 +42,7 @@ internal class NonAssociationsMappingServiceTest {
     @Test
     internal fun `will return null when not found`() {
       mappingApi.stubFor(
-        get(urlPathMatching("/mapping/non-associations/firstOffenderNo/.*")).willReturn(
+        get(urlPathMatching("/mapping/non-associations/first-offender-no/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
@@ -64,7 +64,7 @@ internal class NonAssociationsMappingServiceTest {
     @Test
     internal fun `will return the mapping when found`(): Unit = runBlocking {
       mappingApi.stubFor(
-        get(urlPathMatching("/mapping/non-associations/firstOffenderNo/.*")).willReturn(
+        get(urlPathMatching("/mapping/non-associations/first-offender-no/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
@@ -102,7 +102,7 @@ internal class NonAssociationsMappingServiceTest {
     @Test
     internal fun `will throw exception for any other error`() {
       mappingApi.stubFor(
-        get(urlPathMatching("/mapping/non-associations/firstOffenderNo/.*")).willReturn(
+        get(urlPathMatching("/mapping/non-associations/first-offender-no/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
@@ -200,7 +200,7 @@ internal class NonAssociationsMappingServiceTest {
     @Test
     fun `should throw exception for any error`() {
       mappingApi.stubFor(
-        post(urlPathMatching("/mapping/non-associations")).willReturn(
+        post(urlPathMatching(NON_ASSOCIATIONS_CREATE_MAPPING_URL)).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())

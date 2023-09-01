@@ -512,28 +512,28 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubGetNonAssociation(offenderNo: String, nsOffenderNo: String) {
+  fun stubGetNonAssociation(offenderNo: String, nsOffenderNo: String, typeSequence: Int) {
     nomisApi.stubFor(
       get(
-        urlPathEqualTo("/non-associations/offender/$offenderNo/ns-offender/$nsOffenderNo"),
+        urlPathEqualTo("/non-associations/offender/$offenderNo/ns-offender/$nsOffenderNo/type-sequence/$typeSequence"),
       )
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
-            .withBody(nonAssociationResponse(offenderNo = offenderNo, nsOffenderNo = nsOffenderNo)),
+            .withBody(nonAssociationResponse(offenderNo = offenderNo, nsOffenderNo = nsOffenderNo, typeSequence = typeSequence)),
         ),
     )
   }
 
-  fun stubGetNonAssociationWithMinimalData(offenderNo: String, nsOffenderNo: String) {
+  fun stubGetNonAssociationWithMinimalData(offenderNo: String, nsOffenderNo: String, typeSequence: Int) {
     nomisApi.stubFor(
       get(
-        urlPathEqualTo("/non-associations/offender/$offenderNo/ns-offender/$nsOffenderNo"),
+        urlPathEqualTo("/non-associations/offender/$offenderNo/ns-offender/$nsOffenderNo/type-sequence/$typeSequence"),
       )
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
-            .withBody(nonAssociationResponseMinimalData(offenderNo = offenderNo, nsOffenderNo = nsOffenderNo)),
+            .withBody(nonAssociationResponseMinimalData(offenderNo = offenderNo, nsOffenderNo = nsOffenderNo, typeSequence = typeSequence)),
         ),
     )
   }
@@ -1087,11 +1087,13 @@ fun adjudicationResponse(
 private fun nonAssociationResponse(
   offenderNo: String = "A1234BC",
   nsOffenderNo: String = "D5678EF",
+  typeSequence: Int = 1,
 ): String =
   """
     {
       "offenderNo": "$offenderNo",
       "nsOffenderNo": "$nsOffenderNo",
+      "typeSequence": $typeSequence,
       "reason": "VIC",
       "recipReason": "PER",
       "type": "WING",
@@ -1105,11 +1107,13 @@ private fun nonAssociationResponse(
 private fun nonAssociationResponseMinimalData(
   offenderNo: String = "A1234BC",
   nsOffenderNo: String = "D5678EF",
+  typeSequence: Int = 1,
 ): String =
   """
     {
       "offenderNo": "$offenderNo",
       "nsOffenderNo": "$nsOffenderNo",
+      "typeSequence": $typeSequence,
       "reason": "VIC",
       "recipReason": "PER",
       "type": "WING",

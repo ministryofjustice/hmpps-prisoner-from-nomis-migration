@@ -7,11 +7,11 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2023-08-23.4548.dd53515"
+    "version": "2023-08-24.4581.6fd4c69"
   },
   "servers": [
     {
-      "url": "https://nomis-prsner-dev.aks-dev-1.studio-hosting.service.justice.gov.uk",
+      "url": "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
       "description": "Development"
     },
     {
@@ -4984,6 +4984,7 @@
           "description",
           "excludeBankHolidays",
           "minimumIncentiveLevelCode",
+          "outsideWork",
           "payPerSession",
           "payRates",
           "programCode",
@@ -5050,6 +5051,10 @@
           "excludeBankHolidays": {
             "type": "boolean",
             "description": "Exclude bank holidays?"
+          },
+          "outsideWork": {
+            "type": "boolean",
+            "description": "Outside work?"
           },
           "programCode": {
             "type": "string",
@@ -6314,6 +6319,7 @@
           "description",
           "excludeBankHolidays",
           "minimumIncentiveLevelCode",
+          "outsideWork",
           "payPerSession",
           "payRates",
           "prisonId",
@@ -6400,6 +6406,10 @@
           "excludeBankHolidays": {
             "type": "boolean",
             "description": "Exclude bank holidays?"
+          },
+          "outsideWork": {
+            "type": "boolean",
+            "description": "Outside work?"
           }
         },
         "description": "Course activity creation request"
@@ -6622,15 +6632,15 @@
           "first": {
             "type": "boolean"
           },
+          "last": {
+            "type": "boolean"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
           },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
-          },
-          "last": {
-            "type": "boolean"
           },
           "empty": {
             "type": "boolean"
@@ -6812,15 +6822,15 @@
           "first": {
             "type": "boolean"
           },
+          "last": {
+            "type": "boolean"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
           },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
-          },
-          "last": {
-            "type": "boolean"
           },
           "empty": {
             "type": "boolean"
@@ -6955,15 +6965,15 @@
           "first": {
             "type": "boolean"
           },
+          "last": {
+            "type": "boolean"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
           },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
-          },
-          "last": {
-            "type": "boolean"
           },
           "empty": {
             "type": "boolean"
@@ -7080,15 +7090,15 @@
           "first": {
             "type": "boolean"
           },
+          "last": {
+            "type": "boolean"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
           },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
-          },
-          "last": {
-            "type": "boolean"
           },
           "empty": {
             "type": "boolean"
@@ -7221,15 +7231,15 @@
           "first": {
             "type": "boolean"
           },
+          "last": {
+            "type": "boolean"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
           },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
-          },
-          "last": {
-            "type": "boolean"
           },
           "empty": {
             "type": "boolean"
@@ -7374,15 +7384,15 @@
           "first": {
             "type": "boolean"
           },
+          "last": {
+            "type": "boolean"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
           },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
-          },
-          "last": {
-            "type": "boolean"
           },
           "empty": {
             "type": "boolean"
@@ -7445,15 +7455,15 @@
           "first": {
             "type": "boolean"
           },
+          "last": {
+            "type": "boolean"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
           },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
-          },
-          "last": {
-            "type": "boolean"
           },
           "empty": {
             "type": "boolean"

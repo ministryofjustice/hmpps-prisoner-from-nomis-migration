@@ -869,7 +869,7 @@ internal class NomisApiServiceTest {
   @Nested
   @DisplayName("getNonAssociation")
   inner class GetNonAssociation {
-    val nonAssociationUrl = "/non-associations/offender/[A-Z]\\d{4}[A-Z]{2}/ns-offender/[A-Z]\\d{4}[A-Z]{2}"
+    val nonAssociationUrl = "/non-associations/offender/[A-Z]\\d{4}[A-Z]{2}/ns-offender/[A-Z]\\d{4}[A-Z]{2}/type-sequence/\\d"
 
     @BeforeEach
     internal fun setUp() {
@@ -904,10 +904,11 @@ internal class NomisApiServiceTest {
       nomisService.getNonAssociation(
         offenderNo = "A1234BC",
         nsOffenderNo = "D5678EF",
+        typeSequence = 1,
       )
       nomisApi.verify(
         getRequestedFor(
-          urlPathEqualTo("/non-associations/offender/A1234BC/ns-offender/D5678EF"),
+          urlPathEqualTo("/non-associations/offender/A1234BC/ns-offender/D5678EF/type-sequence/1"),
         )
           .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
       )
@@ -918,6 +919,7 @@ internal class NomisApiServiceTest {
       val nonAssociation = nomisService.getNonAssociation(
         offenderNo = "A1234BC",
         nsOffenderNo = "D5678EF",
+        typeSequence = 1,
       )
       assertThat(nonAssociation.offenderNo).isEqualTo("A1234BC")
       assertThat(nonAssociation.nsOffenderNo).isEqualTo("D5678EF")
@@ -963,6 +965,7 @@ internal class NomisApiServiceTest {
         val nonAssociation = nomisService.getNonAssociation(
           offenderNo = "A1234BC",
           nsOffenderNo = "D5678EF",
+          typeSequence = 1,
         )
         assertThat(nonAssociation.offenderNo).isEqualTo("A1234BC")
         assertThat(nonAssociation.nsOffenderNo).isEqualTo("D5678EF")
@@ -999,6 +1002,7 @@ internal class NomisApiServiceTest {
             nomisService.getNonAssociation(
               offenderNo = "A1234BC",
               nsOffenderNo = "D5678EF",
+              typeSequence = 1,
             )
           }
         }.isInstanceOf(NotFound::class.java)
