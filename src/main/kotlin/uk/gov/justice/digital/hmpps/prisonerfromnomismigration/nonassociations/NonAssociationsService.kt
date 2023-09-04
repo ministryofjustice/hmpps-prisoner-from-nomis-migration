@@ -11,7 +11,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.m
 class NonAssociationsService(@Qualifier("nonAssociationsApiWebClient") private val webClient: WebClient) {
   suspend fun upsertNonAssociation(upsertRequest: UpsertSyncRequest): NonAssociation =
     webClient.put()
-      .uri("/sync")
+      .uri("/sync/upsert")
       .bodyValue(upsertRequest)
       .retrieve()
       .awaitBody()

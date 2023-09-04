@@ -122,7 +122,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will create the non-association in the non-associations service`() {
           await untilAsserted {
-            nonAssociationsApi.verify(putRequestedFor(urlPathEqualTo("/sync")))
+            nonAssociationsApi.verify(putRequestedFor(urlPathEqualTo("/sync/upsert")))
           }
         }
 
@@ -193,7 +193,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will create the non-association in the non-associations service`() {
           await untilAsserted {
-            nonAssociationsApi.verify(putRequestedFor(urlPathEqualTo("/sync")))
+            nonAssociationsApi.verify(putRequestedFor(urlPathEqualTo("/sync/upsert")))
           }
         }
 
@@ -240,6 +240,9 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
               nsOffenderIdDisplay = OFFENDER_A,
             ),
           )
+          await untilAsserted {
+            verify(telemetryClient, Times(1)).trackEvent(any(), any(), isNull())
+          }
         }
 
         @Test
@@ -254,22 +257,24 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will not create telemetry tracking success`() {
-          verify(telemetryClient, Times(0)).trackEvent(any(), any(), isNull())
+          verify(telemetryClient, Times(0)).trackEvent(
+            eq("non-association-created-synchronisation-success"),
+            any(),
+            isNull(),
+          )
         }
 
         @Test
         fun `will create telemetry tracking the non-primary ignore`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("non-association-synchronisation-non-primary-skipped"),
-              check {
-                assertThat(it["firstOffenderNo"]).isEqualTo(OFFENDER_B)
-                assertThat(it["secondOffenderNo"]).isEqualTo(OFFENDER_A)
-                assertThat(it["typeSequence"]).isEqualTo(TYPE_SEQUENCE.toString())
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient).trackEvent(
+            eq("non-association-synchronisation-non-primary-skipped"),
+            check {
+              assertThat(it["firstOffenderNo"]).isEqualTo(OFFENDER_B)
+              assertThat(it["secondOffenderNo"]).isEqualTo(OFFENDER_A)
+              assertThat(it["typeSequence"]).isEqualTo(TYPE_SEQUENCE.toString())
+            },
+            isNull(),
+          )
         }
       }
 
@@ -311,7 +316,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will create one non-association in the non-associations service`() {
           await untilAsserted {
-            nonAssociationsApi.verify(exactly(1), putRequestedFor(urlPathEqualTo("/sync")))
+            nonAssociationsApi.verify(exactly(1), putRequestedFor(urlPathEqualTo("/sync/upsert")))
           }
         }
 

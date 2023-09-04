@@ -49,7 +49,7 @@ class NonAssociationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubUpsertNonAssociationForSynchronisation(nonAssociationId: Long = 654321, firstOffenderNo: String = "A1234BC", secondOffenderNo: String = "D5678EF") {
     stubFor(
-      WireMock.put(WireMock.urlMatching("/sync")).willReturn(
+      WireMock.put(WireMock.urlMatching("/sync/upsert")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.CREATED.value())

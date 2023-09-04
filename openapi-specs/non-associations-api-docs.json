@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2023-09-01.1246.4f44f42"
+    "version": "2023-09-04.1306.1958da0"
   },
   "servers": [
     {
@@ -927,7 +927,7 @@
         ],
         "summary": "Get non-associations by prisoner number",
         "description": "Requires ROLE_NON_ASSOCIATIONS role.",
-        "operationId": "getDetailsByPrisonerNumber",
+        "operationId": "getPrisonerNonAssociations",
         "parameters": [
           {
             "name": "prisonerNumber",
@@ -995,7 +995,10 @@
                 "WHEN_UPDATED",
                 "LAST_NAME",
                 "FIRST_NAME",
-                "PRISONER_NUMBER"
+                "PRISONER_NUMBER",
+                "PRISON_ID",
+                "PRISON_NAME",
+                "CELL_LOCATION"
               ]
             },
             "example": "LAST_NAME"
@@ -1240,6 +1243,55 @@
                       "$ref": "#/components/schemas/Constant"
                     }
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sync/{id}": {
+      "delete": {
+        "tags": [
+          "Sync non-associations from NOMIS"
+        ],
+        "summary": "Delete a non-association by ID",
+        "description": "Will delete a non-association for the given ID. Requires ROLE_NON_ASSOCIATIONS_SYNC role.",
+        "operationId": "delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The non-association ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The non-association ID",
+              "example": 42
+            },
+            "example": 42
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Non-association removed"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the ROLE_NON_ASSOCIATIONS_SYNC role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
