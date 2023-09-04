@@ -58,6 +58,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -94,6 +95,8 @@ fun AdjudicationChargeResponse.toAdjudication(): AdjudicationMigrateDto =
         lastName = it.lastName,
         createdBy = it.createdByUsername,
         STAFF,
+        // TODO get the correct added data from NOMIS API
+        dateAdded = this.incident.createdDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
       )
     } + this.incident.prisonerWitnesses.map {
       MigrateWitness(
@@ -101,6 +104,8 @@ fun AdjudicationChargeResponse.toAdjudication(): AdjudicationMigrateDto =
         lastName = it.lastName,
         createdBy = it.createdByUsername,
         OTHER_PERSON,
+        // TODO get the correct added data from NOMIS API
+        dateAdded = this.incident.createdDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
       )
     } + this.incident.staffVictims.map {
       MigrateWitness(
@@ -108,6 +113,8 @@ fun AdjudicationChargeResponse.toAdjudication(): AdjudicationMigrateDto =
         lastName = it.lastName,
         createdBy = it.createdByUsername,
         VICTIM,
+        // TODO get the correct added data from NOMIS API
+        dateAdded = this.incident.createdDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
       )
     } + this.incident.prisonerVictims.map {
       MigrateWitness(
@@ -115,6 +122,8 @@ fun AdjudicationChargeResponse.toAdjudication(): AdjudicationMigrateDto =
         lastName = it.lastName,
         createdBy = it.createdByUsername,
         VICTIM,
+        // TODO get the correct added data from NOMIS API
+        dateAdded = this.incident.createdDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
       )
     } + this.incident.otherPrisonersInvolved.map {
       MigrateWitness(
@@ -122,6 +131,8 @@ fun AdjudicationChargeResponse.toAdjudication(): AdjudicationMigrateDto =
         lastName = it.lastName,
         createdBy = it.createdByUsername,
         PRISONER,
+        // TODO get the correct added data from NOMIS API
+        dateAdded = this.incident.createdDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
       )
     } + this.incident.reportingOfficers.map {
       MigrateWitness(
@@ -129,6 +140,8 @@ fun AdjudicationChargeResponse.toAdjudication(): AdjudicationMigrateDto =
         lastName = it.lastName,
         createdBy = it.createdByUsername,
         OTHER_PERSON,
+        // TODO get the correct added data from NOMIS API
+        dateAdded = this.incident.createdDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
       )
     } + this.incident.otherStaffInvolved.map {
       MigrateWitness(
@@ -136,12 +149,15 @@ fun AdjudicationChargeResponse.toAdjudication(): AdjudicationMigrateDto =
         lastName = it.lastName,
         createdBy = it.createdByUsername,
         OTHER_PERSON,
+        // TODO get the correct added data from NOMIS API
+        dateAdded = this.incident.createdDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
       )
     },
     damages = this.incident.repairs.map { it.toDamage() },
     evidence = this.investigations.flatMap { investigation -> investigation.evidence.map { it.toEvidence() } },
     punishments = this.hearings.flatMap { it.toHearingResultAwards() },
     hearings = this.hearings.map { it.toHearing() },
+    disIssued = emptyList(), // TODO - get notification list
   )
 
 private fun Hearing.toHearingResultAwards(): List<MigratePunishment> =
@@ -215,6 +231,7 @@ private fun Evidence.toEvidence() = MigrateEvidence(
   },
   details = this.detail,
   reporter = this.createdByUsername,
+  dateAdded = this.date.atStartOfDay().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
 )
 
 private fun Repair.toDamage() = MigrateDamage(
@@ -229,6 +246,8 @@ private fun Repair.toDamage() = MigrateDamage(
   },
   details = this.comment,
   createdBy = this.createdByUsername,
+  // TODO get date of repair
+  dateAdded = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
 )
 
 @Service
@@ -352,7 +371,7 @@ class AdjudicationsMigrationService(
       AdjudicationPunishmentMappingDto(
         dpsPunishmentId = it.punishmentId.toString(),
         nomisBookingId = it.bookingId,
-        nomisSanctionSequence = it.sanctionSeq.toInt(),
+        nomisSanctionSequence = it.sanctionSeq!!.toInt(),
       )
     } ?: emptyList(),
     label = context.migrationId,

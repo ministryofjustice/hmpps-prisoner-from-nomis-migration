@@ -50,6 +50,7 @@ internal class AdjudicationsServiceTest {
             evidence = emptyList(),
             punishments = emptyList(),
             hearings = emptyList(),
+            disIssued = emptyList(),
           ),
         )
       }

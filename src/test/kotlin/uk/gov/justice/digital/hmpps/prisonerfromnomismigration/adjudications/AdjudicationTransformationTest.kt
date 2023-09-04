@@ -384,22 +384,15 @@ class AdjudicationTransformationTest {
       val dpsAdjudication = nomisAdjudication.toAdjudication()
 
       assertThat(dpsAdjudication.witnesses).hasSize(2)
-      assertThat(dpsAdjudication.witnesses).contains(
-        MigrateWitness(
-          createdBy = "B.BATTS",
-          firstName = "JOHN",
-          lastName = "SMITH",
-          witnessType = MigrateWitness.WitnessType.STAFF,
-        ),
-      )
-      assertThat(dpsAdjudication.witnesses).contains(
-        MigrateWitness(
-          createdBy = "J.TOMS",
-          firstName = "KWEKU",
-          lastName = "KOFI",
-          witnessType = MigrateWitness.WitnessType.STAFF,
-        ),
-      )
+      assertThat(dpsAdjudication.witnesses[0].createdBy).isEqualTo("B.BATTS")
+      assertThat(dpsAdjudication.witnesses[0].firstName).isEqualTo("JOHN")
+      assertThat(dpsAdjudication.witnesses[0].lastName).isEqualTo("SMITH")
+      assertThat(dpsAdjudication.witnesses[0].witnessType).isEqualTo(MigrateWitness.WitnessType.STAFF)
+
+      assertThat(dpsAdjudication.witnesses[1].createdBy).isEqualTo("J.TOMS")
+      assertThat(dpsAdjudication.witnesses[1].firstName).isEqualTo("KWEKU")
+      assertThat(dpsAdjudication.witnesses[1].lastName).isEqualTo("KOFI")
+      assertThat(dpsAdjudication.witnesses[1].witnessType).isEqualTo(MigrateWitness.WitnessType.STAFF)
     }
 
     @Test
@@ -424,22 +417,16 @@ class AdjudicationTransformationTest {
       val dpsAdjudication = nomisAdjudication.toAdjudication()
 
       assertThat(dpsAdjudication.witnesses).hasSize(2)
-      assertThat(dpsAdjudication.witnesses).contains(
-        MigrateWitness(
-          createdBy = "B.BATTS",
-          firstName = "BOBBY",
-          lastName = "BALLER",
-          witnessType = MigrateWitness.WitnessType.OTHER_PERSON,
-        ),
-      )
-      assertThat(dpsAdjudication.witnesses).contains(
-        MigrateWitness(
-          createdBy = "A.AMRK",
-          firstName = "JANE",
-          lastName = "MIKES",
-          witnessType = MigrateWitness.WitnessType.OTHER_PERSON,
-        ),
-      )
+
+      assertThat(dpsAdjudication.witnesses[0].createdBy).isEqualTo("B.BATTS")
+      assertThat(dpsAdjudication.witnesses[0].firstName).isEqualTo("BOBBY")
+      assertThat(dpsAdjudication.witnesses[0].lastName).isEqualTo("BALLER")
+      assertThat(dpsAdjudication.witnesses[0].witnessType).isEqualTo(MigrateWitness.WitnessType.OTHER_PERSON)
+
+      assertThat(dpsAdjudication.witnesses[1].createdBy).isEqualTo("A.AMRK")
+      assertThat(dpsAdjudication.witnesses[1].firstName).isEqualTo("JANE")
+      assertThat(dpsAdjudication.witnesses[1].lastName).isEqualTo("MIKES")
+      assertThat(dpsAdjudication.witnesses[1].witnessType).isEqualTo(MigrateWitness.WitnessType.OTHER_PERSON)
     }
 
     @Test
@@ -465,22 +452,15 @@ class AdjudicationTransformationTest {
       val dpsAdjudication = nomisAdjudication.toAdjudication()
 
       assertThat(dpsAdjudication.witnesses).hasSize(2)
-      assertThat(dpsAdjudication.witnesses).contains(
-        MigrateWitness(
-          createdBy = "B.BATTS",
-          firstName = "JOHN",
-          lastName = "SMITH",
-          witnessType = MigrateWitness.WitnessType.VICTIM,
-        ),
-      )
-      assertThat(dpsAdjudication.witnesses).contains(
-        MigrateWitness(
-          createdBy = "B.BATTS",
-          firstName = "KWEKU",
-          lastName = "KOFI",
-          witnessType = MigrateWitness.WitnessType.VICTIM,
-        ),
-      )
+      assertThat(dpsAdjudication.witnesses[0].createdBy).isEqualTo("B.BATTS")
+      assertThat(dpsAdjudication.witnesses[0].firstName).isEqualTo("JOHN")
+      assertThat(dpsAdjudication.witnesses[0].lastName).isEqualTo("SMITH")
+      assertThat(dpsAdjudication.witnesses[0].witnessType).isEqualTo(MigrateWitness.WitnessType.VICTIM)
+
+      assertThat(dpsAdjudication.witnesses[1].createdBy).isEqualTo("B.BATTS")
+      assertThat(dpsAdjudication.witnesses[1].firstName).isEqualTo("KWEKU")
+      assertThat(dpsAdjudication.witnesses[1].lastName).isEqualTo("KOFI")
+      assertThat(dpsAdjudication.witnesses[1].witnessType).isEqualTo(MigrateWitness.WitnessType.VICTIM)
     }
 
     @Test
@@ -504,22 +484,16 @@ class AdjudicationTransformationTest {
       val dpsAdjudication = nomisAdjudication.toAdjudication()
 
       assertThat(dpsAdjudication.witnesses).hasSize(2)
-      assertThat(dpsAdjudication.witnesses).contains(
-        MigrateWitness(
-          createdBy = "B.BATTS",
-          firstName = "BOBBY",
-          lastName = "BALLER",
-          witnessType = MigrateWitness.WitnessType.VICTIM,
-        ),
-      )
-      assertThat(dpsAdjudication.witnesses).contains(
-        MigrateWitness(
-          createdBy = "B.BATTS",
-          firstName = "JANE",
-          lastName = "MIKES",
-          witnessType = MigrateWitness.WitnessType.VICTIM,
-        ),
-      )
+
+      assertThat(dpsAdjudication.witnesses[0].createdBy).isEqualTo("B.BATTS")
+      assertThat(dpsAdjudication.witnesses[0].firstName).isEqualTo("BOBBY")
+      assertThat(dpsAdjudication.witnesses[0].lastName).isEqualTo("BALLER")
+      assertThat(dpsAdjudication.witnesses[0].witnessType).isEqualTo(MigrateWitness.WitnessType.VICTIM)
+
+      assertThat(dpsAdjudication.witnesses[1].createdBy).isEqualTo("B.BATTS")
+      assertThat(dpsAdjudication.witnesses[1].firstName).isEqualTo("JANE")
+      assertThat(dpsAdjudication.witnesses[1].lastName).isEqualTo("MIKES")
+      assertThat(dpsAdjudication.witnesses[1].witnessType).isEqualTo(MigrateWitness.WitnessType.VICTIM)
     }
 
     @Test
@@ -543,22 +517,16 @@ class AdjudicationTransformationTest {
       val dpsAdjudication = nomisAdjudication.toAdjudication()
 
       assertThat(dpsAdjudication.witnesses).hasSize(2)
-      assertThat(dpsAdjudication.witnesses).contains(
-        MigrateWitness(
-          createdBy = "B.BATTS",
-          firstName = "BOBBY",
-          lastName = "BALLER",
-          witnessType = MigrateWitness.WitnessType.PRISONER,
-        ),
-      )
-      assertThat(dpsAdjudication.witnesses).contains(
-        MigrateWitness(
-          createdBy = "B.BATTS",
-          firstName = "JANE",
-          lastName = "MIKES",
-          witnessType = MigrateWitness.WitnessType.PRISONER,
-        ),
-      )
+
+      assertThat(dpsAdjudication.witnesses[0].createdBy).isEqualTo("B.BATTS")
+      assertThat(dpsAdjudication.witnesses[0].firstName).isEqualTo("BOBBY")
+      assertThat(dpsAdjudication.witnesses[0].lastName).isEqualTo("BALLER")
+      assertThat(dpsAdjudication.witnesses[0].witnessType).isEqualTo(MigrateWitness.WitnessType.PRISONER)
+
+      assertThat(dpsAdjudication.witnesses[1].createdBy).isEqualTo("B.BATTS")
+      assertThat(dpsAdjudication.witnesses[1].firstName).isEqualTo("JANE")
+      assertThat(dpsAdjudication.witnesses[1].lastName).isEqualTo("MIKES")
+      assertThat(dpsAdjudication.witnesses[1].witnessType).isEqualTo(MigrateWitness.WitnessType.PRISONER)
     }
 
     @Test
@@ -600,38 +568,26 @@ class AdjudicationTransformationTest {
       val dpsAdjudication = nomisAdjudication.toAdjudication()
 
       assertThat(dpsAdjudication.witnesses).hasSize(4)
-      assertThat(dpsAdjudication.witnesses).contains(
-        MigrateWitness(
-          createdBy = "A.BEANS",
-          firstName = "JOHN",
-          lastName = "SMITH",
-          witnessType = MigrateWitness.WitnessType.OTHER_PERSON,
-        ),
-      )
-      assertThat(dpsAdjudication.witnesses).contains(
-        MigrateWitness(
-          createdBy = "A.BEANS",
-          firstName = "KWEKU",
-          lastName = "KOFI",
-          witnessType = MigrateWitness.WitnessType.OTHER_PERSON,
-        ),
-      )
-      assertThat(dpsAdjudication.witnesses).contains(
-        MigrateWitness(
-          createdBy = "A.BEANS",
-          firstName = "JANE",
-          lastName = "SEEKS",
-          witnessType = MigrateWitness.WitnessType.OTHER_PERSON,
-        ),
-      )
-      assertThat(dpsAdjudication.witnesses).contains(
-        MigrateWitness(
-          createdBy = "A.BEANS",
-          firstName = "SARAH",
-          lastName = "BIGHTS",
-          witnessType = MigrateWitness.WitnessType.OTHER_PERSON,
-        ),
-      )
+
+      assertThat(dpsAdjudication.witnesses[0].createdBy).isEqualTo("A.BEANS")
+      assertThat(dpsAdjudication.witnesses[0].firstName).isEqualTo("JOHN")
+      assertThat(dpsAdjudication.witnesses[0].lastName).isEqualTo("SMITH")
+      assertThat(dpsAdjudication.witnesses[0].witnessType).isEqualTo(MigrateWitness.WitnessType.OTHER_PERSON)
+
+      assertThat(dpsAdjudication.witnesses[1].createdBy).isEqualTo("A.BEANS")
+      assertThat(dpsAdjudication.witnesses[1].firstName).isEqualTo("KWEKU")
+      assertThat(dpsAdjudication.witnesses[1].lastName).isEqualTo("KOFI")
+      assertThat(dpsAdjudication.witnesses[1].witnessType).isEqualTo(MigrateWitness.WitnessType.OTHER_PERSON)
+
+      assertThat(dpsAdjudication.witnesses[2].createdBy).isEqualTo("A.BEANS")
+      assertThat(dpsAdjudication.witnesses[2].firstName).isEqualTo("JANE")
+      assertThat(dpsAdjudication.witnesses[2].lastName).isEqualTo("SEEKS")
+      assertThat(dpsAdjudication.witnesses[2].witnessType).isEqualTo(MigrateWitness.WitnessType.OTHER_PERSON)
+
+      assertThat(dpsAdjudication.witnesses[3].createdBy).isEqualTo("A.BEANS")
+      assertThat(dpsAdjudication.witnesses[3].firstName).isEqualTo("SARAH")
+      assertThat(dpsAdjudication.witnesses[3].lastName).isEqualTo("BIGHTS")
+      assertThat(dpsAdjudication.witnesses[3].witnessType).isEqualTo(MigrateWitness.WitnessType.OTHER_PERSON)
     }
   }
 
