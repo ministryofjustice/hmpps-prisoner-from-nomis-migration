@@ -25,7 +25,7 @@ internal class NonAssociationsServiceTest {
   private lateinit var nonAssociationsService: NonAssociationsService
 
   @Nested
-  @DisplayName("POST /sync")
+  @DisplayName("POST /sync/upsert")
   inner class CreateNonAssociationForSynchronisation {
     @BeforeEach
     internal fun setUp() {
@@ -50,7 +50,7 @@ internal class NonAssociationsServiceTest {
     @Test
     fun `should call api with OAuth2 token`() {
       NonAssociationsApiExtension.nonAssociationsApi.verify(
-        putRequestedFor(WireMock.urlEqualTo("/sync"))
+        putRequestedFor(WireMock.urlEqualTo("/sync/upsert"))
           .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
       )
     }
@@ -58,7 +58,7 @@ internal class NonAssociationsServiceTest {
     @Test
     fun `will pass data to the api`() {
       NonAssociationsApiExtension.nonAssociationsApi.verify(
-        putRequestedFor(WireMock.urlEqualTo("/sync"))
+        putRequestedFor(WireMock.urlEqualTo("/sync/upsert"))
           .withRequestBody(matchingJsonPath("firstPrisonerNumber", WireMock.equalTo("A1234CD")))
           .withRequestBody(matchingJsonPath("firstPrisonerReason", WireMock.equalTo("VIC")))
           .withRequestBody(matchingJsonPath("secondPrisonerNumber", WireMock.equalTo("E5678EF")))
