@@ -5,6 +5,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
@@ -515,7 +516,8 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubGetNonAssociation(offenderNo: String, nsOffenderNo: String, typeSequence: Int) {
     nomisApi.stubFor(
       get(
-        urlPathEqualTo("/non-associations/offender/$offenderNo/ns-offender/$nsOffenderNo/type-sequence/$typeSequence"),
+        urlEqualTo("/non-associations/offender/$offenderNo/ns-offender/$nsOffenderNo?typeSequence=$typeSequence"),
+
       )
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json")
@@ -528,7 +530,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubGetNonAssociationWithMinimalData(offenderNo: String, nsOffenderNo: String, typeSequence: Int) {
     nomisApi.stubFor(
       get(
-        urlPathEqualTo("/non-associations/offender/$offenderNo/ns-offender/$nsOffenderNo/type-sequence/$typeSequence"),
+        urlEqualTo("/non-associations/offender/$offenderNo/ns-offender/$nsOffenderNo?typeSequence=$typeSequence"),
       )
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json")
@@ -538,10 +540,10 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubGetNonAssociationNotFound(offenderNo: String, nsOffenderNo: String) {
+  fun stubGetNonAssociationNotFound(offenderNo: String, nsOffenderNo: String, typeSequence: Int) {
     nomisApi.stubFor(
       get(
-        urlPathEqualTo("/non-associations/offender/$offenderNo/ns-offender/$nsOffenderNo"),
+        urlEqualTo("/non-associations/offender/$offenderNo/ns-offender/$nsOffenderNo?typeSequence=$typeSequence"),
       )
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json")
