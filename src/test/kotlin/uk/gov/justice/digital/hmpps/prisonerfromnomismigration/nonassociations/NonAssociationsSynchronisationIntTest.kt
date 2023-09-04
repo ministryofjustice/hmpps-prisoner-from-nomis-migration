@@ -8,6 +8,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.exactly
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
@@ -36,7 +37,7 @@ import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 private const val OFFENDER_A = "A4803BG"
 private const val OFFENDER_B = "G4803UT"
 private const val TYPE_SEQUENCE = 1
-private const val nomisApiUrl = "/non-associations/offender/$OFFENDER_A/ns-offender/$OFFENDER_B/type-sequence/$TYPE_SEQUENCE"
+private const val nomisApiUrl = "/non-associations/offender/$OFFENDER_A/ns-offender/$OFFENDER_B?typeSequence=$TYPE_SEQUENCE"
 private const val nomisMappingApiUrl = "/mapping/non-associations/first-offender-no/$OFFENDER_A/second-offender-no/$OFFENDER_B/type-sequence/$TYPE_SEQUENCE"
 
 class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
@@ -75,7 +76,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
             isNull(),
           )
         }
-        nomisApi.verify(exactly(0), getRequestedFor(urlPathEqualTo(nomisApiUrl)))
+        nomisApi.verify(exactly(0), getRequestedFor(urlEqualTo(nomisApiUrl)))
         nonAssociationsApi.verify(exactly(0), anyRequestedFor(anyUrl()))
       }
     }
@@ -107,7 +108,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will retrieve details about the non-association from NOMIS`() {
           await untilAsserted {
-            nomisApi.verify(getRequestedFor(urlPathEqualTo(nomisApiUrl)))
+            nomisApi.verify(getRequestedFor(urlEqualTo(nomisApiUrl)))
           }
         }
 
@@ -178,7 +179,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will retrieve details about the non-association from NOMIS`() {
           await untilAsserted {
-            nomisApi.verify(getRequestedFor(urlPathEqualTo(nomisApiUrl)))
+            nomisApi.verify(getRequestedFor(urlEqualTo(nomisApiUrl)))
           }
         }
 
@@ -303,7 +304,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will retrieve details about one non-association from NOMIS`() {
           await untilAsserted {
-            nomisApi.verify(exactly(1), getRequestedFor(urlPathEqualTo(nomisApiUrl)))
+            nomisApi.verify(exactly(1), getRequestedFor(urlEqualTo(nomisApiUrl)))
           }
         }
 
@@ -360,7 +361,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class WhenNomisHasNoNonAssociation {
         @BeforeEach
         fun setUp() {
-          nomisApi.stubGetNonAssociationNotFound(offenderNo = OFFENDER_A, nsOffenderNo = OFFENDER_B)
+          nomisApi.stubGetNonAssociationNotFound(offenderNo = OFFENDER_A, nsOffenderNo = OFFENDER_B, typeSequence = TYPE_SEQUENCE)
 
           awsSqsNonAssociationsOffenderEventsClient.sendMessage(
             nonAssociationsQueueOffenderEventsUrl,

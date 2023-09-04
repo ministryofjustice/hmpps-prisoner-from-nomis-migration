@@ -5,6 +5,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import kotlinx.coroutines.runBlocking
@@ -869,13 +870,13 @@ internal class NomisApiServiceTest {
   @Nested
   @DisplayName("getNonAssociation")
   inner class GetNonAssociation {
-    val nonAssociationUrl = "/non-associations/offender/[A-Z]\\d{4}[A-Z]{2}/ns-offender/[A-Z]\\d{4}[A-Z]{2}/type-sequence/\\d"
+    val nonAssociationUrl = "/non-associations/offender/[A-Z]\\d{4}[A-Z]{2}/ns-offender/[A-Z]\\d{4}[A-Z]{2}\\?typeSequence=\\d"
 
     @BeforeEach
     internal fun setUp() {
       nomisApi.stubFor(
         get(
-          urlPathMatching(nonAssociationUrl),
+          urlMatching(nonAssociationUrl),
         ).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -908,7 +909,7 @@ internal class NomisApiServiceTest {
       )
       nomisApi.verify(
         getRequestedFor(
-          urlPathEqualTo("/non-associations/offender/A1234BC/ns-offender/D5678EF/type-sequence/1"),
+          urlEqualTo("/non-associations/offender/A1234BC/ns-offender/D5678EF?typeSequence=1"),
         )
           .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
       )
@@ -939,7 +940,7 @@ internal class NomisApiServiceTest {
       internal fun setUp() {
         nomisApi.stubFor(
           get(
-            urlPathMatching(nonAssociationUrl),
+            urlMatching(nonAssociationUrl),
           ).willReturn(
             aResponse()
               .withHeader("Content-Type", "application/json")
@@ -986,7 +987,7 @@ internal class NomisApiServiceTest {
       internal fun setUp() {
         nomisApi.stubFor(
           get(
-            urlPathMatching(nonAssociationUrl),
+            urlMatching(nonAssociationUrl),
           ).willReturn(
             aResponse()
               .withHeader("Content-Type", "application/json")

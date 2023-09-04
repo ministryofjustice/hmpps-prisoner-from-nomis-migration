@@ -236,7 +236,11 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
 
   suspend fun getNonAssociation(offenderNo: String, nsOffenderNo: String, typeSequence: Int): NonAssociationResponse =
     webClient.get()
-      .uri("/non-associations/offender/{offenderNo}/ns-offender/{nsOffenderNo}/type-sequence/{typeSequence}", offenderNo, nsOffenderNo, typeSequence)
+      .uri {
+        it.path("/non-associations/offender/{offenderNo}/ns-offender/{nsOffenderNo}")
+          .queryParam("typeSequence", "$typeSequence")
+          .build(offenderNo, nsOffenderNo)
+      }
       .retrieve()
       .awaitBody()
 
