@@ -9,6 +9,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.NonAssociationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.NonAssociationMappingDto.MappingType.NOMIS_CREATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.NonAssociationsSynchronisationService.MappingResponse.MAPPING_FAILED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
@@ -50,17 +52,24 @@ class NonAssociationsSynchronisationService(
       secondOffenderNo = event.nsOffenderIdDisplay,
       nomisTypeSequence = event.typeSeq,
     )?.let {
+      log.debug("Found non-association mapping: $it")
+      log.debug("Sending non-association upsert sync " + nomisNonAssociation.toUpsertSyncRequest(it.nonAssociationId))
       nonAssociationsService.upsertNonAssociation(nomisNonAssociation.toUpsertSyncRequest(it.nonAssociationId))
       telemetryClient.trackEvent(
         "non-association-updated-synchronisation-success",
         event.toTelemetryProperties(it.nonAssociationId),
       )
     } ?: let {
+      log.debug("No non-association mapping - sending non-association upsert sync " + nomisNonAssociation.toUpsertSyncRequest())
+
       nonAssociationsService.upsertNonAssociation(nomisNonAssociation.toUpsertSyncRequest()).also { nonAssociation ->
         tryToCreateNonAssociationMapping(event, nonAssociation.id).also { result ->
           telemetryClient.trackEvent(
             "non-association-created-synchronisation-success",
-            event.toTelemetryProperties(nonAssociation.id),
+            event.toTelemetryProperties(
+              nonAssociation.id,
+              result == MAPPING_FAILED,
+            ),
           )
         }
       }
@@ -81,7 +90,7 @@ class NonAssociationsSynchronisationService(
       firstOffenderNo = event.offenderIdDisplay,
       secondOffenderNo = event.nsOffenderIdDisplay,
       nomisTypeSequence = event.typeSeq,
-      mappingType = NonAssociationMappingDto.MappingType.NOMIS_CREATED,
+      mappingType = NOMIS_CREATED,
     )
     try {
       nonAssociationsMappingService.createMapping(
@@ -119,7 +128,7 @@ class NonAssociationsSynchronisationService(
         message = mapping,
         telemetryAttributes = event.toTelemetryProperties(nonAssociationId),
       )
-      return MappingResponse.MAPPING_FAILED
+      return MAPPING_FAILED
     }
   }
 
