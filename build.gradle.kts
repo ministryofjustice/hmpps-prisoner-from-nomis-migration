@@ -65,7 +65,7 @@ dependencies {
 }
 
 java {
-  toolchain.languageVersion.set(JavaLanguageVersion.of(19))
+  toolchain.languageVersion.set(JavaLanguageVersion.of(20))
 }
 
 tasks {
@@ -73,7 +73,7 @@ tasks {
     //  dependsOn("buildSentencingApiModel")
     dependsOn("buildActivityApiModel", "buildNomisSyncApiModel", "buildAdjudicationApiModel", "buildNonAssociationsApiModel", "buildMappingServiceApiModel")
     kotlinOptions {
-      jvmTarget = "19"
+      jvmTarget = "20"
     }
   }
   withType<KtLintCheckTask> {
