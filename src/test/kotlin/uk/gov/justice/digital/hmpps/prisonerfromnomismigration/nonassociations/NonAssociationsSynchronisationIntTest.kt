@@ -1,11 +1,11 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations
 
-import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.exactly
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
@@ -34,6 +34,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NonAssociationsApiExtension.Companion.nonAssociationsApi
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 
+private const val NON_ASSOCIATION_ID = 4321L
 private const val OFFENDER_A = "A4803BG"
 private const val OFFENDER_B = "G4803UT"
 private const val TYPE_SEQUENCE = 1
@@ -70,13 +71,14 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
             check {
               assertThat(it["firstOffenderNo"]).isEqualTo(OFFENDER_A)
               assertThat(it["secondOffenderNo"]).isEqualTo(OFFENDER_B)
-              assertThat(it["typeSequence"]).isEqualTo(TYPE_SEQUENCE.toString())
-              assertThat(it["nonAssociationsId"]).isNull()
+              assertThat(it["typeSequence"]).isEqualTo("$TYPE_SEQUENCE")
+              assertThat(it["nonAssociationId"]).isNull()
             },
             isNull(),
           )
         }
-        nomisApi.verify(exactly(0), getRequestedFor(urlEqualTo(nomisApiUrl)))
+        nomisApi.verify(exactly(0), getRequestedFor(anyUrl()))
+        mappingApi.verify(exactly(0), getRequestedFor(anyUrl()))
         nonAssociationsApi.verify(exactly(0), anyRequestedFor(anyUrl()))
       }
     }
@@ -91,8 +93,8 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun setUp() {
           nomisApi.stubGetNonAssociation(offenderNo = OFFENDER_A, nsOffenderNo = OFFENDER_B, typeSequence = TYPE_SEQUENCE)
           mappingApi.stubAllMappingsNotFound(nomisMappingApiUrl)
-          mappingApi.stubMappingCreate(NON_ASSOCIATIONS_CREATE_MAPPING_URL)
           nonAssociationsApi.stubUpsertNonAssociationForSynchronisation(firstOffenderNo = OFFENDER_A, secondOffenderNo = OFFENDER_B)
+          mappingApi.stubMappingCreate(NON_ASSOCIATIONS_CREATE_MAPPING_URL)
 
           awsSqsNonAssociationsOffenderEventsClient.sendMessage(
             nonAssociationsQueueOffenderEventsUrl,
@@ -131,10 +133,10 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             mappingApi.verify(
               postRequestedFor(urlPathEqualTo("/mapping/non-associations"))
-                .withRequestBody(WireMock.matchingJsonPath("nonAssociationId", equalTo("654321")))
-                .withRequestBody(WireMock.matchingJsonPath("firstOffenderNo", equalTo(OFFENDER_A)))
-                .withRequestBody(WireMock.matchingJsonPath("secondOffenderNo", equalTo(OFFENDER_B)))
-                .withRequestBody(WireMock.matchingJsonPath("nomisTypeSequence", equalTo(TYPE_SEQUENCE.toString()))),
+                .withRequestBody(matchingJsonPath("nonAssociationId", equalTo("$NON_ASSOCIATION_ID")))
+                .withRequestBody(matchingJsonPath("firstOffenderNo", equalTo(OFFENDER_A)))
+                .withRequestBody(matchingJsonPath("secondOffenderNo", equalTo(OFFENDER_B)))
+                .withRequestBody(matchingJsonPath("nomisTypeSequence", equalTo("$TYPE_SEQUENCE"))),
             )
           }
         }
@@ -145,10 +147,10 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
             verify(telemetryClient).trackEvent(
               eq("non-association-created-synchronisation-success"),
               check {
-                assertThat(it["nonAssociationId"]).isEqualTo("654321")
+                assertThat(it["nonAssociationId"]).isEqualTo("$NON_ASSOCIATION_ID")
                 assertThat(it["firstOffenderNo"]).isEqualTo(OFFENDER_A)
                 assertThat(it["secondOffenderNo"]).isEqualTo(OFFENDER_B)
-                assertThat(it["typeSequence"]).isEqualTo(TYPE_SEQUENCE.toString())
+                assertThat(it["typeSequence"]).isEqualTo("$TYPE_SEQUENCE")
               },
               isNull(),
             )
@@ -162,8 +164,8 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun setUp() {
           nomisApi.stubGetNonAssociationWithMinimalData(offenderNo = OFFENDER_A, nsOffenderNo = OFFENDER_B, typeSequence = TYPE_SEQUENCE)
           mappingApi.stubAllMappingsNotFound(nomisMappingApiUrl)
-          mappingApi.stubMappingCreate(NON_ASSOCIATIONS_CREATE_MAPPING_URL)
           nonAssociationsApi.stubUpsertNonAssociationForSynchronisation(firstOffenderNo = OFFENDER_A, secondOffenderNo = OFFENDER_B)
+          mappingApi.stubMappingCreate(NON_ASSOCIATIONS_CREATE_MAPPING_URL)
 
           awsSqsNonAssociationsOffenderEventsClient.sendMessage(
             nonAssociationsQueueOffenderEventsUrl,
@@ -202,10 +204,10 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             mappingApi.verify(
               postRequestedFor(urlPathEqualTo("/mapping/non-associations"))
-                .withRequestBody(WireMock.matchingJsonPath("nonAssociationId", equalTo("654321")))
-                .withRequestBody(WireMock.matchingJsonPath("firstOffenderNo", equalTo(OFFENDER_A)))
-                .withRequestBody(WireMock.matchingJsonPath("secondOffenderNo", equalTo(OFFENDER_B)))
-                .withRequestBody(WireMock.matchingJsonPath("nomisTypeSequence", equalTo(TYPE_SEQUENCE.toString()))),
+                .withRequestBody(matchingJsonPath("nonAssociationId", equalTo("$NON_ASSOCIATION_ID")))
+                .withRequestBody(matchingJsonPath("firstOffenderNo", equalTo(OFFENDER_A)))
+                .withRequestBody(matchingJsonPath("secondOffenderNo", equalTo(OFFENDER_B)))
+                .withRequestBody(matchingJsonPath("nomisTypeSequence", equalTo("$TYPE_SEQUENCE"))),
             )
           }
         }
@@ -216,10 +218,10 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
             verify(telemetryClient).trackEvent(
               eq("non-association-created-synchronisation-success"),
               check {
-                assertThat(it["nonAssociationId"]).isEqualTo("654321")
+                assertThat(it["nonAssociationId"]).isEqualTo("$NON_ASSOCIATION_ID")
                 assertThat(it["firstOffenderNo"]).isEqualTo(OFFENDER_A)
                 assertThat(it["secondOffenderNo"]).isEqualTo(OFFENDER_B)
-                assertThat(it["typeSequence"]).isEqualTo(TYPE_SEQUENCE.toString())
+                assertThat(it["typeSequence"]).isEqualTo("$TYPE_SEQUENCE")
               },
               isNull(),
             )
@@ -251,6 +253,11 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         }
 
         @Test
+        fun `will not attempt to get mapping data`() {
+          mappingApi.verify(exactly(0), getRequestedFor(anyUrl()))
+        }
+
+        @Test
         fun `will not create the non-association in the non-associations service`() {
           nonAssociationsApi.verify(exactly(0), anyRequestedFor(anyUrl()))
         }
@@ -271,7 +278,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
             check {
               assertThat(it["firstOffenderNo"]).isEqualTo(OFFENDER_B)
               assertThat(it["secondOffenderNo"]).isEqualTo(OFFENDER_A)
-              assertThat(it["typeSequence"]).isEqualTo(TYPE_SEQUENCE.toString())
+              assertThat(it["typeSequence"]).isEqualTo("$TYPE_SEQUENCE")
             },
             isNull(),
           )
@@ -283,7 +290,9 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           nomisApi.stubGetNonAssociation(offenderNo = OFFENDER_A, nsOffenderNo = OFFENDER_B, typeSequence = TYPE_SEQUENCE)
+          mappingApi.stubAllMappingsNotFound(nomisMappingApiUrl)
           nonAssociationsApi.stubUpsertNonAssociationForSynchronisation(firstOffenderNo = OFFENDER_A, secondOffenderNo = OFFENDER_B)
+          mappingApi.stubMappingCreate(NON_ASSOCIATIONS_CREATE_MAPPING_URL)
 
           awsSqsNonAssociationsOffenderEventsClient.sendMessage(
             nonAssociationsQueueOffenderEventsUrl,
@@ -314,6 +323,19 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         }
 
         @Test
+        fun `will create a mapping between the two records`() {
+          await untilAsserted {
+            mappingApi.verify(
+              postRequestedFor(urlPathEqualTo("/mapping/non-associations"))
+                .withRequestBody(matchingJsonPath("nonAssociationId", equalTo("$NON_ASSOCIATION_ID")))
+                .withRequestBody(matchingJsonPath("firstOffenderNo", equalTo(OFFENDER_A)))
+                .withRequestBody(matchingJsonPath("secondOffenderNo", equalTo(OFFENDER_B)))
+                .withRequestBody(matchingJsonPath("nomisTypeSequence", equalTo("$TYPE_SEQUENCE"))),
+            )
+          }
+        }
+
+        @Test
         fun `will create one non-association in the non-associations service`() {
           await untilAsserted {
             nonAssociationsApi.verify(exactly(1), putRequestedFor(urlPathEqualTo("/sync/upsert")))
@@ -326,10 +348,10 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
             verify(telemetryClient).trackEvent(
               eq("non-association-created-synchronisation-success"),
               check {
-                assertThat(it["nonAssociationId"]).isEqualTo("654321")
+                assertThat(it["nonAssociationId"]).isEqualTo("$NON_ASSOCIATION_ID")
                 assertThat(it["firstOffenderNo"]).isEqualTo(OFFENDER_A)
                 assertThat(it["secondOffenderNo"]).isEqualTo(OFFENDER_B)
-                assertThat(it["typeSequence"]).isEqualTo(TYPE_SEQUENCE.toString())
+                assertThat(it["typeSequence"]).isEqualTo("$TYPE_SEQUENCE")
               },
               isNull(),
             )
@@ -337,10 +359,10 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
           verify(telemetryClient, Times(0)).trackEvent(
             eq("non-association-created-synchronisation-success"),
             check {
-              assertThat(it["nonAssociationId"]).isEqualTo("654321")
+              assertThat(it["nonAssociationId"]).isEqualTo("$NON_ASSOCIATION_ID")
               assertThat(it["firstOffenderNo"]).isEqualTo(OFFENDER_B)
               assertThat(it["secondOffenderNo"]).isEqualTo(OFFENDER_A)
-              assertThat(it["typeSequence"]).isEqualTo(TYPE_SEQUENCE.toString())
+              assertThat(it["typeSequence"]).isEqualTo("$TYPE_SEQUENCE")
             },
             isNull(),
           )
@@ -386,8 +408,134 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         }
 
         @Test
+        fun `will not attempt to get mapping data`() {
+          mappingApi.verify(exactly(0), getRequestedFor(anyUrl()))
+        }
+
+        @Test
         fun `will not create telemetry tracking`() {
           verify(telemetryClient, Times(0)).trackEvent(any(), any(), isNull())
+        }
+      }
+
+      @Nested
+      inner class WhenDuplicateMapping {
+
+        private val duplicationNonAssociationId = 1234L
+
+        @Test
+        internal fun `it will not retry after a 409 (duplicate non-association written to Non-association API)`() {
+          nomisApi.stubGetNonAssociation(offenderNo = OFFENDER_A, nsOffenderNo = OFFENDER_B, typeSequence = TYPE_SEQUENCE)
+          mappingApi.stubAllMappingsNotFound(nomisMappingApiUrl)
+          nonAssociationsApi.stubUpsertNonAssociationForSynchronisation(nonAssociationId = duplicationNonAssociationId, firstOffenderNo = OFFENDER_A, secondOffenderNo = OFFENDER_B)
+          mappingApi.stubNonAssociationMappingCreateConflict(
+            nonAssociationId = NON_ASSOCIATION_ID,
+            duplicateNonAssociationId = duplicationNonAssociationId,
+          )
+
+          awsSqsNonAssociationsOffenderEventsClient.sendMessage(
+            nonAssociationsQueueOffenderEventsUrl,
+            nonAssociationEvent(
+              eventType = "NON_ASSOCIATION_DETAIL-UPSERTED",
+              auditModuleName = "OIDSENAD",
+              offenderIdDisplay = OFFENDER_A,
+              nsOffenderIdDisplay = OFFENDER_B,
+            ),
+          )
+
+          // wait for all mappings to be created before verifying
+          await untilCallTo { mappingApi.createMappingCount(NON_ASSOCIATIONS_CREATE_MAPPING_URL) } matches { it == 1 }
+
+          // check that one non-association is created
+          assertThat(nonAssociationsApi.createNonAssociationSynchronisationCount()).isEqualTo(1)
+
+          // doesn't retry
+          mappingApi.verifyCreateMappingNonAssociation(arrayOf(duplicationNonAssociationId), times = 1)
+
+          verify(telemetryClient).trackEvent(
+            eq("from-nomis-synch-non-association-duplicate"),
+            check {
+              assertThat(it["duplicateNonAssociationId"]).isEqualTo("$duplicationNonAssociationId")
+              assertThat(it["duplicateFirstOffenderNo"]).isEqualTo("A1234BC")
+              assertThat(it["duplicateSecondOffenderNo"]).isEqualTo("D5678EF")
+              assertThat(it["duplicateNomisTypeSequence"]).isEqualTo("2")
+              assertThat(it["existingNonAssociationId"]).isEqualTo("$NON_ASSOCIATION_ID")
+              assertThat(it["existingFirstOffenderNo"]).isEqualTo("A1234BC")
+              assertThat(it["existingSecondOffenderNo"]).isEqualTo("D5678EF")
+              assertThat(it["existingNomisTypeSequence"]).isEqualTo("2")
+              assertThat(it["migrationId"]).isNull()
+            },
+            isNull(),
+          )
+        }
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("NON_ASSOCIATION_DETAIL-DELETED")
+  inner class NonAssociationDetailDeleted {
+
+    @Nested
+    inner class WhenDeleteByDPS {
+      @BeforeEach
+      fun setUp() {
+        awsSqsNonAssociationsOffenderEventsClient.sendMessage(
+          nonAssociationsQueueOffenderEventsUrl,
+          nonAssociationEvent(
+            eventType = "NON_ASSOCIATION_DETAIL-DELETED",
+            auditModuleName = "DPS_SYNCHRONISATION",
+            offenderIdDisplay = OFFENDER_A,
+            nsOffenderIdDisplay = OFFENDER_B,
+          ),
+        )
+      }
+
+      @Test
+      fun `the event is ignored`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            eq("non-association-delete-synchronisation-skipped"),
+            check {
+              assertThat(it["firstOffenderNo"]).isEqualTo(OFFENDER_A)
+              assertThat(it["secondOffenderNo"]).isEqualTo(OFFENDER_B)
+            },
+            isNull(),
+          )
+        }
+        nomisApi.verify(exactly(0), anyRequestedFor(anyUrl()))
+        mappingApi.verify(exactly(0), getRequestedFor(anyUrl()))
+        nonAssociationsApi.verify(exactly(0), anyRequestedFor(anyUrl()))
+      }
+    }
+
+    @Nested
+    inner class WhenDeleteByNomisSuccess {
+      @BeforeEach
+      fun setUp() {
+        awsSqsNonAssociationsOffenderEventsClient.sendMessage(
+          nonAssociationsQueueOffenderEventsUrl,
+          nonAssociationEvent(
+            eventType = "NON_ASSOCIATION_DETAIL-DELETED",
+            auditModuleName = "OIDSENAD",
+            offenderIdDisplay = OFFENDER_A,
+            nsOffenderIdDisplay = OFFENDER_B,
+          ),
+        )
+      }
+
+      @Test
+      fun `will create telemetry tracking the delete`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            eq("non-association-delete-synchronisation-success"),
+            check {
+              assertThat(it["firstOffenderNo"]).isEqualTo(OFFENDER_A)
+              assertThat(it["secondOffenderNo"]).isEqualTo(OFFENDER_B)
+              assertThat(it["typeSequence"]).isEqualTo("$TYPE_SEQUENCE")
+            },
+            isNull(),
+          )
         }
       }
     }

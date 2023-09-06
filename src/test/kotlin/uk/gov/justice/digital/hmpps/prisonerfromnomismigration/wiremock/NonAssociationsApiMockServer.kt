@@ -2,9 +2,11 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
-import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.put
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
@@ -47,9 +49,12 @@ class NonAssociationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubUpsertNonAssociationForSynchronisation(nonAssociationId: Long = 654321, firstOffenderNo: String = "A1234BC", secondOffenderNo: String = "D5678EF") {
+  fun createNonAssociationSynchronisationCount() =
+    findAll(putRequestedFor(urlMatching("/sync/upsert"))).count()
+
+  fun stubUpsertNonAssociationForSynchronisation(nonAssociationId: Long = 4321, firstOffenderNo: String = "A1234BC", secondOffenderNo: String = "D5678EF") {
     stubFor(
-      WireMock.put(WireMock.urlMatching("/sync/upsert")).willReturn(
+      put(urlMatching("/sync/upsert")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.CREATED.value())

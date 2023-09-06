@@ -44,11 +44,10 @@ class NonAssociationsPrisonOffenderEventListener(
                   sqsMessage.Message.fromJson(),
                 )
 
-              "NON_ASSOCIATION_DETAIL-DELETED" -> log.debug(
-                "NON_ASSOCIATION_DETAIL-DELETED received",
-                // nonAssociationsSynchronisationService.synchroniseNonAssociationsDelete(
-                (sqsMessage.Message.fromJson()),
-              )
+              "NON_ASSOCIATION_DETAIL-DELETED" ->
+                nonAssociationsSynchronisationService.synchroniseNonAssociationDelete(
+                  sqsMessage.Message.fromJson(),
+                )
 
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }

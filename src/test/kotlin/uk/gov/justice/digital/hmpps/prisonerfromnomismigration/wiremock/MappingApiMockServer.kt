@@ -697,6 +697,59 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun verifyCreateMappingNonAssociation(nonAssociationIds: Array<Long>, times: Int = 1) =
+    nonAssociationIds.forEach {
+      verify(
+        times,
+        postRequestedFor(urlPathEqualTo("/mapping/non-associations")).withRequestBody(
+          matchingJsonPath(
+            "nonAssociationId",
+            equalTo(it.toString()),
+          ),
+        ),
+      )
+    }
+
+  fun stubNonAssociationMappingCreateConflict(
+    nonAssociationId: Long,
+    duplicateNonAssociationId: Long,
+  ) {
+    stubFor(
+      post(urlPathEqualTo("/mapping/non-associations"))
+        .willReturn(
+          aResponse()
+            .withStatus(409)
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
+              "moreInfo": 
+              {
+                "existing" :  {
+                  "nonAssociationId": $nonAssociationId,
+                  "firstOffenderNo": "A1234BC",
+                  "secondOffenderNo": "D5678EF",
+                  "nomisTypeSequence": 2,
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "NOMIS_CREATED"
+                 },
+                 "duplicate" : {
+                  "nonAssociationId": $duplicateNonAssociationId,
+                  "firstOffenderNo": "A1234BC",
+                  "secondOffenderNo": "D5678EF",
+                  "nomisTypeSequence": 2,
+                  "activityScheduleId": 123,
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                   "mappingType": "NOMIS_CREATED"
+                }
+              }
+              }""",
+            ),
+        ),
+    )
+  }
+
   fun stubNonAssociationsMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 54327) {
     val content = """{
       "nonAssociationId": 14478,
