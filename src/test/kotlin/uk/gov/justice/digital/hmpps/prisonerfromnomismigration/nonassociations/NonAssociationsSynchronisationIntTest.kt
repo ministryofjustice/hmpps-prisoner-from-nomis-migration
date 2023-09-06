@@ -419,6 +419,71 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Nested
+      inner class WhenUpdateByNomisSuccess {
+        @BeforeEach
+        fun setUp() {
+          nomisApi.stubGetNonAssociation(offenderNo = OFFENDER_A, nsOffenderNo = OFFENDER_B, typeSequence = TYPE_SEQUENCE)
+          mappingApi.stubGetNonAssociation(firstOffenderNo = OFFENDER_A, secondOffenderNo = OFFENDER_B)
+          nonAssociationsApi.stubUpsertNonAssociationForSynchronisation(firstOffenderNo = OFFENDER_A, secondOffenderNo = OFFENDER_B)
+
+          awsSqsNonAssociationsOffenderEventsClient.sendMessage(
+            nonAssociationsQueueOffenderEventsUrl,
+            nonAssociationEvent(
+              eventType = "NON_ASSOCIATION_DETAIL-UPSERTED",
+              auditModuleName = "OIDSENAD",
+              offenderIdDisplay = OFFENDER_A,
+              nsOffenderIdDisplay = OFFENDER_B,
+            ),
+          )
+        }
+
+        @Test
+        fun `will retrieve details about the non-association from NOMIS`() {
+          await untilAsserted {
+            nomisApi.verify(getRequestedFor(urlEqualTo(nomisApiUrl)))
+          }
+        }
+
+        @Test
+        fun `will retrieve mapping to check if this is a new non-association`() {
+          await untilAsserted {
+            mappingApi.verify(getRequestedFor(urlPathEqualTo(nomisMappingApiUrl)))
+          }
+        }
+
+        @Test
+        fun `will send the update to the non-association in the non-associations service`() {
+          await untilAsserted {
+            nonAssociationsApi.verify(putRequestedFor(urlPathEqualTo("/sync/upsert")))
+          }
+        }
+
+        @Test
+        fun `will not add a new mapping between the two records`() {
+          await untilAsserted {
+            verify(telemetryClient, Times(1)).trackEvent(any(), any(), isNull())
+            mappingApi.verify(exactly(0), postRequestedFor(anyUrl()))
+          }
+        }
+
+        @Test
+        fun `will create telemetry tracking the create`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("non-association-updated-synchronisation-success"),
+              check {
+                assertThat(it["nonAssociationId"]).isEqualTo("14478")
+                assertThat(it["firstOffenderNo"]).isEqualTo(OFFENDER_A)
+                assertThat(it["secondOffenderNo"]).isEqualTo(OFFENDER_B)
+                assertThat(it["typeSequence"]).isEqualTo("$TYPE_SEQUENCE")
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
       inner class WhenDuplicateMapping {
 
         private val duplicationNonAssociationId = 1234L

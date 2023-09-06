@@ -750,6 +750,22 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubGetNonAssociation(firstOffenderNo: String = "A1234BC", secondOffenderNo: String = "D5678EF", typeSequence: Int = 1) {
+    val content = """{
+      "nonAssociationId": 14478,
+      "firstOffenderNo": "$firstOffenderNo",                                       
+      "secondOffenderNo": "$secondOffenderNo",                   
+      "nomisTypeSequence": $typeSequence,    
+      "label": "2022-02-14T09:58:45",
+      "whenCreated": "2020-01-01T11:10:00",
+      "mappingType": "NOMIS_CREATED"
+    }"""
+    stubFor(
+      get(urlPathMatching("/mapping/non-associations/first-offender-no/$firstOffenderNo/second-offender-no/$secondOffenderNo/type-sequence/$typeSequence"))
+        .willReturn(okJson(content)),
+    )
+  }
+
   fun stubNonAssociationsMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 54327) {
     val content = """{
       "nonAssociationId": 14478,
