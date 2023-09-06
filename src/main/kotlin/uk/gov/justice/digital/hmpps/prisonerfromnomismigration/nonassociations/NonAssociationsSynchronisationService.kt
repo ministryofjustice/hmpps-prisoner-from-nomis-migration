@@ -7,14 +7,14 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.NonAssociationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.NonAssociationMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.NonAssociationsSynchronisationService.MappingResponse.MAPPING_FAILED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.NON_ASSOCIATIONS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.toUpsertSyncRequest
 
 @Service
@@ -76,6 +76,61 @@ class NonAssociationsSynchronisationService(
     }
   }
 
+  suspend fun synchroniseNonAssociationDelete(event: NonAssociationsOffenderEvent) {
+    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      telemetryClient.trackEvent(
+        "non-association-delete-synchronisation-skipped",
+        event.toTelemetryProperties(),
+      )
+      return
+    }
+
+    /* TODO investigate if need primary check
+    if (event.isNotPrimaryNonAssociation()) {
+      telemetryClient.trackEvent(
+        "non-association-delete-synchronisation-non-primary-skipped",
+        event.toTelemetryProperties(),
+      )
+      return
+    }
+    */
+
+    telemetryClient.trackEvent(
+      "non-association-delete-synchronisation-success",
+      event.toTelemetryProperties(),
+    )
+
+    /* TODO add actual delete sync
+    nomisApiService.getNonAssociation(event.offenderIdDisplay, event.nsOffenderIdDisplay, event.typeSequence)
+      .also {
+        nonAssociationsService.deleteNonAssociation(
+          DeleteSyncRequest(
+            firstPrisonerNumber = event.offenderIdDisplay,
+            secondPrisonerNumber = event.nsOffenderIdDisplay
+          ),
+          // nomisTypeSequence = event.typeSequence,
+        )
+
+        nonAssociationsMappingService.deleteNomisNonAssociationMapping(
+          firstOffenderNo = event.offenderIdDisplay,
+          secondOffenderNo = event.nsOffenderIdDisplay,
+          nomisTypeSequence = event.typeSequence,
+        )
+      }
+          ?.let {
+          telemetryClient.trackEvent(
+            "non-association-delete-synchronisation-success",
+            event.toTelemetryProperties(),
+          )
+        } ?: let {
+          telemetryClient.trackEvent(
+            "non-association-delete-synchronisation-ignored",
+            event.toTelemetryProperties(),
+          )
+        }
+     */
+  }
+
   enum class MappingResponse {
     MAPPING_CREATED,
     MAPPING_FAILED,
@@ -123,8 +178,8 @@ class NonAssociationsSynchronisationService(
         e,
       )
       queueService.sendMessage(
-        messageType = SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING.name,
-        synchronisationType = SynchronisationType.NON_ASSOCIATIONS,
+        messageType = RETRY_SYNCHRONISATION_MAPPING.name,
+        synchronisationType = NON_ASSOCIATIONS,
         message = mapping,
         telemetryAttributes = event.toTelemetryProperties(nonAssociationId),
       )
