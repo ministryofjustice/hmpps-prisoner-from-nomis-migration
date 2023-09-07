@@ -766,6 +766,17 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubNonAssociationMappingDelete(firstOffenderNo: String = "A1234BC", secondOffenderNo: String = "D5678EF", typeSequence: Int = 1) {
+    stubFor(
+      delete(urlEqualTo("/mapping/non-associations/first-offender-no/$firstOffenderNo/second-offender-no/$secondOffenderNo/type-sequence/$typeSequence"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NO_CONTENT.value()),
+        ),
+    )
+  }
+
   fun stubNonAssociationsMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 54327) {
     val content = """{
       "nonAssociationId": 14478,

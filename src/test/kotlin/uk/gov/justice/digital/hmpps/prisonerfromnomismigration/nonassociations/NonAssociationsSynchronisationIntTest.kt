@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.exactly
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
@@ -35,8 +36,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NonAssoc
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 
 private const val NON_ASSOCIATION_ID = 4321L
-private const val OFFENDER_A = "A4803BG"
-private const val OFFENDER_B = "G4803UT"
+private const val OFFENDER_A = "A1234BC"
+private const val OFFENDER_B = "D5678EF"
 private const val TYPE_SEQUENCE = 1
 private const val nomisApiUrl = "/non-associations/offender/$OFFENDER_A/ns-offender/$OFFENDER_B?typeSequence=$TYPE_SEQUENCE"
 private const val nomisMappingApiUrl = "/mapping/non-associations/first-offender-no/$OFFENDER_A/second-offender-no/$OFFENDER_B/type-sequence/$TYPE_SEQUENCE"
@@ -53,13 +54,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         awsSqsNonAssociationsOffenderEventsClient.sendMessage(
           nonAssociationsQueueOffenderEventsUrl,
-          nonAssociationEvent(
-            eventType = "NON_ASSOCIATION_DETAIL-UPSERTED",
-            auditModuleName = "DPS_SYNCHRONISATION",
-
-            offenderIdDisplay = OFFENDER_A,
-            nsOffenderIdDisplay = OFFENDER_B,
-          ),
+          nonAssociationEvent(auditModuleName = "DPS_SYNCHRONISATION"),
         )
       }
 
@@ -98,12 +93,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
           awsSqsNonAssociationsOffenderEventsClient.sendMessage(
             nonAssociationsQueueOffenderEventsUrl,
-            nonAssociationEvent(
-              eventType = "NON_ASSOCIATION_DETAIL-UPSERTED",
-              auditModuleName = "OIDSENAD",
-              offenderIdDisplay = OFFENDER_A,
-              nsOffenderIdDisplay = OFFENDER_B,
-            ),
+            nonAssociationEvent(),
           )
         }
 
@@ -169,12 +159,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
           awsSqsNonAssociationsOffenderEventsClient.sendMessage(
             nonAssociationsQueueOffenderEventsUrl,
-            nonAssociationEvent(
-              eventType = "NON_ASSOCIATION_DETAIL-UPSERTED",
-              auditModuleName = "OIDSENAD",
-              offenderIdDisplay = OFFENDER_A,
-              nsOffenderIdDisplay = OFFENDER_B,
-            ),
+            nonAssociationEvent(),
           )
         }
 
@@ -236,8 +221,6 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
           awsSqsNonAssociationsOffenderEventsClient.sendMessage(
             nonAssociationsQueueOffenderEventsUrl,
             nonAssociationEvent(
-              eventType = "NON_ASSOCIATION_DETAIL-UPSERTED",
-              auditModuleName = "OIDSENAD",
               offenderIdDisplay = OFFENDER_B,
               nsOffenderIdDisplay = OFFENDER_A,
             ),
@@ -296,18 +279,11 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
           awsSqsNonAssociationsOffenderEventsClient.sendMessage(
             nonAssociationsQueueOffenderEventsUrl,
-            nonAssociationEvent(
-              eventType = "NON_ASSOCIATION_DETAIL-UPSERTED",
-              auditModuleName = "OIDSENAD",
-              offenderIdDisplay = OFFENDER_A,
-              nsOffenderIdDisplay = OFFENDER_B,
-            ),
+            nonAssociationEvent(),
           )
           awsSqsNonAssociationsOffenderEventsClient.sendMessage(
             nonAssociationsQueueOffenderEventsUrl,
             nonAssociationEvent(
-              eventType = "NON_ASSOCIATION_DETAIL-UPSERTED",
-              auditModuleName = "OIDSENAD",
               offenderIdDisplay = OFFENDER_B,
               nsOffenderIdDisplay = OFFENDER_A,
             ),
@@ -392,12 +368,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
           awsSqsNonAssociationsOffenderEventsClient.sendMessage(
             nonAssociationsQueueOffenderEventsUrl,
-            nonAssociationEvent(
-              eventType = "NON_ASSOCIATION_DETAIL-UPSERTED",
-              auditModuleName = "OIDSENAD",
-              offenderIdDisplay = OFFENDER_A,
-              nsOffenderIdDisplay = OFFENDER_B,
-            ),
+            nonAssociationEvent(),
           )
           awsSqsNonAssociationsOffenderEventDlqClient.waitForMessageCountOnQueue(nonAssociationsQueueOffenderEventsDlqUrl, 1)
         }
@@ -428,12 +399,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
           awsSqsNonAssociationsOffenderEventsClient.sendMessage(
             nonAssociationsQueueOffenderEventsUrl,
-            nonAssociationEvent(
-              eventType = "NON_ASSOCIATION_DETAIL-UPSERTED",
-              auditModuleName = "OIDSENAD",
-              offenderIdDisplay = OFFENDER_A,
-              nsOffenderIdDisplay = OFFENDER_B,
-            ),
+            nonAssociationEvent(),
           )
         }
 
@@ -500,12 +466,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
           awsSqsNonAssociationsOffenderEventsClient.sendMessage(
             nonAssociationsQueueOffenderEventsUrl,
-            nonAssociationEvent(
-              eventType = "NON_ASSOCIATION_DETAIL-UPSERTED",
-              auditModuleName = "OIDSENAD",
-              offenderIdDisplay = OFFENDER_A,
-              nsOffenderIdDisplay = OFFENDER_B,
-            ),
+            nonAssociationEvent(),
           )
 
           // wait for all mappings to be created before verifying
@@ -550,8 +511,6 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
           nonAssociationEvent(
             eventType = "NON_ASSOCIATION_DETAIL-DELETED",
             auditModuleName = "DPS_SYNCHRONISATION",
-            offenderIdDisplay = OFFENDER_A,
-            nsOffenderIdDisplay = OFFENDER_B,
           ),
         )
       }
@@ -575,28 +534,145 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
     }
 
     @Nested
-    inner class WhenDeleteByNomisSuccess {
-      @BeforeEach
-      fun setUp() {
-        awsSqsNonAssociationsOffenderEventsClient.sendMessage(
-          nonAssociationsQueueOffenderEventsUrl,
-          nonAssociationEvent(
-            eventType = "NON_ASSOCIATION_DETAIL-DELETED",
-            auditModuleName = "OIDSENAD",
-            offenderIdDisplay = OFFENDER_A,
-            nsOffenderIdDisplay = OFFENDER_B,
-          ),
-        )
+    @DisplayName("When there is a delete Non-association")
+    inner class WhenDeleteByNomis {
+
+      @Nested
+      inner class WhenDeleteByNomisSuccess {
+        @BeforeEach
+        fun setUp() {
+          mappingApi.stubGetNonAssociation(OFFENDER_A, OFFENDER_B, TYPE_SEQUENCE)
+          nonAssociationsApi.stubDeleteNonAssociationForSynchronisation()
+          mappingApi.stubNonAssociationMappingDelete(OFFENDER_A, OFFENDER_B, TYPE_SEQUENCE)
+
+          awsSqsNonAssociationsOffenderEventsClient.sendMessage(
+            nonAssociationsQueueOffenderEventsUrl,
+            nonAssociationEvent(
+              eventType = "NON_ASSOCIATION_DETAIL-DELETED",
+              auditModuleName = "OIUDNONA",
+            ),
+          )
+        }
+
+        @Test
+        fun `will retrieve mapping`() {
+          await untilAsserted {
+            mappingApi.verify(getRequestedFor(urlPathEqualTo(nomisMappingApiUrl)))
+          }
+        }
+
+        @Test
+        fun `will delete the non-association in the non-associations service`() {
+          await untilAsserted {
+            nonAssociationsApi.verify(deleteRequestedFor(urlPathEqualTo("/sync/delete")))
+          }
+        }
+
+        @Test
+        fun `will delete mapping`() {
+          await untilAsserted {
+            mappingApi.verify(deleteRequestedFor(urlPathEqualTo(nomisMappingApiUrl)))
+          }
+        }
+
+        @Test
+        fun `will create telemetry tracking the delete`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("non-association-delete-synchronisation-success"),
+              check {
+                assertThat(it["firstOffenderNo"]).isEqualTo(OFFENDER_A)
+                assertThat(it["secondOffenderNo"]).isEqualTo(OFFENDER_B)
+                assertThat(it["typeSequence"]).isEqualTo("$TYPE_SEQUENCE")
+              },
+              isNull(),
+            )
+          }
+        }
       }
 
-      @Test
-      fun `will create telemetry tracking the delete`() {
-        await untilAsserted {
+      @Nested
+      inner class WhenDeleteByNomisWithNoMapping {
+        @BeforeEach
+        fun setUp() {
+          mappingApi.stubAllMappingsNotFound(nomisMappingApiUrl)
+
+          awsSqsNonAssociationsOffenderEventsClient.sendMessage(
+            nonAssociationsQueueOffenderEventsUrl,
+            nonAssociationEvent(
+              eventType = "NON_ASSOCIATION_DETAIL-DELETED",
+              auditModuleName = "OIUDNONA",
+            ),
+          )
+          await untilAsserted {
+            verify(telemetryClient, Times(1)).trackEvent(any(), any(), isNull())
+          }
+        }
+
+        @Test
+        fun `will attempt to retrieve mapping`() {
+          mappingApi.verify(getRequestedFor(urlPathEqualTo(nomisMappingApiUrl)))
+        }
+
+        @Test
+        fun `will not delete the non-association in the non-associations service`() {
+          nonAssociationsApi.verify(exactly(0), deleteRequestedFor(anyUrl()))
+        }
+
+        @Test
+        fun `will not attempt to delete a mapping`() {
+          mappingApi.verify(exactly(0), deleteRequestedFor(anyUrl()))
+        }
+
+        @Test
+        fun `will create telemetry tracking the ignored delete`() {
           verify(telemetryClient).trackEvent(
-            eq("non-association-delete-synchronisation-success"),
+            eq("non-association-delete-synchronisation-ignored"),
             check {
               assertThat(it["firstOffenderNo"]).isEqualTo(OFFENDER_A)
               assertThat(it["secondOffenderNo"]).isEqualTo(OFFENDER_B)
+              assertThat(it["typeSequence"]).isEqualTo("$TYPE_SEQUENCE")
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      inner class WhenOffenderOrderingInNonAssociationNotAlphabetical {
+        @BeforeEach
+        fun setUp() {
+          awsSqsNonAssociationsOffenderEventsClient.sendMessage(
+            nonAssociationsQueueOffenderEventsUrl,
+            nonAssociationEvent(
+              eventType = "NON_ASSOCIATION_DETAIL-DELETED",
+              auditModuleName = "OIUDNONA",
+              offenderIdDisplay = OFFENDER_B,
+              nsOffenderIdDisplay = OFFENDER_A,
+            ),
+          )
+          await untilAsserted {
+            verify(telemetryClient, Times(1)).trackEvent(any(), any(), isNull())
+          }
+        }
+
+        @Test
+        fun `will not attempt to get mapping data`() {
+          mappingApi.verify(exactly(0), getRequestedFor(anyUrl()))
+        }
+
+        @Test
+        fun `will not call the non-associations service`() {
+          nonAssociationsApi.verify(exactly(0), anyRequestedFor(anyUrl()))
+        }
+
+        @Test
+        fun `will create telemetry tracking the non-primary ignore`() {
+          verify(telemetryClient).trackEvent(
+            eq("non-association-delete-synchronisation-non-primary-skipped"),
+            check {
+              assertThat(it["firstOffenderNo"]).isEqualTo(OFFENDER_B)
+              assertThat(it["secondOffenderNo"]).isEqualTo(OFFENDER_A)
               assertThat(it["typeSequence"]).isEqualTo("$TYPE_SEQUENCE")
             },
             isNull(),
@@ -614,10 +690,10 @@ fun SqsAsyncClient.waitForMessageCountOnQueue(queueUrl: String, messageCount: In
   } matches { it == messageCount }
 
 fun nonAssociationEvent(
-  eventType: String,
+  eventType: String = "NON_ASSOCIATION_DETAIL-UPSERTED",
   offenderIdDisplay: String = OFFENDER_A,
   nsOffenderIdDisplay: String = OFFENDER_B,
-  auditModuleName: String = "OIDSENAD",
+  auditModuleName: String = "OIDONONA",
 ) = """{
     "Type" : "Notification",
     "MessageId" : "be8e7273-0446-5590-8c7f-2f24e966322e",
