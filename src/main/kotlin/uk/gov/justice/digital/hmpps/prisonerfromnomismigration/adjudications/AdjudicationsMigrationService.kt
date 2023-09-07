@@ -129,7 +129,7 @@ private fun AdjudicationCharge.toEvidence(incident: AdjudicationIncident): List<
 private fun Staff.toWitness(type: WitnessType) = MigrateWitness(
   firstName = this.firstName,
   lastName = this.lastName,
-  createdBy = this.createdByUsername,
+  createdBy = this.createdByUsername!!, // never null for a witness
   type,
   dateAdded = (this.dateAddedToIncident ?: LocalDate.now()).format(DateTimeFormatter.ISO_LOCAL_DATE),
   comment = this.comment,
