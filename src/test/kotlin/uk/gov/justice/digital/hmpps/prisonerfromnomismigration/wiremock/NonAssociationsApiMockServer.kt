@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
+import org.springframework.http.HttpStatus.NO_CONTENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.model.NonAssociation
 
 class NonAssociationsApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
@@ -49,9 +51,6 @@ class NonAssociationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun createNonAssociationSynchronisationCount() =
-    findAll(putRequestedFor(urlMatching("/sync/upsert"))).count()
-
   fun stubUpsertNonAssociationForSynchronisation(nonAssociationId: Long = 4321, firstOffenderNo: String = "A1234BC", secondOffenderNo: String = "D5678EF") {
     stubFor(
       put(urlMatching("/sync/upsert")).willReturn(
@@ -86,6 +85,19 @@ class NonAssociationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       ),
     )
   }
+
+  fun stubDeleteNonAssociationForSynchronisation() {
+    stubFor(
+      delete(urlMatching("/sync/delete")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(NO_CONTENT.value()),
+      ),
+    )
+  }
+
+  fun createNonAssociationSynchronisationCount() =
+    findAll(putRequestedFor(urlMatching("/sync/upsert"))).count()
 }
 
 private fun Any.toJson(): String = ObjectMapper().writeValueAsString(this)

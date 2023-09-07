@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
+import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.NonAssociationMappingDto
@@ -32,14 +33,18 @@ class NonAssociationsMappingService(@Qualifier("mappingApiWebClient") webClient:
       }
       .awaitSingleOrNull()
 
-/*
-  TODO add delete mapping
   suspend fun deleteNomisNonAssociationMapping(
-    nonAssociationId: Long,
+    firstOffenderNo: String,
+    secondOffenderNo: String,
+    nomisTypeSequence: Int,
   ): Unit =
     webClient.delete()
-      .uri("/mapping/non-associations/non-association-id/$nonAssociationId")
+      .uri(
+        "/mapping/non-associations/first-offender-no/{firstOffenderNo}/second-offender-no/{secondOffenderNo}/type-sequence/{typeSequence}",
+        firstOffenderNo,
+        secondOffenderNo,
+        nomisTypeSequence,
+      )
       .retrieve()
       .awaitBody()
- */
 }
