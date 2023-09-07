@@ -1079,7 +1079,8 @@ fun adjudicationResponse(
                 }
             ],
             "createdDateTime": "2023-08-07T16:56:17.018049",
-            "createdByUsername": "AMARKE_GEN"
+            "createdByUsername": "AMARKE_GEN",
+            "notifications": []
         }
     ]
 }    
