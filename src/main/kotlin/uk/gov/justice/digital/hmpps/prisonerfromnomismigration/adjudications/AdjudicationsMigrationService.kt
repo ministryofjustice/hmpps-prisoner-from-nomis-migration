@@ -8,6 +8,7 @@ import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.AdjudicationMigrateDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.DisIssued
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateDamage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateDamage.DamageType.CLEANING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateDamage.DamageType.ELECTRICAL_REPAIR
@@ -31,6 +32,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigratePunishment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateWitness
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateWitness.WitnessType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateWitness.WitnessType.OTHER_PERSON
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateWitness.WitnessType.PRISONER
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateWitness.WitnessType.STAFF
@@ -43,14 +45,19 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AdjudicationHearingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AdjudicationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AdjudicationPunishmentMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationIncident
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Evidence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Hearing
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.HearingNotification
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.HearingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.HearingResultAward
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Prisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Repair
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Staff
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
@@ -58,7 +65,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -89,76 +95,60 @@ fun AdjudicationChargeResponse.toAdjudication(): AdjudicationMigrateDto =
       offenceCode = this.charge.offence.code,
       offenceDescription = this.charge.offence.description,
     ),
-    witnesses = this.incident.staffWitnesses.map {
-      MigrateWitness(
-        firstName = it.firstName,
-        lastName = it.lastName,
-        createdBy = it.createdByUsername,
-        STAFF,
-        // TODO get the correct added data from NOMIS API
-        dateAdded = this.incident.createdDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-      )
-    } + this.incident.prisonerWitnesses.map {
-      MigrateWitness(
-        firstName = it.firstName ?: "",
-        lastName = it.lastName,
-        createdBy = it.createdByUsername,
-        OTHER_PERSON,
-        // TODO get the correct added data from NOMIS API
-        dateAdded = this.incident.createdDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-      )
-    } + this.incident.staffVictims.map {
-      MigrateWitness(
-        firstName = it.firstName,
-        lastName = it.lastName,
-        createdBy = it.createdByUsername,
-        VICTIM,
-        // TODO get the correct added data from NOMIS API
-        dateAdded = this.incident.createdDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-      )
-    } + this.incident.prisonerVictims.map {
-      MigrateWitness(
-        firstName = it.firstName ?: "",
-        lastName = it.lastName,
-        createdBy = it.createdByUsername,
-        VICTIM,
-        // TODO get the correct added data from NOMIS API
-        dateAdded = this.incident.createdDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-      )
-    } + this.incident.otherPrisonersInvolved.map {
-      MigrateWitness(
-        firstName = it.firstName ?: "",
-        lastName = it.lastName,
-        createdBy = it.createdByUsername,
-        PRISONER,
-        // TODO get the correct added data from NOMIS API
-        dateAdded = this.incident.createdDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-      )
-    } + this.incident.reportingOfficers.map {
-      MigrateWitness(
-        firstName = it.firstName,
-        lastName = it.lastName,
-        createdBy = it.createdByUsername,
-        OTHER_PERSON,
-        // TODO get the correct added data from NOMIS API
-        dateAdded = this.incident.createdDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-      )
-    } + this.incident.otherStaffInvolved.map {
-      MigrateWitness(
-        firstName = it.firstName,
-        lastName = it.lastName,
-        createdBy = it.createdByUsername,
-        OTHER_PERSON,
-        // TODO get the correct added data from NOMIS API
-        dateAdded = this.incident.createdDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-      )
-    },
+    witnesses = this.incident.staffWitnesses.map { it.toWitness(STAFF) } +
+      this.incident.prisonerWitnesses.map { it.toWitness(OTHER_PERSON) } +
+      this.incident.staffVictims.map { it.toWitness(VICTIM) } +
+      this.incident.prisonerVictims.map { it.toWitness(VICTIM) } +
+      this.incident.otherPrisonersInvolved.map { it.toWitness(PRISONER) } +
+      this.incident.reportingOfficers.map { it.toWitness(OTHER_PERSON) } +
+      this.incident.otherStaffInvolved.map { it.toWitness(OTHER_PERSON) },
     damages = this.incident.repairs.map { it.toDamage() },
-    evidence = this.investigations.flatMap { investigation -> investigation.evidence.map { it.toEvidence() } },
+    evidence = this.investigations.flatMap { investigation -> investigation.evidence.map { it.toEvidence() } } + this.charge.toEvidence(incident),
     punishments = this.hearings.flatMap { it.toHearingResultAwards() },
     hearings = this.hearings.map { it.toHearing() },
-    disIssued = emptyList(), // TODO - get notification list
+    disIssued = this.hearings.flatMap { hearing -> hearing.notifications.map { it.toIssued() } },
   )
+
+private fun AdjudicationCharge.toEvidence(incident: AdjudicationIncident): List<MigrateEvidence> =
+  this.takeUnless { it.evidence.isNullOrEmpty() && it.reportDetail.isNullOrEmpty() }.let { charge ->
+    return charge?.let {
+      listOf(
+        MigrateEvidence(
+          evidenceCode = OTHER,
+          details = listOfNotNull(
+            charge.evidence.takeUnless { it.isNullOrEmpty() },
+            charge.reportDetail.takeUnless { it.isNullOrEmpty() },
+          ).joinToString(separator = " - "),
+          reporter = incident.reportingStaff.username,
+          dateAdded = incident.reportedDate.atStartOfDay().format(DateTimeFormatter.ISO_LOCAL_DATE),
+        ),
+      )
+    } ?: emptyList()
+  }
+
+private fun Staff.toWitness(type: WitnessType) = MigrateWitness(
+  firstName = this.firstName,
+  lastName = this.lastName,
+  createdBy = this.createdByUsername,
+  type,
+  dateAdded = (this.dateAddedToIncident ?: LocalDate.now()).format(DateTimeFormatter.ISO_LOCAL_DATE),
+  comment = this.comment,
+)
+
+private fun Prisoner.toWitness(type: WitnessType) = MigrateWitness(
+  firstName = this.firstName ?: "",
+  lastName = this.lastName,
+  createdBy = this.createdByUsername,
+  type,
+  dateAdded = this.dateAddedToIncident.format(DateTimeFormatter.ISO_LOCAL_DATE),
+  comment = this.comment,
+)
+
+private fun HearingNotification.toIssued() = DisIssued(
+  issuingOfficer = this.notifiedStaff.username,
+  dateTimeOfIssue = this.deliveryDate.atTime(LocalTime.parse(this.deliveryTime))
+    .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+)
 
 private fun Hearing.toHearingResultAwards(): List<MigratePunishment> =
   this.hearingResults
@@ -209,6 +199,7 @@ private fun Hearing.toHearing() = MigrateHearing(
   adjudicator = this.hearingStaff?.username,
   commentText = this.comment,
   hearingResult = this.hearingResults.toHearingResult(),
+  representative = this.representativeText,
 )
 
 private fun List<HearingResult>.toHearingResult(): MigrateHearingResult? =
@@ -231,7 +222,7 @@ private fun Evidence.toEvidence() = MigrateEvidence(
   },
   details = this.detail,
   reporter = this.createdByUsername,
-  dateAdded = this.date.atStartOfDay().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+  dateAdded = this.date.format(DateTimeFormatter.ISO_LOCAL_DATE),
 )
 
 private fun Repair.toDamage() = MigrateDamage(
@@ -246,8 +237,7 @@ private fun Repair.toDamage() = MigrateDamage(
   },
   details = this.comment,
   createdBy = this.createdByUsername,
-  // TODO get date of repair
-  dateAdded = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+  repairCost = this.cost,
 )
 
 @Service
