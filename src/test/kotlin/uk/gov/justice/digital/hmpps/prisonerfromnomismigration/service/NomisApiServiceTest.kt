@@ -882,10 +882,11 @@ internal class NomisApiServiceTest {
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpURLConnection.HTTP_OK)
             .withBody(
-              """
-                  {
+              """                
+                {
                   "offenderNo": "A1234BC",
                   "nsOffenderNo": "D5678EF",
+                  "typeSequence": 1,
                   "reason": "VIC",
                   "recipReason": "PER",
                   "type": "WING",
@@ -924,6 +925,7 @@ internal class NomisApiServiceTest {
       )
       assertThat(nonAssociation.offenderNo).isEqualTo("A1234BC")
       assertThat(nonAssociation.nsOffenderNo).isEqualTo("D5678EF")
+      assertThat(nonAssociation.typeSequence).isEqualTo(1)
       assertThat(nonAssociation.reason).isEqualTo("VIC")
       assertThat(nonAssociation.recipReason).isEqualTo("PER")
       assertThat(nonAssociation.type).isEqualTo("WING")
@@ -950,6 +952,7 @@ internal class NomisApiServiceTest {
                   {
                   "offenderNo": "A1234BC",
                   "nsOffenderNo": "D5678EF",
+                  "typeSequence": 1,
                   "reason": "VIC",
                   "recipReason": "PER",
                   "type": "WING",
@@ -970,6 +973,7 @@ internal class NomisApiServiceTest {
         )
         assertThat(nonAssociation.offenderNo).isEqualTo("A1234BC")
         assertThat(nonAssociation.nsOffenderNo).isEqualTo("D5678EF")
+        assertThat(nonAssociation.typeSequence).isEqualTo(1)
         assertThat(nonAssociation.reason).isEqualTo("VIC")
         assertThat(nonAssociation.recipReason).isEqualTo("PER")
         assertThat(nonAssociation.type).isEqualTo("WING")
@@ -1004,6 +1008,129 @@ internal class NomisApiServiceTest {
               offenderNo = "A1234BC",
               nsOffenderNo = "D5678EF",
               typeSequence = 1,
+            )
+          }
+        }.isInstanceOf(NotFound::class.java)
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("getNonAssociations")
+  inner class GetAllNonAssociations {
+    val nonAssociationsUrl = "/non-associations/offender/[A-Z]\\d{4}[A-Z]{2}/ns-offender/[A-Z]\\d{4}[A-Z]{2}\\/all"
+
+    @BeforeEach
+    internal fun setUp() {
+      nomisApi.stubFor(
+        get(
+          urlPathMatching(nonAssociationsUrl),
+        ).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpURLConnection.HTTP_OK)
+            .withBody(
+              """
+                [
+                  {
+                    "offenderNo": "A1234BC",
+                    "nsOffenderNo": "D5678EF",
+                    "typeSequence": 1,
+                    "reason": "VIC",
+                    "recipReason": "PER",
+                    "type": "WING",
+                    "authorisedBy": "Jim Smith",
+                    "effectiveDate": "2023-10-25",
+                    "expiryDate": "2023-10-26",
+                    "comment": "Fight on Wing C"
+                  },
+                  {
+                    "offenderNo": "A1234BC",
+                    "nsOffenderNo": "D5678EF",
+                    "typeSequence": 2,
+                    "reason": "RIV",
+                    "recipReason": "RIV",
+                    "type": "LAND",
+                    "effectiveDate": "2023-08-31",
+                    "expiryDate": "2023-09-01",
+                    "comment": "tester"
+                  }
+                ]
+              """.trimIndent(),
+            ),
+        ),
+      )
+    }
+
+    @Test
+    internal fun `will supply authentication token`(): Unit = runBlocking {
+      nomisService.getNonAssociations(
+        offenderNo = "A1234BC",
+        nsOffenderNo = "D5678EF",
+      )
+      nomisApi.verify(
+        getRequestedFor(
+          urlEqualTo("/non-associations/offender/A1234BC/ns-offender/D5678EF/all"),
+        )
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will return non-association data`(): Unit = runBlocking {
+      val nonAssociations = nomisService.getNonAssociations(
+        offenderNo = "A1234BC",
+        nsOffenderNo = "D5678EF",
+      )
+      with(nonAssociations[0]) {
+        assertThat(offenderNo).isEqualTo("A1234BC")
+        assertThat(nsOffenderNo).isEqualTo("D5678EF")
+        assertThat(typeSequence).isEqualTo(1)
+        assertThat(reason).isEqualTo("VIC")
+        assertThat(recipReason).isEqualTo("PER")
+        assertThat(type).isEqualTo("WING")
+        assertThat(authorisedBy).isEqualTo("Jim Smith")
+        assertThat(effectiveDate).isEqualTo(LocalDate.parse("2023-10-25"))
+        assertThat(expiryDate).isEqualTo(LocalDate.parse("2023-10-26"))
+        assertThat(comment).isEqualTo("Fight on Wing C")
+      }
+      with(nonAssociations[1]) {
+        assertThat(offenderNo).isEqualTo("A1234BC")
+        assertThat(nsOffenderNo).isEqualTo("D5678EF")
+        assertThat(typeSequence).isEqualTo(2)
+        assertThat(reason).isEqualTo("RIV")
+        assertThat(recipReason).isEqualTo("RIV")
+        assertThat(type).isEqualTo("LAND")
+        assertThat(authorisedBy).isNull()
+        assertThat(effectiveDate).isEqualTo(LocalDate.parse("2023-08-31"))
+        assertThat(expiryDate).isEqualTo(LocalDate.parse("2023-09-01"))
+        assertThat(comment).isEqualTo("tester")
+      }
+    }
+
+    @Nested
+    @DisplayName("when non-associations don't exist in NOMIS")
+    inner class WhenNotFound {
+      @BeforeEach
+      internal fun setUp() {
+        nomisApi.stubFor(
+          get(
+            urlMatching(nonAssociationsUrl),
+          ).willReturn(
+            aResponse()
+              .withHeader("Content-Type", "application/json")
+              .withStatus(HttpURLConnection.HTTP_NOT_FOUND),
+          ),
+        )
+      }
+
+      @Test
+      internal fun `will throw an exception`() {
+        assertThatThrownBy {
+          runBlocking {
+            nomisService.getNonAssociations(
+              offenderNo = "A1234BC",
+              nsOffenderNo = "D5678EF",
             )
           }
         }.isInstanceOf(NotFound::class.java)
