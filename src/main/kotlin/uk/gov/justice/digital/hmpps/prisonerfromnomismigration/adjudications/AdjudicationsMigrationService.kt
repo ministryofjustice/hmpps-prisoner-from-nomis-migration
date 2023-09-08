@@ -103,7 +103,9 @@ fun AdjudicationChargeResponse.toAdjudication(): AdjudicationMigrateDto =
       this.incident.reportingOfficers.map { it.toWitness(OTHER_PERSON) } +
       this.incident.otherStaffInvolved.map { it.toWitness(OTHER_PERSON) },
     damages = this.incident.repairs.map { it.toDamage() },
-    evidence = this.investigations.flatMap { investigation -> investigation.evidence.map { it.toEvidence() } } + this.charge.toEvidence(incident),
+    evidence = this.investigations.flatMap { investigation -> investigation.evidence.map { it.toEvidence() } } + this.charge.toEvidence(
+      incident,
+    ),
     punishments = this.hearings.flatMap { it.toHearingResultAwards() },
     hearings = this.hearings.map { it.toHearing() },
     disIssued = this.hearings.flatMap { hearing -> hearing.notifications.map { it.toIssued() } },
@@ -357,7 +359,13 @@ class AdjudicationsMigrationService(
         nomisHearingId = it.oicHearingId,
       )
     } ?: emptyList(),
-    punishments = mapping.punishmentMappings?.map {
+    punishments = mapping.punishmentMappings?.filter {
+      (it.sanctionSeq != null).also { hasSanction ->
+        if (!hasSanction) {
+          log.warn("Ignoring mapping for punishment ${it.punishmentId} for booking ${it.bookingId}. DPS has no sanctionSeq as this is a WIP")
+        }
+      }
+    }?.map {
       AdjudicationPunishmentMappingDto(
         dpsPunishmentId = it.punishmentId.toString(),
         nomisBookingId = it.bookingId,
