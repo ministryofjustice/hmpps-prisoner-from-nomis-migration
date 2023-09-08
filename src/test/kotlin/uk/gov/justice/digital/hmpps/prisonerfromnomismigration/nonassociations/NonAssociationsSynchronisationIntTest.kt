@@ -87,7 +87,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           nomisApi.stubGetNonAssociation(offenderNo = OFFENDER_A, nsOffenderNo = OFFENDER_B, typeSequence = TYPE_SEQUENCE)
-          mappingApi.stubAllMappingsNotFound(nomisMappingApiUrl)
+          mappingApi.stubGetNonAssociationNotFound()
           nonAssociationsApi.stubUpsertNonAssociationForSynchronisation(firstOffenderNo = OFFENDER_A, secondOffenderNo = OFFENDER_B)
           mappingApi.stubMappingCreate(NON_ASSOCIATIONS_CREATE_MAPPING_URL)
 
@@ -153,7 +153,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           nomisApi.stubGetNonAssociationWithMinimalData(offenderNo = OFFENDER_A, nsOffenderNo = OFFENDER_B, typeSequence = TYPE_SEQUENCE)
-          mappingApi.stubAllMappingsNotFound(nomisMappingApiUrl)
+          mappingApi.stubGetNonAssociationNotFound()
           nonAssociationsApi.stubUpsertNonAssociationForSynchronisation(firstOffenderNo = OFFENDER_A, secondOffenderNo = OFFENDER_B)
           mappingApi.stubMappingCreate(NON_ASSOCIATIONS_CREATE_MAPPING_URL)
 
@@ -273,7 +273,8 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           nomisApi.stubGetNonAssociation(offenderNo = OFFENDER_A, nsOffenderNo = OFFENDER_B, typeSequence = TYPE_SEQUENCE)
-          mappingApi.stubAllMappingsNotFound(nomisMappingApiUrl)
+          mappingApi.stubGetNonAssociationNotFound()
+          mappingApi.stubGetNonAssociationNotFound(firstOffenderNo = OFFENDER_B, secondOffenderNo = OFFENDER_A)
           nonAssociationsApi.stubUpsertNonAssociationForSynchronisation(firstOffenderNo = OFFENDER_A, secondOffenderNo = OFFENDER_B)
           mappingApi.stubMappingCreate(NON_ASSOCIATIONS_CREATE_MAPPING_URL)
 
@@ -438,7 +439,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
             verify(telemetryClient).trackEvent(
               eq("non-association-updated-synchronisation-success"),
               check {
-                assertThat(it["nonAssociationId"]).isEqualTo("14478")
+                assertThat(it["nonAssociationId"]).isEqualTo("$NON_ASSOCIATION_ID")
                 assertThat(it["firstOffenderNo"]).isEqualTo(OFFENDER_A)
                 assertThat(it["secondOffenderNo"]).isEqualTo(OFFENDER_B)
                 assertThat(it["typeSequence"]).isEqualTo("$TYPE_SEQUENCE")
@@ -457,7 +458,8 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         internal fun `it will not retry after a 409 (duplicate non-association written to Non-association API)`() {
           nomisApi.stubGetNonAssociation(offenderNo = OFFENDER_A, nsOffenderNo = OFFENDER_B, typeSequence = TYPE_SEQUENCE)
-          mappingApi.stubAllMappingsNotFound(nomisMappingApiUrl)
+          mappingApi.stubGetNonAssociationNotFound()
+          mappingApi.stubGetNonAssociationNotFound(firstOffenderNo = OFFENDER_B, secondOffenderNo = OFFENDER_A)
           nonAssociationsApi.stubUpsertNonAssociationForSynchronisation(nonAssociationId = duplicationNonAssociationId, firstOffenderNo = OFFENDER_A, secondOffenderNo = OFFENDER_B)
           mappingApi.stubNonAssociationMappingCreateConflict(
             nonAssociationId = NON_ASSOCIATION_ID,
@@ -542,8 +544,8 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           mappingApi.stubGetNonAssociation(OFFENDER_A, OFFENDER_B, TYPE_SEQUENCE)
-          nonAssociationsApi.stubDeleteNonAssociationForSynchronisation()
-          mappingApi.stubNonAssociationMappingDelete(OFFENDER_A, OFFENDER_B, TYPE_SEQUENCE)
+          nonAssociationsApi.stubDeleteNonAssociationForSynchronisation(NON_ASSOCIATION_ID)
+          mappingApi.stubNonAssociationMappingDelete(NON_ASSOCIATION_ID)
 
           awsSqsNonAssociationsOffenderEventsClient.sendMessage(
             nonAssociationsQueueOffenderEventsUrl,
@@ -564,14 +566,14 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will delete the non-association in the non-associations service`() {
           await untilAsserted {
-            nonAssociationsApi.verify(deleteRequestedFor(urlPathEqualTo("/sync/delete")))
+            nonAssociationsApi.verify(deleteRequestedFor(urlPathEqualTo("/sync/delete/$NON_ASSOCIATION_ID")))
           }
         }
 
         @Test
         fun `will delete mapping`() {
           await untilAsserted {
-            mappingApi.verify(deleteRequestedFor(urlPathEqualTo(nomisMappingApiUrl)))
+            mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/non-associations/non-association-id/$NON_ASSOCIATION_ID")))
           }
         }
 
@@ -595,7 +597,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class WhenDeleteByNomisWithNoMapping {
         @BeforeEach
         fun setUp() {
-          mappingApi.stubAllMappingsNotFound(nomisMappingApiUrl)
+          mappingApi.stubGetNonAssociationNotFound()
 
           awsSqsNonAssociationsOffenderEventsClient.sendMessage(
             nonAssociationsQueueOffenderEventsUrl,

@@ -29,6 +29,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.NON_ASSOCIATIONS_CREATE_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 
+private const val NON_ASSOCIATION_ID = 1234L
+
 @SpringAPIServiceTest
 @Import(NonAssociationsMappingService::class, NonAssociationsConfiguration::class)
 internal class NonAssociationsMappingServiceTest {
@@ -224,6 +226,26 @@ internal class NonAssociationsMappingServiceTest {
           )
         }
       }.isInstanceOf(WebClientResponseException.InternalServerError::class.java)
+    }
+  }
+
+  @Nested
+  inner class DeleteNonAssociationMapping {
+    @Test
+    internal fun `will pass oath2 token to service`() {
+      mappingApi.stubNonAssociationMappingDelete(NON_ASSOCIATION_ID)
+
+      runBlocking {
+        nonAssociationsMappingService.deleteNomisNonAssociationMapping(
+          nonAssociationId = NON_ASSOCIATION_ID,
+        )
+      }
+
+      mappingApi.verify(
+        WireMock.deleteRequestedFor(
+          urlPathEqualTo("/mapping/non-associations/non-association-id/$NON_ASSOCIATION_ID"),
+        ).withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
+      )
     }
   }
 

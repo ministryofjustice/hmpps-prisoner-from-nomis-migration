@@ -33,18 +33,9 @@ class NonAssociationsMappingService(@Qualifier("mappingApiWebClient") webClient:
       }
       .awaitSingleOrNull()
 
-  suspend fun deleteNomisNonAssociationMapping(
-    firstOffenderNo: String,
-    secondOffenderNo: String,
-    nomisTypeSequence: Int,
-  ): Unit =
+  suspend fun deleteNomisNonAssociationMapping(nonAssociationId: Long): Unit =
     webClient.delete()
-      .uri(
-        "/mapping/non-associations/first-offender-no/{firstOffenderNo}/second-offender-no/{secondOffenderNo}/type-sequence/{typeSequence}",
-        firstOffenderNo,
-        secondOffenderNo,
-        nomisTypeSequence,
-      )
+      .uri("/mapping/non-associations/non-association-id/$nonAssociationId")
       .retrieve()
       .awaitBody()
 }
