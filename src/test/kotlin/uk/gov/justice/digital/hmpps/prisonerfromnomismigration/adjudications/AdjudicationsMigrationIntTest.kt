@@ -385,7 +385,20 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
                 }
             ],
             "createdDateTime": "2023-08-07T16:56:17.018049",
-            "createdByUsername": "AMARKE_GEN"
+            "createdByUsername": "AMARKE_GEN",
+            "notifications": [
+                  {
+                    "deliveryDate": "2023-09-07",
+                    "deliveryTime": "11:24:00",
+                    "comment": "Added",
+                    "notifiedStaff": {
+                        "username": "AMARKE_GEN",
+                        "staffId": 87654,
+                        "firstName": "BREAD",
+                        "lastName": "MEAT"
+                    }
+                  }
+            ]
         }
     ]
 }    

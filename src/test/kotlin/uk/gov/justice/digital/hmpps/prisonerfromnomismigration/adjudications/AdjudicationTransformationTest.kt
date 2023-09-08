@@ -8,7 +8,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateDamage.DamageType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateEvidence
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateEvidence.EvidenceCode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateHearing
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateHearing.OicHearingType.GOV
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateHearing.OicHearingType.GOV_ADULT
@@ -20,6 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.A
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Evidence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Hearing
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.HearingNotification
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.HearingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.HearingResultAward
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.InternalLocation
@@ -136,6 +137,7 @@ class AdjudicationTransformationTest {
             type = CodeDescription(code = "PLUM", description = "Plumbing"),
             comment = "Broken toilet",
             createdByUsername = "A.BEANS",
+            cost = BigDecimal("12.34"),
           ),
         ),
       )
@@ -144,6 +146,7 @@ class AdjudicationTransformationTest {
       assertThat(dpsAdjudication.damages).hasSize(1)
       assertThat(dpsAdjudication.damages[0].details).isEqualTo("Broken toilet")
       assertThat(dpsAdjudication.damages[0].createdBy).isEqualTo("A.BEANS")
+      assertThat(dpsAdjudication.damages[0].repairCost).isEqualTo(BigDecimal("12.34"))
     }
 
     @Test
@@ -262,6 +265,7 @@ class AdjudicationTransformationTest {
       assertThat(dpsAdjudication.evidence).hasSize(1)
       assertThat(dpsAdjudication.evidence[0].details).isEqualTo("report detail")
       assertThat(dpsAdjudication.evidence[0].reporter).isEqualTo("A.BEANS")
+      assertThat(dpsAdjudication.evidence[0].dateAdded).isEqualTo("2020-12-25")
     }
 
     @Test
@@ -334,14 +338,71 @@ class AdjudicationTransformationTest {
       val dpsAdjudication = nomisAdjudication.toAdjudication()
 
       assertThat(dpsAdjudication.evidence).hasSize(8)
-      assertThat(dpsAdjudication.evidence[0].evidenceCode).isEqualTo(MigrateEvidence.EvidenceCode.OTHER)
-      assertThat(dpsAdjudication.evidence[1].evidenceCode).isEqualTo(MigrateEvidence.EvidenceCode.OTHER)
-      assertThat(dpsAdjudication.evidence[2].evidenceCode).isEqualTo(MigrateEvidence.EvidenceCode.OTHER)
-      assertThat(dpsAdjudication.evidence[3].evidenceCode).isEqualTo(MigrateEvidence.EvidenceCode.OTHER)
-      assertThat(dpsAdjudication.evidence[4].evidenceCode).isEqualTo(MigrateEvidence.EvidenceCode.PHOTO)
-      assertThat(dpsAdjudication.evidence[5].evidenceCode).isEqualTo(MigrateEvidence.EvidenceCode.OTHER)
-      assertThat(dpsAdjudication.evidence[6].evidenceCode).isEqualTo(MigrateEvidence.EvidenceCode.BAGGED_AND_TAGGED)
-      assertThat(dpsAdjudication.evidence[7].evidenceCode).isEqualTo(MigrateEvidence.EvidenceCode.OTHER)
+      assertThat(dpsAdjudication.evidence[0].evidenceCode).isEqualTo(EvidenceCode.OTHER)
+      assertThat(dpsAdjudication.evidence[1].evidenceCode).isEqualTo(EvidenceCode.OTHER)
+      assertThat(dpsAdjudication.evidence[2].evidenceCode).isEqualTo(EvidenceCode.OTHER)
+      assertThat(dpsAdjudication.evidence[3].evidenceCode).isEqualTo(EvidenceCode.OTHER)
+      assertThat(dpsAdjudication.evidence[4].evidenceCode).isEqualTo(EvidenceCode.PHOTO)
+      assertThat(dpsAdjudication.evidence[5].evidenceCode).isEqualTo(EvidenceCode.OTHER)
+      assertThat(dpsAdjudication.evidence[6].evidenceCode).isEqualTo(EvidenceCode.BAGGED_AND_TAGGED)
+      assertThat(dpsAdjudication.evidence[7].evidenceCode).isEqualTo(EvidenceCode.OTHER)
+    }
+
+    @Test
+    fun `will copy charge evidence details from charge details`() {
+      val nomisAdjudication = nomisAdjudicationCharge(
+        investigations = emptyList(),
+        chargeEvidence = "Broken cup",
+        chargeReportDetail = "Smashed to pieces",
+        reportedDate = LocalDate.parse("2020-12-26"),
+        reportingStaffUsername = "A.CHARGEBEANS",
+      )
+
+      val dpsAdjudication = nomisAdjudication.toAdjudication()
+
+      assertThat(dpsAdjudication.evidence).hasSize(1)
+      assertThat(dpsAdjudication.evidence[0].details).isEqualTo("Broken cup - Smashed to pieces")
+      assertThat(dpsAdjudication.evidence[0].reporter).isEqualTo("A.CHARGEBEANS")
+      assertThat(dpsAdjudication.evidence[0].dateAdded).isEqualTo("2020-12-26")
+      assertThat(dpsAdjudication.evidence[0].evidenceCode).isEqualTo(EvidenceCode.OTHER)
+    }
+
+    @Test
+    fun `will copy partial charge evidence details from charge details with evidence`() {
+      val nomisAdjudication = nomisAdjudicationCharge(
+        investigations = emptyList(),
+        chargeEvidence = "Broken cup",
+        chargeReportDetail = "",
+        reportedDate = LocalDate.parse("2020-12-26"),
+        reportingStaffUsername = "A.CHARGEBEANS",
+      )
+
+      val dpsAdjudication = nomisAdjudication.toAdjudication()
+
+      assertThat(dpsAdjudication.evidence).hasSize(1)
+      assertThat(dpsAdjudication.evidence[0].details).isEqualTo("Broken cup")
+      assertThat(dpsAdjudication.evidence[0].reporter).isEqualTo("A.CHARGEBEANS")
+      assertThat(dpsAdjudication.evidence[0].dateAdded).isEqualTo("2020-12-26")
+      assertThat(dpsAdjudication.evidence[0].evidenceCode).isEqualTo(EvidenceCode.OTHER)
+    }
+
+    @Test
+    fun `will copy partial charge evidence details from charge details with report deatils`() {
+      val nomisAdjudication = nomisAdjudicationCharge(
+        investigations = emptyList(),
+        chargeEvidence = "",
+        chargeReportDetail = "Smashed to pieces",
+        reportedDate = LocalDate.parse("2020-12-26"),
+        reportingStaffUsername = "A.CHARGEBEANS",
+      )
+
+      val dpsAdjudication = nomisAdjudication.toAdjudication()
+
+      assertThat(dpsAdjudication.evidence).hasSize(1)
+      assertThat(dpsAdjudication.evidence[0].details).isEqualTo("Smashed to pieces")
+      assertThat(dpsAdjudication.evidence[0].reporter).isEqualTo("A.CHARGEBEANS")
+      assertThat(dpsAdjudication.evidence[0].dateAdded).isEqualTo("2020-12-26")
+      assertThat(dpsAdjudication.evidence[0].evidenceCode).isEqualTo(EvidenceCode.OTHER)
     }
   }
 
@@ -405,12 +466,15 @@ class AdjudicationTransformationTest {
             firstName = "BOBBY",
             lastName = "BALLER",
             createdByUsername = "B.BATTS",
+            dateAddedToIncident = LocalDate.parse("2020-12-25"),
           ),
           Prisoner(
             offenderNo = "A1234TT",
             firstName = "JANE",
             lastName = "MIKES",
             createdByUsername = "A.AMRK",
+            dateAddedToIncident = LocalDate.parse("2020-12-26"),
+            comment = "Saw everything",
           ),
         ),
       )
@@ -422,11 +486,14 @@ class AdjudicationTransformationTest {
       assertThat(dpsAdjudication.witnesses[0].firstName).isEqualTo("BOBBY")
       assertThat(dpsAdjudication.witnesses[0].lastName).isEqualTo("BALLER")
       assertThat(dpsAdjudication.witnesses[0].witnessType).isEqualTo(MigrateWitness.WitnessType.OTHER_PERSON)
+      assertThat(dpsAdjudication.witnesses[0].dateAdded).isEqualTo("2020-12-25")
 
       assertThat(dpsAdjudication.witnesses[1].createdBy).isEqualTo("A.AMRK")
       assertThat(dpsAdjudication.witnesses[1].firstName).isEqualTo("JANE")
       assertThat(dpsAdjudication.witnesses[1].lastName).isEqualTo("MIKES")
       assertThat(dpsAdjudication.witnesses[1].witnessType).isEqualTo(MigrateWitness.WitnessType.OTHER_PERSON)
+      assertThat(dpsAdjudication.witnesses[1].dateAdded).isEqualTo("2020-12-26")
+      assertThat(dpsAdjudication.witnesses[1].comment).isEqualTo("Saw everything")
     }
 
     @Test
@@ -472,12 +539,15 @@ class AdjudicationTransformationTest {
             firstName = "BOBBY",
             lastName = "BALLER",
             createdByUsername = "B.BATTS",
+            dateAddedToIncident = LocalDate.parse("2020-12-25"),
           ),
           Prisoner(
             offenderNo = "A1234TT",
             firstName = "JANE",
             lastName = "MIKES",
             createdByUsername = "B.BATTS",
+            dateAddedToIncident = LocalDate.parse("2020-12-26"),
+            comment = "Beaten up",
           ),
         ),
       )
@@ -489,11 +559,14 @@ class AdjudicationTransformationTest {
       assertThat(dpsAdjudication.witnesses[0].firstName).isEqualTo("BOBBY")
       assertThat(dpsAdjudication.witnesses[0].lastName).isEqualTo("BALLER")
       assertThat(dpsAdjudication.witnesses[0].witnessType).isEqualTo(MigrateWitness.WitnessType.VICTIM)
+      assertThat(dpsAdjudication.witnesses[0].dateAdded).isEqualTo("2020-12-25")
 
       assertThat(dpsAdjudication.witnesses[1].createdBy).isEqualTo("B.BATTS")
       assertThat(dpsAdjudication.witnesses[1].firstName).isEqualTo("JANE")
       assertThat(dpsAdjudication.witnesses[1].lastName).isEqualTo("MIKES")
       assertThat(dpsAdjudication.witnesses[1].witnessType).isEqualTo(MigrateWitness.WitnessType.VICTIM)
+      assertThat(dpsAdjudication.witnesses[1].dateAdded).isEqualTo("2020-12-26")
+      assertThat(dpsAdjudication.witnesses[1].comment).isEqualTo("Beaten up")
     }
 
     @Test
@@ -505,12 +578,15 @@ class AdjudicationTransformationTest {
             firstName = "BOBBY",
             lastName = "BALLER",
             createdByUsername = "B.BATTS",
+            dateAddedToIncident = LocalDate.parse("2020-12-25"),
           ),
           Prisoner(
             offenderNo = "A1234TT",
             firstName = "JANE",
             lastName = "MIKES",
             createdByUsername = "B.BATTS",
+            dateAddedToIncident = LocalDate.parse("2020-12-26"),
+            comment = "She joined in",
           ),
         ),
       )
@@ -522,11 +598,14 @@ class AdjudicationTransformationTest {
       assertThat(dpsAdjudication.witnesses[0].firstName).isEqualTo("BOBBY")
       assertThat(dpsAdjudication.witnesses[0].lastName).isEqualTo("BALLER")
       assertThat(dpsAdjudication.witnesses[0].witnessType).isEqualTo(MigrateWitness.WitnessType.PRISONER)
+      assertThat(dpsAdjudication.witnesses[0].dateAdded).isEqualTo("2020-12-25")
 
       assertThat(dpsAdjudication.witnesses[1].createdBy).isEqualTo("B.BATTS")
       assertThat(dpsAdjudication.witnesses[1].firstName).isEqualTo("JANE")
       assertThat(dpsAdjudication.witnesses[1].lastName).isEqualTo("MIKES")
       assertThat(dpsAdjudication.witnesses[1].witnessType).isEqualTo(MigrateWitness.WitnessType.PRISONER)
+      assertThat(dpsAdjudication.witnesses[1].dateAdded).isEqualTo("2020-12-26")
+      assertThat(dpsAdjudication.witnesses[1].comment).isEqualTo("She joined in")
     }
 
     @Test
@@ -617,6 +696,8 @@ class AdjudicationTransformationTest {
             eventStatus = CodeDescription(code = "SCH", description = "Scheduled"),
             createdByUsername = "A.BEANS",
             createdDateTime = "2020-12-31T10:00:00",
+            notifications = emptyList(),
+            representativeText = "JULIE BART",
           ),
         ),
       )
@@ -631,6 +712,7 @@ class AdjudicationTransformationTest {
           commentText = "Some comment",
           locationId = 321,
           hearingResult = null,
+          representative = "JULIE BART",
         ),
       )
     }
@@ -648,6 +730,7 @@ class AdjudicationTransformationTest {
             eventStatus = CodeDescription(code = "SCH", description = "Scheduled"),
             createdByUsername = "A.BEANS",
             createdDateTime = "2020-12-31T10:00:00",
+            notifications = emptyList(),
           ),
         ),
       )
@@ -701,6 +784,7 @@ class AdjudicationTransformationTest {
               eventStatus = CodeDescription(code = "SCH", description = "Scheduled"),
               createdByUsername = "A.BEANS",
               createdDateTime = "2020-12-30T10:00:00",
+              notifications = emptyList(),
             ),
           ),
         )
@@ -736,6 +820,7 @@ class AdjudicationTransformationTest {
               eventStatus = CodeDescription(code = "SCH", description = "Scheduled"),
               createdByUsername = "A.BEANS",
               createdDateTime = "2020-12-31T10:00:00",
+              notifications = emptyList(),
             ),
           ),
         )
@@ -743,27 +828,198 @@ class AdjudicationTransformationTest {
         assertThat(dpsAdjudication.hearings).hasSize(1)
         assertThat(dpsAdjudication.hearings[0].hearingResult).isNull()
       }
+    }
 
-      @Nested
-      inner class Punishments {
+    @Nested
+    inner class HearingNotifications {
+      @Test
+      fun `will copy notifications`() {
+        val charge = nomisAdjudicationCharge().charge.copy(chargeSequence = 2)
+        val nomisAdjudication = nomisAdjudicationCharge(
+          chargeSequence = charge.chargeSequence,
+          hearings = listOf(
+            Hearing(
+              hearingId = 54321,
+              hearingDate = LocalDate.parse("2021-01-01"),
+              hearingTime = "12:00:00",
+              type = CodeDescription(code = "GOV_ADULT", description = "Governor's Hearing Adult"),
+              hearingStaff = Staff(
+                username = "A.JUDGE",
+                staffId = 123,
+                firstName = "A",
+                lastName = "JUDGE",
+                createdByUsername = "A.BEANS",
+              ),
+              internalLocation = InternalLocation(321, "A-1-1", "MDI-A-1-1"),
+              eventStatus = CodeDescription(code = "SCH", description = "Scheduled"),
+              createdByUsername = "A.BEANS",
+              createdDateTime = "2020-12-30T10:00:00",
+              hearingResults = emptyList(),
+              notifications = listOf(
+                HearingNotification(
+                  deliveryDate = LocalDate.parse("2020-12-31"),
+                  deliveryTime = "11:00:00",
+                  comment = "You have been notified",
+                  notifiedStaff = Staff(
+                    username = "A.NOTIFY",
+                    staffId = 456,
+                    firstName = "A",
+                    lastName = "NOTIFY",
+                    createdByUsername = "A.BEANS",
+                  ),
+                ),
+                HearingNotification(
+                  deliveryDate = LocalDate.parse("2021-01-01"),
+                  deliveryTime = "10:30:00",
+                  notifiedStaff = Staff(
+                    username = "B.NOTIFY",
+                    staffId = 457,
+                    firstName = "B",
+                    lastName = "NOTIFY",
+                    createdByUsername = "A.BEANS",
+                  ),
+                ),
+              ),
+            ),
+          ),
+        )
+        val dpsAdjudication = nomisAdjudication.toAdjudication()
+        assertThat(dpsAdjudication.disIssued).hasSize(2)
+        assertThat(dpsAdjudication.disIssued[0].issuingOfficer).isEqualTo("A.NOTIFY")
+        assertThat(dpsAdjudication.disIssued[0].dateTimeOfIssue).isEqualTo("2020-12-31T11:00:00")
+        assertThat(dpsAdjudication.disIssued[1].issuingOfficer).isEqualTo("B.NOTIFY")
+        assertThat(dpsAdjudication.disIssued[1].dateTimeOfIssue).isEqualTo("2021-01-01T10:30:00")
+      }
 
-        @Test
-        fun `will copy award for the charge punishment`() {
-          val charge = nomisAdjudicationCharge().charge.copy(chargeSequence = 2)
-          val nomisAdjudication = nomisAdjudicationCharge(
-            chargeSequence = charge.chargeSequence,
-            hearings = listOf(
-              Hearing(
-                hearingId = 54321,
-                hearingDate = LocalDate.parse("2021-01-01"),
-                hearingTime = "12:00:00",
-                type = CodeDescription(code = "GOV_ADULT", description = "Governor's Hearing Adult"),
-                hearingResults = listOf(
-                  HearingResult(
-                    charge = charge,
-                    offence = charge.offence,
-                    resultAwards = listOf(
-                      HearingResultAward(
+      @Test
+      fun `result can be null when not present`() {
+        val charge = nomisAdjudicationCharge().charge.copy(chargeSequence = 2)
+        val nomisAdjudication = nomisAdjudicationCharge(
+          chargeSequence = charge.chargeSequence,
+          hearings = listOf(
+            Hearing(
+              hearingId = 54321,
+              hearingDate = LocalDate.parse("2021-01-01"),
+              hearingTime = "12:00:00",
+              type = CodeDescription(code = "GOV_ADULT", description = "Governor's Hearing Adult"),
+              hearingResults = listOf(),
+              hearingStaff = Staff(
+                username = "A.JUDGE",
+                staffId = 123,
+                firstName = "A",
+                lastName = "JUDGE",
+                createdByUsername = "A.BEANS",
+              ),
+              internalLocation = InternalLocation(321, "A-1-1", "MDI-A-1-1"),
+              eventStatus = CodeDescription(code = "SCH", description = "Scheduled"),
+              createdByUsername = "A.BEANS",
+              createdDateTime = "2020-12-31T10:00:00",
+              notifications = emptyList(),
+            ),
+          ),
+        )
+        val dpsAdjudication = nomisAdjudication.toAdjudication()
+        assertThat(dpsAdjudication.hearings).hasSize(1)
+        assertThat(dpsAdjudication.hearings[0].hearingResult).isNull()
+      }
+    }
+
+    @Nested
+    inner class Punishments {
+
+      @Test
+      fun `will copy award for the charge punishment`() {
+        val charge = nomisAdjudicationCharge().charge.copy(chargeSequence = 2)
+        val nomisAdjudication = nomisAdjudicationCharge(
+          chargeSequence = charge.chargeSequence,
+          hearings = listOf(
+            Hearing(
+              hearingId = 54321,
+              hearingDate = LocalDate.parse("2021-01-01"),
+              hearingTime = "12:00:00",
+              type = CodeDescription(code = "GOV_ADULT", description = "Governor's Hearing Adult"),
+              hearingResults = listOf(
+                HearingResult(
+                  charge = charge,
+                  offence = charge.offence,
+                  resultAwards = listOf(
+                    HearingResultAward(
+                      effectiveDate = LocalDate.parse("2021-01-01"),
+                      sanctionType = CodeDescription(code = "CC", description = "Cellular Confinement"),
+                      sanctionStatus = CodeDescription(code = "IMMEDIATE", description = "Immediate"),
+                      comment = "Remain in cell",
+                      statusDate = LocalDate.parse("2021-01-02"),
+                      sanctionDays = 2,
+                      sanctionMonths = null,
+                      compensationAmount = BigDecimal.valueOf(23.67),
+                      consecutiveAward = null,
+                      sequence = 23,
+                      chargeSequence = charge.chargeSequence,
+                      adjudicationNumber = 7654321,
+                    ),
+                  ),
+                  pleaFindingType = CodeDescription(code = "GUILTY", description = "Guilty"),
+                  findingType = CodeDescription(code = "S", description = "Suspended"),
+                  createdByUsername = "A.BEANS",
+                  createdDateTime = "2020-12-31T10:00:00",
+                ),
+              ),
+              hearingStaff = Staff(
+                username = "A.JUDGE",
+                staffId = 123,
+                firstName = "A",
+                lastName = "JUDGE",
+                createdByUsername = "A.BEANS",
+              ),
+              internalLocation = InternalLocation(321, "A-1-1", "MDI-A-1-1"),
+              eventStatus = CodeDescription(code = "SCH", description = "Scheduled"),
+              createdByUsername = "A.BEANS",
+              createdDateTime = "2020-12-31T10:00:00",
+              notifications = emptyList(),
+            ),
+          ),
+        )
+        val dpsAdjudication = nomisAdjudication.toAdjudication()
+        assertThat(dpsAdjudication.punishments).hasSize(1)
+        assertThat(dpsAdjudication.punishments[0].comment).isEqualTo("Remain in cell")
+        assertThat(dpsAdjudication.punishments[0].compensationAmount).isEqualTo(BigDecimal.valueOf(23.67))
+        assertThat(dpsAdjudication.punishments[0].days).isEqualTo(2)
+        assertThat(dpsAdjudication.punishments[0].effectiveDate).isEqualTo("2021-01-01")
+        assertThat(dpsAdjudication.punishments[0].consecutiveChargeNumber).isNull()
+        assertThat(dpsAdjudication.punishments[0].sanctionCode).isEqualTo("CC")
+        assertThat(dpsAdjudication.punishments[0].sanctionSeq).isEqualTo(23)
+        assertThat(dpsAdjudication.punishments[0].sanctionStatus).isEqualTo("IMMEDIATE")
+      }
+
+      @Test
+      fun `will calculate the consecutiveChargeNumber when consecutive punishment is present`() {
+        val charge1 = nomisAdjudicationCharge().charge.copy(chargeSequence = 1)
+        val charge2 = nomisAdjudicationCharge().charge.copy(chargeSequence = 2)
+        val nomisAdjudication = nomisAdjudicationCharge(
+          adjudicationNumber = 12345,
+          chargeSequence = charge2.chargeSequence,
+          hearings = listOf(
+            Hearing(
+              hearingId = 54321,
+              hearingDate = LocalDate.parse("2021-01-01"),
+              hearingTime = "12:00:00",
+              type = CodeDescription(code = "GOV_ADULT", description = "Governor's Hearing Adult"),
+              hearingResults = listOf(
+                HearingResult(
+                  charge = charge2,
+                  offence = charge2.offence,
+                  resultAwards = listOf(
+                    HearingResultAward(
+                      effectiveDate = LocalDate.parse("2021-01-01"),
+                      sanctionType = CodeDescription(code = "CC", description = "Cellular Confinement"),
+                      sanctionStatus = CodeDescription(code = "IMMEDIATE", description = "Immediate"),
+                      comment = "Remain in cell",
+                      statusDate = LocalDate.parse("2021-01-02"),
+                      sanctionDays = 2,
+                      sanctionMonths = null,
+                      compensationAmount = null,
+                      chargeSequence = charge2.chargeSequence,
+                      consecutiveAward = HearingResultAward(
                         effectiveDate = LocalDate.parse("2021-01-01"),
                         sanctionType = CodeDescription(code = "CC", description = "Cellular Confinement"),
                         sanctionStatus = CodeDescription(code = "IMMEDIATE", description = "Immediate"),
@@ -771,184 +1027,110 @@ class AdjudicationTransformationTest {
                         statusDate = LocalDate.parse("2021-01-02"),
                         sanctionDays = 2,
                         sanctionMonths = null,
-                        compensationAmount = BigDecimal.valueOf(23.67),
+                        compensationAmount = null,
                         consecutiveAward = null,
-                        sequence = 23,
-                        chargeSequence = charge.chargeSequence,
+                        sequence = 24,
+                        chargeSequence = charge1.chargeSequence,
                         adjudicationNumber = 7654321,
                       ),
+                      sequence = 23,
+                      adjudicationNumber = 12345,
                     ),
-                    pleaFindingType = CodeDescription(code = "GUILTY", description = "Guilty"),
-                    findingType = CodeDescription(code = "S", description = "Suspended"),
-                    createdByUsername = "A.BEANS",
-                    createdDateTime = "2020-12-31T10:00:00",
                   ),
-                ),
-                hearingStaff = Staff(
-                  username = "A.JUDGE",
-                  staffId = 123,
-                  firstName = "A",
-                  lastName = "JUDGE",
+                  pleaFindingType = CodeDescription(code = "GUILTY", description = "Guilty"),
+                  findingType = CodeDescription(code = "S", description = "Suspended"),
                   createdByUsername = "A.BEANS",
+                  createdDateTime = "2020-12-31T10:00:00",
                 ),
-                internalLocation = InternalLocation(321, "A-1-1", "MDI-A-1-1"),
-                eventStatus = CodeDescription(code = "SCH", description = "Scheduled"),
-                createdByUsername = "A.BEANS",
-                createdDateTime = "2020-12-31T10:00:00",
               ),
+              hearingStaff = Staff(
+                username = "A.JUDGE",
+                staffId = 123,
+                firstName = "A",
+                lastName = "JUDGE",
+                createdByUsername = "A.BEANS",
+              ),
+              internalLocation = InternalLocation(321, "A-1-1", "MDI-A-1-1"),
+              eventStatus = CodeDescription(code = "SCH", description = "Scheduled"),
+              createdByUsername = "A.BEANS",
+              createdDateTime = "2020-12-31T10:00:00",
+              notifications = emptyList(),
             ),
-          )
-          val dpsAdjudication = nomisAdjudication.toAdjudication()
-          assertThat(dpsAdjudication.punishments).hasSize(1)
-          assertThat(dpsAdjudication.punishments[0].comment).isEqualTo("Remain in cell")
-          assertThat(dpsAdjudication.punishments[0].compensationAmount).isEqualTo(BigDecimal.valueOf(23.67))
-          assertThat(dpsAdjudication.punishments[0].days).isEqualTo(2)
-          assertThat(dpsAdjudication.punishments[0].effectiveDate).isEqualTo("2021-01-01")
-          assertThat(dpsAdjudication.punishments[0].consecutiveChargeNumber).isNull()
-          assertThat(dpsAdjudication.punishments[0].sanctionCode).isEqualTo("CC")
-          assertThat(dpsAdjudication.punishments[0].sanctionSeq).isEqualTo(23)
-          assertThat(dpsAdjudication.punishments[0].sanctionStatus).isEqualTo("IMMEDIATE")
-        }
+          ),
+        )
+        val dpsAdjudication = nomisAdjudication.toAdjudication()
+        assertThat(dpsAdjudication.punishments).hasSize(1)
+        assertThat(dpsAdjudication.punishments[0].comment).isEqualTo("Remain in cell")
+        assertThat(dpsAdjudication.punishments[0].compensationAmount).isNull()
+        assertThat(dpsAdjudication.punishments[0].days).isEqualTo(2)
+        assertThat(dpsAdjudication.punishments[0].effectiveDate).isEqualTo("2021-01-01")
+        assertThat(dpsAdjudication.punishments[0].sanctionCode).isEqualTo("CC")
+        assertThat(dpsAdjudication.punishments[0].sanctionSeq).isEqualTo(23)
+        assertThat(dpsAdjudication.punishments[0].sanctionStatus).isEqualTo("IMMEDIATE")
+        assertThat(dpsAdjudication.punishments[0].consecutiveChargeNumber).isEqualTo("7654321-1")
+      }
 
-        @Test
-        fun `will calculate the consecutiveChargeNumber when consecutive punishment is present`() {
-          val charge1 = nomisAdjudicationCharge().charge.copy(chargeSequence = 1)
-          val charge2 = nomisAdjudicationCharge().charge.copy(chargeSequence = 2)
-          val nomisAdjudication = nomisAdjudicationCharge(
-            adjudicationNumber = 12345,
-            chargeSequence = charge2.chargeSequence,
-            hearings = listOf(
-              Hearing(
-                hearingId = 54321,
-                hearingDate = LocalDate.parse("2021-01-01"),
-                hearingTime = "12:00:00",
-                type = CodeDescription(code = "GOV_ADULT", description = "Governor's Hearing Adult"),
-                hearingResults = listOf(
-                  HearingResult(
-                    charge = charge2,
-                    offence = charge2.offence,
-                    resultAwards = listOf(
-                      HearingResultAward(
-                        effectiveDate = LocalDate.parse("2021-01-01"),
-                        sanctionType = CodeDescription(code = "CC", description = "Cellular Confinement"),
-                        sanctionStatus = CodeDescription(code = "IMMEDIATE", description = "Immediate"),
-                        comment = "Remain in cell",
-                        statusDate = LocalDate.parse("2021-01-02"),
-                        sanctionDays = 2,
-                        sanctionMonths = null,
-                        compensationAmount = null,
-                        chargeSequence = charge2.chargeSequence,
-                        consecutiveAward = HearingResultAward(
-                          effectiveDate = LocalDate.parse("2021-01-01"),
-                          sanctionType = CodeDescription(code = "CC", description = "Cellular Confinement"),
-                          sanctionStatus = CodeDescription(code = "IMMEDIATE", description = "Immediate"),
-                          comment = "Remain in cell",
-                          statusDate = LocalDate.parse("2021-01-02"),
-                          sanctionDays = 2,
-                          sanctionMonths = null,
-                          compensationAmount = null,
-                          consecutiveAward = null,
-                          sequence = 24,
-                          chargeSequence = charge1.chargeSequence,
-                          adjudicationNumber = 7654321,
-                        ),
-                        sequence = 23,
-                        adjudicationNumber = 12345,
-                      ),
+      @ParameterizedTest
+      @MethodSource("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.AdjudicationTransformationTest#getAwardDayMonthData")
+      fun `days and months are added together`(
+        days: Int?,
+        months: Int?,
+        effectiveDate: String,
+        calculatedDays: Int?,
+      ) {
+        val charge = nomisAdjudicationCharge().charge.copy(chargeSequence = 2)
+        val nomisAdjudication = nomisAdjudicationCharge(
+          chargeSequence = charge.chargeSequence,
+          hearings = listOf(
+            Hearing(
+              hearingId = 54321,
+              hearingDate = LocalDate.parse("2021-01-01"),
+              hearingTime = "12:00:00",
+              type = CodeDescription(code = "GOV_ADULT", description = "Governor's Hearing Adult"),
+              hearingResults = listOf(
+                HearingResult(
+                  charge = charge,
+                  offence = charge.offence,
+                  resultAwards = listOf(
+                    HearingResultAward(
+                      effectiveDate = LocalDate.parse(effectiveDate),
+                      sanctionType = CodeDescription(code = "CC", description = "Cellular Confinement"),
+                      sanctionStatus = CodeDescription(code = "IMMEDIATE", description = "Immediate"),
+                      comment = "Remain in cell",
+                      statusDate = LocalDate.parse("2021-01-02"),
+                      sanctionDays = days,
+                      sanctionMonths = months,
+                      compensationAmount = null,
+                      consecutiveAward = null,
+                      sequence = 23,
+                      chargeSequence = charge.chargeSequence,
+                      adjudicationNumber = 12345,
                     ),
-                    pleaFindingType = CodeDescription(code = "GUILTY", description = "Guilty"),
-                    findingType = CodeDescription(code = "S", description = "Suspended"),
-                    createdByUsername = "A.BEANS",
-                    createdDateTime = "2020-12-31T10:00:00",
                   ),
-                ),
-                hearingStaff = Staff(
-                  username = "A.JUDGE",
-                  staffId = 123,
-                  firstName = "A",
-                  lastName = "JUDGE",
+                  pleaFindingType = CodeDescription(code = "GUILTY", description = "Guilty"),
+                  findingType = CodeDescription(code = "S", description = "Suspended"),
                   createdByUsername = "A.BEANS",
+                  createdDateTime = "2020-12-31T10:00:00",
                 ),
-                internalLocation = InternalLocation(321, "A-1-1", "MDI-A-1-1"),
-                eventStatus = CodeDescription(code = "SCH", description = "Scheduled"),
-                createdByUsername = "A.BEANS",
-                createdDateTime = "2020-12-31T10:00:00",
               ),
-            ),
-          )
-          val dpsAdjudication = nomisAdjudication.toAdjudication()
-          assertThat(dpsAdjudication.punishments).hasSize(1)
-          assertThat(dpsAdjudication.punishments[0].comment).isEqualTo("Remain in cell")
-          assertThat(dpsAdjudication.punishments[0].compensationAmount).isNull()
-          assertThat(dpsAdjudication.punishments[0].days).isEqualTo(2)
-          assertThat(dpsAdjudication.punishments[0].effectiveDate).isEqualTo("2021-01-01")
-          assertThat(dpsAdjudication.punishments[0].sanctionCode).isEqualTo("CC")
-          assertThat(dpsAdjudication.punishments[0].sanctionSeq).isEqualTo(23)
-          assertThat(dpsAdjudication.punishments[0].sanctionStatus).isEqualTo("IMMEDIATE")
-          assertThat(dpsAdjudication.punishments[0].consecutiveChargeNumber).isEqualTo("7654321-1")
-        }
-
-        @ParameterizedTest
-        @MethodSource("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.AdjudicationTransformationTest#getAwardDayMonthData")
-        fun `days and months are added together`(
-          days: Int?,
-          months: Int?,
-          effectiveDate: String,
-          calculatedDays: Int?,
-        ) {
-          val charge = nomisAdjudicationCharge().charge.copy(chargeSequence = 2)
-          val nomisAdjudication = nomisAdjudicationCharge(
-            chargeSequence = charge.chargeSequence,
-            hearings = listOf(
-              Hearing(
-                hearingId = 54321,
-                hearingDate = LocalDate.parse("2021-01-01"),
-                hearingTime = "12:00:00",
-                type = CodeDescription(code = "GOV_ADULT", description = "Governor's Hearing Adult"),
-                hearingResults = listOf(
-                  HearingResult(
-                    charge = charge,
-                    offence = charge.offence,
-                    resultAwards = listOf(
-                      HearingResultAward(
-                        effectiveDate = LocalDate.parse(effectiveDate),
-                        sanctionType = CodeDescription(code = "CC", description = "Cellular Confinement"),
-                        sanctionStatus = CodeDescription(code = "IMMEDIATE", description = "Immediate"),
-                        comment = "Remain in cell",
-                        statusDate = LocalDate.parse("2021-01-02"),
-                        sanctionDays = days,
-                        sanctionMonths = months,
-                        compensationAmount = null,
-                        consecutiveAward = null,
-                        sequence = 23,
-                        chargeSequence = charge.chargeSequence,
-                        adjudicationNumber = 12345,
-                      ),
-                    ),
-                    pleaFindingType = CodeDescription(code = "GUILTY", description = "Guilty"),
-                    findingType = CodeDescription(code = "S", description = "Suspended"),
-                    createdByUsername = "A.BEANS",
-                    createdDateTime = "2020-12-31T10:00:00",
-                  ),
-                ),
-                hearingStaff = Staff(
-                  username = "A.JUDGE",
-                  staffId = 123,
-                  firstName = "A",
-                  lastName = "JUDGE",
-                  createdByUsername = "A.BEANS",
-                ),
-                internalLocation = InternalLocation(321, "A-1-1", "MDI-A-1-1"),
-                eventStatus = CodeDescription(code = "SCH", description = "Scheduled"),
+              hearingStaff = Staff(
+                username = "A.JUDGE",
+                staffId = 123,
+                firstName = "A",
+                lastName = "JUDGE",
                 createdByUsername = "A.BEANS",
-                createdDateTime = "2020-12-31T10:00:00",
               ),
+              internalLocation = InternalLocation(321, "A-1-1", "MDI-A-1-1"),
+              eventStatus = CodeDescription(code = "SCH", description = "Scheduled"),
+              createdByUsername = "A.BEANS",
+              createdDateTime = "2020-12-31T10:00:00",
+              notifications = emptyList(),
             ),
-          )
-          val dpsAdjudication = nomisAdjudication.toAdjudication()
-          assertThat(dpsAdjudication.punishments).hasSize(1)
-          assertThat(dpsAdjudication.punishments[0].days).isEqualTo(calculatedDays)
-        }
+          ),
+        )
+        val dpsAdjudication = nomisAdjudication.toAdjudication()
+        assertThat(dpsAdjudication.punishments).hasSize(1)
+        assertThat(dpsAdjudication.punishments[0].days).isEqualTo(calculatedDays)
       }
     }
   }
@@ -1002,6 +1184,8 @@ private fun nomisAdjudicationCharge(
   reportingStaffUsername: String = "F.LAST",
   createdByStaffUsername: String = "A.BEANS",
   hearings: List<Hearing> = emptyList(),
+  chargeEvidence: String? = null,
+  chargeReportDetail: String? = null,
 ): AdjudicationChargeResponse {
   return AdjudicationChargeResponse(
     adjudicationSequence = chargeSequence,
@@ -1040,8 +1224,8 @@ private fun nomisAdjudicationCharge(
     ),
     charge = AdjudicationCharge(
       chargeSequence = chargeSequence,
-      evidence = "some evidence",
-      reportDetail = "some report detail",
+      evidence = chargeEvidence,
+      reportDetail = chargeReportDetail,
       offenceId = "$adjudicationNumber/$chargeSequence",
       offence = AdjudicationOffence(
         code = offenceCode,
