@@ -244,6 +244,20 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       .retrieve()
       .awaitBody()
 
+  suspend fun getNonAssociations(
+    offenderNo: String,
+    nsOffenderNo: String,
+  ): List<NonAssociationResponse> =
+    webClient.get()
+      .uri(
+        "/non-associations/offender/{offenderNo}/ns-offender/{nsOffenderNo}/all",
+        offenderNo,
+        nsOffenderNo,
+      )
+      .retrieve()
+      .bodyToMono(typeReference<List<NonAssociationResponse>>())
+      .awaitSingle()
+
   suspend fun getNonAssociationIds(
     fromDate: LocalDate?,
     toDate: LocalDate?,
@@ -272,14 +286,6 @@ data class NomisAdjustmentId(
   val adjustmentId: Long,
   val adjustmentCategory: String,
 )
-/*
-data class NomisNonAssociationId(
-  val offenderNo: String,
-  val nsOffenderNo: String,
-  val typeSequence: Int,
-)
-
- */
 
 data class NomisVisitor(
   val personId: Long,
