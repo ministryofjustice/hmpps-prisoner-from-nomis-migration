@@ -90,7 +90,7 @@ internal class NonAssociationsServiceTest {
       @Test
       fun `should call api with OAuth2 token`() {
         nonAssociationsApi.verify(
-          deleteRequestedFor(urlEqualTo("/sync/delete/$NON_ASSOCIATION_ID"))
+          deleteRequestedFor(urlEqualTo("/sync/$NON_ASSOCIATION_ID"))
             .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
         )
       }

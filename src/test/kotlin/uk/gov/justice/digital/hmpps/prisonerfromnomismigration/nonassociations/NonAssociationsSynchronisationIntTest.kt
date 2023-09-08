@@ -566,7 +566,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will delete the non-association in the non-associations service`() {
           await untilAsserted {
-            nonAssociationsApi.verify(deleteRequestedFor(urlPathEqualTo("/sync/delete/$NON_ASSOCIATION_ID")))
+            nonAssociationsApi.verify(deleteRequestedFor(urlPathEqualTo("/sync/$NON_ASSOCIATION_ID")))
           }
         }
 
