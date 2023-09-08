@@ -6,7 +6,6 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNotFound
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.model.DeleteSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.model.NonAssociation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.model.UpsertSyncRequest
 
@@ -19,11 +18,10 @@ class NonAssociationsService(@Qualifier("nonAssociationsApiWebClient") private v
       .retrieve()
       .awaitBody()
 
-  suspend fun deleteNonAssociation(deleteRequest: DeleteSyncRequest) =
+  suspend fun deleteNonAssociation(nonAssociationId: Long) =
     webClient
       .method(DELETE)
-      .uri("/sync/delete")
-      .bodyValue(deleteRequest)
+      .uri("/sync/delete/$nonAssociationId")
       .retrieve()
       .awaitBodyOrNotFound<Unit>()
 }

@@ -11,7 +11,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Synchro
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.NonAssociationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.NonAssociationMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.NonAssociationsSynchronisationService.MappingResponse.MAPPING_FAILED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.model.DeleteSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
@@ -54,14 +53,15 @@ class NonAssociationsSynchronisationService(
       nomisTypeSequence = event.typeSeq,
     )?.let {
       log.debug("Found non-association mapping: $it")
-      log.debug("Sending non-association upsert sync " + nomisNonAssociation.toUpsertSyncRequest(it.nonAssociationId))
+      log.debug("Sending non-association upsert sync {}", nomisNonAssociation.toUpsertSyncRequest(it.nonAssociationId))
+
       nonAssociationsService.upsertNonAssociation(nomisNonAssociation.toUpsertSyncRequest(it.nonAssociationId))
       telemetryClient.trackEvent(
         "non-association-updated-synchronisation-success",
         event.toTelemetryProperties(it.nonAssociationId),
       )
     } ?: let {
-      log.debug("No non-association mapping - sending non-association upsert sync " + nomisNonAssociation.toUpsertSyncRequest())
+      log.debug("No non-association mapping - sending non-association upsert sync {} ", nomisNonAssociation.toUpsertSyncRequest())
 
       nonAssociationsService.upsertNonAssociation(nomisNonAssociation.toUpsertSyncRequest()).also { nonAssociation ->
         tryToCreateNonAssociationMapping(event, nonAssociation.id).also { result ->
@@ -100,13 +100,11 @@ class NonAssociationsSynchronisationService(
       nomisTypeSequence = event.typeSeq,
     )?.let {
       log.debug("Found non-association mapping: $it")
-      log.debug("Sending non-association delete sync for " + it.nonAssociationId)
+      log.debug("Sending non-association delete sync for {}", it.nonAssociationId)
 
-      nonAssociationsService.deleteNonAssociation(
-        DeleteSyncRequest(it.nonAssociationId.toString(), it.nonAssociationId.toString()),
-      )
+      nonAssociationsService.deleteNonAssociation(it.nonAssociationId)
 
-      nonAssociationsMappingService.deleteNomisNonAssociationMapping(it.firstOffenderNo, it.secondOffenderNo, it.nomisTypeSequence)
+      nonAssociationsMappingService.deleteNomisNonAssociationMapping(it.nonAssociationId)
 
       telemetryClient.trackEvent(
         "non-association-delete-synchronisation-success",

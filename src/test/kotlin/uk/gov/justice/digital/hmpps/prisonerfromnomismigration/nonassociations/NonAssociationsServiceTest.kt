@@ -1,8 +1,10 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations
 
 import com.github.tomakehurst.wiremock.client.WireMock
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -12,7 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.model.UpsertSyncRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NonAssociationsApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NonAssociationsApiExtension.Companion.nonAssociationsApi
 import java.time.LocalDate
 
 private const val NON_ASSOCIATION_ID = 72345L
@@ -25,11 +27,11 @@ internal class NonAssociationsServiceTest {
   private lateinit var nonAssociationsService: NonAssociationsService
 
   @Nested
-  @DisplayName("POST /sync/upsert")
+  @DisplayName("PUT /sync/upsert")
   inner class CreateNonAssociationForSynchronisation {
     @BeforeEach
     internal fun setUp() {
-      NonAssociationsApiExtension.nonAssociationsApi.stubUpsertNonAssociationForSynchronisation(nonAssociationId = NON_ASSOCIATION_ID)
+      nonAssociationsApi.stubUpsertNonAssociationForSynchronisation(nonAssociationId = NON_ASSOCIATION_ID)
       runBlocking {
         nonAssociationsService.upsertNonAssociation(
           UpsertSyncRequest(
@@ -49,16 +51,16 @@ internal class NonAssociationsServiceTest {
 
     @Test
     fun `should call api with OAuth2 token`() {
-      NonAssociationsApiExtension.nonAssociationsApi.verify(
-        putRequestedFor(WireMock.urlEqualTo("/sync/upsert"))
+      nonAssociationsApi.verify(
+        putRequestedFor(urlEqualTo("/sync/upsert"))
           .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
       )
     }
 
     @Test
     fun `will pass data to the api`() {
-      NonAssociationsApiExtension.nonAssociationsApi.verify(
-        putRequestedFor(WireMock.urlEqualTo("/sync/upsert"))
+      nonAssociationsApi.verify(
+        putRequestedFor(urlEqualTo("/sync/upsert"))
           .withRequestBody(matchingJsonPath("firstPrisonerNumber", WireMock.equalTo("A1234CD")))
           .withRequestBody(matchingJsonPath("firstPrisonerReason", WireMock.equalTo("VIC")))
           .withRequestBody(matchingJsonPath("secondPrisonerNumber", WireMock.equalTo("E5678EF")))
@@ -69,6 +71,44 @@ internal class NonAssociationsServiceTest {
           .withRequestBody(matchingJsonPath("effectiveFromDate", WireMock.equalTo("2022-01-01")))
           .withRequestBody(matchingJsonPath("expiryDate", WireMock.equalTo("2022-07-01"))),
       )
+    }
+  }
+
+  @Nested
+  @DisplayName("DELETE /sync")
+  inner class DeleteNonAssociationForSynchronisation {
+    @Nested
+    inner class NonAssociationExists {
+      @BeforeEach
+      internal fun setUp() {
+        nonAssociationsApi.stubDeleteNonAssociationForSynchronisation(nonAssociationId = NON_ASSOCIATION_ID)
+        runBlocking {
+          nonAssociationsService.deleteNonAssociation(nonAssociationId = NON_ASSOCIATION_ID)
+        }
+      }
+
+      @Test
+      fun `should call api with OAuth2 token`() {
+        nonAssociationsApi.verify(
+          deleteRequestedFor(urlEqualTo("/sync/delete/$NON_ASSOCIATION_ID"))
+            .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
+        )
+      }
+    }
+
+    @Nested
+    inner class NonAssociationAlreadyDeleted {
+      @BeforeEach
+      internal fun setUp() {
+        nonAssociationsApi.stubDeleteNonAssociationForSynchronisationNotFound(nonAssociationId = NON_ASSOCIATION_ID)
+      }
+
+      @Test
+      fun `should ignore 404 error`() {
+        runBlocking {
+          nonAssociationsService.deleteNonAssociation(nonAssociationId = NON_ASSOCIATION_ID)
+        }
+      }
     }
   }
 }

@@ -752,7 +752,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubGetNonAssociation(firstOffenderNo: String = "A1234BC", secondOffenderNo: String = "D5678EF", typeSequence: Int = 1) {
     val content = """{
-      "nonAssociationId": 14478,
+      "nonAssociationId": 4321,
       "firstOffenderNo": "$firstOffenderNo",                                       
       "secondOffenderNo": "$secondOffenderNo",                   
       "nomisTypeSequence": $typeSequence,    
@@ -766,9 +766,20 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubNonAssociationMappingDelete(firstOffenderNo: String = "A1234BC", secondOffenderNo: String = "D5678EF", typeSequence: Int = 1) {
+  fun stubGetNonAssociationNotFound(firstOffenderNo: String = "A1234BC", secondOffenderNo: String = "D5678EF", typeSequence: Int = 1) {
     stubFor(
-      delete(urlEqualTo("/mapping/non-associations/first-offender-no/$firstOffenderNo/second-offender-no/$secondOffenderNo/type-sequence/$typeSequence"))
+      get(urlPathMatching("/mapping/non-associations/first-offender-no/$firstOffenderNo/second-offender-no/$secondOffenderNo/type-sequence/$typeSequence"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NOT_FOUND.value()),
+        ),
+    )
+  }
+
+  fun stubNonAssociationMappingDelete(nonAssociationId: Long) {
+    stubFor(
+      delete(urlEqualTo("/mapping/non-associations/non-association-id/$nonAssociationId"))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
