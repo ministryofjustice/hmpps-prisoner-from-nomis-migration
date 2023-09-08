@@ -88,7 +88,7 @@ class NonAssociationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubDeleteNonAssociationForSynchronisation(nonAssociationId: Long) {
     stubFor(
-      delete(urlMatching("/sync/delete/$nonAssociationId")).willReturn(
+      delete(urlMatching("/sync/$nonAssociationId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(NO_CONTENT.value()),
@@ -98,7 +98,7 @@ class NonAssociationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubDeleteNonAssociationForSynchronisationNotFound(nonAssociationId: Long) {
     stubFor(
-      delete(urlMatching("/sync/delete/$nonAssociationId")).willReturn(
+      delete(urlMatching("/sync/$nonAssociationId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.NOT_FOUND.value()),
