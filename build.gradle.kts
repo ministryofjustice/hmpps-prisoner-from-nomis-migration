@@ -10,24 +10,12 @@ plugins {
   id("org.openapi.generator") version "7.0.0"
 }
 
-dependencyCheck {
-  suppressionFiles.add("reactive-suppressions.xml")
-  // Please remove the below suppressions once it has been suppressed in the DependencyCheck plugin (see this issue: https://github.com/jeremylong/DependencyCheck/issues/4616)
-  suppressionFiles.add("postgres-suppressions.xml")
-}
-
 configurations {
   implementation { exclude(module = "spring-boot-starter-web") }
   implementation { exclude(module = "spring-boot-starter-tomcat") }
   testImplementation { exclude(group = "org.junit.vintage") }
 }
 
-// Temporarily kept at 0.9.2 as get class java.lang.Long cannot be cast to class java.lang.Integer when upgrading to 1.0.0.RELEASE
-val r2dbcPostgresVersion by extra("0.9.2.RELEASE")
-
-repositories {
-  mavenCentral()
-}
 dependencies {
   implementation("org.springframework.boot:spring-boot-starter-webflux")
   implementation("org.springframework.boot:spring-boot-starter-security")
@@ -44,7 +32,7 @@ dependencies {
 
   implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.2")
 
-  runtimeOnly("org.postgresql:r2dbc-postgresql:$r2dbcPostgresVersion")
+  runtimeOnly("org.postgresql:r2dbc-postgresql:1.0.1.RELEASE")
   runtimeOnly("org.springframework.boot:spring-boot-starter-jdbc")
   runtimeOnly("org.postgresql:postgresql:42.6.0")
   implementation("org.flywaydb:flyway-core")
@@ -55,9 +43,9 @@ dependencies {
   testImplementation("io.jsonwebtoken:jjwt-impl:0.11.5")
   testImplementation("io.jsonwebtoken:jjwt-jackson:0.11.5")
 
-  testImplementation("org.wiremock:wiremock:3.0.3")
+  testImplementation("org.wiremock:wiremock:3.0.4")
   testImplementation("org.testcontainers:localstack:1.19.0")
-  testImplementation("com.amazonaws:aws-java-sdk-core:1.12.546")
+  testImplementation("com.amazonaws:aws-java-sdk-core:1.12.547")
   testImplementation("org.awaitility:awaitility-kotlin:4.2.0")
   testImplementation("org.testcontainers:postgresql:1.19.0")
   testImplementation("io.mockk:mockk:1.13.7")
