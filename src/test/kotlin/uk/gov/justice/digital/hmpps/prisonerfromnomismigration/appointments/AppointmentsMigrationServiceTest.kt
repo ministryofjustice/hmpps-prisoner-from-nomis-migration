@@ -1013,6 +1013,7 @@ fun sampleAppointment(appointmentInstanceId: Long) = Appointment(
     AppointmentOccurrence(
       1,
       1,
+      "MEDO",
       false,
       LocalDate.parse("2020-05-23"),
       "11:30",
