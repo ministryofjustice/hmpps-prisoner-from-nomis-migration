@@ -17,7 +17,7 @@ import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.sampleAppointment
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.sampleAppointmentInstance
 
 class ActivitiesApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
   companion object {
@@ -58,7 +58,7 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubCreateAppointmentForMigration(appointmentInstanceId: Long) {
-    val response = objectMapper.writeValueAsString(sampleAppointment(appointmentInstanceId))
+    val response = objectMapper.writeValueAsString(sampleAppointmentInstance(appointmentInstanceId))
 
     stubFor(
       post(urlMatching("/migrate-appointment"))
