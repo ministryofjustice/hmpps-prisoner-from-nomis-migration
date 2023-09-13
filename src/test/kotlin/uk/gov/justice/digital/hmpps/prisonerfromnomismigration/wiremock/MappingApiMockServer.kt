@@ -709,6 +709,28 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       )
     }
 
+  fun stubNonAssociationsLatestMigration(migrationId: String) {
+    stubFor(
+      get(urlEqualTo("/mapping/non-associations/migrated/latest")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(
+            """
+            {
+              "nonAssociationId": 4321,
+              "firstOffenderNo": "A1234BC",                                       
+              "secondOffenderNo": "D5678EF",                   
+              "nomisTypeSequence": 2,    
+              "label": "$migrationId",
+              "whenCreated": "2020-01-01T11:10:00",
+              "mappingType": "MIGRATED"
+            }              
+            """,
+          ),
+      ),
+    )
+  }
+
   fun stubNonAssociationMappingCreateConflict(
     nonAssociationId: Long,
     duplicateNonAssociationId: Long,
