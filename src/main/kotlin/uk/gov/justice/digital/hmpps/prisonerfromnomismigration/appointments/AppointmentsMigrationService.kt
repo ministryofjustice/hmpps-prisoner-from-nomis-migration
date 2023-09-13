@@ -73,7 +73,7 @@ class AppointmentsMigrationService(
         val appointment = nomisApiService.getAppointment(eventId)
 
         val migratedAppointment = appointmentsService.createAppointment(appointment.toAppointment())
-        val id = migratedAppointment.occurrences.first().allocations.first().id
+        val id = migratedAppointment.id
         createAppointmentMapping(
           nomisEventId = eventId,
           appointmentInstanceId = id,
