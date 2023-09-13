@@ -1,8 +1,9 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations
 
-import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import kotlinx.coroutines.runBlocking
@@ -42,6 +43,7 @@ internal class NonAssociationsServiceTest {
             restrictionType = UpsertSyncRequest.RestrictionType.CELL,
             comment = "Do not keep together - fighting",
             authorisedBy = "Jim Smith",
+            lastModifiedByUsername = "Fred Jones",
             effectiveFromDate = LocalDate.parse("2022-01-01"),
             expiryDate = LocalDate.parse("2022-07-01"),
           ),
@@ -53,7 +55,7 @@ internal class NonAssociationsServiceTest {
     fun `should call api with OAuth2 token`() {
       nonAssociationsApi.verify(
         putRequestedFor(urlEqualTo("/sync/upsert"))
-          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
@@ -61,15 +63,16 @@ internal class NonAssociationsServiceTest {
     fun `will pass data to the api`() {
       nonAssociationsApi.verify(
         putRequestedFor(urlEqualTo("/sync/upsert"))
-          .withRequestBody(matchingJsonPath("firstPrisonerNumber", WireMock.equalTo("A1234CD")))
-          .withRequestBody(matchingJsonPath("firstPrisonerReason", WireMock.equalTo("VIC")))
-          .withRequestBody(matchingJsonPath("secondPrisonerNumber", WireMock.equalTo("E5678EF")))
-          .withRequestBody(matchingJsonPath("secondPrisonerReason", WireMock.equalTo("PER")))
-          .withRequestBody(matchingJsonPath("restrictionType", WireMock.equalTo("CELL")))
-          .withRequestBody(matchingJsonPath("comment", WireMock.equalTo("Do not keep together - fighting")))
-          .withRequestBody(matchingJsonPath("authorisedBy", WireMock.equalTo("Jim Smith")))
-          .withRequestBody(matchingJsonPath("effectiveFromDate", WireMock.equalTo("2022-01-01")))
-          .withRequestBody(matchingJsonPath("expiryDate", WireMock.equalTo("2022-07-01"))),
+          .withRequestBody(matchingJsonPath("firstPrisonerNumber", equalTo("A1234CD")))
+          .withRequestBody(matchingJsonPath("firstPrisonerReason", equalTo("VIC")))
+          .withRequestBody(matchingJsonPath("secondPrisonerNumber", equalTo("E5678EF")))
+          .withRequestBody(matchingJsonPath("secondPrisonerReason", equalTo("PER")))
+          .withRequestBody(matchingJsonPath("restrictionType", equalTo("CELL")))
+          .withRequestBody(matchingJsonPath("comment", equalTo("Do not keep together - fighting")))
+          .withRequestBody(matchingJsonPath("authorisedBy", equalTo("Jim Smith")))
+          .withRequestBody(matchingJsonPath("lastModifiedByUsername", equalTo("Fred Jones")))
+          .withRequestBody(matchingJsonPath("effectiveFromDate", equalTo("2022-01-01")))
+          .withRequestBody(matchingJsonPath("expiryDate", equalTo("2022-07-01"))),
       )
     }
   }
@@ -91,7 +94,7 @@ internal class NonAssociationsServiceTest {
       fun `should call api with OAuth2 token`() {
         nonAssociationsApi.verify(
           deleteRequestedFor(urlEqualTo("/sync/$NON_ASSOCIATION_ID"))
-            .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
+            .withHeader("Authorization", equalTo("Bearer ABCDE")),
         )
       }
     }
@@ -109,6 +112,56 @@ internal class NonAssociationsServiceTest {
           nonAssociationsService.deleteNonAssociation(nonAssociationId = NON_ASSOCIATION_ID)
         }
       }
+    }
+  }
+
+  @Nested
+  @DisplayName("POST /migrate")
+  inner class CreateNonAssociationForMigration {
+    @BeforeEach
+    internal fun setUp() {
+      nonAssociationsApi.stubUpsertNonAssociationForMigration(nonAssociationId = NON_ASSOCIATION_ID)
+      runBlocking {
+        nonAssociationsService.migrateNonAssociation(
+          UpsertSyncRequest(
+            firstPrisonerNumber = "A1234CD",
+            firstPrisonerReason = UpsertSyncRequest.FirstPrisonerReason.VIC,
+            secondPrisonerNumber = "E5678EF",
+            secondPrisonerReason = UpsertSyncRequest.SecondPrisonerReason.PER,
+            restrictionType = UpsertSyncRequest.RestrictionType.CELL,
+            comment = "Do not keep together - fighting",
+            authorisedBy = "Jim Smith",
+            lastModifiedByUsername = "Fred Jones",
+            effectiveFromDate = LocalDate.parse("2022-01-01"),
+            expiryDate = LocalDate.parse("2022-07-01"),
+          ),
+        )
+      }
+    }
+
+    @Test
+    fun `should call api with OAuth2 token`() {
+      nonAssociationsApi.verify(
+        postRequestedFor(urlEqualTo("/migrate"))
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will pass data to the api`() {
+      nonAssociationsApi.verify(
+        postRequestedFor(urlEqualTo("/migrate"))
+          .withRequestBody(matchingJsonPath("firstPrisonerNumber", equalTo("A1234CD")))
+          .withRequestBody(matchingJsonPath("firstPrisonerReason", equalTo("VIC")))
+          .withRequestBody(matchingJsonPath("secondPrisonerNumber", equalTo("E5678EF")))
+          .withRequestBody(matchingJsonPath("secondPrisonerReason", equalTo("PER")))
+          .withRequestBody(matchingJsonPath("restrictionType", equalTo("CELL")))
+          .withRequestBody(matchingJsonPath("comment", equalTo("Do not keep together - fighting")))
+          .withRequestBody(matchingJsonPath("authorisedBy", equalTo("Jim Smith")))
+          .withRequestBody(matchingJsonPath("lastModifiedByUsername", equalTo("Fred Jones")))
+          .withRequestBody(matchingJsonPath("effectiveFromDate", equalTo("2022-01-01")))
+          .withRequestBody(matchingJsonPath("expiryDate", equalTo("2022-07-01"))),
+      )
     }
   }
 }

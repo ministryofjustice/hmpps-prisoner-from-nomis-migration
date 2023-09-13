@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2023-09-04.1306.1958da0"
+    "version": "2023-09-12.1471.19ec9b0"
   },
   "servers": [
     {
@@ -104,7 +104,7 @@
         ],
         "summary": "Sync delete a non-association",
         "description": "Will delete all non-associations between these 2 prisoners. Requires ROLE_NON_ASSOCIATIONS_SYNC role.",
-        "operationId": "sync_1",
+        "operationId": "delete",
         "requestBody": {
           "content": {
             "application/json": {
@@ -117,7 +117,17 @@
         },
         "responses": {
           "204": {
-            "description": "Non-association removed"
+            "description": "Non-association removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NonAssociation"
+                  }
+                }
+              }
+            }
           },
           "401": {
             "description": "Unauthorized to access this endpoint",
@@ -231,7 +241,7 @@
           "Non-Associations"
         ],
         "summary": "Close a non-association",
-        "description": "Requires ROLE_NON_ASSOCIATIONS role with write scope.",
+        "description": "Requires WRITE_NON_ASSOCIATIONS role with write scope.",
         "operationId": "closeNonAssociation",
         "parameters": [
           {
@@ -307,7 +317,7 @@
           "Non-Associations"
         ],
         "summary": "Creates a non-association between two prisoners.",
-        "description": "Requires ROLE_NON_ASSOCIATIONS role with write scope.",
+        "description": "Requires WRITE_NON_ASSOCIATIONS role with write scope.",
         "operationId": "createNonAssociation",
         "requestBody": {
           "content": {
@@ -448,7 +458,7 @@
           "Non-Associations"
         ],
         "summary": "Get non-associations involving any of the given prisoners. Either person in the non-association must be in the provided list.",
-        "description": "Requires ROLE_NON_ASSOCIATIONS role.",
+        "description": "Requires READ_NON_ASSOCIATIONS role.",
         "operationId": "getNonAssociationsInvolvingPrisoners",
         "parameters": [
           {
@@ -571,7 +581,7 @@
           "Non-Associations"
         ],
         "summary": "Get non-associations between two or more prisoners by prisoner number. Both people in the non-associations must be in the provided list.",
-        "description": "Requires ROLE_NON_ASSOCIATIONS role.",
+        "description": "Requires READ_NON_ASSOCIATIONS role.",
         "operationId": "getNonAssociationsBetweenPrisoners",
         "parameters": [
           {
@@ -746,7 +756,7 @@
           "Non-Associations"
         ],
         "summary": "Get a non-association between two prisoners by ID.",
-        "description": "Requires ROLE_NON_ASSOCIATIONS role.",
+        "description": "Requires READ_NON_ASSOCIATIONS role.",
         "operationId": "getNonAssociation",
         "parameters": [
           {
@@ -810,7 +820,7 @@
           "Non-Associations"
         ],
         "summary": "Partial update of a non-association by ID.",
-        "description": "Requires ROLE_NON_ASSOCIATIONS role with write scope.",
+        "description": "Requires WRITE_NON_ASSOCIATIONS role with write scope.",
         "operationId": "patchNonAssociation",
         "parameters": [
           {
@@ -926,7 +936,7 @@
           "Non-Associations"
         ],
         "summary": "Get non-associations by prisoner number",
-        "description": "Requires ROLE_NON_ASSOCIATIONS role.",
+        "description": "Requires READ_NON_ASSOCIATIONS role.",
         "operationId": "getPrisonerNonAssociations",
         "parameters": [
           {
@@ -1257,7 +1267,7 @@
         ],
         "summary": "Delete a non-association by ID",
         "description": "Will delete a non-association for the given ID. Requires ROLE_NON_ASSOCIATIONS_SYNC role.",
-        "operationId": "delete",
+        "operationId": "delete_1",
         "parameters": [
           {
             "name": "id",
@@ -1274,7 +1284,14 @@
         ],
         "responses": {
           "204": {
-            "description": "Non-association removed"
+            "description": "Non-association removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NonAssociation"
+                }
+              }
+            }
           },
           "401": {
             "description": "Unauthorized to access this endpoint",
@@ -1356,6 +1373,8 @@
             "example": 234233
           },
           "firstPrisonerNumber": {
+            "maxLength": 10,
+            "pattern": "[a-zA-Z][0-9]{4}[a-zA-Z]{2}",
             "type": "string",
             "description": "Prisoner number to not associate, this is ignored if ID is provided",
             "example": "A1234BC"
@@ -1374,6 +1393,8 @@
             ]
           },
           "secondPrisonerNumber": {
+            "maxLength": 10,
+            "pattern": "[a-zA-Z][0-9]{4}[a-zA-Z]{2}",
             "type": "string",
             "description": "Prisoner number to not associate, this is ignored if ID is provided",
             "example": "D5678EF"
@@ -1409,9 +1430,18 @@
             "example": "John and Luke always end up fighting"
           },
           "authorisedBy": {
+            "maxLength": 60,
+            "minLength": 1,
             "type": "string",
             "description": "Who authorised the non-association",
             "example": "John Smith"
+          },
+          "lastModifiedByUsername": {
+            "maxLength": 30,
+            "minLength": 1,
+            "type": "string",
+            "description": "The last staff member who changed this record, username of 30 characters, if not provided the API credentials will be used",
+            "example": "JSMITH"
           },
           "effectiveFromDate": {
             "type": "string",
@@ -1430,7 +1460,6 @@
       },
       "NonAssociation": {
         "required": [
-          "authorisedBy",
           "comment",
           "firstPrisonerNumber",
           "firstPrisonerRole",
@@ -1537,11 +1566,6 @@
             "type": "string",
             "description": "Explanation of why prisoners are non-associated",
             "example": "John and Luke always end up fighting"
-          },
-          "authorisedBy": {
-            "type": "string",
-            "description": "User ID of the person who created the non-association. NOTE: For records migrated from NOMIS/Prison API this is free text and may not be a valid User ID. Additionally, migrated records might use an internal system username",
-            "example": "OFF3_GEN"
           },
           "whenCreated": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
@@ -1694,6 +1718,8 @@
         "type": "object",
         "properties": {
           "firstPrisonerNumber": {
+            "maxLength": 10,
+            "pattern": "[a-zA-Z][0-9]{4}[a-zA-Z]{2}",
             "type": "string",
             "description": "Prisoner number to not associate",
             "example": "A1234BC"
@@ -1710,6 +1736,8 @@
             ]
           },
           "secondPrisonerNumber": {
+            "maxLength": 10,
+            "pattern": "[a-zA-Z][0-9]{4}[a-zA-Z]{2}",
             "type": "string",
             "description": "Prisoner number to not associate",
             "example": "D5678EF"
@@ -2316,7 +2344,6 @@
       },
       "LegacyNonAssociation": {
         "required": [
-          "authorisedBy",
           "comments",
           "effectiveDate",
           "id",

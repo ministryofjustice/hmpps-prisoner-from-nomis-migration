@@ -1,7 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations
 
 import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.http.HttpMethod.DELETE
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
@@ -19,9 +18,15 @@ class NonAssociationsService(@Qualifier("nonAssociationsApiWebClient") private v
       .awaitBody()
 
   suspend fun deleteNonAssociation(nonAssociationId: Long) =
-    webClient
-      .method(DELETE)
+    webClient.delete()
       .uri("/sync/$nonAssociationId")
       .retrieve()
       .awaitBodyOrNotFound<Unit>()
+
+  suspend fun migrateNonAssociation(upsertRequest: UpsertSyncRequest): NonAssociation =
+    webClient.post()
+      .uri("/migrate")
+      .bodyValue(upsertRequest)
+      .retrieve()
+      .awaitBody()
 }

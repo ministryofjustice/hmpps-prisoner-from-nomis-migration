@@ -5,6 +5,7 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
@@ -13,8 +14,13 @@ import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
+import org.springframework.http.HttpStatus.CREATED
 import org.springframework.http.HttpStatus.NO_CONTENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.model.NonAssociation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.model.NonAssociation.FirstPrisonerRole
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.model.NonAssociation.Reason
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.model.NonAssociation.RestrictionType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.model.NonAssociation.SecondPrisonerRole
 
 class NonAssociationsApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
   companion object {
@@ -56,22 +62,21 @@ class NonAssociationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       put(urlMatching("/sync/upsert")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.CREATED.value())
+          .withStatus(CREATED.value())
           .withBody(
             NonAssociation(
               id = nonAssociationId,
               firstPrisonerNumber = firstOffenderNo,
-              firstPrisonerRole = NonAssociation.FirstPrisonerRole.VICTIM,
+              firstPrisonerRole = FirstPrisonerRole.VICTIM,
               firstPrisonerRoleDescription = "Victim",
               secondPrisonerNumber = secondOffenderNo,
-              secondPrisonerRole = NonAssociation.SecondPrisonerRole.PERPETRATOR,
+              secondPrisonerRole = SecondPrisonerRole.PERPETRATOR,
               secondPrisonerRoleDescription = "Perpetrator",
-              reason = NonAssociation.Reason.BULLYING,
+              reason = Reason.BULLYING,
               reasonDescription = "Bullying",
-              restrictionType = NonAssociation.RestrictionType.CELL,
+              restrictionType = RestrictionType.CELL,
               restrictionTypeDescription = "Cell",
               comment = "John and Luke always end up fighting",
-              authorisedBy = "OFF3_GEN",
               whenCreated = "2023-07-05T11:12:45",
               whenUpdated = "2023-07-06T13:35:17",
               updatedBy = "OFF3_GEN",
@@ -102,6 +107,40 @@ class NonAssociationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.NOT_FOUND.value()),
+      ),
+    )
+  }
+
+  fun stubUpsertNonAssociationForMigration(nonAssociationId: Long = 4321, firstOffenderNo: String = "A1234BC", secondOffenderNo: String = "D5678EF") {
+    stubFor(
+      post(urlMatching("/migrate")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(CREATED.value())
+          .withBody(
+            NonAssociation(
+              id = nonAssociationId,
+              firstPrisonerNumber = firstOffenderNo,
+              firstPrisonerRole = FirstPrisonerRole.VICTIM,
+              firstPrisonerRoleDescription = "Victim",
+              secondPrisonerNumber = secondOffenderNo,
+              secondPrisonerRole = SecondPrisonerRole.PERPETRATOR,
+              secondPrisonerRoleDescription = "Perpetrator",
+              reason = Reason.BULLYING,
+              reasonDescription = "Bullying",
+              restrictionType = RestrictionType.CELL,
+              restrictionTypeDescription = "Cell",
+              comment = "John and Luke always end up fighting",
+              whenCreated = "2023-07-05T11:12:45",
+              whenUpdated = "2023-07-06T13:35:17",
+              updatedBy = "OFF3_GEN",
+              isClosed = false,
+              closedBy = "null",
+              closedReason = "null",
+              closedAt = "2023-07-09T15:44:23",
+              isOpen = true,
+            ).toJson(),
+          ),
       ),
     )
   }
