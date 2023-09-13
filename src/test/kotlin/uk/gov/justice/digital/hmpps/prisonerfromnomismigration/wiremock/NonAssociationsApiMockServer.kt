@@ -6,6 +6,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
@@ -147,6 +148,9 @@ class NonAssociationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun createNonAssociationSynchronisationCount() =
     findAll(putRequestedFor(urlMatching("/sync/upsert"))).count()
+
+  fun createNonAssociationMigrationCount() =
+    findAll(postRequestedFor(urlMatching("/migrate"))).count()
 }
 
 private fun Any.toJson(): String = ObjectMapper().writeValueAsString(this)
