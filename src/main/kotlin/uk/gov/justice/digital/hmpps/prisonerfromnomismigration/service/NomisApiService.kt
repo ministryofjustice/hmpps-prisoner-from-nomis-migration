@@ -266,7 +266,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
   ): PageImpl<NonAssociationIdResponse> =
     webClient.get()
       .uri {
-        it.path("/non-association/ids")
+        it.path("/non-associations/ids")
           .queryParam("fromDate", fromDate)
           .queryParam("toDate", toDate)
           .queryParam("page", pageNumber)
@@ -414,6 +414,7 @@ fun NonAssociationResponse.toUpsertSyncRequest(nonAssociationId: Long? = null) =
     secondPrisonerReason = UpsertSyncRequest.SecondPrisonerReason.valueOf(recipReason),
     restrictionType = UpsertSyncRequest.RestrictionType.valueOf(type),
     comment = comment,
+    lastModifiedByUsername = "", // TODO ADD this in
     authorisedBy = authorisedBy,
     effectiveFromDate = effectiveDate,
     expiryDate = expiryDate,

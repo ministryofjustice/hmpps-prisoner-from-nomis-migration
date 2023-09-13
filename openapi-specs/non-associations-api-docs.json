@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2023-09-12.1471.19ec9b0"
+    "version": "2023-09-13.1489.7283719"
   },
   "servers": [
     {
@@ -945,6 +945,7 @@
             "description": "The offender prisoner number",
             "required": true,
             "schema": {
+              "pattern": "[a-zA-Z][0-9]{4}[a-zA-Z]{2}",
               "type": "string",
               "description": "The offender prisoner number",
               "example": "A1234BC"
@@ -1437,10 +1438,10 @@
             "example": "John Smith"
           },
           "lastModifiedByUsername": {
-            "maxLength": 30,
+            "maxLength": 60,
             "minLength": 1,
             "type": "string",
-            "description": "The last staff member who changed this record, username of 30 characters, if not provided the API credentials will be used",
+            "description": "The last staff member who changed this record, username of 60 characters, if not provided the API credentials will be used",
             "example": "JSMITH"
           },
           "effectiveFromDate": {
@@ -1619,11 +1620,13 @@
         "type": "object",
         "properties": {
           "firstPrisonerNumber": {
+            "pattern": "[a-zA-Z][0-9]{4}[a-zA-Z]{2}",
             "type": "string",
             "description": "Prisoner number to not associate",
             "example": "A1234BC"
           },
           "secondPrisonerNumber": {
+            "pattern": "[a-zA-Z][0-9]{4}[a-zA-Z]{2}",
             "type": "string",
             "description": "Prisoner number to not associate",
             "example": "D5678EF"
@@ -1687,6 +1690,8 @@
         "type": "object",
         "properties": {
           "closedReason": {
+            "maxLength": 2147483647,
+            "minLength": 1,
             "type": "string",
             "description": "Reason for closing the non-association",
             "example": "They are friends now"
@@ -1698,6 +1703,8 @@
             "example": "2021-07-05T10:35:17"
           },
           "closedBy": {
+            "maxLength": 60,
+            "minLength": 1,
             "type": "string",
             "description": "The username of the member of staff requesting the closure, if not provided will use the user in the JWT access token",
             "example": "ASMITH"
@@ -1778,6 +1785,8 @@
             ]
           },
           "comment": {
+            "maxLength": 2147483647,
+            "minLength": 1,
             "type": "string",
             "description": "Explanation of why prisoners are non-associated",
             "example": "John and Luke always end up fighting"
@@ -1793,11 +1802,15 @@
         "type": "object",
         "properties": {
           "deletionReason": {
+            "maxLength": 2147483647,
+            "minLength": 1,
             "type": "string",
             "description": "Reason for deleting the non-association",
             "example": "Created in error and removed on requested from OMU team"
           },
           "staffUserNameRequestingDeletion": {
+            "maxLength": 60,
+            "minLength": 1,
             "type": "string",
             "description": "The username of the member of staff requesting the deletion",
             "example": "AJONES"
@@ -1806,13 +1819,6 @@
         "description": "Request to delete a non-association"
       },
       "PatchNonAssociationRequest": {
-        "required": [
-          "comment",
-          "firstPrisonerRole",
-          "reason",
-          "restrictionType",
-          "secondPrisonerRole"
-        ],
         "type": "object",
         "properties": {
           "firstPrisonerRole": {
@@ -1862,6 +1868,8 @@
             ]
           },
           "comment": {
+            "maxLength": 2147483647,
+            "minLength": 1,
             "type": "string",
             "description": "Explanation of why prisoners are non-associated",
             "example": "John and Luke always end up fighting"
