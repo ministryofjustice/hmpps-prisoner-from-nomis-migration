@@ -21,6 +21,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveActivityIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveAllocationIdsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NonAssociationIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.math.BigDecimal
 import java.net.HttpURLConnection
@@ -1136,5 +1137,151 @@ internal class NomisApiServiceTest {
         }.isInstanceOf(NotFound::class.java)
       }
     }
+  }
+
+  @Nested
+  inner class GetNonAssociationIds {
+    @BeforeEach
+    internal fun setUp() {
+      nomisApi.stubFor(
+        get(
+          urlPathEqualTo("/non-associations/ids"),
+        ).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpURLConnection.HTTP_OK)
+            .withBody(nonAssociationsPagedResponse()),
+        ),
+      )
+    }
+
+    @Test
+    internal fun `will supply authentication token`() {
+      runBlocking {
+        nomisService.getNonAssociationIds(
+          pageNumber = 0,
+          pageSize = 3,
+          fromDate = null,
+          toDate = null,
+        )
+      }
+      nomisApi.verify(
+        getRequestedFor(
+          urlPathEqualTo("/non-associations/ids"),
+        )
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass all filters`() {
+      runBlocking {
+        nomisService.getNonAssociationIds(
+          pageNumber = 0,
+          pageSize = 3,
+          fromDate = null,
+          toDate = null,
+        )
+      }
+      nomisApi.verify(
+        getRequestedFor(
+          urlEqualTo("/non-associations/ids?fromDate&toDate&page=0&size=3"),
+        ),
+      )
+    }
+
+    @Test
+    internal fun `will pass all filters when present`() {
+      runBlocking {
+        nomisService.getNonAssociationIds(
+          pageNumber = 0,
+          pageSize = 3,
+          fromDate = LocalDate.parse("2020-01-01"),
+          toDate = LocalDate.parse("2020-01-02"),
+        )
+      }
+      nomisApi.verify(
+        getRequestedFor(
+          urlEqualTo("/non-associations/ids?fromDate=2020-01-01&toDate=2020-01-02&page=0&size=3"),
+        ),
+      )
+    }
+
+    @Test
+    internal fun `will return paging info along with the non-association ids`() {
+      nomisApi.stubFor(
+        get(
+          urlPathEqualTo("/non-associations/ids"),
+        ).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpURLConnection.HTTP_OK)
+            .withBody(nonAssociationsPagedResponse()),
+        ),
+      )
+
+      val nonAssociations = runBlocking {
+        nomisService.getNonAssociationIds(
+          pageNumber = 0,
+          pageSize = 3,
+          fromDate = null,
+          toDate = null,
+        )
+      }
+
+      assertThat(nonAssociations.content).hasSize(3)
+      assertThat(nonAssociations.content).extracting<String>(NonAssociationIdResponse::offenderNo1)
+        .containsExactly("A1234BC", "G1234HI", "M1234NO")
+      assertThat(nonAssociations.content).extracting<String>(NonAssociationIdResponse::offenderNo2)
+        .containsExactly("D5678EF", "J5678KL", "P5678QR")
+      assertThat(nonAssociations.totalPages).isEqualTo(2)
+      assertThat(nonAssociations.pageable.pageNumber).isEqualTo(0)
+      assertThat(nonAssociations.totalElements).isEqualTo(4)
+    }
+
+    private fun nonAssociationsPagedResponse() = """
+{
+    "content": [
+      {
+        "offenderNo1": "A1234BC",
+        "offenderNo2": "D5678EF"
+      },
+      {
+        "offenderNo1": "G1234HI",
+        "offenderNo2": "J5678KL"
+      },
+      {
+        "offenderNo1": "M1234NO",
+        "offenderNo2": "P5678QR"
+      }
+    ],
+    "pageable": {
+        "sort": {
+            "empty": false,
+            "sorted": true,
+            "unsorted": false
+        },
+        "offset": 0,
+        "pageSize": 3,
+        "pageNumber": 1,
+        "paged": true,
+        "unpaged": false
+    },
+    "last": false,
+    "totalPages": 2,
+    "totalElements": 4,
+    "size": 3,
+    "number": 0,
+    "sort": {
+        "empty": false,
+        "sorted": true,
+        "unsorted": false
+    },
+    "first": true,
+    "numberOfElements": 3,
+    "empty": false
+}                
+      
+    """.trimIndent()
   }
 }

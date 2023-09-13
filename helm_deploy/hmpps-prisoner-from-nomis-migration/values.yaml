@@ -87,6 +87,10 @@ generic-service:
       HMPPS_SQS_QUEUES_MIGRATIONALLOCATIONS_QUEUE_NAME: "sqs_name"
     sqs-migration-allocations-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONALLOCATIONS_DLQ_NAME: "sqs_name"
+    sqs-migration-nonassociations-queue:
+      HMPPS_SQS_QUEUES_MIGRATIONNONASSOCIATIONS_QUEUE_NAME: "sqs_name"
+    sqs-migration-nonassociations-dlq:
+      HMPPS_SQS_QUEUES_MIGRATIONNONASSOCIATIONS_DLQ_NAME: "sqs_name"
     prisoner-from-nomis-visits-queue:
       HMPPS_SQS_QUEUES_EVENTVISITS_QUEUE_NAME: "sqs_name"
     prisoner-from-nomis-visits-dl-queue:
