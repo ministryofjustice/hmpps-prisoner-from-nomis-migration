@@ -70,7 +70,7 @@ class NonAssociationsMigrationService(
     val secondOffenderNo = context.body.offenderNo2
 
     // Determine all non-associations for this offender pair
-    nomisApiService.getNonAssociations(firstOffenderNo, secondOffenderNo) ?.forEach { nomisNonAssociationResponse ->
+    nomisApiService.getNonAssociations(firstOffenderNo, secondOffenderNo).forEach { nomisNonAssociationResponse ->
       nonAssociationsMappingService.findNomisNonAssociationMapping(firstOffenderNo, secondOffenderNo, nomisNonAssociationResponse.typeSequence)
         ?.run {
           log.info(
@@ -80,6 +80,7 @@ class NonAssociationsMigrationService(
           )
         }
         ?: run {
+          log.debug("No non-association mapping - sending non-association migrate upsert {}", nomisNonAssociationResponse.toUpsertSyncRequest())
           val migratedNonAssociation = nonAssociationsService.migrateNonAssociation(nomisNonAssociationResponse.toUpsertSyncRequest())
             .also {
               createNonAssociationMapping(
