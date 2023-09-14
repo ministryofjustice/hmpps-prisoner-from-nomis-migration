@@ -41,8 +41,7 @@ class MappingApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallb
     const val KEYDATE_ADJUSTMENTS_GET_MAPPING_URL =
       "/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id"
     const val ADJUSTMENTS_CREATE_MAPPING_URL = "/mapping/sentencing/adjustments"
-    const val NON_ASSOCIATIONS_CREATE_MAPPING_URL =
-      "/mapping/non-associations"
+    const val NON_ASSOCIATIONS_CREATE_MAPPING_URL = "/mapping/non-associations"
   }
 
   override fun beforeAll(context: ExtensionContext) {
@@ -710,6 +709,28 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       )
     }
 
+  fun stubNonAssociationsLatestMigration(migrationId: String) {
+    stubFor(
+      get(urlEqualTo("/mapping/non-associations/migrated/latest")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(
+            """
+            {
+              "nonAssociationId": 4321,
+              "firstOffenderNo": "A1234BC",                                       
+              "secondOffenderNo": "D5678EF",                   
+              "nomisTypeSequence": 2,    
+              "label": "$migrationId",
+              "whenCreated": "2020-01-01T11:10:00",
+              "mappingType": "MIGRATED"
+            }              
+            """,
+          ),
+      ),
+    )
+  }
+
   fun stubNonAssociationMappingCreateConflict(
     nonAssociationId: Long,
     duplicateNonAssociationId: Long,
@@ -777,6 +798,17 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubGetAnyNonAssociationNotFound() {
+    stubFor(
+      get(urlPathMatching("/mapping/non-associations/first-offender-no/[A-Z]\\d{4}[A-Z]{2}/second-offender-no/[A-Z]\\d{4}[A-Z]{2}/type-sequence/\\d"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NOT_FOUND.value()),
+        ),
+    )
+  }
+
   fun stubNonAssociationMappingDelete(nonAssociationId: Long) {
     stubFor(
       delete(urlEqualTo("/mapping/non-associations/non-association-id/$nonAssociationId"))
@@ -803,6 +835,18 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
         okJson(pageContent(content, count)),
       ),
 
+    )
+  }
+
+  fun verifyCreateMappingNonAssociationIds(nomsNonAssociationIds: Array<Long>, times: Int = 1) = nomsNonAssociationIds.forEach {
+    verify(
+      times,
+      postRequestedFor(urlEqualTo("/mapping/non-associations")).withRequestBody(
+        matchingJsonPath(
+          "nonAssociationId",
+          equalTo("$it"),
+        ),
+      ),
     )
   }
 

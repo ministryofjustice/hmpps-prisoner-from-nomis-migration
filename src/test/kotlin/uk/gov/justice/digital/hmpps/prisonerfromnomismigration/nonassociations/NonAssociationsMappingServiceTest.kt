@@ -254,7 +254,7 @@ internal class NonAssociationsMappingServiceTest {
   inner class FindLatestMigration {
     @BeforeEach
     internal fun setUp() {
-      mappingApi.stubLatestMigration("2020-01-01T10:00:00")
+      mappingApi.stubNonAssociationsLatestMigration("2020-01-01T10:00:00")
     }
 
     @Test

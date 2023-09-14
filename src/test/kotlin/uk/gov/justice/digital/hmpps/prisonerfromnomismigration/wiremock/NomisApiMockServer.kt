@@ -23,6 +23,7 @@ class NomisApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallbac
     const val ADJUSTMENTS_ID_URL = "/adjustments/ids"
     const val ACTIVITIES_ID_URL = "/activities/ids"
     const val ALLOCATIONS_ID_URL = "/allocations/ids"
+    const val NON_ASSOCIATIONS_ID_URL = "/non-associations/ids"
 
     @JvmField
     val nomisApi = NomisApiMockServer()
@@ -313,6 +314,48 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .willReturn(
             aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
               .withBody(sentenceAdjustmentResponse(it.toLong())),
+          ),
+      )
+    }
+  }
+
+  fun stubMultipleGetNonAssociationIdCounts(totalElements: Long, pageSize: Long) {
+    // for each page create a response for each non-association id starting from 1 up to `totalElements`
+
+    val pages = (totalElements / pageSize) + 1
+    (0..pages).forEach { page ->
+      val startNonAssociationId = (page * pageSize) + 1
+      val endNonAssociationId = min((page * pageSize) + pageSize, totalElements)
+      nomisApi.stubFor(
+        get(
+          urlPathEqualTo("/non-associations/ids"),
+        )
+          .withQueryParam("page", equalTo(page.toString()))
+          .willReturn(
+            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+              .withBody(
+                nonAssociationIdsPagedResponse(
+                  totalElements = totalElements,
+                  nonAssociationIds = (startNonAssociationId..endNonAssociationId).map { it },
+                  pageNumber = page,
+                  pageSize = pageSize,
+                ),
+              ),
+          ),
+      )
+    }
+  }
+
+  fun stubMultipleGetNonAssociations(intProgression: IntProgression) {
+    (intProgression).forEach {
+      val offenders = idCreator(it.toLong())
+      nomisApi.stubFor(
+        get(
+          urlPathEqualTo("/non-associations/offender/${offenders["offenderNo1"]}/ns-offender/${offenders["offenderNo2"]}/all"),
+        )
+          .willReturn(
+            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+              .withBody(allNonAssociationResponse(offenders["offenderNo1"]!!, offenders["offenderNo2"]!!)),
           ),
       )
     }
@@ -648,6 +691,17 @@ fun adjustmentIdsPagedResponse(
   val content = adjustmentIds.map { """{ "adjustmentId": $it, "adjustmentCategory": "${getAdjustmentCategory(it)}"}""" }
     .joinToString { it }
   return pageContent(content, pageSize, pageNumber, totalElements, adjustmentIds.size)
+}
+
+fun nonAssociationIdsPagedResponse(
+  totalElements: Long = 10,
+  nonAssociationIds: List<Long> = (0L..10L).toList(),
+  pageSize: Long = 10,
+  pageNumber: Long = 0,
+): String {
+  val content = nonAssociationIds.map { idJsonCreator(it) }
+    .joinToString { it }
+  return pageContent(content, pageSize, pageNumber, totalElements, nonAssociationIds.size)
 }
 
 fun appointmentIdsPagedResponse(
@@ -1087,6 +1141,27 @@ fun adjudicationResponse(
   """.trimIndent()
 }
 
+private fun allNonAssociationResponse(
+  offenderNo: String = "A1234BC",
+  nsOffenderNo: String = "D5678EF",
+): String =
+  """
+    [
+    {
+      "offenderNo": "$offenderNo",
+      "nsOffenderNo": "$nsOffenderNo",
+      "typeSequence": 1,
+      "reason": "VIC",
+      "recipReason": "PER",
+      "type": "WING",
+      "authorisedBy": "Jim Smith",
+      "effectiveDate": "2023-10-25",
+      "expiryDate": "2023-10-26",
+      "comment": "Fight on Wing C"
+    }
+    ]
+  """.trimIndent()
+
 private fun nonAssociationResponse(
   offenderNo: String = "A1234BC",
   nsOffenderNo: String = "D5678EF",
@@ -1221,3 +1296,15 @@ private fun allocationsResponse(
     "livingUnitDescription": "BXI-A-1-01"
 }
   """.trimIndent()
+
+private fun idJsonCreator(id: Long): String {
+  val fourDigitString = String.format("%04d", id)
+  return """
+    {"offenderNo1": "A${fourDigitString}BC", "offenderNo2": "D${fourDigitString}EF"}
+  """.trimMargin()
+}
+
+private fun idCreator(id: Long): Map<String, String> {
+  val fourDigitString = String.format("%04d", id)
+  return mapOf("offenderNo1" to "A${fourDigitString}BC", "offenderNo2" to "D${fourDigitString}EF")
+}

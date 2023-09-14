@@ -812,8 +812,6 @@ internal class NonAssociationsMigrationServiceTest {
     internal fun setUp(): Unit = runBlocking {
       whenever(nonAssociationsMappingService.findNomisNonAssociationMapping(any(), any(), any())).thenReturn(null)
       whenever(nomisApiService.getNonAssociations(any(), any())).thenReturn(aNomisNonAssociationResponse())
-
-      // /////////
       whenever(nonAssociationsService.migrateNonAssociation(any())).thenReturn(aNonAssociation())
     }
 
@@ -1033,12 +1031,12 @@ fun aNonAssociation() = NonAssociation(
 )
 
 fun pages(total: Long, startId: Long = 1): PageImpl<NonAssociationIdResponse> = PageImpl<NonAssociationIdResponse>(
-  (startId..total - 1 + startId).map { NonAssociationIdResponse(idCreator(it), idCreator(it, false)) },
+  (startId..total - 1 + startId).map { idCreator(it) },
   Pageable.ofSize(10),
   total,
 )
 
-private fun idCreator(id: Long, firstIdentifier: Boolean = true): String {
+private fun idCreator(id: Long): NonAssociationIdResponse {
   val fourDigitString = String.format("%04d", id)
-  return if (firstIdentifier) "A${fourDigitString}BC" else "D${fourDigitString}EF"
+  return NonAssociationIdResponse("A${fourDigitString}BC", "D${fourDigitString}EF")
 }
