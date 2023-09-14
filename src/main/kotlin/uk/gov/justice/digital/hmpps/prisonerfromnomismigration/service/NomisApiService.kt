@@ -414,7 +414,7 @@ fun NonAssociationResponse.toUpsertSyncRequest(nonAssociationId: Long? = null) =
     secondPrisonerReason = UpsertSyncRequest.SecondPrisonerReason.valueOf(recipReason),
     restrictionType = UpsertSyncRequest.RestrictionType.valueOf(type),
     comment = comment,
-    lastModifiedByUsername = "", // TODO ADD this in
+    // lastModifiedByUsername = "", // TODO ADD this in
     authorisedBy = authorisedBy,
     effectiveFromDate = effectiveDate,
     expiryDate = expiryDate,
