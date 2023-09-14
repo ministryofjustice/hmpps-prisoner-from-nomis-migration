@@ -28,13 +28,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import java.time.LocalDateTime
 
 @RestController
-@RequestMapping("/migrate", produces = [MediaType.APPLICATION_JSON_VALUE])
+@RequestMapping("/migrate/non-associations", produces = [MediaType.APPLICATION_JSON_VALUE])
+@PreAuthorize("hasRole('ROLE_MIGRATE_NON_ASSOCIATIONS')")
 class NonAssociationsMigrationResource(
   private val nonAssociationsMigrationService: NonAssociationsMigrationService,
   private val migrationHistoryService: MigrationHistoryService,
 ) {
-  @PreAuthorize("hasRole('ROLE_MIGRATE_NON_ASSOCIATIONS')")
-  @PostMapping("/non-associations")
+  @PostMapping("")
   @ResponseStatus(value = ACCEPTED)
   @Operation(
     summary = "Starts an nonAssociations migration",
@@ -69,8 +69,7 @@ class NonAssociationsMigrationResource(
     migrationFilter: NonAssociationsMigrationFilter,
   ) = nonAssociationsMigrationService.startMigration(migrationFilter)
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_NON_ASSOCIATIONS')")
-  @GetMapping("/non-associations/history")
+  @GetMapping("/history")
   @Operation(
     summary = "Lists all filtered migration history records un-paged for nonAssociations",
     description = "The records are un-paged and requires role <b>MIGRATE_NON_ASSOCIATIONS</b>",
@@ -127,8 +126,7 @@ class NonAssociationsMigrationResource(
     ),
   )
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_NON_ASSOCIATIONS')")
-  @GetMapping("/non-associations/history/{migrationId}")
+  @GetMapping("/history/{migrationId}")
   @Operation(
     summary = "Gets a specific migration history record",
     description = "Requires role <b>MIGRATE_NON_ASSOCIATIONS</b>",
@@ -166,8 +164,7 @@ class NonAssociationsMigrationResource(
     migrationId: String,
   ) = migrationHistoryService.get(migrationId)
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_NON_ASSOCIATIONS')")
-  @PostMapping("/non-associations/{migrationId}/cancel")
+  @PostMapping("/{migrationId}/cancel")
   @ResponseStatus(value = ACCEPTED)
   @Operation(
     summary = "Cancels a running migration. The actual cancellation might take several minutes to complete",
@@ -200,8 +197,7 @@ class NonAssociationsMigrationResource(
     migrationId: String,
   ) = nonAssociationsMigrationService.cancel(migrationId)
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_NON_ASSOCIATIONS')")
-  @GetMapping("/non-associations/active-migration")
+  @GetMapping("/active-migration")
   @Operation(
     summary = "Gets active/currently running migration data, using migration record and migration queues",
     description = "Requires role <b>MIGRATE_NON_ASSOCIATIONS</b>",
