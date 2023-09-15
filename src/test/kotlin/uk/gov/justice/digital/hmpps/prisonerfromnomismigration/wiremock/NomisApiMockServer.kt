@@ -1157,6 +1157,7 @@ private fun allNonAssociationResponse(
       "authorisedBy": "Jim Smith",
       "effectiveDate": "2023-10-25",
       "expiryDate": "2023-10-26",
+      "updatedBy": "TJONES_ADM",
       "comment": "Fight on Wing C"
     }
     ]
@@ -1178,6 +1179,7 @@ private fun nonAssociationResponse(
       "authorisedBy": "Jim Smith",
       "effectiveDate": "2023-10-25",
       "expiryDate": "2023-10-26",
+      "updatedBy": "FADAMS_ADM",
       "comment": "Fight on Wing C"
     }
   """.trimIndent()
@@ -1195,7 +1197,8 @@ private fun nonAssociationResponseMinimalData(
       "reason": "VIC",
       "recipReason": "PER",
       "type": "WING",
-      "effectiveDate": "2023-10-25"
+      "effectiveDate": "2023-10-25",
+      "updatedBy": "JSMITH_ADM"
     }
   """.trimIndent()
 

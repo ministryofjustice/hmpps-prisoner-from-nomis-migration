@@ -852,7 +852,7 @@ internal class NonAssociationsMigrationServiceTest {
             restrictionType = UpsertSyncRequest.RestrictionType.WING,
             comment = "Fight on Wing C",
             authorisedBy = "Jim Smith",
-            // lastModifiedByUsername = "", // TODO add value when returned from nomis-prisoner-api
+            lastModifiedByUsername = "TJONES_ADM",
             effectiveFromDate = LocalDate.parse("2023-10-25"),
             expiryDate = LocalDate.parse("2023-10-26"),
 
@@ -1000,6 +1000,7 @@ fun aNomisNonAssociationResponse(
     reason = "VIC",
     recipReason = "PER",
     type = "WING",
+    updatedBy = "TJONES_ADM",
     authorisedBy = "Jim Smith",
     effectiveDate = LocalDate.parse("2023-10-25"),
     expiryDate = LocalDate.parse("2023-10-26"),
