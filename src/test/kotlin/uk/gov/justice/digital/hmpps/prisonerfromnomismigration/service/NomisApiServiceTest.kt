@@ -894,6 +894,7 @@ internal class NomisApiServiceTest {
                   "authorisedBy": "Jim Smith",
                   "effectiveDate": "2023-10-25",
                   "expiryDate": "2023-10-26",
+                  "updatedBy": "TJONES_ADM",
                   "comment": "Fight on Wing C"
                 }
               """.trimIndent(),
@@ -933,6 +934,7 @@ internal class NomisApiServiceTest {
       assertThat(nonAssociation.authorisedBy).isEqualTo("Jim Smith")
       assertThat(nonAssociation.effectiveDate).isEqualTo(LocalDate.parse("2023-10-25"))
       assertThat(nonAssociation.expiryDate).isEqualTo(LocalDate.parse("2023-10-26"))
+      assertThat(nonAssociation.updatedBy).isEqualTo("TJONES_ADM")
       assertThat(nonAssociation.comment).isEqualTo("Fight on Wing C")
     }
 
@@ -957,6 +959,7 @@ internal class NomisApiServiceTest {
                   "reason": "VIC",
                   "recipReason": "PER",
                   "type": "WING",
+                  "updatedBy": "TJONES_ADM",
                   "effectiveDate": "2023-10-25"
                 }
                 """.trimIndent(),
@@ -981,6 +984,7 @@ internal class NomisApiServiceTest {
         assertThat(nonAssociation.authorisedBy).isNull()
         assertThat(nonAssociation.effectiveDate).isEqualTo(LocalDate.parse("2023-10-25"))
         assertThat(nonAssociation.expiryDate).isNull()
+        assertThat(nonAssociation.updatedBy).isEqualTo("TJONES_ADM")
         assertThat(nonAssociation.comment).isNull()
       }
     }
@@ -1043,6 +1047,7 @@ internal class NomisApiServiceTest {
                     "authorisedBy": "Jim Smith",
                     "effectiveDate": "2023-10-25",
                     "expiryDate": "2023-10-26",
+                    "updatedBy": "TJONES_ADM",
                     "comment": "Fight on Wing C"
                   },
                   {
@@ -1054,6 +1059,7 @@ internal class NomisApiServiceTest {
                     "type": "LAND",
                     "effectiveDate": "2023-08-31",
                     "expiryDate": "2023-09-01",
+                    "updatedBy": "FSMITH_ADM",
                     "comment": "tester"
                   }
                 ]
@@ -1093,6 +1099,7 @@ internal class NomisApiServiceTest {
         assertThat(authorisedBy).isEqualTo("Jim Smith")
         assertThat(effectiveDate).isEqualTo(LocalDate.parse("2023-10-25"))
         assertThat(expiryDate).isEqualTo(LocalDate.parse("2023-10-26"))
+        assertThat(updatedBy).isEqualTo("TJONES_ADM")
         assertThat(comment).isEqualTo("Fight on Wing C")
       }
       with(nonAssociations[1]) {
@@ -1105,6 +1112,7 @@ internal class NomisApiServiceTest {
         assertThat(authorisedBy).isNull()
         assertThat(effectiveDate).isEqualTo(LocalDate.parse("2023-08-31"))
         assertThat(expiryDate).isEqualTo(LocalDate.parse("2023-09-01"))
+        assertThat(updatedBy).isEqualTo("FSMITH_ADM")
         assertThat(comment).isEqualTo("tester")
       }
     }

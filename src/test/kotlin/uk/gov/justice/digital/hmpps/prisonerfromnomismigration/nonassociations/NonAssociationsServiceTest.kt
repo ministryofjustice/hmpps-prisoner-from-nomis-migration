@@ -43,7 +43,7 @@ internal class NonAssociationsServiceTest {
             restrictionType = UpsertSyncRequest.RestrictionType.CELL,
             comment = "Do not keep together - fighting",
             authorisedBy = "Jim Smith",
-            lastModifiedByUsername = "Fred Jones",
+            lastModifiedByUsername = "TJONES_ADM",
             effectiveFromDate = LocalDate.parse("2022-01-01"),
             expiryDate = LocalDate.parse("2022-07-01"),
           ),
@@ -70,7 +70,7 @@ internal class NonAssociationsServiceTest {
           .withRequestBody(matchingJsonPath("restrictionType", equalTo("CELL")))
           .withRequestBody(matchingJsonPath("comment", equalTo("Do not keep together - fighting")))
           .withRequestBody(matchingJsonPath("authorisedBy", equalTo("Jim Smith")))
-          .withRequestBody(matchingJsonPath("lastModifiedByUsername", equalTo("Fred Jones")))
+          .withRequestBody(matchingJsonPath("lastModifiedByUsername", equalTo("TJONES_ADM")))
           .withRequestBody(matchingJsonPath("effectiveFromDate", equalTo("2022-01-01")))
           .withRequestBody(matchingJsonPath("expiryDate", equalTo("2022-07-01"))),
       )
@@ -131,7 +131,7 @@ internal class NonAssociationsServiceTest {
             restrictionType = UpsertSyncRequest.RestrictionType.CELL,
             comment = "Do not keep together - fighting",
             authorisedBy = "Jim Smith",
-            lastModifiedByUsername = "Fred Jones",
+            lastModifiedByUsername = "TJONES_ADM",
             effectiveFromDate = LocalDate.parse("2022-01-01"),
             expiryDate = LocalDate.parse("2022-07-01"),
           ),
@@ -158,7 +158,7 @@ internal class NonAssociationsServiceTest {
           .withRequestBody(matchingJsonPath("restrictionType", equalTo("CELL")))
           .withRequestBody(matchingJsonPath("comment", equalTo("Do not keep together - fighting")))
           .withRequestBody(matchingJsonPath("authorisedBy", equalTo("Jim Smith")))
-          .withRequestBody(matchingJsonPath("lastModifiedByUsername", equalTo("Fred Jones")))
+          .withRequestBody(matchingJsonPath("lastModifiedByUsername", equalTo("TJONES_ADM")))
           .withRequestBody(matchingJsonPath("effectiveFromDate", equalTo("2022-01-01")))
           .withRequestBody(matchingJsonPath("expiryDate", equalTo("2022-07-01"))),
       )
