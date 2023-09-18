@@ -979,6 +979,28 @@ internal class NonAssociationsMigrationServiceTest {
     }
 
     @Test
+    internal fun `will not migrate non-primary associations`(): Unit = runBlocking {
+      service.migrateNomisEntity(
+        MigrationContext(
+          type = NON_ASSOCIATIONS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = NonAssociationIdResponse("D5678EF", "A1234BC"),
+        ),
+      )
+
+      verify(telemetryClient).trackEvent(
+        eq("non-association-migration-non-primary-skipped"),
+        check {
+          assertThat(it["firstOffenderNo"]).isEqualTo("D5678EF")
+          assertThat(it["secondOffenderNo"]).isEqualTo("A1234BC")
+          assertThat(it["migrationId"]).isNotNull
+        },
+        eq(null),
+      )
+    }
+
+    @Test
     internal fun `will create a mapping between a new Non-Association and a NOMIS Non-Association`(): Unit =
       runBlocking {
         whenever(nomisApiService.getNonAssociations(any(), any())).thenReturn(

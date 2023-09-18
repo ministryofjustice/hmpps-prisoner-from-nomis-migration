@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
@@ -65,9 +66,22 @@ class NonAssociationsMigrationService(
   }
 
   override suspend fun migrateNomisEntity(context: MigrationContext<NonAssociationIdResponse>) {
-    log.info("attempting to migrate ${context.body}")
-    val firstOffenderNo = context.body.offenderNo1
-    val secondOffenderNo = context.body.offenderNo2
+    val nonAssociation = context.body
+    log.info("attempting to migrate $nonAssociation")
+    val firstOffenderNo = nonAssociation.offenderNo1
+    val secondOffenderNo = nonAssociation.offenderNo2
+
+    if (nonAssociation.isNotPrimaryNonAssociation()) {
+      telemetryClient.trackEvent(
+        "non-association-migration-non-primary-skipped",
+        mapOf(
+          "firstOffenderNo" to firstOffenderNo,
+          "secondOffenderNo" to secondOffenderNo,
+          "migrationId" to context.migrationId,
+        ),
+      )
+      return
+    }
 
     // Determine all valid non-associations for this offender pair
     val nonAssociationPairs = nomisApiService.getNonAssociations(firstOffenderNo, secondOffenderNo)
@@ -179,6 +193,9 @@ class NonAssociationsMigrationService(
     )
   }
 }
+
+// Two non-association events occur for each non-association relationship - use the offenderIds to uniquely identify each pair
+fun NonAssociationIdResponse.isNotPrimaryNonAssociation(): Boolean = offenderNo1 > offenderNo2
 
 fun NonAssociationResponse.isOpenAndNewestOrClosed(nonAssociationPairCount: Int) =
   typeSequence == nonAssociationPairCount || expiryDate != null
