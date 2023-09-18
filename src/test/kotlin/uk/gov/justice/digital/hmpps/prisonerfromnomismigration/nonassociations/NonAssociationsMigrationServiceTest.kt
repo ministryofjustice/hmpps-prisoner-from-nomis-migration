@@ -14,6 +14,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.internal.verification.Times
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
@@ -30,6 +31,7 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.CANCEL_MIGRATION
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_BY_PAGE
@@ -811,8 +813,9 @@ internal class NonAssociationsMigrationServiceTest {
     @BeforeEach
     internal fun setUp(): Unit = runBlocking {
       whenever(nonAssociationsMappingService.findNomisNonAssociationMapping(any(), any(), any())).thenReturn(null)
-      whenever(nomisApiService.getNonAssociations(any(), any())).thenReturn(aNomisNonAssociationResponse())
+      whenever(nomisApiService.getNonAssociations(any(), any())).thenReturn(listOf(aNomisNonAssociationResponse()))
       whenever(nonAssociationsService.migrateNonAssociation(any())).thenReturn(aNonAssociation())
+      whenever(nonAssociationsMappingService.createMapping(any(), any())).thenReturn(CreateMappingResult())
     }
 
     @Test
@@ -831,7 +834,7 @@ internal class NonAssociationsMigrationServiceTest {
 
     @Test
     internal fun `will transform and send that non-association to the Non-associations service`(): Unit = runBlocking {
-      whenever(nomisApiService.getNonAssociations(any(), any())).thenReturn(aNomisNonAssociationResponse())
+      whenever(nomisApiService.getNonAssociations(any(), any())).thenReturn(listOf(aNomisNonAssociationResponse()))
 
       service.migrateNomisEntity(
         MigrationContext(
@@ -862,10 +865,124 @@ internal class NonAssociationsMigrationServiceTest {
     }
 
     @Test
+    internal fun `will not migrate multiple open non-associations for the same offender pair`(): Unit = runBlocking {
+      whenever(nomisApiService.getNonAssociations(any(), any())).thenReturn(
+        listOf(
+          aNomisNonAssociationResponse(expiryDate = null),
+          aNomisNonAssociationResponse(typeSequence = 2, reason = "RIV"),
+          aNomisNonAssociationResponse(typeSequence = 3, reason = "BUL", recipReason = "RIV", expiryDate = null),
+        ),
+      )
+
+      service.migrateNomisEntity(
+        MigrationContext(
+          type = NON_ASSOCIATIONS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = NonAssociationIdResponse("A1234BC", "D5678EF"),
+        ),
+      )
+
+      verify(nonAssociationsService, Times(0)).migrateNonAssociation(
+        eq(
+          UpsertSyncRequest(
+            firstPrisonerNumber = "A1234BC",
+            firstPrisonerReason = UpsertSyncRequest.FirstPrisonerReason.VIC,
+            secondPrisonerNumber = "D5678EF",
+            secondPrisonerReason = UpsertSyncRequest.SecondPrisonerReason.PER,
+            restrictionType = UpsertSyncRequest.RestrictionType.WING,
+            comment = "Fight on Wing C",
+            authorisedBy = "Jim Smith",
+            lastModifiedByUsername = "TJONES_ADM",
+            effectiveFromDate = LocalDate.parse("2023-10-25"),
+            expiryDate = null,
+          ),
+        ),
+      )
+
+      verify(nonAssociationsService).migrateNonAssociation(
+        eq(
+          UpsertSyncRequest(
+            firstPrisonerNumber = "A1234BC",
+            firstPrisonerReason = UpsertSyncRequest.FirstPrisonerReason.RIV,
+            secondPrisonerNumber = "D5678EF",
+            secondPrisonerReason = UpsertSyncRequest.SecondPrisonerReason.PER,
+            restrictionType = UpsertSyncRequest.RestrictionType.WING,
+            comment = "Fight on Wing C",
+            authorisedBy = "Jim Smith",
+            lastModifiedByUsername = "TJONES_ADM",
+            effectiveFromDate = LocalDate.parse("2023-10-25"),
+            expiryDate = LocalDate.parse("2023-10-26"),
+          ),
+        ),
+      )
+      verify(nonAssociationsService).migrateNonAssociation(
+        eq(
+          UpsertSyncRequest(
+            firstPrisonerNumber = "A1234BC",
+            firstPrisonerReason = UpsertSyncRequest.FirstPrisonerReason.BUL,
+            secondPrisonerNumber = "D5678EF",
+            secondPrisonerReason = UpsertSyncRequest.SecondPrisonerReason.RIV,
+            restrictionType = UpsertSyncRequest.RestrictionType.WING,
+            comment = "Fight on Wing C",
+            authorisedBy = "Jim Smith",
+            lastModifiedByUsername = "TJONES_ADM",
+            effectiveFromDate = LocalDate.parse("2023-10-25"),
+            expiryDate = null,
+
+          ),
+        ),
+      )
+    }
+
+    @Test
+    internal fun `will add telemetry events for migrated and non-migrated entries`(): Unit = runBlocking {
+      whenever(nomisApiService.getNonAssociations(any(), any())).thenReturn(
+        listOf(
+          aNomisNonAssociationResponse(expiryDate = null),
+          aNomisNonAssociationResponse(typeSequence = 2, reason = "RIV"),
+          aNomisNonAssociationResponse(typeSequence = 3, reason = "BUL", recipReason = "RIV", expiryDate = null),
+        ),
+      )
+
+      service.migrateNomisEntity(
+        MigrationContext(
+          type = NON_ASSOCIATIONS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = NonAssociationIdResponse("A1234BC", "D5678EF"),
+        ),
+      )
+
+      verify(telemetryClient, times(2)).trackEvent(
+        eq("non-associations-migration-entity-migrated"),
+        check {
+          assertThat(it["migrationId"]).isNotNull
+          assertThat(it["nonAssociationId"]).isNotNull
+          assertThat(it["firstOffenderNo"]).isEqualTo("A1234BC")
+          assertThat(it["secondOffenderNo"]).isEqualTo("D5678EF")
+          assertThat(it["nomisTypeSequence"]).isNotEqualTo("1")
+        },
+        eq(null),
+      )
+
+      verify(telemetryClient).trackEvent(
+        eq("non-association-migration-entity-ignored"),
+        check {
+          assertThat(it["migrationId"]).isNotNull
+          assertThat(it["firstOffenderNo"]).isEqualTo("A1234BC")
+          assertThat(it["secondOffenderNo"]).isEqualTo("D5678EF")
+          assertThat(it["nomisTypeSequence"]).isEqualTo("1")
+        },
+        eq(null),
+      )
+    }
+
+    @Test
     internal fun `will create a mapping between a new Non-Association and a NOMIS Non-Association`(): Unit =
       runBlocking {
         whenever(nomisApiService.getNonAssociations(any(), any())).thenReturn(
-          aNomisNonAssociationResponse(),
+          listOf(aNomisNonAssociationResponse()),
         )
         whenever(nonAssociationsService.migrateNonAssociation(any())).thenReturn(
           aNonAssociation(),
@@ -896,7 +1013,7 @@ internal class NonAssociationsMigrationServiceTest {
     @Test
     internal fun `will not throw an exception (and place message back on queue) but create a new retry message`(): Unit =
       runBlocking {
-        whenever(nomisApiService.getNonAssociations(any(), any())).thenReturn(aNomisNonAssociationResponse())
+        whenever(nomisApiService.getNonAssociations(any(), any())).thenReturn(listOf(aNomisNonAssociationResponse()))
         whenever(nonAssociationsService.migrateNonAssociation(any())).thenReturn(aNonAssociation())
 
         whenever(
@@ -992,21 +1109,23 @@ fun aNomisNonAssociationResponse(
   offenderNo: String = "A1234BC",
   nsOffenderNo: String = "D5678EF",
   typeSequence: Int = 1,
-) = listOf(
+  reason: String = "VIC",
+  recipReason: String = "PER",
+  expiryDate: LocalDate? = LocalDate.parse("2023-10-26"),
+) =
   NonAssociationResponse(
     offenderNo = offenderNo,
     nsOffenderNo = nsOffenderNo,
     typeSequence = typeSequence,
-    reason = "VIC",
-    recipReason = "PER",
+    reason = reason,
+    recipReason = recipReason,
     type = "WING",
     updatedBy = "TJONES_ADM",
     authorisedBy = "Jim Smith",
     effectiveDate = LocalDate.parse("2023-10-25"),
-    expiryDate = LocalDate.parse("2023-10-26"),
+    expiryDate = expiryDate,
     comment = "Fight on Wing C",
-  ),
-)
+  )
 
 fun aNonAssociation() = NonAssociation(
   id = 4321,
