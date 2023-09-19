@@ -193,7 +193,8 @@ class NonAssociationsMigrationService(
   }
 }
 
-// Two non-association events occur for each non-association relationship - use the offenderIds to uniquely identify each pair
+// Two non-association events occur for each non-association relationship.
+// We call the primary association the one where the first offender number is less (string comparison) than the second.
 fun NonAssociationIdResponse.isNotPrimaryNonAssociation(): Boolean = offenderNo1 > offenderNo2
 
 fun NonAssociationResponse.isOpenAndNewestOrClosed(nonAssociationPairCount: Int) =
