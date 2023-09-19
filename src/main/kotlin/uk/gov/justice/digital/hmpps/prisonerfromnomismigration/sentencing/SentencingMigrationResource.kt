@@ -2,7 +2,6 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing
 
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
-import io.swagger.v3.oas.annotations.media.ArraySchema
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -20,9 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.HistoryFilter
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InProgressMigration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import java.time.LocalDateTime
@@ -80,12 +77,6 @@ class SentencingMigrationResource(
       ApiResponse(
         responseCode = "200",
         description = "All sentencing migration history records",
-        content = [
-          Content(
-            mediaType = "application/json",
-            array = ArraySchema(schema = Schema(implementation = MigrationHistory::class)),
-          ),
-        ],
       ),
       ApiResponse(
         responseCode = "401",
@@ -138,12 +129,6 @@ class SentencingMigrationResource(
       ApiResponse(
         responseCode = "200",
         description = "The sentencing migration history record",
-        content = [
-          Content(
-            mediaType = "application/json",
-            schema = Schema(implementation = MigrationHistory::class),
-          ),
-        ],
       ),
       ApiResponse(
         responseCode = "401",
@@ -164,7 +149,7 @@ class SentencingMigrationResource(
   )
   suspend fun get(
     @PathVariable
-    @Schema(description = "Migration Id", example = "2020-03-24T12:00:00", required = true)
+    @Schema(description = "Migration Id", example = "2020-03-24T12:00:00")
     migrationId: String,
   ) = migrationHistoryService.get(migrationId)
 
@@ -198,7 +183,7 @@ class SentencingMigrationResource(
   )
   suspend fun cancel(
     @PathVariable
-    @Schema(description = "Migration Id", example = "2020-03-24T12:00:00", required = true)
+    @Schema(description = "Migration Id", example = "2020-03-24T12:00:00")
     migrationId: String,
   ) = sentencingAdjustmentsMigrationService.cancel(migrationId)
 
@@ -211,12 +196,6 @@ class SentencingMigrationResource(
       ApiResponse(
         responseCode = "200",
         description = "Only called during an active migration from the UI - assumes latest migration is active",
-        content = [
-          Content(
-            mediaType = "application/json",
-            schema = Schema(implementation = InProgressMigration::class),
-          ),
-        ],
       ),
       ApiResponse(
         responseCode = "401",
