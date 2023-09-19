@@ -8,6 +8,7 @@ import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AllocationMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AllocationMigrateResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -69,8 +70,12 @@ class AllocationsMigrationService(
     allocationsMappingService.findNomisMapping(allocationId)
       ?.run {
         log.info("Will not migrate the allocationId=$allocationId since it was already mapped to DPS allocationId ${this.activityAllocationId} during migration ${this.label}")
+        telemetryClient.trackEvent(
+          "${MigrationType.ALLOCATIONS.telemetryName}-migration-entity-ignored",
+          mapOf("nomisAllocationId" to allocationId.toString(), "migrationId" to migrationId),
+        )
       }
-      ?: run {
+      ?: runCatching {
         nomisApiService.getAllocation(allocationId)
           .let { nomisResponse -> nomisResponse.toAllocationMigrateRequest(allocationId) }
           .let { allocationRequest -> activitiesApiService.migrateAllocation(allocationRequest) }
@@ -78,12 +83,19 @@ class AllocationsMigrationService(
           .also { mappingDto -> mappingDto.createAllocationMapping(context) }
           .also { mappingDto -> mappingDto.publishTelemetry() }
       }
+        .onFailure {
+          telemetryClient.trackEvent(
+            "${MigrationType.ALLOCATIONS.telemetryName}-migration-entity-failed",
+            mapOf("nomisAllocationId" to allocationId.toString(), "reason" to it.toString(), "migrationId" to migrationId),
+          )
+          throw it
+        }
   }
 
   private suspend fun GetAllocationResponse.toAllocationMigrateRequest(allocationId: Long): AllocationMigrateRequest {
     val activityMapping = activityMappingService.findNomisMapping(courseActivityId)
       ?: throw IllegalStateException("Cannot migrate allocation $allocationId - unable to find mapping for course activity $courseActivityId")
-    return this.toAllocationMigrateRequest(activityMapping.activityScheduleId, activityMapping.activityScheduleId2)
+    return this.toAllocationMigrateRequest(activityMapping.activityId, activityMapping.activityId2)
   }
 
   private suspend fun AllocationMigrationMappingDto.createAllocationMapping(context: MigrationContext<*>) =
@@ -106,11 +118,11 @@ class AllocationsMigrationService(
 
   private suspend fun AllocationMigrationMappingDto.publishTelemetry() =
     telemetryClient.trackEvent(
-      "allocation-migration-entity-migrated",
+      "${MigrationType.ALLOCATIONS.telemetryName}-migration-entity-migrated",
       mapOf(
         "nomisAllocationId" to nomisAllocationId.toString(),
-        "activityAllocationId" to activityAllocationId.toString(),
-        "activityScheduleId" to activityScheduleId.toString(),
+        "dpsAllocationId" to activityAllocationId.toString(),
+        "activityId" to activityId.toString(),
         "migrationId" to this.label,
       ),
       null,
@@ -121,15 +133,15 @@ class AllocationsMigrationService(
       ?.let { it.errorResponse?.moreInfo }
       ?.also {
         telemetryClient.trackEvent(
-          "nomis-migration-allocation-duplicate",
+          "${MigrationType.ALLOCATIONS.telemetryName}-nomis-migration-duplicate",
           mapOf(
             "migrationId" to context.migrationId,
             "duplicateNomisAllocationId" to it.duplicate.nomisAllocationId.toString(),
-            "duplicateActivityAllocationId" to it.duplicate.activityAllocationId.toString(),
-            "duplicateActivityScheduleId" to it.duplicate.activityScheduleId.toString(),
+            "duplicateDpsAllocationId" to it.duplicate.activityAllocationId.toString(),
+            "duplicateactivityId" to it.duplicate.activityId.toString(),
             "existingNomisAllocationId" to it.existing.nomisAllocationId.toString(),
-            "existingActivityAllocationId" to it.existing.activityAllocationId.toString(),
-            "existingActivityScheduleId" to it.existing.activityScheduleId.toString(),
+            "existingDpsAllocationId" to it.existing.activityAllocationId.toString(),
+            "existingactivityId" to it.existing.activityId.toString(),
           ),
           null,
         )
@@ -155,6 +167,6 @@ private fun AllocationMigrateResponse.toAllocationMigrateMappingDto(nomisAllocat
   AllocationMigrationMappingDto(
     nomisAllocationId = nomisAllocationId,
     activityAllocationId = allocationId,
-    activityScheduleId = activityId,
+    activityId = activityId,
     label = migrationId,
   )

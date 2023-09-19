@@ -182,7 +182,7 @@ class AllocationsMigrationServiceTest {
       }
 
       verify(telemetryClient).trackEvent(
-        eq("allocations-migration-started"),
+        eq("activity-allocation-migration-started"),
         check {
           assertThat(it["migrationId"]).isNotNull
           assertThat(it["estimatedCount"]).isEqualTo("7")
@@ -535,6 +535,15 @@ class AllocationsMigrationServiceTest {
         }
 
         verifyNoInteractions(queueService)
+        verify(telemetryClient).trackEvent(
+          eq("activity-allocation-migration-entity-failed"),
+          check<Map<String, String>> {
+            assertThat(it["nomisAllocationId"]).isEqualTo("123")
+            assertThat(it["reason"]).contains("BadGateway")
+            assertThat(it["migrationId"]).isEqualTo("2020-05-23T11:30:00")
+          },
+          isNull(),
+        )
       }
 
     @Test
@@ -554,6 +563,15 @@ class AllocationsMigrationServiceTest {
         }
 
         verifyNoInteractions(queueService)
+        verify(telemetryClient).trackEvent(
+          eq("activity-allocation-migration-entity-failed"),
+          check<Map<String, String>> {
+            assertThat(it["nomisAllocationId"]).isEqualTo("123")
+            assertThat(it["reason"]).contains("NotFound")
+            assertThat(it["migrationId"]).contains("2020-05-23T11:30:00")
+          },
+          isNull(),
+        )
       }
 
     @Test
@@ -597,7 +615,7 @@ class AllocationsMigrationServiceTest {
             assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
             assertThat(it.body.nomisAllocationId).isEqualTo(123)
             assertThat(it.body.activityAllocationId).isEqualTo(456)
-            assertThat(it.body.activityScheduleId).isEqualTo(789)
+            assertThat(it.body.activityId).isEqualTo(789)
           },
           delaySeconds = eq(0),
         )
@@ -610,7 +628,7 @@ class AllocationsMigrationServiceTest {
           AllocationMigrationMappingDto(
             nomisAllocationId = 123L,
             activityAllocationId = 456,
-            activityScheduleId = 456,
+            activityId = 456,
             label = "An old migration",
           ),
         )
@@ -625,6 +643,14 @@ class AllocationsMigrationServiceTest {
       )
 
       verifyNoInteractions(activitiesApiService)
+      verify(telemetryClient).trackEvent(
+        eq("activity-allocation-migration-entity-ignored"),
+        check<Map<String, String>> {
+          assertThat(it["nomisAllocationId"]).isEqualTo("123")
+          assertThat(it["migrationId"]).isEqualTo("2020-05-23T11:30:00")
+        },
+        isNull(),
+      )
     }
 
     @Test
@@ -639,13 +665,13 @@ class AllocationsMigrationServiceTest {
       )
 
       verify(telemetryClient).trackEvent(
-        eq("allocation-migration-entity-migrated"),
+        eq("activity-allocation-migration-entity-migrated"),
         check<Map<String, String>> {
           assertThat(it).containsExactlyInAnyOrderEntriesOf(
             mapOf(
               "nomisAllocationId" to "123",
-              "activityAllocationId" to "456",
-              "activityScheduleId" to "789",
+              "dpsAllocationId" to "456",
+              "activityId" to "789",
               "migrationId" to "2020-05-23T11:30:00",
             ),
           )
@@ -763,7 +789,7 @@ class AllocationsMigrationServiceTest {
         )
 
         verify(telemetryClient).trackEvent(
-          eq("allocations-migration-completed"),
+          eq("activity-allocation-migration-completed"),
           check {
             assertThat(it["migrationId"]).isNotNull
             assertThat(it["estimatedCount"]).isEqualTo("7")
@@ -909,7 +935,7 @@ class AllocationsMigrationServiceTest {
         )
 
         verify(telemetryClient).trackEvent(
-          eq("allocations-migration-cancelled"),
+          eq("activity-allocation-migration-cancelled"),
           check {
             assertThat(it["migrationId"]).isNotNull
             assertThat(it["estimatedCount"]).isEqualTo("7")

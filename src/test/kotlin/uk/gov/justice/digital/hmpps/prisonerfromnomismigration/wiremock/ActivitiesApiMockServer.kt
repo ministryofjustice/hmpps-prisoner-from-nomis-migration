@@ -7,6 +7,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
+import com.github.tomakehurst.wiremock.client.WireMock.notMatching
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
@@ -16,7 +17,7 @@ import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.sampleAppointment
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.sampleAppointmentInstance
 
 class ActivitiesApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
   companion object {
@@ -57,7 +58,7 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubCreateAppointmentForMigration(appointmentInstanceId: Long) {
-    val response = objectMapper.writeValueAsString(sampleAppointment(appointmentInstanceId))
+    val response = objectMapper.writeValueAsString(sampleAppointmentInstance(appointmentInstanceId))
 
     stubFor(
       post(urlMatching("/migrate-appointment"))
@@ -82,7 +83,7 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubCreateActivityForMigration(activityScheduleId: Long = 4444, activityScheduleId2: Long? = 5555) {
     stubFor(
-      post(urlMatching("/migrate-activity"))
+      post(urlMatching("/migrate/activity"))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -98,6 +99,41 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
             ),
         ),
     )
+  }
+
+  fun stubCreateAllocationForMigration(count: Int, allocationId: Long = 4444, activityScheduleId: Long = 5555) {
+    repeat(count) { offset ->
+      stubFor(
+        post(urlMatching("/migrate/allocation"))
+          .willReturn(
+            aResponse()
+              .withHeader("Content-Type", "application/json")
+              .withStatus(HttpStatus.CREATED.value())
+              .withBody(
+                """
+              {
+                "allocationId": ${allocationId + offset},
+                "activityScheduleId": ${activityScheduleId + offset }}
+              }
+                """.trimIndent(),
+              ),
+          ),
+      )
+    }
+  }
+
+  fun verifyCreateAllocationsForMigration(count: Int, activityScheduleId: Long = 4444, activityScheduleId2: Long? = 5555) {
+    repeat(count) { offset ->
+      verify(
+        postRequestedFor(urlPathEqualTo("/migrate/allocation"))
+          .withRequestBody(matchingJsonPath("activityId", equalTo((activityScheduleId + offset).toString())))
+          .apply {
+            activityScheduleId2
+              ?.run { withRequestBody(matchingJsonPath("splitRegimeActivityId", equalTo((activityScheduleId2.let { (offset + it).toString() })))) }
+              ?: run { withRequestBody(notMatching("splitRegimeActivityId")) }
+          },
+      )
+    }
   }
 
   fun stubGetActivityCategories() {
@@ -129,5 +165,8 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun createActivitiesCount() =
-    findAll(postRequestedFor(urlMatching("/migrate-activity"))).count()
+    findAll(postRequestedFor(urlMatching("/migrate/activity"))).count()
+
+  fun createAllocationsCount() =
+    findAll(postRequestedFor(urlMatching("/migrate/allocation"))).count()
 }

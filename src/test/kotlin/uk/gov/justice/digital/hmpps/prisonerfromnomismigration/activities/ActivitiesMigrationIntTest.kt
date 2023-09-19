@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities
 
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
+import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
 import org.hamcrest.core.StringContains
@@ -17,7 +18,10 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.test.web.reactive.server.WebTestClient
+import org.springframework.test.web.reactive.server.returnResult
 import org.springframework.web.reactive.function.BodyInserters
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
@@ -39,6 +43,19 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
   @Autowired
   private lateinit var migrationHistoryRepository: MigrationHistoryRepository
 
+  private fun stubMigrationDependencies(
+    entities: Int = 1,
+    stubCreateMapping: () -> Unit = { mappingApi.stubMappingCreate(ACTIVITIES_CREATE_MAPPING_URL) },
+  ) {
+    activitiesApi.stubGetActivityCategories()
+    nomisApi.stubGetInitialCount(ACTIVITIES_ID_URL, entities.toLong()) { activitiesIdsPagedResponse(it) }
+    nomisApi.stubMultipleGetActivitiesIdCounts(totalElements = entities.toLong(), pageSize = 3)
+    mappingApi.stubAllMappingsNotFound(ACTIVITIES_GET_MAPPING_URL)
+    nomisApi.stubMultipleGetActivities(entities)
+    activitiesApi.stubCreateActivityForMigration()
+    stubCreateMapping()
+  }
+
   @Nested
   @DisplayName("POST /migrate/activities")
   inner class MigrateActivities {
@@ -51,7 +68,17 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().is2xxSuccessful
     }
 
-    // Call this after each migration is started - it means we can make immediate assertions, and we know the next test has a clean slate
+    private fun WebTestClient.performMigration(body: String = """{ "prisonId": "BXI" }""") =
+      post().uri("/migrate/activities")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+        .header("Content-Type", "application/json")
+        .body(BodyInserters.fromValue(body))
+        .exchange()
+        .expectStatus().isAccepted
+        .also {
+          waitUntilCompleted()
+        }
+
     private fun waitUntilCompleted() =
       await.atMost(Duration.ofSeconds(31)) untilAsserted {
         verify(telemetryClient).trackEvent(
@@ -81,98 +108,50 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Test
-    fun `will start processing pages of activities`() {
-      nomisApi.stubGetInitialCount(ACTIVITIES_ID_URL, 7) { activitiesIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetActivitiesIdCounts(totalElements = 7, pageSize = 3)
-      nomisApi.stubMultipleGetActivities(1..7)
-      mappingApi.stubAllMappingsNotFound(ACTIVITIES_GET_MAPPING_URL)
-      mappingApi.stubMappingCreate(ACTIVITIES_CREATE_MAPPING_URL)
-      activitiesApi.stubCreateActivityForMigration()
-      activitiesApi.stubGetActivityCategories()
-      mappingApi.stubActivitiesMappingByMigrationId(count = 7)
+    fun `will migrate several pages of activities`() {
+      stubMigrationDependencies(7)
 
-      webTestClient.post().uri("/migrate/activities")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
-        .header("Content-Type", "application/json")
-        .body(BodyInserters.fromValue("""{ "prisonId": "BXI" }"""))
-        .exchange()
-        .expectStatus().isAccepted
+      webTestClient.performMigration()
 
-      waitUntilCompleted()
-
-      // check filter values passed to get activity ids call
+      // check filter values passed to get activity ids
       nomisApi.verifyActivitiesGetIds("/activities/ids", "BXI")
 
       // all mappings should be created
       assertThat(mappingApi.createMappingCount(ACTIVITIES_CREATE_MAPPING_URL)).isEqualTo(7)
+      mappingApi.verifyCreateActivityMappings(7)
 
-      // check that each activity is created in DPS
+      // all activities should be created in DPS
       assertThat(activitiesApi.createActivitiesCount()).isEqualTo(7)
-
-      // Check each activity has a mapping (each activity will be a unique number starting from 1)
-      mappingApi.verifyCreateMappingActivitiesIds(1L..7L)
     }
 
     @Test
-    fun `will start processing a single course activity`() {
-      nomisApi.stubGetInitialCount(ACTIVITIES_ID_URL, 1) { activitiesIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetActivitiesIdCounts(totalElements = 1, pageSize = 3)
-      nomisApi.stubMultipleGetActivities(1..1)
-      mappingApi.stubAllMappingsNotFound(ACTIVITIES_GET_MAPPING_URL)
-      mappingApi.stubMappingCreate(ACTIVITIES_CREATE_MAPPING_URL)
-      activitiesApi.stubCreateActivityForMigration()
-      activitiesApi.stubGetActivityCategories()
-      mappingApi.stubActivitiesMappingByMigrationId(count = 1)
+    fun `will migrate a single course activity`() {
+      stubMigrationDependencies()
 
-      webTestClient.post().uri("/migrate/activities")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
-        .header("Content-Type", "application/json")
-        .body(BodyInserters.fromValue("""{ "prisonId": "BXI", "courseActivityId": 1 }"""))
-        .exchange()
-        .expectStatus().isAccepted
+      // Pass a course activity id into the migrate request
+      webTestClient.performMigration("""{ "prisonId": "BXI", "courseActivityId": 1 }""")
 
-      waitUntilCompleted()
+      // check course activity is included when retrieving ids
+      nomisApi.verifyActivitiesGetIds("/activities/ids", "BXI", courseActivityId = 1)
 
-      // check course activity id included when retrieving ids
-      nomisApi.verifyActivitiesGetIds("/activities/ids", "BXI", 1)
-
-      // single mapping created
-      assertThat(mappingApi.createMappingCount(ACTIVITIES_CREATE_MAPPING_URL)).isEqualTo(1)
-
-      // single activity created
+      // single mapping and activity are created
+      mappingApi.verifyCreateActivityMappings(1)
       assertThat(activitiesApi.createActivitiesCount()).isEqualTo(1)
-
-      // Created the correct mapping
-      mappingApi.verifyCreateMappingActivitiesIds(1L..1L)
     }
 
     @Test
-    fun `will add analytical events for starting, ending and each migrated record`() {
-      nomisApi.stubGetInitialCount(ACTIVITIES_ID_URL, 7) { activitiesIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetActivitiesIdCounts(totalElements = 7, pageSize = 3)
-      nomisApi.stubMultipleGetActivities(1..7)
-      mappingApi.stubAllMappingsNotFound(ACTIVITIES_GET_MAPPING_URL)
-      mappingApi.stubMappingCreate(ACTIVITIES_CREATE_MAPPING_URL)
-      activitiesApi.stubCreateActivityForMigration()
-      activitiesApi.stubGetActivityCategories()
-      mappingApi.stubActivitiesMappingByMigrationId(count = 6)
+    fun `will add analytical events and history`() {
+      stubMigrationDependencies(3)
 
-      // stub 6 migrated records and 1 fake a failure
-      mappingApi.stubActivitiesMappingByMigrationId(count = 6)
+      // stub 2 migrated records and 1 failure for the history
+      mappingApi.stubActivitiesMappingByMigrationId(count = 2)
       awsSqsActivitiesMigrationDlqClient!!.sendMessage(activitiesMigrationDlqUrl!!, """{ "message": "some error" }""")
 
-      webTestClient.post().uri("/migrate/activities")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
-        .header("Content-Type", "application/json")
-        .body(BodyInserters.fromValue("""{ "prisonId": "BXI" }"""))
-        .exchange()
-        .expectStatus().isAccepted
-
-      waitUntilCompleted()
+      webTestClient.performMigration()
 
       verify(telemetryClient).trackEvent(eq("activity-migration-started"), any(), isNull())
 
-      verify(telemetryClient, times(7)).trackEvent(eq("activity-migration-entity-migrated"), any(), isNull())
+      verify(telemetryClient, times(3)).trackEvent(eq("activity-migration-entity-migrated"), any(), isNull())
 
       webTestClient.get().uri("/migrate/activities/history")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
@@ -184,68 +163,50 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
         .jsonPath("$[0].migrationId").isNotEmpty
         .jsonPath("$[0].whenStarted").isNotEmpty
         .jsonPath("$[0].whenEnded").isNotEmpty
-        .jsonPath("$[0].estimatedRecordCount").isEqualTo(7)
+        .jsonPath("$[0].estimatedRecordCount").isEqualTo(3)
         .jsonPath("$[0].migrationType").isEqualTo("ACTIVITIES")
         .jsonPath("$[0].status").isEqualTo("COMPLETED")
         .jsonPath("$[0].filter").value(StringContains("BXI"))
-        .jsonPath("$[0].recordsMigrated").isEqualTo(6)
+        .jsonPath("$[0].recordsMigrated").isEqualTo(2)
         .jsonPath("$[0].recordsFailed").isEqualTo(1)
     }
 
     @Test
     fun `will retry to create a mapping, and only the mapping, if it fails first time`() {
-      nomisApi.stubGetInitialCount(ACTIVITIES_ID_URL, 1) { activitiesIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetActivitiesIdCounts(totalElements = 1, pageSize = 3)
-      nomisApi.stubMultipleGetActivities(1..1)
-      mappingApi.stubAllMappingsNotFound(ACTIVITIES_GET_MAPPING_URL)
-      activitiesApi.stubCreateActivityForMigration()
-      activitiesApi.stubGetActivityCategories()
-      mappingApi.stubMappingCreateFailureFollowedBySuccess(ACTIVITIES_CREATE_MAPPING_URL)
+      stubMigrationDependencies {
+        // Force a retry of the mapping creation
+        mappingApi.stubMappingCreateFailureFollowedBySuccess(ACTIVITIES_CREATE_MAPPING_URL)
+      }
 
-      webTestClient.post().uri("/migrate/activities")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
-        .header("Content-Type", "application/json")
-        .body(BodyInserters.fromValue("""{ "prisonId": "BXI" }"""))
-        .exchange()
-        .expectStatus().isAccepted
+      webTestClient.performMigration()
 
-      waitUntilCompleted()
-
-      // all mappings should be created
+      // should have retried the create mapping
       assertThat(mappingApi.createMappingCount(ACTIVITIES_CREATE_MAPPING_URL)).isEqualTo(2)
+      mappingApi.verifyCreateActivityMappings(1, times = 2)
 
-      // check that each activity is created in DPS
+      // should have created the activity
       assertThat(activitiesApi.createActivitiesCount()).isEqualTo(1)
-
-      // should retry to create mapping twice
-      mappingApi.verifyCreateMappingActivitiesIds(1L..1L, times = 2)
     }
 
     @Test
     fun `it will not retry after a 409 (duplicate mapping written to mapping service)`() {
-      nomisApi.stubGetInitialCount(ACTIVITIES_ID_URL, 1) { activitiesIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetActivitiesIdCounts(totalElements = 1, pageSize = 3)
-      nomisApi.stubMultipleGetActivities(1..1)
-      mappingApi.stubAllMappingsNotFound(ACTIVITIES_GET_MAPPING_URL)
-      activitiesApi.stubCreateActivityForMigration()
-      activitiesApi.stubGetActivityCategories()
-      mappingApi.stubActivityMappingCreateConflict(4444, 4445, 123)
+      stubMigrationDependencies {
+        // Emulate mapping already exists when trying to create
+        mappingApi.stubActivityMappingCreateConflict(
+          existingActivityId = 4444,
+          duplicateActivityId = 4445,
+          nomisCourseActivityId = 123,
+        )
+      }
 
-      webTestClient.post().uri("/migrate/activities")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
-        .header("Content-Type", "application/json")
-        .body(BodyInserters.fromValue("""{ "prisonId": "BXI" }"""))
-        .exchange()
-        .expectStatus().isAccepted
-
-      waitUntilCompleted()
+      webTestClient.performMigration()
 
       verify(telemetryClient).trackEvent(
-        eq("nomis-migration-activity-duplicate"),
+        eq("activity-nomis-migration-duplicate"),
         check {
           assertThat(it["migrationId"]).isNotNull
-          assertThat(it["existingActivityScheduleId"]).isEqualTo("4444")
-          assertThat(it["duplicateActivityScheduleId"]).isEqualTo("4445")
+          assertThat(it["existingActivityId"]).isEqualTo("4444")
+          assertThat(it["duplicateActivityId"]).isEqualTo("4445")
           assertThat(it["existingNomisCourseActivityId"]).isEqualTo("123")
           assertThat(it["duplicateNomisCourseActivityId"]).isEqualTo("123")
         },
@@ -259,7 +220,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
       assertThat(activitiesApi.createActivitiesCount()).isEqualTo(1)
 
       // doesn't retry
-      mappingApi.verifyCreateMappingActivitiesIds(1L..1L, times = 1)
+      mappingApi.verifyCreateActivityMappings(1, times = 1)
     }
   }
 
@@ -430,6 +391,252 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
         .jsonPath("$.size()").isEqualTo(2)
         .jsonPath("$[0].migrationId").isEqualTo("2020-01-03T02:00:00")
         .jsonPath("$[1].migrationId").isEqualTo("2020-01-01T00:00:00")
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /migrate/activities/history/{migrationId}")
+  inner class Get {
+    @BeforeEach
+    fun createHistoryRecords() {
+      runBlocking {
+        migrationHistoryRepository.deleteAll()
+        migrationHistoryRepository.save(
+          MigrationHistory(
+            migrationId = "2020-01-01T00:00:00",
+            whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
+            whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
+            status = MigrationStatus.COMPLETED,
+            estimatedRecordCount = 123_567,
+            filter = "",
+            recordsMigrated = 123_560,
+            recordsFailed = 7,
+            migrationType = MigrationType.ACTIVITIES,
+          ),
+        )
+      }
+    }
+
+    @AfterEach
+    fun deleteHistoryRecords() {
+      runBlocking {
+        migrationHistoryRepository.deleteAll()
+      }
+    }
+
+    @Test
+    fun `must have valid token to get history`() {
+      webTestClient.get().uri("/migrate/activities/history/2020-01-01T00:00:00")
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isUnauthorized
+    }
+
+    @Test
+    fun `must have correct role to get history`() {
+      webTestClient.get().uri("/migrate/activities/history/2020-01-01T00:00:00")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isForbidden
+    }
+
+    @Test
+    fun `can read record`() {
+      webTestClient.get().uri("/migrate/activities/history/2020-01-01T00:00:00")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$.migrationId").isEqualTo("2020-01-01T00:00:00")
+        .jsonPath("$.status").isEqualTo("COMPLETED")
+    }
+  }
+
+  @Nested
+  @DisplayName("POST /migrate/activities/{migrationId}/cancel/")
+  inner class CancelMigrationActivities {
+    @BeforeEach
+    fun setUp() {
+      webTestClient.delete().uri("/history")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATION_ADMIN")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().is2xxSuccessful
+    }
+
+    @Test
+    fun `must have valid token to cancel a migration`() {
+      webTestClient.post().uri("/migrate/activities/{migrationId}/cancel/", "some id")
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isUnauthorized
+    }
+
+    @Test
+    fun `must have correct role to cancel a migration`() {
+      webTestClient.post().uri("/migrate/activities/{migrationId}/cancel", "some id")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isForbidden
+    }
+
+    @Test
+    fun `will return a not found if no running migration found`() {
+      webTestClient.post().uri("/migrate/activities/{migrationId}/cancel", "some id")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isNotFound
+    }
+
+    @Test
+    fun `will cancel a running migration`() {
+      stubMigrationDependencies(entities = 10)
+      mappingApi.stubActivitiesMappingByMigrationId(count = 10)
+
+      val migrationId = webTestClient.post().uri("/migrate/activities")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+        .header("Content-Type", "application/json")
+        .body(
+          BodyInserters.fromValue(
+            """
+            {
+              "prisonId": "MDI"
+            }
+            """.trimIndent(),
+          ),
+        )
+        .exchange()
+        .expectStatus().isAccepted
+        .returnResult<MigrationContext<ActivitiesMigrationFilter>>()
+        .responseBody.blockFirst()!!.migrationId
+
+      webTestClient.post().uri("/migrate/activities/{migrationId}/cancel", migrationId)
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isAccepted
+
+      webTestClient.get().uri("/migrate/activities/history/{migrationId}", migrationId)
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$.migrationId").isEqualTo(migrationId)
+        .jsonPath("$.status").isEqualTo("CANCELLED_REQUESTED")
+
+      await atMost Duration.ofSeconds(60) untilAsserted {
+        webTestClient.get().uri("/migrate/activities/history/{migrationId}", migrationId)
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.migrationId").isEqualTo(migrationId)
+          .jsonPath("$.status").isEqualTo("CANCELLED")
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /migrate/activities/active-migration")
+  inner class GetActiveMigration {
+    @BeforeEach
+    internal fun createHistoryRecords() {
+      runBlocking {
+        migrationHistoryRepository.deleteAll()
+        migrationHistoryRepository.save(
+          MigrationHistory(
+            migrationId = "2020-01-01T00:00:00",
+            whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
+            whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
+            status = MigrationStatus.STARTED,
+            estimatedRecordCount = 123_567,
+            filter = "",
+            recordsMigrated = 123_560,
+            recordsFailed = 7,
+            migrationType = MigrationType.ACTIVITIES,
+          ),
+        )
+        migrationHistoryRepository.save(
+          MigrationHistory(
+            migrationId = "2019-01-01T00:00:00",
+            whenStarted = LocalDateTime.parse("2019-01-01T00:00:00"),
+            whenEnded = LocalDateTime.parse("2019-01-01T01:00:00"),
+            status = MigrationStatus.COMPLETED,
+            estimatedRecordCount = 123_567,
+            filter = "",
+            recordsMigrated = 123_567,
+            recordsFailed = 0,
+            migrationType = MigrationType.ACTIVITIES,
+          ),
+        )
+      }
+    }
+
+    @AfterEach
+    internal fun deleteHistoryRecords() {
+      runBlocking {
+        migrationHistoryRepository.deleteAll()
+      }
+    }
+
+    @Test
+    internal fun `must have valid token to get active migration data`() {
+      webTestClient.get().uri("/migrate/activities/active-migration")
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isUnauthorized
+    }
+
+    @Test
+    internal fun `must have correct role to get action migration data`() {
+      webTestClient.get().uri("/migrate/activities/active-migration")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isForbidden
+    }
+
+    @Test
+    internal fun `will return dto with null contents if no migrations are found`() {
+      deleteHistoryRecords()
+      webTestClient.get().uri("/migrate/activities/active-migration")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$.migrationId").doesNotExist()
+        .jsonPath("$.whenStarted").doesNotExist()
+        .jsonPath("$.recordsMigrated").doesNotExist()
+        .jsonPath("$.estimatedRecordCount").doesNotExist()
+        .jsonPath("$.status").doesNotExist()
+        .jsonPath("$.migrationType").doesNotExist()
+    }
+
+    @Test
+    internal fun `can read active migration data`() {
+      mappingApi.stubActivitiesMappingByMigrationId(count = 123456)
+      webTestClient.get().uri("/migrate/activities/active-migration")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$.migrationId").isEqualTo("2020-01-01T00:00:00")
+        .jsonPath("$.whenStarted").isEqualTo("2020-01-01T00:00:00")
+        .jsonPath("$.recordsMigrated").isEqualTo(123456)
+        .jsonPath("$.toBeProcessedCount").isEqualTo(0)
+        .jsonPath("$.beingProcessedCount").isEqualTo(0)
+        .jsonPath("$.recordsFailed").isEqualTo(0)
+        .jsonPath("$.estimatedRecordCount").isEqualTo(123567)
+        .jsonPath("$.status").isEqualTo("STARTED")
+        .jsonPath("$.migrationType").isEqualTo("ACTIVITIES")
     }
   }
 }

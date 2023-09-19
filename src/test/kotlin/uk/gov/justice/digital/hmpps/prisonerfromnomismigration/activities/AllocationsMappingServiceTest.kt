@@ -46,7 +46,7 @@ class AllocationsMappingServiceTest {
           AllocationMigrationMappingDto(
             nomisAllocationId = 1234L,
             activityAllocationId = 2345L,
-            activityScheduleId = 3456L,
+            activityId = 3456L,
             label = "some-migration-id",
           ),
           object : ParameterizedTypeReference<DuplicateErrorResponse<AllocationMigrationMappingDto>>() {},
@@ -69,7 +69,7 @@ class AllocationsMappingServiceTest {
           AllocationMigrationMappingDto(
             nomisAllocationId = 1234L,
             activityAllocationId = 2345L,
-            activityScheduleId = 3456L,
+            activityId = 3456L,
             label = "some-migration-id",
           ),
           object : ParameterizedTypeReference<DuplicateErrorResponse<AllocationMigrationMappingDto>>() {},
@@ -80,7 +80,7 @@ class AllocationsMappingServiceTest {
         postRequestedFor(urlPathEqualTo("/mapping/allocations/migration"))
           .withRequestBody(matchingJsonPath("nomisAllocationId", equalTo("1234")))
           .withRequestBody(matchingJsonPath("activityAllocationId", equalTo("2345")))
-          .withRequestBody(matchingJsonPath("activityScheduleId", equalTo("3456")))
+          .withRequestBody(matchingJsonPath("activityId", equalTo("3456")))
           .withRequestBody(matchingJsonPath("label", equalTo("some-migration-id"))),
       )
     }
@@ -102,7 +102,7 @@ class AllocationsMappingServiceTest {
             AllocationMigrationMappingDto(
               nomisAllocationId = 1234L,
               activityAllocationId = 2345L,
-              activityScheduleId = 3456L,
+              activityId = 3456L,
               label = "some-migration-id",
             ),
             object : ParameterizedTypeReference<DuplicateErrorResponse<AllocationMigrationMappingDto>>() {},
@@ -126,7 +126,7 @@ class AllocationsMappingServiceTest {
             {
               "nomisAllocationId": 1234,
               "activityAllocationId": "2345",
-              "activityScheduleId": "3456",
+              "activityId": "3456",
               "label": "2020-01-01T00:00:00"
             }
               """.trimIndent(),
@@ -173,7 +173,7 @@ class AllocationsMappingServiceTest {
             {
               "nomisAllocationId": 1234,
               "activityAllocationId": "2345",
-              "activityScheduleId": "3456",
+              "activityId": "3456",
               "label": "2020-01-01T00:00:00"
             }
               """.trimIndent(),
@@ -184,7 +184,7 @@ class AllocationsMappingServiceTest {
       assertThat(mapping).isNotNull
       assertThat(mapping!!.nomisAllocationId).isEqualTo(1234)
       assertThat(mapping.activityAllocationId).isEqualTo(2345)
-      assertThat(mapping.activityScheduleId).isEqualTo(3456)
+      assertThat(mapping.activityId).isEqualTo(3456)
       assertThat(mapping.label).isEqualTo("2020-01-01T00:00:00")
     }
 
@@ -251,7 +251,7 @@ class AllocationsMappingServiceTest {
                 {
                   "nomisAllocationId": 1234,
                   "activityAllocationId": "2345",
-                  "activityScheduleId": "3456",
+                  "activityId": "3456",
                   "label": "2022-02-16T14:20:15",
                   "whenCreated": "2022-02-16T16:21:15.589091"
                 }

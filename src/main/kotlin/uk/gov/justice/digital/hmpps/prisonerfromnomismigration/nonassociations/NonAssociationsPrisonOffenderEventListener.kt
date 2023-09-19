@@ -13,11 +13,13 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NON_ASSOCIATIONS_SYNC_QUEUE_ID
 import java.util.concurrent.CompletableFuture
 
 @Service
 class NonAssociationsPrisonOffenderEventListener(
+  private val nonAssociationsSynchronisationService: NonAssociationsSynchronisationService,
   private val objectMapper: ObjectMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
 ) {
@@ -26,7 +28,7 @@ class NonAssociationsPrisonOffenderEventListener(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  @SqsListener("eventnonassociations", factory = "hmppsQueueContainerFactoryProxy")
+  @SqsListener(NON_ASSOCIATIONS_SYNC_QUEUE_ID, factory = "hmppsQueueContainerFactoryProxy")
   @WithSpan(value = "Digital-Prison-Services-prisoner_from_nomis_nonassociations_queue", kind = SpanKind.SERVER)
   fun onMessage(message: String): CompletableFuture<Void> {
     log.debug("Received offender event message {}", message)
@@ -37,17 +39,15 @@ class NonAssociationsPrisonOffenderEventListener(
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
           if (eventFeatureSwitch.isEnabled(eventType)) {
             when (eventType) {
-              "NON_ASSOCIATION_DETAIL_UPSERTED" -> log.debug(
-                "NON_ASSOCIATION_DETAIL_UPSERTED received",
-                // nonAssociationsSynchronisationService.synchroniseNonAssociationsCreateOrUpdate(
-                (sqsMessage.Message.fromJson()),
-              )
+              "NON_ASSOCIATION_DETAIL-UPSERTED" ->
+                nonAssociationsSynchronisationService.synchroniseNonAssociationCreateOrUpdate(
+                  sqsMessage.Message.fromJson(),
+                )
 
-              "NON_ASSOCIATION_DETAIL_DELETED" -> log.debug(
-                "NON_ASSOCIATION_DETAIL_DELETED received",
-                // nonAssociationsSynchronisationService.synchroniseNonAssociationsDelete(
-                (sqsMessage.Message.fromJson()),
-              )
+              "NON_ASSOCIATION_DETAIL-DELETED" ->
+                nonAssociationsSynchronisationService.synchroniseNonAssociationDelete(
+                  sqsMessage.Message.fromJson(),
+                )
 
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
@@ -56,9 +56,7 @@ class NonAssociationsPrisonOffenderEventListener(
           }
         }
 
-        SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING.name -> log.debug(
-          "NON_ASSOCIATION_DETAIL retry sync received",
-          // nonAssociationsSynchronisationService.retryCreateSentenceAdjustmentMapping(
+        RETRY_SYNCHRONISATION_MAPPING.name -> nonAssociationsSynchronisationService.retryCreateNonAssociationMapping(
           sqsMessage.Message.fromJson(),
         )
       }
@@ -68,6 +66,13 @@ class NonAssociationsPrisonOffenderEventListener(
   private inline fun <reified T> String.fromJson(): T =
     objectMapper.readValue(this)
 }
+
+data class NonAssociationsOffenderEvent(
+  val offenderIdDisplay: String,
+  val nsOffenderIdDisplay: String,
+  val typeSeq: Int,
+  val auditModuleName: String?,
+)
 
 private fun asCompletableFuture(
   process: suspend () -> Unit,

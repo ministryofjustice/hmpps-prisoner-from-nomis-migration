@@ -5,6 +5,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
@@ -21,6 +22,8 @@ class NomisApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallbac
     const val APPOINTMENTS_ID_URL = "/appointments/ids"
     const val ADJUSTMENTS_ID_URL = "/adjustments/ids"
     const val ACTIVITIES_ID_URL = "/activities/ids"
+    const val ALLOCATIONS_ID_URL = "/allocations/ids"
+    const val NON_ASSOCIATIONS_ID_URL = "/non-associations/ids"
 
     @JvmField
     val nomisApi = NomisApiMockServer()
@@ -316,6 +319,48 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }
   }
 
+  fun stubMultipleGetNonAssociationIdCounts(totalElements: Long, pageSize: Long) {
+    // for each page create a response for each non-association id starting from 1 up to `totalElements`
+
+    val pages = (totalElements / pageSize) + 1
+    (0..pages).forEach { page ->
+      val startNonAssociationId = (page * pageSize) + 1
+      val endNonAssociationId = min((page * pageSize) + pageSize, totalElements)
+      nomisApi.stubFor(
+        get(
+          urlPathEqualTo("/non-associations/ids"),
+        )
+          .withQueryParam("page", equalTo(page.toString()))
+          .willReturn(
+            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+              .withBody(
+                nonAssociationIdsPagedResponse(
+                  totalElements = totalElements,
+                  nonAssociationIds = (startNonAssociationId..endNonAssociationId).map { it },
+                  pageNumber = page,
+                  pageSize = pageSize,
+                ),
+              ),
+          ),
+      )
+    }
+  }
+
+  fun stubMultipleGetNonAssociations(intProgression: IntProgression) {
+    (intProgression).forEach {
+      val offenders = idCreator(it.toLong())
+      nomisApi.stubFor(
+        get(
+          urlPathEqualTo("/non-associations/offender/${offenders["offenderNo1"]}/ns-offender/${offenders["offenderNo2"]}/all"),
+        )
+          .willReturn(
+            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+              .withBody(allNonAssociationResponse(offenders["offenderNo1"]!!, offenders["offenderNo2"]!!)),
+          ),
+      )
+    }
+  }
+
   fun stubMultipleGetKeyDateAdjustments(intProgression: IntProgression) {
     (intProgression).forEach {
       nomisApi.stubFor(
@@ -420,24 +465,62 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }
   }
 
-  fun verifyActivitiesGetIds(url: String, prisonId: String, courseActivityId: Long? = null) {
+  fun stubMultipleGetAllocationsIdCounts(totalElements: Long, pageSize: Long) {
+    // for each page create a response for each id starting from 1 up to `totalElements`
+
+    val pages = (totalElements / pageSize) + 1
+    (0..pages).forEach { page ->
+      val startId = (page * pageSize) + 1
+      val endId = min((page * pageSize) + pageSize, totalElements)
+      nomisApi.stubFor(
+        get(urlPathEqualTo("/allocations/ids"))
+          .withQueryParam("page", equalTo(page.toString()))
+          .willReturn(
+            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+              .withBody(
+                allocationsIdsPagedResponse(
+                  totalElements = totalElements,
+                  ids = (startId..endId).map { it },
+                  pageNumber = page,
+                  pageSize = pageSize,
+                ),
+              ),
+          ),
+      )
+    }
+  }
+
+  fun verifyActivitiesGetIds(url: String, prisonId: String, excludeProgramCodes: List<String> = listOf(), courseActivityId: Long? = null) {
     val request = getRequestedFor(
       urlPathEqualTo(url),
     )
       .withQueryParam("prisonId", equalTo(prisonId))
+      .apply { excludeProgramCodes.forEach { withQueryParam("excludeProgramCode", equalTo(it)) } }
       .apply { courseActivityId?.run { withQueryParam("courseActivityId", equalTo(courseActivityId.toString())) } }
     nomisApi.verify(
       request,
     )
   }
 
-  fun stubMultipleGetActivities(intProgression: IntProgression) {
-    (intProgression).forEach {
+  fun stubMultipleGetActivities(count: Int) {
+    repeat(count) { offset ->
       nomisApi.stubFor(
-        get(urlPathEqualTo("/activities/$it"))
+        get(urlPathEqualTo("/activities/${1 + offset}"))
           .willReturn(
             aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-              .withBody(activitiesResponse(it.toLong())),
+              .withBody(activitiesResponse((1 + offset).toLong())),
+          ),
+      )
+    }
+  }
+
+  fun stubMultipleGetAllocations(count: Int) {
+    repeat(count) { offset ->
+      nomisApi.stubFor(
+        get(urlPathEqualTo("/allocations/${1 + offset}"))
+          .willReturn(
+            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+              .withBody(allocationsResponse((1 + offset).toLong())),
           ),
       )
     }
@@ -470,6 +553,45 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     prisonId?.let { request.withQueryParam("prisonIds", equalTo(prisonId)) }
     nomisApi.verify(
       request,
+    )
+  }
+
+  fun stubGetNonAssociation(offenderNo: String, nsOffenderNo: String, typeSequence: Int) {
+    nomisApi.stubFor(
+      get(
+        urlEqualTo("/non-associations/offender/$offenderNo/ns-offender/$nsOffenderNo?typeSequence=$typeSequence"),
+
+      )
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(nonAssociationResponse(offenderNo = offenderNo, nsOffenderNo = nsOffenderNo, typeSequence = typeSequence)),
+        ),
+    )
+  }
+
+  fun stubGetNonAssociationWithMinimalData(offenderNo: String, nsOffenderNo: String, typeSequence: Int) {
+    nomisApi.stubFor(
+      get(
+        urlEqualTo("/non-associations/offender/$offenderNo/ns-offender/$nsOffenderNo?typeSequence=$typeSequence"),
+      )
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(nonAssociationResponseMinimalData(offenderNo = offenderNo, nsOffenderNo = nsOffenderNo, typeSequence = typeSequence)),
+        ),
+    )
+  }
+
+  fun stubGetNonAssociationNotFound(offenderNo: String, nsOffenderNo: String, typeSequence: Int) {
+    nomisApi.stubFor(
+      get(
+        urlEqualTo("/non-associations/offender/$offenderNo/ns-offender/$nsOffenderNo?typeSequence=$typeSequence"),
+      )
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NOT_FOUND.value()),
+        ),
     )
   }
 }
@@ -571,6 +693,17 @@ fun adjustmentIdsPagedResponse(
   return pageContent(content, pageSize, pageNumber, totalElements, adjustmentIds.size)
 }
 
+fun nonAssociationIdsPagedResponse(
+  totalElements: Long = 10,
+  nonAssociationIds: List<Long> = (0L..10L).toList(),
+  pageSize: Long = 10,
+  pageNumber: Long = 0,
+): String {
+  val content = nonAssociationIds.map { idJsonCreator(it) }
+    .joinToString { it }
+  return pageContent(content, pageSize, pageNumber, totalElements, nonAssociationIds.size)
+}
+
 fun appointmentIdsPagedResponse(
   totalElements: Long = 10,
   ids: List<Long> = (0L..10L).toList(),
@@ -588,6 +721,16 @@ fun activitiesIdsPagedResponse(
   pageNumber: Long = 0,
 ): String {
   val content = ids.map { """{ "courseActivityId": $it }""" }.joinToString { it }
+  return pageContent(content, pageSize, pageNumber, totalElements, ids.size)
+}
+
+fun allocationsIdsPagedResponse(
+  totalElements: Long = 10,
+  ids: List<Long> = (0L..10L).toList(),
+  pageSize: Long = 10,
+  pageNumber: Long = 0,
+): String {
+  val content = ids.map { """{ "allocationId": $it }""" }.joinToString { it }
   return pageContent(content, pageSize, pageNumber, totalElements, ids.size)
 }
 
@@ -962,9 +1105,11 @@ fun adjudicationResponse(
                                 "statusDate": "2023-08-07",
                                 "sanctionDays": 2,
                                 "sanctionMonths": 1,
-                                "chargeSequence": 1
+                                "chargeSequence": 1,
+                                "adjudicationNumber": ${adjudicationNumber - 1} 
                             },
-                            "chargeSequence": 2
+                            "chargeSequence": 2,
+                            "adjudicationNumber": $adjudicationNumber
                         },
                         {
                             "sequence": 7,
@@ -988,12 +1133,74 @@ fun adjudicationResponse(
                 }
             ],
             "createdDateTime": "2023-08-07T16:56:17.018049",
-            "createdByUsername": "AMARKE_GEN"
+            "createdByUsername": "AMARKE_GEN",
+            "notifications": []
         }
     ]
 }    
   """.trimIndent()
 }
+
+private fun allNonAssociationResponse(
+  offenderNo: String = "A1234BC",
+  nsOffenderNo: String = "D5678EF",
+): String =
+  """
+    [
+    {
+      "offenderNo": "$offenderNo",
+      "nsOffenderNo": "$nsOffenderNo",
+      "typeSequence": 1,
+      "reason": "VIC",
+      "recipReason": "PER",
+      "type": "WING",
+      "authorisedBy": "Jim Smith",
+      "effectiveDate": "2023-10-25",
+      "expiryDate": "2023-10-26",
+      "updatedBy": "TJONES_ADM",
+      "comment": "Fight on Wing C"
+    }
+    ]
+  """.trimIndent()
+
+private fun nonAssociationResponse(
+  offenderNo: String = "A1234BC",
+  nsOffenderNo: String = "D5678EF",
+  typeSequence: Int = 1,
+): String =
+  """
+    {
+      "offenderNo": "$offenderNo",
+      "nsOffenderNo": "$nsOffenderNo",
+      "typeSequence": $typeSequence,
+      "reason": "VIC",
+      "recipReason": "PER",
+      "type": "WING",
+      "authorisedBy": "Jim Smith",
+      "effectiveDate": "2023-10-25",
+      "expiryDate": "2023-10-26",
+      "updatedBy": "FADAMS_ADM",
+      "comment": "Fight on Wing C"
+    }
+  """.trimIndent()
+
+private fun nonAssociationResponseMinimalData(
+  offenderNo: String = "A1234BC",
+  nsOffenderNo: String = "D5678EF",
+  typeSequence: Int = 1,
+): String =
+  """
+    {
+      "offenderNo": "$offenderNo",
+      "nsOffenderNo": "$nsOffenderNo",
+      "typeSequence": $typeSequence,
+      "reason": "VIC",
+      "recipReason": "PER",
+      "type": "WING",
+      "effectiveDate": "2023-10-25",
+      "updatedBy": "JSMITH_ADM"
+    }
+  """.trimIndent()
 
 private fun appointmentResponse(
   bookingId: Long = 2,
@@ -1073,3 +1280,34 @@ private fun activitiesResponse(
   ]
 }
   """.trimIndent()
+
+private fun allocationsResponse(
+  courseActivityId: Long = 123,
+): String =
+  """
+{
+    "prisonId": "BXI",
+    "courseActivityId": $courseActivityId,
+    "nomisId": "A1234AA",
+    "bookingId": 4321,
+    "startDate": "2020-04-11",
+    "endDate": "2023-11-15",
+    "suspended": false,
+    "endComment": "Ended",
+    "endReasonCode": "WDRAWN",
+    "payBand": "1",
+    "livingUnitDescription": "BXI-A-1-01"
+}
+  """.trimIndent()
+
+private fun idJsonCreator(id: Long): String {
+  val fourDigitString = String.format("%04d", id)
+  return """
+    {"offenderNo1": "A${fourDigitString}BC", "offenderNo2": "D${fourDigitString}EF"}
+  """.trimMargin()
+}
+
+private fun idCreator(id: Long): Map<String, String> {
+  val fourDigitString = String.format("%04d", id)
+  return mapOf("offenderNo1" to "A${fourDigitString}BC", "offenderNo2" to "D${fourDigitString}EF")
+}

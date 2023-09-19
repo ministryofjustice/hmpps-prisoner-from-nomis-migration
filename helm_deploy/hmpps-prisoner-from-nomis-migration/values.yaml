@@ -1,6 +1,7 @@
 ---
 generic-service:
   nameOverride: hmpps-prisoner-from-nomis-migration
+  productId: DPS060
 
   replicaCount: 4
 
@@ -36,6 +37,9 @@ generic-service:
     FEATURE_EVENT_SENTENCE_ADJUSTMENT_DELETED: true
     FEATURE_EVENT_KEY_DATE_ADJUSTMENT_UPSERTED: true
     FEATURE_EVENT_KEY_DATE_ADJUSTMENT_DELETED: true
+    FEATURE_EVENT_NON_ASSOCIATION_DETAIL-UPSERTED: true
+    FEATURE_EVENT_NON_ASSOCIATION_DETAIL-DELETED: true
+    FEATURE_ADJUDICATIONS_REPORT_MODE: false
     HMPPS_SQS_USE_WEB_TOKEN: true
 
   # Pre-existing kubernetes secrets to load as environment variables in the deployment.
@@ -84,6 +88,10 @@ generic-service:
       HMPPS_SQS_QUEUES_MIGRATIONALLOCATIONS_QUEUE_NAME: "sqs_name"
     sqs-migration-allocations-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONALLOCATIONS_DLQ_NAME: "sqs_name"
+    sqs-migration-nonassociations-queue:
+      HMPPS_SQS_QUEUES_MIGRATIONNONASSOCIATIONS_QUEUE_NAME: "sqs_name"
+    sqs-migration-nonassociations-dlq:
+      HMPPS_SQS_QUEUES_MIGRATIONNONASSOCIATIONS_DLQ_NAME: "sqs_name"
     prisoner-from-nomis-visits-queue:
       HMPPS_SQS_QUEUES_EVENTVISITS_QUEUE_NAME: "sqs_name"
     prisoner-from-nomis-visits-dl-queue:

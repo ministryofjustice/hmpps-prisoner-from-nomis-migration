@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations
 
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -8,7 +8,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import jakarta.validation.Valid
 import org.springframework.format.annotation.DateTimeFormat
-import org.springframework.http.HttpStatus
+import org.springframework.http.HttpStatus.ACCEPTED
 import org.springframework.http.MediaType
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
@@ -28,22 +28,22 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import java.time.LocalDateTime
 
 @RestController
-@RequestMapping("/migrate", produces = [MediaType.APPLICATION_JSON_VALUE])
-class ActivitiesMigrationResource(
-  private val activitiesMigrationService: ActivitiesMigrationService,
+@RequestMapping("/migrate/non-associations", produces = [MediaType.APPLICATION_JSON_VALUE])
+@PreAuthorize("hasRole('ROLE_MIGRATE_NON_ASSOCIATIONS')")
+class NonAssociationsMigrationResource(
+  private val nonAssociationsMigrationService: NonAssociationsMigrationService,
   private val migrationHistoryService: MigrationHistoryService,
 ) {
-  @PreAuthorize("hasRole('ROLE_MIGRATE_ACTIVITIES')")
-  @PostMapping("/activities")
-  @ResponseStatus(value = HttpStatus.ACCEPTED)
+  @PostMapping("")
+  @ResponseStatus(value = ACCEPTED)
   @Operation(
-    summary = "Starts an activities migration",
-    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>MIGRATE_ACTIVITIES</b>",
+    summary = "Starts an nonAssociations migration",
+    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>MIGRATE_NON_ASSOCIATIONS</b>",
     requestBody = io.swagger.v3.oas.annotations.parameters.RequestBody(
       content = [
         Content(
           mediaType = "application/json",
-          schema = Schema(implementation = ActivitiesMigrationFilter::class),
+          schema = Schema(implementation = NonAssociationsMigrationFilter::class),
         ),
       ],
     ),
@@ -64,16 +64,15 @@ class ActivitiesMigrationResource(
       ),
     ],
   )
-  suspend fun migrateActivities(
+  suspend fun migrateNonAssociations(
     @RequestBody @Valid
-    migrationFilter: ActivitiesMigrationFilter,
-  ) = activitiesMigrationService.startMigration(migrationFilter)
+    migrationFilter: NonAssociationsMigrationFilter,
+  ) = nonAssociationsMigrationService.startMigration(migrationFilter)
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_ACTIVITIES')")
-  @GetMapping("/activities/history")
+  @GetMapping("/history")
   @Operation(
-    summary = "Lists all filtered migration history records un-paged for activities",
-    description = "The records are un-paged and requires role <b>MIGRATE_ACTIVITIES</b>",
+    summary = "Lists all filtered migration history records un-paged for nonAssociations",
+    description = "The records are un-paged and requires role <b>MIGRATE_NON_ASSOCIATIONS</b>",
     responses = [
       ApiResponse(
         responseCode = "200",
@@ -120,18 +119,17 @@ class ActivitiesMigrationResource(
     ) @RequestParam includeOnlyFailures: Boolean = false,
   ) = migrationHistoryService.findAll(
     HistoryFilter(
-      migrationTypes = listOf(MigrationType.ACTIVITIES.name),
+      migrationTypes = listOf(MigrationType.NON_ASSOCIATIONS.name),
       fromDateTime = fromDateTime,
       toDateTime = toDateTime,
       includeOnlyFailures = includeOnlyFailures,
     ),
   )
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_ACTIVITIES')")
-  @GetMapping("/activities/history/{migrationId}")
+  @GetMapping("/history/{migrationId}")
   @Operation(
     summary = "Gets a specific migration history record",
-    description = "Requires role <b>MIGRATE_ACTIVITIES</b>",
+    description = "Requires role <b>MIGRATE_NON_ASSOCIATIONS</b>",
     responses = [
       ApiResponse(
         responseCode = "200",
@@ -166,12 +164,11 @@ class ActivitiesMigrationResource(
     migrationId: String,
   ) = migrationHistoryService.get(migrationId)
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_ACTIVITIES')")
-  @PostMapping("/activities/{migrationId}/cancel")
-  @ResponseStatus(value = HttpStatus.ACCEPTED)
+  @PostMapping("/{migrationId}/cancel")
+  @ResponseStatus(value = ACCEPTED)
   @Operation(
     summary = "Cancels a running migration. The actual cancellation might take several minutes to complete",
-    description = "Requires role <b>MIGRATE_ACTIVITIES</b>",
+    description = "Requires role <b>MIGRATE_NON_ASSOCIATIONS</b>",
     responses = [
       ApiResponse(
         responseCode = "202",
@@ -198,13 +195,12 @@ class ActivitiesMigrationResource(
     @PathVariable
     @Schema(description = "Migration Id", example = "2020-03-24T12:00:00", required = true)
     migrationId: String,
-  ) = activitiesMigrationService.cancel(migrationId)
+  ) = nonAssociationsMigrationService.cancel(migrationId)
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_ACTIVITIES')")
-  @GetMapping("/activities/active-migration")
+  @GetMapping("/active-migration")
   @Operation(
     summary = "Gets active/currently running migration data, using migration record and migration queues",
-    description = "Requires role <b>MIGRATE_ACTIVITIES</b>",
+    description = "Requires role <b>MIGRATE_NON_ASSOCIATIONS</b>",
     responses = [
       ApiResponse(
         responseCode = "200",
@@ -228,5 +224,5 @@ class ActivitiesMigrationResource(
       ),
     ],
   )
-  suspend fun getActiveMigrationDetails() = migrationHistoryService.getActiveMigrationDetails(MigrationType.ACTIVITIES)
+  suspend fun getActiveMigrationDetails() = migrationHistoryService.getActiveMigrationDetails(MigrationType.NON_ASSOCIATIONS)
 }

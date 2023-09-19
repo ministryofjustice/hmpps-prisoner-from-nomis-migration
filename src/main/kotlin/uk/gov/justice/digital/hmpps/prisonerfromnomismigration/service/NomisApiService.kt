@@ -19,6 +19,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.F
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveAllocationIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetActivityResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetAllocationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NonAssociationIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NonAssociationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.model.UpsertSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomUsageResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationFilter
@@ -230,6 +233,49 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       .retrieve()
       .bodyToMono(typeReference<RestResponsePage<FindActiveAllocationIdsResponse>>())
       .awaitSingle()
+
+  suspend fun getNonAssociation(offenderNo: String, nsOffenderNo: String, typeSequence: Int): NonAssociationResponse =
+    webClient.get()
+      .uri {
+        it.path("/non-associations/offender/{offenderNo}/ns-offender/{nsOffenderNo}")
+          .queryParam("typeSequence", "$typeSequence")
+          .build(offenderNo, nsOffenderNo)
+      }
+      .retrieve()
+      .awaitBody()
+
+  suspend fun getNonAssociations(
+    offenderNo: String,
+    nsOffenderNo: String,
+  ): List<NonAssociationResponse> =
+    webClient.get()
+      .uri(
+        "/non-associations/offender/{offenderNo}/ns-offender/{nsOffenderNo}/all",
+        offenderNo,
+        nsOffenderNo,
+      )
+      .retrieve()
+      .bodyToMono(typeReference<List<NonAssociationResponse>>())
+      .awaitSingle()
+
+  suspend fun getNonAssociationIds(
+    fromDate: LocalDate?,
+    toDate: LocalDate?,
+    pageNumber: Long,
+    pageSize: Long,
+  ): PageImpl<NonAssociationIdResponse> =
+    webClient.get()
+      .uri {
+        it.path("/non-associations/ids")
+          .queryParam("fromDate", fromDate)
+          .queryParam("toDate", toDate)
+          .queryParam("page", pageNumber)
+          .queryParam("size", pageSize)
+          .build()
+      }
+      .retrieve()
+      .bodyToMono(typeReference<RestResponsePage<NonAssociationIdResponse>>())
+      .awaitSingle()
 }
 
 data class VisitId(
@@ -358,3 +404,18 @@ constructor(
 ) : PageImpl<T>(content, PageRequest.of(number, size), totalElements)
 
 inline fun <reified T> typeReference() = object : ParameterizedTypeReference<T>() {}
+
+fun NonAssociationResponse.toUpsertSyncRequest(nonAssociationId: Long? = null) =
+  UpsertSyncRequest(
+    id = nonAssociationId,
+    firstPrisonerNumber = offenderNo,
+    firstPrisonerReason = UpsertSyncRequest.FirstPrisonerReason.valueOf(reason),
+    secondPrisonerNumber = nsOffenderNo,
+    secondPrisonerReason = UpsertSyncRequest.SecondPrisonerReason.valueOf(recipReason),
+    restrictionType = UpsertSyncRequest.RestrictionType.valueOf(type),
+    comment = comment,
+    lastModifiedByUsername = updatedBy,
+    authorisedBy = authorisedBy,
+    effectiveFromDate = effectiveDate,
+    expiryDate = expiryDate,
+  )

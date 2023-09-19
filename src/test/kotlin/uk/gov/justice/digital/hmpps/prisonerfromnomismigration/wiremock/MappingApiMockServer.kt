@@ -41,6 +41,7 @@ class MappingApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallb
     const val KEYDATE_ADJUSTMENTS_GET_MAPPING_URL =
       "/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id"
     const val ADJUSTMENTS_CREATE_MAPPING_URL = "/mapping/sentencing/adjustments"
+    const val NON_ASSOCIATIONS_CREATE_MAPPING_URL = "/mapping/non-associations"
   }
 
   override fun beforeAll(context: ExtensionContext) {
@@ -465,16 +466,22 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun verifyCreateMappingActivitiesIds(nomisCourseActivityIds: LongRange, times: Int = 1) =
-    nomisCourseActivityIds.forEach {
+  fun verifyCreateActivityMappings(count: Int, times: Int = 1) =
+    repeat(count) { offset ->
       verify(
         times,
         postRequestedFor(urlPathEqualTo("/mapping/activities/migration")).withRequestBody(
-          matchingJsonPath(
-            "nomisCourseActivityId",
-            equalTo(it.toString()),
-          ),
+          matchingJsonPath("nomisCourseActivityId", equalTo((offset + 1).toString())),
         ),
+      )
+    }
+
+  fun verifyCreateAllocationMappings(count: Int, times: Int = 1) =
+    repeat(count) { offset ->
+      verify(
+        times,
+        postRequestedFor(urlPathEqualTo("/mapping/allocations/migration"))
+          .withRequestBody(matchingJsonPath("nomisAllocationId", equalTo((offset + 1).toString()))),
       )
     }
 
@@ -594,9 +601,34 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubMultipleGetActivityMappings(
+    count: Int,
+    activityScheduleId: Long = 4444,
+    activityScheduleId2: Long? = 5555,
+  ) {
+    repeat(count) { offset ->
+      stubFor(
+        get(urlPathEqualTo("/mapping/activities/migration/nomis-course-activity-id/${1 + offset}"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(
+                """{
+                "nomisCourseActivityId": ${1 + offset},
+                "activityId": ${activityScheduleId + offset},
+                "activityId2": ${activityScheduleId2?.let { it + offset }},
+                "label": "some old activity migration"
+              }""",
+              ),
+          ),
+      )
+    }
+  }
+
   fun stubActivityMappingCreateConflict(
-    existingActivityScheduleId: Long = 457,
-    duplicateActivityScheduleId: Long = 456,
+    existingActivityId: Long = 457,
+    duplicateActivityId: Long = 456,
     nomisCourseActivityId: Long = 123,
   ) {
     stubFor(
@@ -610,13 +642,13 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
               "moreInfo": 
               {
                 "existing" :  {
-                  "activityScheduleId": $existingActivityScheduleId,
+                  "activityId": $existingActivityId,
                   "nomisCourseActivityId": $nomisCourseActivityId,
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45"
                  },
                  "duplicate" : {
-                  "activityScheduleId": $duplicateActivityScheduleId,
+                  "activityId": $duplicateActivityId,
                   "nomisCourseActivityId": $nomisCourseActivityId,
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45"
@@ -625,6 +657,196 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
               }""",
             ),
         ),
+    )
+  }
+
+  fun stubAllocationMappingCreateConflict(
+    existingAllocationId: Long,
+    duplicateAllocationId: Long,
+    nomisAllocationId: Long,
+  ) {
+    stubFor(
+      post(urlPathEqualTo("/mapping/allocations/migration"))
+        .willReturn(
+          aResponse()
+            .withStatus(409)
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
+              "moreInfo": 
+              {
+                "existing" :  {
+                  "nomisAllocationId": $nomisAllocationId,
+                  "activityAllocationId": $existingAllocationId,
+                  "activityScheduleId": 123,
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45"
+                 },
+                 "duplicate" : {
+                  "nomisAllocationId": $nomisAllocationId,
+                  "activityAllocationId": $duplicateAllocationId,
+                  "activityScheduleId": 123,
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45"
+                  }
+              }
+              }""",
+            ),
+        ),
+    )
+  }
+
+  fun verifyCreateMappingNonAssociation(nonAssociationIds: Array<Long>, times: Int = 1) =
+    nonAssociationIds.forEach {
+      verify(
+        times,
+        postRequestedFor(urlPathEqualTo("/mapping/non-associations")).withRequestBody(
+          matchingJsonPath(
+            "nonAssociationId",
+            equalTo(it.toString()),
+          ),
+        ),
+      )
+    }
+
+  fun stubNonAssociationsLatestMigration(migrationId: String) {
+    stubFor(
+      get(urlEqualTo("/mapping/non-associations/migrated/latest")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(
+            """
+            {
+              "nonAssociationId": 4321,
+              "firstOffenderNo": "A1234BC",                                       
+              "secondOffenderNo": "D5678EF",                   
+              "nomisTypeSequence": 2,    
+              "label": "$migrationId",
+              "whenCreated": "2020-01-01T11:10:00",
+              "mappingType": "MIGRATED"
+            }              
+            """,
+          ),
+      ),
+    )
+  }
+
+  fun stubNonAssociationMappingCreateConflict(
+    nonAssociationId: Long,
+    duplicateNonAssociationId: Long,
+  ) {
+    stubFor(
+      post(urlPathEqualTo("/mapping/non-associations"))
+        .willReturn(
+          aResponse()
+            .withStatus(409)
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
+              "moreInfo": 
+              {
+                "existing" :  {
+                  "nonAssociationId": $nonAssociationId,
+                  "firstOffenderNo": "A1234BC",
+                  "secondOffenderNo": "D5678EF",
+                  "nomisTypeSequence": 2,
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "NOMIS_CREATED"
+                 },
+                 "duplicate" : {
+                  "nonAssociationId": $duplicateNonAssociationId,
+                  "firstOffenderNo": "A1234BC",
+                  "secondOffenderNo": "D5678EF",
+                  "nomisTypeSequence": 2,
+                  "activityScheduleId": 123,
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                   "mappingType": "NOMIS_CREATED"
+                }
+              }
+              }""",
+            ),
+        ),
+    )
+  }
+
+  fun stubGetNonAssociation(firstOffenderNo: String = "A1234BC", secondOffenderNo: String = "D5678EF", typeSequence: Int = 1) {
+    val content = """{
+      "nonAssociationId": 4321,
+      "firstOffenderNo": "$firstOffenderNo",                                       
+      "secondOffenderNo": "$secondOffenderNo",                   
+      "nomisTypeSequence": $typeSequence,    
+      "label": "2022-02-14T09:58:45",
+      "whenCreated": "2020-01-01T11:10:00",
+      "mappingType": "NOMIS_CREATED"
+    }"""
+    stubFor(
+      get(urlPathMatching("/mapping/non-associations/first-offender-no/$firstOffenderNo/second-offender-no/$secondOffenderNo/type-sequence/$typeSequence"))
+        .willReturn(okJson(content)),
+    )
+  }
+
+  fun stubGetNonAssociationNotFound(firstOffenderNo: String = "A1234BC", secondOffenderNo: String = "D5678EF", typeSequence: Int = 1) {
+    stubFor(
+      get(urlPathMatching("/mapping/non-associations/first-offender-no/$firstOffenderNo/second-offender-no/$secondOffenderNo/type-sequence/$typeSequence"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NOT_FOUND.value()),
+        ),
+    )
+  }
+
+  fun stubGetAnyNonAssociationNotFound() {
+    stubFor(
+      get(urlPathMatching("/mapping/non-associations/first-offender-no/[A-Z]\\d{4}[A-Z]{2}/second-offender-no/[A-Z]\\d{4}[A-Z]{2}/type-sequence/\\d"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NOT_FOUND.value()),
+        ),
+    )
+  }
+
+  fun stubNonAssociationMappingDelete(nonAssociationId: Long) {
+    stubFor(
+      delete(urlEqualTo("/mapping/non-associations/non-association-id/$nonAssociationId"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NO_CONTENT.value()),
+        ),
+    )
+  }
+
+  fun stubNonAssociationsMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 54327) {
+    val content = """{
+      "nonAssociationId": 14478,
+      "firstOffenderNo": "A1234BC",                                       
+      "secondOffenderNo": "D5678EF",                   
+      "nomisTypeSequence": 1,    
+      "label": "2022-02-14T09:58:45",
+      "whenCreated": "$whenCreated",
+      "mappingType": "MIGRATED"
+    }"""
+    stubFor(
+      get(urlPathMatching("/mapping/non-associations/migration-id/.*")).willReturn(
+        okJson(pageContent(content, count)),
+      ),
+
+    )
+  }
+
+  fun verifyCreateMappingNonAssociationIds(nomsNonAssociationIds: Array<Long>, times: Int = 1) = nomsNonAssociationIds.forEach {
+    verify(
+      times,
+      postRequestedFor(urlEqualTo("/mapping/non-associations")).withRequestBody(
+        matchingJsonPath(
+          "nonAssociationId",
+          equalTo("$it"),
+        ),
+      ),
     )
   }
 

@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations
 
 import com.microsoft.applicationinsights.TelemetryClient
 import io.mockk.coEvery
@@ -8,18 +8,21 @@ import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.slot
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.internal.verification.Times
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -29,8 +32,6 @@ import org.mockito.kotlin.whenever
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentInstance
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -40,44 +41,48 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Migrati
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_ENTITY
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_STATUS_CHECK
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.RETRY_MIGRATION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.NonAssociationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NonAssociationIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NonAssociationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.model.NonAssociation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.model.UpsertSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AppointmentIdResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AppointmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatusCheck
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.APPOINTMENTS
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.NON_ASSOCIATIONS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import java.time.LocalDate
 import java.time.LocalDateTime
 
 @ExtendWith(MockitoExtension::class)
-internal class AppointmentsMigrationServiceTest {
+internal class NonAssociationsMigrationServiceTest {
   private val nomisApiService: NomisApiService = mock()
   private val queueService: MigrationQueueService = mock()
   private val migrationHistoryService: MigrationHistoryService = mock()
   private val telemetryClient: TelemetryClient = mock()
   private val auditService: AuditService = mock()
-  private val appointmentsService: AppointmentsService = mock()
-  private val appointmentsMappingService: AppointmentsMappingService = mock()
-  val service = AppointmentsMigrationService(
+  private val nonAssociationsService: NonAssociationsService = mock()
+  private val nonAssociationsMappingService: NonAssociationsMappingService = mock()
+  val service = NonAssociationsMigrationService(
     nomisApiService = nomisApiService,
     queueService = queueService,
     migrationHistoryService = migrationHistoryService,
     telemetryClient = telemetryClient,
     auditService = auditService,
-    appointmentsService = appointmentsService,
-    appointmentsMappingService = appointmentsMappingService,
+    nonAssociationsService = nonAssociationsService,
+    nonAssociationsMappingService = nonAssociationsMappingService,
     pageSize = 200,
     completeCheckDelaySeconds = 10,
     completeCheckCount = 9,
   )
 
   @Nested
-  inner class MigrateAppointments {
+  @DisplayName("migrateNonAssociations")
+  inner class MigrateNonAssociations {
     private val nomisApiService = mockk<NomisApiService>()
     private val auditService = mockk<AuditService>(relaxed = true)
     private val migrationHistoryService = mockk<MigrationHistoryService>(relaxed = true)
@@ -85,22 +90,22 @@ internal class AppointmentsMigrationServiceTest {
     private val auditWhatParam = slot<String>()
     private val auditDetailsParam = slot<Map<*, *>>()
 
-    val service = AppointmentsMigrationService(
+    val service = NonAssociationsMigrationService(
       nomisApiService = nomisApiService,
       queueService = queueService,
       migrationHistoryService = migrationHistoryService,
       telemetryClient = telemetryClient,
       auditService = auditService,
-      appointmentsService = appointmentsService,
-      appointmentsMappingService = appointmentsMappingService,
+      nonAssociationsService = nonAssociationsService,
+      nonAssociationsMappingService = nonAssociationsMappingService,
       pageSize = 200,
       completeCheckDelaySeconds = 10,
       completeCheckCount = 9,
     )
 
     @BeforeEach
-    fun setUp() {
-      coEvery { nomisApiService.getAppointmentIds(any(), any(), any(), any(), any()) } returns
+    internal fun setUp() {
+      coEvery { nomisApiService.getNonAssociationIds(any(), any(), any(), any()) } returns
         pages(1)
 
       coEvery {
@@ -112,22 +117,20 @@ internal class AppointmentsMigrationServiceTest {
     }
 
     @Test
-    fun `will pass filter through to get total count along with a tiny page count`() {
+    internal fun `will pass filter through to get total count along with a tiny page count`() {
       runBlocking {
         service.startMigration(
-          AppointmentsMigrationFilter(
+          NonAssociationsMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
-            prisonIds = listOf("MDI"),
           ),
         )
       }
 
       coVerify {
-        nomisApiService.getAppointmentIds(
+        nomisApiService.getNonAssociationIds(
           fromDate = LocalDate.parse("2020-01-01"),
           toDate = LocalDate.parse("2020-01-02"),
-          prisonIds = listOf("MDI"),
           pageNumber = 0,
           pageSize = 1,
         )
@@ -135,23 +138,22 @@ internal class AppointmentsMigrationServiceTest {
     }
 
     @Test
-    fun `will pass appointments count and filter to queue`(): Unit = runBlocking {
-      coEvery { nomisApiService.getAppointmentIds(any(), any(), any(), any(), any()) } returns
+    internal fun `will pass non-association count and filter to queue`(): Unit = runBlocking {
+      coEvery { nomisApiService.getNonAssociationIds(any(), any(), any(), any()) } returns
         pages(23)
 
       runBlocking {
         service.startMigration(
-          AppointmentsMigrationFilter(
+          NonAssociationsMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
-            prisonIds = listOf("MDI"),
           ),
         )
       }
 
       verify(queueService).sendMessage(
         message = eq(MIGRATE_ENTITIES),
-        context = check<MigrationContext<AppointmentsMigrationFilter>> {
+        context = check<MigrationContext<NonAssociationsMigrationFilter>> {
           assertThat(it.estimatedCount).isEqualTo(23)
           assertThat(it.body.fromDate).isEqualTo(LocalDate.parse("2020-01-01"))
           assertThat(it.body.toDate).isEqualTo(LocalDate.parse("2020-01-02"))
@@ -161,28 +163,27 @@ internal class AppointmentsMigrationServiceTest {
     }
 
     @Test
-    fun `will write migration history record`() {
-      val appointmentsMigrationFilter = AppointmentsMigrationFilter(
+    internal fun `will write migration history record`() {
+      val nonAssociationsMigrationFilter = NonAssociationsMigrationFilter(
         fromDate = LocalDate.parse("2020-01-01"),
         toDate = LocalDate.parse("2020-01-02"),
-        prisonIds = listOf("MDI"),
       )
 
-      coEvery { nomisApiService.getAppointmentIds(any(), any(), any(), any(), any()) } returns
+      coEvery { nomisApiService.getNonAssociationIds(any(), any(), any(), any()) } returns
         pages(23)
 
       runBlocking {
         service.startMigration(
-          appointmentsMigrationFilter,
+          nonAssociationsMigrationFilter,
         )
       }
 
       coVerify {
         migrationHistoryService.recordMigrationStarted(
           migrationId = any(),
-          migrationType = APPOINTMENTS,
+          migrationType = NON_ASSOCIATIONS,
           estimatedRecordCount = 23,
-          filter = coWithArg<AppointmentsMigrationFilter> {
+          filter = coWithArg<NonAssociationsMigrationFilter> {
             assertThat(it.fromDate).isEqualTo(LocalDate.parse("2020-01-01"))
             assertThat(it.toDate).isEqualTo(LocalDate.parse("2020-01-02"))
           },
@@ -191,45 +192,42 @@ internal class AppointmentsMigrationServiceTest {
 
       with(auditDetailsParam.captured) {
         assertThat(this).extracting("migrationId").isNotNull
-        assertThat(this).extracting("filter").isEqualTo(appointmentsMigrationFilter)
+        assertThat(this).extracting("filter").isEqualTo(nonAssociationsMigrationFilter)
       }
     }
 
     @Test
-    fun `will write analytic with estimated count and filter`() {
-      coEvery { nomisApiService.getAppointmentIds(any(), any(), any(), any(), any()) } returns
+    internal fun `will write analytic with estimated count and filter`() {
+      coEvery { nomisApiService.getNonAssociationIds(any(), any(), any(), any()) } returns
         pages(23)
 
       runBlocking {
         service.startMigration(
-          AppointmentsMigrationFilter(
+          NonAssociationsMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
-            prisonIds = listOf("MDI"),
           ),
         )
       }
 
       verify(telemetryClient).trackEvent(
-        eq("appointments-migration-started"),
+        eq("non-associations-migration-started"),
         check {
           assertThat(it["migrationId"]).isNotNull
           assertThat(it["estimatedCount"]).isEqualTo("23")
           assertThat(it["fromDate"]).isEqualTo("2020-01-01")
           assertThat(it["toDate"]).isEqualTo("2020-01-02")
-          assertThat(it["prisonIds"]).isEqualTo("[MDI]")
         },
-        eq(null),
+        isNull(),
       )
     }
 
     @Test
-    fun `will write analytics with empty filter`() {
+    internal fun `will write analytics with empty filter`() {
       coEvery {
-        nomisApiService.getAppointmentIds(
+        nomisApiService.getNonAssociationIds(
           fromDate = isNull(),
           toDate = isNull(),
-          prisonIds = listOf("MDI"),
           pageNumber = any(),
           pageSize = any(),
         )
@@ -238,45 +236,44 @@ internal class AppointmentsMigrationServiceTest {
 
       runBlocking {
         service.startMigration(
-          AppointmentsMigrationFilter(prisonIds = listOf("MDI")),
+          NonAssociationsMigrationFilter(),
         )
       }
 
       verify(telemetryClient).trackEvent(
-        eq("appointments-migration-started"),
+        eq("non-associations-migration-started"),
         check {
           assertThat(it["migrationId"]).isNotNull
           assertThat(it["estimatedCount"]).isEqualTo("23")
           assertThat(it["fromDate"]).isNull()
           assertThat(it["toDate"]).isNull()
-          assertThat(it["prisonIds"]).isEqualTo("[MDI]")
         },
-        eq(null),
+        isNull(),
       )
     }
   }
 
   @Nested
-  inner class DivideAppointmentsByPage {
+  @DisplayName("divideNonAssociationsByPage")
+  inner class DivideNonAssociationsByPage {
 
     @BeforeEach
-    fun setUp(): Unit = runBlocking {
-      whenever(nomisApiService.getAppointmentIds(any(), any(), any(), any(), any())).thenReturn(
+    internal fun setUp(): Unit = runBlocking {
+      whenever(nomisApiService.getNonAssociationIds(any(), any(), any(), any())).thenReturn(
         pages(100_200),
       )
     }
 
     @Test
-    fun `will send a page message for every page (200) of appointments`(): Unit = runBlocking {
+    internal fun `will send a page message for every page (200) of non-associations `(): Unit = runBlocking {
       service.divideEntitiesByPage(
         MigrationContext(
-          type = APPOINTMENTS,
+          type = NON_ASSOCIATIONS,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
-          body = AppointmentsMigrationFilter(
+          body = NonAssociationsMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
-            prisonIds = listOf("MDI"),
           ),
         ),
       )
@@ -289,16 +286,15 @@ internal class AppointmentsMigrationServiceTest {
     }
 
     @Test
-    fun `will also send a single MIGRATION_STATUS_CHECK message`(): Unit = runBlocking {
+    internal fun `will also send a single MIGRATION_STATUS_CHECK message`(): Unit = runBlocking {
       service.divideEntitiesByPage(
         MigrationContext(
-          type = APPOINTMENTS,
+          type = NON_ASSOCIATIONS,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
-          body = AppointmentsMigrationFilter(
+          body = NonAssociationsMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
-            prisonIds = listOf("MDI"),
           ),
         ),
       )
@@ -311,23 +307,22 @@ internal class AppointmentsMigrationServiceTest {
     }
 
     @Test
-    fun `each page with have the filter and context attached`(): Unit = runBlocking {
+    internal fun `each page with have the filter and context attached`(): Unit = runBlocking {
       service.divideEntitiesByPage(
         MigrationContext(
-          type = APPOINTMENTS,
+          type = NON_ASSOCIATIONS,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
-          body = AppointmentsMigrationFilter(
+          body = NonAssociationsMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
-            prisonIds = listOf("MDI"),
           ),
         ),
       )
 
       verify(queueService, times(100_200 / 200)).sendMessage(
         message = eq(MIGRATE_BY_PAGE),
-        context = check<MigrationContext<MigrationPage<AppointmentsMigrationFilter>>> {
+        context = check<MigrationContext<MigrationPage<NonAssociationsMigrationFilter>>> {
           assertThat(it.estimatedCount).isEqualTo(100_200)
           assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
           assertThat(it.body.filter.fromDate).isEqualTo(LocalDate.parse("2020-01-01"))
@@ -338,18 +333,17 @@ internal class AppointmentsMigrationServiceTest {
     }
 
     @Test
-    fun `each page will contain page number and page size`(): Unit = runBlocking {
-      val context: KArgumentCaptor<MigrationContext<MigrationPage<AppointmentsMigrationFilter>>> = argumentCaptor()
+    internal fun `each page will contain page number and page size`(): Unit = runBlocking {
+      val context: KArgumentCaptor<MigrationContext<MigrationPage<NonAssociationsMigrationFilter>>> = argumentCaptor()
 
       service.divideEntitiesByPage(
         MigrationContext(
-          type = APPOINTMENTS,
+          type = NON_ASSOCIATIONS,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
-          body = AppointmentsMigrationFilter(
+          body = NonAssociationsMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
             toDate = LocalDate.parse("2020-01-02"),
-            prisonIds = listOf("MDI"),
           ),
         ),
       )
@@ -359,7 +353,7 @@ internal class AppointmentsMigrationServiceTest {
         context.capture(),
         delaySeconds = eq(0),
       )
-      val allContexts: List<MigrationContext<MigrationPage<AppointmentsMigrationFilter>>> = context.allValues
+      val allContexts: List<MigrationContext<MigrationPage<NonAssociationsMigrationFilter>>> = context.allValues
 
       val (firstPage, secondPage, thirdPage) = allContexts
       val lastPage = allContexts.last()
@@ -379,20 +373,21 @@ internal class AppointmentsMigrationServiceTest {
   }
 
   @Nested
-  inner class MigrateAppointmentsStatusCheck {
+  @DisplayName("migrateStatusCheck")
+  inner class MigrateNonAssociationsStatusCheck {
     @Nested
     @DisplayName("when there are still messages on the queue")
     inner class MessagesOnQueue {
       @BeforeEach
-      fun setUp(): Unit = runBlocking {
+      internal fun setUp(): Unit = runBlocking {
         whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed(any())).thenReturn(true)
       }
 
       @Test
-      fun `will check again in 10 seconds`(): Unit = runBlocking {
+      internal fun `will check again in 10 seconds`(): Unit = runBlocking {
         service.migrateStatusCheck(
           MigrationContext(
-            type = APPOINTMENTS,
+            type = NON_ASSOCIATIONS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
             body = MigrationStatusCheck(),
@@ -407,11 +402,11 @@ internal class AppointmentsMigrationServiceTest {
       }
 
       @Test
-      fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit =
+      internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit =
         runBlocking {
           service.migrateStatusCheck(
             MigrationContext(
-              type = APPOINTMENTS,
+              type = NON_ASSOCIATIONS,
               migrationId = "2020-05-23T11:30:00",
               estimatedCount = 100_200,
               body = MigrationStatusCheck(checkCount = 4),
@@ -432,17 +427,17 @@ internal class AppointmentsMigrationServiceTest {
     @DisplayName("when there are no messages on the queue")
     inner class NoMessagesOnQueue {
       @BeforeEach
-      fun setUp(): Unit = runBlocking {
+      internal fun setUp(): Unit = runBlocking {
         whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed(any())).thenReturn(false)
         whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(0)
-        whenever(appointmentsMappingService.getMigrationCount(any())).thenReturn(0)
+        whenever(nonAssociationsMappingService.getMigrationCount(any())).thenReturn(0)
       }
 
       @Test
-      fun `will increment check count and try again a second when only checked 9 times`(): Unit = runBlocking {
+      internal fun `will increment check count and try again a second when only checked 9 times`(): Unit = runBlocking {
         service.migrateStatusCheck(
           MigrationContext(
-            type = APPOINTMENTS,
+            type = NON_ASSOCIATIONS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
             body = MigrationStatusCheck(checkCount = 9),
@@ -459,10 +454,10 @@ internal class AppointmentsMigrationServiceTest {
       }
 
       @Test
-      fun `will finish off when checked 10 times previously`(): Unit = runBlocking {
+      internal fun `will finish off when checked 10 times previously`(): Unit = runBlocking {
         service.migrateStatusCheck(
           MigrationContext(
-            type = APPOINTMENTS,
+            type = NON_ASSOCIATIONS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
             body = MigrationStatusCheck(checkCount = 10),
@@ -477,10 +472,10 @@ internal class AppointmentsMigrationServiceTest {
       }
 
       @Test
-      fun `will add completed telemetry when finishing off`(): Unit = runBlocking {
+      internal fun `will add completed telemetry when finishing off`(): Unit = runBlocking {
         service.migrateStatusCheck(
           MigrationContext(
-            type = APPOINTMENTS,
+            type = NON_ASSOCIATIONS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 23,
             body = MigrationStatusCheck(checkCount = 10),
@@ -488,24 +483,24 @@ internal class AppointmentsMigrationServiceTest {
         )
 
         verify(telemetryClient).trackEvent(
-          eq("appointments-migration-completed"),
+          eq("non-associations-migration-completed"),
           check {
             assertThat(it["migrationId"]).isNotNull
             assertThat(it["estimatedCount"]).isEqualTo("23")
-            assertThat(it["durationMinutes"]).isGreaterThan("0")
+            assertThat(it["durationMinutes"]).isNotNull()
           },
-          eq(null),
+          isNull(),
         )
       }
 
       @Test
-      fun `will update migration history record when finishing off`(): Unit = runBlocking {
+      internal fun `will update migration history record when finishing off`(): Unit = runBlocking {
         whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(2)
-        whenever(appointmentsMappingService.getMigrationCount("2020-05-23T11:30:00")).thenReturn(21)
+        whenever(nonAssociationsMappingService.getMigrationCount("2020-05-23T11:30:00")).thenReturn(21)
 
         service.migrateStatusCheck(
           MigrationContext(
-            type = APPOINTMENTS,
+            type = NON_ASSOCIATIONS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 23,
             body = MigrationStatusCheck(checkCount = 10),
@@ -522,20 +517,21 @@ internal class AppointmentsMigrationServiceTest {
   }
 
   @Nested
+  @DisplayName("cancelMigrateStatusCheck")
   inner class CancelMigrateStatusCheck {
     @Nested
     @DisplayName("when there are still messages on the queue")
     inner class MessagesOnQueue {
       @BeforeEach
-      fun setUp(): Unit = runBlocking {
+      internal fun setUp(): Unit = runBlocking {
         whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed(any())).thenReturn(true)
       }
 
       @Test
-      fun `will check again in 10 seconds`(): Unit = runBlocking {
+      internal fun `will check again in 10 seconds`(): Unit = runBlocking {
         service.cancelMigrateStatusCheck(
           MigrationContext(
-            type = APPOINTMENTS,
+            type = NON_ASSOCIATIONS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
             body = MigrationStatusCheck(),
@@ -551,11 +547,11 @@ internal class AppointmentsMigrationServiceTest {
       }
 
       @Test
-      fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit =
+      internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit =
         runBlocking {
           service.cancelMigrateStatusCheck(
             MigrationContext(
-              type = APPOINTMENTS,
+              type = NON_ASSOCIATIONS,
               migrationId = "2020-05-23T11:30:00",
               estimatedCount = 100_200,
               body = MigrationStatusCheck(checkCount = 4),
@@ -577,24 +573,24 @@ internal class AppointmentsMigrationServiceTest {
     @DisplayName("when there are no messages on the queue")
     inner class NoMessagesOnQueue {
       @BeforeEach
-      fun setUp(): Unit = runBlocking {
+      internal fun setUp(): Unit = runBlocking {
         whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed(any())).thenReturn(false)
         whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(0)
-        whenever(appointmentsMappingService.getMigrationCount(any())).thenReturn(0)
+        whenever(nonAssociationsMappingService.getMigrationCount(any())).thenReturn(0)
       }
 
       @Test
-      fun `will increment check count and try again a second when only checked 9 times`(): Unit = runBlocking {
+      internal fun `will increment check count and try again a second when only checked 9 times`(): Unit = runBlocking {
         service.cancelMigrateStatusCheck(
           MigrationContext(
-            type = APPOINTMENTS,
+            type = NON_ASSOCIATIONS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
             body = MigrationStatusCheck(checkCount = 9),
           ),
         )
 
-        verify(queueService).purgeAllMessages(check { assertThat(it).isEqualTo(APPOINTMENTS) })
+        verify(queueService).purgeAllMessages(check { assertThat(it).isEqualTo(NON_ASSOCIATIONS) })
 
         verify(queueService).sendMessage(
           message = eq(CANCEL_MIGRATION),
@@ -606,17 +602,17 @@ internal class AppointmentsMigrationServiceTest {
       }
 
       @Test
-      fun `will finish off when checked 10 times previously`(): Unit = runBlocking {
+      internal fun `will finish off when checked 10 times previously`(): Unit = runBlocking {
         service.cancelMigrateStatusCheck(
           MigrationContext(
-            type = APPOINTMENTS,
+            type = NON_ASSOCIATIONS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
             body = MigrationStatusCheck(checkCount = 10),
           ),
         )
 
-        verify(queueService, never()).purgeAllMessages(check { assertThat(it).isEqualTo(APPOINTMENTS) })
+        verify(queueService, never()).purgeAllMessages(check { assertThat(it).isEqualTo(NON_ASSOCIATIONS) })
         verify(queueService, never()).sendMessage(
           message = eq(CANCEL_MIGRATION),
           context = any(),
@@ -625,10 +621,10 @@ internal class AppointmentsMigrationServiceTest {
       }
 
       @Test
-      fun `will add completed telemetry when finishing off`(): Unit = runBlocking {
+      internal fun `will add completed telemetry when finishing off`(): Unit = runBlocking {
         service.cancelMigrateStatusCheck(
           MigrationContext(
-            type = APPOINTMENTS,
+            type = NON_ASSOCIATIONS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 23,
             body = MigrationStatusCheck(checkCount = 10),
@@ -636,24 +632,24 @@ internal class AppointmentsMigrationServiceTest {
         )
 
         verify(telemetryClient).trackEvent(
-          eq("appointments-migration-cancelled"),
+          eq("non-associations-migration-cancelled"),
           check {
             assertThat(it["migrationId"]).isNotNull
             assertThat(it["estimatedCount"]).isEqualTo("23")
-            assertThat(it["durationMinutes"]).isGreaterThan("0")
+            assertThat(it["durationMinutes"]).isNotNull()
           },
-          eq(null),
+          isNull(),
         )
       }
 
       @Test
-      fun `will update migration history record when cancelling`(): Unit = runBlocking {
+      internal fun `will update migration history record when cancelling`(): Unit = runTest {
         whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(2)
-        whenever(appointmentsMappingService.getMigrationCount("2020-05-23T11:30:00")).thenReturn(21)
+        whenever(nonAssociationsMappingService.getMigrationCount("2020-05-23T11:30:00")).thenReturn(21)
 
         service.cancelMigrateStatusCheck(
           MigrationContext(
-            type = APPOINTMENTS,
+            type = NON_ASSOCIATIONS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 23,
             body = MigrationStatusCheck(checkCount = 10),
@@ -670,27 +666,27 @@ internal class AppointmentsMigrationServiceTest {
   }
 
   @Nested
-  inner class MigrateAppointmentsForPage {
+  @DisplayName("migrateEntitiesForPage")
+  inner class MigrateNonAssociationsForPage {
     @BeforeEach
-    fun setUp(): Unit = runBlocking {
+    internal fun setUp(): Unit = runBlocking {
       whenever(migrationHistoryService.isCancelling(any())).thenReturn(false)
-      whenever(nomisApiService.getAppointmentIds(any(), any(), any(), any(), any())).thenReturn(
+      whenever(nomisApiService.getNonAssociationIds(any(), any(), any(), any())).thenReturn(
         pages(15),
       )
     }
 
     @Test
-    fun `will pass filter through to get total count along with a tiny page count`(): Unit = runBlocking {
+    internal fun `will pass filter through to get total count along with a tiny page count`(): Unit = runBlocking {
       service.migrateEntitiesForPage(
         MigrationContext(
-          type = APPOINTMENTS,
+          type = NON_ASSOCIATIONS,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
           body = MigrationPage(
-            filter = AppointmentsMigrationFilter(
+            filter = NonAssociationsMigrationFilter(
               fromDate = LocalDate.parse("2020-01-01"),
               toDate = LocalDate.parse("2020-01-02"),
-              prisonIds = listOf("MDI"),
             ),
             pageNumber = 13,
             pageSize = 15,
@@ -698,28 +694,26 @@ internal class AppointmentsMigrationServiceTest {
         ),
       )
 
-      verify(nomisApiService).getAppointmentIds(
+      verify(nomisApiService).getNonAssociationIds(
         fromDate = LocalDate.parse("2020-01-01"),
         toDate = LocalDate.parse("2020-01-02"),
-        prisonIds = listOf("MDI"),
         pageNumber = 13,
         pageSize = 15,
       )
     }
 
     @Test
-    fun `will send MIGRATE_ENTITY with context for each appointment`(): Unit =
+    internal fun `will send MIGRATE_NON_ASSOCIATION with context for each non-association`(): Unit =
       runBlocking {
         service.migrateEntitiesForPage(
           MigrationContext(
-            type = APPOINTMENTS,
+            type = NON_ASSOCIATIONS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
             body = MigrationPage(
-              filter = AppointmentsMigrationFilter(
+              filter = NonAssociationsMigrationFilter(
                 fromDate = LocalDate.parse("2020-01-01"),
                 toDate = LocalDate.parse("2020-01-02"),
-                prisonIds = listOf("MDI"),
               ),
               pageNumber = 13,
               pageSize = 15,
@@ -729,7 +723,7 @@ internal class AppointmentsMigrationServiceTest {
 
         verify(queueService, times(15)).sendMessage(
           message = eq(MIGRATE_ENTITY),
-          context = check<MigrationContext<AppointmentsMigrationFilter>> {
+          context = check<MigrationContext<NonAssociationsMigrationFilter>> {
             assertThat(it.estimatedCount).isEqualTo(100_200)
             assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
           },
@@ -738,11 +732,11 @@ internal class AppointmentsMigrationServiceTest {
       }
 
     @Test
-    fun `will send MIGRATE_ENTITY with bookingId for each appointment`(): Unit =
+    internal fun `will send MIGRATE_NON_ASSOCIATION with bookingId for each non-association`(): Unit =
       runBlocking {
-        val context: KArgumentCaptor<MigrationContext<AppointmentIdResponse>> = argumentCaptor()
+        val context: KArgumentCaptor<MigrationContext<NonAssociationIdResponse>> = argumentCaptor()
 
-        whenever(nomisApiService.getAppointmentIds(any(), any(), any(), any(), any())).thenReturn(
+        whenever(nomisApiService.getNonAssociationIds(any(), any(), any(), any())).thenReturn(
           pages(
             15,
             startId = 1000,
@@ -751,14 +745,13 @@ internal class AppointmentsMigrationServiceTest {
 
         service.migrateEntitiesForPage(
           MigrationContext(
-            type = APPOINTMENTS,
+            type = NON_ASSOCIATIONS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
             body = MigrationPage(
-              filter = AppointmentsMigrationFilter(
+              filter = NonAssociationsMigrationFilter(
                 fromDate = LocalDate.parse("2020-01-01"),
                 toDate = LocalDate.parse("2020-01-02"),
-                prisonIds = listOf("MDI"),
               ),
               pageNumber = 13,
               pageSize = 15,
@@ -770,23 +763,25 @@ internal class AppointmentsMigrationServiceTest {
           eq(MIGRATE_ENTITY),
           context.capture(),
           delaySeconds = eq(0),
+
         )
-        val allContexts: List<MigrationContext<AppointmentIdResponse>> = context.allValues
+        val allContexts: List<MigrationContext<NonAssociationIdResponse>> = context.allValues
 
         val (firstPage, secondPage, thirdPage) = allContexts
         val lastPage = allContexts.last()
 
-        assertThat(firstPage.body.eventId).isEqualTo(1000)
-        assertThat(secondPage.body.eventId).isEqualTo(1001)
-        assertThat(thirdPage.body.eventId).isEqualTo(1002)
-        assertThat(lastPage.body.eventId).isEqualTo(1014)
+        assertThat(firstPage.body.offenderNo1).isEqualTo("A1000BC")
+        assertThat(firstPage.body.offenderNo2).isEqualTo("D1000EF")
+        assertThat(secondPage.body.offenderNo1).isEqualTo("A1001BC")
+        assertThat(thirdPage.body.offenderNo1).isEqualTo("A1002BC")
+        assertThat(lastPage.body.offenderNo1).isEqualTo("A1014BC")
       }
 
     @Test
-    fun `will not send MIGRATE_ENTITY when cancelling`(): Unit = runBlocking {
+    internal fun `will not send MIGRATE_NON_ASSOCIATION when cancelling`(): Unit = runBlocking {
       whenever(migrationHistoryService.isCancelling(any())).thenReturn(true)
 
-      whenever(nomisApiService.getAppointmentIds(any(), any(), any(), any(), any())).thenReturn(
+      whenever(nomisApiService.getNonAssociationIds(any(), any(), any(), any())).thenReturn(
         pages(
           15,
           startId = 1000,
@@ -795,14 +790,13 @@ internal class AppointmentsMigrationServiceTest {
 
       service.migrateEntitiesForPage(
         MigrationContext(
-          type = APPOINTMENTS,
+          type = NON_ASSOCIATIONS,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
           body = MigrationPage(
-            filter = AppointmentsMigrationFilter(
+            filter = NonAssociationsMigrationFilter(
               fromDate = LocalDate.parse("2020-01-01"),
               toDate = LocalDate.parse("2020-01-02"),
-              prisonIds = listOf("MDI"),
             ),
             pageNumber = 13,
             pageSize = 15,
@@ -815,106 +809,241 @@ internal class AppointmentsMigrationServiceTest {
   }
 
   @Nested
-  inner class MigrateAppointment {
+  @DisplayName("migrateNonAssociations")
+  inner class MigrateNonAssociation {
 
     @BeforeEach
-    fun setUp(): Unit = runBlocking {
-      whenever(appointmentsMappingService.findNomisMapping(any())).thenReturn(null)
-      whenever(nomisApiService.getAppointment(any())).thenReturn(
-        aNomisAppointmentResponse(),
-      )
-
-      whenever(appointmentsService.createAppointment(any())).thenReturn(sampleAppointmentInstance(999))
-      whenever(appointmentsMappingService.createMapping(any(), any())).thenReturn(CreateMappingResult<AppointmentMapping>())
+    internal fun setUp(): Unit = runBlocking {
+      whenever(nonAssociationsMappingService.findNomisNonAssociationMapping(any(), any(), any())).thenReturn(null)
+      whenever(nomisApiService.getNonAssociations(any(), any())).thenReturn(listOf(aNomisNonAssociationResponse()))
+      whenever(nonAssociationsService.migrateNonAssociation(any())).thenReturn(aNonAssociation())
+      whenever(nonAssociationsMappingService.createMapping(any(), any())).thenReturn(CreateMappingResult())
     }
 
     @Test
-    fun `will retrieve appointment from NOMIS`(): Unit = runBlocking {
+    internal fun `will retrieve all non associations between offender pair from NOMIS`(): Unit = runBlocking {
       service.migrateNomisEntity(
         MigrationContext(
-          type = APPOINTMENTS,
+          type = NON_ASSOCIATIONS,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
-          body = AppointmentIdResponse(123),
+          body = NonAssociationIdResponse("A1234BC", "D5678EF"),
         ),
       )
 
-      verify(nomisApiService).getAppointment(123)
+      verify(nomisApiService).getNonAssociations("A1234BC", "D5678EF")
     }
 
     @Test
-    fun `will transform and send that appointment to the Appointments service`(): Unit = runBlocking {
-      whenever(nomisApiService.getAppointment(any())).thenReturn(aNomisAppointmentResponse())
+    internal fun `will transform and send that non-association to the Non-associations service`(): Unit = runBlocking {
+      whenever(nomisApiService.getNonAssociations(any(), any())).thenReturn(listOf(aNomisNonAssociationResponse()))
 
       service.migrateNomisEntity(
         MigrationContext(
-          type = APPOINTMENTS,
+          type = NON_ASSOCIATIONS,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
-          body = AppointmentIdResponse(123),
+          body = NonAssociationIdResponse("A1234BC", "D5678EF"),
         ),
       )
 
-      verify(appointmentsService).createAppointment(
+      verify(nonAssociationsService).migrateNonAssociation(
         eq(
-          AppointmentMigrateRequest(
-            bookingId = 606,
-            prisonerNumber = "G4803UT",
-            prisonCode = "MDI",
-            internalLocationId = 2,
-            startDate = LocalDate.parse("2020-01-01"),
-            startTime = "10:00",
-            endTime = "12:00",
-            comment = "a comment",
-            categoryCode = "SUB",
-            isCancelled = false,
-            createdBy = "ITAG_USER",
-            created = LocalDateTime.parse("2020-01-01T10:00"),
-            updatedBy = "another user",
-            updated = LocalDateTime.parse("2020-05-05T12:00"),
+          UpsertSyncRequest(
+            firstPrisonerNumber = "A1234BC",
+            firstPrisonerReason = UpsertSyncRequest.FirstPrisonerReason.VIC,
+            secondPrisonerNumber = "D5678EF",
+            secondPrisonerReason = UpsertSyncRequest.SecondPrisonerReason.PER,
+            restrictionType = UpsertSyncRequest.RestrictionType.WING,
+            comment = "Fight on Wing C",
+            authorisedBy = "Jim Smith",
+            lastModifiedByUsername = "TJONES_ADM",
+            effectiveFromDate = LocalDate.parse("2023-10-25"),
+            expiryDate = LocalDate.parse("2023-10-26"),
+
           ),
         ),
       )
     }
 
     @Test
-    fun `will create a mapping between a new appointment and a NOMIS appointment`(): Unit =
+    internal fun `will not migrate multiple open non-associations for the same offender pair`(): Unit = runBlocking {
+      whenever(nomisApiService.getNonAssociations(any(), any())).thenReturn(
+        listOf(
+          aNomisNonAssociationResponse(expiryDate = null),
+          aNomisNonAssociationResponse(typeSequence = 2, reason = "RIV"),
+          aNomisNonAssociationResponse(typeSequence = 3, reason = "BUL", recipReason = "RIV", expiryDate = null),
+        ),
+      )
+
+      service.migrateNomisEntity(
+        MigrationContext(
+          type = NON_ASSOCIATIONS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = NonAssociationIdResponse("A1234BC", "D5678EF"),
+        ),
+      )
+
+      verify(nonAssociationsService, Times(0)).migrateNonAssociation(
+        eq(
+          UpsertSyncRequest(
+            firstPrisonerNumber = "A1234BC",
+            firstPrisonerReason = UpsertSyncRequest.FirstPrisonerReason.VIC,
+            secondPrisonerNumber = "D5678EF",
+            secondPrisonerReason = UpsertSyncRequest.SecondPrisonerReason.PER,
+            restrictionType = UpsertSyncRequest.RestrictionType.WING,
+            comment = "Fight on Wing C",
+            authorisedBy = "Jim Smith",
+            lastModifiedByUsername = "TJONES_ADM",
+            effectiveFromDate = LocalDate.parse("2023-10-25"),
+            expiryDate = null,
+          ),
+        ),
+      )
+
+      verify(nonAssociationsService).migrateNonAssociation(
+        eq(
+          UpsertSyncRequest(
+            firstPrisonerNumber = "A1234BC",
+            firstPrisonerReason = UpsertSyncRequest.FirstPrisonerReason.RIV,
+            secondPrisonerNumber = "D5678EF",
+            secondPrisonerReason = UpsertSyncRequest.SecondPrisonerReason.PER,
+            restrictionType = UpsertSyncRequest.RestrictionType.WING,
+            comment = "Fight on Wing C",
+            authorisedBy = "Jim Smith",
+            lastModifiedByUsername = "TJONES_ADM",
+            effectiveFromDate = LocalDate.parse("2023-10-25"),
+            expiryDate = LocalDate.parse("2023-10-26"),
+          ),
+        ),
+      )
+      verify(nonAssociationsService).migrateNonAssociation(
+        eq(
+          UpsertSyncRequest(
+            firstPrisonerNumber = "A1234BC",
+            firstPrisonerReason = UpsertSyncRequest.FirstPrisonerReason.BUL,
+            secondPrisonerNumber = "D5678EF",
+            secondPrisonerReason = UpsertSyncRequest.SecondPrisonerReason.RIV,
+            restrictionType = UpsertSyncRequest.RestrictionType.WING,
+            comment = "Fight on Wing C",
+            authorisedBy = "Jim Smith",
+            lastModifiedByUsername = "TJONES_ADM",
+            effectiveFromDate = LocalDate.parse("2023-10-25"),
+            expiryDate = null,
+
+          ),
+        ),
+      )
+    }
+
+    @Test
+    internal fun `will add telemetry events for migrated and non-migrated entries`(): Unit = runBlocking {
+      whenever(nomisApiService.getNonAssociations(any(), any())).thenReturn(
+        listOf(
+          aNomisNonAssociationResponse(expiryDate = null),
+          aNomisNonAssociationResponse(typeSequence = 2, reason = "RIV"),
+          aNomisNonAssociationResponse(typeSequence = 3, reason = "BUL", recipReason = "RIV", expiryDate = null),
+        ),
+      )
+
+      service.migrateNomisEntity(
+        MigrationContext(
+          type = NON_ASSOCIATIONS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = NonAssociationIdResponse("A1234BC", "D5678EF"),
+        ),
+      )
+
+      verify(telemetryClient, times(2)).trackEvent(
+        eq("non-associations-migration-entity-migrated"),
+        check {
+          assertThat(it["migrationId"]).isNotNull
+          assertThat(it["nonAssociationId"]).isNotNull
+          assertThat(it["firstOffenderNo"]).isEqualTo("A1234BC")
+          assertThat(it["secondOffenderNo"]).isEqualTo("D5678EF")
+          assertThat(it["nomisTypeSequence"]).isNotEqualTo("1")
+        },
+        isNull(),
+      )
+
+      verify(telemetryClient).trackEvent(
+        eq("non-association-migration-entity-ignored"),
+        check {
+          assertThat(it["migrationId"]).isNotNull
+          assertThat(it["firstOffenderNo"]).isEqualTo("A1234BC")
+          assertThat(it["secondOffenderNo"]).isEqualTo("D5678EF")
+          assertThat(it["nomisTypeSequence"]).isEqualTo("1")
+        },
+        isNull(),
+      )
+    }
+
+    @Test
+    internal fun `will not migrate non-primary associations`(): Unit = runBlocking {
+      service.migrateNomisEntity(
+        MigrationContext(
+          type = NON_ASSOCIATIONS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = NonAssociationIdResponse("D5678EF", "A1234BC"),
+        ),
+      )
+
+      verify(telemetryClient).trackEvent(
+        eq("non-association-migration-non-primary-skipped"),
+        check {
+          assertThat(it["firstOffenderNo"]).isEqualTo("D5678EF")
+          assertThat(it["secondOffenderNo"]).isEqualTo("A1234BC")
+          assertThat(it["migrationId"]).isNotNull
+        },
+        isNull(),
+      )
+    }
+
+    @Test
+    internal fun `will create a mapping between a new Non-Association and a NOMIS Non-Association`(): Unit =
       runBlocking {
-        whenever(nomisApiService.getAppointment(any())).thenReturn(
-          aNomisAppointmentResponse(),
+        whenever(nomisApiService.getNonAssociations(any(), any())).thenReturn(
+          listOf(aNomisNonAssociationResponse()),
         )
-        whenever(appointmentsService.createAppointment(any())).thenReturn(sampleAppointmentInstance(999))
+        whenever(nonAssociationsService.migrateNonAssociation(any())).thenReturn(
+          aNonAssociation(),
+        )
 
         service.migrateNomisEntity(
           MigrationContext(
-            type = APPOINTMENTS,
+            type = NON_ASSOCIATIONS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = AppointmentIdResponse(123),
+            body = NonAssociationIdResponse("A1234BC", "D5678EF"),
           ),
         )
 
-        verify(appointmentsMappingService).createMapping(
-          AppointmentMapping(
-            nomisEventId = 123,
-            appointmentInstanceId = 999,
+        verify(nonAssociationsMappingService).createMapping(
+          NonAssociationMappingDto(
+            nonAssociationId = 4321,
+            firstOffenderNo = "A1234BC",
+            secondOffenderNo = "D5678EF",
+            nomisTypeSequence = 1,
             label = "2020-05-23T11:30:00",
-            mappingType = "MIGRATED",
+            mappingType = NonAssociationMappingDto.MappingType.MIGRATED,
           ),
-          object : ParameterizedTypeReference<DuplicateErrorResponse<AppointmentMapping>>() {},
+          object : ParameterizedTypeReference<DuplicateErrorResponse<NonAssociationMappingDto>>() {},
         )
       }
 
     @Test
-    fun `will not throw exception (and place message back on queue) but create a new retry message`(): Unit =
+    internal fun `will not throw an exception (and place message back on queue) but create a new retry message`(): Unit =
       runBlocking {
-        whenever(nomisApiService.getAppointment(any())).thenReturn(aNomisAppointmentResponse())
-        whenever(appointmentsService.createAppointment(any())).thenReturn(sampleAppointmentInstance(999))
+        whenever(nomisApiService.getNonAssociations(any(), any())).thenReturn(listOf(aNomisNonAssociationResponse()))
+        whenever(nonAssociationsService.migrateNonAssociation(any())).thenReturn(aNonAssociation())
 
         whenever(
-          appointmentsMappingService.createMapping(
+          nonAssociationsMappingService.createMapping(
             any(),
-            eq(object : ParameterizedTypeReference<DuplicateErrorResponse<AppointmentMapping>>() {}),
+            eq(object : ParameterizedTypeReference<DuplicateErrorResponse<NonAssociationMappingDto>>() {}),
           ),
         ).thenThrow(
           RuntimeException("something went wrong"),
@@ -922,19 +1051,20 @@ internal class AppointmentsMigrationServiceTest {
 
         service.migrateNomisEntity(
           MigrationContext(
-            type = APPOINTMENTS,
+            type = NON_ASSOCIATIONS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = AppointmentIdResponse(123),
+            body = NonAssociationIdResponse("A1234BC", "B5678EF"),
           ),
         )
 
         verify(queueService).sendMessage(
           message = eq(RETRY_MIGRATION_MAPPING),
-          context = check<MigrationContext<AppointmentMapping>> {
+          context = check<MigrationContext<NonAssociationMappingDto>> {
             assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
-            assertThat(it.body.nomisEventId).isEqualTo(123)
-            assertThat(it.body.appointmentInstanceId).isEqualTo(999)
+            assertThat(it.body.firstOffenderNo).isEqualTo("A1234BC")
+            assertThat(it.body.secondOffenderNo).isEqualTo("B5678EF")
+            assertThat(it.body.nomisTypeSequence).isEqualTo(1)
           },
           delaySeconds = eq(0),
         )
@@ -943,34 +1073,36 @@ internal class AppointmentsMigrationServiceTest {
     @Nested
     inner class WhenMigratedAlready {
       @BeforeEach
-      fun setUp(): Unit = runBlocking {
-        whenever(appointmentsMappingService.findNomisMapping(any())).thenReturn(
-          AppointmentMapping(
-            nomisEventId = 123,
-            appointmentInstanceId = 999,
-            mappingType = "MIGRATION",
+      internal fun setUp(): Unit = runBlocking {
+        whenever(nonAssociationsMappingService.findNomisNonAssociationMapping(any(), any(), any())).thenReturn(
+          NonAssociationMappingDto(
+            nonAssociationId = 4321,
+            firstOffenderNo = "A1234BC",
+            secondOffenderNo = "D5678EF",
+            nomisTypeSequence = 1,
+            mappingType = NonAssociationMappingDto.MappingType.NOMIS_CREATED,
           ),
         )
       }
 
       @Test
-      fun `will do nothing`(): Unit = runBlocking {
+      internal fun `will do nothing`(): Unit = runBlocking {
         service.migrateNomisEntity(
           MigrationContext(
-            type = APPOINTMENTS,
+            type = NON_ASSOCIATIONS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = AppointmentIdResponse(123),
+            body = NonAssociationIdResponse("A1234BC", "D5678EF"),
           ),
         )
 
-        verifyNoInteractions(appointmentsService)
+        verifyNoInteractions(nonAssociationsService)
       }
     }
   }
 
   @Test
-  fun `will create audit event on user cancel`() {
+  internal fun `will create audit event on user cancel`() {
     runBlocking {
       whenever(migrationHistoryService.get("123-2020-01-01")).thenReturn(
         MigrationHistory(
@@ -978,7 +1110,7 @@ internal class AppointmentsMigrationServiceTest {
           status = MigrationStatus.CANCELLED,
           whenEnded = LocalDateTime.parse("2020-01-01T00:00:00"),
           whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
-          migrationType = APPOINTMENTS,
+          migrationType = NON_ASSOCIATIONS,
           estimatedRecordCount = 100,
         ),
       )
@@ -990,60 +1122,65 @@ internal class AppointmentsMigrationServiceTest {
         check {
           it as Map<*, *>
           assertThat(it["migrationId"]).isNotNull
-          assertThat(it["migrationType"]).isEqualTo(APPOINTMENTS.name)
+          assertThat(it["migrationType"]).isEqualTo(NON_ASSOCIATIONS.name)
         },
       )
     }
   }
 }
 
-fun sampleAppointmentInstance(appointmentInstanceId: Long) = AppointmentInstance(
-  id = appointmentInstanceId,
-  appointmentSeriesId = 10,
-  appointmentId = 50,
-  appointmentAttendeeId = appointmentInstanceId,
-  appointmentType = AppointmentInstance.AppointmentType.INDIVIDUAL,
-  prisonCode = "MDI",
-  prisonerNumber = "A1234AA",
-  bookingId = 4567,
-  categoryCode = "MEDO",
-  inCell = false,
-  appointmentDate = LocalDate.parse("2020-05-23"),
-  startTime = "11:30",
-  endTime = "12:30",
-  extraInformation = "some comment",
-  createdTime = LocalDateTime.parse("2023-01-01T12:00:00"),
-  createdBy = "ITAG_USER",
+fun aNomisNonAssociationResponse(
+  offenderNo: String = "A1234BC",
+  nsOffenderNo: String = "D5678EF",
+  typeSequence: Int = 1,
+  reason: String = "VIC",
+  recipReason: String = "PER",
+  expiryDate: LocalDate? = LocalDate.parse("2023-10-26"),
+) =
+  NonAssociationResponse(
+    offenderNo = offenderNo,
+    nsOffenderNo = nsOffenderNo,
+    typeSequence = typeSequence,
+    reason = reason,
+    recipReason = recipReason,
+    type = "WING",
+    updatedBy = "TJONES_ADM",
+    authorisedBy = "Jim Smith",
+    effectiveDate = LocalDate.parse("2023-10-25"),
+    expiryDate = expiryDate,
+    comment = "Fight on Wing C",
+  )
+
+fun aNonAssociation() = NonAssociation(
+  id = 4321,
+  firstPrisonerNumber = "A1234BC",
+  firstPrisonerRole = NonAssociation.FirstPrisonerRole.VICTIM,
+  firstPrisonerRoleDescription = "Victim",
+  secondPrisonerNumber = "D5678EF",
+  secondPrisonerRole = NonAssociation.SecondPrisonerRole.PERPETRATOR,
+  secondPrisonerRoleDescription = "Perpetrator",
+  reason = NonAssociation.Reason.BULLYING,
+  reasonDescription = "Bullying",
+  restrictionType = NonAssociation.RestrictionType.CELL,
+  restrictionTypeDescription = "Cell",
+  comment = "John and Luke always end up fighting",
+  whenCreated = "2023-07-05T11:12:45",
+  whenUpdated = "2023-07-06T13:35:17",
+  updatedBy = "OFF3_GEN",
+  isClosed = false,
+  closedBy = "null",
+  closedReason = "null",
+  closedAt = "2023-07-09T15:44:23",
+  isOpen = true,
 )
 
-fun aNomisAppointmentResponse(
-  bookingId: Long = 606,
-  offenderNo: String = "G4803UT",
-  prisonId: String = "MDI",
-  internalLocation: Long = 2,
-  startDateTime: LocalDateTime = LocalDateTime.parse("2020-01-01T10:00:00"),
-  endDateTime: LocalDateTime = LocalDateTime.parse("2020-01-01T12:00:00"),
-  comment: String = "a comment",
-  subtype: String = "SUB",
-  status: String = "SCH",
-) = AppointmentResponse(
-  bookingId = bookingId,
-  offenderNo = offenderNo,
-  prisonId = prisonId,
-  internalLocation = internalLocation,
-  startDateTime = startDateTime,
-  endDateTime = endDateTime,
-  comment = comment,
-  subtype = subtype,
-  status = status,
-  createdBy = "ITAG_USER",
-  createdDate = LocalDateTime.parse("2020-01-01T10:00:00"),
-  modifiedBy = "another user",
-  modifiedDate = LocalDateTime.parse("2020-05-05T12:00:00"),
-)
-
-fun pages(total: Long, startId: Long = 1): PageImpl<AppointmentIdResponse> = PageImpl<AppointmentIdResponse>(
-  (startId..total - 1 + startId).map { AppointmentIdResponse(it) },
+fun pages(total: Long, startId: Long = 1): PageImpl<NonAssociationIdResponse> = PageImpl<NonAssociationIdResponse>(
+  (startId..total - 1 + startId).map { idCreator(it) },
   Pageable.ofSize(10),
   total,
 )
+
+private fun idCreator(id: Long): NonAssociationIdResponse {
+  val fourDigitString = String.format("%04d", id)
+  return NonAssociationIdResponse("A${fourDigitString}BC", "D${fourDigitString}EF")
+}

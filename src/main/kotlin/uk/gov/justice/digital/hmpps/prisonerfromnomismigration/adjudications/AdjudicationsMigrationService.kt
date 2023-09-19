@@ -6,7 +6,9 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
+import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.AdjudicationMigrateDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.DisIssued
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateDamage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateDamage.DamageType.CLEANING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateDamage.DamageType.ELECTRICAL_REPAIR
@@ -30,6 +32,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigratePunishment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateWitness
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateWitness.WitnessType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateWitness.WitnessType.OTHER_PERSON
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateWitness.WitnessType.PRISONER
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateWitness.WitnessType.STAFF
@@ -42,14 +45,19 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AdjudicationHearingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AdjudicationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AdjudicationPunishmentMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationIncident
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Evidence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Hearing
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.HearingNotification
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.HearingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.HearingResultAward
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Prisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Repair
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Staff
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
@@ -87,63 +95,64 @@ fun AdjudicationChargeResponse.toAdjudication(): AdjudicationMigrateDto =
       offenceCode = this.charge.offence.code,
       offenceDescription = this.charge.offence.description,
     ),
-    witnesses = this.incident.staffWitnesses.map {
-      MigrateWitness(
-        firstName = it.firstName,
-        lastName = it.lastName,
-        createdBy = it.createdByUsername,
-        STAFF,
-      )
-    } + this.incident.prisonerWitnesses.map {
-      MigrateWitness(
-        firstName = it.firstName ?: "",
-        lastName = it.lastName,
-        createdBy = it.createdByUsername,
-        OTHER_PERSON,
-      )
-    } + this.incident.staffVictims.map {
-      MigrateWitness(
-        firstName = it.firstName,
-        lastName = it.lastName,
-        createdBy = it.createdByUsername,
-        VICTIM,
-      )
-    } + this.incident.prisonerVictims.map {
-      MigrateWitness(
-        firstName = it.firstName ?: "",
-        lastName = it.lastName,
-        createdBy = it.createdByUsername,
-        VICTIM,
-      )
-    } + this.incident.otherPrisonersInvolved.map {
-      MigrateWitness(
-        firstName = it.firstName ?: "",
-        lastName = it.lastName,
-        createdBy = it.createdByUsername,
-        PRISONER,
-      )
-    } + this.incident.reportingOfficers.map {
-      MigrateWitness(
-        firstName = it.firstName,
-        lastName = it.lastName,
-        createdBy = it.createdByUsername,
-        OTHER_PERSON,
-      )
-    } + this.incident.otherStaffInvolved.map {
-      MigrateWitness(
-        firstName = it.firstName,
-        lastName = it.lastName,
-        createdBy = it.createdByUsername,
-        OTHER_PERSON,
-      )
-    },
+    witnesses = this.incident.staffWitnesses.map { it.toWitness(STAFF) } +
+      this.incident.prisonerWitnesses.map { it.toWitness(OTHER_PERSON) } +
+      this.incident.staffVictims.map { it.toWitness(VICTIM) } +
+      this.incident.prisonerVictims.map { it.toWitness(VICTIM) } +
+      this.incident.otherPrisonersInvolved.map { it.toWitness(PRISONER) } +
+      this.incident.reportingOfficers.map { it.toWitness(OTHER_PERSON) } +
+      this.incident.otherStaffInvolved.map { it.toWitness(OTHER_PERSON) },
     damages = this.incident.repairs.map { it.toDamage() },
-    evidence = this.investigations.flatMap { investigation -> investigation.evidence.map { it.toEvidence() } },
-    punishments = this.hearings.flatMap { it.toHearingResultAwards(this.adjudicationNumber) },
+    evidence = this.investigations.flatMap { investigation -> investigation.evidence.map { it.toEvidence() } } + this.charge.toEvidence(
+      incident,
+    ),
+    punishments = this.hearings.flatMap { it.toHearingResultAwards() },
     hearings = this.hearings.map { it.toHearing() },
+    disIssued = this.hearings.flatMap { hearing -> hearing.notifications.map { it.toIssued() } },
   )
 
-private fun Hearing.toHearingResultAwards(adjudicationNumber: Long): List<MigratePunishment> =
+private fun AdjudicationCharge.toEvidence(incident: AdjudicationIncident): List<MigrateEvidence> =
+  this.takeUnless { it.evidence.isNullOrEmpty() && it.reportDetail.isNullOrEmpty() }.let { charge ->
+    return charge?.let {
+      listOf(
+        MigrateEvidence(
+          evidenceCode = OTHER,
+          details = listOfNotNull(
+            charge.evidence.takeUnless { it.isNullOrEmpty() },
+            charge.reportDetail.takeUnless { it.isNullOrEmpty() },
+          ).joinToString(separator = " - "),
+          reporter = incident.reportingStaff.username,
+          dateAdded = incident.reportedDate.atStartOfDay().format(DateTimeFormatter.ISO_LOCAL_DATE),
+        ),
+      )
+    } ?: emptyList()
+  }
+
+private fun Staff.toWitness(type: WitnessType) = MigrateWitness(
+  firstName = this.firstName,
+  lastName = this.lastName,
+  createdBy = this.createdByUsername!!, // never null for a witness
+  type,
+  dateAdded = (this.dateAddedToIncident ?: LocalDate.now()).format(DateTimeFormatter.ISO_LOCAL_DATE),
+  comment = this.comment,
+)
+
+private fun Prisoner.toWitness(type: WitnessType) = MigrateWitness(
+  firstName = this.firstName ?: "",
+  lastName = this.lastName,
+  createdBy = this.createdByUsername,
+  type,
+  dateAdded = this.dateAddedToIncident.format(DateTimeFormatter.ISO_LOCAL_DATE),
+  comment = this.comment,
+)
+
+private fun HearingNotification.toIssued() = DisIssued(
+  issuingOfficer = this.notifiedStaff.username,
+  dateTimeOfIssue = this.deliveryDate.atTime(LocalTime.parse(this.deliveryTime))
+    .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+)
+
+private fun Hearing.toHearingResultAwards(): List<MigratePunishment> =
   this.hearingResults
     .flatMap { hearingResult ->
       hearingResult.resultAwards.map {
@@ -157,12 +166,12 @@ private fun Hearing.toHearingResultAwards(adjudicationNumber: Long): List<Migrat
           comment = it.comment,
           compensationAmount = it.compensationAmount,
           days = it.sanctionDays + it.sanctionMonths.asDays(it.effectiveDate),
-          consecutiveChargeNumber = it.consecutiveAward.toConsecutiveChargeNumber(adjudicationNumber),
+          consecutiveChargeNumber = it.consecutiveAward.toConsecutiveChargeNumber(),
         )
       }
     }
 
-private fun HearingResultAward?.toConsecutiveChargeNumber(adjudicationNumber: Long): String? =
+private fun HearingResultAward?.toConsecutiveChargeNumber(): String? =
   this?.let { "$adjudicationNumber-$chargeSequence" }
 
 private operator fun Int?.plus(second: Int?): Int? = when {
@@ -192,6 +201,7 @@ private fun Hearing.toHearing() = MigrateHearing(
   adjudicator = this.hearingStaff?.username,
   commentText = this.comment,
   hearingResult = this.hearingResults.toHearingResult(),
+  representative = this.representativeText,
 )
 
 private fun List<HearingResult>.toHearingResult(): MigrateHearingResult? =
@@ -214,6 +224,7 @@ private fun Evidence.toEvidence() = MigrateEvidence(
   },
   details = this.detail,
   reporter = this.createdByUsername,
+  dateAdded = this.date.format(DateTimeFormatter.ISO_LOCAL_DATE),
 )
 
 private fun Repair.toDamage() = MigrateDamage(
@@ -228,6 +239,7 @@ private fun Repair.toDamage() = MigrateDamage(
   },
   details = this.comment,
   createdBy = this.createdByUsername,
+  repairCost = this.cost,
 )
 
 @Service
@@ -242,6 +254,8 @@ class AdjudicationsMigrationService(
   @Value("\${adjudications.page.size:1000}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
+  @Value("\${feature.adjudications.report.mode:false}")
+  private val reportMode: Boolean,
 ) :
   MigrationService<AdjudicationsMigrationFilter, AdjudicationChargeIdResponse, AdjudicationResponse, AdjudicationAllMappingDto>(
     queueService = queueService,
@@ -292,20 +306,41 @@ class AdjudicationsMigrationService(
             chargeSequence = chargeSequence,
           )
 
-        val mapping = adjudicationsService.createAdjudication(nomisAdjudication.toAdjudication())
-        createAdjudicationMapping(mapping, context = context)
+        try {
+          val mapping = adjudicationsService.createAdjudication(nomisAdjudication.toAdjudication())
+          createAdjudicationMapping(mapping, context = context)
 
-        telemetryClient.trackEvent(
-          "adjudications-migration-entity-migrated",
-          mapOf(
-            "adjudicationNumber" to adjudicationNumber.toString(),
-            "chargeSequence" to chargeSequence.toString(),
-            "chargeNumber" to mapping.chargeNumberMapping.chargeNumber,
-            "offenderNo" to offenderNo,
-            "migrationId" to context.migrationId,
-          ),
-          null,
-        )
+          telemetryClient.trackEvent(
+            "adjudications-migration-entity-migrated",
+            mapOf(
+              "adjudicationNumber" to adjudicationNumber.toString(),
+              "chargeSequence" to chargeSequence.toString(),
+              "prisonId" to nomisAdjudication.incident.prison.code,
+              "chargeNumber" to mapping.chargeNumberMapping.chargeNumber,
+              "offenderNo" to offenderNo,
+              "migrationId" to context.migrationId,
+            ),
+            null,
+          )
+        } catch (e: WebClientResponseException) { // only required while DPS is analysing the data failures
+          if (reportMode && e.statusCode.is4xxClientError) {
+            log.error("Ignoring error ${e.statusCode} for adjudicationNumber: $adjudicationNumber/$chargeSequence")
+            telemetryClient.trackEvent(
+              "adjudications-migration-entity-failed",
+              mapOf(
+                "adjudicationNumber" to adjudicationNumber.toString(),
+                "chargeSequence" to chargeSequence.toString(),
+                "prisonId" to nomisAdjudication.incident.prison.code,
+                "resultCode" to e.statusCode.toString(),
+                "offenderNo" to offenderNo,
+                "migrationId" to context.migrationId,
+              ),
+              null,
+            )
+          } else {
+            throw e
+          }
+        }
       }
   }
 
@@ -324,11 +359,17 @@ class AdjudicationsMigrationService(
         nomisHearingId = it.oicHearingId,
       )
     } ?: emptyList(),
-    punishments = mapping.punishmentMappings?.map {
+    punishments = mapping.punishmentMappings?.filter {
+      (it.sanctionSeq != null).also { hasSanction ->
+        if (!hasSanction) {
+          log.warn("Ignoring mapping for punishment ${it.punishmentId} for booking ${it.bookingId}. DPS has no sanctionSeq as this is a WIP")
+        }
+      }
+    }?.map {
       AdjudicationPunishmentMappingDto(
         dpsPunishmentId = it.punishmentId.toString(),
         nomisBookingId = it.bookingId,
-        nomisSanctionSequence = it.sanctionSeq.toInt(),
+        nomisSanctionSequence = it.sanctionSeq!!.toInt(),
       )
     } ?: emptyList(),
     label = context.migrationId,
