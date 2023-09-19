@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
@@ -65,57 +66,69 @@ class NonAssociationsMigrationService(
   }
 
   override suspend fun migrateNomisEntity(context: MigrationContext<NonAssociationIdResponse>) {
-    log.info("attempting to migrate ${context.body}")
-    val firstOffenderNo = context.body.offenderNo1
-    val secondOffenderNo = context.body.offenderNo2
+    with(context.body) {
+      log.info("attempting to migrate $this")
 
-    // Determine all valid non-associations for this offender pair
-    val nonAssociationPairs = nomisApiService.getNonAssociations(firstOffenderNo, secondOffenderNo)
-    nonAssociationPairs.forEach { nomisNonAssociationResponse ->
-      if (nomisNonAssociationResponse.isOpenAndNewestOrClosed(nonAssociationPairs.size)) {
-        nonAssociationsMappingService.findNomisNonAssociationMapping(firstOffenderNo, secondOffenderNo, nomisNonAssociationResponse.typeSequence)
-          ?.run {
-            log.info(
-              "Will not migrate the non-association since it is migrated already, NOMIS firstOffenderNo is $firstOffenderNo, " +
-                "secondOffenderNo is $secondOffenderNo, nomisTypeSequence is $nomisTypeSequence as part migration " +
-                "${this.label ?: "NONE"} (${this.mappingType})",
-            )
-          }
-          ?: run {
-            log.debug("No non-association mapping - sending non-association migrate upsert {}", nomisNonAssociationResponse.toUpsertSyncRequest())
-            val migratedNonAssociation = nonAssociationsService.migrateNonAssociation(nomisNonAssociationResponse.toUpsertSyncRequest())
-              .also {
-                createNonAssociationMapping(
-                  nonAssociationId = it.id,
-                  firstOffenderNo = firstOffenderNo,
-                  secondOffenderNo = secondOffenderNo,
-                  nomisTypeSequence = nomisNonAssociationResponse.typeSequence,
-                  context = context,
-                )
-              }
-            telemetryClient.trackEvent(
-              "non-associations-migration-entity-migrated",
-              mapOf(
-                "nonAssociationId" to migratedNonAssociation.id.toString(),
-                "firstOffenderNo" to firstOffenderNo,
-                "secondOffenderNo" to secondOffenderNo,
-                "nomisTypeSequence" to nomisNonAssociationResponse.typeSequence.toString(),
-                "migrationId" to context.migrationId,
-              ),
-              null,
-            )
-          }
-      } else {
+      if (isNotPrimaryNonAssociation()) {
         telemetryClient.trackEvent(
-          "non-association-migration-entity-ignored",
+          "non-association-migration-non-primary-skipped",
           mapOf(
-            "firstOffenderNo" to firstOffenderNo,
-            "secondOffenderNo" to secondOffenderNo,
-            "nomisTypeSequence" to nomisNonAssociationResponse.typeSequence.toString(),
+            "firstOffenderNo" to offenderNo1,
+            "secondOffenderNo" to offenderNo2,
             "migrationId" to context.migrationId,
           ),
-          null,
         )
+        return
+      }
+
+      // Determine all valid non-associations for this offender pair
+      val nonAssociationPairs = nomisApiService.getNonAssociations(offenderNo1, offenderNo2)
+      nonAssociationPairs.forEach { nomisNonAssociationResponse ->
+        if (nomisNonAssociationResponse.isOpenAndNewestOrClosed(nonAssociationPairs.size)) {
+          nonAssociationsMappingService.findNomisNonAssociationMapping(offenderNo1, offenderNo2, nomisNonAssociationResponse.typeSequence)
+            ?.run {
+              log.info(
+                "Will not migrate the non-association since it is migrated already, NOMIS firstOffenderNo is $firstOffenderNo, " +
+                  "secondOffenderNo is $secondOffenderNo, nomisTypeSequence is $nomisTypeSequence as part migration " +
+                  "${this.label ?: "NONE"} (${this.mappingType})",
+              )
+            }
+            ?: run {
+              log.debug("No non-association mapping - sending non-association migrate upsert {}", nomisNonAssociationResponse.toUpsertSyncRequest())
+              val migratedNonAssociation = nonAssociationsService.migrateNonAssociation(nomisNonAssociationResponse.toUpsertSyncRequest())
+                .also {
+                  createNonAssociationMapping(
+                    nonAssociationId = it.id,
+                    firstOffenderNo = offenderNo1,
+                    secondOffenderNo = offenderNo2,
+                    nomisTypeSequence = nomisNonAssociationResponse.typeSequence,
+                    context = context,
+                  )
+                }
+              telemetryClient.trackEvent(
+                "non-associations-migration-entity-migrated",
+                mapOf(
+                  "nonAssociationId" to migratedNonAssociation.id.toString(),
+                  "firstOffenderNo" to offenderNo1,
+                  "secondOffenderNo" to offenderNo2,
+                  "nomisTypeSequence" to nomisNonAssociationResponse.typeSequence.toString(),
+                  "migrationId" to context.migrationId,
+                ),
+                null,
+              )
+            }
+        } else {
+          telemetryClient.trackEvent(
+            "non-association-migration-entity-ignored",
+            mapOf(
+              "firstOffenderNo" to offenderNo1,
+              "secondOffenderNo" to offenderNo2,
+              "nomisTypeSequence" to nomisNonAssociationResponse.typeSequence.toString(),
+              "migrationId" to context.migrationId,
+            ),
+            null,
+          )
+        }
       }
     }
   }
@@ -179,6 +192,10 @@ class NonAssociationsMigrationService(
     )
   }
 }
+
+// Two non-association events occur for each non-association relationship.
+// We call the primary association the one where the first offender number is less (string comparison) than the second.
+fun NonAssociationIdResponse.isNotPrimaryNonAssociation(): Boolean = offenderNo1 > offenderNo2
 
 fun NonAssociationResponse.isOpenAndNewestOrClosed(nonAssociationPairCount: Int) =
   typeSequence == nonAssociationPairCount || expiryDate != null

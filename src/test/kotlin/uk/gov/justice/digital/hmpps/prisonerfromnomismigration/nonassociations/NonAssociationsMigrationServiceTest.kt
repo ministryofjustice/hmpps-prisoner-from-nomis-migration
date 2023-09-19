@@ -8,6 +8,7 @@ import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.slot
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -21,6 +22,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -216,7 +218,7 @@ internal class NonAssociationsMigrationServiceTest {
           assertThat(it["fromDate"]).isEqualTo("2020-01-01")
           assertThat(it["toDate"]).isEqualTo("2020-01-02")
         },
-        eq(null),
+        isNull(),
       )
     }
 
@@ -246,7 +248,7 @@ internal class NonAssociationsMigrationServiceTest {
           assertThat(it["fromDate"]).isNull()
           assertThat(it["toDate"]).isNull()
         },
-        eq(null),
+        isNull(),
       )
     }
   }
@@ -487,7 +489,7 @@ internal class NonAssociationsMigrationServiceTest {
             assertThat(it["estimatedCount"]).isEqualTo("23")
             assertThat(it["durationMinutes"]).isNotNull()
           },
-          eq(null),
+          isNull(),
         )
       }
 
@@ -636,12 +638,12 @@ internal class NonAssociationsMigrationServiceTest {
             assertThat(it["estimatedCount"]).isEqualTo("23")
             assertThat(it["durationMinutes"]).isNotNull()
           },
-          eq(null),
+          isNull(),
         )
       }
 
       @Test
-      internal fun `will update migration history record when cancelling`(): Unit = runBlocking {
+      internal fun `will update migration history record when cancelling`(): Unit = runTest {
         whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(2)
         whenever(nonAssociationsMappingService.getMigrationCount("2020-05-23T11:30:00")).thenReturn(21)
 
@@ -963,7 +965,7 @@ internal class NonAssociationsMigrationServiceTest {
           assertThat(it["secondOffenderNo"]).isEqualTo("D5678EF")
           assertThat(it["nomisTypeSequence"]).isNotEqualTo("1")
         },
-        eq(null),
+        isNull(),
       )
 
       verify(telemetryClient).trackEvent(
@@ -974,7 +976,29 @@ internal class NonAssociationsMigrationServiceTest {
           assertThat(it["secondOffenderNo"]).isEqualTo("D5678EF")
           assertThat(it["nomisTypeSequence"]).isEqualTo("1")
         },
-        eq(null),
+        isNull(),
+      )
+    }
+
+    @Test
+    internal fun `will not migrate non-primary associations`(): Unit = runBlocking {
+      service.migrateNomisEntity(
+        MigrationContext(
+          type = NON_ASSOCIATIONS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = NonAssociationIdResponse("D5678EF", "A1234BC"),
+        ),
+      )
+
+      verify(telemetryClient).trackEvent(
+        eq("non-association-migration-non-primary-skipped"),
+        check {
+          assertThat(it["firstOffenderNo"]).isEqualTo("D5678EF")
+          assertThat(it["secondOffenderNo"]).isEqualTo("A1234BC")
+          assertThat(it["migrationId"]).isNotNull
+        },
+        isNull(),
       )
     }
 
