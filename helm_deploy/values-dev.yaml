@@ -39,6 +39,8 @@ generic-prometheus-alerts:
     - "syscon-devs-dev-migration_appointments_dlq"
     - "syscon-devs-dev-migration_activities_queue"
     - "syscon-devs-dev-migration_activities_dlq"
+    - "syscon-devs-dev-migration_allocations_queue"
+    - "syscon-devs-dev-migration_allocations_dlq"
     - "syscon-devs-dev-migration_adjudications_queue"
     - "syscon-devs-dev-migration_adjudications_dlq"
   sqsAlertsOldestThreshold: 2
