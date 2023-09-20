@@ -17,8 +17,6 @@ generic-service:
     API_BASE_URL_ACTIVITIES: https://activities-api-dev.prison.service.justice.gov.uk
     API_BASE_URL_NON_ASSOCIATIONS: https://non-associations-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_ADJUDICATIONS: https://manage-adjudications-api-dev.hmpps.service.justice.gov.uk
-    FEATURE_EVENT_NON_ASSOCIATION_DETAIL-UPSERTED: false
-    FEATURE_EVENT_NON_ASSOCIATION_DETAIL-DELETED: true
 
 generic-prometheus-alerts:
   businessHoursOnly: true
