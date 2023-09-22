@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import jakarta.validation.Valid
+import org.springframework.data.domain.Page
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -19,19 +20,20 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveAllocationIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.HistoryFilter
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import java.time.LocalDateTime
 
 @RestController
-@RequestMapping("/migrate", produces = [MediaType.APPLICATION_JSON_VALUE])
+@RequestMapping("/migrate/allocations", produces = [MediaType.APPLICATION_JSON_VALUE])
 class AllocationsMigrationResource(
   private val migrationHistoryService: MigrationHistoryService,
   private val allocationsMigrationService: AllocationsMigrationService,
 ) {
   @PreAuthorize("hasRole('ROLE_MIGRATE_ACTIVITIES')")
-  @PostMapping("/allocations")
+  @PostMapping()
   @ResponseStatus(value = HttpStatus.ACCEPTED)
   @Operation(
     summary = "Starts an allocations migration",
@@ -67,7 +69,7 @@ class AllocationsMigrationResource(
   ) = allocationsMigrationService.startMigration(migrationFilter)
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_ACTIVITIES')")
-  @GetMapping("/allocations/history")
+  @GetMapping("/history")
   @Operation(
     summary = "Lists all filtered migration history records un-paged for allocations",
     description = "The records are un-paged and requires role <b>MIGRATE_ACTIVITIES</b>",
@@ -119,7 +121,7 @@ class AllocationsMigrationResource(
   )
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_ACTIVITIES')")
-  @GetMapping("/allocations/history/{migrationId}")
+  @GetMapping("/history/{migrationId}")
   @Operation(
     summary = "Gets a specific migration history record",
     description = "Requires role <b>MIGRATE_ACTIVITIES</b>",
@@ -152,7 +154,7 @@ class AllocationsMigrationResource(
   ) = migrationHistoryService.get(migrationId)
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_ACTIVITIES')")
-  @PostMapping("/allocations/{migrationId}/cancel")
+  @PostMapping("/{migrationId}/cancel")
   @ResponseStatus(value = HttpStatus.ACCEPTED)
   @Operation(
     summary = "Cancels a running migration. The actual cancellation might take several minutes to complete",
@@ -186,7 +188,7 @@ class AllocationsMigrationResource(
   ) = allocationsMigrationService.cancel(migrationId)
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_ACTIVITIES')")
-  @GetMapping("/allocations/active-migration")
+  @GetMapping("/active-migration")
   @Operation(
     summary = "Gets active/currently running migration data, using migration record and migration queues",
     description = "Requires role <b>MIGRATE_ACTIVITIES</b>",
@@ -208,4 +210,56 @@ class AllocationsMigrationResource(
     ],
   )
   suspend fun getActiveMigrationDetails() = migrationHistoryService.getActiveMigrationDetails(MigrationType.ALLOCATIONS)
+
+  @PreAuthorize("hasRole('ROLE_MIGRATE_ACTIVITIES')")
+  @GetMapping("/ids")
+  @Operation(
+    summary = "Find paged allocations eligible for migration",
+    description = "Searches for active offender program profiles for active course activities (excluding DPS program services). Requires role MIGRATE_ACTIVITIES",
+    responses = [
+      ApiResponse(
+        responseCode = "200",
+        description = "OK",
+      ),
+      ApiResponse(
+        responseCode = "400",
+        description = "Invalid request",
+        content = [
+          Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class)),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "401",
+        description = "Unauthorized to access this endpoint",
+        content = [
+          Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class)),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "403",
+        description = "Forbidden, requires role NOMIS_ACTIVITIES",
+        content = [
+          Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class)),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Not found",
+        content = [
+          Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class)),
+        ],
+      ),
+    ],
+  )
+  suspend fun findAllocationsToMigrate(
+    @Schema(description = "Page number")
+    @RequestParam(defaultValue = "0")
+    page: Long,
+    @Schema(description = "Page size")
+    @RequestParam(defaultValue = "10")
+    size: Long,
+    @Schema(description = "Prison id") @RequestParam prisonId: String,
+    @Schema(description = "Course Activity ID", type = "integer") @RequestParam courseActivityId: Long?,
+  ): Page<FindActiveAllocationIdsResponse> =
+    allocationsMigrationService.getIds(AllocationsMigrationFilter(prisonId, courseActivityId), size, page)
 }
