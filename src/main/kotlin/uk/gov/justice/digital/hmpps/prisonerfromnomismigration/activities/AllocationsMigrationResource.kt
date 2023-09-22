@@ -27,13 +27,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import java.time.LocalDateTime
 
 @RestController
-@RequestMapping("/migrate", produces = [MediaType.APPLICATION_JSON_VALUE])
+@RequestMapping("/migrate/allocations", produces = [MediaType.APPLICATION_JSON_VALUE])
 class AllocationsMigrationResource(
   private val migrationHistoryService: MigrationHistoryService,
   private val allocationsMigrationService: AllocationsMigrationService,
 ) {
   @PreAuthorize("hasRole('ROLE_MIGRATE_ACTIVITIES')")
-  @PostMapping("/allocations")
+  @PostMapping()
   @ResponseStatus(value = HttpStatus.ACCEPTED)
   @Operation(
     summary = "Starts an allocations migration",
@@ -69,7 +69,7 @@ class AllocationsMigrationResource(
   ) = allocationsMigrationService.startMigration(migrationFilter)
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_ACTIVITIES')")
-  @GetMapping("/allocations/history")
+  @GetMapping("/history")
   @Operation(
     summary = "Lists all filtered migration history records un-paged for allocations",
     description = "The records are un-paged and requires role <b>MIGRATE_ACTIVITIES</b>",
@@ -121,7 +121,7 @@ class AllocationsMigrationResource(
   )
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_ACTIVITIES')")
-  @GetMapping("/allocations/history/{migrationId}")
+  @GetMapping("/history/{migrationId}")
   @Operation(
     summary = "Gets a specific migration history record",
     description = "Requires role <b>MIGRATE_ACTIVITIES</b>",
@@ -154,7 +154,7 @@ class AllocationsMigrationResource(
   ) = migrationHistoryService.get(migrationId)
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_ACTIVITIES')")
-  @PostMapping("/allocations/{migrationId}/cancel")
+  @PostMapping("/{migrationId}/cancel")
   @ResponseStatus(value = HttpStatus.ACCEPTED)
   @Operation(
     summary = "Cancels a running migration. The actual cancellation might take several minutes to complete",
@@ -188,7 +188,7 @@ class AllocationsMigrationResource(
   ) = allocationsMigrationService.cancel(migrationId)
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_ACTIVITIES')")
-  @GetMapping("/allocations/active-migration")
+  @GetMapping("/active-migration")
   @Operation(
     summary = "Gets active/currently running migration data, using migration record and migration queues",
     description = "Requires role <b>MIGRATE_ACTIVITIES</b>",
@@ -212,7 +212,7 @@ class AllocationsMigrationResource(
   suspend fun getActiveMigrationDetails() = migrationHistoryService.getActiveMigrationDetails(MigrationType.ALLOCATIONS)
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_ACTIVITIES')")
-  @GetMapping("/allocations/ids")
+  @GetMapping("/ids")
   @Operation(
     summary = "Find paged allocations eligible for migration",
     description = "Searches for active offender program profiles for active course activities (excluding DPS program services). Requires role MIGRATE_ACTIVITIES",
