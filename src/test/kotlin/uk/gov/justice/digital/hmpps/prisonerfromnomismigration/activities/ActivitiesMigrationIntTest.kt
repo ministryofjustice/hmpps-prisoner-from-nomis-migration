@@ -1,6 +1,9 @@
+@file:OptIn(ExperimentalCoroutinesApi::class)
+
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities
 
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
@@ -228,69 +231,65 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
   @DisplayName("GET /migrate/activities/history")
   inner class GetHistory {
     @BeforeEach
-    fun createHistoryRecords() {
-      runBlocking {
-        migrationHistoryRepository.deleteAll()
-        migrationHistoryRepository.save(
-          MigrationHistory(
-            migrationId = "2020-01-01T00:00:00",
-            whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
-            whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
-            status = MigrationStatus.COMPLETED,
-            estimatedRecordCount = 7,
-            filter = "",
-            recordsMigrated = 5,
-            recordsFailed = 2,
-            migrationType = MigrationType.ACTIVITIES,
-          ),
-        )
-        migrationHistoryRepository.save(
-          MigrationHistory(
-            migrationId = "2020-01-02T00:00:00",
-            whenStarted = LocalDateTime.parse("2020-01-02T00:00:00"),
-            whenEnded = LocalDateTime.parse("2020-01-02T01:00:00"),
-            status = MigrationStatus.COMPLETED,
-            estimatedRecordCount = 8,
-            filter = "",
-            recordsMigrated = 8,
-            recordsFailed = 0,
-            migrationType = MigrationType.ACTIVITIES,
-          ),
-        )
-        migrationHistoryRepository.save(
-          MigrationHistory(
-            migrationId = "2020-01-02T02:00:00",
-            whenStarted = LocalDateTime.parse("2020-01-02T02:00:00"),
-            whenEnded = LocalDateTime.parse("2020-01-02T03:00:00"),
-            status = MigrationStatus.COMPLETED,
-            estimatedRecordCount = 9,
-            filter = "",
-            recordsMigrated = 9,
-            recordsFailed = 0,
-            migrationType = MigrationType.ACTIVITIES,
-          ),
-        )
-        migrationHistoryRepository.save(
-          MigrationHistory(
-            migrationId = "2020-01-03T02:00:00",
-            whenStarted = LocalDateTime.parse("2020-01-03T02:00:00"),
-            whenEnded = LocalDateTime.parse("2020-01-03T03:00:00"),
-            status = MigrationStatus.COMPLETED,
-            estimatedRecordCount = 10,
-            filter = "",
-            recordsMigrated = 6,
-            recordsFailed = 4,
-            migrationType = MigrationType.ACTIVITIES,
-          ),
-        )
-      }
+    fun createHistoryRecords() = runTest {
+      migrationHistoryRepository.deleteAll()
+      migrationHistoryRepository.save(
+        MigrationHistory(
+          migrationId = "2020-01-01T00:00:00",
+          whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
+          whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
+          status = MigrationStatus.COMPLETED,
+          estimatedRecordCount = 7,
+          filter = "",
+          recordsMigrated = 5,
+          recordsFailed = 2,
+          migrationType = MigrationType.ACTIVITIES,
+        ),
+      )
+      migrationHistoryRepository.save(
+        MigrationHistory(
+          migrationId = "2020-01-02T00:00:00",
+          whenStarted = LocalDateTime.parse("2020-01-02T00:00:00"),
+          whenEnded = LocalDateTime.parse("2020-01-02T01:00:00"),
+          status = MigrationStatus.COMPLETED,
+          estimatedRecordCount = 8,
+          filter = "",
+          recordsMigrated = 8,
+          recordsFailed = 0,
+          migrationType = MigrationType.ACTIVITIES,
+        ),
+      )
+      migrationHistoryRepository.save(
+        MigrationHistory(
+          migrationId = "2020-01-02T02:00:00",
+          whenStarted = LocalDateTime.parse("2020-01-02T02:00:00"),
+          whenEnded = LocalDateTime.parse("2020-01-02T03:00:00"),
+          status = MigrationStatus.COMPLETED,
+          estimatedRecordCount = 9,
+          filter = "",
+          recordsMigrated = 9,
+          recordsFailed = 0,
+          migrationType = MigrationType.ACTIVITIES,
+        ),
+      )
+      migrationHistoryRepository.save(
+        MigrationHistory(
+          migrationId = "2020-01-03T02:00:00",
+          whenStarted = LocalDateTime.parse("2020-01-03T02:00:00"),
+          whenEnded = LocalDateTime.parse("2020-01-03T03:00:00"),
+          status = MigrationStatus.COMPLETED,
+          estimatedRecordCount = 10,
+          filter = "",
+          recordsMigrated = 6,
+          recordsFailed = 4,
+          migrationType = MigrationType.ACTIVITIES,
+        ),
+      )
     }
 
     @AfterEach
-    fun deleteHistoryRecords() {
-      runBlocking {
-        migrationHistoryRepository.deleteAll()
-      }
+    fun deleteHistoryRecords() = runTest {
+      migrationHistoryRepository.deleteAll()
     }
 
     @Test
@@ -398,30 +397,26 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
   @DisplayName("GET /migrate/activities/history/{migrationId}")
   inner class Get {
     @BeforeEach
-    fun createHistoryRecords() {
-      runBlocking {
-        migrationHistoryRepository.deleteAll()
-        migrationHistoryRepository.save(
-          MigrationHistory(
-            migrationId = "2020-01-01T00:00:00",
-            whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
-            whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
-            status = MigrationStatus.COMPLETED,
-            estimatedRecordCount = 123_567,
-            filter = "",
-            recordsMigrated = 123_560,
-            recordsFailed = 7,
-            migrationType = MigrationType.ACTIVITIES,
-          ),
-        )
-      }
+    fun createHistoryRecords() = runTest {
+      migrationHistoryRepository.deleteAll()
+      migrationHistoryRepository.save(
+        MigrationHistory(
+          migrationId = "2020-01-01T00:00:00",
+          whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
+          whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
+          status = MigrationStatus.COMPLETED,
+          estimatedRecordCount = 123_567,
+          filter = "",
+          recordsMigrated = 123_560,
+          recordsFailed = 7,
+          migrationType = MigrationType.ACTIVITIES,
+        ),
+      )
     }
 
     @AfterEach
-    fun deleteHistoryRecords() {
-      runBlocking {
-        migrationHistoryRepository.deleteAll()
-      }
+    fun deleteHistoryRecords() = runTest {
+      migrationHistoryRepository.deleteAll()
     }
 
     @Test
@@ -546,43 +541,39 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
   @DisplayName("GET /migrate/activities/active-migration")
   inner class GetActiveMigration {
     @BeforeEach
-    internal fun createHistoryRecords() {
-      runBlocking {
-        migrationHistoryRepository.deleteAll()
-        migrationHistoryRepository.save(
-          MigrationHistory(
-            migrationId = "2020-01-01T00:00:00",
-            whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
-            whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
-            status = MigrationStatus.STARTED,
-            estimatedRecordCount = 123_567,
-            filter = "",
-            recordsMigrated = 123_560,
-            recordsFailed = 7,
-            migrationType = MigrationType.ACTIVITIES,
-          ),
-        )
-        migrationHistoryRepository.save(
-          MigrationHistory(
-            migrationId = "2019-01-01T00:00:00",
-            whenStarted = LocalDateTime.parse("2019-01-01T00:00:00"),
-            whenEnded = LocalDateTime.parse("2019-01-01T01:00:00"),
-            status = MigrationStatus.COMPLETED,
-            estimatedRecordCount = 123_567,
-            filter = "",
-            recordsMigrated = 123_567,
-            recordsFailed = 0,
-            migrationType = MigrationType.ACTIVITIES,
-          ),
-        )
-      }
+    internal fun createHistoryRecords() = runTest {
+      migrationHistoryRepository.deleteAll()
+      migrationHistoryRepository.save(
+        MigrationHistory(
+          migrationId = "2020-01-01T00:00:00",
+          whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
+          whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
+          status = MigrationStatus.STARTED,
+          estimatedRecordCount = 123_567,
+          filter = "",
+          recordsMigrated = 123_560,
+          recordsFailed = 7,
+          migrationType = MigrationType.ACTIVITIES,
+        ),
+      )
+      migrationHistoryRepository.save(
+        MigrationHistory(
+          migrationId = "2019-01-01T00:00:00",
+          whenStarted = LocalDateTime.parse("2019-01-01T00:00:00"),
+          whenEnded = LocalDateTime.parse("2019-01-01T01:00:00"),
+          status = MigrationStatus.COMPLETED,
+          estimatedRecordCount = 123_567,
+          filter = "",
+          recordsMigrated = 123_567,
+          recordsFailed = 0,
+          migrationType = MigrationType.ACTIVITIES,
+        ),
+      )
     }
 
     @AfterEach
-    internal fun deleteHistoryRecords() {
-      runBlocking {
-        migrationHistoryRepository.deleteAll()
-      }
+    internal fun deleteHistoryRecords() = runTest {
+      migrationHistoryRepository.deleteAll()
     }
 
     @Test
@@ -637,6 +628,60 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
         .jsonPath("$.estimatedRecordCount").isEqualTo(123567)
         .jsonPath("$.status").isEqualTo("STARTED")
         .jsonPath("$.migrationType").isEqualTo("ACTIVITIES")
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /migrate/activities/ids")
+  inner class FindActivitiesToMigrate {
+    @BeforeEach
+    internal fun stubNomisApi() = runTest {
+      activitiesApi.stubGetActivityCategories()
+      nomisApi.stubMultipleGetActivitiesIdCounts(2, 3)
+    }
+
+    @Test
+    internal fun `must have valid token to get active migration data`() {
+      webTestClient.get().uri("/migrate/activities/ids?prisonId=MDI&pageSize=3&page=0")
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isUnauthorized
+    }
+
+    @Test
+    internal fun `must have correct role to get action migration data`() {
+      webTestClient.get().uri("/migrate/activities/ids?prisonId=MDI&pageSize=3&page=0")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isForbidden
+    }
+
+    @Test
+    internal fun `will call nomis prisoner api with excluded program services`() {
+      webTestClient.get().uri("/migrate/activities/ids?prisonId=MDI&pageSize=3&page=0")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
+
+      nomisApi.verifyActivitiesGetIds("/activities/ids", "MDI", listOf("SAA_EDUCATION", "SAA_INDUCTION"))
+    }
+
+    @Test
+    internal fun `will return activities and paging details`() {
+      webTestClient.get().uri("/migrate/activities/ids?prisonId=MDI&pageSize=3&page=0")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$.content.size()").isEqualTo(2)
+        .jsonPath("$.content[0].courseActivityId").isEqualTo(1)
+        .jsonPath("$.content[1].courseActivityId").isEqualTo(2)
+        .jsonPath("$.totalElements").isEqualTo(2)
+        .jsonPath("$.pageable.pageNumber").isEqualTo(0)
+        .jsonPath("$.pageable.pageSize").isEqualTo(3)
     }
   }
 }
