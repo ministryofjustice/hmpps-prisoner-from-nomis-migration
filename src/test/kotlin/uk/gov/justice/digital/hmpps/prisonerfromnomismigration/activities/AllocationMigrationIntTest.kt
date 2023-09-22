@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities
 
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
@@ -654,6 +655,60 @@ class AllocationMigrationIntTest : SqsIntegrationTestBase() {
         .jsonPath("$.estimatedRecordCount").isEqualTo(123567)
         .jsonPath("$.status").isEqualTo("STARTED")
         .jsonPath("$.migrationType").isEqualTo("ALLOCATIONS")
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /migrate/allocations/ids")
+  inner class FindActivitiesToMigrate {
+    @BeforeEach
+    internal fun stubNomisApi() = runTest {
+      activitiesApi.stubGetActivityCategories()
+      nomisApi.stubMultipleGetAllocationsIdCounts(2, 3)
+    }
+
+    @Test
+    internal fun `must have valid token to get active migration data`() {
+      webTestClient.get().uri("/migrate/allocations/ids?prisonId=MDI&pageSize=3&page=0")
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isUnauthorized
+    }
+
+    @Test
+    internal fun `must have correct role to get action migration data`() {
+      webTestClient.get().uri("/migrate/allocations/ids?prisonId=MDI&pageSize=3&page=0")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isForbidden
+    }
+
+    @Test
+    internal fun `will call nomis prisoner api with excluded program services`() {
+      webTestClient.get().uri("/migrate/allocations/ids?prisonId=MDI&pageSize=3&page=0")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
+
+      nomisApi.verifyActivitiesGetIds("/allocations/ids", "MDI", listOf("SAA_EDUCATION", "SAA_INDUCTION"))
+    }
+
+    @Test
+    internal fun `will return allocations and paging details`() {
+      webTestClient.get().uri("/migrate/allocations/ids?prisonId=MDI&pageSize=3&page=0")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$.content.size()").isEqualTo(2)
+        .jsonPath("$.content[0].allocationId").isEqualTo(1)
+        .jsonPath("$.content[1].allocationId").isEqualTo(2)
+        .jsonPath("$.totalElements").isEqualTo(2)
+        .jsonPath("$.pageable.pageNumber").isEqualTo(0)
+        .jsonPath("$.pageable.pageSize").isEqualTo(3)
     }
   }
 }
