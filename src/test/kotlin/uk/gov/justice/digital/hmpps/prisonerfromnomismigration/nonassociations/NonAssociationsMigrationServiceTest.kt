@@ -118,7 +118,7 @@ internal class NonAssociationsMigrationServiceTest {
 
     @Test
     internal fun `will pass filter through to get total count along with a tiny page count`() {
-      runBlocking {
+      runTest {
         service.startMigration(
           NonAssociationsMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
@@ -142,7 +142,7 @@ internal class NonAssociationsMigrationServiceTest {
       coEvery { nomisApiService.getNonAssociationIds(any(), any(), any(), any()) } returns
         pages(23)
 
-      runBlocking {
+      runTest {
         service.startMigration(
           NonAssociationsMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
@@ -172,7 +172,7 @@ internal class NonAssociationsMigrationServiceTest {
       coEvery { nomisApiService.getNonAssociationIds(any(), any(), any(), any()) } returns
         pages(23)
 
-      runBlocking {
+      runTest {
         service.startMigration(
           nonAssociationsMigrationFilter,
         )
@@ -201,7 +201,7 @@ internal class NonAssociationsMigrationServiceTest {
       coEvery { nomisApiService.getNonAssociationIds(any(), any(), any(), any()) } returns
         pages(23)
 
-      runBlocking {
+      runTest {
         service.startMigration(
           NonAssociationsMigrationFilter(
             fromDate = LocalDate.parse("2020-01-01"),
@@ -234,7 +234,7 @@ internal class NonAssociationsMigrationServiceTest {
       } returns
         pages(23)
 
-      runBlocking {
+      runTest {
         service.startMigration(
           NonAssociationsMigrationFilter(),
         )
@@ -258,14 +258,14 @@ internal class NonAssociationsMigrationServiceTest {
   inner class DivideNonAssociationsByPage {
 
     @BeforeEach
-    internal fun setUp(): Unit = runBlocking {
+    internal fun setUp(): Unit = runTest {
       whenever(nomisApiService.getNonAssociationIds(any(), any(), any(), any())).thenReturn(
         pages(100_200),
       )
     }
 
     @Test
-    internal fun `will send a page message for every page (200) of non-associations `(): Unit = runBlocking {
+    internal fun `will send a page message for every page (200) of non-associations `(): Unit = runTest {
       service.divideEntitiesByPage(
         MigrationContext(
           type = NON_ASSOCIATIONS,
@@ -286,7 +286,7 @@ internal class NonAssociationsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will also send a single MIGRATION_STATUS_CHECK message`(): Unit = runBlocking {
+    internal fun `will also send a single MIGRATION_STATUS_CHECK message`(): Unit = runTest {
       service.divideEntitiesByPage(
         MigrationContext(
           type = NON_ASSOCIATIONS,
@@ -307,7 +307,7 @@ internal class NonAssociationsMigrationServiceTest {
     }
 
     @Test
-    internal fun `each page with have the filter and context attached`(): Unit = runBlocking {
+    internal fun `each page with have the filter and context attached`(): Unit = runTest {
       service.divideEntitiesByPage(
         MigrationContext(
           type = NON_ASSOCIATIONS,
@@ -333,7 +333,7 @@ internal class NonAssociationsMigrationServiceTest {
     }
 
     @Test
-    internal fun `each page will contain page number and page size`(): Unit = runBlocking {
+    internal fun `each page will contain page number and page size`(): Unit = runTest {
       val context: KArgumentCaptor<MigrationContext<MigrationPage<NonAssociationsMigrationFilter>>> = argumentCaptor()
 
       service.divideEntitiesByPage(
@@ -379,12 +379,12 @@ internal class NonAssociationsMigrationServiceTest {
     @DisplayName("when there are still messages on the queue")
     inner class MessagesOnQueue {
       @BeforeEach
-      internal fun setUp(): Unit = runBlocking {
+      internal fun setUp(): Unit = runTest {
         whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed(any())).thenReturn(true)
       }
 
       @Test
-      internal fun `will check again in 10 seconds`(): Unit = runBlocking {
+      internal fun `will check again in 10 seconds`(): Unit = runTest {
         service.migrateStatusCheck(
           MigrationContext(
             type = NON_ASSOCIATIONS,
@@ -403,7 +403,7 @@ internal class NonAssociationsMigrationServiceTest {
 
       @Test
       internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit =
-        runBlocking {
+        runTest {
           service.migrateStatusCheck(
             MigrationContext(
               type = NON_ASSOCIATIONS,
@@ -427,14 +427,14 @@ internal class NonAssociationsMigrationServiceTest {
     @DisplayName("when there are no messages on the queue")
     inner class NoMessagesOnQueue {
       @BeforeEach
-      internal fun setUp(): Unit = runBlocking {
+      internal fun setUp(): Unit = runTest {
         whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed(any())).thenReturn(false)
         whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(0)
         whenever(nonAssociationsMappingService.getMigrationCount(any())).thenReturn(0)
       }
 
       @Test
-      internal fun `will increment check count and try again a second when only checked 9 times`(): Unit = runBlocking {
+      internal fun `will increment check count and try again a second when only checked 9 times`(): Unit = runTest {
         service.migrateStatusCheck(
           MigrationContext(
             type = NON_ASSOCIATIONS,
@@ -454,7 +454,7 @@ internal class NonAssociationsMigrationServiceTest {
       }
 
       @Test
-      internal fun `will finish off when checked 10 times previously`(): Unit = runBlocking {
+      internal fun `will finish off when checked 10 times previously`(): Unit = runTest {
         service.migrateStatusCheck(
           MigrationContext(
             type = NON_ASSOCIATIONS,
@@ -472,7 +472,7 @@ internal class NonAssociationsMigrationServiceTest {
       }
 
       @Test
-      internal fun `will add completed telemetry when finishing off`(): Unit = runBlocking {
+      internal fun `will add completed telemetry when finishing off`(): Unit = runTest {
         service.migrateStatusCheck(
           MigrationContext(
             type = NON_ASSOCIATIONS,
@@ -494,7 +494,7 @@ internal class NonAssociationsMigrationServiceTest {
       }
 
       @Test
-      internal fun `will update migration history record when finishing off`(): Unit = runBlocking {
+      internal fun `will update migration history record when finishing off`(): Unit = runTest {
         whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(2)
         whenever(nonAssociationsMappingService.getMigrationCount("2020-05-23T11:30:00")).thenReturn(21)
 
@@ -523,12 +523,12 @@ internal class NonAssociationsMigrationServiceTest {
     @DisplayName("when there are still messages on the queue")
     inner class MessagesOnQueue {
       @BeforeEach
-      internal fun setUp(): Unit = runBlocking {
+      internal fun setUp(): Unit = runTest {
         whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed(any())).thenReturn(true)
       }
 
       @Test
-      internal fun `will check again in 10 seconds`(): Unit = runBlocking {
+      internal fun `will check again in 10 seconds`(): Unit = runTest {
         service.cancelMigrateStatusCheck(
           MigrationContext(
             type = NON_ASSOCIATIONS,
@@ -548,7 +548,7 @@ internal class NonAssociationsMigrationServiceTest {
 
       @Test
       internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit =
-        runBlocking {
+        runTest {
           service.cancelMigrateStatusCheck(
             MigrationContext(
               type = NON_ASSOCIATIONS,
@@ -573,14 +573,14 @@ internal class NonAssociationsMigrationServiceTest {
     @DisplayName("when there are no messages on the queue")
     inner class NoMessagesOnQueue {
       @BeforeEach
-      internal fun setUp(): Unit = runBlocking {
+      internal fun setUp(): Unit = runTest {
         whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed(any())).thenReturn(false)
         whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(0)
         whenever(nonAssociationsMappingService.getMigrationCount(any())).thenReturn(0)
       }
 
       @Test
-      internal fun `will increment check count and try again a second when only checked 9 times`(): Unit = runBlocking {
+      internal fun `will increment check count and try again a second when only checked 9 times`(): Unit = runTest {
         service.cancelMigrateStatusCheck(
           MigrationContext(
             type = NON_ASSOCIATIONS,
@@ -602,7 +602,7 @@ internal class NonAssociationsMigrationServiceTest {
       }
 
       @Test
-      internal fun `will finish off when checked 10 times previously`(): Unit = runBlocking {
+      internal fun `will finish off when checked 10 times previously`(): Unit = runTest {
         service.cancelMigrateStatusCheck(
           MigrationContext(
             type = NON_ASSOCIATIONS,
@@ -621,7 +621,7 @@ internal class NonAssociationsMigrationServiceTest {
       }
 
       @Test
-      internal fun `will add completed telemetry when finishing off`(): Unit = runBlocking {
+      internal fun `will add completed telemetry when finishing off`(): Unit = runTest {
         service.cancelMigrateStatusCheck(
           MigrationContext(
             type = NON_ASSOCIATIONS,
@@ -669,7 +669,7 @@ internal class NonAssociationsMigrationServiceTest {
   @DisplayName("migrateEntitiesForPage")
   inner class MigrateNonAssociationsForPage {
     @BeforeEach
-    internal fun setUp(): Unit = runBlocking {
+    internal fun setUp(): Unit = runTest {
       whenever(migrationHistoryService.isCancelling(any())).thenReturn(false)
       whenever(nomisApiService.getNonAssociationIds(any(), any(), any(), any())).thenReturn(
         pages(15),
@@ -677,7 +677,7 @@ internal class NonAssociationsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will pass filter through to get total count along with a tiny page count`(): Unit = runBlocking {
+    internal fun `will pass filter through to get total count along with a tiny page count`(): Unit = runTest {
       service.migrateEntitiesForPage(
         MigrationContext(
           type = NON_ASSOCIATIONS,
@@ -704,7 +704,7 @@ internal class NonAssociationsMigrationServiceTest {
 
     @Test
     internal fun `will send MIGRATE_NON_ASSOCIATION with context for each non-association`(): Unit =
-      runBlocking {
+      runTest {
         service.migrateEntitiesForPage(
           MigrationContext(
             type = NON_ASSOCIATIONS,
@@ -733,7 +733,7 @@ internal class NonAssociationsMigrationServiceTest {
 
     @Test
     internal fun `will send MIGRATE_NON_ASSOCIATION with bookingId for each non-association`(): Unit =
-      runBlocking {
+      runTest {
         val context: KArgumentCaptor<MigrationContext<NonAssociationIdResponse>> = argumentCaptor()
 
         whenever(nomisApiService.getNonAssociationIds(any(), any(), any(), any())).thenReturn(
@@ -778,7 +778,7 @@ internal class NonAssociationsMigrationServiceTest {
       }
 
     @Test
-    internal fun `will not send MIGRATE_NON_ASSOCIATION when cancelling`(): Unit = runBlocking {
+    internal fun `will not send MIGRATE_NON_ASSOCIATION when cancelling`(): Unit = runTest {
       whenever(migrationHistoryService.isCancelling(any())).thenReturn(true)
 
       whenever(nomisApiService.getNonAssociationIds(any(), any(), any(), any())).thenReturn(
@@ -813,7 +813,7 @@ internal class NonAssociationsMigrationServiceTest {
   inner class MigrateNonAssociation {
 
     @BeforeEach
-    internal fun setUp(): Unit = runBlocking {
+    internal fun setUp(): Unit = runTest {
       whenever(nonAssociationsMappingService.findNomisNonAssociationMapping(any(), any(), any())).thenReturn(null)
       whenever(nomisApiService.getNonAssociations(any(), any())).thenReturn(listOf(aNomisNonAssociationResponse()))
       whenever(nonAssociationsService.migrateNonAssociation(any())).thenReturn(aNonAssociation())
@@ -821,7 +821,7 @@ internal class NonAssociationsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will retrieve all non associations between offender pair from NOMIS`(): Unit = runBlocking {
+    internal fun `will retrieve all non associations between offender pair from NOMIS`(): Unit = runTest {
       service.migrateNomisEntity(
         MigrationContext(
           type = NON_ASSOCIATIONS,
@@ -835,7 +835,7 @@ internal class NonAssociationsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will transform and send that non-association to the Non-associations service`(): Unit = runBlocking {
+    internal fun `will transform and send that non-association to the Non-associations service`(): Unit = runTest {
       whenever(nomisApiService.getNonAssociations(any(), any())).thenReturn(listOf(aNomisNonAssociationResponse()))
 
       service.migrateNomisEntity(
@@ -858,8 +858,8 @@ internal class NonAssociationsMigrationServiceTest {
             comment = "Fight on Wing C",
             authorisedBy = "Jim Smith",
             lastModifiedByUsername = "TJONES_ADM",
-            effectiveFromDate = LocalDate.parse("2023-10-25"),
-            expiryDate = LocalDate.parse("2023-10-26"),
+            effectiveFromDate = LocalDate.parse("2023-09-25"),
+            expiryDate = LocalDate.parse("2023-09-26"),
 
           ),
         ),
@@ -867,7 +867,7 @@ internal class NonAssociationsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will not migrate multiple open non-associations for the same offender pair`(): Unit = runBlocking {
+    internal fun `will not migrate multiple open non-associations for the same offender pair`(): Unit = runTest {
       whenever(nomisApiService.getNonAssociations(any(), any())).thenReturn(
         listOf(
           aNomisNonAssociationResponse(expiryDate = null),
@@ -896,7 +896,7 @@ internal class NonAssociationsMigrationServiceTest {
             comment = "Fight on Wing C",
             authorisedBy = "Jim Smith",
             lastModifiedByUsername = "TJONES_ADM",
-            effectiveFromDate = LocalDate.parse("2023-10-25"),
+            effectiveFromDate = LocalDate.parse("2023-09-25"),
             expiryDate = null,
           ),
         ),
@@ -913,8 +913,8 @@ internal class NonAssociationsMigrationServiceTest {
             comment = "Fight on Wing C",
             authorisedBy = "Jim Smith",
             lastModifiedByUsername = "TJONES_ADM",
-            effectiveFromDate = LocalDate.parse("2023-10-25"),
-            expiryDate = LocalDate.parse("2023-10-26"),
+            effectiveFromDate = LocalDate.parse("2023-09-25"),
+            expiryDate = LocalDate.parse("2023-09-26"),
           ),
         ),
       )
@@ -929,7 +929,7 @@ internal class NonAssociationsMigrationServiceTest {
             comment = "Fight on Wing C",
             authorisedBy = "Jim Smith",
             lastModifiedByUsername = "TJONES_ADM",
-            effectiveFromDate = LocalDate.parse("2023-10-25"),
+            effectiveFromDate = LocalDate.parse("2023-09-25"),
             expiryDate = null,
 
           ),
@@ -938,7 +938,7 @@ internal class NonAssociationsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will add telemetry events for migrated and non-migrated entries`(): Unit = runBlocking {
+    internal fun `will add telemetry events for migrated and non-migrated entries`(): Unit = runTest {
       whenever(nomisApiService.getNonAssociations(any(), any())).thenReturn(
         listOf(
           aNomisNonAssociationResponse(expiryDate = null),
@@ -981,30 +981,8 @@ internal class NonAssociationsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will not migrate non-primary associations`(): Unit = runBlocking {
-      service.migrateNomisEntity(
-        MigrationContext(
-          type = NON_ASSOCIATIONS,
-          migrationId = "2020-05-23T11:30:00",
-          estimatedCount = 100_200,
-          body = NonAssociationIdResponse("D5678EF", "A1234BC"),
-        ),
-      )
-
-      verify(telemetryClient).trackEvent(
-        eq("non-association-migration-non-primary-skipped"),
-        check {
-          assertThat(it["firstOffenderNo"]).isEqualTo("D5678EF")
-          assertThat(it["secondOffenderNo"]).isEqualTo("A1234BC")
-          assertThat(it["migrationId"]).isNotNull
-        },
-        isNull(),
-      )
-    }
-
-    @Test
     internal fun `will create a mapping between a new Non-Association and a NOMIS Non-Association`(): Unit =
-      runBlocking {
+      runTest {
         whenever(nomisApiService.getNonAssociations(any(), any())).thenReturn(
           listOf(aNomisNonAssociationResponse()),
         )
@@ -1036,7 +1014,7 @@ internal class NonAssociationsMigrationServiceTest {
 
     @Test
     internal fun `will not throw an exception (and place message back on queue) but create a new retry message`(): Unit =
-      runBlocking {
+      runTest {
         whenever(nomisApiService.getNonAssociations(any(), any())).thenReturn(listOf(aNomisNonAssociationResponse()))
         whenever(nonAssociationsService.migrateNonAssociation(any())).thenReturn(aNonAssociation())
 
@@ -1073,7 +1051,7 @@ internal class NonAssociationsMigrationServiceTest {
     @Nested
     inner class WhenMigratedAlready {
       @BeforeEach
-      internal fun setUp(): Unit = runBlocking {
+      internal fun setUp(): Unit = runTest {
         whenever(nonAssociationsMappingService.findNomisNonAssociationMapping(any(), any(), any())).thenReturn(
           NonAssociationMappingDto(
             nonAssociationId = 4321,
@@ -1086,7 +1064,7 @@ internal class NonAssociationsMigrationServiceTest {
       }
 
       @Test
-      internal fun `will do nothing`(): Unit = runBlocking {
+      internal fun `will do nothing`(): Unit = runTest {
         service.migrateNomisEntity(
           MigrationContext(
             type = NON_ASSOCIATIONS,
@@ -1103,7 +1081,7 @@ internal class NonAssociationsMigrationServiceTest {
 
   @Test
   internal fun `will create audit event on user cancel`() {
-    runBlocking {
+    runTest {
       whenever(migrationHistoryService.get("123-2020-01-01")).thenReturn(
         MigrationHistory(
           migrationId = "123-2020-01-01 ",
@@ -1135,7 +1113,7 @@ fun aNomisNonAssociationResponse(
   typeSequence: Int = 1,
   reason: String = "VIC",
   recipReason: String = "PER",
-  expiryDate: LocalDate? = LocalDate.parse("2023-10-26"),
+  expiryDate: LocalDate? = LocalDate.parse("2023-09-26"),
 ) =
   NonAssociationResponse(
     offenderNo = offenderNo,
@@ -1146,7 +1124,7 @@ fun aNomisNonAssociationResponse(
     type = "WING",
     updatedBy = "TJONES_ADM",
     authorisedBy = "Jim Smith",
-    effectiveDate = LocalDate.parse("2023-10-25"),
+    effectiveDate = LocalDate.parse("2023-09-25"),
     expiryDate = expiryDate,
     comment = "Fight on Wing C",
   )

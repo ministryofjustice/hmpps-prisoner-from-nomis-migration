@@ -23,6 +23,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationMinutes
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.toUpsertSyncRequest
+import java.time.LocalDate
 
 @Service
 class NonAssociationsMigrationService(
@@ -69,22 +70,11 @@ class NonAssociationsMigrationService(
     with(context.body) {
       log.info("attempting to migrate $this")
 
-      if (isNotPrimaryNonAssociation()) {
-        telemetryClient.trackEvent(
-          "non-association-migration-non-primary-skipped",
-          mapOf(
-            "firstOffenderNo" to offenderNo1,
-            "secondOffenderNo" to offenderNo2,
-            "migrationId" to context.migrationId,
-          ),
-        )
-        return
-      }
-
       // Determine all valid non-associations for this offender pair
       val nonAssociationPairs = nomisApiService.getNonAssociations(offenderNo1, offenderNo2)
+      val latestOpenTypeSequence = nonAssociationPairs.findLatestOpenTypeSequence()
       nonAssociationPairs.forEach { nomisNonAssociationResponse ->
-        if (nomisNonAssociationResponse.isOpenAndNewestOrClosed(nonAssociationPairs.size)) {
+        if (nomisNonAssociationResponse.isOpenAndNewestOrClosed(latestOpenTypeSequence)) {
           nonAssociationsMappingService.findNomisNonAssociationMapping(offenderNo1, offenderNo2, nomisNonAssociationResponse.typeSequence)
             ?.run {
               log.info(
@@ -193,9 +183,11 @@ class NonAssociationsMigrationService(
   }
 }
 
-// Two non-association events occur for each non-association relationship.
-// We call the primary association the one where the first offender number is less (string comparison) than the second.
-fun NonAssociationIdResponse.isNotPrimaryNonAssociation(): Boolean = offenderNo1 > offenderNo2
+fun NonAssociationResponse.isOpen() = expiryDate == null || expiryDate.isAfter(LocalDate.now())
 
-fun NonAssociationResponse.isOpenAndNewestOrClosed(nonAssociationPairCount: Int) =
-  typeSequence == nonAssociationPairCount || expiryDate != null
+fun List<NonAssociationResponse>.findLatestOpenTypeSequence(): Int {
+  return sortedByDescending { it.typeSequence }.firstOrNull { it.isOpen() }?.typeSequence ?: 0
+}
+
+fun NonAssociationResponse.isOpenAndNewestOrClosed(latestOpenNonAssociation: Int) =
+  typeSequence == latestOpenNonAssociation || !isOpen()
