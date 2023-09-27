@@ -8,13 +8,17 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
+import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.util.LinkedMultiValueMap
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
+import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentMigrateRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveActivityIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveAllocationIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetActivityResponse
@@ -203,6 +207,12 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
           .build()
       }
       .retrieve()
+      .onStatus({ it == HttpStatus.BAD_REQUEST }, { clientResponse ->
+        clientResponse.bodyToMono(ErrorResponse::class.java)
+          .flatMap { errorResponse ->
+            Mono.error(BadRequestException(errorResponse.userMessage ?: "Received a 400 calling /activities/ids"))
+          }
+      },)
       .bodyToMono(typeReference<RestResponsePage<FindActiveActivityIdsResponse>>())
       .awaitSingle()
 
@@ -231,6 +241,12 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
           .build()
       }
       .retrieve()
+      .onStatus({ it == HttpStatus.BAD_REQUEST }, { clientResponse ->
+        clientResponse.bodyToMono(ErrorResponse::class.java)
+          .flatMap { errorResponse ->
+            Mono.error(BadRequestException(errorResponse.userMessage ?: "Received a 400 calling /allocations/ids"))
+          }
+      },)
       .bodyToMono(typeReference<RestResponsePage<FindActiveAllocationIdsResponse>>())
       .awaitSingle()
 

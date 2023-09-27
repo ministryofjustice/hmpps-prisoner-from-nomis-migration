@@ -465,6 +465,25 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }
   }
 
+  fun stubGetActivitiesIdCountsError(badPrison: String) {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/activities/ids"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.BAD_REQUEST.value())
+            .withBody(
+              """{
+                "status": 400,
+                "userMessage": "Bad request: Prison with id=$badPrison does not exist"
+              }
+              """.trimIndent(),
+
+            ),
+        ),
+    )
+  }
+
   fun stubMultipleGetAllocationsIdCounts(totalElements: Long, pageSize: Long) {
     // for each page create a response for each id starting from 1 up to `totalElements`
 
@@ -488,6 +507,25 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
           ),
       )
     }
+  }
+
+  fun stubGetAllocationsIdCountsError(badPrison: String) {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/allocations/ids"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.BAD_REQUEST.value())
+            .withBody(
+              """{
+                "status": 400,
+                "userMessage": "Bad request: Prison with id=$badPrison does not exist"
+              }
+              """.trimIndent(),
+
+            ),
+        ),
+    )
   }
 
   fun verifyActivitiesGetIds(url: String, prisonId: String, excludeProgramCodes: List<String> = listOf(), courseActivityId: Long? = null) {

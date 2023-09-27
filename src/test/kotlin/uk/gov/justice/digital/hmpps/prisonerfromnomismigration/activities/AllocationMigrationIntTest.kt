@@ -695,6 +695,21 @@ class AllocationMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Test
+    internal fun `will return bad requests for invalid inputs`() {
+      nomisApi.stubGetAllocationsIdCountsError(badPrison = "notaprison")
+
+      webTestClient.get().uri("/migrate/allocations/ids?prisonId=notaprison&pageSize=3&page=0")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isBadRequest
+        .expectBody()
+        .jsonPath("$.userMessage").value<String> {
+          assertThat(it).contains("Prison with id=notaprison does not exist")
+        }
+    }
+
+    @Test
     internal fun `will return allocations and paging details`() {
       webTestClient.get().uri("/migrate/allocations/ids?prisonId=MDI&pageSize=3&page=0")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
