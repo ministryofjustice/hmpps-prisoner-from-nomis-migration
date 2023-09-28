@@ -188,7 +188,7 @@ curl --location --request POST 'https://nomis-sync-prisoner-mapping.hmpps.servic
 ##### DSP Migration 500 error resolution
 
 A 500 error returned from DPS service `POST /reported-adjudications/migrate` typically means we have previously migrated an adjudication and the migration service is trying to migrate the same record again.
-This can happen when the `POST /reported-adjudications/migrate` was successfully by a network issue meant the migration service never received the response. The migration service will retry the migration and the DPS service will return a 500 error since it detects a duplicate record.
+This can happen when the `POST /reported-adjudications/migrate` was successful but a network issue meant the migration service never received the response. The migration service will retry the migration and the DPS service will return a 500 error since it detects a duplicate record.
 
 Records in this state will end up on the DLQ and this query will find the unique adjudications:
 
