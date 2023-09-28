@@ -122,7 +122,7 @@ class AllocationsMigrationService(
       mapOf(
         "nomisAllocationId" to nomisAllocationId.toString(),
         "dpsAllocationId" to activityAllocationId.toString(),
-        "activityId" to activityId.toString(),
+        "dpsActivityId" to activityId.toString(),
         "migrationId" to this.label,
       ),
       null,

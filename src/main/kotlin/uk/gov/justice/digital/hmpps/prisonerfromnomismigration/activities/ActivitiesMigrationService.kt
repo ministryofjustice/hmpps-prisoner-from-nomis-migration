@@ -119,8 +119,8 @@ class ActivitiesMigrationService(
       "${ACTIVITIES.telemetryName}-migration-entity-migrated",
       mapOf(
         "nomisCourseActivityId" to nomisCourseActivityId.toString(),
-        "activityId" to activityId.toString(),
-        "activityId2" to activityId2?.toString(),
+        "dpsActivityId" to activityId.toString(),
+        "dpsActivityId2" to activityId2?.toString(),
         "migrationId" to this.label,
       ),
       null,
