@@ -723,8 +723,8 @@ class ActivitiesMigrationServiceTest {
           assertThat(it).containsExactlyInAnyOrderEntriesOf(
             mapOf(
               "nomisCourseActivityId" to "123",
-              "activityId" to "456",
-              "activityId2" to "789",
+              "dpsActivityId" to "456",
+              "dpsActivityId2" to "789",
               "migrationId" to "2020-05-23T11:30:00",
             ),
           )
