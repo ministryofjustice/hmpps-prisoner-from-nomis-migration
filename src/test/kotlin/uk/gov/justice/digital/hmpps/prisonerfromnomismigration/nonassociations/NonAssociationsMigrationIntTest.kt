@@ -248,21 +248,23 @@ class NonAssociationsMigrationIntTest : SqsIntegrationTestBase() {
       // doesn't retry
       mappingApi.verifyCreateMappingNonAssociationIds(arrayOf(1234), times = 1)
 
-      verify(telemetryClient).trackEvent(
-        eq("nomis-migration-non-association-duplicate"),
-        check {
-          assertThat(it["migrationId"]).isNotNull
-          assertThat(it["duplicateNonAssociationId"]).isEqualTo("1234")
-          assertThat(it["duplicateFirstOffenderNo"]).isEqualTo("A1234BC")
-          assertThat(it["duplicateSecondOffenderNo"]).isEqualTo("D5678EF")
-          assertThat(it["duplicateNomisTypeSequence"]).isEqualTo("2")
-          assertThat(it["existingNonAssociationId"]).isEqualTo("4321")
-          assertThat(it["existingFirstOffenderNo"]).isEqualTo("A1234BC")
-          assertThat(it["existingSecondOffenderNo"]).isEqualTo("D5678EF")
-          assertThat(it["existingNomisTypeSequence"]).isEqualTo("2")
-        },
-        isNull(),
-      )
+      await untilAsserted {
+        verify(telemetryClient).trackEvent(
+          eq("nomis-migration-non-association-duplicate"),
+          check {
+            assertThat(it["migrationId"]).isNotNull
+            assertThat(it["duplicateNonAssociationId"]).isEqualTo("1234")
+            assertThat(it["duplicateFirstOffenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["duplicateSecondOffenderNo"]).isEqualTo("D5678EF")
+            assertThat(it["duplicateNomisTypeSequence"]).isEqualTo("2")
+            assertThat(it["existingNonAssociationId"]).isEqualTo("4321")
+            assertThat(it["existingFirstOffenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["existingSecondOffenderNo"]).isEqualTo("D5678EF")
+            assertThat(it["existingNomisTypeSequence"]).isEqualTo("2")
+          },
+          isNull(),
+        )
+      }
     }
   }
 
