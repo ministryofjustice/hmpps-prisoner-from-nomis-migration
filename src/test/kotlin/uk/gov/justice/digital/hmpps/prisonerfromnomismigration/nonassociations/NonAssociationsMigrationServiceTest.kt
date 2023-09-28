@@ -860,7 +860,6 @@ internal class NonAssociationsMigrationServiceTest {
             lastModifiedByUsername = "TJONES_ADM",
             effectiveFromDate = LocalDate.parse("2023-09-25"),
             expiryDate = LocalDate.parse("2023-09-26"),
-
           ),
         ),
       )
@@ -936,6 +935,74 @@ internal class NonAssociationsMigrationServiceTest {
         ),
       )
     }
+
+    @Test
+    internal fun `will migrate non-association when firstOffenderNo is greater than secondOffenderNo`(): Unit = runTest {
+      whenever(nomisApiService.getNonAssociations(any(), any())).thenReturn(
+        listOf(
+          aNomisNonAssociationResponse(),
+        ),
+      )
+
+      service.migrateNomisEntity(
+        MigrationContext(
+          type = NON_ASSOCIATIONS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = NonAssociationIdResponse("D5678EF", "A1234BC"),
+        ),
+      )
+
+      verify(nonAssociationsService).migrateNonAssociation(
+        eq(
+          UpsertSyncRequest(
+            firstPrisonerNumber = "A1234BC",
+            firstPrisonerReason = UpsertSyncRequest.FirstPrisonerReason.VIC,
+            secondPrisonerNumber = "D5678EF",
+            secondPrisonerReason = UpsertSyncRequest.SecondPrisonerReason.PER,
+            restrictionType = UpsertSyncRequest.RestrictionType.WING,
+            comment = "Fight on Wing C",
+            authorisedBy = "Jim Smith",
+            lastModifiedByUsername = "TJONES_ADM",
+            effectiveFromDate = LocalDate.parse("2023-09-25"),
+            expiryDate = LocalDate.parse("2023-09-26"),
+
+          ),
+        ),
+      )
+    }
+
+    @Test
+    internal fun `will create a correctly ordered mapping when firstOffenderNo is greater than secondOffenderNo`(): Unit =
+      runTest {
+        whenever(nomisApiService.getNonAssociations(any(), any())).thenReturn(
+          listOf(aNomisNonAssociationResponse()),
+        )
+        whenever(nonAssociationsService.migrateNonAssociation(any())).thenReturn(
+          aNonAssociation(),
+        )
+
+        service.migrateNomisEntity(
+          MigrationContext(
+            type = NON_ASSOCIATIONS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = NonAssociationIdResponse("D5678EF", "A1234BC"),
+          ),
+        )
+
+        verify(nonAssociationsMappingService).createMapping(
+          NonAssociationMappingDto(
+            nonAssociationId = 4321,
+            firstOffenderNo = "A1234BC",
+            secondOffenderNo = "D5678EF",
+            nomisTypeSequence = 1,
+            label = "2020-05-23T11:30:00",
+            mappingType = NonAssociationMappingDto.MappingType.MIGRATED,
+          ),
+          object : ParameterizedTypeReference<DuplicateErrorResponse<NonAssociationMappingDto>>() {},
+        )
+      }
 
     @Test
     internal fun `will add telemetry events for migrated and non-migrated entries`(): Unit = runTest {

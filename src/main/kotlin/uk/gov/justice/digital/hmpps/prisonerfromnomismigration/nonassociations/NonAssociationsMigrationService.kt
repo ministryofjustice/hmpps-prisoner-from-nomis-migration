@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
@@ -70,12 +69,15 @@ class NonAssociationsMigrationService(
     with(context.body) {
       log.info("attempting to migrate $this")
 
+      val smallestOffenderNo = if (offenderNo1 < offenderNo2) offenderNo1 else offenderNo2
+      val largestOffenderNo = if (offenderNo1 < offenderNo2) offenderNo2 else offenderNo1
+
       // Determine all valid non-associations for this offender pair
-      val nonAssociationPairs = nomisApiService.getNonAssociations(offenderNo1, offenderNo2)
+      val nonAssociationPairs = nomisApiService.getNonAssociations(smallestOffenderNo, largestOffenderNo)
       val latestOpenTypeSequence = nonAssociationPairs.findLatestOpenTypeSequence()
       nonAssociationPairs.forEach { nomisNonAssociationResponse ->
         if (nomisNonAssociationResponse.isOpenAndNewestOrClosed(latestOpenTypeSequence)) {
-          nonAssociationsMappingService.findNomisNonAssociationMapping(offenderNo1, offenderNo2, nomisNonAssociationResponse.typeSequence)
+          nonAssociationsMappingService.findNomisNonAssociationMapping(smallestOffenderNo, largestOffenderNo, nomisNonAssociationResponse.typeSequence)
             ?.run {
               log.info(
                 "Will not migrate the non-association since it is migrated already, NOMIS firstOffenderNo is $firstOffenderNo, " +
@@ -89,8 +91,8 @@ class NonAssociationsMigrationService(
                 .also {
                   createNonAssociationMapping(
                     nonAssociationId = it.id,
-                    firstOffenderNo = offenderNo1,
-                    secondOffenderNo = offenderNo2,
+                    firstOffenderNo = smallestOffenderNo,
+                    secondOffenderNo = largestOffenderNo,
                     nomisTypeSequence = nomisNonAssociationResponse.typeSequence,
                     context = context,
                   )
@@ -99,8 +101,8 @@ class NonAssociationsMigrationService(
                 "non-associations-migration-entity-migrated",
                 mapOf(
                   "nonAssociationId" to migratedNonAssociation.id.toString(),
-                  "firstOffenderNo" to offenderNo1,
-                  "secondOffenderNo" to offenderNo2,
+                  "firstOffenderNo" to smallestOffenderNo,
+                  "secondOffenderNo" to largestOffenderNo,
                   "nomisTypeSequence" to nomisNonAssociationResponse.typeSequence.toString(),
                   "migrationId" to context.migrationId,
                 ),
@@ -111,8 +113,8 @@ class NonAssociationsMigrationService(
           telemetryClient.trackEvent(
             "non-association-migration-entity-ignored",
             mapOf(
-              "firstOffenderNo" to offenderNo1,
-              "secondOffenderNo" to offenderNo2,
+              "firstOffenderNo" to smallestOffenderNo,
+              "secondOffenderNo" to largestOffenderNo,
               "nomisTypeSequence" to nomisNonAssociationResponse.typeSequence.toString(),
               "migrationId" to context.migrationId,
             ),
