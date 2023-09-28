@@ -183,9 +183,82 @@ curl --location --request POST 'https://nomis-sync-prisoner-mapping.hmpps.servic
     "label": "2022-02-14T09:58:45"
 }'
 ```
+#### Adjudications
+ 
+##### DSP Migration 500 error resolution
+
+A 500 error returned from DPS service `POST /reported-adjudications/migrate` typically means we have previously migrated an adjudication and the migration service is trying to migrate the same record again.
+This can happen when the `POST /reported-adjudications/migrate` was successful but a network issue meant the migration service never received the response. The migration service will retry the migration and the DPS service will return a 500 error since it detects a duplicate record.
+
+Records in this state will end up on the DLQ and this query will find the unique adjudications:
+
+```azure
+traces
+| where timestamp > todatetime('2023-09-26T11:00:00')
+| where timestamp < todatetime('2023-09-26T11:00:20')
+| where operation_Name == "POST /reported-adjudications/migrate"
+| summarize by  message
+```
+
+Where the correct time range for a retry attempt is supplied. This should return results something like:
+
+```ERROR: duplicate key value violates unique constraint "unique_report_number" Detail: Key (charge_number)=(3057925-1) already exists.```
+
+Given this we have enough information to call the NOMIS API and the DPS Adjudication API to manually create a mapping record.
+
+Call the NOMIS API as follows:
+
+Requires a token with `NOMIS_ADJUDICATIONS` 
+
+`https://nomis-prisoner.aks-live-1.studio-hosting.service.justice.gov.uk/adjudications/adjudication-number/3057925/charge-sequence/1`
+
+From this extract the prison id (agency Id) for the incident since this is needed for the DPS call.
+
+Call the DPS API as follows:
+
+Requires a token with `VIEW_ADJUDICATIONS`
+
+Set Header `Active-Caseload` to the prison id from the NOMIS call
+`https://manage-adjudications-api.hmpps.service.justice.gov.uk/reported-adjudications/3057925-1/v2`
 
 
+Lastly we need to create manually a mapping record by POSTing an adjudication mapping record to the mapping service.
 
+POST url is `https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk/mapping/adjudications/all`
+
+Requires a token with `NOMIS_ADJUDICATIONS`
+
+Body would be similar to this 
+```json
+{
+  "label": "2023-09-26T07:59:02",
+  "mappingType": "MIGRATED",
+  "adjudicationId": {
+        "adjudicationNumber": "3057925",
+        "chargeNumber": "3057925-1",
+        "chargeSequence": "1"
+    },
+    "hearings": [
+        {
+            "dpsHearingId": "3755641",
+            "nomisHearingId": "3434190"
+        }
+    ],
+    "punishments": [
+        {
+            "dpsPunishmentId": "2980481",
+            "nomisBookingId": "2375870",
+            "nomisSanctionSequence": "13"
+        },
+        {
+            "dpsPunishmentId": "2980479",
+            "nomisBookingId": "2375870",
+            "nomisSanctionSequence": "14"
+        }
+    ]
+}
+```
+where the IDs are extracted from the DPS and NOMIS calls and where label is this migration id.
 ### Architecture
 
 Architecture decision records start [here](doc/architecture/decisions/0001-use-adr.md)
