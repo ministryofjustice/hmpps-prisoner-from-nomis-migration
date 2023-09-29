@@ -203,6 +203,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubMultipleGetVisitsCounts(totalElements = 1, pageSize = 10)
       nomisApi.stubMultipleGetVisits(totalElements = 1)
       mappingApi.stubAllMappingsNotFound(VISITS_GET_MAPPING_URL)
+      mappingApi.stubVisitMappingByMigrationId()
       mappingApi.stubRoomMapping()
       visitsApi.stubCreateVisit()
       mappingApi.stubMappingCreateFailureFollowedBySuccess(VISITS_CREATE_MAPPING_URL)
@@ -222,6 +223,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubMultipleGetVisitsCounts(totalElements = 1, pageSize = 10)
       nomisApi.stubMultipleGetVisits(totalElements = 1)
       mappingApi.stubVisitsCreateConflict(existingVsipId = 12, duplicateVsipId = 654321, nomisVisitId = 1)
+      mappingApi.stubVisitMappingByMigrationId()
       visitsApi.stubCreateVisit()
 
       webTestClient.performMigration()

@@ -54,6 +54,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
     nomisApi.stubGetInitialCount(ACTIVITIES_ID_URL, entities.toLong()) { activitiesIdsPagedResponse(it) }
     nomisApi.stubMultipleGetActivitiesIdCounts(totalElements = entities.toLong(), pageSize = 3)
     mappingApi.stubAllMappingsNotFound(ACTIVITIES_GET_MAPPING_URL)
+    mappingApi.stubActivitiesMappingByMigrationId()
     nomisApi.stubMultipleGetActivities(entities)
     activitiesApi.stubCreateActivityForMigration()
     stubCreateMapping()

@@ -171,6 +171,7 @@ class NonAssociationsMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubMultipleGetNonAssociationIdCounts(totalElements = 1, pageSize = 10)
       nomisApi.stubMultipleGetNonAssociations(1..1)
       mappingApi.stubGetAnyNonAssociationNotFound()
+      mappingApi.stubNonAssociationsMappingByMigrationId()
       nonAssociationsApi.stubUpsertNonAssociationForMigration(654321)
       mappingApi.stubMappingCreateFailureFollowedBySuccess(NON_ASSOCIATIONS_CREATE_MAPPING_URL)
 
@@ -189,6 +190,7 @@ class NonAssociationsMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubMultipleGetNonAssociationIdCounts(totalElements = 1, pageSize = 10)
       nomisApi.stubMultipleGetNonAssociations(1..1)
       mappingApi.stubGetAnyNonAssociationNotFound()
+      mappingApi.stubNonAssociationsMappingByMigrationId()
       nonAssociationsApi.stubUpsertNonAssociationForMigration(1234)
       mappingApi.stubNonAssociationMappingCreateConflict(4321, 1234)
 

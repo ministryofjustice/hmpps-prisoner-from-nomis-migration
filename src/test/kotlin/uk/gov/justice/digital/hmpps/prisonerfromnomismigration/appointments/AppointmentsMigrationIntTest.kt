@@ -178,6 +178,7 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubMultipleGetAppointmentIdCounts(totalElements = 1, pageSize = 10)
       nomisApi.stubMultipleGetAppointments(1..1)
       mappingApi.stubAllMappingsNotFound(APPOINTMENTS_GET_MAPPING_URL)
+      mappingApi.stubAppointmentMappingByMigrationId()
       activitiesApi.stubCreateAppointmentForMigration(654321L)
       mappingApi.stubMappingCreateFailureFollowedBySuccess(APPOINTMENTS_CREATE_MAPPING_URL)
 
@@ -202,6 +203,7 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
       activitiesApi.stubCreateAppointmentForMigration(123)
       mappingApi.stubAppointmentMappingCreateConflict(10, 11, 1)
       mappingApi.stubNomisAppointmentsMappingFound(2)
+      mappingApi.stubAppointmentMappingByMigrationId()
 
       webTestClient.performMigration("""{ "prisonIds": ["MDI"] }""")
 

@@ -39,7 +39,7 @@ class MappingApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallb
     const val SENTENCE_ADJUSTMENTS_GET_MAPPING_URL =
       "/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id"
     const val KEYDATE_ADJUSTMENTS_GET_MAPPING_URL =
-      "/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id"
+      "/mapping/sentencing/adjustments/nomis-adjustment-category/KEY_DATE/nomis-adjustment-id"
     const val ADJUSTMENTS_CREATE_MAPPING_URL = "/mapping/sentencing/adjustments"
     const val NON_ASSOCIATIONS_CREATE_MAPPING_URL = "/mapping/non-associations"
   }

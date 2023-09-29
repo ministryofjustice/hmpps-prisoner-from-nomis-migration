@@ -548,6 +548,7 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubGetSingleAdjudicationId(adjudicationNumber = 654321)
       nomisApi.stubGetAdjudication(adjudicationNumber = 654321, chargeSequence = 1)
       mappingApi.stubAllMappingsNotFound(ADJUDICATIONS_GET_MAPPING_URL)
+      mappingApi.stubAdjudicationMappingByMigrationId()
       adjudicationsApi.stubCreateAdjudicationForMigration(654321L)
       mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/adjudications/all")
 

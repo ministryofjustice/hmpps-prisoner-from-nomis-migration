@@ -57,6 +57,7 @@ class AllocationMigrationIntTest : SqsIntegrationTestBase() {
     }
     nomisApi.stubMultipleGetAllocationsIdCounts(totalElements = entities.toLong(), pageSize = 3)
     mappingApi.stubAllMappingsNotFound(MappingApiExtension.ALLOCATIONS_GET_MAPPING_URL)
+    mappingApi.stubAllocationsMappingByMigrationId()
     nomisApi.stubMultipleGetAllocations(entities)
     stubGetActivityMappings()
     activitiesApi.stubCreateAllocationForMigration(entities)
