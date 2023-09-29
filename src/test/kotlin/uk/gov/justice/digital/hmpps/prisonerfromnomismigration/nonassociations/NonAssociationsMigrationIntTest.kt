@@ -4,9 +4,7 @@ import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
-import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilAsserted
-import org.awaitility.kotlin.untilCallTo
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -19,9 +17,8 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.ReactiveHttpOutputMessage
+import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.returnResult
-import org.springframework.web.reactive.function.BodyInserter
 import org.springframework.web.reactive.function.BodyInserters
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
@@ -57,11 +54,31 @@ class NonAssociationsMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().is2xxSuccessful
     }
 
+    private fun WebTestClient.performMigration(body: String = "{ }") =
+      post().uri("/migrate/non-associations")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_NON_ASSOCIATIONS")))
+        .header("Content-Type", "application/json")
+        .body(BodyInserters.fromValue(body))
+        .exchange()
+        .expectStatus().isAccepted
+        .also {
+          waitUntilCompleted()
+        }
+
+    private fun waitUntilCompleted() =
+      await atMost Duration.ofSeconds(60) untilAsserted {
+        verify(telemetryClient).trackEvent(
+          eq("non-associations-migration-completed"),
+          any(),
+          isNull(),
+        )
+      }
+
     @Test
     internal fun `must have valid token to start migration`() {
       webTestClient.post().uri("/migrate/non-associations")
         .header("Content-Type", "application/json")
-        .body(someMigrationFilter())
+        .body(BodyInserters.fromValue("{ }"))
         .exchange()
         .expectStatus().isUnauthorized
     }
@@ -71,7 +88,7 @@ class NonAssociationsMigrationIntTest : SqsIntegrationTestBase() {
       webTestClient.post().uri("/migrate/non-associations")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
         .header("Content-Type", "application/json")
-        .body(someMigrationFilter())
+        .body(BodyInserters.fromValue("{ }"))
         .exchange()
         .expectStatus().isForbidden
     }
@@ -88,29 +105,14 @@ class NonAssociationsMigrationIntTest : SqsIntegrationTestBase() {
       nonAssociationsApi.stubUpsertNonAssociationForMigration()
       mappingApi.stubNonAssociationsMappingByMigrationId(count = 86)
 
-      webTestClient.post().uri("/migrate/non-associations")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_NON_ASSOCIATIONS")))
-        .header("Content-Type", "application/json")
-        .body(
-          BodyInserters.fromValue(
-            """
-            {
-              "fromDate": "2020-01-01",
-              "toDate": "2020-01-02"
-            }
-            """.trimIndent(),
-          ),
-        )
-        .exchange()
-        .expectStatus().isAccepted
-
-      await atMost Duration.ofSeconds(60) untilAsserted {
-        verify(telemetryClient).trackEvent(
-          eq("non-associations-migration-completed"),
-          any(),
-          isNull(),
-        )
-      }
+      webTestClient.performMigration(
+        """
+          {
+            "fromDate": "2020-01-01",
+            "toDate": "2020-01-02"
+          }
+        """.trimIndent(),
+      )
 
       // check filter matches what is passed in
       nomisApi.verifyGetIdsCount(
@@ -139,27 +141,7 @@ class NonAssociationsMigrationIntTest : SqsIntegrationTestBase() {
         SendMessageRequest.builder().queueUrl(nonAssociationsMigrationDlqUrl).messageBody("""{ "message": "some error" }""").build(),
       ).get()
 
-      webTestClient.post().uri("/migrate/non-associations")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_NON_ASSOCIATIONS")))
-        .header("Content-Type", "application/json")
-        .body(
-          BodyInserters.fromValue(
-            """
-            {
-            }
-            """.trimIndent(),
-          ),
-        )
-        .exchange()
-        .expectStatus().isAccepted
-
-      await atMost Duration.ofSeconds(60) untilAsserted {
-        verify(telemetryClient).trackEvent(
-          eq("non-associations-migration-completed"),
-          any(),
-          isNull(),
-        )
-      }
+      webTestClient.performMigration()
 
       verify(telemetryClient).trackEvent(eq("non-associations-migration-started"), any(), isNull())
       verify(telemetryClient, times(26)).trackEvent(eq("non-associations-migration-entity-migrated"), any(), isNull())
@@ -192,22 +174,7 @@ class NonAssociationsMigrationIntTest : SqsIntegrationTestBase() {
       nonAssociationsApi.stubUpsertNonAssociationForMigration(654321)
       mappingApi.stubMappingCreateFailureFollowedBySuccess(NON_ASSOCIATIONS_CREATE_MAPPING_URL)
 
-      webTestClient.post().uri("/migrate/non-associations")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_NON_ASSOCIATIONS")))
-        .header("Content-Type", "application/json")
-        .body(
-          BodyInserters.fromValue(
-            """
-            {
-            }
-            """.trimIndent(),
-          ),
-        )
-        .exchange()
-        .expectStatus().isAccepted
-
-      // wait for all mappings to be created before verifying
-      await untilCallTo { mappingApi.createMappingCount(NON_ASSOCIATIONS_CREATE_MAPPING_URL) } matches { it == 2 }
+      webTestClient.performMigration()
 
       // check that one non-association is created
       assertThat(nonAssociationsApi.createNonAssociationMigrationCount()).isEqualTo(1)
@@ -225,22 +192,7 @@ class NonAssociationsMigrationIntTest : SqsIntegrationTestBase() {
       nonAssociationsApi.stubUpsertNonAssociationForMigration(1234)
       mappingApi.stubNonAssociationMappingCreateConflict(4321, 1234)
 
-      webTestClient.post().uri("/migrate/non-associations")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_NON_ASSOCIATIONS")))
-        .header("Content-Type", "application/json")
-        .body(
-          BodyInserters.fromValue(
-            """
-            {
-            }
-            """.trimIndent(),
-          ),
-        )
-        .exchange()
-        .expectStatus().isAccepted
-
-      // wait for all mappings to be created before verifying
-      await untilCallTo { mappingApi.createMappingCount(NON_ASSOCIATIONS_CREATE_MAPPING_URL) } matches { it == 1 }
+      webTestClient.performMigration()
 
       // check that one non-association is created
       assertThat(nonAssociationsApi.createNonAssociationMigrationCount()).isEqualTo(1)
@@ -248,23 +200,21 @@ class NonAssociationsMigrationIntTest : SqsIntegrationTestBase() {
       // doesn't retry
       mappingApi.verifyCreateMappingNonAssociationIds(arrayOf(1234), times = 1)
 
-      await untilAsserted {
-        verify(telemetryClient).trackEvent(
-          eq("nomis-migration-non-association-duplicate"),
-          check {
-            assertThat(it["migrationId"]).isNotNull
-            assertThat(it["duplicateNonAssociationId"]).isEqualTo("1234")
-            assertThat(it["duplicateFirstOffenderNo"]).isEqualTo("A1234BC")
-            assertThat(it["duplicateSecondOffenderNo"]).isEqualTo("D5678EF")
-            assertThat(it["duplicateNomisTypeSequence"]).isEqualTo("2")
-            assertThat(it["existingNonAssociationId"]).isEqualTo("4321")
-            assertThat(it["existingFirstOffenderNo"]).isEqualTo("A1234BC")
-            assertThat(it["existingSecondOffenderNo"]).isEqualTo("D5678EF")
-            assertThat(it["existingNomisTypeSequence"]).isEqualTo("2")
-          },
-          isNull(),
-        )
-      }
+      verify(telemetryClient).trackEvent(
+        eq("nomis-migration-non-association-duplicate"),
+        check {
+          assertThat(it["migrationId"]).isNotNull
+          assertThat(it["duplicateNonAssociationId"]).isEqualTo("1234")
+          assertThat(it["duplicateFirstOffenderNo"]).isEqualTo("A1234BC")
+          assertThat(it["duplicateSecondOffenderNo"]).isEqualTo("D5678EF")
+          assertThat(it["duplicateNomisTypeSequence"]).isEqualTo("2")
+          assertThat(it["existingNonAssociationId"]).isEqualTo("4321")
+          assertThat(it["existingFirstOffenderNo"]).isEqualTo("A1234BC")
+          assertThat(it["existingSecondOffenderNo"]).isEqualTo("D5678EF")
+          assertThat(it["existingNomisTypeSequence"]).isEqualTo("2")
+        },
+        isNull(),
+      )
     }
   }
 
@@ -687,10 +637,3 @@ class NonAssociationsMigrationIntTest : SqsIntegrationTestBase() {
     }
   }
 }
-
-fun someMigrationFilter(): BodyInserter<String, ReactiveHttpOutputMessage> = BodyInserters.fromValue(
-  """
-  {
-  }
-  """.trimIndent(),
-)

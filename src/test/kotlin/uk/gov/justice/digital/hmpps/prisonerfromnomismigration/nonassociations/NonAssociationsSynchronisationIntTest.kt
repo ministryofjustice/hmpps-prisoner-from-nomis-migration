@@ -480,21 +480,23 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
           // doesn't retry
           mappingApi.verifyCreateMappingNonAssociation(arrayOf(duplicationNonAssociationId), times = 1)
 
-          verify(telemetryClient).trackEvent(
-            eq("from-nomis-synch-non-association-duplicate"),
-            check {
-              assertThat(it["duplicateNonAssociationId"]).isEqualTo("$duplicationNonAssociationId")
-              assertThat(it["duplicateFirstOffenderNo"]).isEqualTo("A1234BC")
-              assertThat(it["duplicateSecondOffenderNo"]).isEqualTo("D5678EF")
-              assertThat(it["duplicateNomisTypeSequence"]).isEqualTo("2")
-              assertThat(it["existingNonAssociationId"]).isEqualTo("$NON_ASSOCIATION_ID")
-              assertThat(it["existingFirstOffenderNo"]).isEqualTo("A1234BC")
-              assertThat(it["existingSecondOffenderNo"]).isEqualTo("D5678EF")
-              assertThat(it["existingNomisTypeSequence"]).isEqualTo("2")
-              assertThat(it["migrationId"]).isNull()
-            },
-            isNull(),
-          )
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("from-nomis-synch-non-association-duplicate"),
+              check {
+                assertThat(it["duplicateNonAssociationId"]).isEqualTo("$duplicationNonAssociationId")
+                assertThat(it["duplicateFirstOffenderNo"]).isEqualTo("A1234BC")
+                assertThat(it["duplicateSecondOffenderNo"]).isEqualTo("D5678EF")
+                assertThat(it["duplicateNomisTypeSequence"]).isEqualTo("2")
+                assertThat(it["existingNonAssociationId"]).isEqualTo("$NON_ASSOCIATION_ID")
+                assertThat(it["existingFirstOffenderNo"]).isEqualTo("A1234BC")
+                assertThat(it["existingSecondOffenderNo"]).isEqualTo("D5678EF")
+                assertThat(it["existingNomisTypeSequence"]).isEqualTo("2")
+                assertThat(it["migrationId"]).isNull()
+              },
+              isNull(),
+            )
+          }
         }
       }
     }

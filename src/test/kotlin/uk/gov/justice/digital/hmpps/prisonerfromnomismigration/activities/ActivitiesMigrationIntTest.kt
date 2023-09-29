@@ -83,7 +83,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
         }
 
     private fun waitUntilCompleted() =
-      await.atMost(Duration.ofSeconds(31)) untilAsserted {
+      await atMost Duration.ofSeconds(31) untilAsserted {
         verify(telemetryClient).trackEvent(
           eq("activity-migration-completed"),
           any(),
