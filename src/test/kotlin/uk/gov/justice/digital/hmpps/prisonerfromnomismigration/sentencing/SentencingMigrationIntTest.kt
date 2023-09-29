@@ -181,6 +181,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubMultipleGetSentenceAdjustments(1..1)
       mappingApi.stubAllMappingsNotFound(SENTENCE_ADJUSTMENTS_GET_MAPPING_URL)
       mappingApi.stubAllMappingsNotFound(KEYDATE_ADJUSTMENTS_GET_MAPPING_URL)
+      mappingApi.stubSentenceAdjustmentMappingByMigrationId()
       sentencingApi.stubCreateSentencingAdjustmentForMigration("654321")
       mappingApi.stubMappingCreateFailureFollowedBySuccess(ADJUSTMENTS_CREATE_MAPPING_URL)
 
@@ -203,6 +204,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubMultipleGetSentenceAdjustments(1..1)
       mappingApi.stubAllMappingsNotFound(SENTENCE_ADJUSTMENTS_GET_MAPPING_URL)
       mappingApi.stubAllMappingsNotFound(KEYDATE_ADJUSTMENTS_GET_MAPPING_URL)
+      mappingApi.stubSentenceAdjustmentMappingByMigrationId()
       sentencingApi.stubCreateSentencingAdjustmentForMigration("123")
       mappingApi.stubSentenceAdjustmentMappingCreateConflict()
 
@@ -605,6 +607,8 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubGetInitialCount(NomisApiExtension.ADJUSTMENTS_ID_URL, count) { adjustmentIdsPagedResponse(it) }
       nomisApi.stubMultipleGetAdjustmentIdCounts(totalElements = count, pageSize = 10)
       mappingApi.stubSentenceAdjustmentMappingByMigrationId(count = count.toInt())
+      mappingApi.stubAllMappingsNotFound(SENTENCE_ADJUSTMENTS_GET_MAPPING_URL)
+      mappingApi.stubAllMappingsNotFound(KEYDATE_ADJUSTMENTS_GET_MAPPING_URL)
 
       val migrationId = webTestClient.post().uri("/migrate/sentencing")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
