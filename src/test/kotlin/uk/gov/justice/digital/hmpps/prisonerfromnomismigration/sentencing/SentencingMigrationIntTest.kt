@@ -9,7 +9,6 @@ import org.awaitility.kotlin.untilAsserted
 import org.awaitility.kotlin.untilCallTo
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -21,6 +20,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ReactiveHttpOutputMessage
+import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.returnResult
 import org.springframework.web.reactive.function.BodyInserter
 import org.springframework.web.reactive.function.BodyInserters
@@ -60,6 +60,26 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().is2xxSuccessful
     }
 
+    private fun WebTestClient.performMigration(body: String = "{ }") =
+      post().uri("/migrate/sentencing")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
+        .header("Content-Type", "application/json")
+        .body(BodyInserters.fromValue(body))
+        .exchange()
+        .expectStatus().isAccepted
+        .also {
+          waitUntilCompleted()
+        }
+
+    private fun waitUntilCompleted() =
+      await atMost Duration.ofSeconds(60) untilAsserted {
+        verify(telemetryClient).trackEvent(
+          eq("sentencing-adjustments-migration-completed"),
+          any(),
+          isNull(),
+        )
+      }
+
     @Test
     internal fun `must have valid token to start migration`() {
       webTestClient.post().uri("/migrate/sentencing")
@@ -92,29 +112,14 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
       sentencingApi.stubCreateSentencingAdjustmentForMigration()
       mappingApi.stubSentenceAdjustmentMappingByMigrationId(count = 86)
 
-      webTestClient.post().uri("/migrate/sentencing")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
-        .header("Content-Type", "application/json")
-        .body(
-          BodyInserters.fromValue(
-            """
-            {
-              "fromDate": "2020-01-01",
-              "toDate": "2020-01-02"
-            }
-            """.trimIndent(),
-          ),
-        )
-        .exchange()
-        .expectStatus().isAccepted
-
-      await atMost Duration.ofSeconds(60) untilAsserted {
-        verify(telemetryClient).trackEvent(
-          eq("sentencing-adjustments-migration-completed"),
-          any(),
-          isNull(),
-        )
-      }
+      webTestClient.performMigration(
+        """
+          {
+            "fromDate": "2020-01-01",
+            "toDate": "2020-01-02"
+          }
+        """.trimIndent(),
+      )
 
       // check filter matches what is passed in
       nomisApi.verifyGetIdsCount(
@@ -145,27 +150,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
         SendMessageRequest.builder().queueUrl(sentencingMigrationDlqUrl).messageBody("""{ "message": "some error" }""").build(),
       ).get()
 
-      webTestClient.post().uri("/migrate/sentencing")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
-        .header("Content-Type", "application/json")
-        .body(
-          BodyInserters.fromValue(
-            """
-            {
-            }
-            """.trimIndent(),
-          ),
-        )
-        .exchange()
-        .expectStatus().isAccepted
-
-      await atMost Duration.ofSeconds(60) untilAsserted {
-        verify(telemetryClient).trackEvent(
-          eq("sentencing-adjustments-migration-completed"),
-          any(),
-          isNull(),
-        )
-      }
+      webTestClient.performMigration()
 
       verify(telemetryClient).trackEvent(eq("sentencing-adjustments-migration-started"), any(), isNull())
       verify(telemetryClient, times(26)).trackEvent(eq("sentencing-adjustments-migration-entity-migrated"), any(), isNull())
@@ -199,19 +184,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
       sentencingApi.stubCreateSentencingAdjustmentForMigration("654321")
       mappingApi.stubMappingCreateFailureFollowedBySuccess(ADJUSTMENTS_CREATE_MAPPING_URL)
 
-      webTestClient.post().uri("/migrate/sentencing")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
-        .header("Content-Type", "application/json")
-        .body(
-          BodyInserters.fromValue(
-            """
-            {
-            }
-            """.trimIndent(),
-          ),
-        )
-        .exchange()
-        .expectStatus().isAccepted
+      webTestClient.performMigration()
 
       // wait for all mappings to be created before verifying
       await untilCallTo { mappingApi.createMappingCount(ADJUSTMENTS_CREATE_MAPPING_URL) } matches { it == 2 }
@@ -224,7 +197,6 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Test
-    @Disabled
     internal fun `it will not retry after a 409 (duplicate adjustment written to Sentencing API)`() {
       nomisApi.stubGetInitialCount(NomisApiExtension.ADJUSTMENTS_ID_URL, 1) { adjustmentIdsPagedResponse(it) }
       nomisApi.stubMultipleGetAdjustmentIdCounts(totalElements = 1, pageSize = 10)
@@ -234,19 +206,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
       sentencingApi.stubCreateSentencingAdjustmentForMigration("123")
       mappingApi.stubSentenceAdjustmentMappingCreateConflict()
 
-      webTestClient.post().uri("/migrate/sentencing")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
-        .header("Content-Type", "application/json")
-        .body(
-          BodyInserters.fromValue(
-            """
-            {
-            }
-            """.trimIndent(),
-          ),
-        )
-        .exchange()
-        .expectStatus().isAccepted
+      webTestClient.performMigration()
 
       // wait for all mappings to be created before verifying
       await untilCallTo { mappingApi.createMappingCount(ADJUSTMENTS_CREATE_MAPPING_URL) } matches { it == 1 }

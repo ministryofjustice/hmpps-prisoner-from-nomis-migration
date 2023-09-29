@@ -351,19 +351,21 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         // doesn't retry
         mappingApi.verifyCreateMappingSentenceAdjustmentIds(arrayOf(ADJUSTMENT_ID), times = 1)
 
-        verify(telemetryClient).trackEvent(
-          eq("from-nomis-synch-adjustment-duplicate"),
-          check {
-            assertThat(it["migrationId"]).isNull()
-            assertThat(it["existingAdjustmentId"]).isEqualTo("10")
-            assertThat(it["duplicateAdjustmentId"]).isEqualTo(ADJUSTMENT_ID)
-            assertThat(it["existingNomisAdjustmentId"]).isEqualTo("$NOMIS_ADJUSTMENT_ID")
-            assertThat(it["duplicateNomisAdjustmentId"]).isEqualTo("$NOMIS_ADJUSTMENT_ID")
-            assertThat(it["existingNomisAdjustmentCategory"]).isEqualTo("SENTENCE")
-            assertThat(it["duplicateNomisAdjustmentCategory"]).isEqualTo("SENTENCE")
-          },
-          isNull(),
-        )
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            eq("from-nomis-synch-adjustment-duplicate"),
+            check {
+              assertThat(it["migrationId"]).isNull()
+              assertThat(it["existingAdjustmentId"]).isEqualTo("10")
+              assertThat(it["duplicateAdjustmentId"]).isEqualTo(ADJUSTMENT_ID)
+              assertThat(it["existingNomisAdjustmentId"]).isEqualTo("$NOMIS_ADJUSTMENT_ID")
+              assertThat(it["duplicateNomisAdjustmentId"]).isEqualTo("$NOMIS_ADJUSTMENT_ID")
+              assertThat(it["existingNomisAdjustmentCategory"]).isEqualTo("SENTENCE")
+              assertThat(it["duplicateNomisAdjustmentCategory"]).isEqualTo("SENTENCE")
+            },
+            isNull(),
+          )
+        }
       }
     }
 

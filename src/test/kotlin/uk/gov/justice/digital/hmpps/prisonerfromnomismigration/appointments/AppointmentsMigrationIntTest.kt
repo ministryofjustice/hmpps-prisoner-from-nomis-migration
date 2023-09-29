@@ -9,7 +9,6 @@ import org.awaitility.kotlin.untilAsserted
 import org.awaitility.kotlin.untilCallTo
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -20,9 +19,8 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.ReactiveHttpOutputMessage
+import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.returnResult
-import org.springframework.web.reactive.function.BodyInserter
 import org.springframework.web.reactive.function.BodyInserters
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
@@ -59,11 +57,31 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().is2xxSuccessful
     }
 
+    private fun WebTestClient.performMigration(body: String = "{ }") =
+      post().uri("/migrate/appointments")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_APPOINTMENTS")))
+        .header("Content-Type", "application/json")
+        .body(BodyInserters.fromValue(body))
+        .exchange()
+        .expectStatus().isAccepted
+        .also {
+          waitUntilCompleted()
+        }
+
+    private fun waitUntilCompleted() =
+      await atMost Duration.ofSeconds(60) untilAsserted {
+        verify(telemetryClient).trackEvent(
+          eq("appointments-migration-completed"),
+          any(),
+          isNull(),
+        )
+      }
+
     @Test
     fun `must have valid token to start migration`() {
       webTestClient.post().uri("/migrate/appointments")
         .header("Content-Type", "application/json")
-        .body(someMigrationFilter())
+        .body(BodyInserters.fromValue("{ }"))
         .exchange()
         .expectStatus().isUnauthorized
     }
@@ -73,7 +91,7 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
       webTestClient.post().uri("/migrate/appointments")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
         .header("Content-Type", "application/json")
-        .body(someMigrationFilter())
+        .body(BodyInserters.fromValue("{ }"))
         .exchange()
         .expectStatus().isForbidden
     }
@@ -89,30 +107,15 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
       activitiesApi.stubCreateAppointmentForMigration(12345)
       mappingApi.stubAppointmentMappingByMigrationId(count = 14)
 
-      webTestClient.post().uri("/migrate/appointments")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_APPOINTMENTS")))
-        .header("Content-Type", "application/json")
-        .body(
-          BodyInserters.fromValue(
-            """
-            {
-              "fromDate": "2020-01-01",
-              "toDate": "2020-01-02",
-              "prisonIds": ["MDI"]
-            }
-            """.trimIndent(),
-          ),
-        )
-        .exchange()
-        .expectStatus().isAccepted
-
-      await atMost Duration.ofSeconds(60) untilAsserted {
-        verify(telemetryClient).trackEvent(
-          eq("appointments-migration-completed"),
-          any(),
-          isNull(),
-        )
-      }
+      webTestClient.performMigration(
+        """
+          {
+            "fromDate": "2020-01-01",
+            "toDate": "2020-01-02",
+            "prisonIds": ["MDI"]
+          }
+        """.trimIndent(),
+      )
 
       // check filter matches what is passed in
       nomisApi.verifyGetIdsCount(
@@ -145,27 +148,7 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
           .messageBody("""{ "message": "some error" }""").build(),
       ).get()
 
-      webTestClient.post().uri("/migrate/appointments")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_APPOINTMENTS")))
-        .header("Content-Type", "application/json")
-        .body(
-          BodyInserters.fromValue(
-            """
-            {
-            }
-            """.trimIndent(),
-          ),
-        )
-        .exchange()
-        .expectStatus().isAccepted
-
-      await atMost Duration.ofSeconds(60) untilAsserted {
-        verify(telemetryClient).trackEvent(
-          eq("appointments-migration-completed"),
-          any(),
-          isNull(),
-        )
-      }
+      webTestClient.performMigration()
 
       verify(telemetryClient).trackEvent(eq("appointments-migration-started"), any(), isNull())
       verify(telemetryClient, times(3)).trackEvent(eq("appointments-migration-entity-migrated"), any(), isNull())
@@ -198,12 +181,7 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
       activitiesApi.stubCreateAppointmentForMigration(654321L)
       mappingApi.stubMappingCreateFailureFollowedBySuccess(APPOINTMENTS_CREATE_MAPPING_URL)
 
-      webTestClient.post().uri("/migrate/appointments")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_APPOINTMENTS")))
-        .header("Content-Type", "application/json")
-        .body(someMigrationFilter())
-        .exchange()
-        .expectStatus().isAccepted
+      webTestClient.performMigration("""{ "prisonIds": ["MDI"] }""")
 
       // wait for all mappings to be created before verifying
       await untilCallTo { mappingApi.createMappingCount(APPOINTMENTS_CREATE_MAPPING_URL) } matches { it == 2 }
@@ -216,7 +194,6 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Test
-    @Disabled("This test is flaky and needs to be fixed")
     fun `it will not retry after a 409 (duplicate appointment written to Activities API) or mapping already exists`() {
       nomisApi.stubGetInitialCount(APPOINTMENTS_ID_URL, 1) { appointmentIdsPagedResponse(it) }
       nomisApi.stubMultipleGetAppointmentIdCounts(totalElements = 2, pageSize = 10)
@@ -226,12 +203,7 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
       mappingApi.stubAppointmentMappingCreateConflict(10, 11, 1)
       mappingApi.stubNomisAppointmentsMappingFound(2)
 
-      webTestClient.post().uri("/migrate/appointments")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_APPOINTMENTS")))
-        .header("Content-Type", "application/json")
-        .body(someMigrationFilter())
-        .exchange()
-        .expectStatus().isAccepted
+      webTestClient.performMigration("""{ "prisonIds": ["MDI"] }""")
 
       // wait for all mappings to be created before verifying
       await untilCallTo { mappingApi.createMappingCount(APPOINTMENTS_CREATE_MAPPING_URL) } matches { it == 1 }
@@ -676,6 +648,3 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
     }
   }
 }
-
-fun someMigrationFilter(): BodyInserter<String, ReactiveHttpOutputMessage> =
-  BodyInserters.fromValue("""{ "prisonIds": ["MDI"] }""")

@@ -4,9 +4,7 @@ import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
-import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilAsserted
-import org.awaitility.kotlin.untilCallTo
 import org.hamcrest.core.StringContains
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -20,6 +18,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ReactiveHttpOutputMessage
+import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.returnResult
 import org.springframework.web.reactive.function.BodyInserter
 import org.springframework.web.reactive.function.BodyInserters
@@ -58,6 +57,26 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().is2xxSuccessful
     }
 
+    private fun WebTestClient.performMigration(body: String = "{ }") =
+      post().uri("/migrate/visits")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
+        .header("Content-Type", "application/json")
+        .body(BodyInserters.fromValue(body))
+        .exchange()
+        .expectStatus().isAccepted
+        .also {
+          waitUntilCompleted()
+        }
+
+    private fun waitUntilCompleted() =
+      await atMost Duration.ofSeconds(60) untilAsserted {
+        verify(telemetryClient).trackEvent(
+          eq("visits-migration-completed"),
+          any(),
+          isNull(),
+        )
+      }
+
     @Test
     internal fun `must have valid token to start migration`() {
       webTestClient.post().uri("/migrate/visits")
@@ -88,32 +107,22 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
       visitsApi.stubCreateVisit()
       mappingApi.stubVisitMappingByMigrationId(count = 86)
 
-      webTestClient.post().uri("/migrate/visits")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
-        .header("Content-Type", "application/json")
-        .body(
-          BodyInserters.fromValue(
-            """
-            {
-              "prisonIds": [
-                "MDI",
-                "BXI"
-              ],
-              "visitTypes": [
-                "SCON",
-                "OFFI"
-              ],
-              "fromDateTime": "2020-01-01T01:30:00",
-              "toDateTime": "2020-01-02T23:30:00"
-            }
-            """.trimIndent(),
-          ),
-        )
-        .exchange()
-        .expectStatus().isAccepted
-
-      // wait for all mappings to be created before verifying
-      await untilCallTo { mappingApi.createMappingCount(VISITS_CREATE_MAPPING_URL) } matches { it == 86 }
+      webTestClient.performMigration(
+        """
+          {
+            "prisonIds": [
+              "MDI",
+              "BXI"
+            ],
+            "visitTypes": [
+              "SCON",
+              "OFFI"
+            ],
+            "fromDateTime": "2020-01-01T01:30:00",
+            "toDateTime": "2020-01-02T23:30:00"
+          }
+        """.trimIndent(),
+      )
 
       // check filter matches what is passed in
       nomisApi.verifyGetVisitsFilter(
@@ -146,28 +155,18 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
       mappingApi.stubVisitMappingByMigrationId(count = 25)
       awsSqsVisitsMigrationDlqClient!!.sendMessage(visitsMigrationDlqUrl!!, """{ "message": "some error" }""")
 
-      webTestClient.post().uri("/migrate/visits")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
-        .header("Content-Type", "application/json")
-        .body(
-          BodyInserters.fromValue(
-            """
-            {
-              "prisonIds": [
-                "HEI"
-              ],
-              "visitTypes": [
-                "SCON"
-              ]
-            }
-            """.trimIndent(),
-          ),
-        )
-        .exchange()
-        .expectStatus().isAccepted
-
-      // wait for all mappings to be created before verifying
-      await untilCallTo { mappingApi.createMappingCount(VISITS_CREATE_MAPPING_URL) } matches { it == 26 }
+      webTestClient.performMigration(
+        """
+          {
+            "prisonIds": [
+              "HEI"
+            ],
+            "visitTypes": [
+              "SCON"
+            ]
+          }
+        """.trimIndent(),
+      )
 
       await untilAsserted {
         verify(telemetryClient).trackEvent(eq("visits-migration-started"), any(), isNull())
@@ -175,14 +174,6 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
 
       await untilAsserted {
         verify(telemetryClient, times(26)).trackEvent(eq("visits-migration-entity-migrated"), any(), isNull())
-      }
-
-      await.atMost(Duration.ofSeconds(31)) untilAsserted {
-        verify(telemetryClient).trackEvent(
-          eq("visits-migration-completed"),
-          any(),
-          isNull(),
-        )
       }
 
       await untilAsserted {
@@ -216,17 +207,7 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
       visitsApi.stubCreateVisit()
       mappingApi.stubMappingCreateFailureFollowedBySuccess(VISITS_CREATE_MAPPING_URL)
 
-      webTestClient.post().uri("/migrate/visits")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
-        .header("Content-Type", "application/json")
-        .body(
-          BodyInserters.fromValue("{}"),
-        )
-        .exchange()
-        .expectStatus().isAccepted
-
-      // wait for all mappings to be created before verifying
-      await untilCallTo { mappingApi.createMappingCount(VISITS_CREATE_MAPPING_URL) } matches { it == 2 }
+      webTestClient.performMigration()
 
       // check that each visit is created in VSIP
       assertThat(visitsApi.createVisitCount()).isEqualTo(1)
@@ -243,26 +224,10 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
       mappingApi.stubVisitsCreateConflict(existingVsipId = 12, duplicateVsipId = 654321, nomisVisitId = 1)
       visitsApi.stubCreateVisit()
 
-      webTestClient.post().uri("/migrate/visits")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
-        .header("Content-Type", "application/json")
-        .body(
-          BodyInserters.fromValue(
-            """
-            {
-            }
-            """.trimIndent(),
-          ),
-        )
-        .exchange()
-        .expectStatus().isAccepted
-
-      // wait for all mappings to be created before verifying
-      await untilCallTo { mappingApi.createMappingCount(VISITS_CREATE_MAPPING_URL) } matches { it == 1 }
+      webTestClient.performMigration()
 
       // check that one visit is created
-      assertThat(visitsApi.createVisitCount())
-        .isEqualTo(1)
+      assertThat(visitsApi.createVisitCount()).isEqualTo(1)
 
       // doesn't retry
       mappingApi.verifyCreateMappingVisitIds(arrayOf(1), times = 1)
