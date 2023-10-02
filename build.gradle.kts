@@ -7,7 +7,7 @@ import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 plugins {
   id("uk.gov.justice.hmpps.gradle-spring-boot") version "5.4.1"
   kotlin("plugin.spring") version "1.9.10"
-  id("org.openapi.generator") version "7.0.0"
+  id("org.openapi.generator") version "7.0.1"
 }
 
 configurations {
@@ -32,23 +32,23 @@ dependencies {
 
   implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.2")
 
-  runtimeOnly("org.postgresql:r2dbc-postgresql:1.0.1.RELEASE")
+  runtimeOnly("org.postgresql:r2dbc-postgresql:1.0.2.RELEASE")
   runtimeOnly("org.springframework.boot:spring-boot-starter-jdbc")
   runtimeOnly("org.postgresql:postgresql:42.6.0")
   implementation("org.flywaydb:flyway-core")
 
-  implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:1.29.0")
+  implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:1.30.0")
 
   testImplementation("io.swagger.parser.v3:swagger-parser:2.1.16")
   testImplementation("io.jsonwebtoken:jjwt-impl:0.11.5")
   testImplementation("io.jsonwebtoken:jjwt-jackson:0.11.5")
 
-  testImplementation("org.wiremock:wiremock:3.0.4")
+  testImplementation("org.wiremock:wiremock:3.2.0")
   testImplementation("org.testcontainers:localstack:1.19.0")
-  testImplementation("com.amazonaws:aws-java-sdk-core:1.12.547")
+  testImplementation("com.amazonaws:aws-java-sdk-core:1.12.560")
   testImplementation("org.awaitility:awaitility-kotlin:4.2.0")
   testImplementation("org.testcontainers:postgresql:1.19.0")
-  testImplementation("io.mockk:mockk:1.13.7")
+  testImplementation("io.mockk:mockk:1.13.8")
   testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
   testImplementation("javax.xml.bind:jaxb-api:2.3.1")
 }
