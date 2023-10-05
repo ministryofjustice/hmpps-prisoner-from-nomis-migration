@@ -2,9 +2,12 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.containing
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.put
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.junit.jupiter.api.extension.AfterAllCallback
@@ -550,6 +553,21 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
           ),
       )
     }
+  }
+
+  fun stubEndActivities() {
+    nomisApi.stubFor(
+      put(urlPathEqualTo("/activities/end"))
+        .willReturn(
+          aResponse()
+            .withStatus(HttpStatus.OK.value()),
+        ),
+    )
+  }
+
+  fun verifyEndActivities(expectedCourseActivityIds: List<Long>) {
+    putRequestedFor(urlPathEqualTo("/activities/end"))
+      .withRequestBody(containing(""""courseActivityIds": $expectedCourseActivityIds"""))
   }
 
   fun stubMultipleGetAllocations(count: Int) {

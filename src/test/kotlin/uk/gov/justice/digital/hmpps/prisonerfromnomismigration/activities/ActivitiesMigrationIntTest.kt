@@ -700,4 +700,69 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
         .jsonPath("$.pageable.pageSize").isEqualTo(3)
     }
   }
+
+  @Nested
+  @DisplayName("GET /migrate/activities/end")
+  inner class EndMigratedActivities {
+
+    private val migrationId = "2023-10-05T09:58:45"
+    private val count = 3
+
+    @BeforeEach
+    internal fun stubApis() = runTest {
+      mappingApi.stubActivitiesMappingByMigrationId(count = count, migrationId = migrationId)
+      nomisApi.stubEndActivities()
+    }
+
+    @Test
+    internal fun `must have valid token`() {
+      webTestClient.put().uri("/migrate/activities/$migrationId/end")
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isUnauthorized
+    }
+
+    @Test
+    internal fun `must have correct role`() {
+      webTestClient.put().uri("/migrate/activities/$migrationId/end")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isForbidden
+    }
+
+    @Test
+    internal fun `will return not found for unknown migration`() {
+      mappingApi.stubActivitiesMappingByMigrationIdFails(404)
+
+      webTestClient.put().uri("/migrate/activities/$migrationId/end")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isNotFound
+    }
+
+    @Test
+    internal fun `will pass on upstream errors`() {
+      mappingApi.stubActivitiesMappingByMigrationIdFails(500)
+
+      webTestClient.put().uri("/migrate/activities/$migrationId/end")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().is5xxServerError
+    }
+
+    @Test
+    internal fun `will end activities`() {
+      webTestClient.put().uri("/migrate/activities/$migrationId/end")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
+
+      mappingApi.verifyActivitiesMappingByMigrationId(migrationId, count)
+      nomisApi.verifyEndActivities(listOf(1, 2, 3))
+    }
+  }
 }

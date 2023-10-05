@@ -21,6 +21,7 @@ import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
+import java.net.URLEncoder
 
 class MappingApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
 
@@ -436,18 +437,36 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       )
     }
 
-  fun stubActivitiesMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 7) {
-    val content = """{
-      "nomisCourseActivityId": 123,
+  fun stubActivitiesMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 7, migrationId: String = "2022-02-14T09:58:45") {
+    fun aMigration(id: Int) = """{
+      "nomisCourseActivityId": $id,
       "activityScheduleId": 456,
       "activityScheduleId2": 789,
-      "label": "2022-02-14T09:58:45",
+      "label": "$migrationId",
       "whenCreated": "$whenCreated"
     }"""
+    val content = IntRange(1, count).joinToString { aMigration(it) }
     stubFor(
       get(urlPathMatching("/mapping/activities/migration/migration-id/.*")).willReturn(
         okJson(pageContent(content, count)),
       ),
+    )
+  }
+  fun stubActivitiesMappingByMigrationIdFails(statusCode: Int) {
+    stubFor(
+      get(urlPathMatching("/mapping/activities/migration/migration-id/.*"))
+        .willReturn(
+          aResponse()
+            .withStatus(statusCode)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
+  fun verifyActivitiesMappingByMigrationId(migrationId: String, count: Int) {
+    verify(
+      getRequestedFor(urlPathEqualTo("/mapping/activities/migration/migration-id/${URLEncoder.encode(migrationId, "UTF-8")}"))
+        .withQueryParam("size", equalTo("$count")),
     )
   }
 

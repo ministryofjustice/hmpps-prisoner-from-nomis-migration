@@ -14,6 +14,7 @@ import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -262,4 +263,49 @@ class ActivitiesMigrationResource(
     @Schema(description = "Course Activity ID", type = "integer") @RequestParam courseActivityId: Long?,
   ): Page<FindActiveActivityIdsResponse> =
     activitiesMigrationService.getIds(ActivitiesMigrationFilter(prisonId, courseActivityId), size, page)
+
+  @PreAuthorize("hasRole('ROLE_MIGRATE_ACTIVITIES')")
+  @PutMapping("/{migrationId}/end")
+  @Operation(
+    summary = "End all activities and allocations for a migration",
+    description = "Get all NOMIS activities migrated on a migrationId and ends them all. Requires role MIGRATE_ACTIVITIES",
+    responses = [
+      ApiResponse(
+        responseCode = "200",
+        description = "OK",
+      ),
+      ApiResponse(
+        responseCode = "400",
+        description = "Invalid request",
+        content = [
+          Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class)),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "401",
+        description = "Unauthorized to access this endpoint",
+        content = [
+          Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class)),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "403",
+        description = "Forbidden, requires role NOMIS_ACTIVITIES",
+        content = [
+          Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class)),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Not found",
+        content = [
+          Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class)),
+        ],
+      ),
+    ],
+  )
+  suspend fun endMigratedActivities(
+    @Schema(description = "Migration ID", type = "string") @PathVariable migrationId: String,
+  ) =
+    activitiesMigrationService.endMigratedActivities(migrationId)
 }

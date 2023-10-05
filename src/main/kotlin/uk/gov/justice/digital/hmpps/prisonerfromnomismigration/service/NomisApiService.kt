@@ -11,13 +11,16 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.util.LinkedMultiValueMap
+import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.EndActivitiesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveActivityIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveAllocationIdsResponse
@@ -215,6 +218,13 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       },)
       .bodyToMono(typeReference<RestResponsePage<FindActiveActivityIdsResponse>>())
       .awaitSingle()
+
+  suspend fun endActivities(ids: List<Long>) =
+    webClient.put()
+      .uri("/activities/end")
+      .body(BodyInserters.fromValue(EndActivitiesRequest(ids)))
+      .retrieve()
+      .awaitBodilessEntity()
 
   suspend fun getAllocation(allocationId: Long): GetAllocationResponse =
     webClient.get()
