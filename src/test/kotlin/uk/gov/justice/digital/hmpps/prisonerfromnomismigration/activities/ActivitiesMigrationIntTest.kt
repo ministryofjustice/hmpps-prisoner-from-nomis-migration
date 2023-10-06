@@ -550,10 +550,10 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
           whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
           whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
           status = MigrationStatus.STARTED,
-          estimatedRecordCount = 123_567,
+          estimatedRecordCount = 8,
           filter = "",
-          recordsMigrated = 123_560,
-          recordsFailed = 7,
+          recordsMigrated = 7,
+          recordsFailed = 1,
           migrationType = MigrationType.ACTIVITIES,
         ),
       )
@@ -563,9 +563,9 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
           whenStarted = LocalDateTime.parse("2019-01-01T00:00:00"),
           whenEnded = LocalDateTime.parse("2019-01-01T01:00:00"),
           status = MigrationStatus.COMPLETED,
-          estimatedRecordCount = 123_567,
+          estimatedRecordCount = 8,
           filter = "",
-          recordsMigrated = 123_567,
+          recordsMigrated = 8,
           recordsFailed = 0,
           migrationType = MigrationType.ACTIVITIES,
         ),
@@ -613,7 +613,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `can read active migration data`() {
-      mappingApi.stubActivitiesMappingByMigrationId(count = 123456)
+      mappingApi.stubActivitiesMappingByMigrationId(count = 7)
       webTestClient.get().uri("/migrate/activities/active-migration")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
         .header("Content-Type", "application/json")
@@ -622,11 +622,11 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
         .expectBody()
         .jsonPath("$.migrationId").isEqualTo("2020-01-01T00:00:00")
         .jsonPath("$.whenStarted").isEqualTo("2020-01-01T00:00:00")
-        .jsonPath("$.recordsMigrated").isEqualTo(123456)
+        .jsonPath("$.recordsMigrated").isEqualTo(7)
         .jsonPath("$.toBeProcessedCount").isEqualTo(0)
         .jsonPath("$.beingProcessedCount").isEqualTo(0)
         .jsonPath("$.recordsFailed").isEqualTo(0)
-        .jsonPath("$.estimatedRecordCount").isEqualTo(123567)
+        .jsonPath("$.estimatedRecordCount").isEqualTo(8)
         .jsonPath("$.status").isEqualTo("STARTED")
         .jsonPath("$.migrationType").isEqualTo("ACTIVITIES")
     }
