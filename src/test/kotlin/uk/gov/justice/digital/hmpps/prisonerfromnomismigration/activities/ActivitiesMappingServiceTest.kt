@@ -325,13 +325,13 @@ class ActivitiesMappingServiceTest {
     internal fun `should return the mapping when found`(): Unit = runBlocking {
       mappingApi.stubActivitiesMappingByMigrationId(
         whenCreated = "2020-01-01T11:10:00",
-        count = 56_766,
+        count = 7,
       )
 
       val mapping = activitiesMappingService.getMigrationDetails("2020-01-01T10:00:00")
       assertThat(mapping).isNotNull
       assertThat(mapping.startedDateTime).isEqualTo("2020-01-01T11:10:00")
-      assertThat(mapping.count).isEqualTo(56766)
+      assertThat(mapping.count).isEqualTo(7)
     }
 
     @Test
@@ -385,10 +385,10 @@ class ActivitiesMappingServiceTest {
     internal fun `should return the mapping count when found`(): Unit = runBlocking {
       mappingApi.stubActivitiesMappingByMigrationId(
         whenCreated = "2020-01-01T11:10:00",
-        count = 56_766,
+        count = 7,
       )
 
-      assertThat(activitiesMappingService.getMigrationCount("2020-01-01T10:00:00")).isEqualTo(56_766)
+      assertThat(activitiesMappingService.getMigrationCount("2020-01-01T10:00:00")).isEqualTo(7)
     }
 
     @Test

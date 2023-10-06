@@ -26,6 +26,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.ACTIVITIES
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NotFoundException
 import java.math.BigDecimal
 
 @Service
@@ -94,6 +95,15 @@ class ActivitiesMigrationService(
           )
           throw it
         }
+  }
+
+  suspend fun endMigratedActivities(migrationId: String) {
+    val activityCount = activitiesMappingService.getMigrationCount(migrationId)
+    if (activityCount == 0L) throw NotFoundException("No migrations found for $migrationId")
+
+    val allActivityIds = activitiesMappingService.getActivityMigrationDetails(migrationId, activityCount).content
+      .map { it.nomisCourseActivityId }
+    nomisApiService.endActivities(allActivityIds)
   }
 
   private suspend fun ActivityMigrationMappingDto.createActivityMapping(context: MigrationContext<*>) =

@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities
 
+import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
@@ -23,4 +24,14 @@ class ActivitiesMappingService(@Qualifier("mappingApiWebClient") webClient: WebC
       }
       .awaitSingleOrNull()
   }
+
+  suspend fun getActivityMigrationDetails(migrationId: String, size: Long = 1): ActivityMigrationDetails = webClient.get()
+    .uri {
+      it.path("$domainUrl/migration-id/{migrationId}")
+        .queryParam("size", size)
+        .build(migrationId)
+    }
+    .retrieve()
+    .bodyToMono(ActivityMigrationDetails::class.java)
+    .awaitSingle()!!
 }
