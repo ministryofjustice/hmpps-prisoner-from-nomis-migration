@@ -20,10 +20,14 @@ object LocalStackContainer {
   }
 
   private fun startLocalstackIfNotRunning(): LocalStackContainer? {
-    if (localstackIsRunning()) return null
+    if (localstackIsRunning()) {
+      log.warn("Using existing localstack instance")
+      return null
+    }
+    log.info("Creating a localstack instance")
     val logConsumer = Slf4jLogConsumer(log).withPrefix("localstack")
     return LocalStackContainer(
-      DockerImageName.parse("localstack/localstack").withTag("1.4"),
+      DockerImageName.parse("localstack/localstack").withTag("2.3"),
     ).apply {
       withServices(LocalStackContainer.Service.SQS)
       withEnv("HOSTNAME_EXTERNAL", "localhost")
