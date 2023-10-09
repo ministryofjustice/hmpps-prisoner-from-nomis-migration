@@ -20,6 +20,7 @@ import kotlin.random.Random
  * This can be deleted once real service is available.
  */
 @RestController
+@PreAuthorize("hasRole('ROLE_SENTENCE_ADJUSTMENTS_SYNCHRONISATION')")
 class MockSentencingResource {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
