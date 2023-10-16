@@ -33,7 +33,7 @@ class SentencingService(@Qualifier("sentencingApiWebClient") private val webClie
 
   suspend fun updateSentencingAdjustment(adjustmentId: String, sentencingAdjustment: SentencingAdjustment): Unit =
     webClient.put()
-      .uri("/legacy/adjustments/$adjustmentId")
+      .uri("/legacy/adjustments/{adjustmentId}", adjustmentId)
       .header("Content-Type", LEGACY_CONTENT_TYPE)
       .bodyValue(sentencingAdjustment)
       .retrieve()
@@ -41,7 +41,7 @@ class SentencingService(@Qualifier("sentencingApiWebClient") private val webClie
 
   suspend fun deleteSentencingAdjustment(adjustmentId: String) {
     webClient.delete()
-      .uri("/legacy/adjustments/$adjustmentId")
+      .uri("/legacy/adjustments/{adjustmentId}", adjustmentId)
       .header("Content-Type", LEGACY_CONTENT_TYPE)
       .retrieve()
       .awaitBodyOrNotFound<Unit>()

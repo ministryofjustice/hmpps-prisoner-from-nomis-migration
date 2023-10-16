@@ -19,7 +19,7 @@ class NonAssociationsService(@Qualifier("nonAssociationsApiWebClient") private v
 
   suspend fun deleteNonAssociation(nonAssociationId: Long) =
     webClient.delete()
-      .uri("/sync/$nonAssociationId")
+      .uri("/sync/{nonAssociationId}", nonAssociationId)
       .retrieve()
       .awaitBodyOrNotFound<Unit>()
 
