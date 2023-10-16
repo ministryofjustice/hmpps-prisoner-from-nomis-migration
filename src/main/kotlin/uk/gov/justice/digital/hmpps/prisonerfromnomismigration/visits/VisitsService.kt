@@ -22,7 +22,7 @@ class VisitsService(@Qualifier("visitsApiWebClient") private val webClient: WebC
 
   suspend fun cancelVisit(visitReference: String, outcome: VsipOutcomeDto) =
     webClient.put()
-      .uri("/migrate-visits/$visitReference/cancel")
+      .uri("/migrate-visits/{visitReference}/cancel", visitReference)
       .bodyValue(outcome)
       .retrieve()
       .bodyToMono(Unit::class.java)

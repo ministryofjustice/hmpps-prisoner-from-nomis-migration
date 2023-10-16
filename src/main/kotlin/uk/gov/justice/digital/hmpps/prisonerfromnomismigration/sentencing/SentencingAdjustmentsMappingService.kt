@@ -34,7 +34,7 @@ class SentencingAdjustmentsMappingService(@Qualifier("mappingApiWebClient") webC
     adjustmentId: String,
   ): Unit =
     webClient.delete()
-      .uri("/mapping/sentencing/adjustments/adjustment-id/$adjustmentId")
+      .uri("/mapping/sentencing/adjustments/adjustment-id/{adjustmentId}", adjustmentId)
       .retrieve()
       .awaitBody()
 }
