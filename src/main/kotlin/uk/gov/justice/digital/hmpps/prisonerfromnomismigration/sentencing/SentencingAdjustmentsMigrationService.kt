@@ -147,6 +147,7 @@ class SentencingAdjustmentsMigrationService(
           nomisAdjustmentId = nomisAdjustmentId,
           nomisAdjustmentCategory = nomisAdjustmentCategory,
           adjustmentId = adjustmentId,
+          label = context.migrationId,
           mappingType = "MIGRATED",
         ),
       ),
