@@ -43,6 +43,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.adjustme
 import java.time.Duration
 import java.time.LocalDateTime
 
+data class MigrationResult(val migrationId: String)
+
 class SentencingMigrationIntTest : SqsIntegrationTestBase() {
 
   @Autowired
@@ -60,13 +62,13 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().is2xxSuccessful
     }
 
-    private fun WebTestClient.performMigration(body: String = "{ }") =
+    private fun WebTestClient.performMigration(body: String = "{ }"): MigrationResult =
       post().uri("/migrate/sentencing")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .body(BodyInserters.fromValue(body))
         .exchange()
-        .expectStatus().isAccepted
+        .expectStatus().isAccepted.returnResult<MigrationResult>().responseBody.blockFirst()!!
         .also {
           waitUntilCompleted()
         }
@@ -185,7 +187,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
       sentencingApi.stubCreateSentencingAdjustmentForMigration("654321")
       mappingApi.stubMappingCreateFailureFollowedBySuccess(ADJUSTMENTS_CREATE_MAPPING_URL)
 
-      webTestClient.performMigration()
+      val (migrationId) = webTestClient.performMigration()
 
       // wait for all mappings to be created before verifying
       await untilCallTo { mappingApi.createMappingCount(ADJUSTMENTS_CREATE_MAPPING_URL) } matches { it == 2 }
@@ -194,7 +196,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
       assertThat(sentencingApi.createSentenceAdjustmentCount()).isEqualTo(1)
 
       // should retry to create mapping twice
-      mappingApi.verifyCreateMappingSentenceAdjustmentIds(arrayOf("654321"), times = 2)
+      mappingApi.verifyCreateMappingSentenceAdjustmentIds(migrationId, arrayOf("654321"), times = 2)
     }
 
     @Test

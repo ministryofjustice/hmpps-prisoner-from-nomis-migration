@@ -358,6 +358,30 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       )
     }
 
+  fun verifyCreateMappingSentenceAdjustmentIds(
+    migrationId: String,
+    nomsSentenceAdjustmentIds: Array<String>,
+    times: Int = 1,
+  ) =
+    nomsSentenceAdjustmentIds.forEach {
+      verify(
+        times,
+        postRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments"))
+          .withRequestBody(
+            matchingJsonPath(
+              "adjustmentId",
+              equalTo(it),
+            ),
+          )
+          .withRequestBody(
+            matchingJsonPath(
+              "label",
+              equalTo(migrationId),
+            ),
+          ),
+      )
+    }
+
   fun stubNomisAppointmentsMappingFound(id: Long) {
     val content = """{
       "appointmentInstanceId": 191747,
