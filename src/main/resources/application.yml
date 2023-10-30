@@ -38,10 +38,10 @@ spring:
             client-id: ${visits.client.id}
             client-secret: ${visits.client.secret}
             authorization-grant-type: client_credentials
-          visit-mapping-api:
+          nomis-mapping-api:
             provider: hmpps-auth
-            client-id: ${visit.nomis.api.client.id}
-            client-secret: ${visit.nomis.api.secret}
+            client-id: ${nomis.mapping.api.client.id}
+            client-secret: ${nomis.mapping.api.secret}
             authorization-grant-type: client_credentials
           sentencing-api:
             provider: hmpps-auth

@@ -5,35 +5,27 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientManager
-import org.springframework.security.oauth2.client.web.reactive.function.client.ServerOAuth2AuthorizedClientExchangeFilterFunction
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.authorisedWebClient
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.healthWebClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.health.HealthCheck
+import java.time.Duration
 
 @Configuration
 class VisitsConfiguration(
   @Value("\${api.base.url.visits}") val visitsApiBaseUri: String,
+  @Value("\${api.health-timeout:2s}") val healthTimeout: Duration,
+  @Value("\${api.timeout:90s}") val timeout: Duration,
 ) {
 
   @Bean
-  fun visitsApiHealthWebClient(): WebClient {
-    return WebClient.builder()
-      .baseUrl(visitsApiBaseUri)
-      .build()
-  }
+  fun visitsApiHealthWebClient(builder: WebClient.Builder): WebClient = builder.healthWebClient(visitsApiBaseUri, healthTimeout)
 
   @Bean
-  fun visitsApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager): WebClient {
-    val oauth2Client = ServerOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager)
-    oauth2Client.setDefaultClientRegistrationId("visits-api")
-
-    return WebClient.builder()
-      .baseUrl(visitsApiBaseUri)
-      .filter(oauth2Client)
-      .build()
-  }
+  fun visitsApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager, builder: WebClient.Builder): WebClient =
+    builder.authorisedWebClient(authorizedClientManager, registrationId = "visits-api", url = visitsApiBaseUri, timeout)
 
   @Component("visitsApi")
-  class VisitsApiHealth
-  constructor(@Qualifier("visitsApiHealthWebClient") webClient: WebClient) : HealthCheck(webClient)
+  class VisitsApiHealth(@Qualifier("visitsApiHealthWebClient") webClient: WebClient) : HealthCheck(webClient)
 }
