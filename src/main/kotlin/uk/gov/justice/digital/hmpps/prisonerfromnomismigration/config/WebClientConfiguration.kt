@@ -1,57 +1,45 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config
 
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.client.reactive.ReactorClientHttpConnector
 import org.springframework.security.oauth2.client.AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager
 import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientManager
 import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientProviderBuilder
 import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientService
 import org.springframework.security.oauth2.client.registration.ReactiveClientRegistrationRepository
 import org.springframework.security.oauth2.client.web.reactive.function.client.ServerOAuth2AuthorizedClientExchangeFilterFunction
-import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.health.HealthCheck
+import reactor.netty.http.client.HttpClient
+import java.time.Duration
+import kotlin.apply as kotlinApply
 
 @Configuration
 class WebClientConfiguration(
   @Value("\${api.base.url.nomis}") val nomisApiBaseUri: String,
   @Value("\${api.base.url.oauth}") val oauthApiBaseUri: String,
   @Value("\${api.base.url.mapping}") val mappingApiBaseUri: String,
+  @Value("\${api.health-timeout:2s}") val healthTimeout: Duration,
+  @Value("\${api.timeout:90s}") val timeout: Duration,
 ) {
 
   @Bean
-  fun nomisApiHealthWebClient(): WebClient = WebClient.builder().baseUrl(nomisApiBaseUri).build()
+  fun nomisApiHealthWebClient(builder: WebClient.Builder): WebClient = builder.healthWebClient(nomisApiBaseUri, healthTimeout)
 
   @Bean
-  fun mappingApiHealthWebClient(): WebClient = WebClient.builder().baseUrl(mappingApiBaseUri).build()
+  fun mappingApiHealthWebClient(builder: WebClient.Builder): WebClient = builder.healthWebClient(mappingApiBaseUri, healthTimeout)
 
   @Bean
-  fun oauthApiHealthWebClient(): WebClient = WebClient.builder().baseUrl(oauthApiBaseUri).build()
+  fun oauthApiHealthWebClient(builder: WebClient.Builder): WebClient = builder.healthWebClient(oauthApiBaseUri, healthTimeout)
 
   @Bean
-  fun nomisApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager, webClientBuilder: WebClient.Builder): WebClient {
-    val oauth2Client = ServerOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager)
-
-    oauth2Client.setDefaultClientRegistrationId("nomis-api")
-
-    return webClientBuilder
-      .baseUrl(nomisApiBaseUri)
-      .filter(oauth2Client)
-      .build()
-  }
+  fun nomisApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager, builder: WebClient.Builder): WebClient =
+    builder.authorisedWebClient(authorizedClientManager, registrationId = "nomis-api", url = nomisApiBaseUri, timeout)
 
   @Bean
-  fun mappingApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager): WebClient {
-    val oauth2Client = ServerOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager)
-    oauth2Client.setDefaultClientRegistrationId("visit-mapping-api")
-
-    return WebClient.builder()
-      .baseUrl(mappingApiBaseUri)
-      .filter(oauth2Client)
-      .build()
-  }
+  fun mappingApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager, builder: WebClient.Builder): WebClient =
+    builder.authorisedWebClient(authorizedClientManager, registrationId = "nomis-mapping-api", url = mappingApiBaseUri, timeout)
 
   @Bean
   fun authorizedClientManager(
@@ -59,13 +47,25 @@ class WebClientConfiguration(
     oAuth2AuthorizedClientService: ReactiveOAuth2AuthorizedClientService,
   ): ReactiveOAuth2AuthorizedClientManager {
     val authorizedClientProvider = ReactiveOAuth2AuthorizedClientProviderBuilder.builder().clientCredentials().build()
-    val authorizedClientManager =
-      AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(clientRegistrationRepository, oAuth2AuthorizedClientService)
-    authorizedClientManager.setAuthorizedClientProvider(authorizedClientProvider)
-    return authorizedClientManager
+    return AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(
+      clientRegistrationRepository,
+      oAuth2AuthorizedClientService,
+    ).kotlinApply { setAuthorizedClientProvider(authorizedClientProvider) }
+  }
+}
+
+fun WebClient.Builder.authorisedWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager, registrationId: String, url: String, timeout: Duration): WebClient {
+  val oauth2Client = ServerOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager).kotlinApply {
+    setDefaultClientRegistrationId(registrationId)
   }
 
-  @Component("visitMappingApi")
-  class MappingApiHealth
-  constructor(@Qualifier("mappingApiHealthWebClient") webClient: WebClient) : HealthCheck(webClient)
+  return baseUrl(url)
+    .clientConnector(ReactorClientHttpConnector(HttpClient.create().responseTimeout(timeout)))
+    .filter(oauth2Client)
+    .build()
 }
+
+fun WebClient.Builder.healthWebClient(url: String, healthTimeout: Duration): WebClient =
+  baseUrl(url)
+    .clientConnector(ReactorClientHttpConnector(HttpClient.create().responseTimeout(healthTimeout)))
+    .build()

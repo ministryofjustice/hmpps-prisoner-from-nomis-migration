@@ -5,35 +5,27 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientManager
-import org.springframework.security.oauth2.client.web.reactive.function.client.ServerOAuth2AuthorizedClientExchangeFilterFunction
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.authorisedWebClient
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.healthWebClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.health.HealthCheck
+import java.time.Duration
 
 @Configuration
 class SentencingConfiguration(
   @Value("\${api.base.url.sentencing}") val sentencingApiBaseUri: String,
+  @Value("\${api.health-timeout:2s}") val healthTimeout: Duration,
+  @Value("\${api.timeout:90s}") val timeout: Duration,
 ) {
 
   @Bean
-  fun sentencingApiHealthWebClient(): WebClient {
-    return WebClient.builder()
-      .baseUrl(sentencingApiBaseUri)
-      .build()
-  }
+  fun sentencingApiHealthWebClient(builder: WebClient.Builder): WebClient = builder.healthWebClient(sentencingApiBaseUri, healthTimeout)
 
   @Bean
-  fun sentencingApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager): WebClient {
-    val oauth2Client = ServerOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager)
-    oauth2Client.setDefaultClientRegistrationId("sentencing-api")
-
-    return WebClient.builder()
-      .baseUrl(sentencingApiBaseUri)
-      .filter(oauth2Client)
-      .build()
-  }
+  fun sentencingApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager, builder: WebClient.Builder): WebClient =
+    builder.authorisedWebClient(authorizedClientManager, registrationId = "sentencing-api", url = sentencingApiBaseUri, timeout)
 
   @Component("sentencingApi")
-  class SentencingApiHealth
-  constructor(@Qualifier("sentencingApiHealthWebClient") webClient: WebClient) : HealthCheck(webClient)
+  class SentencingApiHealth(@Qualifier("sentencingApiHealthWebClient") webClient: WebClient) : HealthCheck(webClient)
 }

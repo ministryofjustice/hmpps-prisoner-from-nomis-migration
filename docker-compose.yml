@@ -17,7 +17,7 @@ services:
       - API_BASE_URL_OAUTH=http://hpfnm-hmpps-auth:8080/auth
       - API_BASE_URL_NOMIS=http://hpfnm-hmpps-nomis-prisoner-api:8080
       - API_BASE_URL_VISITS=http://hpfnm-hmpps-visits-api:8080
-      - API_BASE_URL_VISIT_MAPPING=http://hpfnm-hmpps-nomis-visit-mapping-api:8080
+      - API_BASE_URL_MAPPING=http://hpfnm-hmpps-nomis-visit-mapping-api:8080
       - SPRING_R2DBC_URL=r2dbc:postgresql://hpfnm-migration-db:5432/migration?sslmode=prefer
 
   hmpps-auth:
@@ -64,7 +64,7 @@ services:
       - API_BASE_URL_OAUTH=http://hpfnm-hmpps-auth:8080/auth
       - API_BASE_URL_NOMIS=http://hpfnm-hmpps-nomis-prisoner-api:8080
       - API_BASE_URL_VISITS=http://hpfnm-hmpps-visits-api:8080
-      - API_BASE_URL_VISIT_MAPPING=http://hpfnm-hmpps-nomis-visit-mapping-api:8080
+      - API_BASE_URL_MAPPING=http://hpfnm-hmpps-nomis-visit-mapping-api:8080
 
 
   hmpps-nomis-mapping-api:
