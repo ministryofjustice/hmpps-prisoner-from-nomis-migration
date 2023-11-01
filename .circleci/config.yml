@@ -15,7 +15,7 @@ jobs:
   validate:
     executor:
       name: hmpps/java_localstack_postgres
-      jdk_tag: "20.0"
+      jdk_tag: "21.0"
       localstack_tag: "2.3"
       postgres_tag: "15"
       postgres_username: "migration"
@@ -108,7 +108,7 @@ workflows:
                 - main
     jobs:
       - hmpps/gradle_owasp_dependency_check:
-          jdk_tag: "20.0"
+          jdk_tag: "21.0"
           cache_key: "v2_0"
           slack_channel: << pipeline.parameters.alerts-slack-channel >>
           context:

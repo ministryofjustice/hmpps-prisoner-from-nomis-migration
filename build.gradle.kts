@@ -5,8 +5,8 @@ import org.jlleitschuh.gradle.ktlint.tasks.KtLintFormatTask
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "5.7.0"
-  kotlin("plugin.spring") version "1.9.10"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "5.8.0"
+  kotlin("plugin.spring") version "1.9.20"
   id("org.openapi.generator") version "7.0.1"
 }
 
@@ -37,7 +37,7 @@ dependencies {
   runtimeOnly("org.postgresql:postgresql:42.6.0")
   implementation("org.flywaydb:flyway-core")
 
-  implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:1.30.0")
+  implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:1.31.0")
 
   testImplementation("io.swagger.parser.v3:swagger-parser:2.1.18")
   testImplementation("io.jsonwebtoken:jjwt-impl:0.12.3")
@@ -45,7 +45,7 @@ dependencies {
 
   testImplementation("org.wiremock:wiremock:3.2.0")
   testImplementation("org.testcontainers:localstack:1.19.1")
-  testImplementation("com.amazonaws:aws-java-sdk-core:1.12.569")
+  testImplementation("com.amazonaws:aws-java-sdk-core:1.12.578")
   testImplementation("org.awaitility:awaitility-kotlin:4.2.0")
   testImplementation("org.testcontainers:postgresql:1.19.1")
   testImplementation("io.mockk:mockk:1.13.8")
@@ -53,8 +53,8 @@ dependencies {
   testImplementation("javax.xml.bind:jaxb-api:2.3.1")
 }
 
-java {
-  toolchain.languageVersion.set(JavaLanguageVersion.of(20))
+kotlin {
+  jvmToolchain(21)
 }
 
 tasks {
@@ -62,7 +62,7 @@ tasks {
     //  dependsOn("buildSentencingApiModel")
     dependsOn("buildActivityApiModel", "buildNomisSyncApiModel", "buildAdjudicationApiModel", "buildNonAssociationsApiModel", "buildMappingServiceApiModel")
     kotlinOptions {
-      jvmTarget = "20"
+      jvmTarget = "21"
     }
   }
   withType<KtLintCheckTask> {
