@@ -92,17 +92,17 @@ generic-service:
       HMPPS_SQS_QUEUES_MIGRATIONNONASSOCIATIONS_QUEUE_NAME: "sqs_name"
     sqs-migration-nonassociations-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONNONASSOCIATIONS_DLQ_NAME: "sqs_name"
-    prisoner-from-nomis-visits-queue:
+    prison-events-visits-queue:
       HMPPS_SQS_QUEUES_EVENTVISITS_QUEUE_NAME: "sqs_name"
-    prisoner-from-nomis-visits-dl-queue:
+    prison-events-visits-dl-queue:
       HMPPS_SQS_QUEUES_EVENTVISITS_DLQ_NAME: "sqs_name"
-    prisoner-from-nomis-sentencing-queue:
+    prison-events-sentencing-queue:
       HMPPS_SQS_QUEUES_EVENTSENTENCING_QUEUE_NAME: "sqs_name"
-    prisoner-from-nomis-sentencing-dl-queue:
+    prison-events-sentencing-dl-queue:
       HMPPS_SQS_QUEUES_EVENTSENTENCING_DLQ_NAME: "sqs_name"
-    prisoner-from-nomis-nonassociations-queue:
+    prison-events-nonassociations-queue:
       HMPPS_SQS_QUEUES_EVENTNONASSOCIATIONS_QUEUE_NAME: "sqs_name"
-    prisoner-from-nomis-nonassociations-dl-queue:
+    prison-events-nonassociations-dl-queue:
       HMPPS_SQS_QUEUES_EVENTNONASSOCIATIONS_DLQ_NAME: "sqs_name"
     rds-database:
       SPRING_FLYWAY_USER: "database_username"
