@@ -23,12 +23,12 @@ generic-prometheus-alerts:
   rdsAlertsDatabases:
     cloud-platform-bb7deb71226bc52e: "prisoner nomis migration"
   sqsAlertsQueueNames:
-    - "Digital-Prison-Services-dev-prisoner_from_nomis_visits_queue"
-    - "Digital-Prison-Services-dev-prisoner_from_nomis_visits_dl_queue"
-    - "Digital-Prison-Services-dev-prisoner_from_nomis_sentencing_queue"
-    - "Digital-Prison-Services-dev-prisoner_from_nomis_sentencing_dl_queue"
-    - "Digital-Prison-Services-dev-prisoner_from_nomis_nonassociations_queue"
-    - "Digital-Prison-Services-dev-prisoner_from_nomis_nonassociations_dl_queue"
+    - "syscon-devs-dev-prisoner_from_nomis_visits_queue"
+    - "syscon-devs-dev-prisoner_from_nomis_visits_dl_queue"
+    - "syscon-devs-dev-prisoner_from_nomis_sentencing_queue"
+    - "syscon-devs-dev-prisoner_from_nomis_sentencing_dl_queue"
+    - "syscon-devs-dev-prisoner_from_nomis_nonassociations_queue"
+    - "syscon-devs-dev-prisoner_from_nomis_nonassociations_dl_queue"
     - "syscon-devs-dev-migration_sentencing_queue"
     - "syscon-devs-dev-migration_sentencing_dlq"
     - "syscon-devs-dev-migration_visits_queue"
