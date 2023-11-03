@@ -12,7 +12,7 @@
       "name": "MIT",
       "url": "https://opensource.org/license/mit-0"
     },
-    "version": "2023-09-07.8027.f68ac15"
+    "version": "2023-11-03.9092.bfbb408"
   },
   "servers": [
     {
@@ -1308,7 +1308,8 @@
                 "NOT_PROCEED",
                 "ADJOURNED",
                 "CHARGE_PROVED",
-                "QUASHED"
+                "QUASHED",
+                "CORRUPTED"
               ]
             }
           }
@@ -1526,6 +1527,109 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/DamagesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportedAdjudicationResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not able to process the request because the header “Accept” does not match with any of the content types this endpoint can handle",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "Active-Caseload",
+          "in": "header",
+          "description": "Current Caseload for request",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "example": "MDI"
+        }
+      ]
+    },
+    "/reported-adjudications/{chargeNumber}/created-on-behalf-of": {
+      "put": {
+        "tags": [
+          "20. Adjudication Management"
+        ],
+        "summary": "Set created on behalf of",
+        "operationId": "setCreatedOnBehalfOf",
+        "parameters": [
+          {
+            "name": "chargeNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatedOnBehalfOfRequest"
               }
             }
           },
@@ -2818,7 +2922,7 @@
           "10. Draft Adjudication Management"
         ],
         "summary": "Set created on behalf of",
-        "operationId": "setCreatedOnBehalfOf",
+        "operationId": "setCreatedOnBehalfOf_1",
         "parameters": [
           {
             "name": "id",
@@ -4849,6 +4953,153 @@
         }
       ]
     },
+    "/adjudications/adjudication-hearings": {
+      "post": {
+        "tags": [
+          "01. Adjudication Summary"
+        ],
+        "summary": "Gets a list of offender adjudication hearings",
+        "description": "\n        <p>This endpoint returns a list of offender adjudication hearings for 1 or more offenders for a given date range and optional time slot.</p>\n        <p>If the date range goes beyond 31 days then an exception will be thrown.</p>\n        <p>At least one offender number must be supplied if not then an exception will be thrown.</p>\n        <p>If the time slot is provided then the results will be further restricted to the hearings that fall in that time slot.</p>\n        ",
+        "operationId": "getOffenderAdjudicationHearings",
+        "parameters": [
+          {
+            "name": "agencyId",
+            "in": "query",
+            "description": "An agency id to allow filtering by the prison in which the offence occurred",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fromDate",
+            "in": "query",
+            "description": "Adjudications must have been reported on or after this date (in YYYY-MM-DD format).",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "toDate",
+            "in": "query",
+            "description": "Adjudications must have been reported on or before this date (in YYYY-MM-DD format).",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "timeSlot",
+            "in": "query",
+            "description": "AM, PM or ED",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "AM",
+                "PM",
+                "ED"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "uniqueItems": true,
+                "type": "array",
+                "description": "The prisoner numbers. Prisoner numbers have the format:<b>G0364GX</b>",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OffenderAdjudicationHearing"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not able to process the request because the header “Accept” does not match with any of the content types this endpoint can handle",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "Active-Caseload",
+          "in": "header",
+          "description": "Current Caseload for request",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "example": "MDI"
+        }
+      ]
+    },
     "/reported-adjudications/{chargeNumber}/v2": {
       "get": {
         "tags": [
@@ -4993,7 +5244,8 @@
                   "NOT_PROCEED",
                   "ADJOURNED",
                   "CHARGE_PROVED",
-                  "QUASHED"
+                  "QUASHED",
+                  "CORRUPTED"
                 ]
               }
             }
@@ -5190,7 +5442,7 @@
         }
       ]
     },
-    "/reported-adjudications/punishments/{prisonerNumber}/suspended": {
+    "/reported-adjudications/punishments/{prisonerNumber}/suspended/v2": {
       "get": {
         "tags": [
           "30. Punishments"
@@ -5207,7 +5459,7 @@
             }
           },
           {
-            "name": "reportNumber",
+            "name": "chargeNumber",
             "in": "query",
             "required": true,
             "schema": {
@@ -5471,7 +5723,8 @@
                   "NOT_PROCEED",
                   "ADJOURNED",
                   "CHARGE_PROVED",
-                  "QUASHED"
+                  "QUASHED",
+                  "CORRUPTED"
                 ]
               }
             }
@@ -6166,6 +6419,114 @@
         }
       ]
     },
+    "/draft-adjudications/offence-rules": {
+      "get": {
+        "tags": [
+          "15. Draft Offence"
+        ],
+        "summary": "Returns all the offence rules",
+        "operationId": "getOffenceRules",
+        "parameters": [
+          {
+            "name": "youthOffender",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "gender",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "MALE",
+                "FEMALE"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OffenceRuleDetailsDto"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not able to process the request because the header “Accept” does not match with any of the content types this endpoint can handle",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "Active-Caseload",
+          "in": "header",
+          "description": "Current Caseload for request",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "example": "MDI"
+        }
+      ]
+    },
     "/draft-adjudications/offence-rule/{offenceCode}": {
       "get": {
         "tags": [
@@ -6572,7 +6933,8 @@
                 "REFUSED",
                 "REF_POLICE",
                 "S",
-                "UNFIT"
+                "UNFIT",
+                "ADJOURNED"
               ]
             },
             "example": "NOT_PROVEN"
@@ -7111,92 +7473,6 @@
           "example": "MDI"
         }
       ]
-    },
-    "/reported-adjudications/migrate/reset": {
-      "delete": {
-        "tags": [
-          "99. Migrate"
-        ],
-        "summary": "resets the migration and removes all migrated records from database",
-        "operationId": "reset",
-        "parameters": [
-          {
-            "name": "agency",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "default": {
-            "description": "Unexpected error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "406": {
-            "description": "Not able to process the request because the header “Accept” does not match with any of the content types this endpoint can handle",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too many requests",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "parameters": [
-        {
-          "name": "Active-Caseload",
-          "in": "header",
-          "description": "Current Caseload for request",
-          "required": true,
-          "schema": {
-            "type": "string"
-          },
-          "example": "MDI"
-        }
-      ]
     }
   },
   "components": {
@@ -7575,6 +7851,7 @@
       },
       "OutcomeDto": {
         "required": [
+          "canRemove",
           "code"
         ],
         "type": "object",
@@ -7627,6 +7904,10 @@
               "APPEAL_UPHELD",
               "OTHER"
             ]
+          },
+          "canRemove": {
+            "type": "boolean",
+            "description": "flag to indicate if the outcome can be removed"
           }
         },
         "additionalProperties": false,
@@ -7686,6 +7967,7 @@
       },
       "PunishmentDto": {
         "required": [
+          "canRemove",
           "schedule",
           "type"
         ],
@@ -7722,6 +8004,7 @@
               "MONEY",
               "TV",
               "ASSOCIATION",
+              "GYM",
               "OTHER"
             ]
           },
@@ -7757,6 +8040,10 @@
             "type": "number",
             "description": "optional amount - money being recovered for damages",
             "format": "double"
+          },
+          "canRemove": {
+            "type": "boolean",
+            "description": "flag to indicate if the punishment can be removed"
           }
         },
         "additionalProperties": false,
@@ -7880,7 +8167,8 @@
               "NOT_PROCEED",
               "ADJOURNED",
               "CHARGE_PROVED",
-              "QUASHED"
+              "QUASHED",
+              "CORRUPTED"
             ]
           },
           "reviewedByUserId": {
@@ -7982,11 +8270,6 @@
           "transferableActionsAllowed": {
             "type": "boolean",
             "description": "optional actions flag to indicate if an ALO can carry out actions against a transferable adjudication, null if not transferable"
-          },
-          "hearingIdActioned": {
-            "type": "integer",
-            "description": "hearing id action carried out on",
-            "format": "int64"
           },
           "createdOnBehalfOfOfficer": {
             "type": "string",
@@ -8152,7 +8435,8 @@
               "NOT_PROCEED",
               "ADJOURNED",
               "CHARGE_PROVED",
-              "QUASHED"
+              "QUASHED",
+              "CORRUPTED"
             ]
           },
           "statusReason": {
@@ -8208,6 +8492,7 @@
               "MONEY",
               "TV",
               "ASSOCIATION",
+              "GYM",
               "OTHER"
             ]
           },
@@ -8244,9 +8529,9 @@
             "type": "string",
             "description": "optional activated from report number"
           },
-          "consecutiveReportNumber": {
+          "consecutiveChargeNumber": {
             "type": "string",
-            "description": "optional consecutive report number"
+            "description": "optional consecutive charge number"
           },
           "damagesOwedAmount": {
             "type": "number",
@@ -8599,6 +8884,25 @@
         },
         "additionalProperties": false,
         "description": "Request to update the list of damages for a draft adjudication"
+      },
+      "CreatedOnBehalfOfRequest": {
+        "required": [
+          "createdOnBehalfOfOfficer",
+          "createdOnBehalfOfReason"
+        ],
+        "type": "object",
+        "properties": {
+          "createdOnBehalfOfOfficer": {
+            "type": "string",
+            "description": "Name the officer the report was created on behalf of"
+          },
+          "createdOnBehalfOfReason": {
+            "type": "string",
+            "description": "Reason why the report was created on behalf of another officer"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Request to update created on behalf of"
       },
       "DlqMessage": {
         "required": [
@@ -9061,25 +9365,6 @@
         },
         "additionalProperties": false,
         "description": "Request to update the gender"
-      },
-      "CreatedOnBehalfOfRequest": {
-        "required": [
-          "createdOnBehalfOfOfficer",
-          "createdOnBehalfOfReason"
-        ],
-        "type": "object",
-        "properties": {
-          "createdOnBehalfOfOfficer": {
-            "type": "string",
-            "description": "Name the officer the report was created on behalf of"
-          },
-          "createdOnBehalfOfReason": {
-            "type": "string",
-            "description": "Reason why the report was created on behalf of another officer"
-          }
-        },
-        "additionalProperties": false,
-        "description": "Request to update created on behalf of"
       },
       "IncidentRoleAssociatedPrisonerRequest": {
         "required": [
@@ -9586,10 +9871,9 @@
             "description": "this is the reporter, we could use the investigator in this field, or createdBy user"
           },
           "dateAdded": {
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
             "description": "date added",
-            "example": "2021-07-05T10:35:17"
+            "format": "date"
           }
         },
         "additionalProperties": false,
@@ -9725,6 +10009,7 @@
       },
       "MigratePunishment": {
         "required": [
+          "createdBy",
           "effectiveDate",
           "sanctionCode",
           "sanctionSeq",
@@ -9766,6 +10051,10 @@
             "type": "integer",
             "description": "days applied - note we do not support months, should be converted to days if present TBC",
             "format": "int32"
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "created by username"
           }
         },
         "additionalProperties": false,
@@ -9805,10 +10094,9 @@
             ]
           },
           "dateAdded": {
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
             "description": "date added",
-            "example": "2021-07-05T10:35:17"
+            "format": "date"
           },
           "comment": {
             "type": "string",
@@ -9991,6 +10279,59 @@
         "additionalProperties": false,
         "description": "Request to create a new draft adjudication"
       },
+      "OffenderAdjudicationHearing": {
+        "required": [
+          "agencyId",
+          "hearingId",
+          "internalLocationId",
+          "offenderNo"
+        ],
+        "type": "object",
+        "properties": {
+          "agencyId": {
+            "type": "string"
+          },
+          "offenderNo": {
+            "type": "string",
+            "description": "Display Prisoner Number (UK is NOMS ID)"
+          },
+          "hearingId": {
+            "type": "integer",
+            "description": "OIC Hearing ID",
+            "format": "int64",
+            "example": 1985937
+          },
+          "hearingType": {
+            "type": "string",
+            "description": "Hearing Type",
+            "example": "Governor's Hearing Adult"
+          },
+          "startTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "Hearing Time",
+            "example": "2021-07-05T10:35:17"
+          },
+          "internalLocationId": {
+            "type": "integer",
+            "description": "The internal location id of the hearing",
+            "format": "int64",
+            "example": 789448
+          },
+          "internalLocationDescription": {
+            "type": "string",
+            "description": "The internal location description of the hearing",
+            "example": "PVI-RES-MCASU-ADJUD"
+          },
+          "eventStatus": {
+            "type": "string",
+            "description": "The status of the hearing, SCH, COMP or EXP",
+            "example": "COMP"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Represents an adjudication hearing at the offender level."
+      },
       "Pageable": {
         "type": "object",
         "properties": {
@@ -10047,12 +10388,12 @@
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
           },
+          "first": {
+            "type": "boolean"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
-          },
-          "first": {
-            "type": "boolean"
           },
           "empty": {
             "type": "boolean"
@@ -10231,7 +10572,8 @@
               "NOT_PROCEED",
               "ADJOURNED",
               "CHARGE_PROVED",
-              "QUASHED"
+              "QUASHED",
+              "CORRUPTED"
             ]
           }
         },
@@ -10331,12 +10673,12 @@
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
           },
+          "first": {
+            "type": "boolean"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
-          },
-          "first": {
-            "type": "boolean"
           },
           "empty": {
             "type": "boolean"
@@ -10738,12 +11080,12 @@
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
           },
+          "first": {
+            "type": "boolean"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
-          },
-          "first": {
-            "type": "boolean"
           },
           "empty": {
             "type": "boolean"

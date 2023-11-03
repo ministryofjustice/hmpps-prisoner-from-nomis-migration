@@ -1147,6 +1147,7 @@ fun adjudicationResponse(
                             "effectiveDate": "2023-08-15",
                             "statusDate": "2023-08-15",
                             "sanctionDays": 3,
+                            "createdByUsername": "Q124UT",
                             "consecutiveAward": {
                                 "sequence": 2,
                                 "sanctionType": {
@@ -1157,6 +1158,7 @@ fun adjudicationResponse(
                                     "code": "IMMEDIATE",
                                     "description": "Immediate"
                                 },
+                                "createdByUsername": "Q124UT",
                                 "effectiveDate": "2023-08-07",
                                 "statusDate": "2023-08-07",
                                 "sanctionDays": 2,
@@ -1177,6 +1179,7 @@ fun adjudicationResponse(
                                 "code": "IMMEDIATE",
                                 "description": "Immediate"
                             },
+                            "createdByUsername": "Q124UT",
                             "effectiveDate": "2023-08-15",
                             "statusDate": "2023-08-15",
                             "sanctionMonths": 2,
