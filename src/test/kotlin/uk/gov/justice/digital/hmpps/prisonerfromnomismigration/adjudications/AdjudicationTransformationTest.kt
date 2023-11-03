@@ -956,6 +956,7 @@ class AdjudicationTransformationTest {
                       sequence = 23,
                       chargeSequence = charge.chargeSequence,
                       adjudicationNumber = 7654321,
+                      createdByUsername = "A.BEANS",
                     ),
                   ),
                   pleaFindingType = CodeDescription(code = "GUILTY", description = "Guilty"),
@@ -989,6 +990,7 @@ class AdjudicationTransformationTest {
         assertThat(dpsAdjudication.punishments[0].sanctionCode).isEqualTo("CC")
         assertThat(dpsAdjudication.punishments[0].sanctionSeq).isEqualTo(23)
         assertThat(dpsAdjudication.punishments[0].sanctionStatus).isEqualTo("IMMEDIATE")
+        assertThat(dpsAdjudication.punishments[0].createdBy).isEqualTo("A.BEANS")
       }
 
       @Test
@@ -1032,9 +1034,11 @@ class AdjudicationTransformationTest {
                         sequence = 24,
                         chargeSequence = charge1.chargeSequence,
                         adjudicationNumber = 7654321,
+                        createdByUsername = "A.BEANS",
                       ),
                       sequence = 23,
                       adjudicationNumber = 12345,
+                      createdByUsername = "A.BEANS",
                     ),
                   ),
                   pleaFindingType = CodeDescription(code = "GUILTY", description = "Guilty"),
@@ -1067,6 +1071,7 @@ class AdjudicationTransformationTest {
         assertThat(dpsAdjudication.punishments[0].sanctionCode).isEqualTo("CC")
         assertThat(dpsAdjudication.punishments[0].sanctionSeq).isEqualTo(23)
         assertThat(dpsAdjudication.punishments[0].sanctionStatus).isEqualTo("IMMEDIATE")
+        assertThat(dpsAdjudication.punishments[0].createdBy).isEqualTo("A.BEANS")
         assertThat(dpsAdjudication.punishments[0].consecutiveChargeNumber).isEqualTo("7654321-1")
       }
 
@@ -1105,6 +1110,7 @@ class AdjudicationTransformationTest {
                       sequence = 23,
                       chargeSequence = charge.chargeSequence,
                       adjudicationNumber = 12345,
+                      createdByUsername = "A.BEANS",
                     ),
                   ),
                   pleaFindingType = CodeDescription(code = "GUILTY", description = "Guilty"),

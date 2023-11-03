@@ -122,7 +122,7 @@ private fun AdjudicationCharge.toEvidence(incident: AdjudicationIncident): List<
             charge.reportDetail.takeUnless { it.isNullOrEmpty() },
           ).joinToString(separator = " - "),
           reporter = incident.reportingStaff.username,
-          dateAdded = incident.reportedDate.atStartOfDay().format(DateTimeFormatter.ISO_LOCAL_DATE),
+          dateAdded = incident.reportedDate,
         ),
       )
     } ?: emptyList()
@@ -133,7 +133,7 @@ private fun Staff.toWitness(type: WitnessType) = MigrateWitness(
   lastName = this.lastName,
   createdBy = this.createdByUsername!!, // never null for a witness
   type,
-  dateAdded = (this.dateAddedToIncident ?: LocalDate.now()).format(DateTimeFormatter.ISO_LOCAL_DATE),
+  dateAdded = this.dateAddedToIncident ?: LocalDate.now(),
   comment = this.comment,
 )
 
@@ -142,7 +142,7 @@ private fun Prisoner.toWitness(type: WitnessType) = MigrateWitness(
   lastName = this.lastName,
   createdBy = this.createdByUsername,
   type,
-  dateAdded = this.dateAddedToIncident.format(DateTimeFormatter.ISO_LOCAL_DATE),
+  dateAdded = this.dateAddedToIncident,
   comment = this.comment,
 )
 
@@ -167,6 +167,7 @@ private fun Hearing.toHearingResultAwards(): List<MigratePunishment> =
           compensationAmount = it.compensationAmount,
           days = it.sanctionDays + it.sanctionMonths.asDays(it.effectiveDate),
           consecutiveChargeNumber = it.consecutiveAward.toConsecutiveChargeNumber(),
+          createdBy = it.createdByUsername,
         )
       }
     }
@@ -224,7 +225,7 @@ private fun Evidence.toEvidence() = MigrateEvidence(
   },
   details = this.detail,
   reporter = this.createdByUsername,
-  dateAdded = this.date.format(DateTimeFormatter.ISO_LOCAL_DATE),
+  dateAdded = this.date,
 )
 
 private fun Repair.toDamage() = MigrateDamage(
