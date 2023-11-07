@@ -11,7 +11,6 @@ import org.springframework.test.context.ActiveProfiles
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-@Suppress("SpringJavaInjectionPointsAutowiringInspection")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class OpenApiDocsTest : SqsIntegrationTestBase() {
@@ -38,13 +37,13 @@ class OpenApiDocsTest : SqsIntegrationTestBase() {
   }
 
   @Test
-  fun `the swagger json is valid`() {
+  fun `the open api json contains documentation`() {
     webTestClient.get()
       .uri("/v3/api-docs")
       .accept(MediaType.APPLICATION_JSON)
       .exchange()
       .expectStatus().isOk
-      .expectBody().jsonPath("messages").doesNotExist()
+      .expectBody().jsonPath("paths").isNotEmpty
   }
 
   @Test
