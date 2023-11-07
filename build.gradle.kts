@@ -39,7 +39,10 @@ dependencies {
 
   implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:1.31.0")
 
-  testImplementation("io.swagger.parser.v3:swagger-parser:2.1.18")
+  testImplementation("io.swagger.parser.v3:swagger-parser:2.1.18") {
+    exclude(group = "io.swagger.core.v3")
+  }
+  testImplementation("io.swagger.core.v3:swagger-core-jakarta:2.2.18")
   testImplementation("io.jsonwebtoken:jjwt-impl:0.12.3")
   testImplementation("io.jsonwebtoken:jjwt-jackson:0.12.3")
 
@@ -50,7 +53,6 @@ dependencies {
   testImplementation("org.testcontainers:postgresql:1.19.1")
   testImplementation("io.mockk:mockk:1.13.8")
   testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
-  testImplementation("javax.xml.bind:jaxb-api:2.3.1")
 }
 
 kotlin {
