@@ -546,6 +546,24 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubFindNomisMapping(adjudicationNumber: Long, chargeSequence: Int) {
+    stubFor(
+      get(urlPathMatching("/mapping/adjudications/adjudication-number/$adjudicationNumber/charge-sequence/$chargeSequence")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(
+            """{
+            "adjudicationNumber": $adjudicationNumber,
+            "chargeSequence": $chargeSequence,
+            "chargeNumber": "$adjudicationNumber-$chargeSequence",
+            "label": "2022-02-14T09:58:45",
+            "mappingType": "MIGRATED"
+          }""",
+          ),
+      ),
+    )
+  }
+
   fun verifyCreateMappingAdjudication(
     adjudicationNumber: Long,
     chargeSequence: Int,

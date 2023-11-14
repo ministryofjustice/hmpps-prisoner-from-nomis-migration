@@ -53,6 +53,100 @@ class AdjudicationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubChargeGet(
+    chargeNumber: String,
+    offenderNo: String = "A7937DY",
+    outcomes: String = "[]",
+    damages: String = "[]",
+    evidence: String = "[]",
+    punishments: String = "[]",
+    status: String = "UNSCHEDULED",
+  ) {
+    stubFor(
+      get("/reported-adjudications/$chargeNumber/v2").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(
+            """
+{
+    "reportedAdjudication": {
+        "chargeNumber": "$chargeNumber",
+        "prisonerNumber": "$offenderNo",
+        "gender": "MALE",
+        "incidentDetails": {
+            "locationId": 197683,
+            "dateTimeOfIncident": "2023-07-11T09:00:00",
+            "dateTimeOfDiscovery": "2023-07-11T09:00:00",
+            "handoverDeadline": "2023-07-13T09:00:00"
+        },
+        "isYouthOffender": false,
+        "incidentRole": {},
+        "offenceDetails": {
+            "offenceCode": 16001,
+            "offenceRule": {
+                "paragraphNumber": "1",
+                "paragraphDescription": "Commits any assault",
+                "nomisCode": "51:1B"
+            }
+        },
+        "incidentStatement": {
+            "statement": "12",
+            "completed": true
+        },
+        "createdByUserId": "TWRIGHT",
+        "createdDateTime": "2023-07-25T15:19:37.476664",
+        "status": "$status",
+        "reviewedByUserId": "AMARKE_GEN",
+        "statusReason": "",
+        "statusDetails": "",
+        "damages": $damages,
+        "evidence": $evidence,
+        "witnesses": [],
+        "hearings": [{
+                "id": 345,
+                "locationId": 27187,
+                "dateTimeOfHearing": "2023-08-23T14:25:00",
+                "oicHearingType": "GOV_ADULT",
+                "agencyId": "MDI",
+                  "outcome": {
+                        "id": 962,
+                        "adjudicator": "JBULLENGEN",
+                        "code": "COMPLETE",
+                        "plea": "GUILTY"
+                    }
+            }],
+        "disIssueHistory": [],
+        "outcomes": $outcomes,
+        "punishments": $punishments,
+        "punishmentComments": [],
+        "outcomeEnteredInNomis": false,
+        "originatingAgencyId": "MDI"
+    }
+}              
+            """.trimIndent(),
+          )
+          .withStatus(200),
+      ),
+    )
+  }
+
+  fun stubChargeGetWithError(chargeNumber: String, status: Int) {
+    stubFor(
+      get("/reported-adjudications/$chargeNumber/v2").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(
+            """
+              {
+                "error": "some error"
+              }
+            """.trimIndent(),
+          )
+          .withStatus(status),
+      ),
+    )
+  }
+
   fun stubCreateAdjudicationForMigration(
     adjudicationNumber: Long = 654321,
     chargeSequence: Int = 1,

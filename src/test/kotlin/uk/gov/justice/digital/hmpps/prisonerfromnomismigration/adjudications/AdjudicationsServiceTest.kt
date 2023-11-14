@@ -1,14 +1,21 @@
+@file:OptIn(ExperimentalCoroutinesApi::class)
+
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications
 
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
+import org.springframework.web.reactive.function.client.WebClientResponseException.ServiceUnavailable
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.AdjudicationMigrateDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateOffence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigratePrisoner
@@ -64,6 +71,60 @@ internal class AdjudicationsServiceTest {
           WireMock.equalTo("Bearer ABCDE"),
         ),
       )
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /reported-adjudications/{chargeNumber}/v2")
+  inner class GetAdjudication {
+    @BeforeEach
+    internal fun setUp() {
+      adjudicationsApi.stubChargeGet(chargeNumber = "1234")
+    }
+
+    @Test
+    fun `should call api with OAuth2 token`(): Unit = runTest {
+      adjudicationsService.getCharge("1234", "MDI")
+
+      adjudicationsApi.verify(
+        WireMock.getRequestedFor(WireMock.urlEqualTo("/reported-adjudications/1234/v2"))
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `should call api with prisonId in header token`(): Unit = runTest {
+      adjudicationsService.getCharge("1234", "MDI")
+
+      adjudicationsApi.verify(
+        WireMock.getRequestedFor(WireMock.anyUrl())
+          .withHeader("Active-Caseload", WireMock.equalTo("MDI")),
+      )
+    }
+
+    @Test
+    internal fun `will parse data for an adjudication`(): Unit = runTest {
+      adjudicationsApi.stubChargeGet(chargeNumber = "1234", offenderNo = "A1234KT")
+
+      val adjudication = adjudicationsService.getCharge("1234", "MDI")
+
+      assertThat(adjudication?.reportedAdjudication?.prisonerNumber).isEqualTo("A1234KT")
+    }
+
+    @Test
+    internal fun `when adjudication is not found null is returned`() = runTest {
+      adjudicationsApi.stubChargeGetWithError("1234", status = 404)
+
+      assertThat(adjudicationsService.getCharge("1234", "MDI")).isNull()
+    }
+
+    @Test
+    internal fun `when any bad response is received an exception is thrown`() = runTest {
+      adjudicationsApi.stubChargeGetWithError("1234", status = 503)
+
+      assertThrows<ServiceUnavailable> {
+        adjudicationsService.getCharge("1234", "MDI")
+      }
     }
   }
 }
