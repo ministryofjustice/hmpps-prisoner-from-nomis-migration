@@ -5,9 +5,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.HearingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.HearingMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.PunishmentDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.PunishmentDto.Type
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.PunishmentMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.ReportedAdjudicationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Hearing
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.HearingResultAward
 import java.time.LocalDateTime
 import java.time.LocalTime
 
@@ -32,8 +36,42 @@ class AdjudicationMappingCreator(
         offenceSequence = nomisAdjudication.adjudicationSequence.toLong(),
       ),
       hearingMappings = hearingMappings(nomisAdjudication.hearings, dpsAdjudication.reportedAdjudication.hearings),
-      punishmentMappings = listOf(),
+      punishmentMappings = punishmentMappings(
+        nomisAdjudication.bookingId,
+        nomisAdjudication.hearings
+          .flatMap { it.hearingResults }
+          .flatMap { it.resultAwards },
+        dpsAdjudication.reportedAdjudication.punishments,
+      ),
     )
+  }
+
+  private fun punishmentMappings(
+    nomisBookingId: Long,
+    nomisPunishments: List<HearingResultAward>,
+    dpsPunishments: List<PunishmentDto>,
+  ): List<PunishmentMapping> {
+    // this is "good" enough to ensure the small number of records map
+    // note: they don't need to be perfect since if they are ever updated in
+    // DPS they will be re-synced to NOMIS as a batch
+    val nomisPunishmentsSorted = nomisPunishments
+      .filter { it.sanctionType != null && it.sanctionStatus != null }
+      .sortedWith(compareBy<HearingResultAward> { it.toDpsPunishmentType() }.thenBy { it.asDays() })
+    val dpsPunishmentsSorted = dpsPunishments
+      .sortedWith(compareBy<PunishmentDto> { it.type }.thenBy { it.schedule.days })
+
+    if (nomisPunishmentsSorted.size != dpsPunishmentsSorted.size) {
+      throw IllegalStateException("Unable to find matching punishments for adjudication, NOMIS has ${nomisPunishmentsSorted.size} valid awards, DPS has ${dpsPunishmentsSorted.size} punishments")
+    }
+
+    return nomisPunishmentsSorted.zip(dpsPunishmentsSorted)
+      .map {
+        PunishmentMapping(
+          sanctionSeq = it.first.sequence.toLong(),
+          bookingId = nomisBookingId,
+          punishmentId = it.second.id!!,
+        )
+      }
   }
 
   private fun hearingMappings(nomisHearings: List<Hearing>, dpsHearings: List<HearingDto>): List<HearingMapping> {
@@ -66,4 +104,29 @@ class AdjudicationMappingCreator(
           ?: throw IllegalStateException("Unable to find adjudication $nomisAdjudicationNumber with charge sequence $chargeSequence")
         )
   }
+
+  fun HearingResultAward.toDpsPunishmentType(): Type = when (this.sanctionType?.code) {
+    // exact copy of DPS mapping code
+    OicSanctionCode.ADA.name -> if (prospectiveStatuses.contains(this.sanctionStatus?.code)) Type.PROSPECTIVE_DAYS else Type.ADDITIONAL_DAYS
+    OicSanctionCode.PADA.name -> Type.PROSPECTIVE_DAYS
+    OicSanctionCode.EXTRA_WORK.name -> Type.EXCLUSION_WORK
+    OicSanctionCode.EXTW.name -> Type.EXTRA_WORK
+    OicSanctionCode.CAUTION.name -> Type.CAUTION
+    OicSanctionCode.CC.name -> Type.CONFINEMENT
+    OicSanctionCode.REMACT.name -> Type.REMOVAL_ACTIVITY
+    OicSanctionCode.REMWIN.name -> Type.REMOVAL_WING
+    OicSanctionCode.STOP_PCT.name -> Type.EARNINGS
+    OicSanctionCode.OTHER.name -> if (this.compensationAmount != null) Type.DAMAGES_OWED else Type.PRIVILEGE
+    else -> Type.PRIVILEGE
+  }
+}
+
+private enum class OicSanctionCode {
+  ADA, CAUTION, CC, EXTRA_WORK, EXTW, OTHER, REMACT, REMWIN, STOP_PCT, PADA
+}
+
+private val prospectiveStatuses: List<String> = listOf(Status.PROSPECTIVE.name, Status.SUSP_PROSP.name)
+
+private enum class Status {
+  PROSPECTIVE, SUSP_PROSP
 }

@@ -165,13 +165,14 @@ private fun Hearing.toHearingResultAwards(): List<MigratePunishment> =
           sanctionSeq = it.sequence.toLong(),
           comment = it.comment,
           compensationAmount = it.compensationAmount,
-          days = it.sanctionDays + it.sanctionMonths.asDays(it.effectiveDate),
+          days = it.asDays(),
           consecutiveChargeNumber = it.consecutiveAward.toConsecutiveChargeNumber(),
           createdBy = it.createdByUsername,
         )
       }
     }
 
+fun HearingResultAward.asDays() = this.sanctionDays + this.sanctionMonths.asDays(this.effectiveDate)
 private fun HearingResultAward?.toConsecutiveChargeNumber(): String? =
   this?.let { "$adjudicationNumber-$chargeSequence" }
 
