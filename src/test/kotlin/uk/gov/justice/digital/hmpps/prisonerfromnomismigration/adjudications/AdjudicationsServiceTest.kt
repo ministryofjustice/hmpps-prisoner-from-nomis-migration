@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
+import org.springframework.web.reactive.function.client.WebClientResponseException.InternalServerError
 import org.springframework.web.reactive.function.client.WebClientResponseException.ServiceUnavailable
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.AdjudicationMigrateDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateOffence
@@ -36,6 +37,10 @@ internal class AdjudicationsServiceTest {
     @BeforeEach
     internal fun setUp() {
       adjudicationsApi.stubCreateAdjudicationForMigration()
+    }
+
+    @Test
+    fun `should call api with OAuth2 token`() {
       runBlocking {
         adjudicationsService.createAdjudication(
           AdjudicationMigrateDto(
@@ -61,16 +66,75 @@ internal class AdjudicationsServiceTest {
           ),
         )
       }
-    }
 
-    @Test
-    fun `should call api with OAuth2 token`() {
       adjudicationsApi.verify(
         postRequestedFor(WireMock.urlEqualTo("/reported-adjudications/migrate")).withHeader(
           "Authorization",
           WireMock.equalTo("Bearer ABCDE"),
         ),
       )
+    }
+
+    @Test
+    fun `will return NULL for 406 error`() = runTest {
+      adjudicationsApi.stubCreateAdjudicationForMigrationWithError(status = 406)
+
+      val mappings = adjudicationsService.createAdjudication(
+        AdjudicationMigrateDto(
+          agencyIncidentId = 1,
+          oicIncidentId = 1,
+          offenceSequence = 1,
+          bookingId = 1,
+          agencyId = "MDI",
+          incidentDateTime = "2021-01-01T12:00:00",
+          reportedDateTime = "2021-01-01T13:00:00",
+          locationId = 1,
+          statement = "statement",
+          reportingOfficer = ReportingOfficer("M.BOB"),
+          createdByUsername = "J.KWEKU",
+          prisoner = MigratePrisoner(prisonerNumber = "A1234KL", gender = "M", currentAgencyId = "MDI"),
+          offence = MigrateOffence("51:1B", offenceDescription = "Assault on another prisoner"),
+          witnesses = emptyList(),
+          damages = emptyList(),
+          evidence = emptyList(),
+          punishments = emptyList(),
+          hearings = emptyList(),
+          disIssued = emptyList(),
+        ),
+      )
+
+      assertThat(mappings).isNull()
+    }
+
+    @Test
+    fun `will throw exception for any error other than 406`() = runTest {
+      adjudicationsApi.stubCreateAdjudicationForMigrationWithError(status = 500)
+
+      assertThrows<InternalServerError> {
+        adjudicationsService.createAdjudication(
+          AdjudicationMigrateDto(
+            agencyIncidentId = 1,
+            oicIncidentId = 1,
+            offenceSequence = 1,
+            bookingId = 1,
+            agencyId = "MDI",
+            incidentDateTime = "2021-01-01T12:00:00",
+            reportedDateTime = "2021-01-01T13:00:00",
+            locationId = 1,
+            statement = "statement",
+            reportingOfficer = ReportingOfficer("M.BOB"),
+            createdByUsername = "J.KWEKU",
+            prisoner = MigratePrisoner(prisonerNumber = "A1234KL", gender = "M", currentAgencyId = "MDI"),
+            offence = MigrateOffence("51:1B", offenceDescription = "Assault on another prisoner"),
+            witnesses = emptyList(),
+            damages = emptyList(),
+            evidence = emptyList(),
+            punishments = emptyList(),
+            hearings = emptyList(),
+            disIssued = emptyList(),
+          ),
+        )
+      }
     }
   }
 

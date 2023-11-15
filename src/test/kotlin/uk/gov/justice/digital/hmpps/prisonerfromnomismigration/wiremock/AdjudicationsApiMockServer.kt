@@ -188,6 +188,23 @@ class AdjudicationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubCreateAdjudicationForMigrationWithError(status: Int) {
+    stubFor(
+      post(WireMock.urlMatching("/reported-adjudications/migrate")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status)
+          .withBody(
+            """
+              {
+                "error": "some error"
+              }
+            """.trimIndent(),
+          ),
+      ),
+    )
+  }
+
   fun verifyCreatedAdjudicationForMigration(builder: RequestPatternBuilder.() -> RequestPatternBuilder = { this }) =
     verify(
       postRequestedFor(WireMock.urlEqualTo("/reported-adjudications/migrate")).builder(),
