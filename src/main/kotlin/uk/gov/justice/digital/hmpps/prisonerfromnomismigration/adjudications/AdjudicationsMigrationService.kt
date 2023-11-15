@@ -253,6 +253,7 @@ class AdjudicationsMigrationService(
   auditService: AuditService,
   private val adjudicationsMappingService: AdjudicationsMappingService,
   private val adjudicationsService: AdjudicationsService,
+  private val mappingCreator: AdjudicationMappingCreator,
   @Value("\${adjudications.page.size:1000}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
@@ -310,20 +311,37 @@ class AdjudicationsMigrationService(
 
         try {
           val mapping = adjudicationsService.createAdjudication(nomisAdjudication.toAdjudication())
-          createAdjudicationMapping(mapping, context = context)
+            ?: mappingCreator.createMigrationMappingResponse(nomisAdjudication)
 
-          telemetryClient.trackEvent(
-            "adjudications-migration-entity-migrated",
-            mapOf(
-              "adjudicationNumber" to adjudicationNumber.toString(),
-              "chargeSequence" to chargeSequence.toString(),
-              "prisonId" to nomisAdjudication.incident.prison.code,
-              "chargeNumber" to mapping.chargeNumberMapping.chargeNumber,
-              "offenderNo" to offenderNo,
-              "migrationId" to context.migrationId,
-            ),
-            null,
-          )
+          mapping?.run {
+            createAdjudicationMapping(mapping, context = context)
+
+            telemetryClient.trackEvent(
+              "adjudications-migration-entity-migrated",
+              mapOf(
+                "adjudicationNumber" to adjudicationNumber.toString(),
+                "chargeSequence" to chargeSequence.toString(),
+                "prisonId" to nomisAdjudication.incident.prison.code,
+                "chargeNumber" to mapping.chargeNumberMapping.chargeNumber,
+                "offenderNo" to offenderNo,
+                "migrationId" to context.migrationId,
+              ),
+              null,
+            )
+          } ?: run {
+            // unlikely to get here since we checked the mapping just above
+            telemetryClient.trackEvent(
+              "adjudications-migration-entity-already-migrated",
+              mapOf(
+                "adjudicationNumber" to adjudicationNumber.toString(),
+                "chargeSequence" to chargeSequence.toString(),
+                "prisonId" to nomisAdjudication.incident.prison.code,
+                "offenderNo" to offenderNo,
+                "migrationId" to context.migrationId,
+              ),
+              null,
+            )
+          }
         } catch (e: WebClientResponseException) { // only required while DPS is analysing the data failures
           if (reportMode && e.statusCode.is4xxClientError) {
             log.error("Ignoring error ${e.statusCode} for adjudicationNumber: $adjudicationNumber/$chargeSequence")

@@ -10,3 +10,8 @@ suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitBodyOrNotFound(
   this.bodyToMono<T>()
     .onErrorResume(WebClientResponseException.NotFound::class.java) { Mono.empty() }
     .awaitSingleOrNull()
+
+suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitBodyOrNotAcceptable(): T? =
+  this.bodyToMono<T>()
+    .onErrorResume(WebClientResponseException.NotAcceptable::class.java) { Mono.empty() }
+    .awaitSingleOrNull()
