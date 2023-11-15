@@ -60,6 +60,20 @@ class AdjudicationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     damages: String = "[]",
     evidence: String = "[]",
     punishments: String = "[]",
+    hearings: String = """[{
+                "id": 345,
+                "locationId": 27187,
+                "dateTimeOfHearing": "2023-08-23T14:25:00",
+                "oicHearingType": "GOV_ADULT",
+                "agencyId": "MDI",
+                  "outcome": {
+                        "id": 962,
+                        "adjudicator": "JBULLENGEN",
+                        "code": "COMPLETE",
+                        "plea": "GUILTY"
+                    }
+            }]
+    """.trimMargin(),
     status: String = "UNSCHEDULED",
   ) {
     stubFor(
@@ -102,19 +116,7 @@ class AdjudicationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         "damages": $damages,
         "evidence": $evidence,
         "witnesses": [],
-        "hearings": [{
-                "id": 345,
-                "locationId": 27187,
-                "dateTimeOfHearing": "2023-08-23T14:25:00",
-                "oicHearingType": "GOV_ADULT",
-                "agencyId": "MDI",
-                  "outcome": {
-                        "id": 962,
-                        "adjudicator": "JBULLENGEN",
-                        "code": "COMPLETE",
-                        "plea": "GUILTY"
-                    }
-            }],
+        "hearings": $hearings,
         "disIssueHistory": [],
         "outcomes": $outcomes,
         "punishments": $punishments,
