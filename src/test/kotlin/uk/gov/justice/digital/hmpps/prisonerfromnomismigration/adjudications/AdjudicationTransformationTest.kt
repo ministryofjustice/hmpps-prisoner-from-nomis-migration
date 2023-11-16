@@ -1194,7 +1194,7 @@ private fun nomisAdjudicationCharge(
   chargeReportDetail: String? = null,
 ): AdjudicationChargeResponse {
   return AdjudicationChargeResponse(
-    adjudicationSequence = chargeSequence,
+    adjudicationSequence = 10,
     offenderNo = offenderNo,
     bookingId = bookingId,
     partyAddedDate = LocalDate.now(),

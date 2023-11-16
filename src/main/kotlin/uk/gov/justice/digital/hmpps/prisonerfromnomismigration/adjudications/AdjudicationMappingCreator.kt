@@ -21,19 +21,19 @@ class AdjudicationMappingCreator(
   private val mappingService: AdjudicationsMappingService,
 ) {
   suspend fun createMigrationMappingResponse(nomisAdjudication: AdjudicationChargeResponse): MigrateResponse? {
-    if (hasAlreadyCreatedMappings(nomisAdjudication.adjudicationNumber, nomisAdjudication.adjudicationSequence)) {
+    if (hasAlreadyCreatedMappings(nomisAdjudication.adjudicationNumber, nomisAdjudication.charge.chargeSequence)) {
       return null
     }
     val dpsAdjudication = getDpsAdjudication(
       nomisAdjudication.adjudicationNumber,
-      nomisAdjudication.adjudicationSequence,
+      nomisAdjudication.charge.chargeSequence,
       nomisAdjudication.incident.prison.code,
     )
     return MigrateResponse(
       chargeNumberMapping = ChargeNumberMapping(
         chargeNumber = dpsAdjudication.reportedAdjudication.chargeNumber,
         oicIncidentId = nomisAdjudication.adjudicationNumber,
-        offenceSequence = nomisAdjudication.adjudicationSequence.toLong(),
+        offenceSequence = nomisAdjudication.charge.chargeSequence.toLong(),
       ),
       hearingMappings = hearingMappings(nomisAdjudication.hearings, dpsAdjudication.reportedAdjudication.hearings),
       punishmentMappings = punishmentMappings(

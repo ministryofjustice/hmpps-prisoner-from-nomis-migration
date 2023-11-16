@@ -471,7 +471,7 @@ class AdjudicationMappingCreatorTest {
     bookingId: Long = 12345L,
   ): AdjudicationChargeResponse {
     return AdjudicationChargeResponse(
-      adjudicationSequence = chargeSequence,
+      adjudicationSequence = 10,
       adjudicationNumber = adjudicationNumber,
       incident = AdjudicationIncident(
         adjudicationIncidentId = 98765L,
