@@ -1355,7 +1355,8 @@ private fun allocationsResponse(
     "endComment": "Ended",
     "endReasonCode": "WDRAWN",
     "payBand": "1",
-    "livingUnitDescription": "BXI-A-1-01"
+    "livingUnitDescription": "BXI-A-1-01",
+    "exclusions": []
 }
   """.trimIndent()
 
