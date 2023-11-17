@@ -155,31 +155,6 @@ class AllocationsMigrationService(
           null,
         )
       }
-
-  fun toSlots(exclusions: List<AllocationExclusion>): List<Slot> =
-    listOf("AM", "PM", "ED").map { timeSlot ->
-      exclusions
-        .filter { exclusion -> exclusion.slot == null || exclusion.slot.value == timeSlot }
-        .map { exclusion -> findDay(exclusion) }
-        .toSet()
-        .let { daysOfWeek ->
-          Slot(
-            weekNumber = 1,
-            timeSlot = timeSlot,
-            monday = MONDAY in daysOfWeek,
-            tuesday = TUESDAY in daysOfWeek,
-            wednesday = WEDNESDAY in daysOfWeek,
-            thursday = THURSDAY in daysOfWeek,
-            friday = FRIDAY in daysOfWeek,
-            saturday = SATURDAY in daysOfWeek,
-            sunday = SUNDAY in daysOfWeek,
-            daysOfWeek = daysOfWeek,
-          )
-        }
-    }.filter { it.daysOfWeek.isNotEmpty() }
-
-  private fun findDay(exclusion: AllocationExclusion) =
-    Slot.DaysOfWeek.entries.first { day -> day.value.startsWith(exclusion.day.value) }
 }
 
 private fun GetAllocationResponse.toAllocationMigrateRequest(activityId: Long, splitRegimeActivityId: Long?): AllocationMigrateRequest =
@@ -195,7 +170,33 @@ private fun GetAllocationResponse.toAllocationMigrateRequest(activityId: Long, s
     endComment = endComment,
     cellLocation = livingUnitDescription,
     nomisPayBand = payBand,
+    exclusions = exclusions.toDpsExclusions(),
   )
+
+fun List<AllocationExclusion>.toDpsExclusions(): List<Slot> =
+  listOf("AM", "PM", "ED").map { timeSlot ->
+    this
+      .filter { exclusion -> exclusion.slot == null || exclusion.slot.value == timeSlot }
+      .map { exclusion -> exclusion.findDay() }
+      .toSet()
+      .let { daysOfWeek ->
+        Slot(
+          weekNumber = 1,
+          timeSlot = timeSlot,
+          monday = MONDAY in daysOfWeek,
+          tuesday = TUESDAY in daysOfWeek,
+          wednesday = WEDNESDAY in daysOfWeek,
+          thursday = THURSDAY in daysOfWeek,
+          friday = FRIDAY in daysOfWeek,
+          saturday = SATURDAY in daysOfWeek,
+          sunday = SUNDAY in daysOfWeek,
+          daysOfWeek = daysOfWeek,
+        )
+      }
+  }.filter { it.daysOfWeek.isNotEmpty() }
+
+private fun AllocationExclusion.findDay() =
+  Slot.DaysOfWeek.entries.first { day -> day.value.startsWith(this.day.value) }
 
 private fun AllocationMigrateResponse.toAllocationMigrateMappingDto(nomisAllocationId: Long, migrationId: String) =
   AllocationMigrationMappingDto(

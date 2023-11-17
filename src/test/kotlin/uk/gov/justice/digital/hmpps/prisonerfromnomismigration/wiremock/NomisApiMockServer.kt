@@ -1356,7 +1356,7 @@ private fun allocationsResponse(
     "endReasonCode": "WDRAWN",
     "payBand": "1",
     "livingUnitDescription": "BXI-A-1-01",
-    "exclusions": []
+    "exclusions": [{ "day": "MON", "slot": "AM" }]
 }
   """.trimIndent()
 
