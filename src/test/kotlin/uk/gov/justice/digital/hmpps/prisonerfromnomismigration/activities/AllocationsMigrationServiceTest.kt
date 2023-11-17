@@ -32,12 +32,25 @@ import org.springframework.data.domain.Pageable
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AllocationMigrateResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.Slot
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.Slot.DaysOfWeek.MONDAY
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.Slot.DaysOfWeek.SATURDAY
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.Slot.DaysOfWeek.SUNDAY
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.Slot.DaysOfWeek.TUESDAY
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.Slot.DaysOfWeek.WEDNESDAY
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ActivityMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AllocationMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AllocationExclusion
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AllocationExclusion.Day.MON
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AllocationExclusion.Day.SAT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AllocationExclusion.Day.SUN
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AllocationExclusion.Day.TUE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AllocationExclusion.Day.WED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AllocationExclusion.Slot.AM
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AllocationExclusion.Slot.ED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AllocationExclusion.Slot.PM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveAllocationIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetAllocationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
@@ -445,7 +458,10 @@ class AllocationsMigrationServiceTest {
           endReasonCode = "WDRAWN",
           payBand = "1",
           livingUnitDescription = "BXI-A-1-01",
-          exclusions = listOf(),
+          exclusions = listOf(
+            AllocationExclusion(day = MON, slot = AM),
+            AllocationExclusion(day = TUE, slot = null),
+          ),
         ),
       )
 
@@ -498,6 +514,11 @@ class AllocationsMigrationServiceTest {
           assertThat(it.cellLocation).isEqualTo("BXI-A-1-01")
           assertThat(it.nomisPayBand).isEqualTo("1")
           assertThat(it.endComment).isEqualTo("Ended")
+          assertThat(it.exclusions).containsExactlyInAnyOrder(
+            aSlot(timeSlot = "AM", monday = true, tuesday = true, daysOfWeek = setOf(MONDAY, TUESDAY)),
+            aSlot(timeSlot = "PM", tuesday = true, daysOfWeek = setOf(TUESDAY)),
+            aSlot(timeSlot = "ED", tuesday = true, daysOfWeek = setOf(TUESDAY)),
+          )
         },
       )
     }
@@ -682,6 +703,20 @@ class AllocationsMigrationServiceTest {
         isNull(),
       )
     }
+
+    private fun aSlot(timeSlot: String, monday: Boolean = false, tuesday: Boolean = false, daysOfWeek: Set<Slot.DaysOfWeek> = setOf()) =
+      Slot(
+        weekNumber = 1,
+        timeSlot = timeSlot,
+        monday = monday,
+        tuesday = tuesday,
+        wednesday = false,
+        thursday = false,
+        friday = false,
+        saturday = false,
+        sunday = false,
+        daysOfWeek = daysOfWeek,
+      )
   }
 
   @Nested
@@ -975,14 +1010,14 @@ class AllocationsMigrationServiceTest {
   inner class ToSlots {
     @Test
     fun `should return empty list when empty list`() {
-      assertThat(service.toSlots(emptyList())).isEmpty()
+      assertThat(emptyList<AllocationExclusion>().toDpsExclusions()).isEmpty()
     }
 
     @Test
     fun `should map a single slot`() {
-      val exclusions = listOf(AllocationExclusion(AllocationExclusion.Day.MON, AllocationExclusion.Slot.AM))
+      val exclusions = listOf(AllocationExclusion(MON, AM))
 
-      assertThat(service.toSlots(exclusions)).containsExactly(
+      assertThat(exclusions.toDpsExclusions()).containsExactly(
         Slot(
           weekNumber = 1,
           timeSlot = "AM",
@@ -993,7 +1028,7 @@ class AllocationsMigrationServiceTest {
           friday = false,
           saturday = false,
           sunday = false,
-          daysOfWeek = setOf(Slot.DaysOfWeek.MONDAY),
+          daysOfWeek = setOf(MONDAY),
         ),
       )
     }
@@ -1001,12 +1036,12 @@ class AllocationsMigrationServiceTest {
     @Test
     fun `should map a multiple slots`() {
       val exclusions = listOf(
-        AllocationExclusion(AllocationExclusion.Day.MON, AllocationExclusion.Slot.AM),
-        AllocationExclusion(AllocationExclusion.Day.TUE, AllocationExclusion.Slot.AM),
-        AllocationExclusion(AllocationExclusion.Day.WED, AllocationExclusion.Slot.PM),
+        AllocationExclusion(MON, AM),
+        AllocationExclusion(TUE, AM),
+        AllocationExclusion(WED, PM),
       )
 
-      assertThat(service.toSlots(exclusions)).containsExactlyInAnyOrder(
+      assertThat(exclusions.toDpsExclusions()).containsExactlyInAnyOrder(
         Slot(
           weekNumber = 1,
           timeSlot = "AM",
@@ -1017,7 +1052,7 @@ class AllocationsMigrationServiceTest {
           friday = false,
           saturday = false,
           sunday = false,
-          daysOfWeek = setOf(Slot.DaysOfWeek.MONDAY, Slot.DaysOfWeek.TUESDAY),
+          daysOfWeek = setOf(MONDAY, TUESDAY),
         ),
         Slot(
           weekNumber = 1,
@@ -1029,7 +1064,7 @@ class AllocationsMigrationServiceTest {
           friday = false,
           saturday = false,
           sunday = false,
-          daysOfWeek = setOf(Slot.DaysOfWeek.WEDNESDAY),
+          daysOfWeek = setOf(WEDNESDAY),
         ),
       )
     }
@@ -1037,10 +1072,10 @@ class AllocationsMigrationServiceTest {
     @Test
     fun `should map a full day`() {
       val exclusions = listOf(
-        AllocationExclusion(AllocationExclusion.Day.MON, null),
+        AllocationExclusion(MON, null),
       )
 
-      assertThat(service.toSlots(exclusions)).containsExactlyInAnyOrder(
+      assertThat(exclusions.toDpsExclusions()).containsExactlyInAnyOrder(
         Slot(
           weekNumber = 1,
           timeSlot = "AM",
@@ -1051,7 +1086,7 @@ class AllocationsMigrationServiceTest {
           friday = false,
           saturday = false,
           sunday = false,
-          daysOfWeek = setOf(Slot.DaysOfWeek.MONDAY),
+          daysOfWeek = setOf(MONDAY),
         ),
         Slot(
           weekNumber = 1,
@@ -1063,7 +1098,7 @@ class AllocationsMigrationServiceTest {
           friday = false,
           saturday = false,
           sunday = false,
-          daysOfWeek = setOf(Slot.DaysOfWeek.MONDAY),
+          daysOfWeek = setOf(MONDAY),
         ),
         Slot(
           weekNumber = 1,
@@ -1075,7 +1110,7 @@ class AllocationsMigrationServiceTest {
           friday = false,
           saturday = false,
           sunday = false,
-          daysOfWeek = setOf(Slot.DaysOfWeek.MONDAY),
+          daysOfWeek = setOf(MONDAY),
         ),
       )
     }
@@ -1083,14 +1118,14 @@ class AllocationsMigrationServiceTest {
     @Test
     fun `should map a combination of scenarios`() {
       val exclusions = listOf(
-        AllocationExclusion(AllocationExclusion.Day.MON, null),
-        AllocationExclusion(AllocationExclusion.Day.TUE, AllocationExclusion.Slot.AM),
-        AllocationExclusion(AllocationExclusion.Day.WED, null),
-        AllocationExclusion(AllocationExclusion.Day.SAT, AllocationExclusion.Slot.PM),
-        AllocationExclusion(AllocationExclusion.Day.SUN, AllocationExclusion.Slot.ED),
+        AllocationExclusion(MON, null),
+        AllocationExclusion(TUE, AM),
+        AllocationExclusion(WED, null),
+        AllocationExclusion(SAT, PM),
+        AllocationExclusion(SUN, ED),
       )
 
-      assertThat(service.toSlots(exclusions)).containsExactlyInAnyOrder(
+      assertThat(exclusions.toDpsExclusions()).containsExactlyInAnyOrder(
         Slot(
           weekNumber = 1,
           timeSlot = "AM",
@@ -1101,7 +1136,7 @@ class AllocationsMigrationServiceTest {
           friday = false,
           saturday = false,
           sunday = false,
-          daysOfWeek = setOf(Slot.DaysOfWeek.MONDAY, Slot.DaysOfWeek.TUESDAY, Slot.DaysOfWeek.WEDNESDAY),
+          daysOfWeek = setOf(MONDAY, TUESDAY, WEDNESDAY),
         ),
         Slot(
           weekNumber = 1,
@@ -1113,7 +1148,7 @@ class AllocationsMigrationServiceTest {
           friday = false,
           saturday = true,
           sunday = false,
-          daysOfWeek = setOf(Slot.DaysOfWeek.MONDAY, Slot.DaysOfWeek.WEDNESDAY, Slot.DaysOfWeek.SATURDAY),
+          daysOfWeek = setOf(MONDAY, WEDNESDAY, SATURDAY),
         ),
         Slot(
           weekNumber = 1,
@@ -1125,7 +1160,7 @@ class AllocationsMigrationServiceTest {
           friday = false,
           saturday = false,
           sunday = true,
-          daysOfWeek = setOf(Slot.DaysOfWeek.MONDAY, Slot.DaysOfWeek.WEDNESDAY, Slot.DaysOfWeek.SUNDAY),
+          daysOfWeek = setOf(MONDAY, WEDNESDAY, SUNDAY),
         ),
       )
     }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.containing
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
@@ -127,6 +128,10 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
       verify(
         postRequestedFor(urlPathEqualTo("/migrate/allocation"))
           .withRequestBody(matchingJsonPath("activityId", equalTo((activityScheduleId + offset).toString())))
+          .withRequestBody(matchingJsonPath("exclusions[0].timeSlot", equalTo("AM")))
+          .withRequestBody(matchingJsonPath("exclusions[0].monday", equalTo("true")))
+          .withRequestBody(matchingJsonPath("exclusions[0].daysOfWeek.length()", equalTo("1")))
+          .withRequestBody(matchingJsonPath("exclusions[0].daysOfWeek[0]", containing("MONDAY")))
           .apply {
             activityScheduleId2
               ?.run { withRequestBody(matchingJsonPath("splitRegimeActivityId", equalTo((activityScheduleId2.let { (offset + it).toString() })))) }
