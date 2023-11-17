@@ -8,12 +8,21 @@ import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AllocationMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AllocationMigrateResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.Slot
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.Slot.DaysOfWeek.FRIDAY
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.Slot.DaysOfWeek.MONDAY
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.Slot.DaysOfWeek.SATURDAY
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.Slot.DaysOfWeek.SUNDAY
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.Slot.DaysOfWeek.THURSDAY
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.Slot.DaysOfWeek.TUESDAY
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.Slot.DaysOfWeek.WEDNESDAY
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AllocationMigrationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AllocationExclusion
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveAllocationIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetAllocationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
@@ -146,6 +155,28 @@ class AllocationsMigrationService(
           null,
         )
       }
+
+  fun toSlots(exclusions: List<AllocationExclusion>): List<Slot> =
+    listOf("AM", "PM", "ED").map { timeSlot ->
+      exclusions
+        .filter { exclusion -> exclusion.slot == null || exclusion.slot.value == timeSlot }
+        .map { exclusion -> Slot.DaysOfWeek.entries.first { day -> day.value.startsWith(exclusion.day.value) } }
+        .toSet()
+        .let { daysOfWeek ->
+          Slot(
+            weekNumber = 1,
+            timeSlot = timeSlot,
+            monday = MONDAY in daysOfWeek,
+            tuesday = TUESDAY in daysOfWeek,
+            wednesday = WEDNESDAY in daysOfWeek,
+            thursday = THURSDAY in daysOfWeek,
+            friday = FRIDAY in daysOfWeek,
+            saturday = SATURDAY in daysOfWeek,
+            sunday = SUNDAY in daysOfWeek,
+            daysOfWeek = daysOfWeek,
+          )
+        }
+    }.filter { it.daysOfWeek.isNotEmpty() }
 }
 
 private fun GetAllocationResponse.toAllocationMigrateRequest(activityId: Long, splitRegimeActivityId: Long?): AllocationMigrateRequest =

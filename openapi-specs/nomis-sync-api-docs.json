@@ -2,12 +2,12 @@
   "openapi": "3.0.1",
   "info": {
     "title": "NOMIS Synchronisation API",
-    "description": "Controls writing Prisoner information back to NOMIS for data synchronistion (not intended for general usage)",
+    "description": "Controls writing Prisoner information back to NOMIS for data synchronisation (not intended for general usage)",
     "contact": {
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2023-11-03.5431.2f35d93"
+    "version": "2023-11-16.5599.1c16549"
   },
   "servers": [
     {
@@ -4298,6 +4298,84 @@
         }
       }
     },
+    "/prisoners/{offenderNo}/sentencing/court-case/{id}": {
+      "get": {
+        "tags": [
+          "sentencing-resource"
+        ],
+        "summary": "get a court case",
+        "description": "Requires role NOMIS_SENTENCING. Retrieves a court case by id",
+        "operationId": "getCourtCase",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Court case id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Court case id",
+              "example": 12345
+            },
+            "example": 12345
+          },
+          {
+            "name": "offenderNo",
+            "in": "path",
+            "description": "Offender No",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Offender No",
+              "example": 12345
+            },
+            "example": 12345
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the court case details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourtCaseResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint when role NOMIS_SENTENCING not present",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Offender not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/prisoners/ids": {
       "get": {
         "tags": [
@@ -7338,6 +7416,39 @@
         },
         "description": "Course schedule update update response"
       },
+      "AllocationExclusion": {
+        "required": [
+          "day"
+        ],
+        "type": "object",
+        "properties": {
+          "day": {
+            "type": "string",
+            "description": "The day of the exclusion",
+            "example": "MON",
+            "enum": [
+              "MON",
+              "TUE",
+              "WED",
+              "THU",
+              "FRI",
+              "SAT",
+              "SUN"
+            ]
+          },
+          "slot": {
+            "type": "string",
+            "description": "The session the exclusion applies to (morning, afternoon or evening). Or null for the whole day.",
+            "example": "AM",
+            "enum": [
+              "AM",
+              "PM",
+              "ED"
+            ]
+          }
+        },
+        "description": "A session to exclude from the allocation during which period attendances will not be generated"
+      },
       "UpsertAllocationRequest": {
         "required": [
           "bookingId",
@@ -7391,6 +7502,13 @@
             "type": "string",
             "description": "Offender program status from domain OFF_PRG_STS",
             "example": "ALLOC"
+          },
+          "exclusions": {
+            "type": "array",
+            "description": "Sessions excluded from the allocation during which period attendances will not be generated",
+            "items": {
+              "$ref": "#/components/schemas/AllocationExclusion"
+            }
           }
         },
         "description": "Course activity create or update allocation request"
@@ -9008,13 +9126,13 @@
       "PageVisitIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -9215,16 +9333,185 @@
         },
         "description": "Adjustment type"
       },
-      "PagePrisonerId": {
+      "CourtCaseResponse": {
+        "required": [
+          "caseSequence",
+          "caseStatus",
+          "caseType",
+          "courtEvents",
+          "createdByUsername",
+          "createdDateTime",
+          "id",
+          "lidsCaseNumber",
+          "offenderNo",
+          "prisonId"
+        ],
         "type": "object",
         "properties": {
-          "totalPages": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "offenderNo": {
+            "type": "string"
+          },
+          "caseInfoNumber": {
+            "type": "string"
+          },
+          "caseSequence": {
             "type": "integer",
             "format": "int32"
           },
+          "caseStatus": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "caseType": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "beginDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "prisonId": {
+            "type": "string"
+          },
+          "combinedCaseId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "statusUpdateStaffId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "statusUpdateDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "statusUpdateComment": {
+            "type": "string"
+          },
+          "statusUpdateReason": {
+            "type": "string"
+          },
+          "lidsCaseId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lidsCombinedCaseId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lidsCaseNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "example": "2021-07-05T10:35:17"
+          },
+          "createdByUsername": {
+            "type": "string"
+          },
+          "courtEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CourtEventResponse"
+            }
+          }
+        },
+        "description": "Court Case"
+      },
+      "CourtEventResponse": {
+        "required": [
+          "courtEventType",
+          "createdByUsername",
+          "createdDateTime",
+          "eventDate",
+          "eventStatus",
+          "id",
+          "offenderNo",
+          "prisonId",
+          "startTime"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "offenderNo": {
+            "type": "string"
+          },
+          "eventDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "startTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "example": "2021-07-05T10:35:17"
+          },
+          "courtEventType": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "eventStatus": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "directionCode": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "judgeName": {
+            "type": "string"
+          },
+          "prisonId": {
+            "type": "string"
+          },
+          "outcomeReasonCode": {
+            "type": "string"
+          },
+          "commentText": {
+            "type": "string"
+          },
+          "orderRequestedFlag": {
+            "type": "boolean"
+          },
+          "holdFlag": {
+            "type": "boolean"
+          },
+          "nextEventRequestFlag": {
+            "type": "boolean"
+          },
+          "nextEventDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "nextEventStartTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "example": "2021-07-05T10:35:17"
+          },
+          "createdDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "example": "2021-07-05T10:35:17"
+          },
+          "createdByUsername": {
+            "type": "string"
+          }
+        },
+        "description": "Court Event"
+      },
+      "PagePrisonerId": {
+        "type": "object",
+        "properties": {
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -9374,13 +9661,13 @@
       "PageNonAssociationIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -9499,13 +9786,13 @@
       "PageIncentiveIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -9693,13 +9980,13 @@
       "PageAppointmentIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -9740,6 +10027,7 @@
         "required": [
           "bookingId",
           "courseActivityId",
+          "exclusions",
           "nomisId",
           "prisonId",
           "startDate",
@@ -9805,6 +10093,13 @@
             "type": "string",
             "description": "Cell description (can be null if OUT or being transferred)",
             "example": "RSI-A-1-001"
+          },
+          "exclusions": {
+            "type": "array",
+            "description": "Sessions excluded from the allocation during which period attendances will not be generated",
+            "items": {
+              "$ref": "#/components/schemas/AllocationExclusion"
+            }
           }
         },
         "description": "Allocation to an activity"
@@ -9850,13 +10145,13 @@
       "PageFindActiveAllocationIdsResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -9915,13 +10210,13 @@
       "PageAdjustmentIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -9986,13 +10281,13 @@
       "PageAdjudicationChargeIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -10318,13 +10613,13 @@
       "PageFindActiveActivityIdsResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
