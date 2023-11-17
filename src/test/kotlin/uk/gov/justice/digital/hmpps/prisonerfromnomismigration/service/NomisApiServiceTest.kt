@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.web.reactive.function.client.WebClientResponseException.NotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AllocationExclusion
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveActivityIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveAllocationIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NonAssociationIdResponse
@@ -806,7 +807,13 @@ internal class NomisApiServiceTest {
                   "endReasonCode": "WDRAWN",
                   "suspended": false,
                   "payBand": "1",
-                  "livingUnitDescription": "RSI-A-1-001"
+                  "livingUnitDescription": "RSI-A-1-001",
+                  "exclusions": [
+                    {
+                      "day": "MON",
+                      "slot": "AM"
+                    }
+                  ]
                 }
               """.trimIndent(),
             ),
@@ -830,15 +837,18 @@ internal class NomisApiServiceTest {
     internal fun `should return allocation data`(): Unit = runBlocking {
       val allocation = nomisService.getAllocation(allocationId = 3333)
 
-      assertThat(allocation.nomisId).isEqualTo("A1234BC")
-      assertThat(allocation.bookingId).isEqualTo(12345)
-      assertThat(allocation.startDate).isEqualTo("2023-03-12")
-      assertThat(allocation.endDate).isEqualTo("2023-05-26")
-      assertThat(allocation.endComment).isEqualTo("Removed due to schedule clash")
-      assertThat(allocation.endReasonCode).isEqualTo("WDRAWN")
-      assertThat(allocation.suspended).isEqualTo(false)
-      assertThat(allocation.payBand).isEqualTo("1")
-      assertThat(allocation.livingUnitDescription).isEqualTo("RSI-A-1-001")
+      with(allocation) {
+        assertThat(nomisId).isEqualTo("A1234BC")
+        assertThat(bookingId).isEqualTo(12345)
+        assertThat(startDate).isEqualTo("2023-03-12")
+        assertThat(endDate).isEqualTo("2023-05-26")
+        assertThat(endComment).isEqualTo("Removed due to schedule clash")
+        assertThat(endReasonCode).isEqualTo("WDRAWN")
+        assertThat(suspended).isEqualTo(false)
+        assertThat(payBand).isEqualTo("1")
+        assertThat(livingUnitDescription).isEqualTo("RSI-A-1-001")
+        assertThat(exclusions).containsExactly(AllocationExclusion(day = AllocationExclusion.Day.MON, slot = AllocationExclusion.Slot.AM))
+      }
     }
 
     @Nested

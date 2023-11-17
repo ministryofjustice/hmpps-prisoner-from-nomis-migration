@@ -24,6 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AllocationMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.NomisPayRate
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.NomisScheduleRule
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.Slot
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension.Companion.activitiesApi
 import java.time.LocalDate
@@ -270,6 +271,20 @@ internal class ActivitiesApiServiceTest {
         cellLocation = "BXI-A-1-01",
         nomisPayBand = "1",
         endComment = "Ended",
+        exclusions = listOf(
+          Slot(
+            weekNumber = 1,
+            timeSlot = "AM",
+            monday = true,
+            tuesday = false,
+            wednesday = false,
+            thursday = false,
+            friday = false,
+            saturday = false,
+            sunday = false,
+            daysOfWeek = setOf(Slot.DaysOfWeek.MONDAY),
+          ),
+        ),
       )
 
     @Test
@@ -302,7 +317,21 @@ internal class ActivitiesApiServiceTest {
                   "suspendedFlag": true,
                   "cellLocation": "BXI-A-1-01",
                   "nomisPayBand": "1",
-                  "endComment": "Ended"
+                  "endComment": "Ended",
+                  "exclusions": [
+                  {
+                    "weekNumber": 1,
+                    "timeSlot": "AM",
+                    "monday": true,
+                    "tuesday": false,
+                    "wednesday": false,
+                    "thursday": false,
+                    "friday": false,
+                    "saturday": false,
+                    "sunday": false,
+                    "daysOfWeek": ["MONDAY"]
+                  }
+  ]
                 }
               """.trimIndent(),
             ),

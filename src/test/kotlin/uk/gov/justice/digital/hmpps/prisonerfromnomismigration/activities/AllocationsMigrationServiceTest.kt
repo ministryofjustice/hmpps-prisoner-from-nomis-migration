@@ -31,11 +31,13 @@ import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AllocationMigrateResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.Slot
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ActivityMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AllocationMigrationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AllocationExclusion
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveAllocationIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetAllocationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
@@ -443,6 +445,7 @@ class AllocationsMigrationServiceTest {
           endReasonCode = "WDRAWN",
           payBand = "1",
           livingUnitDescription = "BXI-A-1-01",
+          exclusions = listOf(),
         ),
       )
 
@@ -965,6 +968,166 @@ class AllocationsMigrationServiceTest {
           recordsMigrated = eq(5),
         )
       }
+    }
+  }
+
+  @Nested
+  inner class ToSlots {
+    @Test
+    fun `should return empty list when empty list`() {
+      assertThat(service.toSlots(emptyList())).isEmpty()
+    }
+
+    @Test
+    fun `should map a single slot`() {
+      val exclusions = listOf(AllocationExclusion(AllocationExclusion.Day.MON, AllocationExclusion.Slot.AM))
+
+      assertThat(service.toSlots(exclusions)).containsExactly(
+        Slot(
+          weekNumber = 1,
+          timeSlot = "AM",
+          monday = true,
+          tuesday = false,
+          wednesday = false,
+          thursday = false,
+          friday = false,
+          saturday = false,
+          sunday = false,
+          daysOfWeek = setOf(Slot.DaysOfWeek.MONDAY),
+        ),
+      )
+    }
+
+    @Test
+    fun `should map a multiple slots`() {
+      val exclusions = listOf(
+        AllocationExclusion(AllocationExclusion.Day.MON, AllocationExclusion.Slot.AM),
+        AllocationExclusion(AllocationExclusion.Day.TUE, AllocationExclusion.Slot.AM),
+        AllocationExclusion(AllocationExclusion.Day.WED, AllocationExclusion.Slot.PM),
+      )
+
+      assertThat(service.toSlots(exclusions)).containsExactlyInAnyOrder(
+        Slot(
+          weekNumber = 1,
+          timeSlot = "AM",
+          monday = true,
+          tuesday = true,
+          wednesday = false,
+          thursday = false,
+          friday = false,
+          saturday = false,
+          sunday = false,
+          daysOfWeek = setOf(Slot.DaysOfWeek.MONDAY, Slot.DaysOfWeek.TUESDAY),
+        ),
+        Slot(
+          weekNumber = 1,
+          timeSlot = "PM",
+          monday = false,
+          tuesday = false,
+          wednesday = true,
+          thursday = false,
+          friday = false,
+          saturday = false,
+          sunday = false,
+          daysOfWeek = setOf(Slot.DaysOfWeek.WEDNESDAY),
+        ),
+      )
+    }
+
+    @Test
+    fun `should map a full day`() {
+      val exclusions = listOf(
+        AllocationExclusion(AllocationExclusion.Day.MON, null),
+      )
+
+      assertThat(service.toSlots(exclusions)).containsExactlyInAnyOrder(
+        Slot(
+          weekNumber = 1,
+          timeSlot = "AM",
+          monday = true,
+          tuesday = false,
+          wednesday = false,
+          thursday = false,
+          friday = false,
+          saturday = false,
+          sunday = false,
+          daysOfWeek = setOf(Slot.DaysOfWeek.MONDAY),
+        ),
+        Slot(
+          weekNumber = 1,
+          timeSlot = "PM",
+          monday = true,
+          tuesday = false,
+          wednesday = false,
+          thursday = false,
+          friday = false,
+          saturday = false,
+          sunday = false,
+          daysOfWeek = setOf(Slot.DaysOfWeek.MONDAY),
+        ),
+        Slot(
+          weekNumber = 1,
+          timeSlot = "ED",
+          monday = true,
+          tuesday = false,
+          wednesday = false,
+          thursday = false,
+          friday = false,
+          saturday = false,
+          sunday = false,
+          daysOfWeek = setOf(Slot.DaysOfWeek.MONDAY),
+        ),
+      )
+    }
+
+    @Test
+    fun `should map a combination of scenarios`() {
+      val exclusions = listOf(
+        AllocationExclusion(AllocationExclusion.Day.MON, null),
+        AllocationExclusion(AllocationExclusion.Day.TUE, AllocationExclusion.Slot.AM),
+        AllocationExclusion(AllocationExclusion.Day.WED, null),
+        AllocationExclusion(AllocationExclusion.Day.SAT, AllocationExclusion.Slot.PM),
+        AllocationExclusion(AllocationExclusion.Day.SUN, AllocationExclusion.Slot.ED),
+      )
+
+      assertThat(service.toSlots(exclusions)).containsExactlyInAnyOrder(
+        Slot(
+          weekNumber = 1,
+          timeSlot = "AM",
+          monday = true,
+          tuesday = true,
+          wednesday = true,
+          thursday = false,
+          friday = false,
+          saturday = false,
+          sunday = false,
+          daysOfWeek = setOf(Slot.DaysOfWeek.MONDAY, Slot.DaysOfWeek.TUESDAY, Slot.DaysOfWeek.WEDNESDAY),
+        ),
+        Slot(
+          weekNumber = 1,
+          timeSlot = "PM",
+          monday = true,
+          tuesday = false,
+          wednesday = true,
+          thursday = false,
+          friday = false,
+          saturday = true,
+          sunday = false,
+          daysOfWeek = setOf(Slot.DaysOfWeek.MONDAY, Slot.DaysOfWeek.WEDNESDAY, Slot.DaysOfWeek.SATURDAY),
+        ),
+        Slot(
+          weekNumber = 1,
+          timeSlot = "ED",
+          monday = true,
+          tuesday = false,
+          wednesday = true,
+          thursday = false,
+          friday = false,
+          saturday = false,
+          sunday = true,
+          daysOfWeek = setOf(Slot.DaysOfWeek.MONDAY, Slot.DaysOfWeek.WEDNESDAY, Slot.DaysOfWeek.SUNDAY),
+        ),
+      )
     }
   }
 }
