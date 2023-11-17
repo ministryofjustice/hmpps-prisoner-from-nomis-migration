@@ -160,7 +160,7 @@ class AllocationsMigrationService(
     listOf("AM", "PM", "ED").map { timeSlot ->
       exclusions
         .filter { exclusion -> exclusion.slot == null || exclusion.slot.value == timeSlot }
-        .map { exclusion -> Slot.DaysOfWeek.entries.first { day -> day.value.startsWith(exclusion.day.value) } }
+        .map { exclusion -> findDay(exclusion) }
         .toSet()
         .let { daysOfWeek ->
           Slot(
@@ -177,6 +177,9 @@ class AllocationsMigrationService(
           )
         }
     }.filter { it.daysOfWeek.isNotEmpty() }
+
+  private fun findDay(exclusion: AllocationExclusion) =
+    Slot.DaysOfWeek.entries.first { day -> day.value.startsWith(exclusion.day.value) }
 }
 
 private fun GetAllocationResponse.toAllocationMigrateRequest(activityId: Long, splitRegimeActivityId: Long?): AllocationMigrateRequest =
