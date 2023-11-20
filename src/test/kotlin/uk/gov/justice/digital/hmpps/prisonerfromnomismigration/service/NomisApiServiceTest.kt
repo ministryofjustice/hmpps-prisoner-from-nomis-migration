@@ -813,6 +813,30 @@ internal class NomisApiServiceTest {
                       "day": "MON",
                       "slot": "AM"
                     }
+                  ],
+                  "scheduleRules": [
+                    {
+                      "startTime": "09:00",
+                      "endTime": "11:30",
+                      "monday": true,
+                      "tuesday": true,
+                      "wednesday": true,
+                      "thursday": true,
+                      "friday": true,
+                      "saturday": true,
+                      "sunday": true
+                    },
+                    {
+                      "startTime": "13:00",
+                      "endTime": "16:30",
+                      "monday": true,
+                      "tuesday": true,
+                      "wednesday": true,
+                      "thursday": true,
+                      "friday": true,
+                      "saturday": true,
+                      "sunday": true
+                    }
                   ]
                 }
               """.trimIndent(),
@@ -848,6 +872,13 @@ internal class NomisApiServiceTest {
         assertThat(payBand).isEqualTo("1")
         assertThat(livingUnitDescription).isEqualTo("RSI-A-1-001")
         assertThat(exclusions).containsExactly(AllocationExclusion(day = AllocationExclusion.Day.MON, slot = AllocationExclusion.Slot.AM))
+        assertThat(scheduleRules.size).isEqualTo(2)
+        assertThat(scheduleRules[0].startTime).isEqualTo("09:00")
+        assertThat(scheduleRules[0].endTime).isEqualTo("11:30")
+        assertThat(scheduleRules[0].monday).isTrue()
+        assertThat(scheduleRules[1].startTime).isEqualTo("13:00")
+        assertThat(scheduleRules[1].endTime).isEqualTo("16:30")
+        assertThat(scheduleRules[1].monday).isTrue()
       }
     }
 

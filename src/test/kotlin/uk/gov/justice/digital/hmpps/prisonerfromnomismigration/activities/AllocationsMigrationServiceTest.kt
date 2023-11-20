@@ -53,6 +53,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.A
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AllocationExclusion.Slot.PM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveAllocationIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetAllocationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ScheduleRulesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
@@ -462,7 +463,11 @@ class AllocationsMigrationServiceTest {
             AllocationExclusion(day = MON, slot = AM),
             AllocationExclusion(day = TUE, slot = null),
           ),
+          scheduleRules = listOf(
+            ScheduleRulesResponse("10:00", "12:00", true, true, true, true, true, false, false),
+          ),
         ),
+
       )
 
       whenever(activityMappingService.findNomisMapping(any())).thenReturn(
@@ -516,8 +521,6 @@ class AllocationsMigrationServiceTest {
           assertThat(it.endComment).isEqualTo("Ended")
           assertThat(it.exclusions).containsExactlyInAnyOrder(
             aSlot(timeSlot = "AM", monday = true, tuesday = true, daysOfWeek = setOf(MONDAY, TUESDAY)),
-            aSlot(timeSlot = "PM", tuesday = true, daysOfWeek = setOf(TUESDAY)),
-            aSlot(timeSlot = "ED", tuesday = true, daysOfWeek = setOf(TUESDAY)),
           )
         },
       )
@@ -1010,14 +1013,22 @@ class AllocationsMigrationServiceTest {
   inner class ToSlots {
     @Test
     fun `should return empty list when empty list`() {
-      assertThat(emptyList<AllocationExclusion>().toDpsExclusions()).isEmpty()
+      assertThat(emptyList<AllocationExclusion>().toDpsExclusions(listOf())).isEmpty()
+    }
+
+    @Test
+    fun `should return empty list if no schedule rules`() {
+      val exclusions = listOf(AllocationExclusion(MON, AM))
+
+      assertThat(exclusions.toDpsExclusions(listOf())).isEmpty()
     }
 
     @Test
     fun `should map a single slot`() {
       val exclusions = listOf(AllocationExclusion(MON, AM))
+      val scheduleRules = listOf(aScheduleRule("AM", listOf("MON")))
 
-      assertThat(exclusions.toDpsExclusions()).containsExactly(
+      assertThat(exclusions.toDpsExclusions(scheduleRules)).containsExactly(
         Slot(
           weekNumber = 1,
           timeSlot = "AM",
@@ -1040,8 +1051,12 @@ class AllocationsMigrationServiceTest {
         AllocationExclusion(TUE, AM),
         AllocationExclusion(WED, PM),
       )
+      val scheduleRules = listOf(
+        aScheduleRule("AM", listOf("MON", "TUE")),
+        aScheduleRule("PM", listOf("WED")),
+      )
 
-      assertThat(exclusions.toDpsExclusions()).containsExactlyInAnyOrder(
+      assertThat(exclusions.toDpsExclusions(scheduleRules)).containsExactlyInAnyOrder(
         Slot(
           weekNumber = 1,
           timeSlot = "AM",
@@ -1070,12 +1085,44 @@ class AllocationsMigrationServiceTest {
     }
 
     @Test
+    fun `should ignore slots without a schedule rule`() {
+      val exclusions = listOf(
+        AllocationExclusion(MON, AM),
+        AllocationExclusion(TUE, AM),
+        AllocationExclusion(WED, PM),
+      )
+      val scheduleRules = listOf(
+        aScheduleRule("AM", listOf("MON")),
+      )
+
+      assertThat(exclusions.toDpsExclusions(scheduleRules)).containsExactlyInAnyOrder(
+        Slot(
+          weekNumber = 1,
+          timeSlot = "AM",
+          monday = true,
+          tuesday = false,
+          wednesday = false,
+          thursday = false,
+          friday = false,
+          saturday = false,
+          sunday = false,
+          daysOfWeek = setOf(MONDAY),
+        ),
+      )
+    }
+
+    @Test
     fun `should map a full day`() {
       val exclusions = listOf(
         AllocationExclusion(MON, null),
       )
+      val scheduleRules = listOf(
+        aScheduleRule("AM", listOf("MON")),
+        aScheduleRule("PM", listOf("MON")),
+        aScheduleRule("ED", listOf("MON")),
+      )
 
-      assertThat(exclusions.toDpsExclusions()).containsExactlyInAnyOrder(
+      assertThat(exclusions.toDpsExclusions(scheduleRules)).containsExactlyInAnyOrder(
         Slot(
           weekNumber = 1,
           timeSlot = "AM",
@@ -1124,8 +1171,13 @@ class AllocationsMigrationServiceTest {
         AllocationExclusion(SAT, PM),
         AllocationExclusion(SUN, ED),
       )
+      val scheduleRules = listOf(
+        aScheduleRule("AM", listOf("MON", "TUE", "WED")),
+        aScheduleRule("PM", listOf("MON", "WED", "SAT")),
+        aScheduleRule("ED", listOf("MON", "WED", "SUN")),
+      )
 
-      assertThat(exclusions.toDpsExclusions()).containsExactlyInAnyOrder(
+      assertThat(exclusions.toDpsExclusions(scheduleRules)).containsExactlyInAnyOrder(
         Slot(
           weekNumber = 1,
           timeSlot = "AM",
@@ -1162,6 +1214,30 @@ class AllocationsMigrationServiceTest {
           sunday = true,
           daysOfWeek = setOf(MONDAY, WEDNESDAY, SUNDAY),
         ),
+      )
+    }
+
+    private fun aScheduleRule(slot: String, days: List<String>): ScheduleRulesResponse {
+      val startTime = when (slot) {
+        "AM" -> "10:00"
+        "PM" -> "13:00"
+        else -> "18:00"
+      }
+      val endTime = when (slot) {
+        "AM" -> "11:30"
+        "PM" -> "14:30"
+        else -> "19:30"
+      }
+      return ScheduleRulesResponse(
+        startTime = startTime,
+        endTime = endTime,
+        monday = "MON" in days,
+        tuesday = "TUE" in days,
+        wednesday = "WED" in days,
+        thursday = "THU" in days,
+        friday = "FRI" in days,
+        saturday = "SAT" in days,
+        sunday = "SUN" in days,
       )
     }
   }

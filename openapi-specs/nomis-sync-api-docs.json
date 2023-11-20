@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2023-11-16.5599.1c16549"
+    "version": "2023-11-20.5622.21eaf4f"
   },
   "servers": [
     {
@@ -9126,13 +9126,13 @@
       "PageVisitIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -9505,13 +9505,13 @@
       "PagePrisonerId": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -9661,13 +9661,13 @@
       "PageNonAssociationIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -9786,13 +9786,13 @@
       "PageIncentiveIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -9980,13 +9980,13 @@
       "PageAppointmentIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -10030,6 +10030,7 @@
           "exclusions",
           "nomisId",
           "prisonId",
+          "scheduleRules",
           "startDate",
           "suspended"
         ],
@@ -10100,9 +10101,80 @@
             "items": {
               "$ref": "#/components/schemas/AllocationExclusion"
             }
+          },
+          "scheduleRules": {
+            "type": "array",
+            "description": "Rules for creating schedules - days and times",
+            "items": {
+              "$ref": "#/components/schemas/ScheduleRulesResponse"
+            }
           }
         },
         "description": "Allocation to an activity"
+      },
+      "ScheduleRulesResponse": {
+        "required": [
+          "endTime",
+          "friday",
+          "monday",
+          "saturday",
+          "startTime",
+          "sunday",
+          "thursday",
+          "tuesday",
+          "wednesday"
+        ],
+        "type": "object",
+        "properties": {
+          "startTime": {
+            "type": "string",
+            "description": "Course start time",
+            "format": "partial-time",
+            "example": "09:00"
+          },
+          "endTime": {
+            "type": "string",
+            "description": "Course end time",
+            "format": "partial-time",
+            "example": "11:00"
+          },
+          "monday": {
+            "type": "boolean",
+            "description": "Runs on Mondays",
+            "example": true
+          },
+          "tuesday": {
+            "type": "boolean",
+            "description": "Runs on Tuesdays",
+            "example": true
+          },
+          "wednesday": {
+            "type": "boolean",
+            "description": "Runs on Wednesdays",
+            "example": true
+          },
+          "thursday": {
+            "type": "boolean",
+            "description": "Runs on Thursdays",
+            "example": true
+          },
+          "friday": {
+            "type": "boolean",
+            "description": "Runs on Fridays",
+            "example": true
+          },
+          "saturday": {
+            "type": "boolean",
+            "description": "Runs on Saturdays",
+            "example": true
+          },
+          "sunday": {
+            "type": "boolean",
+            "description": "Runs on Sundays",
+            "example": true
+          }
+        },
+        "description": "Activity Schedule Rules"
       },
       "AllocationReconciliationResponse": {
         "required": [
@@ -10145,13 +10217,13 @@
       "PageFindActiveAllocationIdsResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -10210,13 +10282,13 @@
       "PageAdjustmentIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -10281,13 +10353,13 @@
       "PageAdjudicationChargeIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -10531,70 +10603,6 @@
         },
         "description": "Activity Pay Rates"
       },
-      "ScheduleRulesResponse": {
-        "required": [
-          "endTime",
-          "friday",
-          "monday",
-          "saturday",
-          "startTime",
-          "sunday",
-          "thursday",
-          "tuesday",
-          "wednesday"
-        ],
-        "type": "object",
-        "properties": {
-          "startTime": {
-            "type": "string",
-            "description": "Course start time",
-            "format": "partial-time",
-            "example": "09:00"
-          },
-          "endTime": {
-            "type": "string",
-            "description": "Course end time",
-            "format": "partial-time",
-            "example": "11:00"
-          },
-          "monday": {
-            "type": "boolean",
-            "description": "Runs on Mondays",
-            "example": true
-          },
-          "tuesday": {
-            "type": "boolean",
-            "description": "Runs on Tuesdays",
-            "example": true
-          },
-          "wednesday": {
-            "type": "boolean",
-            "description": "Runs on Wednesdays",
-            "example": true
-          },
-          "thursday": {
-            "type": "boolean",
-            "description": "Runs on Thursdays",
-            "example": true
-          },
-          "friday": {
-            "type": "boolean",
-            "description": "Runs on Fridays",
-            "example": true
-          },
-          "saturday": {
-            "type": "boolean",
-            "description": "Runs on Saturdays",
-            "example": true
-          },
-          "sunday": {
-            "type": "boolean",
-            "description": "Runs on Sundays",
-            "example": true
-          }
-        },
-        "description": "Activity Schedule Rules"
-      },
       "FindActiveActivityIdsResponse": {
         "required": [
           "courseActivityId"
@@ -10613,13 +10621,13 @@
       "PageFindActiveActivityIdsResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"

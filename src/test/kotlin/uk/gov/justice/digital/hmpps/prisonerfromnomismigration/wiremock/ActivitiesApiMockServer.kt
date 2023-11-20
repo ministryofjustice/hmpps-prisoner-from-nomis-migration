@@ -128,6 +128,7 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
       verify(
         postRequestedFor(urlPathEqualTo("/migrate/allocation"))
           .withRequestBody(matchingJsonPath("activityId", equalTo((activityScheduleId + offset).toString())))
+          .withRequestBody(matchingJsonPath("exclusions.size()", equalTo("1")))
           .withRequestBody(matchingJsonPath("exclusions[0].timeSlot", equalTo("AM")))
           .withRequestBody(matchingJsonPath("exclusions[0].monday", equalTo("true")))
           .withRequestBody(matchingJsonPath("exclusions[0].daysOfWeek.length()", equalTo("1")))

@@ -1356,7 +1356,31 @@ private fun allocationsResponse(
     "endReasonCode": "WDRAWN",
     "payBand": "1",
     "livingUnitDescription": "BXI-A-1-01",
-    "exclusions": [{ "day": "MON", "slot": "AM" }]
+    "exclusions": [{ "day": "MON", "slot": "AM" }, { "day": "TUE", "slot": "ED" }],
+    "scheduleRules": [
+        {
+            "startTime": "09:00",
+            "endTime": "11:00",
+            "monday": true,
+            "tuesday": true,
+            "wednesday": true,
+            "thursday": true,
+            "friday": true,
+            "saturday": true,
+            "sunday": true
+        },
+        {
+            "startTime": "13:00",
+            "endTime": "15:30",
+            "monday": true,
+            "tuesday": true,
+            "wednesday": true,
+            "thursday": true,
+            "friday": true,
+            "saturday": false,
+            "sunday": false
+        }
+    ]
 }
   """.trimIndent()
 
