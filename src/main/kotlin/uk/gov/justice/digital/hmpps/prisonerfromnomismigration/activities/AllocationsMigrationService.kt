@@ -25,12 +25,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AllocationExclusion
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveAllocationIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetAllocationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ScheduleRulesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
+import java.time.LocalTime
 
 @Service
 class AllocationsMigrationService(
@@ -170,14 +172,15 @@ private fun GetAllocationResponse.toAllocationMigrateRequest(activityId: Long, s
     endComment = endComment,
     cellLocation = livingUnitDescription,
     nomisPayBand = payBand,
-    exclusions = exclusions.toDpsExclusions(),
+    exclusions = exclusions.toDpsExclusions(scheduleRules),
   )
 
-fun List<AllocationExclusion>.toDpsExclusions(): List<Slot> =
+fun List<AllocationExclusion>.toDpsExclusions(scheduleRules: List<ScheduleRulesResponse>): List<Slot> =
   listOf("AM", "PM", "ED").map { timeSlot ->
     this
       .filter { exclusion -> exclusion.slot == null || exclusion.slot.value == timeSlot }
       .map { exclusion -> exclusion.findDay() }
+      .filter { day -> scheduleRules.includes(day, timeSlot) }
       .toSet()
       .let { daysOfWeek ->
         Slot(
@@ -205,3 +208,26 @@ private fun AllocationMigrateResponse.toAllocationMigrateMappingDto(nomisAllocat
     activityId = activityId,
     label = migrationId,
   )
+
+private fun List<ScheduleRulesResponse>.includes(day: Slot.DaysOfWeek, slot: String) =
+  any { scheduleRule ->
+    scheduleRule.slot() == slot &&
+      when (day) {
+        MONDAY -> scheduleRule.monday
+        TUESDAY -> scheduleRule.tuesday
+        WEDNESDAY -> scheduleRule.wednesday
+        THURSDAY -> scheduleRule.thursday
+        FRIDAY -> scheduleRule.friday
+        SATURDAY -> scheduleRule.saturday
+        SUNDAY -> scheduleRule.sunday
+      }
+  }
+
+fun ScheduleRulesResponse.slot(): String =
+  LocalTime.parse(startTime).let {
+    when {
+      it.hour < 12 -> "AM"
+      it.hour < 17 -> "PM"
+      else -> "ED"
+    }
+  }
