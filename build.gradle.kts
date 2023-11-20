@@ -75,12 +75,14 @@ tasks {
   }
 }
 
+val buildDirectory: Directory = layout.buildDirectory.get()
+
 tasks.register("buildActivityApiModel", GenerateTask::class) {
   generatorName.set("kotlin")
   skipValidateSpec.set(true)
   inputSpec.set("openapi-specs/activities-api-docs.json")
   // remoteInputSpec.set("https://activities-api-dev.prison.service.justice.gov.uk/v3/api-docs")
-  outputDir.set("$buildDir/generated")
+  outputDir.set("$buildDirectory/generated/activities")
   modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model")
   apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.api")
   configOptions.set(
@@ -97,7 +99,7 @@ tasks.register("buildNomisSyncApiModel", GenerateTask::class) {
   generatorName.set("kotlin")
   inputSpec.set("openapi-specs/nomis-sync-api-docs.json")
   // remoteInputSpec.set("https://prisoner-to-nomis-update-dev.hmpps.service.justice.gov.uk/v3/api-docs")
-  outputDir.set("$buildDir/generated")
+  outputDir.set("$buildDirectory/generated/nomissync")
   modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model")
   apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.api")
   configOptions.set(
@@ -117,7 +119,7 @@ tasks.register("buildNomisSyncApiModel", GenerateTask::class) {
 tasks.register("buildMappingServiceApiModel", GenerateTask::class) {
   generatorName.set("kotlin")
   inputSpec.set("openapi-specs/nomis-mapping-service-api-docs.json")
-  outputDir.set("$buildDir/generated")
+  outputDir.set("$buildDirectory/generated/mappings")
   modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model")
   apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api")
   configOptions.set(
@@ -134,7 +136,7 @@ tasks.register("buildAdjudicationApiModel", GenerateTask::class) {
   generatorName.set("kotlin")
   skipValidateSpec.set(true)
   inputSpec.set("openapi-specs/adjudications-api-docs.json")
-  outputDir.set("$buildDir/generated")
+  outputDir.set("$buildDirectory/generated/adjudications")
   modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model")
   apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.api")
   configOptions.set(
@@ -150,7 +152,7 @@ tasks.register("buildAdjudicationApiModel", GenerateTask::class) {
 tasks.register("buildNonAssociationsApiModel", GenerateTask::class) {
   generatorName.set("kotlin")
   inputSpec.set("openapi-specs/non-associations-api-docs.json")
-  outputDir.set("$buildDir/generated")
+  outputDir.set("$buildDirectory/generated/nonassociations")
   modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.model")
   apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.api")
   configOptions.set(
@@ -168,7 +170,7 @@ tasks.register("buildNonAssociationsApiModel", GenerateTask::class) {
 tasks.register("buildSentencingApiModel", GenerateTask::class) {
   generatorName.set("kotlin")
   inputSpec.set("sentences-api-docs.json")
-  outputDir.set("$buildDir/generated")
+  outputDir.set("$buildDirectory/generated/sentencing")
   modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.model")
   apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.api")
   configOptions.set(
@@ -185,16 +187,22 @@ tasks.register("buildSentencingApiModel", GenerateTask::class) {
 }
 */
 
+val generatedProjectDirs = listOf("activities", "adjudications", "nonassociations", "nomissync", "mappings")
+
 kotlin {
-  sourceSets["main"].apply {
-    kotlin.srcDir("$buildDir/generated/src/main/kotlin")
+  generatedProjectDirs.forEach { generatedProject ->
+    sourceSets["main"].apply {
+      kotlin.srcDir("$buildDirectory/generated/$generatedProject/src/main/kotlin")
+    }
   }
 }
 
 configure<KtlintExtension> {
-  filter {
-    exclude {
-      it.file.path.contains("build/generated/src/main/")
+  generatedProjectDirs.forEach { generatedProject ->
+    filter {
+      exclude {
+        it.file.path.contains("$buildDirectory/generated/$generatedProject/src/main/")
+      }
     }
   }
 }
