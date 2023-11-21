@@ -13,12 +13,10 @@ generic-service:
     API_BASE_URL_NOMIS: https://nomis-prisoner.aks-live-1.studio-hosting.service.justice.gov.uk
     API_BASE_URL_VISITS: https://visit-scheduler.prison.service.justice.gov.uk
     API_BASE_URL_MAPPING: https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk
-    # currently set to self for a mock API until real API is ready
-    API_BASE_URL_SENTENCING: https://prisoner-nomis-migration.hmpps.service.justice.gov.uk
+    API_BASE_URL_SENTENCING: https://adjustments-api.hmpps.service.justice.gov.uk
     API_BASE_URL_ACTIVITIES: https://activities-api.prison.service.justice.gov.uk
     API_BASE_URL_NON_ASSOCIATIONS: https://non-associations-api.hmpps.service.justice.gov.uk
-    # currently set to self for a mock API until real API is ready
-    API_BASE_URL_ADJUDICATIONS: https://prisoner-nomis-migration.hmpps.service.justice.gov.uk
+    API_BASE_URL_ADJUDICATIONS: https://manage-adjudications-api.hmpps.service.justice.gov.uk
     FEATURE_EVENT_SENTENCE_ADJUSTMENT_UPSERTED: false
     FEATURE_EVENT_SENTENCE_ADJUSTMENT_DELETED: false
     FEATURE_EVENT_KEY_DATE_ADJUSTMENT_UPSERTED: false
