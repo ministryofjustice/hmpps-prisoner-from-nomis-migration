@@ -44,7 +44,7 @@ dependencies {
   testImplementation("io.jsonwebtoken:jjwt-impl:0.12.3")
   testImplementation("io.jsonwebtoken:jjwt-jackson:0.12.3")
 
-  testImplementation("org.wiremock:wiremock:3.3.1")
+  testImplementation("org.wiremock:wiremock-standalone:3.3.1")
   testImplementation("org.testcontainers:localstack:1.19.3")
   testImplementation("com.amazonaws:aws-java-sdk-core:1.12.595")
   testImplementation("org.awaitility:awaitility-kotlin:4.2.0")
