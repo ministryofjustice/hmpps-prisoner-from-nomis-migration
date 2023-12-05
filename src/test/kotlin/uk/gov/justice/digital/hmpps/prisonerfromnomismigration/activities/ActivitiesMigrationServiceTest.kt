@@ -443,6 +443,343 @@ class ActivitiesMigrationServiceTest {
       whenever(mappingService.createMapping(any(), any())).thenReturn(CreateMappingResult())
     }
 
+    @Test
+    internal fun `will retrieve activity from NOMIS`(): Unit = runBlocking {
+      service.migrateNomisEntity(migrationContext())
+
+      verify(nomisApiService).getActivity(123)
+    }
+
+    @Test
+    internal fun `will migrate an activity to DPS`(): Unit = runBlocking {
+      service.migrateNomisEntity(migrationContext())
+
+      verify(activitiesApiService).migrateActivity(
+        check {
+          assertThat(it.programServiceCode).isEqualTo("SOME_PROGRAM")
+          assertThat(it.prisonCode).isEqualTo("BXI")
+          assertThat(it.startDate).isEqualTo(yesterday)
+          assertThat(it.endDate).isEqualTo(tomorrow)
+          assertThat(it.capacity).isEqualTo(10)
+          assertThat(it.description).isEqualTo("Some activity")
+          assertThat(it.payPerSession).isEqualTo(ActivityMigrateRequest.PayPerSession.H)
+          assertThat(it.minimumIncentiveLevel).isEqualTo("BAS")
+          assertThat(it.runsOnBankHoliday).isEqualTo(false)
+          assertThat(it.internalLocationId).isEqualTo(123)
+          assertThat(it.internalLocationCode).isEqualTo("CELL-01")
+          assertThat(it.internalLocationDescription).isEqualTo("BXI-A-1-01")
+          assertThat(it.outsideWork).isEqualTo(true)
+          with(it.payRates.first { it.nomisPayBand == "1" }) {
+            assertThat(incentiveLevel).isEqualTo("BAS")
+            assertThat(rate).isEqualTo(120)
+          }
+          with(it.payRates.first { it.nomisPayBand == "2" }) {
+            assertThat(incentiveLevel).isEqualTo("BAS")
+            assertThat(rate).isEqualTo(140)
+          }
+          with(it.scheduleRules[0]) {
+            assertThat(startTime).isEqualTo("08:00")
+            assertThat(endTime).isEqualTo("11:30")
+            assertThat(monday).isTrue()
+            assertThat(tuesday).isTrue()
+            assertThat(wednesday).isTrue()
+            assertThat(thursday).isFalse()
+            assertThat(friday).isFalse()
+            assertThat(saturday).isFalse()
+            assertThat(sunday).isFalse()
+          }
+          with(it.scheduleRules[1]) {
+            assertThat(startTime).isEqualTo("13:00")
+            assertThat(endTime).isEqualTo("16:30")
+            assertThat(monday).isFalse()
+            assertThat(tuesday).isFalse()
+            assertThat(wednesday).isTrue()
+            assertThat(thursday).isTrue()
+            assertThat(friday).isTrue()
+            assertThat(saturday).isTrue()
+            assertThat(sunday).isTrue()
+          }
+        },
+      )
+    }
+
+    @Test
+    internal fun `will map rules for all slots`(): Unit = runBlocking {
+      whenever(nomisApiService.getActivity(any())).thenReturn(
+        nomisActivityResponse(
+          scheduleRules = listOf(
+            nomisScheduleRulesResponse(
+              start = "08:00",
+              end = "11:00",
+              days = listOf("MON", "TUE", "WED", "THU"),
+            ),
+            nomisScheduleRulesResponse(
+              start = "13:00",
+              end = "15:30",
+              days = listOf("FRI"),
+            ),
+            nomisScheduleRulesResponse(
+              start = "19:00",
+              end = "20:00",
+              days = listOf("SAT", "SUN"),
+            ),
+          ),
+        ),
+      )
+
+      service.migrateNomisEntity(migrationContext())
+
+      verify(activitiesApiService).migrateActivity(
+        check {
+          assertThat(it.scheduleRules.size).isEqualTo(3)
+          with(it.scheduleRules[0]) {
+            assertThat(startTime).isEqualTo("08:00")
+            assertThat(endTime).isEqualTo("11:00")
+            assertThat(monday).isTrue()
+            assertThat(tuesday).isTrue()
+            assertThat(wednesday).isTrue()
+            assertThat(thursday).isTrue()
+            assertThat(friday).isFalse()
+            assertThat(saturday).isFalse()
+            assertThat(sunday).isFalse()
+          }
+          with(it.scheduleRules[1]) {
+            assertThat(startTime).isEqualTo("13:00")
+            assertThat(endTime).isEqualTo("15:30")
+            assertThat(monday).isFalse()
+            assertThat(tuesday).isFalse()
+            assertThat(wednesday).isFalse()
+            assertThat(thursday).isFalse()
+            assertThat(friday).isTrue()
+            assertThat(saturday).isFalse()
+            assertThat(sunday).isFalse()
+          }
+          with(it.scheduleRules[2]) {
+            assertThat(startTime).isEqualTo("19:00")
+            assertThat(endTime).isEqualTo("20:00")
+            assertThat(monday).isFalse()
+            assertThat(tuesday).isFalse()
+            assertThat(wednesday).isFalse()
+            assertThat(thursday).isFalse()
+            assertThat(friday).isFalse()
+            assertThat(saturday).isTrue()
+            assertThat(sunday).isTrue()
+          }
+        },
+      )
+    }
+
+    @Test
+    internal fun `will consolidate schedule rules by slot`(): Unit = runBlocking {
+      whenever(nomisApiService.getActivity(any())).thenReturn(
+        nomisActivityResponse(
+          scheduleRules = listOf(
+            nomisScheduleRulesResponse(
+              start = "08:00",
+              end = "11:00",
+              days = listOf("MON", "TUE", "WED", "THU"),
+            ),
+            nomisScheduleRulesResponse(
+              start = "09:00",
+              end = "11:30",
+              days = listOf("FRI"),
+            ),
+            nomisScheduleRulesResponse(
+              start = "09:00",
+              end = "12:00",
+              days = listOf("SAT", "SUN"),
+            ),
+          ),
+        ),
+      )
+
+      service.migrateNomisEntity(migrationContext())
+
+      verify(activitiesApiService).migrateActivity(
+        check {
+          assertThat(it.scheduleRules.size).isEqualTo(1)
+          with(it.scheduleRules[0]) {
+            assertThat(startTime).isEqualTo("08:00")
+            assertThat(endTime).isEqualTo("12:00")
+            assertThat(monday).isTrue()
+            assertThat(tuesday).isTrue()
+            assertThat(wednesday).isTrue()
+            assertThat(thursday).isTrue()
+            assertThat(friday).isTrue()
+            assertThat(saturday).isTrue()
+            assertThat(sunday).isTrue()
+          }
+        },
+      )
+    }
+
+    @Test
+    internal fun `will remove duplicate schedule rules`(): Unit = runBlocking {
+      whenever(nomisApiService.getActivity(any())).thenReturn(
+        nomisActivityResponse(
+          scheduleRules = listOf(
+            nomisScheduleRulesResponse(
+              start = "13:00",
+              end = "15:30",
+              days = listOf("SAT", "SUN"),
+            ),
+            nomisScheduleRulesResponse(
+              start = "13:00",
+              end = "15:30",
+              days = listOf("SAT", "SUN"),
+            ),
+          ),
+        ),
+      )
+
+      service.migrateNomisEntity(migrationContext())
+
+      verify(activitiesApiService).migrateActivity(
+        check {
+          assertThat(it.scheduleRules.size).isEqualTo(1)
+          with(it.scheduleRules[0]) {
+            assertThat(startTime).isEqualTo("13:00")
+            assertThat(endTime).isEqualTo("15:30")
+            assertThat(monday).isFalse()
+            assertThat(tuesday).isFalse()
+            assertThat(wednesday).isFalse()
+            assertThat(thursday).isFalse()
+            assertThat(friday).isFalse()
+            assertThat(saturday).isTrue()
+            assertThat(sunday).isTrue()
+          }
+        },
+      )
+    }
+
+    @Test
+    internal fun `will throw after an error checking the mapping service so the message is rejected and retried`(): Unit =
+      runBlocking {
+        whenever(mappingService.findNomisMapping(any())).thenThrow(WebClientResponseException.BadGateway::class.java)
+
+        assertThrows<WebClientResponseException.BadGateway> {
+          service.migrateNomisEntity(
+            MigrationContext(
+              type = MigrationType.ACTIVITIES,
+              migrationId = "2020-05-23T11:30:00",
+              estimatedCount = 7,
+              body = FindActiveActivityIdsResponse(123),
+            ),
+          )
+        }
+
+        verifyNoInteractions(queueService)
+      }
+
+    @Test
+    internal fun `will throw after an error retrieving the Nomis entity so the message is rejected and retried`(): Unit =
+      runBlocking {
+        whenever(nomisApiService.getActivity(any())).thenThrow(WebClientResponseException.BadGateway::class.java)
+
+        assertThrows<WebClientResponseException.BadGateway> {
+          service.migrateNomisEntity(migrationContext())
+        }
+
+        verifyNoInteractions(queueService)
+        verify(telemetryClient).trackEvent(
+          eq("activity-migration-entity-failed"),
+          check<Map<String, String>> {
+            assertThat(it["nomisCourseActivityId"]).isEqualTo("123")
+            assertThat(it["reason"]).contains("BadGateway")
+            assertThat(it["migrationId"]).contains("2020-05-23T11:30:00")
+          },
+          isNull(),
+        )
+      }
+
+    @Test
+    internal fun `will throw after an error creating the Activities entity so the message is rejected and retried`(): Unit =
+      runBlocking {
+        whenever(activitiesApiService.migrateActivity(any())).thenThrow(WebClientResponseException.BadGateway::class.java)
+
+        assertThrows<WebClientResponseException.BadGateway> {
+          service.migrateNomisEntity(migrationContext())
+        }
+
+        verifyNoInteractions(queueService)
+        verify(telemetryClient).trackEvent(
+          eq("activity-migration-entity-failed"),
+          check<Map<String, String>> {
+            assertThat(it["nomisCourseActivityId"]).isEqualTo("123")
+            assertThat(it["reason"]).contains("BadGateway")
+            assertThat(it["migrationId"]).contains("2020-05-23T11:30:00")
+          },
+          isNull(),
+        )
+      }
+
+    @Test
+    internal fun `will NOT throw but will publish a retry mapping message after an error creating the new mapping`(): Unit =
+      runBlocking {
+        whenever(mappingService.createMapping(any(), any())).thenThrow(WebClientResponseException.BadGateway::class.java)
+
+        assertDoesNotThrow {
+          service.migrateNomisEntity(migrationContext())
+        }
+
+        verify(queueService).sendMessage(
+          message = eq(MigrationMessageType.RETRY_MIGRATION_MAPPING),
+          context = check<MigrationContext<ActivityMigrationMappingDto>> {
+            assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
+            assertThat(it.body.nomisCourseActivityId).isEqualTo(123)
+            assertThat(it.body.activityId).isEqualTo(456)
+            assertThat(it.body.activityId2).isEqualTo(789)
+          },
+          delaySeconds = eq(0),
+        )
+        verify(telemetryClient, never()).trackEvent(eq("activity-migration-entity-failed"), any(), isNull())
+      }
+
+    @Test
+    fun `will do nothing when already migrated`() = runBlocking {
+      whenever(mappingService.findNomisMapping(any()))
+        .thenReturn(
+          ActivityMigrationMappingDto(
+            nomisCourseActivityId = 123L,
+            activityId = 456,
+            activityId2 = 789,
+            label = "An old migration",
+          ),
+        )
+
+      service.migrateNomisEntity(migrationContext())
+
+      verifyNoInteractions(activitiesApiService)
+      verify(telemetryClient).trackEvent(
+        eq("activity-migration-entity-ignored"),
+        check<Map<String, String>> {
+          assertThat(it["nomisCourseActivityId"]).isEqualTo("123")
+          assertThat(it["migrationId"]).isEqualTo("2020-05-23T11:30:00")
+        },
+        isNull(),
+      )
+    }
+
+    @Test
+    fun `will publish telemetry when migration successful`() = runBlocking {
+      service.migrateNomisEntity(migrationContext())
+
+      verify(telemetryClient).trackEvent(
+        eq("activity-migration-entity-migrated"),
+        check<Map<String, String>> {
+          assertThat(it).containsExactlyInAnyOrderEntriesOf(
+            mapOf(
+              "nomisCourseActivityId" to "123",
+              "dpsActivityId" to "456",
+              "dpsActivityId2" to "789",
+              "migrationId" to "2020-05-23T11:30:00",
+            ),
+          )
+        },
+        isNull(),
+      )
+    }
+
     private fun nomisActivityResponse(
       scheduleRules: List<ScheduleRulesResponse> = listOf(
         nomisScheduleRulesResponse(
@@ -498,412 +835,13 @@ class ActivitiesMigrationServiceTest {
       sunday = "SUN" in days,
     )
 
-    @Test
-    internal fun `will retrieve activity from NOMIS`(): Unit = runBlocking {
-      service.migrateNomisEntity(
-        MigrationContext(
-          type = MigrationType.ACTIVITIES,
-          migrationId = "2020-05-23T11:30:00",
-          estimatedCount = 7,
-          body = FindActiveActivityIdsResponse(123),
-        ),
+    private fun migrationContext() =
+      MigrationContext(
+        type = MigrationType.ACTIVITIES,
+        migrationId = "2020-05-23T11:30:00",
+        estimatedCount = 7,
+        body = FindActiveActivityIdsResponse(123),
       )
-
-      verify(nomisApiService).getActivity(123)
-    }
-
-    @Test
-    internal fun `will migrate an activity to DPS`(): Unit = runBlocking {
-      service.migrateNomisEntity(
-        MigrationContext(
-          type = MigrationType.ACTIVITIES,
-          migrationId = "2020-05-23T11:30:00",
-          estimatedCount = 7,
-          body = FindActiveActivityIdsResponse(123),
-        ),
-      )
-
-      verify(activitiesApiService).migrateActivity(
-        check {
-          assertThat(it.programServiceCode).isEqualTo("SOME_PROGRAM")
-          assertThat(it.prisonCode).isEqualTo("BXI")
-          assertThat(it.startDate).isEqualTo(yesterday)
-          assertThat(it.endDate).isEqualTo(tomorrow)
-          assertThat(it.capacity).isEqualTo(10)
-          assertThat(it.description).isEqualTo("Some activity")
-          assertThat(it.payPerSession).isEqualTo(ActivityMigrateRequest.PayPerSession.H)
-          assertThat(it.minimumIncentiveLevel).isEqualTo("BAS")
-          assertThat(it.runsOnBankHoliday).isEqualTo(false)
-          assertThat(it.internalLocationId).isEqualTo(123)
-          assertThat(it.internalLocationCode).isEqualTo("CELL-01")
-          assertThat(it.internalLocationDescription).isEqualTo("BXI-A-1-01")
-          assertThat(it.outsideWork).isEqualTo(true)
-          with(it.payRates.first { it.nomisPayBand == "1" }) {
-            assertThat(incentiveLevel).isEqualTo("BAS")
-            assertThat(rate).isEqualTo(120)
-          }
-          with(it.payRates.first { it.nomisPayBand == "2" }) {
-            assertThat(incentiveLevel).isEqualTo("BAS")
-            assertThat(rate).isEqualTo(140)
-          }
-          with(it.scheduleRules[0]) {
-            assertThat(startTime).isEqualTo("08:00")
-            assertThat(endTime).isEqualTo("11:30")
-            assertThat(monday).isTrue()
-            assertThat(tuesday).isTrue()
-            assertThat(wednesday).isTrue()
-            assertThat(thursday).isFalse()
-            assertThat(friday).isFalse()
-            assertThat(saturday).isFalse()
-            assertThat(sunday).isFalse()
-          }
-          with(it.scheduleRules[1]) {
-            assertThat(startTime).isEqualTo("13:00")
-            assertThat(endTime).isEqualTo("16:30")
-            assertThat(monday).isFalse()
-            assertThat(tuesday).isFalse()
-            assertThat(wednesday).isTrue()
-            assertThat(thursday).isTrue()
-            assertThat(friday).isTrue()
-            assertThat(saturday).isTrue()
-            assertThat(sunday).isTrue()
-          }
-        },
-      )
-    }
-
-    @Test
-    internal fun `will consolidate schedule rules by slot for DPS`(): Unit = runBlocking {
-      whenever(nomisApiService.getActivity(any())).thenReturn(
-        nomisActivityResponse(
-          scheduleRules = listOf(
-            nomisScheduleRulesResponse(
-              start = "08:00",
-              end = "11:00",
-              days = listOf("MON", "TUE", "WED", "THU"),
-            ),
-            nomisScheduleRulesResponse(
-              start = "09:00",
-              end = "11:30",
-              days = listOf("FRI"),
-            ),
-            nomisScheduleRulesResponse(
-              start = "09:00",
-              end = "12:00",
-              days = listOf("SAT", "SUN"),
-            ),
-          ),
-        ),
-      )
-
-      service.migrateNomisEntity(
-        MigrationContext(
-          type = MigrationType.ACTIVITIES,
-          migrationId = "2020-05-23T11:30:00",
-          estimatedCount = 7,
-          body = FindActiveActivityIdsResponse(123),
-        ),
-      )
-
-      verify(activitiesApiService).migrateActivity(
-        check {
-          assertThat(it.scheduleRules.size).isEqualTo(1)
-          with(it.scheduleRules[0]) {
-            assertThat(startTime).isEqualTo("08:00")
-            assertThat(endTime).isEqualTo("12:00")
-            assertThat(monday).isTrue()
-            assertThat(tuesday).isTrue()
-            assertThat(wednesday).isTrue()
-            assertThat(thursday).isTrue()
-            assertThat(friday).isTrue()
-            assertThat(saturday).isTrue()
-            assertThat(sunday).isTrue()
-          }
-        },
-      )
-    }
-
-    @Test
-    internal fun `will map rules for all slots`(): Unit = runBlocking {
-      whenever(nomisApiService.getActivity(any())).thenReturn(
-        nomisActivityResponse(
-          scheduleRules = listOf(
-            nomisScheduleRulesResponse(
-              start = "08:00",
-              end = "11:00",
-              days = listOf("MON", "TUE", "WED", "THU"),
-            ),
-            nomisScheduleRulesResponse(
-              start = "13:00",
-              end = "15:30",
-              days = listOf("FRI"),
-            ),
-            nomisScheduleRulesResponse(
-              start = "19:00",
-              end = "20:00",
-              days = listOf("SAT", "SUN"),
-            ),
-          ),
-        ),
-      )
-
-      service.migrateNomisEntity(
-        MigrationContext(
-          type = MigrationType.ACTIVITIES,
-          migrationId = "2020-05-23T11:30:00",
-          estimatedCount = 7,
-          body = FindActiveActivityIdsResponse(123),
-        ),
-      )
-
-      verify(activitiesApiService).migrateActivity(
-        check {
-          assertThat(it.scheduleRules.size).isEqualTo(3)
-          with(it.scheduleRules[0]) {
-            assertThat(startTime).isEqualTo("08:00")
-            assertThat(endTime).isEqualTo("11:00")
-            assertThat(monday).isTrue()
-            assertThat(tuesday).isTrue()
-            assertThat(wednesday).isTrue()
-            assertThat(thursday).isTrue()
-            assertThat(friday).isFalse()
-            assertThat(saturday).isFalse()
-            assertThat(sunday).isFalse()
-          }
-          with(it.scheduleRules[1]) {
-            assertThat(startTime).isEqualTo("13:00")
-            assertThat(endTime).isEqualTo("15:30")
-            assertThat(monday).isFalse()
-            assertThat(tuesday).isFalse()
-            assertThat(wednesday).isFalse()
-            assertThat(thursday).isFalse()
-            assertThat(friday).isTrue()
-            assertThat(saturday).isFalse()
-            assertThat(sunday).isFalse()
-          }
-          with(it.scheduleRules[2]) {
-            assertThat(startTime).isEqualTo("19:00")
-            assertThat(endTime).isEqualTo("20:00")
-            assertThat(monday).isFalse()
-            assertThat(tuesday).isFalse()
-            assertThat(wednesday).isFalse()
-            assertThat(thursday).isFalse()
-            assertThat(friday).isFalse()
-            assertThat(saturday).isTrue()
-            assertThat(sunday).isTrue()
-          }
-        },
-      )
-    }
-
-    @Test
-    internal fun `will remove duplicate schedule rules`(): Unit = runBlocking {
-      whenever(nomisApiService.getActivity(any())).thenReturn(
-        nomisActivityResponse(
-          scheduleRules = listOf(
-            nomisScheduleRulesResponse(
-              start = "13:00",
-              end = "15:30",
-              days = listOf("SAT", "SUN"),
-            ),
-            nomisScheduleRulesResponse(
-              start = "13:00",
-              end = "15:30",
-              days = listOf("SAT", "SUN"),
-            ),
-          ),
-        ),
-      )
-
-      service.migrateNomisEntity(
-        MigrationContext(
-          type = MigrationType.ACTIVITIES,
-          migrationId = "2020-05-23T11:30:00",
-          estimatedCount = 7,
-          body = FindActiveActivityIdsResponse(123),
-        ),
-      )
-
-      verify(activitiesApiService).migrateActivity(
-        check {
-          assertThat(it.scheduleRules.size).isEqualTo(1)
-          with(it.scheduleRules[0]) {
-            assertThat(startTime).isEqualTo("13:00")
-            assertThat(endTime).isEqualTo("15:30")
-            assertThat(monday).isFalse()
-            assertThat(tuesday).isFalse()
-            assertThat(wednesday).isFalse()
-            assertThat(thursday).isFalse()
-            assertThat(friday).isFalse()
-            assertThat(saturday).isTrue()
-            assertThat(sunday).isTrue()
-          }
-        },
-      )
-    }
-
-    @Test
-    internal fun `will throw after an error checking the mapping service so the message is rejected and retried`(): Unit =
-      runBlocking {
-        whenever(mappingService.findNomisMapping(any())).thenThrow(WebClientResponseException.BadGateway::class.java)
-
-        assertThrows<WebClientResponseException.BadGateway> {
-          service.migrateNomisEntity(
-            MigrationContext(
-              type = MigrationType.ACTIVITIES,
-              migrationId = "2020-05-23T11:30:00",
-              estimatedCount = 7,
-              body = FindActiveActivityIdsResponse(123),
-            ),
-          )
-        }
-
-        verifyNoInteractions(queueService)
-      }
-
-    @Test
-    internal fun `will throw after an error retrieving the Nomis entity so the message is rejected and retried`(): Unit =
-      runBlocking {
-        whenever(nomisApiService.getActivity(any())).thenThrow(WebClientResponseException.BadGateway::class.java)
-
-        assertThrows<WebClientResponseException.BadGateway> {
-          service.migrateNomisEntity(
-            MigrationContext(
-              type = MigrationType.ACTIVITIES,
-              migrationId = "2020-05-23T11:30:00",
-              estimatedCount = 7,
-              body = FindActiveActivityIdsResponse(123),
-            ),
-          )
-        }
-
-        verifyNoInteractions(queueService)
-        verify(telemetryClient).trackEvent(
-          eq("activity-migration-entity-failed"),
-          check<Map<String, String>> {
-            assertThat(it["nomisCourseActivityId"]).isEqualTo("123")
-            assertThat(it["reason"]).contains("BadGateway")
-            assertThat(it["migrationId"]).contains("2020-05-23T11:30:00")
-          },
-          isNull(),
-        )
-      }
-
-    @Test
-    internal fun `will throw after an error creating the Activities entity so the message is rejected and retried`(): Unit =
-      runBlocking {
-        whenever(activitiesApiService.migrateActivity(any())).thenThrow(WebClientResponseException.BadGateway::class.java)
-
-        assertThrows<WebClientResponseException.BadGateway> {
-          service.migrateNomisEntity(
-            MigrationContext(
-              type = MigrationType.ACTIVITIES,
-              migrationId = "2020-05-23T11:30:00",
-              estimatedCount = 7,
-              body = FindActiveActivityIdsResponse(123),
-            ),
-          )
-        }
-
-        verifyNoInteractions(queueService)
-        verify(telemetryClient).trackEvent(
-          eq("activity-migration-entity-failed"),
-          check<Map<String, String>> {
-            assertThat(it["nomisCourseActivityId"]).isEqualTo("123")
-            assertThat(it["reason"]).contains("BadGateway")
-            assertThat(it["migrationId"]).contains("2020-05-23T11:30:00")
-          },
-          isNull(),
-        )
-      }
-
-    @Test
-    internal fun `will NOT throw but will publish a retry mapping message after an error creating the new mapping`(): Unit =
-      runBlocking {
-        whenever(mappingService.createMapping(any(), any())).thenThrow(WebClientResponseException.BadGateway::class.java)
-
-        assertDoesNotThrow {
-          service.migrateNomisEntity(
-            MigrationContext(
-              type = MigrationType.ACTIVITIES,
-              migrationId = "2020-05-23T11:30:00",
-              estimatedCount = 7,
-              body = FindActiveActivityIdsResponse(123),
-            ),
-          )
-        }
-
-        verify(queueService).sendMessage(
-          message = eq(MigrationMessageType.RETRY_MIGRATION_MAPPING),
-          context = check<MigrationContext<ActivityMigrationMappingDto>> {
-            assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
-            assertThat(it.body.nomisCourseActivityId).isEqualTo(123)
-            assertThat(it.body.activityId).isEqualTo(456)
-            assertThat(it.body.activityId2).isEqualTo(789)
-          },
-          delaySeconds = eq(0),
-        )
-        verify(telemetryClient, never()).trackEvent(eq("activity-migration-entity-failed"), any(), isNull())
-      }
-
-    @Test
-    fun `will do nothing when already migrated`() = runBlocking {
-      whenever(mappingService.findNomisMapping(any()))
-        .thenReturn(
-          ActivityMigrationMappingDto(
-            nomisCourseActivityId = 123L,
-            activityId = 456,
-            activityId2 = 789,
-            label = "An old migration",
-          ),
-        )
-
-      service.migrateNomisEntity(
-        MigrationContext(
-          type = MigrationType.ACTIVITIES,
-          migrationId = "2020-05-23T11:30:00",
-          estimatedCount = 7,
-          body = FindActiveActivityIdsResponse(123),
-        ),
-      )
-
-      verifyNoInteractions(activitiesApiService)
-      verify(telemetryClient).trackEvent(
-        eq("activity-migration-entity-ignored"),
-        check<Map<String, String>> {
-          assertThat(it["nomisCourseActivityId"]).isEqualTo("123")
-          assertThat(it["migrationId"]).isEqualTo("2020-05-23T11:30:00")
-        },
-        isNull(),
-      )
-    }
-
-    @Test
-    fun `will publish telemetry when migration successful`() = runBlocking {
-      service.migrateNomisEntity(
-        MigrationContext(
-          type = MigrationType.ACTIVITIES,
-          migrationId = "2020-05-23T11:30:00",
-          estimatedCount = 7,
-          body = FindActiveActivityIdsResponse(123),
-        ),
-      )
-
-      verify(telemetryClient).trackEvent(
-        eq("activity-migration-entity-migrated"),
-        check<Map<String, String>> {
-          assertThat(it).containsExactlyInAnyOrderEntriesOf(
-            mapOf(
-              "nomisCourseActivityId" to "123",
-              "dpsActivityId" to "456",
-              "dpsActivityId2" to "789",
-              "migrationId" to "2020-05-23T11:30:00",
-            ),
-          )
-        },
-        isNull(),
-      )
-    }
   }
 
   @Nested
