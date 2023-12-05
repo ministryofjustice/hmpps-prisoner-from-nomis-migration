@@ -430,60 +430,7 @@ class ActivitiesMigrationServiceTest {
     @BeforeEach
     internal fun setUp(): Unit = runBlocking {
       whenever(mappingService.findNomisMapping(any())).thenReturn(null)
-      whenever(nomisApiService.getActivity(any())).thenReturn(
-        GetActivityResponse(
-          courseActivityId = 123,
-          programCode = "SOME_PROGRAM",
-          prisonId = "BXI",
-          startDate = yesterday,
-          endDate = tomorrow,
-          capacity = 10,
-          description = "Some activity",
-          payPerSession = "H",
-          minimumIncentiveLevel = "BAS",
-          excludeBankHolidays = true,
-          internalLocationDescription = "BXI-A-1-01",
-          internalLocationCode = "CELL-01",
-          internalLocationId = 123,
-          outsideWork = true,
-          scheduleRules = listOf(
-            ScheduleRulesResponse(
-              startTime = "${today.atTime(8, 0)}",
-              endTime = "${today.atTime(11, 30)}",
-              monday = true,
-              tuesday = true,
-              wednesday = true,
-              thursday = false,
-              friday = false,
-              saturday = false,
-              sunday = false,
-            ),
-            ScheduleRulesResponse(
-              startTime = "${today.atTime(13, 0)}",
-              endTime = "${today.atTime(16, 30)}",
-              monday = false,
-              tuesday = false,
-              wednesday = true,
-              thursday = true,
-              friday = true,
-              saturday = true,
-              sunday = true,
-            ),
-          ),
-          payRates = listOf(
-            PayRatesResponse(
-              incentiveLevelCode = "BAS",
-              rate = BigDecimal.valueOf(1.20),
-              payBand = "1",
-            ),
-            PayRatesResponse(
-              incentiveLevelCode = "BAS",
-              rate = BigDecimal.valueOf(1.40),
-              payBand = "2",
-            ),
-          ),
-        ),
-      )
+      whenever(nomisApiService.getActivity(any())).thenReturn(nomisActivityResponse())
 
       whenever(activitiesApiService.migrateActivity(any())).thenReturn(
         ActivityMigrateResponse(
@@ -498,28 +445,14 @@ class ActivitiesMigrationServiceTest {
 
     @Test
     internal fun `will retrieve activity from NOMIS`(): Unit = runBlocking {
-      service.migrateNomisEntity(
-        MigrationContext(
-          type = MigrationType.ACTIVITIES,
-          migrationId = "2020-05-23T11:30:00",
-          estimatedCount = 7,
-          body = FindActiveActivityIdsResponse(123),
-        ),
-      )
+      service.migrateNomisEntity(migrationContext())
 
       verify(nomisApiService).getActivity(123)
     }
 
     @Test
     internal fun `will migrate an activity to DPS`(): Unit = runBlocking {
-      service.migrateNomisEntity(
-        MigrationContext(
-          type = MigrationType.ACTIVITIES,
-          migrationId = "2020-05-23T11:30:00",
-          estimatedCount = 7,
-          body = FindActiveActivityIdsResponse(123),
-        ),
-      )
+      service.migrateNomisEntity(migrationContext())
 
       verify(activitiesApiService).migrateActivity(
         check {
@@ -545,8 +478,8 @@ class ActivitiesMigrationServiceTest {
             assertThat(rate).isEqualTo(140)
           }
           with(it.scheduleRules[0]) {
-            assertThat(startTime).isEqualTo("${today}T08:00")
-            assertThat(endTime).isEqualTo("${today}T11:30")
+            assertThat(startTime).isEqualTo("08:00")
+            assertThat(endTime).isEqualTo("11:30")
             assertThat(monday).isTrue()
             assertThat(tuesday).isTrue()
             assertThat(wednesday).isTrue()
@@ -556,13 +489,162 @@ class ActivitiesMigrationServiceTest {
             assertThat(sunday).isFalse()
           }
           with(it.scheduleRules[1]) {
-            assertThat(startTime).isEqualTo("${today}T13:00")
-            assertThat(endTime).isEqualTo("${today}T16:30")
+            assertThat(startTime).isEqualTo("13:00")
+            assertThat(endTime).isEqualTo("16:30")
             assertThat(monday).isFalse()
             assertThat(tuesday).isFalse()
             assertThat(wednesday).isTrue()
             assertThat(thursday).isTrue()
             assertThat(friday).isTrue()
+            assertThat(saturday).isTrue()
+            assertThat(sunday).isTrue()
+          }
+        },
+      )
+    }
+
+    @Test
+    internal fun `will map rules for all slots`(): Unit = runBlocking {
+      whenever(nomisApiService.getActivity(any())).thenReturn(
+        nomisActivityResponse(
+          scheduleRules = listOf(
+            nomisScheduleRulesResponse(
+              start = "08:00",
+              end = "11:00",
+              days = listOf("MON", "TUE", "WED", "THU"),
+            ),
+            nomisScheduleRulesResponse(
+              start = "13:00",
+              end = "15:30",
+              days = listOf("FRI"),
+            ),
+            nomisScheduleRulesResponse(
+              start = "19:00",
+              end = "20:00",
+              days = listOf("SAT", "SUN"),
+            ),
+          ),
+        ),
+      )
+
+      service.migrateNomisEntity(migrationContext())
+
+      verify(activitiesApiService).migrateActivity(
+        check {
+          assertThat(it.scheduleRules.size).isEqualTo(3)
+          with(it.scheduleRules[0]) {
+            assertThat(startTime).isEqualTo("08:00")
+            assertThat(endTime).isEqualTo("11:00")
+            assertThat(monday).isTrue()
+            assertThat(tuesday).isTrue()
+            assertThat(wednesday).isTrue()
+            assertThat(thursday).isTrue()
+            assertThat(friday).isFalse()
+            assertThat(saturday).isFalse()
+            assertThat(sunday).isFalse()
+          }
+          with(it.scheduleRules[1]) {
+            assertThat(startTime).isEqualTo("13:00")
+            assertThat(endTime).isEqualTo("15:30")
+            assertThat(monday).isFalse()
+            assertThat(tuesday).isFalse()
+            assertThat(wednesday).isFalse()
+            assertThat(thursday).isFalse()
+            assertThat(friday).isTrue()
+            assertThat(saturday).isFalse()
+            assertThat(sunday).isFalse()
+          }
+          with(it.scheduleRules[2]) {
+            assertThat(startTime).isEqualTo("19:00")
+            assertThat(endTime).isEqualTo("20:00")
+            assertThat(monday).isFalse()
+            assertThat(tuesday).isFalse()
+            assertThat(wednesday).isFalse()
+            assertThat(thursday).isFalse()
+            assertThat(friday).isFalse()
+            assertThat(saturday).isTrue()
+            assertThat(sunday).isTrue()
+          }
+        },
+      )
+    }
+
+    @Test
+    internal fun `will consolidate schedule rules by slot`(): Unit = runBlocking {
+      whenever(nomisApiService.getActivity(any())).thenReturn(
+        nomisActivityResponse(
+          scheduleRules = listOf(
+            nomisScheduleRulesResponse(
+              start = "08:00",
+              end = "11:00",
+              days = listOf("MON", "TUE", "WED", "THU"),
+            ),
+            nomisScheduleRulesResponse(
+              start = "09:00",
+              end = "11:30",
+              days = listOf("FRI"),
+            ),
+            nomisScheduleRulesResponse(
+              start = "09:00",
+              end = "12:00",
+              days = listOf("SAT", "SUN"),
+            ),
+          ),
+        ),
+      )
+
+      service.migrateNomisEntity(migrationContext())
+
+      verify(activitiesApiService).migrateActivity(
+        check {
+          assertThat(it.scheduleRules.size).isEqualTo(1)
+          with(it.scheduleRules[0]) {
+            assertThat(startTime).isEqualTo("08:00")
+            assertThat(endTime).isEqualTo("12:00")
+            assertThat(monday).isTrue()
+            assertThat(tuesday).isTrue()
+            assertThat(wednesday).isTrue()
+            assertThat(thursday).isTrue()
+            assertThat(friday).isTrue()
+            assertThat(saturday).isTrue()
+            assertThat(sunday).isTrue()
+          }
+        },
+      )
+    }
+
+    @Test
+    internal fun `will remove duplicate schedule rules`(): Unit = runBlocking {
+      whenever(nomisApiService.getActivity(any())).thenReturn(
+        nomisActivityResponse(
+          scheduleRules = listOf(
+            nomisScheduleRulesResponse(
+              start = "13:00",
+              end = "15:30",
+              days = listOf("SAT", "SUN"),
+            ),
+            nomisScheduleRulesResponse(
+              start = "13:00",
+              end = "15:30",
+              days = listOf("SAT", "SUN"),
+            ),
+          ),
+        ),
+      )
+
+      service.migrateNomisEntity(migrationContext())
+
+      verify(activitiesApiService).migrateActivity(
+        check {
+          assertThat(it.scheduleRules.size).isEqualTo(1)
+          with(it.scheduleRules[0]) {
+            assertThat(startTime).isEqualTo("13:00")
+            assertThat(endTime).isEqualTo("15:30")
+            assertThat(monday).isFalse()
+            assertThat(tuesday).isFalse()
+            assertThat(wednesday).isFalse()
+            assertThat(thursday).isFalse()
+            assertThat(friday).isFalse()
             assertThat(saturday).isTrue()
             assertThat(sunday).isTrue()
           }
@@ -595,14 +677,7 @@ class ActivitiesMigrationServiceTest {
         whenever(nomisApiService.getActivity(any())).thenThrow(WebClientResponseException.BadGateway::class.java)
 
         assertThrows<WebClientResponseException.BadGateway> {
-          service.migrateNomisEntity(
-            MigrationContext(
-              type = MigrationType.ACTIVITIES,
-              migrationId = "2020-05-23T11:30:00",
-              estimatedCount = 7,
-              body = FindActiveActivityIdsResponse(123),
-            ),
-          )
+          service.migrateNomisEntity(migrationContext())
         }
 
         verifyNoInteractions(queueService)
@@ -623,14 +698,7 @@ class ActivitiesMigrationServiceTest {
         whenever(activitiesApiService.migrateActivity(any())).thenThrow(WebClientResponseException.BadGateway::class.java)
 
         assertThrows<WebClientResponseException.BadGateway> {
-          service.migrateNomisEntity(
-            MigrationContext(
-              type = MigrationType.ACTIVITIES,
-              migrationId = "2020-05-23T11:30:00",
-              estimatedCount = 7,
-              body = FindActiveActivityIdsResponse(123),
-            ),
-          )
+          service.migrateNomisEntity(migrationContext())
         }
 
         verifyNoInteractions(queueService)
@@ -651,14 +719,7 @@ class ActivitiesMigrationServiceTest {
         whenever(mappingService.createMapping(any(), any())).thenThrow(WebClientResponseException.BadGateway::class.java)
 
         assertDoesNotThrow {
-          service.migrateNomisEntity(
-            MigrationContext(
-              type = MigrationType.ACTIVITIES,
-              migrationId = "2020-05-23T11:30:00",
-              estimatedCount = 7,
-              body = FindActiveActivityIdsResponse(123),
-            ),
-          )
+          service.migrateNomisEntity(migrationContext())
         }
 
         verify(queueService).sendMessage(
@@ -686,14 +747,7 @@ class ActivitiesMigrationServiceTest {
           ),
         )
 
-      service.migrateNomisEntity(
-        MigrationContext(
-          type = MigrationType.ACTIVITIES,
-          migrationId = "2020-05-23T11:30:00",
-          estimatedCount = 7,
-          body = FindActiveActivityIdsResponse(123),
-        ),
-      )
+      service.migrateNomisEntity(migrationContext())
 
       verifyNoInteractions(activitiesApiService)
       verify(telemetryClient).trackEvent(
@@ -708,14 +762,7 @@ class ActivitiesMigrationServiceTest {
 
     @Test
     fun `will publish telemetry when migration successful`() = runBlocking {
-      service.migrateNomisEntity(
-        MigrationContext(
-          type = MigrationType.ACTIVITIES,
-          migrationId = "2020-05-23T11:30:00",
-          estimatedCount = 7,
-          body = FindActiveActivityIdsResponse(123),
-        ),
-      )
+      service.migrateNomisEntity(migrationContext())
 
       verify(telemetryClient).trackEvent(
         eq("activity-migration-entity-migrated"),
@@ -732,6 +779,69 @@ class ActivitiesMigrationServiceTest {
         isNull(),
       )
     }
+
+    private fun nomisActivityResponse(
+      scheduleRules: List<ScheduleRulesResponse> = listOf(
+        nomisScheduleRulesResponse(
+          start = "08:00",
+          end = "11:30",
+          days = listOf("MON", "TUE", "WED"),
+        ),
+        nomisScheduleRulesResponse(
+          start = "13:00",
+          end = "16:30",
+          days = listOf("WED", "THU", "FRI", "SAT", "SUN"),
+        ),
+      ),
+    ) = GetActivityResponse(
+      courseActivityId = 123,
+      programCode = "SOME_PROGRAM",
+      prisonId = "BXI",
+      startDate = yesterday,
+      endDate = tomorrow,
+      capacity = 10,
+      description = "Some activity",
+      payPerSession = "H",
+      minimumIncentiveLevel = "BAS",
+      excludeBankHolidays = true,
+      internalLocationDescription = "BXI-A-1-01",
+      internalLocationCode = "CELL-01",
+      internalLocationId = 123,
+      outsideWork = true,
+      scheduleRules = scheduleRules,
+      payRates = listOf(
+        PayRatesResponse(
+          incentiveLevelCode = "BAS",
+          rate = BigDecimal.valueOf(1.20),
+          payBand = "1",
+        ),
+        PayRatesResponse(
+          incentiveLevelCode = "BAS",
+          rate = BigDecimal.valueOf(1.40),
+          payBand = "2",
+        ),
+      ),
+    )
+
+    private fun nomisScheduleRulesResponse(start: String, end: String, days: List<String>) = ScheduleRulesResponse(
+      startTime = start,
+      endTime = end,
+      monday = "MON" in days,
+      tuesday = "TUE" in days,
+      wednesday = "WED" in days,
+      thursday = "THU" in days,
+      friday = "FRI" in days,
+      saturday = "SAT" in days,
+      sunday = "SUN" in days,
+    )
+
+    private fun migrationContext() =
+      MigrationContext(
+        type = MigrationType.ACTIVITIES,
+        migrationId = "2020-05-23T11:30:00",
+        estimatedCount = 7,
+        body = FindActiveActivityIdsResponse(123),
+      )
   }
 
   @Nested
