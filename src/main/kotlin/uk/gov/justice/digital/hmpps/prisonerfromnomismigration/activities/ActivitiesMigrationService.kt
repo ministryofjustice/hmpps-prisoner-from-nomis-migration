@@ -176,24 +176,19 @@ private fun GetActivityResponse.toActivityMigrateRequest(): ActivityMigrateReque
   )
 
 private fun List<ScheduleRulesResponse>.toNomisScheduleRules(): List<NomisScheduleRule> =
-  map { rule -> rule.slot() to rule }
-    .groupBy { it.first }
-    .let { rulesBySlot ->
-      rulesBySlot.map { (_, rulesInSameSlot) ->
-        val rules = rulesInSameSlot.map { it.second }
-        NomisScheduleRule(
-          startTime = rules.minOf { it.startTime },
-          endTime = rules.maxOf { it.endTime },
-          monday = rules.any { it.monday },
-          tuesday = rules.any { it.tuesday },
-          wednesday = rules.any { it.wednesday },
-          thursday = rules.any { it.thursday },
-          friday = rules.any { it.friday },
-          saturday = rules.any { it.saturday },
-          sunday = rules.any { it.sunday },
-        )
-      }
-    }
+  map {
+    NomisScheduleRule(
+      startTime = it.startTime,
+      endTime = it.endTime,
+      monday = it.monday,
+      tuesday = it.tuesday,
+      wednesday = it.wednesday,
+      thursday = it.thursday,
+      friday = it.friday,
+      saturday = it.saturday,
+      sunday = it.sunday,
+    )
+  }.distinct()
 
 private fun PayRatesResponse.toNomisPayRate(): NomisPayRate =
   NomisPayRate(

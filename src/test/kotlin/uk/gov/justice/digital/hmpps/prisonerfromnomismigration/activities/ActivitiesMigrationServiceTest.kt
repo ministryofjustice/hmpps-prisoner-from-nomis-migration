@@ -570,7 +570,7 @@ class ActivitiesMigrationServiceTest {
     }
 
     @Test
-    internal fun `will consolidate schedule rules by slot`(): Unit = runBlocking {
+    internal fun `will allow multiple schedule rules per slot`(): Unit = runBlocking {
       whenever(nomisApiService.getActivity(any())).thenReturn(
         nomisActivityResponse(
           scheduleRules = listOf(
@@ -597,15 +597,37 @@ class ActivitiesMigrationServiceTest {
 
       verify(activitiesApiService).migrateActivity(
         check {
-          assertThat(it.scheduleRules.size).isEqualTo(1)
+          assertThat(it.scheduleRules.size).isEqualTo(3)
           with(it.scheduleRules[0]) {
             assertThat(startTime).isEqualTo("08:00")
-            assertThat(endTime).isEqualTo("12:00")
+            assertThat(endTime).isEqualTo("11:00")
             assertThat(monday).isTrue()
             assertThat(tuesday).isTrue()
             assertThat(wednesday).isTrue()
             assertThat(thursday).isTrue()
+            assertThat(friday).isFalse()
+            assertThat(saturday).isFalse()
+            assertThat(sunday).isFalse()
+          }
+          with(it.scheduleRules[1]) {
+            assertThat(startTime).isEqualTo("09:00")
+            assertThat(endTime).isEqualTo("11:30")
+            assertThat(monday).isFalse()
+            assertThat(tuesday).isFalse()
+            assertThat(wednesday).isFalse()
+            assertThat(thursday).isFalse()
             assertThat(friday).isTrue()
+            assertThat(saturday).isFalse()
+            assertThat(sunday).isFalse()
+          }
+          with(it.scheduleRules[2]) {
+            assertThat(startTime).isEqualTo("09:00")
+            assertThat(endTime).isEqualTo("12:00")
+            assertThat(monday).isFalse()
+            assertThat(tuesday).isFalse()
+            assertThat(wednesday).isFalse()
+            assertThat(thursday).isFalse()
+            assertThat(friday).isFalse()
             assertThat(saturday).isTrue()
             assertThat(sunday).isTrue()
           }
