@@ -165,7 +165,6 @@ private fun GetActivityResponse.toActivityMigrateRequest(): ActivityMigrateReque
     capacity = capacity,
     description = description,
     payPerSession = ActivityMigrateRequest.PayPerSession.valueOf(payPerSession),
-    minimumIncentiveLevel = minimumIncentiveLevel,
     runsOnBankHoliday = !excludeBankHolidays,
     internalLocationCode = internalLocationCode,
     internalLocationId = internalLocationId,
