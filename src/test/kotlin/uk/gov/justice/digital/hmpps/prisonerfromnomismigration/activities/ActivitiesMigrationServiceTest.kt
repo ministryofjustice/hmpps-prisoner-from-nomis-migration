@@ -463,7 +463,6 @@ class ActivitiesMigrationServiceTest {
           assertThat(it.capacity).isEqualTo(10)
           assertThat(it.description).isEqualTo("Some activity")
           assertThat(it.payPerSession).isEqualTo(ActivityMigrateRequest.PayPerSession.H)
-          assertThat(it.minimumIncentiveLevel).isNull()
           assertThat(it.runsOnBankHoliday).isEqualTo(false)
           assertThat(it.internalLocationId).isEqualTo(123)
           assertThat(it.internalLocationCode).isEqualTo("CELL-01")
