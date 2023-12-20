@@ -211,12 +211,6 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
           .build()
       }
       .retrieve()
-//      .onStatus({ it == HttpStatus.BAD_REQUEST }, { clientResponse ->
-//        clientResponse.bodyToMono(ErrorResponse::class.java)
-//          .flatMap { errorResponse ->
-//            Mono.error(BadRequestException(errorResponse.userMessage ?: "Received a 400 calling /activities/ids"))
-//          }
-//      },)
       .bodyToMono(typeReference<RestResponsePage<FindActiveActivityIdsResponse>>())
       .onErrorResume(WebClientResponseException.BadRequest::class.java) {
         val errorResponse = it.getResponseBodyAs(ErrorResponse::class.java) as ErrorResponse
