@@ -76,13 +76,14 @@ class HmppsPrisonerFromNomisMigrationExceptionHandler {
   @ExceptionHandler(BadRequestException::class)
   fun handleBadRequest(e: BadRequestException): Mono<ResponseEntity<ErrorResponse>> {
     log.info("Bad request returned from downstream service: {}", e.message)
+    val message = (e.cause?.message ?: e.message)?.replace("Bad request: ", "")
     return Mono.just(
       ResponseEntity
         .status(BAD_REQUEST)
         .body(
           ErrorResponse(
             status = BAD_REQUEST,
-            userMessage = "Bad Request: ${e.cause?.message}",
+            userMessage = "Bad Request: $message",
             developerMessage = e.message,
           ),
         ),
