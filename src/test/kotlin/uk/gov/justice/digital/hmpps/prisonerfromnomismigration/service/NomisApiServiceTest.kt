@@ -19,6 +19,7 @@ import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.web.reactive.function.client.WebClientResponseException.NotFound
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AllocationExclusion
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveActivityIdsResponse
@@ -499,7 +500,7 @@ internal class NomisApiServiceTest {
         ).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
-            .withStatus(HttpURLConnection.HTTP_NOT_FOUND)
+            .withStatus(HttpURLConnection.HTTP_BAD_REQUEST)
             .withBody(
               """
                {
@@ -516,7 +517,7 @@ internal class NomisApiServiceTest {
       )
 
       runBlocking {
-        assertThrows<NotFoundException> {
+        assertThrows<BadRequestException> {
           nomisService.getActivityIds(
             prisonId = "",
             excludeProgramCodes = listOf("PROGRAM1", "PROGRAM2"),
