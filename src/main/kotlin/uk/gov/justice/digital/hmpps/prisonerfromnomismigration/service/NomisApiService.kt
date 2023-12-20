@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service
 import org.springframework.util.LinkedMultiValueMap
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
@@ -210,13 +211,11 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
           .build()
       }
       .retrieve()
-      .onStatus({ it == HttpStatus.BAD_REQUEST }, { clientResponse ->
-        clientResponse.bodyToMono(ErrorResponse::class.java)
-          .flatMap { errorResponse ->
-            Mono.error(BadRequestException(errorResponse.userMessage ?: "Received a 400 calling /activities/ids"))
-          }
-      },)
       .bodyToMono(typeReference<RestResponsePage<FindActiveActivityIdsResponse>>())
+      .onErrorResume(WebClientResponseException.BadRequest::class.java) {
+        val errorResponse = it.getResponseBodyAs(ErrorResponse::class.java) as ErrorResponse
+        Mono.error(BadRequestException(errorResponse.userMessage ?: "Received a 400 calling /activities/ids"))
+      }
       .awaitSingle()
 
   suspend fun endActivities(ids: List<Long>) =
