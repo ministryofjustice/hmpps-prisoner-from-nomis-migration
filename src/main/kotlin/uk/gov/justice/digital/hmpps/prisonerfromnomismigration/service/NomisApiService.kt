@@ -216,6 +216,12 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
             Mono.error(BadRequestException(errorResponse.userMessage ?: "Received a 400 calling /activities/ids"))
           }
       },)
+      .onStatus({ it == HttpStatus.NOT_FOUND }, { clientResponse ->
+        clientResponse.bodyToMono(ErrorResponse::class.java)
+          .flatMap { errorResponse ->
+            Mono.error(NotFoundException(errorResponse.userMessage ?: "Received a 404 calling /activities/ids"))
+          }
+      },)
       .bodyToMono(typeReference<RestResponsePage<FindActiveActivityIdsResponse>>())
       .awaitSingle()
 

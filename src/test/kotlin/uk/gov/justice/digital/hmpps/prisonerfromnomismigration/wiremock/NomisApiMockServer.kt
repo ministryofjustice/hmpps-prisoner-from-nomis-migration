@@ -474,11 +474,11 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.BAD_REQUEST.value())
+            .withStatus(HttpStatus.NOT_FOUND.value())
             .withBody(
               """{
-                "status": 400,
-                "userMessage": "Bad request: Prison with id=$badPrison does not exist"
+                "status": 404,
+                "userMessage": "Not found: Prison with id=$badPrison does not exist"
               }
               """.trimIndent(),
 

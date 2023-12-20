@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.web.reactive.function.client.WebClientResponseException.NotFound
@@ -463,6 +464,69 @@ internal class NomisApiServiceTest {
       assertThat(activities.totalPages).isEqualTo(2)
       assertThat(activities.pageable.pageNumber).isEqualTo(0)
       assertThat(activities.totalElements).isEqualTo(4)
+    }
+
+    @Test
+    fun `will pass on a not found to the caller`() {
+      nomisApi.stubFor(
+        get(
+          urlPathEqualTo("/activities/ids"),
+        ).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpURLConnection.HTTP_NOT_FOUND)
+            .withBody(
+              """
+               {
+                 "status": 404,
+                 "errorCode": null,
+                 "userMessage": "Not found: Prison with id=UNKNOWN does not exist",
+                 "developerMessage": "Not found: Prison with id=UNKNOWN does not exist",
+                 "moreInfo": null
+               }
+
+              """.trimIndent(),
+            ),
+        ),
+      )
+    }
+
+    @Test
+    fun `will pass on a bad request to the caller`() {
+      nomisApi.stubFor(
+        get(
+          urlPathEqualTo("/activities/ids"),
+        ).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpURLConnection.HTTP_NOT_FOUND)
+            .withBody(
+              """
+               {
+                 "status": 400,
+                 "errorCode": null,
+                 "userMessage": "Bad Request: Missing request parameter",
+                 "developerMessage": "Bad Request: Missing request parameter",
+                 "moreInfo": null
+               }
+
+              """.trimIndent(),
+            ),
+        ),
+      )
+
+      runBlocking {
+        assertThrows<NotFoundException> {
+          nomisService.getActivityIds(
+            prisonId = "",
+            excludeProgramCodes = listOf("PROGRAM1", "PROGRAM2"),
+            pageNumber = 0,
+            pageSize = 3,
+          )
+        }.also {
+          assertThat(it.message).isEqualTo("Bad Request: Missing request parameter")
+        }
+      }
     }
 
     private fun activitiesPagedResponse() = """

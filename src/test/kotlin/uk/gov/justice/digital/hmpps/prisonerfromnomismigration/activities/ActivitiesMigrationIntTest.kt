@@ -670,14 +670,14 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Test
-    internal fun `will return bad request for invalid inputs`() {
+    internal fun `will return not found for invalid inputs`() {
       nomisApi.stubGetActivitiesIdCountsError(badPrison = "notaprison")
 
       webTestClient.get().uri("/migrate/activities/ids?prisonId=notaprison&pageSize=3&page=0")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
         .header("Content-Type", "application/json")
         .exchange()
-        .expectStatus().isBadRequest
+        .expectStatus().isNotFound
         .expectBody()
         .jsonPath("$.userMessage").value<String> {
           assertThat(it).contains("Prison with id=notaprison does not exist")
