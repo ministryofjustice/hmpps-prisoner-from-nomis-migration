@@ -426,6 +426,7 @@ class AdjudicationMappingCreatorTest {
       effectiveDate = effectiveDate,
       chargeSequence = 1,
       createdByUsername = "JTEST_GEN",
+      createdDateTime = "2021-03-01T10:00:00",
       sanctionType = CodeDescription(nomisTypeCode, "$nomisTypeCode description"),
       sanctionDays = sanctionDays,
       sanctionMonths = sanctionMonths,

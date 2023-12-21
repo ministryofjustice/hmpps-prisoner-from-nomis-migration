@@ -346,6 +346,7 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
                             "statusDate": "2023-08-15",
                             "sanctionDays": 3,
                             "createdByUsername": "Q124UT",
+                            "createdDateTime": "2023-08-07T16:56:17.018049",
                             "consecutiveAward": {
                                 "sequence": 2,
                                 "sanctionType": {
@@ -353,6 +354,7 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
                                     "description": "Additional Days Added"
                                 },
                                 "createdByUsername": "Q124UT",
+                                "createdDateTime": "2023-08-07T16:56:17.018049",
                                 "sanctionStatus": {
                                     "code": "IMMEDIATE",
                                     "description": "Immediate"
@@ -379,6 +381,7 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
                             "statusDate": "2023-08-15",
                             "sanctionMonths": 2,
                             "createdByUsername": "Q124UT",
+                            "createdDateTime": "2023-08-07T16:56:17.018049",
                             "compensationAmount": 120.12,
                             "chargeSequence": 2
                         }

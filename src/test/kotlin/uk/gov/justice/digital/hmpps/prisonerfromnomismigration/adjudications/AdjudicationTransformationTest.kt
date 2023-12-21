@@ -957,6 +957,7 @@ class AdjudicationTransformationTest {
                       chargeSequence = charge.chargeSequence,
                       adjudicationNumber = 7654321,
                       createdByUsername = "A.BEANS",
+                      createdDateTime = "2021-01-01T10:00",
                     ),
                   ),
                   pleaFindingType = CodeDescription(code = "GUILTY", description = "Guilty"),
@@ -986,11 +987,13 @@ class AdjudicationTransformationTest {
         assertThat(dpsAdjudication.punishments[0].compensationAmount).isEqualTo(BigDecimal.valueOf(23.67))
         assertThat(dpsAdjudication.punishments[0].days).isEqualTo(2)
         assertThat(dpsAdjudication.punishments[0].effectiveDate).isEqualTo("2021-01-01")
+        assertThat(dpsAdjudication.punishments[0].statusDate).isEqualTo("2021-01-02")
         assertThat(dpsAdjudication.punishments[0].consecutiveChargeNumber).isNull()
         assertThat(dpsAdjudication.punishments[0].sanctionCode).isEqualTo("CC")
         assertThat(dpsAdjudication.punishments[0].sanctionSeq).isEqualTo(23)
         assertThat(dpsAdjudication.punishments[0].sanctionStatus).isEqualTo("IMMEDIATE")
         assertThat(dpsAdjudication.punishments[0].createdBy).isEqualTo("A.BEANS")
+        assertThat(dpsAdjudication.punishments[0].createdDateTime).isEqualTo("2021-01-01T10:00")
       }
 
       @Test
@@ -1035,10 +1038,12 @@ class AdjudicationTransformationTest {
                         chargeSequence = charge1.chargeSequence,
                         adjudicationNumber = 7654321,
                         createdByUsername = "A.BEANS",
+                        createdDateTime = "2021-03-01T10:00:00",
                       ),
                       sequence = 23,
                       adjudicationNumber = 12345,
                       createdByUsername = "A.BEANS",
+                      createdDateTime = "2021-03-01T10:00:00",
                     ),
                   ),
                   pleaFindingType = CodeDescription(code = "GUILTY", description = "Guilty"),
@@ -1111,6 +1116,7 @@ class AdjudicationTransformationTest {
                       chargeSequence = charge.chargeSequence,
                       adjudicationNumber = 12345,
                       createdByUsername = "A.BEANS",
+                      createdDateTime = "2021-03-01T10:00:00",
                     ),
                   ),
                   pleaFindingType = CodeDescription(code = "GUILTY", description = "Guilty"),
