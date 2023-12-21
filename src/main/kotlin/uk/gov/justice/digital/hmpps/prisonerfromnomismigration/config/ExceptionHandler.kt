@@ -82,7 +82,7 @@ class HmppsPrisonerFromNomisMigrationExceptionHandler {
         .body(
           ErrorResponse(
             status = BAD_REQUEST,
-            userMessage = "Bad Request: ${e.cause?.message}",
+            userMessage = "Bad Request: ${e.message}",
             developerMessage = e.message,
           ),
         ),
