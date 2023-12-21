@@ -162,12 +162,14 @@ private fun Hearing.toHearingResultAwards(): List<MigratePunishment> =
           sanctionStatus = it.sanctionStatus?.code
             ?: throw IllegalArgumentException("Result award must have a sanctionStatus"),
           effectiveDate = it.effectiveDate,
+          statusDate = it.statusDate,
           sanctionSeq = it.sequence.toLong(),
           comment = it.comment,
           compensationAmount = it.compensationAmount,
           days = it.asDays(),
           consecutiveChargeNumber = it.consecutiveAward.toConsecutiveChargeNumber(),
           createdBy = it.createdByUsername,
+          createdDateTime = it.createdDateTime,
         )
       }
     }
