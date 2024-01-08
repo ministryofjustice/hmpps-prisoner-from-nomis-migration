@@ -24,6 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Migrati
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AllocationMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AllocationExclusion
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveAllocationIdsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindSuspendedAllocationsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetAllocationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ScheduleRulesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
@@ -102,6 +103,13 @@ class AllocationsMigrationService(
           throw it
         }
   }
+
+  suspend fun getSuspendedAllocations(prisonId: String, courseActivityId: Long?): List<FindSuspendedAllocationsResponse> =
+    nomisApiService.getSuspendedAllocations(
+      prisonId = prisonId,
+      excludeProgramCodes = activitiesApiService.getActivityCategories(),
+      courseActivityId = courseActivityId,
+    )
 
   private suspend fun GetAllocationResponse.toAllocationMigrateRequest(allocationId: Long): AllocationMigrateRequest {
     val activityMapping = activityMappingService.findNomisMapping(courseActivityId)

@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.E
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveActivityIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveAllocationIdsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindSuspendedAllocationsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetActivityResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetAllocationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NonAssociationIdResponse
@@ -300,6 +301,29 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       }
       .retrieve()
       .bodyToMono(typeReference<RestResponsePage<NonAssociationIdResponse>>())
+      .awaitSingle()
+
+  suspend fun getSuspendedAllocations(
+    prisonId: String,
+    excludeProgramCodes: List<String>,
+    courseActivityId: Long? = null,
+  ): List<FindSuspendedAllocationsResponse> =
+    webClient.get()
+      .uri {
+        it.path("/allocations/suspended")
+          .queryParam("prisonId", prisonId)
+          .queryParams(LinkedMultiValueMap<String, String>().apply { addAll("excludeProgramCode", excludeProgramCodes) })
+          .apply { courseActivityId?.run { queryParam("courseActivityId", courseActivityId) } }
+          .build()
+      }
+      .retrieve()
+      .onStatus({ it == HttpStatus.BAD_REQUEST }, { clientResponse ->
+        clientResponse.bodyToMono(ErrorResponse::class.java)
+          .flatMap { errorResponse ->
+            Mono.error(BadRequestException(errorResponse.userMessage ?: "Received a 400 calling /allocations/suspended"))
+          }
+      },)
+      .bodyToMono(typeReference<List<FindSuspendedAllocationsResponse>>())
       .awaitSingle()
 }
 
