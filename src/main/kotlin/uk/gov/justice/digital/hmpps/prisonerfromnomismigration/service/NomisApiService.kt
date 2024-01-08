@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
-import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.util.LinkedMultiValueMap
 import org.springframework.web.reactive.function.BodyInserters
@@ -251,13 +250,11 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
           .build()
       }
       .retrieve()
-      .onStatus({ it == HttpStatus.BAD_REQUEST }, { clientResponse ->
-        clientResponse.bodyToMono(ErrorResponse::class.java)
-          .flatMap { errorResponse ->
-            Mono.error(BadRequestException(errorResponse.userMessage ?: "Received a 400 calling /allocations/ids"))
-          }
-      },)
       .bodyToMono(typeReference<RestResponsePage<FindActiveAllocationIdsResponse>>())
+      .onErrorResume(WebClientResponseException.BadRequest::class.java) {
+        val errorResponse = it.getResponseBodyAs(ErrorResponse::class.java) as ErrorResponse
+        Mono.error(BadRequestException(errorResponse.userMessage ?: "Received a 400 calling /allocations/ids"))
+      }
       .awaitSingle()
 
   suspend fun getNonAssociation(offenderNo: String, nsOffenderNo: String, typeSequence: Int): NonAssociationResponse =
@@ -317,13 +314,11 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
           .build()
       }
       .retrieve()
-      .onStatus({ it == HttpStatus.BAD_REQUEST }, { clientResponse ->
-        clientResponse.bodyToMono(ErrorResponse::class.java)
-          .flatMap { errorResponse ->
-            Mono.error(BadRequestException(errorResponse.userMessage ?: "Received a 400 calling /allocations/suspended"))
-          }
-      },)
       .bodyToMono(typeReference<List<FindSuspendedAllocationsResponse>>())
+      .onErrorResume(WebClientResponseException.BadRequest::class.java) {
+        val errorResponse = it.getResponseBodyAs(ErrorResponse::class.java) as ErrorResponse
+        Mono.error(BadRequestException(errorResponse.userMessage ?: "Received a 400 calling /allocations/suspended"))
+      }
       .awaitSingle()
 }
 
