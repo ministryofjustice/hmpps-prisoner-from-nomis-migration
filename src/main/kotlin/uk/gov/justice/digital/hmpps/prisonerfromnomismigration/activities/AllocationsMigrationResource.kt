@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveAllocationIdsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindSuspendedAllocationsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.HistoryFilter
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
@@ -262,4 +263,43 @@ class AllocationsMigrationResource(
     @Schema(description = "Course Activity ID", type = "integer") @RequestParam courseActivityId: Long?,
   ): Page<FindActiveAllocationIdsResponse> =
     allocationsMigrationService.getIds(AllocationsMigrationFilter(prisonId, courseActivityId), size, page)
+
+  @PreAuthorize("hasRole('ROLE_MIGRATE_ACTIVITIES')")
+  @GetMapping("/suspended")
+  @Operation(
+    summary = "Find suspended allocations eligible for migration",
+    description = "Searches for suspended active offender program profiles for active course activities (excluding DPS program services). Requires role MIGRATE_ACTIVITIES",
+    responses = [
+      ApiResponse(
+        responseCode = "200",
+        description = "OK",
+      ),
+      ApiResponse(
+        responseCode = "400",
+        description = "Invalid request",
+        content = [
+          Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class)),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "401",
+        description = "Unauthorized to access this endpoint",
+        content = [
+          Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class)),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "403",
+        description = "Forbidden, requires role NOMIS_ACTIVITIES",
+        content = [
+          Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class)),
+        ],
+      ),
+    ],
+  )
+  suspend fun findSuspendedAllocationsToMigrate(
+    @Schema(description = "Prison id") @RequestParam prisonId: String,
+    @Schema(description = "Course Activity ID", type = "integer") @RequestParam courseActivityId: Long?,
+  ): List<FindSuspendedAllocationsResponse> =
+    allocationsMigrationService.getSuspendedAllocations(prisonId, courseActivityId)
 }

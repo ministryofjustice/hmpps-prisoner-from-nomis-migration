@@ -582,6 +582,32 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }
   }
 
+  fun stubGetSuspendedAllocations() {
+    nomisApi.stubFor(
+      get(
+        urlPathEqualTo("/allocations/suspended"),
+      )
+        .withQueryParam("prisonId", equalTo("MDI"))
+        .withQueryParam("excludeProgramCode", equalTo("SAA_EDUCATION"))
+        .withQueryParam("excludeProgramCode", equalTo("SAA_INDUCTION"))
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+            .withBody(suspendedAllocationsResponse()),
+        ),
+    )
+  }
+
+  fun verifyGetSuspendedAllocations() {
+    nomisApi.verify(
+      getRequestedFor(
+        urlPathEqualTo("/allocations/suspended"),
+      )
+        .withQueryParam("prisonId", equalTo("MDI"))
+        .withQueryParam("excludeProgramCode", equalTo("SAA_EDUCATION"))
+        .withQueryParam("excludeProgramCode", equalTo("SAA_INDUCTION")),
+    )
+  }
+
   fun stubGetInitialCount(
     urlPath: String,
     totalElements: Long,
@@ -1386,6 +1412,27 @@ private fun allocationsResponse(
     ]
 }
   """.trimIndent()
+
+private fun suspendedAllocationsResponse(): String =
+  """
+    [
+      {
+        "offenderNo": "A1234AA",
+        "courseActivityId": 12345,
+        "courseActivityDescription": "Kitchens AM"
+      },
+      {
+        "offenderNo": "B1234BB",
+        "courseActivityId": 12345,
+        "courseActivityDescription": "Kitchens AM"
+      },
+      {
+        "offenderNo": "A1234AA",
+        "courseActivityId": 12346,
+        "courseActivityDescription": "Kitchens PM"
+      }
+    ]
+  """
 
 private fun idJsonCreator(id: Long): String {
   val fourDigitString = String.format("%04d", id)

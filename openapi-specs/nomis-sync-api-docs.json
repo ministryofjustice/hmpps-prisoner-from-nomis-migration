@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2023-12-21.5935.8675fd6"
+    "version": "2024-01-05.6038.79cdfc0"
   },
   "servers": [
     {
@@ -2669,6 +2669,166 @@
           },
           "404": {
             "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/service-prisons/{serviceCode}/prison/{prisonId}": {
+      "get": {
+        "tags": [
+          "service-agency-switches-resource"
+        ],
+        "summary": "Check if a service is turned on for a prison",
+        "description": "Check if a prison is turned on for a service. Requires role NOMIS_ACTIVITIES",
+        "operationId": "checkServicePrison",
+        "parameters": [
+          {
+            "name": "serviceCode",
+            "in": "path",
+            "description": "The code of the service from the EXTERNAL_SERVICES table",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The code of the service from the EXTERNAL_SERVICES table",
+              "example": "ACTIVITY"
+            },
+            "example": "ACTIVITY"
+          },
+          {
+            "name": "prisonId",
+            "in": "path",
+            "description": "The id of the prison",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The id of the prison",
+              "example": "MDI"
+            },
+            "example": "MDI"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires role SYNCHRONISATION_REPORTING",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found, the service is not turned on for the prison",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "service-agency-switches-resource"
+        ],
+        "summary": "Turn on a service for a prison",
+        "description": "Turn on a service for a prison. Requires role NOMIS_ACTIVITIES",
+        "operationId": "createServicePrison",
+        "parameters": [
+          {
+            "name": "serviceCode",
+            "in": "path",
+            "description": "The code of the service from the EXTERNAL_SERVICES table",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The code of the service from the EXTERNAL_SERVICES table",
+              "example": "ACTIVITY"
+            },
+            "example": "ACTIVITY"
+          },
+          {
+            "name": "prisonId",
+            "in": "path",
+            "description": "The id of the prison",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The id of the prison",
+              "example": "MDI"
+            },
+            "example": "MDI"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires role SYNCHRONISATION_REPORTING",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found, the service or prison do not exist",
             "content": {
               "application/json": {
                 "schema": {
@@ -5828,6 +5988,93 @@
         }
       }
     },
+    "/allocations/suspended": {
+      "get": {
+        "tags": [
+          "activities-resource"
+        ],
+        "summary": "Find suspended allocations",
+        "description": "Searches for suspended prisoners on active course allocations. Requires role NOMIS_ACTIVITIES",
+        "operationId": "findSuspendedAllocations",
+        "parameters": [
+          {
+            "name": "prisonId",
+            "in": "query",
+            "description": "Prison id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Prison id"
+            }
+          },
+          {
+            "name": "excludeProgramCode",
+            "in": "query",
+            "description": "Exclude program codes",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Exclude program codes"
+            }
+          },
+          {
+            "name": "courseActivityId",
+            "in": "query",
+            "description": "Course Activity ID",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "Course Activity ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FindSuspendedAllocationsResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires role NOMIS_ACTIVITIES",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/allocations/reconciliation/{prisonId}": {
       "get": {
         "tags": [
@@ -8154,10 +8401,12 @@
       },
       "CourtAppearanceRequest": {
         "required": [
+          "courtEventCharges",
           "courtEventType",
           "courtId",
           "eventDate",
           "eventStatus",
+          "nextCourtId",
           "startTime"
         ],
         "type": "object",
@@ -8194,13 +8443,22 @@
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
             "example": "2021-07-05T10:35:17"
+          },
+          "courtEventCharges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OffenderChargeRequest"
+            }
+          },
+          "nextCourtId": {
+            "type": "string"
           }
         },
         "description": "Court Event"
       },
       "CreateCourtCaseRequest": {
         "required": [
-          "courtAppearances",
+          "courtAppearance",
           "courtId",
           "legalCaseType",
           "startDate",
@@ -8221,17 +8479,50 @@
           "status": {
             "type": "string"
           },
-          "courtAppearances": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CourtAppearanceRequest"
-            }
+          "courtAppearance": {
+            "$ref": "#/components/schemas/CourtAppearanceRequest"
           }
         },
         "description": "Court case create request"
       },
+      "OffenderChargeRequest": {
+        "required": [
+          "mostSeriousFlag",
+          "offenceCode",
+          "statuteCode"
+        ],
+        "type": "object",
+        "properties": {
+          "offenceCode": {
+            "type": "string"
+          },
+          "statuteCode": {
+            "type": "string"
+          },
+          "offencesCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "offenceDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "offenceEndDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "resultCode1": {
+            "type": "string"
+          },
+          "mostSeriousFlag": {
+            "type": "boolean"
+          }
+        },
+        "description": "Court Event"
+      },
       "CreateCourtAppearanceResponse": {
         "required": [
+          "courtEventChargesIds",
           "id"
         ],
         "type": "object",
@@ -8239,6 +8530,12 @@
           "id": {
             "type": "integer",
             "format": "int64"
+          },
+          "courtEventChargesIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateCourtEventChargesResponse"
+            }
           }
         },
         "description": "Create adjustment response"
@@ -8259,6 +8556,19 @@
             "items": {
               "$ref": "#/components/schemas/CreateCourtAppearanceResponse"
             }
+          }
+        },
+        "description": "Create adjustment response"
+      },
+      "CreateCourtEventChargesResponse": {
+        "required": [
+          "offenderChargeId"
+        ],
+        "type": "object",
+        "properties": {
+          "offenderChargeId": {
+            "type": "integer",
+            "format": "int64"
           }
         },
         "description": "Create adjustment response"
@@ -10069,7 +10379,7 @@
         "required": [
           "eventId",
           "mostSeriousFlag",
-          "offenderChargeId"
+          "offenderCharge"
         ],
         "type": "object",
         "properties": {
@@ -10077,9 +10387,8 @@
             "type": "integer",
             "format": "int64"
           },
-          "offenderChargeId": {
-            "type": "integer",
-            "format": "int64"
+          "offenderCharge": {
+            "$ref": "#/components/schemas/OffenderChargeResponse"
           },
           "offencesCount": {
             "type": "integer",
@@ -11416,6 +11725,33 @@
           }
         },
         "description": "Activity Schedule Rules"
+      },
+      "FindSuspendedAllocationsResponse": {
+        "required": [
+          "courseActivityDescription",
+          "courseActivityId",
+          "offenderNo"
+        ],
+        "type": "object",
+        "properties": {
+          "offenderNo": {
+            "type": "string",
+            "description": "NOMIS offender number",
+            "example": "A1234BC"
+          },
+          "courseActivityId": {
+            "type": "integer",
+            "description": "Course Activity ID",
+            "format": "int64",
+            "example": 1234567
+          },
+          "courseActivityDescription": {
+            "type": "string",
+            "description": "Course description",
+            "example": "Kitchens AM"
+          }
+        },
+        "description": "Find suspended prisoners from active allocations"
       },
       "AllocationReconciliationResponse": {
         "required": [

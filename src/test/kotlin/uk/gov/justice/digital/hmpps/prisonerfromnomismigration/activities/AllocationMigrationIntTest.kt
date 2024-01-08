@@ -2,6 +2,8 @@
 
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities
 
+import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
@@ -724,6 +726,73 @@ class AllocationMigrationIntTest : SqsIntegrationTestBase() {
         .jsonPath("$.totalElements").isEqualTo(2)
         .jsonPath("$.pageable.pageNumber").isEqualTo(0)
         .jsonPath("$.pageable.pageSize").isEqualTo(3)
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /migrate/allocations/suspended")
+  inner class FindSuspendedActivitiesToMigrate {
+    @BeforeEach
+    internal fun stubNomisApi() = runTest {
+      activitiesApi.stubGetActivityCategories()
+      nomisApi.stubGetSuspendedAllocations()
+    }
+
+    @Test
+    internal fun `must have valid token to get suspended allocations`() {
+      webTestClient.get().uri("/migrate/allocations/suspended?prisonId=MDI")
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isUnauthorized
+    }
+
+    @Test
+    internal fun `must have correct role to get suspended allocations`() {
+      webTestClient.get().uri("/migrate/allocations/suspended?prisonId=MDI")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isForbidden
+    }
+
+    @Test
+    internal fun `will call nomis prisoner api with excluded program services`() {
+      webTestClient.get().uri("/migrate/allocations/suspended?prisonId=MDI")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
+
+      activitiesApi.verify(getRequestedFor(urlPathEqualTo("/activity-categories")))
+      nomisApi.verifyGetSuspendedAllocations()
+    }
+
+    @Test
+    internal fun `will return bad requests for invalid inputs`() {
+      webTestClient.get().uri("/migrate/allocations/suspended")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isBadRequest
+    }
+
+    @Test
+    internal fun `will return allocations`() {
+      webTestClient.get().uri("/migrate/allocations/suspended?prisonId=MDI")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$[0].offenderNo").isEqualTo("A1234AA")
+        .jsonPath("$[0].courseActivityId").isEqualTo(12345)
+        .jsonPath("$[0].courseActivityDescription").isEqualTo("Kitchens AM")
+        .jsonPath("$[1].offenderNo").isEqualTo("B1234BB")
+        .jsonPath("$[1].courseActivityId").isEqualTo(12345)
+        .jsonPath("$[1].courseActivityDescription").isEqualTo("Kitchens AM")
+        .jsonPath("$[2].offenderNo").isEqualTo("A1234AA")
+        .jsonPath("$[2].courseActivityId").isEqualTo(12346)
+        .jsonPath("$[2].courseActivityDescription").isEqualTo("Kitchens PM")
     }
   }
 }
