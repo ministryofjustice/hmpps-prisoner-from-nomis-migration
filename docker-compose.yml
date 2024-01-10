@@ -84,7 +84,7 @@ services:
       - API_BASE_URL_OAUTH=http://hpfnm-hmpps-auth:8080/auth
 
   localstack:
-    image: localstack/localstack:2.3
+    image: localstack/localstack:3
     networks:
       - hmpps
     container_name: hpfnm-localstack
@@ -95,7 +95,7 @@ services:
       - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
 
   localstack-external:
-    image: localstack/localstack:2.3
+    image: localstack/localstack:3
     networks:
       - hmpps
     container_name: hpfnm-localstack-external
