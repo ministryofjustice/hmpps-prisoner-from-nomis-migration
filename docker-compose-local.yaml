@@ -14,7 +14,7 @@ services:
       - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
 
   migration-db:
-    image: postgres:15
+    image: postgres:16
     networks:
       - hmpps
     container_name: hpfnm-migration-db
