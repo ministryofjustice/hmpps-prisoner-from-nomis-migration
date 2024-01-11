@@ -17,6 +17,11 @@
     "percentage": 100
   },
   "preview": {
+    "instrumentation": {
+      "r2dbc": {
+        "enabled": true
+      }
+    },
     "sampling": {
       "overrides": [
         {
