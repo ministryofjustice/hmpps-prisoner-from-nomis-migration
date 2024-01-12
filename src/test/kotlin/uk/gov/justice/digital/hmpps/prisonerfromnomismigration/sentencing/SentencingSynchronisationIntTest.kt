@@ -273,7 +273,8 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           fun `will only create the adjustment once despite constant failures failure`() {
             await untilAsserted {
               mappingApi.verify(
-                exactly(3), // Once and then twice via RETRY_SYNCHRONISATION_SENTENCING_ADJUSTMENT_MAPPING message
+                // Once and then twice via RETRY_SYNCHRONISATION_SENTENCING_ADJUSTMENT_MAPPING message
+                exactly(3),
                 postRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments"))
                   .withRequestBody(matchingJsonPath("nomisAdjustmentId", equalTo(NOMIS_ADJUSTMENT_ID.toString())))
                   .withRequestBody(matchingJsonPath("nomisAdjustmentCategory", equalTo("SENTENCE")))
@@ -1044,7 +1045,8 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           fun `will only create the adjustment once despite constant failures failure`() {
             await untilAsserted {
               mappingApi.verify(
-                exactly(3), // Once and then twice via RETRY_SYNCHRONISATION_SENTENCING_ADJUSTMENT_MAPPING message
+                // Once and then twice via RETRY_SYNCHRONISATION_SENTENCING_ADJUSTMENT_MAPPING message
+                exactly(3),
                 postRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments"))
                   .withRequestBody(matchingJsonPath("nomisAdjustmentId", equalTo(NOMIS_ADJUSTMENT_ID.toString())))
                   .withRequestBody(matchingJsonPath("nomisAdjustmentCategory", equalTo("KEY-DATE")))

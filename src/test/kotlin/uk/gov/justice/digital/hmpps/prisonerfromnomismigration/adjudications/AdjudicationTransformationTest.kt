@@ -739,7 +739,8 @@ class AdjudicationTransformationTest {
       assertThat(dpsAdjudication.hearings).containsExactly(
         MigrateHearing(
           oicHearingId = 54321,
-          oicHearingType = GOV, // TODO - we always have a NOMIS type so default to this until we have a decision
+          // TODO - we always have a NOMIS type so default to this until we have a decision
+          oicHearingType = GOV,
           hearingDateTime = "2021-01-01T12:00:00",
           adjudicator = null,
           commentText = null,
@@ -1155,7 +1156,8 @@ class AdjudicationTransformationTest {
         Arguments.of(null, null, "2020-01-01", null),
         Arguments.of(1, null, "2020-01-01", 1),
         Arguments.of(null, 1, "2020-01-01", 31),
-        Arguments.of(null, 1, "2020-02-01", 29), // leap year
+        // leap year
+        Arguments.of(null, 1, "2020-02-01", 29),
         Arguments.of(null, 1, "2021-02-01", 28),
         Arguments.of(10, 1, "2020-02-01", 39),
         Arguments.of(null, 6, "2020-01-01", 182),

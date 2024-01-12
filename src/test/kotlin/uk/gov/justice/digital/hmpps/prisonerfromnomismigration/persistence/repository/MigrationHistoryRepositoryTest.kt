@@ -14,7 +14,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
-private const val filter = """{
+private const val FILTER = """{
         "prisonIds": [
             "HEI"
         ],
@@ -41,7 +41,7 @@ class MigrationHistoryRepositoryTest : TestBase() {
     repository.save(
       MigrationHistory(
         migrationId = "2022-01-23T10:31:45",
-        filter = filter,
+        filter = FILTER,
         migrationType = VISITS,
         estimatedRecordCount = 123_678,
       ),

@@ -398,7 +398,8 @@ private val simpleTimeFormat = DateTimeFormatter.ofPattern("HH:mm")
 data class AppointmentResponse(
   val bookingId: Long,
   val offenderNo: String,
-  val prisonId: String, // prison or toPrison is never null in existing nomis data for event_type = 'APP' (as at 11/5/2023)
+  // prison or toPrison is never null in existing nomis data for event_type = 'APP' (as at 11/5/2023)
+  val prisonId: String,
   val internalLocation: Long? = null,
   val startDateTime: LocalDateTime? = null,
   val endDateTime: LocalDateTime? = null,

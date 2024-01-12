@@ -53,7 +53,8 @@ data class SentencingAdjustment(
   val bookingId: Long,
   val offenderNo: String,
   val sentenceSequence: Long? = null,
-  val adjustmentType: String, // LegacyAdjustmentType enum in AdjustmentsApi
+  // LegacyAdjustmentType enum in AdjustmentsApi
+  val adjustmentType: String,
   @JsonFormat(pattern = "yyyy-MM-dd")
   val adjustmentDate: LocalDate?,
   @JsonFormat(pattern = "yyyy-MM-dd")
