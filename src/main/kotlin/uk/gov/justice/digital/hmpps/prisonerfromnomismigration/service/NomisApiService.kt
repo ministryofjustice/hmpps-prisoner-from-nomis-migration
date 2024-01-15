@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 
-import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.JsonNode
 import kotlinx.coroutines.reactive.awaitSingle
@@ -434,18 +433,13 @@ data class AppointmentIdResponse(
   val eventId: Long,
 )
 
-class RestResponsePage<T>
-@JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-constructor(
+class RestResponsePage<T>(
   @JsonProperty("content") content: List<T>,
   @JsonProperty("number") number: Int,
   @JsonProperty("size") size: Int,
   @JsonProperty("totalElements") totalElements: Long,
   @Suppress("UNUSED_PARAMETER")
-  @JsonProperty(
-    "pageable",
-  )
-  pageable: JsonNode,
+  @JsonProperty("pageable") pageable: JsonNode,
 ) : PageImpl<T>(content, PageRequest.of(number, size), totalElements)
 
 inline fun <reified T> typeReference() = object : ParameterizedTypeReference<T>() {}
