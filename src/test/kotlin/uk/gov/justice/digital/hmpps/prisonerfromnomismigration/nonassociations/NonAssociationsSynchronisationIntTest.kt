@@ -39,8 +39,8 @@ private const val NON_ASSOCIATION_ID = 4321L
 private const val OFFENDER_A = "A1234BC"
 private const val OFFENDER_B = "D5678EF"
 private const val TYPE_SEQUENCE = 1
-private const val nomisApiUrl = "/non-associations/offender/$OFFENDER_A/ns-offender/$OFFENDER_B?typeSequence=$TYPE_SEQUENCE"
-private const val nomisMappingApiUrl = "/mapping/non-associations/first-offender-no/$OFFENDER_A/second-offender-no/$OFFENDER_B/type-sequence/$TYPE_SEQUENCE"
+private const val NOMIS_API_URL = "/non-associations/offender/$OFFENDER_A/ns-offender/$OFFENDER_B?typeSequence=$TYPE_SEQUENCE"
+private const val NOMIS_MAPPING_API_URL = "/mapping/non-associations/first-offender-no/$OFFENDER_A/second-offender-no/$OFFENDER_B/type-sequence/$TYPE_SEQUENCE"
 
 class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
@@ -100,14 +100,14 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will retrieve details about the non-association from NOMIS`() {
           await untilAsserted {
-            nomisApi.verify(getRequestedFor(urlEqualTo(nomisApiUrl)))
+            nomisApi.verify(getRequestedFor(urlEqualTo(NOMIS_API_URL)))
           }
         }
 
         @Test
         fun `will retrieve mapping to check if this is a new non-association`() {
           await untilAsserted {
-            mappingApi.verify(getRequestedFor(urlPathEqualTo(nomisMappingApiUrl)))
+            mappingApi.verify(getRequestedFor(urlPathEqualTo(NOMIS_MAPPING_API_URL)))
           }
         }
 
@@ -166,14 +166,14 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will retrieve details about the non-association from NOMIS`() {
           await untilAsserted {
-            nomisApi.verify(getRequestedFor(urlEqualTo(nomisApiUrl)))
+            nomisApi.verify(getRequestedFor(urlEqualTo(NOMIS_API_URL)))
           }
         }
 
         @Test
         fun `will retrieve mapping to check if this is a new non-association`() {
           await untilAsserted {
-            mappingApi.verify(getRequestedFor(urlPathEqualTo(nomisMappingApiUrl)))
+            mappingApi.verify(getRequestedFor(urlPathEqualTo(NOMIS_MAPPING_API_URL)))
           }
         }
 
@@ -295,7 +295,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will retrieve details about one non-association from NOMIS`() {
           await untilAsserted {
-            nomisApi.verify(exactly(1), getRequestedFor(urlEqualTo(nomisApiUrl)))
+            nomisApi.verify(exactly(1), getRequestedFor(urlEqualTo(NOMIS_API_URL)))
           }
         }
 
@@ -407,14 +407,14 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will retrieve details about the non-association from NOMIS`() {
           await untilAsserted {
-            nomisApi.verify(getRequestedFor(urlEqualTo(nomisApiUrl)))
+            nomisApi.verify(getRequestedFor(urlEqualTo(NOMIS_API_URL)))
           }
         }
 
         @Test
         fun `will retrieve mapping to check if this is a new non-association`() {
           await untilAsserted {
-            mappingApi.verify(getRequestedFor(urlPathEqualTo(nomisMappingApiUrl)))
+            mappingApi.verify(getRequestedFor(urlPathEqualTo(NOMIS_MAPPING_API_URL)))
           }
         }
 
@@ -561,7 +561,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will retrieve mapping`() {
           await untilAsserted {
-            mappingApi.verify(getRequestedFor(urlPathEqualTo(nomisMappingApiUrl)))
+            mappingApi.verify(getRequestedFor(urlPathEqualTo(NOMIS_MAPPING_API_URL)))
           }
         }
 
@@ -615,7 +615,7 @@ class NonAssociationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will attempt to retrieve mapping`() {
-          mappingApi.verify(getRequestedFor(urlPathEqualTo(nomisMappingApiUrl)))
+          mappingApi.verify(getRequestedFor(urlPathEqualTo(NOMIS_MAPPING_API_URL)))
         }
 
         @Test

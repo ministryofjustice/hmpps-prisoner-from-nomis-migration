@@ -58,7 +58,6 @@ class MigrationHistoryResource(private val migrationHistoryService: MigrationHis
       description = "List of migration types, when omitted all migration types will be returned",
       example = "VISITS",
     ) @RequestParam migrationTypes: List<String>? = null,
-
     @Parameter(
       description = "Only include migrations started after this date time",
       example = "2020-03-23T12:00:00",
@@ -66,7 +65,6 @@ class MigrationHistoryResource(private val migrationHistoryService: MigrationHis
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     @RequestParam
     fromDateTime: LocalDateTime? = null,
-
     @Parameter(
       description = "Only include migrations started before this date time",
       example = "2020-03-24T12:00:00",
@@ -74,12 +72,10 @@ class MigrationHistoryResource(private val migrationHistoryService: MigrationHis
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     @RequestParam
     toDateTime: LocalDateTime? = null,
-
     @Parameter(
       description = "When true only include migrations that had at least one failure",
       example = "false",
     ) @RequestParam includeOnlyFailures: Boolean = false,
-
     @Parameter(
       description = "Specify a word of phrase that will appear in the filter related to the migration",
       example = "HEI",

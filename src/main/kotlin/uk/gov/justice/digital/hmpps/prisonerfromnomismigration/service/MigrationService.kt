@@ -107,7 +107,7 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, NOMIS_ENTITY : Any
     /*
        when checking if there are messages to process, it is always an estimation due to SQS, therefore once
        we think there are no messages we check several times in row reducing probability of false positives significantly
-    */
+     */
     if (queueService.isItProbableThatThereAreStillMessagesToBeProcessed(context.type)) {
       queueService.sendMessage(
         MigrationMessageType.MIGRATE_STATUS_CHECK,
@@ -150,7 +150,7 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, NOMIS_ENTITY : Any
     /*
        when checking if there are messages to process, it is always an estimation due to SQS, therefore once
        we think there are no messages we check several times in row reducing probability of false positives significantly
-    */
+     */
     if (queueService.isItProbableThatThereAreStillMessagesToBeProcessed(context.type)) {
       queueService.purgeAllMessages(context.type)
       queueService.sendMessage(

@@ -101,8 +101,10 @@ class ActivitiesMigrationServiceTest {
 
       coEvery {
         auditService.sendAuditEvent(
-          what = capture(auditWhatParam), // makes mock match calls with any value for `speed` and record it in a slot
-          details = capture(auditDetailsParam), // makes mock and capturing only match calls with specific `direction`. Use `any()` to match calls with any `direction`
+          // makes mock match calls with any value for `speed` and record it in a slot
+          what = capture(auditWhatParam),
+          // makes mock and capturing only match calls with specific `direction`. Use `any()` to match calls with any `direction`
+          details = capture(auditDetailsParam),
         )
       } just runs
 

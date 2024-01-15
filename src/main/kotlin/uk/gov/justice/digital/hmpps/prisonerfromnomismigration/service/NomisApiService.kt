@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 
-import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.JsonNode
 import kotlinx.coroutines.reactive.awaitSingle
@@ -398,7 +397,8 @@ private val simpleTimeFormat = DateTimeFormatter.ofPattern("HH:mm")
 data class AppointmentResponse(
   val bookingId: Long,
   val offenderNo: String,
-  val prisonId: String, // prison or toPrison is never null in existing nomis data for event_type = 'APP' (as at 11/5/2023)
+  // prison or toPrison is never null in existing nomis data for event_type = 'APP' (as at 11/5/2023)
+  val prisonId: String,
   val internalLocation: Long? = null,
   val startDateTime: LocalDateTime? = null,
   val endDateTime: LocalDateTime? = null,
@@ -433,18 +433,13 @@ data class AppointmentIdResponse(
   val eventId: Long,
 )
 
-class RestResponsePage<T>
-@JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-constructor(
+class RestResponsePage<T>(
   @JsonProperty("content") content: List<T>,
   @JsonProperty("number") number: Int,
   @JsonProperty("size") size: Int,
   @JsonProperty("totalElements") totalElements: Long,
   @Suppress("UNUSED_PARAMETER")
-  @JsonProperty(
-    "pageable",
-  )
-  pageable: JsonNode,
+  @JsonProperty("pageable") pageable: JsonNode,
 ) : PageImpl<T>(content, PageRequest.of(number, size), totalElements)
 
 inline fun <reified T> typeReference() = object : ParameterizedTypeReference<T>() {}

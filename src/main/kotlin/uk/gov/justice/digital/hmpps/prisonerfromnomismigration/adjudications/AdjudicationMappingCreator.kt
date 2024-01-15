@@ -122,11 +122,21 @@ class AdjudicationMappingCreator(
 }
 
 private enum class OicSanctionCode {
-  ADA, CAUTION, CC, EXTRA_WORK, EXTW, OTHER, REMACT, REMWIN, STOP_PCT, PADA
+  ADA,
+  CAUTION,
+  CC,
+  EXTRA_WORK,
+  EXTW,
+  OTHER,
+  REMACT,
+  REMWIN,
+  STOP_PCT,
+  PADA,
 }
 
 private val prospectiveStatuses: List<String> = listOf(Status.PROSPECTIVE.name, Status.SUSP_PROSP.name)
 
 private enum class Status {
-  PROSPECTIVE, SUSP_PROSP
+  PROSPECTIVE,
+  SUSP_PROSP,
 }

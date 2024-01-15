@@ -131,7 +131,8 @@ private fun AdjudicationCharge.toEvidence(incident: AdjudicationIncident): List<
 private fun Staff.toWitness(type: WitnessType) = MigrateWitness(
   firstName = this.firstName,
   lastName = this.lastName,
-  createdBy = this.createdByUsername!!, // never null for a witness
+  // never null for a witness
+  createdBy = this.createdByUsername!!,
   type,
   dateAdded = this.dateAddedToIncident ?: LocalDate.now(),
   comment = this.comment,
@@ -211,10 +212,10 @@ private fun Hearing.toHearing() = MigrateHearing(
 private fun List<HearingResult>.toHearingResult(): MigrateHearingResult? =
   this.firstOrNull()?.let {
     MigrateHearingResult(
-      plea = it.pleaFindingType?.code
-        ?: throw IllegalArgumentException("Hearing result must have a plea"), // Never null in NOMIS though schema allows it
-      finding = it.findingType?.code
-        ?: throw IllegalArgumentException("Hearing result must have a finding"), // Never null in NOMIS though schema allows it
+      // Never null in NOMIS though schema allows it
+      plea = it.pleaFindingType?.code ?: throw IllegalArgumentException("Hearing result must have a plea"),
+      // Never null in NOMIS though schema allows it
+      finding = it.findingType?.code ?: throw IllegalArgumentException("Hearing result must have a finding"),
       createdDateTime = it.createdDateTime,
       createdBy = it.createdByUsername,
     )
