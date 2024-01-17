@@ -63,6 +63,7 @@ internal class AdjudicationsServiceTest {
             punishments = emptyList(),
             hearings = emptyList(),
             disIssued = emptyList(),
+            nomisSplitRecord = false,
           ),
         )
       }
@@ -100,6 +101,7 @@ internal class AdjudicationsServiceTest {
           punishments = emptyList(),
           hearings = emptyList(),
           disIssued = emptyList(),
+          nomisSplitRecord = false,
         ),
       )
 
@@ -132,6 +134,7 @@ internal class AdjudicationsServiceTest {
             punishments = emptyList(),
             hearings = emptyList(),
             disIssued = emptyList(),
+            nomisSplitRecord = false,
           ),
         )
       }

@@ -109,6 +109,7 @@ fun AdjudicationChargeResponse.toAdjudication(): AdjudicationMigrateDto =
     punishments = this.hearings.flatMap { it.toHearingResultAwards() },
     hearings = this.hearings.map { it.toHearing() },
     disIssued = this.hearings.flatMap { hearing -> hearing.notifications.map { it.toIssued() } },
+    nomisSplitRecord = this.hasMultipleCharges,
   )
 
 private fun AdjudicationCharge.toEvidence(incident: AdjudicationIncident): List<MigrateEvidence> =

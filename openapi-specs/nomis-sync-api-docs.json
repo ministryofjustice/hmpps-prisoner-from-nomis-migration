@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-01-05.6038.79cdfc0"
+    "version": "2024-01-17.6165.474dc9b"
   },
   "servers": [
     {
@@ -3070,6 +3070,104 @@
         }
       }
     },
+    "/prisoners/{offenderNo}/sentencing/court-cases/{caseId}/court-appearances": {
+      "post": {
+        "tags": [
+          "sentencing-resource"
+        ],
+        "summary": "Creates a new Court Appearance",
+        "description": "Required role NOMIS_SENTENCING Creates a new Court Appearance for the offender,latest booking and given Court Case",
+        "operationId": "createCourtAppearance",
+        "parameters": [
+          {
+            "name": "offenderNo",
+            "in": "path",
+            "description": "Offender no",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Offender no",
+              "example": "AB1234A"
+            },
+            "example": "AB1234A"
+          },
+          {
+            "name": "caseId",
+            "in": "path",
+            "description": "Case Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Case Id",
+              "example": 34565
+            },
+            "example": 34565
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CourtAppearanceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created Court Appearance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateCourtAppearanceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Supplied data is invalid, for instance missing required fields or invalid values. See schema for details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint when role NOMIS_SENTENCING not present",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Court case does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/prisoners/{offenderNo}/adjudications": {
       "post": {
         "tags": [
@@ -4600,6 +4698,154 @@
           },
           "403": {
             "description": "Forbidden, requires role SYNCHRONISATION_REPORTING",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/questionnaires/{questionnaireId}": {
+      "get": {
+        "tags": [
+          "incident-questionnaire-resource"
+        ],
+        "summary": "Get incident questionnaire details",
+        "description": "Gets incident questionnaire details. Requires role NOMIS_INCIDENTS",
+        "operationId": "getQuestionnaire",
+        "parameters": [
+          {
+            "name": "questionnaireId",
+            "in": "path",
+            "description": "Incident Questionnaire id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Incident Questionnaire id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestionnaireResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires role NOMIS_INCIDENTS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/questionnaires/ids": {
+      "get": {
+        "tags": [
+          "incident-questionnaire-resource"
+        ],
+        "summary": "get questionnaire IDs by filter",
+        "description": "Retrieves a paged list of incident questionnaire ids by filter. Requires ROLE_NOMIS_INCIDENTS.",
+        "operationId": "getIdsByFilter",
+        "parameters": [
+          {
+            "name": "pageRequest",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          },
+          {
+            "name": "fromDate",
+            "in": "query",
+            "description": "Filter results by those that were created on or after the given date",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2021-11-03"
+          },
+          {
+            "name": "toDate",
+            "in": "query",
+            "description": "Filter results by those that were created on or before the given date",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2021-11-03"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pageable list of ids are returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageQuestionnaireIdResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint when role NOMIS_INCIDENTS not present",
             "content": {
               "application/json": {
                 "schema": {
@@ -8405,8 +8651,6 @@
           "courtEventType",
           "courtId",
           "eventDate",
-          "eventStatus",
-          "nextCourtId",
           "startTime"
         ],
         "type": "object",
@@ -8423,17 +8667,11 @@
           "courtEventType": {
             "type": "string"
           },
-          "eventStatus": {
-            "type": "string"
-          },
           "courtId": {
             "type": "string"
           },
           "outcomeReasonCode": {
             "type": "string"
-          },
-          "nextEventRequestFlag": {
-            "type": "boolean"
           },
           "nextEventDate": {
             "type": "string",
@@ -8488,15 +8726,11 @@
       "OffenderChargeRequest": {
         "required": [
           "mostSeriousFlag",
-          "offenceCode",
-          "statuteCode"
+          "offenceCode"
         ],
         "type": "object",
         "properties": {
           "offenceCode": {
-            "type": "string"
-          },
-          "statuteCode": {
             "type": "string"
           },
           "offencesCount": {
@@ -10170,6 +10404,7 @@
           "adjustmentDays",
           "adjustmentType",
           "bookingId",
+          "hasBeenReleased",
           "hiddenFromUsers",
           "id",
           "offenderNo",
@@ -10186,6 +10421,10 @@
             "type": "integer",
             "description": "The booking id",
             "format": "int64"
+          },
+          "hasBeenReleased": {
+            "type": "boolean",
+            "description": "Indicates whether for this booking the prisoner has been released"
           },
           "offenderNo": {
             "type": "string",
@@ -10253,6 +10492,256 @@
           }
         },
         "description": "Adjustment type"
+      },
+      "AnswerResponse": {
+        "required": [
+          "active",
+          "answer",
+          "answerSequence",
+          "commentRequired",
+          "dateRequired",
+          "id",
+          "listSequence"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "The answer id",
+            "format": "int64"
+          },
+          "answer": {
+            "type": "string",
+            "description": "The answer text"
+          },
+          "answerSequence": {
+            "type": "integer",
+            "description": "The answer id used to set the listSequence values",
+            "format": "int32",
+            "example": 1
+          },
+          "listSequence": {
+            "type": "integer",
+            "description": "The order of the answers",
+            "format": "int32",
+            "example": 1
+          },
+          "active": {
+            "type": "boolean",
+            "description": "If the answer is active",
+            "example": true
+          },
+          "expiryDate": {
+            "type": "string",
+            "description": "The date the answer is no longer used",
+            "format": "date"
+          },
+          "nextQuestion": {
+            "$ref": "#/components/schemas/QuestionResponse"
+          },
+          "dateRequired": {
+            "type": "boolean",
+            "description": "If the answer should include a date",
+            "example": true
+          },
+          "commentRequired": {
+            "type": "boolean",
+            "description": "If the answer should include a comment",
+            "example": true
+          }
+        },
+        "description": "List of Answers to this question"
+      },
+      "QuestionResponse": {
+        "required": [
+          "active",
+          "answers",
+          "id",
+          "listSequence",
+          "multipleAnswers",
+          "question",
+          "questionSequence"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "The question id",
+            "format": "int64"
+          },
+          "question": {
+            "type": "string",
+            "description": "The question text"
+          },
+          "answers": {
+            "type": "array",
+            "description": "List of Answers to this question",
+            "items": {
+              "$ref": "#/components/schemas/AnswerResponse"
+            }
+          },
+          "active": {
+            "type": "boolean",
+            "description": "If the question is active",
+            "example": true
+          },
+          "expiryDate": {
+            "type": "string",
+            "description": "The date the question is no longer used",
+            "format": "date"
+          },
+          "multipleAnswers": {
+            "type": "boolean",
+            "description": "If the question has multiple answers",
+            "example": true
+          },
+          "questionSequence": {
+            "type": "integer",
+            "description": "The question id used to set the listSequence values",
+            "format": "int32",
+            "example": 1
+          },
+          "listSequence": {
+            "type": "integer",
+            "description": "The order of the questions",
+            "format": "int32",
+            "example": 1
+          }
+        },
+        "description": "List of Questions (and associated Answers) for this Questionnaire"
+      },
+      "QuestionnaireResponse": {
+        "required": [
+          "active",
+          "code",
+          "createdBy",
+          "createdDate",
+          "id",
+          "listSequence",
+          "questions"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "The unique identifier of the questionnaire",
+            "format": "int64"
+          },
+          "description": {
+            "type": "string",
+            "description": "A description of the questionnaire",
+            "example": "Escape from Establishment"
+          },
+          "code": {
+            "type": "string",
+            "description": "Code to identify this questionnaire",
+            "example": "ESCAPE_EST"
+          },
+          "active": {
+            "type": "boolean",
+            "description": "If the questionnaire is active",
+            "example": true
+          },
+          "listSequence": {
+            "type": "integer",
+            "description": "Sequence value of the questionnaires",
+            "format": "int32",
+            "example": 1
+          },
+          "questions": {
+            "type": "array",
+            "description": "List of Questions (and associated Answers) for this Questionnaire",
+            "items": {
+              "$ref": "#/components/schemas/QuestionResponse"
+            }
+          },
+          "expiryDate": {
+            "type": "string",
+            "description": "The date the questionnaire is no longer used",
+            "format": "date"
+          },
+          "createdDate": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "Questionnaire created date",
+            "example": "2021-07-05T10:35:17"
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "Questionnaire created by"
+          },
+          "modifiedDate": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "Questionnaire modified date",
+            "example": "2021-07-05T10:35:17"
+          },
+          "modifiedBy": {
+            "type": "string",
+            "description": "Questionnaire modified by"
+          }
+        },
+        "description": "Questionnaire"
+      },
+      "PageQuestionnaireIdResponse": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionnaireIdResponse"
+            }
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "QuestionnaireIdResponse": {
+        "required": [
+          "questionnaireId"
+        ],
+        "type": "object",
+        "properties": {
+          "questionnaireId": {
+            "type": "integer",
+            "description": "The questionnaire id",
+            "format": "int64"
+          }
+        },
+        "description": "Questionnaire id"
       },
       "IncentiveLevel": {
         "required": [
@@ -11026,6 +11515,7 @@
           "adjustmentDays",
           "adjustmentType",
           "bookingId",
+          "hasBeenReleased",
           "id",
           "offenderNo"
         ],
@@ -11040,6 +11530,10 @@
             "type": "integer",
             "description": "The booking id",
             "format": "int64"
+          },
+          "hasBeenReleased": {
+            "type": "boolean",
+            "description": "Indicates whether for this booking the prisoner has been released"
           },
           "offenderNo": {
             "type": "string",
@@ -11980,6 +12474,7 @@
           "bookingId",
           "charge",
           "gender",
+          "hasMultipleCharges",
           "hearings",
           "incident",
           "investigations",
@@ -12041,6 +12536,10 @@
             "items": {
               "$ref": "#/components/schemas/Hearing"
             }
+          },
+          "hasMultipleCharges": {
+            "type": "boolean",
+            "description": "indicates if this charge was part of a larger multi-charge adjudication in NOMIS"
           }
         },
         "description": "The requested adjudication charge and associated adjudication details. Note: the adjudication may have other charges associated with it"

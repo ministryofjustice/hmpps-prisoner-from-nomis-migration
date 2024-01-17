@@ -524,6 +524,7 @@ class AdjudicationMappingCreatorTest {
       ),
       investigations = listOf(),
       hearings = hearings,
+      hasMultipleCharges = false,
     )
   }
 }
