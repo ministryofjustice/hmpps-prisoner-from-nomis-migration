@@ -46,6 +46,12 @@ class AdjudicationTransformationTest {
   }
 
   @Test
+  fun `will set NOMIS split record field for multiple charges`() {
+    assertThat(nomisAdjudicationCharge(hasMultipleCharges = true).toAdjudication().nomisSplitRecord).isTrue()
+    assertThat(nomisAdjudicationCharge(hasMultipleCharges = false).toAdjudication().nomisSplitRecord).isFalse()
+  }
+
+  @Test
   fun `will user who created and reported the incident`() {
     val nomisAdjudication =
       nomisAdjudicationCharge(reportingStaffUsername = "F.LAST", createdByStaffUsername = "A.BEANS")
@@ -1200,6 +1206,7 @@ private fun nomisAdjudicationCharge(
   hearings: List<Hearing> = emptyList(),
   chargeEvidence: String? = null,
   chargeReportDetail: String? = null,
+  hasMultipleCharges: Boolean = false,
 ): AdjudicationChargeResponse {
   return AdjudicationChargeResponse(
     adjudicationSequence = 10,
@@ -1251,5 +1258,6 @@ private fun nomisAdjudicationCharge(
     hearings = hearings,
     adjudicationNumber = adjudicationNumber,
     comment = "comment",
+    hasMultipleCharges = hasMultipleCharges,
   )
 }

@@ -153,6 +153,7 @@ class AdjudicationsMigrationIntTest : SqsIntegrationTestBase() {
     "offenderNo": "$offenderNo",
     "bookingId": $bookingId,
     "adjudicationNumber": $adjudicationNumber,
+    "hasMultipleCharges": false,
     "gender": {
         "code": "M",
         "description": "Male"

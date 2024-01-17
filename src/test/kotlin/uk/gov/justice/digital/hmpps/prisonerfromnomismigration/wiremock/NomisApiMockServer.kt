@@ -948,6 +948,7 @@ fun adjudicationResponse(
     "adjudicationSequence": 1,
     "offenderNo": "$offenderNo",
     "bookingId": 1201725,
+    "hasMultipleCharges": false,
     "adjudicationNumber": $adjudicationNumber,
     "gender": {
         "code": "M",

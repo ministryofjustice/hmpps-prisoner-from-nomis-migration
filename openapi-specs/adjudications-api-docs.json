@@ -12,7 +12,7 @@
       "name": "MIT",
       "url": "https://opensource.org/license/mit-0"
     },
-    "version": "2023-12-21.9824.e5be2a5"
+    "version": "2024-01-17.10093.d951d3a"
   },
   "servers": [
     {
@@ -221,109 +221,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ReportedAdjudicationStatusRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ReportedAdjudicationResponse"
-                }
-              }
-            }
-          },
-          "default": {
-            "description": "Unexpected error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "406": {
-            "description": "Not able to process the request because the header “Accept” does not match with any of the content types this endpoint can handle",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too many requests",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "parameters": [
-        {
-          "name": "Active-Caseload",
-          "in": "header",
-          "description": "Current Caseload for request",
-          "required": true,
-          "schema": {
-            "type": "string"
-          },
-          "example": "MDI"
-        }
-      ]
-    },
-    "/reported-adjudications/{chargeNumber}/repair": {
-      "put": {
-        "tags": [
-          "31. Outcomes"
-        ],
-        "summary": "repairs a broken adjudication by providing the outcome that takes precedence",
-        "operationId": "repair",
-        "parameters": [
-          {
-            "name": "chargeNumber",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RepairRequest"
               }
             }
           },
@@ -1396,6 +1293,7 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "reported adjudication status codes",
               "enum": [
                 "ACCEPTED",
                 "REJECTED",
@@ -1412,7 +1310,9 @@
                 "ADJOURNED",
                 "CHARGE_PROVED",
                 "QUASHED",
-                "CORRUPTED"
+                "INVALID_OUTCOME",
+                "INVALID_SUSPENDED",
+                "INVALID_ADA"
               ]
             }
           }
@@ -5185,6 +5085,7 @@
               "type": "array",
               "items": {
                 "type": "string",
+                "description": "reported adjudication status codes",
                 "enum": [
                   "ACCEPTED",
                   "REJECTED",
@@ -5201,7 +5102,9 @@
                   "ADJOURNED",
                   "CHARGE_PROVED",
                   "QUASHED",
-                  "CORRUPTED"
+                  "INVALID_OUTCOME",
+                  "INVALID_SUSPENDED",
+                  "INVALID_ADA"
                 ]
               }
             }
@@ -5627,6 +5530,200 @@
         }
       ]
     },
+    "/reported-adjudications/punishments/{offenderBookingId}/active": {
+      "get": {
+        "tags": [
+          "30. Punishments"
+        ],
+        "summary": "get a list of active punishments by offenderBookingId",
+        "operationId": "getActivePunishments",
+        "parameters": [
+          {
+            "name": "offenderBookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActivePunishmentDto"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not able to process the request because the header “Accept” does not match with any of the content types this endpoint can handle",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "Active-Caseload",
+          "in": "header",
+          "description": "Current Caseload for request",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "example": "MDI"
+        }
+      ]
+    },
+    "/reported-adjudications/prisoner/{prisonerNumber}": {
+      "get": {
+        "tags": [
+          "40. Reports"
+        ],
+        "summary": "Get all adjudications for a prisoner",
+        "operationId": "getAdjudicationsForPrisoner",
+        "parameters": [
+          {
+            "name": "prisonerNumber",
+            "in": "path",
+            "description": "prisoner number",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReportedAdjudicationDto"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not able to process the request because the header “Accept” does not match with any of the content types this endpoint can handle",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "Active-Caseload",
+          "in": "header",
+          "description": "Current Caseload for request",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "example": "MDI"
+        }
+      ]
+    },
     "/reported-adjudications/my-reports": {
       "get": {
         "tags": [
@@ -5664,6 +5761,7 @@
               "type": "array",
               "items": {
                 "type": "string",
+                "description": "reported adjudication status codes",
                 "enum": [
                   "ACCEPTED",
                   "REJECTED",
@@ -5680,7 +5778,9 @@
                   "ADJOURNED",
                   "CHARGE_PROVED",
                   "QUASHED",
-                  "CORRUPTED"
+                  "INVALID_OUTCOME",
+                  "INVALID_SUSPENDED",
+                  "INVALID_ADA"
                 ]
               }
             }
@@ -6153,6 +6253,7 @@
               "type": "array",
               "items": {
                 "type": "string",
+                "description": "reported adjudication status codes",
                 "enum": [
                   "ACCEPTED",
                   "REJECTED",
@@ -6169,7 +6270,9 @@
                   "ADJOURNED",
                   "CHARGE_PROVED",
                   "QUASHED",
-                  "CORRUPTED"
+                  "INVALID_OUTCOME",
+                  "INVALID_SUSPENDED",
+                  "INVALID_ADA"
                 ]
               }
             }
@@ -8287,7 +8390,7 @@
           },
           "status": {
             "type": "string",
-            "description": "The status of the reported adjudication",
+            "description": "reported adjudication status codes",
             "enum": [
               "ACCEPTED",
               "REJECTED",
@@ -8304,7 +8407,9 @@
               "ADJOURNED",
               "CHARGE_PROVED",
               "QUASHED",
-              "CORRUPTED"
+              "INVALID_OUTCOME",
+              "INVALID_SUSPENDED",
+              "INVALID_ADA"
             ]
           },
           "reviewedByUserId": {
@@ -8555,7 +8660,7 @@
         "properties": {
           "status": {
             "type": "string",
-            "description": "The status to set the reported adjudication to",
+            "description": "reported adjudication status codes",
             "enum": [
               "ACCEPTED",
               "REJECTED",
@@ -8572,7 +8677,9 @@
               "ADJOURNED",
               "CHARGE_PROVED",
               "QUASHED",
-              "CORRUPTED"
+              "INVALID_OUTCOME",
+              "INVALID_SUSPENDED",
+              "INVALID_ADA"
             ]
           },
           "statusReason": {
@@ -8590,47 +8697,6 @@
         },
         "additionalProperties": false,
         "description": "Request to set the state for an a reported adjudication"
-      },
-      "RepairRequest": {
-        "required": [
-          "correctOutcomeCode",
-          "incorrectOutcomeCode"
-        ],
-        "type": "object",
-        "properties": {
-          "correctOutcomeCode": {
-            "type": "string",
-            "description": "the outcome that takes precedence",
-            "enum": [
-              "REFER_POLICE",
-              "REFER_INAD",
-              "REFER_GOV",
-              "NOT_PROCEED",
-              "DISMISSED",
-              "PROSECUTION",
-              "SCHEDULE_HEARING",
-              "CHARGE_PROVED",
-              "QUASHED"
-            ]
-          },
-          "incorrectOutcomeCode": {
-            "type": "string",
-            "description": "the outcome that is wrong",
-            "enum": [
-              "REFER_POLICE",
-              "REFER_INAD",
-              "REFER_GOV",
-              "NOT_PROCEED",
-              "DISMISSED",
-              "PROSECUTION",
-              "SCHEDULE_HEARING",
-              "CHARGE_PROVED",
-              "QUASHED"
-            ]
-          }
-        },
-        "additionalProperties": false,
-        "description": "repair a broken adjudication"
       },
       "PunishmentRequest": {
         "required": [
@@ -9848,6 +9914,7 @@
           "hearings",
           "incidentDateTime",
           "locationId",
+          "nomisSplitRecord",
           "offence",
           "offenceSequence",
           "oicIncidentId",
@@ -9959,6 +10026,10 @@
             "items": {
               "$ref": "#/components/schemas/DisIssued"
             }
+          },
+          "nomisSplitRecord": {
+            "type": "boolean",
+            "description": "the nomis record has been split into multiple adjudications"
           }
         },
         "additionalProperties": false,
@@ -10523,11 +10594,11 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "last": {
-            "type": "boolean"
-          },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
+          },
+          "last": {
+            "type": "boolean"
           },
           "first": {
             "type": "boolean"
@@ -10552,10 +10623,10 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "paged": {
+          "unpaged": {
             "type": "boolean"
           },
-          "unpaged": {
+          "paged": {
             "type": "boolean"
           },
           "pageNumber": {
@@ -10608,6 +10679,7 @@
       "SuspendedPunishmentDto": {
         "required": [
           "chargeNumber",
+          "corrupted",
           "punishment"
         ],
         "type": "object",
@@ -10615,6 +10687,10 @@
           "chargeNumber": {
             "type": "string",
             "description": "charge number punishment from"
+          },
+          "corrupted": {
+            "type": "boolean",
+            "description": "indicates there is something wrong with this suspended punishment, and its within the last 6 months"
           },
           "punishment": {
             "$ref": "#/components/schemas/PunishmentDto"
@@ -10646,6 +10722,84 @@
         },
         "additionalProperties": false,
         "description": "additional days to activate dto"
+      },
+      "ActivePunishmentDto": {
+        "required": [
+          "chargeNumber",
+          "punishmentType"
+        ],
+        "type": "object",
+        "properties": {
+          "chargeNumber": {
+            "type": "string",
+            "description": "charge number"
+          },
+          "punishmentType": {
+            "type": "string",
+            "description": "punishment type",
+            "enum": [
+              "PRIVILEGE",
+              "EARNINGS",
+              "CONFINEMENT",
+              "REMOVAL_ACTIVITY",
+              "EXCLUSION_WORK",
+              "EXTRA_WORK",
+              "REMOVAL_WING",
+              "ADDITIONAL_DAYS",
+              "PROSPECTIVE_DAYS",
+              "CAUTION",
+              "DAMAGES_OWED"
+            ]
+          },
+          "privilegeType": {
+            "type": "string",
+            "description": "privilege type",
+            "enum": [
+              "CANTEEN",
+              "FACILITIES",
+              "MONEY",
+              "TV",
+              "ASSOCIATION",
+              "GYM",
+              "OTHER"
+            ]
+          },
+          "otherPrivilege": {
+            "type": "string",
+            "description": "other privilege description"
+          },
+          "days": {
+            "type": "integer",
+            "description": "days applied",
+            "format": "int32"
+          },
+          "startDate": {
+            "type": "string",
+            "description": "start date",
+            "format": "date"
+          },
+          "lastDay": {
+            "type": "string",
+            "description": "last day",
+            "format": "date"
+          },
+          "amount": {
+            "type": "number",
+            "description": "amount",
+            "format": "double"
+          },
+          "stoppagePercentage": {
+            "type": "integer",
+            "description": "stoppage percentage",
+            "format": "int32"
+          },
+          "activatedFrom": {
+            "type": "string",
+            "description": "activated from report"
+          }
+        },
+        "additionalProperties": false,
+        "description": "active punishment dto"
       },
       "HearingSummaryDto": {
         "required": [
@@ -10697,7 +10851,7 @@
           },
           "status": {
             "type": "string",
-            "description": "reported adjudication status",
+            "description": "reported adjudication status codes",
             "enum": [
               "ACCEPTED",
               "REJECTED",
@@ -10714,7 +10868,9 @@
               "ADJOURNED",
               "CHARGE_PROVED",
               "QUASHED",
-              "CORRUPTED"
+              "INVALID_OUTCOME",
+              "INVALID_SUSPENDED",
+              "INVALID_ADA"
             ]
           }
         },
@@ -10808,11 +10964,11 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "last": {
-            "type": "boolean"
-          },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
+          },
+          "last": {
+            "type": "boolean"
           },
           "first": {
             "type": "boolean"
@@ -11215,11 +11371,11 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "last": {
-            "type": "boolean"
-          },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
+          },
+          "last": {
+            "type": "boolean"
           },
           "first": {
             "type": "boolean"
