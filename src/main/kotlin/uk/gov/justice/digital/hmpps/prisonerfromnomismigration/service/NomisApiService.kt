@@ -29,7 +29,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.G
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NonAssociationIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NonAssociationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.model.UpsertSyncRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustment
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.model.LegacyAdjustment
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.model.LegacyAdjustment.AdjustmentType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomUsageResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationFilter
 import java.time.LocalDate
@@ -376,17 +377,19 @@ data class NomisAdjustment(
   val comment: String?,
   val active: Boolean,
   val hiddenFromUsers: Boolean,
+  val hasBeenReleased: Boolean,
 ) {
-  fun toSentencingAdjustment(): SentencingAdjustment = SentencingAdjustment(
+  fun toSentencingAdjustment(): LegacyAdjustment = LegacyAdjustment(
     bookingId = bookingId,
-    sentenceSequence = sentenceSequence,
-    adjustmentType = adjustmentType.code,
+    sentenceSequence = sentenceSequence?.toInt(),
+    adjustmentType = AdjustmentType.valueOf(adjustmentType.code),
     adjustmentDate = adjustmentDate,
     adjustmentFromDate = adjustmentFromDate,
-    adjustmentDays = adjustmentDays,
+    adjustmentDays = adjustmentDays.toInt(),
     comment = comment,
     active = active,
     offenderNo = offenderNo,
+    bookingReleased = hasBeenReleased,
   )
 
   fun getAdjustmentCategory() = sentenceSequence?.let { "SENTENCE" } ?: "KEY_DATE"

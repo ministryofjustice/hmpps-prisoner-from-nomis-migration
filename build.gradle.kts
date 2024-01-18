@@ -60,22 +60,48 @@ kotlin {
 tasks {
   withType<KotlinCompile> {
     //  dependsOn("buildSentencingApiModel")
-    dependsOn("buildActivityApiModel", "buildNomisSyncApiModel", "buildAdjudicationApiModel", "buildNonAssociationsApiModel", "buildMappingServiceApiModel")
+    dependsOn(
+      "buildActivityApiModel",
+      "buildNomisSyncApiModel",
+      "buildAdjudicationApiModel",
+      "buildNonAssociationsApiModel",
+      "buildMappingServiceApiModel",
+      "buildSentencingAdjustmentsApiModel",
+    )
     kotlinOptions {
       jvmTarget = "21"
     }
   }
   withType<KtLintCheckTask> {
     // Under gradle 8 we must declare the dependency here, even if we're not going to be linting the model
-    mustRunAfter("buildActivityApiModel", "buildNomisSyncApiModel", "buildAdjudicationApiModel", "buildNonAssociationsApiModel", "buildMappingServiceApiModel")
+    mustRunAfter(
+      "buildActivityApiModel",
+      "buildNomisSyncApiModel",
+      "buildAdjudicationApiModel",
+      "buildNonAssociationsApiModel",
+      "buildMappingServiceApiModel",
+      "buildSentencingAdjustmentsApiModel",
+    )
   }
   withType<KtLintFormatTask> {
     // Under gradle 8 we must declare the dependency here, even if we're not going to be linting the model
-    mustRunAfter("buildActivityApiModel", "buildNomisSyncApiModel", "buildAdjudicationApiModel", "buildNonAssociationsApiModel", "buildMappingServiceApiModel")
+    mustRunAfter(
+      "buildActivityApiModel",
+      "buildNomisSyncApiModel",
+      "buildAdjudicationApiModel",
+      "buildNonAssociationsApiModel",
+      "buildMappingServiceApiModel",
+      "buildSentencingAdjustmentsApiModel",
+    )
   }
 }
 
 val buildDirectory: Directory = layout.buildDirectory.get()
+val configValues = mapOf(
+  "dateLibrary" to "java8-localdatetime",
+  "serializationLibrary" to "jackson",
+  "enumPropertyNaming" to "original",
+)
 
 tasks.register("buildActivityApiModel", GenerateTask::class) {
   generatorName.set("kotlin")
@@ -85,13 +111,7 @@ tasks.register("buildActivityApiModel", GenerateTask::class) {
   outputDir.set("$buildDirectory/generated/activities")
   modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model")
   apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.api")
-  configOptions.set(
-    mapOf(
-      "dateLibrary" to "java8-localdatetime",
-      "serializationLibrary" to "jackson",
-      "enumPropertyNaming" to "original",
-    ),
-  )
+  configOptions.set(configValues)
   globalProperties.set(mapOf("models" to ""))
 }
 
@@ -102,13 +122,7 @@ tasks.register("buildNomisSyncApiModel", GenerateTask::class) {
   outputDir.set("$buildDirectory/generated/nomissync")
   modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model")
   apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.api")
-  configOptions.set(
-    mapOf(
-      "dateLibrary" to "java8-localdatetime",
-      "serializationLibrary" to "jackson",
-      "enumPropertyNaming" to "original",
-    ),
-  )
+  configOptions.set(configValues)
   globalProperties.set(
     mapOf(
       "models" to "",
@@ -122,13 +136,7 @@ tasks.register("buildMappingServiceApiModel", GenerateTask::class) {
   outputDir.set("$buildDirectory/generated/mappings")
   modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model")
   apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api")
-  configOptions.set(
-    mapOf(
-      "dateLibrary" to "java8-localdatetime",
-      "serializationLibrary" to "jackson",
-      "enumPropertyNaming" to "original",
-    ),
-  )
+  configOptions.set(configValues)
   globalProperties.set(mapOf("models" to ""))
 }
 
@@ -139,13 +147,7 @@ tasks.register("buildAdjudicationApiModel", GenerateTask::class) {
   outputDir.set("$buildDirectory/generated/adjudications")
   modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model")
   apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.api")
-  configOptions.set(
-    mapOf(
-      "dateLibrary" to "java8-localdatetime",
-      "serializationLibrary" to "jackson",
-      "enumPropertyNaming" to "original",
-    ),
-  )
+  configOptions.set(configValues)
   globalProperties.set(mapOf("models" to ""))
 }
 
@@ -155,13 +157,18 @@ tasks.register("buildNonAssociationsApiModel", GenerateTask::class) {
   outputDir.set("$buildDirectory/generated/nonassociations")
   modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.model")
   apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.api")
-  configOptions.set(
-    mapOf(
-      "dateLibrary" to "java8-localdatetime",
-      "serializationLibrary" to "jackson",
-      "enumPropertyNaming" to "original",
-    ),
-  )
+  configOptions.set(configValues)
+  globalProperties.set(mapOf("models" to ""))
+}
+
+tasks.register("buildSentencingAdjustmentsApiModel", GenerateTask::class) {
+  generatorName.set("kotlin")
+  skipValidateSpec.set(true)
+  inputSpec.set("openapi-specs/sentencing-adjustments-api-docs.json")
+  outputDir.set("$buildDirectory/generated/sentencingadjustments")
+  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.model")
+  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.api")
+  configOptions.set(configValues)
   globalProperties.set(mapOf("models" to ""))
 }
 
@@ -187,7 +194,8 @@ tasks.register("buildSentencingApiModel", GenerateTask::class) {
 }
 */
 
-val generatedProjectDirs = listOf("activities", "adjudications", "nonassociations", "nomissync", "mappings")
+val generatedProjectDirs =
+  listOf("activities", "adjudications", "nonassociations", "nomissync", "mappings", "sentencingadjustments")
 
 kotlin {
   generatedProjectDirs.forEach { generatedProject ->

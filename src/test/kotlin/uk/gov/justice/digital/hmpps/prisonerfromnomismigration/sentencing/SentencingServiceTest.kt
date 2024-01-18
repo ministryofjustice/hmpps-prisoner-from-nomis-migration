@@ -14,6 +14,8 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.model.LegacyAdjustment
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.model.LegacyAdjustment.AdjustmentType.RX
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.SentencingApiExtension.Companion.sentencingApi
 import java.time.LocalDate
 
@@ -34,16 +36,17 @@ internal class SentencingServiceTest {
       sentencingApi.stubCreateSentencingAdjustmentForMigration(sentenceAdjustmentId = ADJUSTMENT_ID)
       runBlocking {
         sentencingService.migrateSentencingAdjustment(
-          SentencingAdjustment(
+          LegacyAdjustment(
             bookingId = 1234,
             sentenceSequence = 2,
-            adjustmentType = "RX",
+            adjustmentType = RX,
             adjustmentDate = LocalDate.parse("2022-01-01"),
             adjustmentFromDate = LocalDate.parse("2021-07-01"),
             adjustmentDays = 99,
             comment = "Remand added",
             active = true,
             offenderNo = "G4803UT",
+            bookingReleased = false,
           ),
         )
       }
@@ -69,6 +72,7 @@ internal class SentencingServiceTest {
           .withRequestBody(WireMock.matchingJsonPath("adjustmentDays", equalTo("99")))
           .withRequestBody(WireMock.matchingJsonPath("adjustmentFromDate", equalTo("2021-07-01")))
           .withRequestBody(WireMock.matchingJsonPath("comment", equalTo("Remand added")))
+          .withRequestBody(WireMock.matchingJsonPath("bookingReleased", equalTo("false")))
           .withRequestBody(WireMock.matchingJsonPath("active", equalTo("true"))),
       )
     }
@@ -82,16 +86,17 @@ internal class SentencingServiceTest {
       sentencingApi.stubCreateSentencingAdjustmentForSynchronisation(sentenceAdjustmentId = ADJUSTMENT_ID)
       runBlocking {
         sentencingService.createSentencingAdjustment(
-          SentencingAdjustment(
+          LegacyAdjustment(
             bookingId = 1234,
             sentenceSequence = 2,
-            adjustmentType = "RX",
+            adjustmentType = RX,
             adjustmentDate = LocalDate.parse("2022-01-01"),
             adjustmentFromDate = LocalDate.parse("2021-07-01"),
             adjustmentDays = 99,
             comment = "Remand added",
             active = true,
             offenderNo = "G4803UT",
+            bookingReleased = false,
           ),
         )
       }
@@ -131,16 +136,17 @@ internal class SentencingServiceTest {
       runBlocking {
         sentencingService.updateSentencingAdjustment(
           ADJUSTMENT_ID,
-          SentencingAdjustment(
+          LegacyAdjustment(
             bookingId = 1234,
             sentenceSequence = 2,
-            adjustmentType = "RX",
+            adjustmentType = RX,
             adjustmentDate = LocalDate.parse("2022-01-01"),
             adjustmentFromDate = LocalDate.parse("2021-07-01"),
             adjustmentDays = 99,
             comment = "Remand added",
             active = true,
             offenderNo = "G4803UT",
+            bookingReleased = false,
           ),
         )
       }
