@@ -38,6 +38,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Migrati
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_STATUS_CHECK
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.RETRY_MIGRATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.model.LegacyAdjustment
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.model.LegacyAdjustment.AdjustmentType.ADA
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.model.LegacyAdjustmentCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
@@ -51,6 +54,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisCodeDescription
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.util.UUID
 
 @ExtendWith(MockitoExtension::class)
 internal class SentencingAdjustmentsMigrationServiceTest {
@@ -812,7 +816,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
         aNomisSentenceAdjustment(),
       )
 
-      whenever(sentencingService.migrateSentencingAdjustment(any())).thenReturn(CreateSentencingAdjustmentResponse("999"))
+      whenever(sentencingService.migrateSentencingAdjustment(any())).thenReturn(LegacyAdjustmentCreatedResponse(UUID.randomUUID()))
     }
 
     @Test
@@ -848,7 +852,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
 
       verify(sentencingService).migrateSentencingAdjustment(
         eq(
-          SentencingAdjustment(
+          LegacyAdjustment(
             adjustmentDate = adjustmentDate,
             adjustmentFromDate = adjustmentFromDate,
             adjustmentDays = 8,
@@ -856,8 +860,9 @@ internal class SentencingAdjustmentsMigrationServiceTest {
             sentenceSequence = 2,
             comment = "a comment",
             active = true,
-            adjustmentType = "ADA",
+            adjustmentType = ADA,
             offenderNo = "G4803UT",
+            bookingReleased = true,
           ),
         ),
       )
@@ -869,7 +874,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
         whenever(nomisApiService.getSentenceAdjustment(any())).thenReturn(
           aNomisSentenceAdjustment(),
         )
-        whenever(sentencingService.migrateSentencingAdjustment(any())).thenReturn(CreateSentencingAdjustmentResponse("999"))
+        whenever(sentencingService.migrateSentencingAdjustment(any())).thenReturn(LegacyAdjustmentCreatedResponse(UUID.fromString("6f35a357-f458-40b9-b824-de729ffeb459")))
 
         service.migrateNomisEntity(
           MigrationContext(
@@ -884,7 +889,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
           SentencingAdjustmentNomisMapping(
             nomisAdjustmentId = 123,
             nomisAdjustmentCategory = "SENTENCE",
-            adjustmentId = "999",
+            adjustmentId = "6f35a357-f458-40b9-b824-de729ffeb459",
             label = "2020-05-23T11:30:00",
             mappingType = "MIGRATED",
           ),
@@ -898,7 +903,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
         whenever(nomisApiService.getSentenceAdjustment(any())).thenReturn(
           aNomisSentenceAdjustment(),
         )
-        whenever(sentencingService.migrateSentencingAdjustment(any())).thenReturn(CreateSentencingAdjustmentResponse("999"))
+        whenever(sentencingService.migrateSentencingAdjustment(any())).thenReturn(LegacyAdjustmentCreatedResponse(UUID.fromString("6f35a357-f458-40b9-b824-de729ffeb459")))
 
         whenever(
           sentencingAdjustmentsMappingService.createMapping(
@@ -924,7 +929,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
             assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
             assertThat(it.body.nomisAdjustmentId).isEqualTo(123)
             assertThat(it.body.nomisAdjustmentCategory).isEqualTo("SENTENCE")
-            assertThat(it.body.adjustmentId).isEqualTo("999")
+            assertThat(it.body.adjustmentId).isEqualTo("6f35a357-f458-40b9-b824-de729ffeb459")
           },
           delaySeconds = eq(0),
         )
@@ -1013,6 +1018,7 @@ fun aNomisSentenceAdjustment(
   comment = comment,
   active = active,
   hiddenFromUsers = false,
+  hasBeenReleased = true,
 )
 
 fun pages(total: Long, startId: Long = 1): PageImpl<NomisAdjustmentId> = PageImpl<NomisAdjustmentId>(

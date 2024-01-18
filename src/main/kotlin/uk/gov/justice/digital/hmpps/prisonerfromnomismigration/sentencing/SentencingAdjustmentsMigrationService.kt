@@ -83,7 +83,7 @@ class SentencingAdjustmentsMigrationService(
               createAdjustmentMapping(
                 nomisAdjustmentId = nomisAdjustmentId,
                 nomisAdjustmentCategory = nomisAdjustmentCategory,
-                adjustmentId = it.adjustmentId,
+                adjustmentId = it.adjustmentId.toString(),
                 context = context,
               )
             }
@@ -92,7 +92,7 @@ class SentencingAdjustmentsMigrationService(
           mapOf(
             "nomisAdjustmentId" to nomisAdjustmentId.toString(),
             "nomisAdjustmentCategory" to nomisAdjustmentCategory,
-            "adjustmentId" to migratedSentenceAdjustment.adjustmentId,
+            "adjustmentId" to migratedSentenceAdjustment.adjustmentId.toString(),
             "migrationId" to context.migrationId,
           ),
           null,

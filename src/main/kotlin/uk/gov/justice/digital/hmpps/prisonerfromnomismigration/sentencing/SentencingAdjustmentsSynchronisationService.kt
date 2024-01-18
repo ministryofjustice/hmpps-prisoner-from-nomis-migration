@@ -48,10 +48,10 @@ class SentencingAdjustmentsSynchronisationService(
           )
         } ?: let {
           sentencingService.createSentencingAdjustment(nomisAdjustment.toSentencingAdjustment()).also { adjustment ->
-            tryToCreateSentenceMapping(event, adjustment.adjustmentId).also { result ->
+            tryToCreateSentenceMapping(event, adjustment.adjustmentId.toString()).also { result ->
               telemetryClient.trackEvent(
                 "sentence-adjustment-created-synchronisation-success",
-                event.toTelemetryProperties(adjustment.adjustmentId, result == MAPPING_FAILED),
+                event.toTelemetryProperties(adjustment.adjustmentId.toString(), result == MAPPING_FAILED),
               )
             }
           }
@@ -103,10 +103,10 @@ class SentencingAdjustmentsSynchronisationService(
       )
     } ?: let {
       sentencingService.createSentencingAdjustment(nomisAdjustment.toSentencingAdjustment()).also { adjustment ->
-        tryToCreateKeyDateMapping(event, adjustment.adjustmentId).also { result ->
+        tryToCreateKeyDateMapping(event, adjustment.adjustmentId.toString()).also { result ->
           telemetryClient.trackEvent(
             "key-date-adjustment-created-synchronisation-success",
-            event.toTelemetryProperties(adjustment.adjustmentId, result == MAPPING_FAILED),
+            event.toTelemetryProperties(adjustment.adjustmentId.toString(), result == MAPPING_FAILED),
           )
         }
       }

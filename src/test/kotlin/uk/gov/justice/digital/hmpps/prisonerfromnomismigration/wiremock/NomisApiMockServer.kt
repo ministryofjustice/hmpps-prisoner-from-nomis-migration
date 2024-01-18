@@ -892,6 +892,7 @@ private fun sentenceAdjustmentResponse(
   sentenceAdjustmentId: Long = 3,
   hiddenForUsers: Boolean = false,
 ): String {
+  // language=JSON
   return """
 {
   "bookingId":$bookingId,
@@ -907,7 +908,8 @@ private fun sentenceAdjustmentResponse(
   "adjustmentType": {
     "code": "RST",
     "description": "RST Desc"
-    }
+  },
+  "hasBeenReleased": false
   }
    
   """.trimIndent()
@@ -918,6 +920,7 @@ private fun keyDateAdjustmentResponse(
   keyDateAdjustmentId: Long = 3,
   offenderNo: String = "G4803UT",
 ): String {
+  // language=JSON
   return """
 {
   "bookingId":$bookingId,
@@ -931,7 +934,8 @@ private fun keyDateAdjustmentResponse(
   "adjustmentType": {
     "code": "ADA",
     "description": "Additional days"
-    }
+  },
+  "hasBeenReleased": false
   }
    
   """.trimIndent()

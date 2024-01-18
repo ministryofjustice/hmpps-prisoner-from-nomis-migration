@@ -1,13 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing
 
-import com.fasterxml.jackson.annotation.JsonFormat
-import com.fasterxml.jackson.annotation.JsonInclude
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNotFound
-import java.time.LocalDate
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.model.LegacyAdjustment
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.model.LegacyAdjustmentCreatedResponse
 
 @Service
 class SentencingService(@Qualifier("sentencingApiWebClient") private val webClient: WebClient) {
@@ -15,7 +14,7 @@ class SentencingService(@Qualifier("sentencingApiWebClient") private val webClie
     const val LEGACY_CONTENT_TYPE = "application/vnd.nomis-offence+json"
   }
 
-  suspend fun migrateSentencingAdjustment(sentencingAdjustment: SentencingAdjustment): CreateSentencingAdjustmentResponse =
+  suspend fun migrateSentencingAdjustment(sentencingAdjustment: LegacyAdjustment): LegacyAdjustmentCreatedResponse =
     webClient.post()
       .uri("/legacy/adjustments/migration")
       .header("Content-Type", LEGACY_CONTENT_TYPE)
@@ -23,7 +22,7 @@ class SentencingService(@Qualifier("sentencingApiWebClient") private val webClie
       .retrieve()
       .awaitBody()
 
-  suspend fun createSentencingAdjustment(sentencingAdjustment: SentencingAdjustment): CreateSentencingAdjustmentResponse =
+  suspend fun createSentencingAdjustment(sentencingAdjustment: LegacyAdjustment): LegacyAdjustmentCreatedResponse =
     webClient.post()
       .uri("/legacy/adjustments")
       .header("Content-Type", LEGACY_CONTENT_TYPE)
@@ -31,7 +30,7 @@ class SentencingService(@Qualifier("sentencingApiWebClient") private val webClie
       .retrieve()
       .awaitBody()
 
-  suspend fun updateSentencingAdjustment(adjustmentId: String, sentencingAdjustment: SentencingAdjustment): Unit =
+  suspend fun updateSentencingAdjustment(adjustmentId: String, sentencingAdjustment: LegacyAdjustment): Unit =
     webClient.put()
       .uri("/legacy/adjustments/{adjustmentId}", adjustmentId)
       .header("Content-Type", LEGACY_CONTENT_TYPE)
@@ -47,23 +46,3 @@ class SentencingService(@Qualifier("sentencingApiWebClient") private val webClie
       .awaitBodyOrNotFound<Unit>()
   }
 }
-
-@JsonInclude(JsonInclude.Include.NON_NULL)
-data class SentencingAdjustment(
-  val bookingId: Long,
-  val offenderNo: String,
-  val sentenceSequence: Long? = null,
-  // LegacyAdjustmentType enum in AdjustmentsApi
-  val adjustmentType: String,
-  @JsonFormat(pattern = "yyyy-MM-dd")
-  val adjustmentDate: LocalDate?,
-  @JsonFormat(pattern = "yyyy-MM-dd")
-  val adjustmentFromDate: LocalDate?,
-  val adjustmentDays: Long,
-  val comment: String?,
-  val active: Boolean,
-)
-
-data class CreateSentencingAdjustmentResponse(
-  val adjustmentId: String,
-)
