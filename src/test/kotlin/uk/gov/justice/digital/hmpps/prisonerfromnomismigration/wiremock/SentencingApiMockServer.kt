@@ -48,7 +48,7 @@ class SentencingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubCreateSentencingAdjustmentForMigration(sentenceAdjustmentId: String = "654321") {
+  fun stubCreateSentencingAdjustmentForMigration(sentenceAdjustmentId: String = "05b332ad-58eb-4ec2-963c-c9c927856788") {
     stubFor(
       post(WireMock.urlMatching("/legacy/adjustments/migration")).willReturn(
         aResponse()
@@ -59,7 +59,7 @@ class SentencingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubCreateSentencingAdjustmentForSynchronisation(sentenceAdjustmentId: String = "654321") {
+  fun stubCreateSentencingAdjustmentForSynchronisation(sentenceAdjustmentId: String = "05b332ad-58eb-4ec2-963c-c9c927856788") {
     stubFor(
       post(WireMock.urlMatching("/legacy/adjustments")).willReturn(
         aResponse()

@@ -184,7 +184,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
       mappingApi.stubAllMappingsNotFound(SENTENCE_ADJUSTMENTS_GET_MAPPING_URL)
       mappingApi.stubAllMappingsNotFound(KEYDATE_ADJUSTMENTS_GET_MAPPING_URL)
       mappingApi.stubSentenceAdjustmentMappingByMigrationId()
-      sentencingApi.stubCreateSentencingAdjustmentForMigration("654321")
+      sentencingApi.stubCreateSentencingAdjustmentForMigration("05b332ad-58eb-4ec2-963c-c9c927856788")
       mappingApi.stubMappingCreateFailureFollowedBySuccess(ADJUSTMENTS_CREATE_MAPPING_URL)
 
       val (migrationId) = webTestClient.performMigration()
@@ -196,7 +196,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
       assertThat(sentencingApi.createSentenceAdjustmentCount()).isEqualTo(1)
 
       // should retry to create mapping twice
-      mappingApi.verifyCreateMappingSentenceAdjustmentIds(migrationId, arrayOf("654321"), times = 2)
+      mappingApi.verifyCreateMappingSentenceAdjustmentIds(migrationId, arrayOf("05b332ad-58eb-4ec2-963c-c9c927856788"), times = 2)
     }
 
     @Test
@@ -207,7 +207,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
       mappingApi.stubAllMappingsNotFound(SENTENCE_ADJUSTMENTS_GET_MAPPING_URL)
       mappingApi.stubAllMappingsNotFound(KEYDATE_ADJUSTMENTS_GET_MAPPING_URL)
       mappingApi.stubSentenceAdjustmentMappingByMigrationId()
-      sentencingApi.stubCreateSentencingAdjustmentForMigration("123")
+      sentencingApi.stubCreateSentencingAdjustmentForMigration("05b332ad-58eb-4ec2-963c-c9c927856788")
       mappingApi.stubSentenceAdjustmentMappingCreateConflict()
 
       webTestClient.performMigration()
@@ -219,7 +219,7 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
       assertThat(sentencingApi.createSentenceAdjustmentCount()).isEqualTo(1)
 
       // doesn't retry
-      mappingApi.verifyCreateMappingSentenceAdjustmentIds(arrayOf("123"), times = 1)
+      mappingApi.verifyCreateMappingSentenceAdjustmentIds(arrayOf("05b332ad-58eb-4ec2-963c-c9c927856788"), times = 1)
 
       verify(telemetryClient).trackEvent(
         eq("nomis-migration-adjustment-duplicate"),
