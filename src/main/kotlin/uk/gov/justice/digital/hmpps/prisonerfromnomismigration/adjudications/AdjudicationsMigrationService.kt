@@ -170,7 +170,9 @@ private fun Hearing.toHearingResultAwards(): List<MigratePunishment> =
           compensationAmount = it.compensationAmount,
           days = it.asDays(),
           consecutiveChargeNumber = it.consecutiveAward.toConsecutiveChargeNumber(),
-          createdBy = it.createdByUsername,
+          // if award was created by NOMIS merge user than use person who create result
+          createdBy = it.createdByUsername.takeUnless { username -> username == "SYS" }
+            ?: hearingResult.createdByUsername,
           createdDateTime = it.createdDateTime,
         )
       }

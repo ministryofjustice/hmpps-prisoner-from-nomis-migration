@@ -966,10 +966,26 @@ class AdjudicationTransformationTest {
                       createdByUsername = "A.BEANS",
                       createdDateTime = "2021-01-01T10:00",
                     ),
+                    HearingResultAward(
+                      effectiveDate = LocalDate.parse("2021-01-01"),
+                      sanctionType = CodeDescription(code = "CC", description = "Cellular Confinement"),
+                      sanctionStatus = CodeDescription(code = "IMMEDIATE", description = "Immediate"),
+                      comment = "Remain in cell",
+                      statusDate = LocalDate.parse("2021-01-02"),
+                      sanctionDays = 2,
+                      sanctionMonths = null,
+                      compensationAmount = BigDecimal.valueOf(23.67),
+                      consecutiveAward = null,
+                      sequence = 24,
+                      chargeSequence = charge.chargeSequence,
+                      adjudicationNumber = 7654321,
+                      createdByUsername = "SYS",
+                      createdDateTime = "2021-01-01T10:00",
+                    ),
                   ),
                   pleaFindingType = CodeDescription(code = "GUILTY", description = "Guilty"),
                   findingType = CodeDescription(code = "S", description = "Suspended"),
-                  createdByUsername = "A.BEANS",
+                  createdByUsername = "B.RESULT",
                   createdDateTime = "2020-12-31T10:00:00",
                 ),
               ),
@@ -989,7 +1005,7 @@ class AdjudicationTransformationTest {
           ),
         )
         val dpsAdjudication = nomisAdjudication.toAdjudication()
-        assertThat(dpsAdjudication.punishments).hasSize(1)
+        assertThat(dpsAdjudication.punishments).hasSize(2)
         assertThat(dpsAdjudication.punishments[0].comment).isEqualTo("Remain in cell")
         assertThat(dpsAdjudication.punishments[0].compensationAmount).isEqualTo(BigDecimal.valueOf(23.67))
         assertThat(dpsAdjudication.punishments[0].days).isEqualTo(2)
@@ -1001,6 +1017,8 @@ class AdjudicationTransformationTest {
         assertThat(dpsAdjudication.punishments[0].sanctionStatus).isEqualTo("IMMEDIATE")
         assertThat(dpsAdjudication.punishments[0].createdBy).isEqualTo("A.BEANS")
         assertThat(dpsAdjudication.punishments[0].createdDateTime).isEqualTo("2021-01-01T10:00")
+        // merged record so use result created by
+        assertThat(dpsAdjudication.punishments[1].createdBy).isEqualTo("B.RESULT")
       }
 
       @Test
