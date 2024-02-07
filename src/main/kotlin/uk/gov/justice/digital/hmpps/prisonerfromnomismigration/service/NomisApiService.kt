@@ -17,6 +17,7 @@ import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.EndActivitiesRequest
@@ -25,6 +26,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.F
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveAllocationIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetActivityResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetAllocationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NonAssociationIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NonAssociationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.model.UpsertSyncRequest
@@ -298,6 +301,32 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       .retrieve()
       .bodyToMono(typeReference<RestResponsePage<NonAssociationIdResponse>>())
       .awaitSingle()
+
+  suspend fun getIncident(incidentId: Long): IncidentResponse =
+    webClient.get()
+      .uri("/incidents/{incidentId}", incidentId)
+      .retrieve()
+      .bodyToMono(IncidentResponse::class.java)
+      .awaitSingle()
+
+  suspend fun getIncidentIds(
+    fromDate: LocalDate?,
+    toDate: LocalDate?,
+    pageNumber: Long,
+    pageSize: Long,
+  ): PageImpl<IncidentIdResponse> =
+    webClient.get()
+      .uri {
+        it.path("/incidents/ids")
+          .queryParam("fromDate", fromDate)
+          .queryParam("toDate", toDate)
+          .queryParam("page", pageNumber)
+          .queryParam("size", pageSize)
+          .build()
+      }
+      .retrieve()
+      .bodyToMono(typeReference<RestResponsePage<IncidentIdResponse>>())
+      .awaitSingle()
 }
 
 data class VisitId(
@@ -438,4 +467,10 @@ fun NonAssociationResponse.toUpsertSyncRequest(nonAssociationId: Long? = null) =
     authorisedBy = authorisedBy,
     effectiveFromDate = effectiveDate,
     expiryDate = expiryDate,
+  )
+
+fun IncidentResponse.toMigrateRequest() =
+  IncidentMigrateRequest(
+    incidentId = id,
+    description = description,
   )

@@ -64,6 +64,7 @@ tasks {
       "buildActivityApiModel",
       "buildNomisSyncApiModel",
       "buildAdjudicationApiModel",
+      "buildIncidentsApiModel",
       "buildNonAssociationsApiModel",
       "buildMappingServiceApiModel",
       "buildSentencingAdjustmentsApiModel",
@@ -78,6 +79,7 @@ tasks {
       "buildActivityApiModel",
       "buildNomisSyncApiModel",
       "buildAdjudicationApiModel",
+      "buildIncidentsApiModel",
       "buildNonAssociationsApiModel",
       "buildMappingServiceApiModel",
       "buildSentencingAdjustmentsApiModel",
@@ -89,6 +91,7 @@ tasks {
       "buildActivityApiModel",
       "buildNomisSyncApiModel",
       "buildAdjudicationApiModel",
+      "buildIncidentsApiModel",
       "buildNonAssociationsApiModel",
       "buildMappingServiceApiModel",
       "buildSentencingAdjustmentsApiModel",
@@ -147,6 +150,16 @@ tasks.register("buildAdjudicationApiModel", GenerateTask::class) {
   outputDir.set("$buildDirectory/generated/adjudications")
   modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model")
   apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.api")
+  configOptions.set(configValues)
+  globalProperties.set(mapOf("models" to ""))
+}
+
+tasks.register("buildIncidentsApiModel", GenerateTask::class) {
+  generatorName.set("kotlin")
+  inputSpec.set("openapi-specs/incidents-api-docs.json")
+  outputDir.set("$buildDirectory/generated/incidents")
+  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model")
+  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.api")
   configOptions.set(configValues)
   globalProperties.set(mapOf("models" to ""))
 }

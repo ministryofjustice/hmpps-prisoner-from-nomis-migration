@@ -6,6 +6,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.AdjudicationsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.HmppsAuthApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.IncidentsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NonAssociationsApiExtension
@@ -97,6 +98,7 @@ class HealthCheckTest : SqsIntegrationTestBase() {
     SentencingApiExtension.sentencingApi.stubHealthPing(status)
     ActivitiesApiExtension.activitiesApi.stubHealthPing(status)
     AdjudicationsApiExtension.adjudicationsApi.stubHealthPing(status)
+    IncidentsApiExtension.incidentsApi.stubHealthPing(status)
     NonAssociationsApiExtension.nonAssociationsApi.stubHealthPing(status)
   }
 }

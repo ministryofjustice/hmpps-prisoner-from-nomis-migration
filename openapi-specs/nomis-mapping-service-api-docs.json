@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2023-10-04.3048.7fc5b4c"
+    "version": "2024-01-29.3522.f39401f"
   },
   "servers": [
     {
@@ -36,6 +36,80 @@
     }
   ],
   "paths": {
+    "/mapping/punishments": {
+      "put": {
+        "tags": [
+          "punishments-mapping-resource"
+        ],
+        "summary": "Creates a new set of adjudication punishment mapping and deletes ones no longer required",
+        "description": "Creates a record of a DPS punishment id and NOMIS bookingId and sanction sequence. The ones that require deleting are removed NOMIS id. Requires NOMIS_ADJUDICATIONS",
+        "operationId": "updatePunishmentBatchMappings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdjudicationPunishmentBatchUpdateMappingDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Mapping entries created"
+          },
+          "409": {
+            "description": "One of the punishment mappings already exist"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "punishments-mapping-resource"
+        ],
+        "summary": "Creates a new set of adjudication punishment mapping",
+        "description": "Creates a record of a DPS punishment id and NOMIS bookingId and sanction sequence. Requires NOMIS_ADJUDICATIONS",
+        "operationId": "createPunishmentBatchMappings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdjudicationPunishmentBatchMappingDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Mapping entries created"
+          },
+          "409": {
+            "description": "One of the punishment mappings already exist"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/activities": {
       "get": {
         "tags": [
@@ -136,7 +210,7 @@
         ],
         "summary": "Creates a new activity mapping",
         "description": "Creates a mapping between nomis id and Activity service id. Requires NOMIS_ACTIVITIES",
-        "operationId": "createMapping_9",
+        "operationId": "createMapping_10",
         "requestBody": {
           "content": {
             "application/json": {
@@ -564,6 +638,51 @@
         }
       }
     },
+    "/mapping/incidents": {
+      "post": {
+        "tags": [
+          "incident-mapping-resource"
+        ],
+        "summary": "Creates a new Incident Report mapping",
+        "description": "Creates a mapping between a Nomis incident report id and DPS Incident report id. Requires role NOMIS_INCIDENTS",
+        "operationId": "createMapping_3",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IncidentMappingDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Mapping entry created"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Indicates a duplicate incident has been rejected. If Error code = 409 the body will return a DuplicateErrorResponse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateMappingErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/incentives": {
       "post": {
         "tags": [
@@ -571,7 +690,7 @@
         ],
         "summary": "Creates a new incentive mapping",
         "description": "Creates a mapping between nomis Incentive ids and Incentive service id. Requires ROLE_NOMIS_INCENTIVES",
-        "operationId": "createMapping_3",
+        "operationId": "createMapping_4",
         "requestBody": {
           "content": {
             "application/json": {
@@ -669,7 +788,7 @@
         ],
         "summary": "Creates a new hearing mapping",
         "description": "Creates a record of a DPS hearing Id and a NOMIS hearing Id . Requires NOMIS_ADJUDICATIONS",
-        "operationId": "createMapping_4",
+        "operationId": "createMapping_5",
         "requestBody": {
           "content": {
             "application/json": {
@@ -747,7 +866,7 @@
         ],
         "summary": "Creates a new appointment mapping",
         "description": "Creates a mapping between nomis id and Appointment instance id. Requires NOMIS_APPOINTMENTS",
-        "operationId": "createMapping_5",
+        "operationId": "createMapping_6",
         "requestBody": {
           "content": {
             "application/json": {
@@ -802,7 +921,7 @@
         ],
         "summary": "Creates a new allocation migration mapping",
         "description": "Creates a mapping between nomis allocation id and Actvities allocation id. Requires NOMIS_ACTIVITIES",
-        "operationId": "createMapping_6",
+        "operationId": "createMapping_7",
         "requestBody": {
           "content": {
             "application/json": {
@@ -972,7 +1091,7 @@
         ],
         "summary": "Creates a new adjudication mapping",
         "description": "Creates a record of a adjudication number. Requires NOMIS_ADJUDICATIONS",
-        "operationId": "createMapping_7",
+        "operationId": "createMapping_8",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1017,7 +1136,7 @@
         ],
         "summary": "Creates a new activity migration mapping",
         "description": "Creates a mapping between nomis id and up to 2 Activity service ids. Requires NOMIS_ACTIVITIES",
-        "operationId": "createMapping_8",
+        "operationId": "createMapping_9",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1639,6 +1758,62 @@
         }
       }
     },
+    "/mapping/punishments/{dpsPunishmentId}": {
+      "get": {
+        "tags": [
+          "punishments-mapping-resource"
+        ],
+        "summary": "get mapping",
+        "description": "Retrieves a mapping by DPS punishment id. Requires role NOMIS_ADJUDICATIONS",
+        "operationId": "getMappingGivenDpsId",
+        "parameters": [
+          {
+            "name": "dpsPunishmentId",
+            "in": "path",
+            "description": "DPS Punishment Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "DPS Punishment Id",
+              "example": 12345
+            },
+            "example": 12345
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdjudicationPunishmentMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/non-associations/non-association-id/{nonAssociationId}": {
       "get": {
         "tags": [
@@ -1897,6 +2072,116 @@
           },
           "404": {
             "description": "Non association id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/incidents/nomis-incident-id/{nomisIncidentId}": {
+      "get": {
+        "tags": [
+          "incident-mapping-resource"
+        ],
+        "summary": "get mapping",
+        "description": "Retrieves a mapping by nomisIncidentId. Requires role NOMIS_INCIDENTS",
+        "operationId": "getIncidentMappingGivenNomisId",
+        "parameters": [
+          {
+            "name": "nomisIncidentId",
+            "in": "path",
+            "description": "Nomis Incident Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Nomis Incident Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nomis incident id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/incidents/incident-id/{incidentId}": {
+      "get": {
+        "tags": [
+          "incident-mapping-resource"
+        ],
+        "summary": "get mapping",
+        "description": "Retrieves a mapping by DPS Incident Id. Requires role NOMIS_INCIDENTS",
+        "operationId": "getIncidentMappingGivenIncidentId",
+        "parameters": [
+          {
+            "name": "incidentId",
+            "in": "path",
+            "description": "Incident id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Incident id",
+              "example": 12345
+            },
+            "example": 12345
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Incident id does not exist in mapping table",
             "content": {
               "application/json": {
                 "schema": {
@@ -2228,7 +2513,7 @@
         ],
         "summary": "get mapping",
         "description": "Retrieves a mapping by DPS hearing Id. Requires role NOMIS_ADJUDICATIONS",
-        "operationId": "getMappingGivenDpsId",
+        "operationId": "getMappingGivenDpsId_1",
         "parameters": [
           {
             "name": "id",
@@ -2917,7 +3202,7 @@
         ],
         "summary": "get mapping",
         "description": "Retrieves a mapping by NOMIS adjudication number and charge sequence. Requires role NOMIS_ADJUDICATIONS",
-        "operationId": "getMappingGivenDpsId_1",
+        "operationId": "getMappingGivenDpsId_2",
         "parameters": [
           {
             "name": "adjudicationNumber",
@@ -3434,6 +3719,124 @@
   },
   "components": {
     "schemas": {
+      "AdjudicationPunishmentBatchUpdateMappingDto": {
+        "required": [
+          "punishmentsToCreate",
+          "punishmentsToDelete"
+        ],
+        "type": "object",
+        "properties": {
+          "punishmentsToCreate": {
+            "type": "array",
+            "description": "Adjudication punishment mapping",
+            "items": {
+              "$ref": "#/components/schemas/AdjudicationPunishmentMappingDto"
+            }
+          },
+          "punishmentsToDelete": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdjudicationPunishmentNomisIdDto"
+            }
+          }
+        },
+        "description": "Batch of Adjudication punishment (aka award) mappings to create and delete"
+      },
+      "AdjudicationPunishmentMappingDto": {
+        "required": [
+          "dpsPunishmentId",
+          "nomisBookingId",
+          "nomisSanctionSequence"
+        ],
+        "type": "object",
+        "properties": {
+          "nomisBookingId": {
+            "type": "integer",
+            "description": "NOMIS booking id",
+            "format": "int64",
+            "example": 123456
+          },
+          "nomisSanctionSequence": {
+            "type": "integer",
+            "description": "NOMIS sanction sequence",
+            "format": "int32",
+            "example": 4
+          },
+          "dpsPunishmentId": {
+            "type": "string",
+            "description": "DPS punishment id",
+            "example": "123456"
+          },
+          "label": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": "string",
+            "description": "Label (a timestamp for migrated ids)"
+          },
+          "mappingType": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": "string",
+            "description": "Mapping type",
+            "default": "ADJUDICATION_CREATED",
+            "enum": [
+              "MIGRATED",
+              "ADJUDICATION_CREATED"
+            ]
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "Date-time the mapping was created",
+            "example": "2021-07-05T10:35:17"
+          }
+        },
+        "description": "Adjudication punishment (aka award) mapping"
+      },
+      "AdjudicationPunishmentNomisIdDto": {
+        "required": [
+          "nomisBookingId",
+          "nomisSanctionSequence"
+        ],
+        "type": "object",
+        "properties": {
+          "nomisBookingId": {
+            "type": "integer",
+            "description": "NOMIS booking id",
+            "format": "int64",
+            "example": 123456
+          },
+          "nomisSanctionSequence": {
+            "type": "integer",
+            "description": "NOMIS sanction sequence",
+            "format": "int32",
+            "example": 4
+          }
+        },
+        "description": "ID of mapping identified by the NOMIS id for an adjudication punishment (aka award) mapping"
+      },
+      "ErrorResponse": {
+        "required": [
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "errorCode": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "userMessage": {
+            "type": "string"
+          },
+          "developerMessage": {
+            "type": "string"
+          }
+        }
+      },
       "ActivityMappingDto": {
         "required": [
           "activityScheduleId",
@@ -3520,28 +3923,6 @@
           }
         },
         "description": "NOMIS to Activity schedule mapping"
-      },
-      "ErrorResponse": {
-        "required": [
-          "status"
-        ],
-        "type": "object",
-        "properties": {
-          "status": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "errorCode": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "userMessage": {
-            "type": "string"
-          },
-          "developerMessage": {
-            "type": "string"
-          }
-        }
       },
       "CreateRoomMappingDto": {
         "required": [
@@ -3702,6 +4083,22 @@
         },
         "description": "NOMIS to Sentencing mapping"
       },
+      "AdjudicationPunishmentBatchMappingDto": {
+        "required": [
+          "punishments"
+        ],
+        "type": "object",
+        "properties": {
+          "punishments": {
+            "type": "array",
+            "description": "Adjudication punishment mapping",
+            "items": {
+              "$ref": "#/components/schemas/AdjudicationPunishmentMappingDto"
+            }
+          }
+        },
+        "description": "Batch of Adjudication punishment (aka award) mappings"
+      },
       "NonAssociationMappingDto": {
         "required": [
           "firstOffenderNo",
@@ -3757,6 +4154,49 @@
           }
         },
         "description": "Non-association mapping (same value for NOMIS and DPS)"
+      },
+      "IncidentMappingDto": {
+        "required": [
+          "incidentId",
+          "mappingType",
+          "nomisIncidentId"
+        ],
+        "type": "object",
+        "properties": {
+          "nomisIncidentId": {
+            "type": "integer",
+            "description": "NOMIS Incident id",
+            "format": "int64"
+          },
+          "incidentId": {
+            "type": "string",
+            "description": "Incident id from incidents service"
+          },
+          "label": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": "string",
+            "description": "Label (a timestamp for migrated ids)"
+          },
+          "mappingType": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": "string",
+            "description": "Mapping type",
+            "enum": [
+              "MIGRATED",
+              "NOMIS_CREATED",
+              "INCIDENT_CREATED"
+            ]
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "Date-time the mapping was created",
+            "example": "2021-07-05T10:35:17"
+          }
+        },
+        "description": "Incident mapping (same value for NOMIS and DPS)"
       },
       "IncentiveMappingDto": {
         "required": [
@@ -4030,57 +4470,6 @@
           }
         },
         "description": "Adjudication hearing mapping"
-      },
-      "AdjudicationPunishmentMappingDto": {
-        "required": [
-          "dpsPunishmentId",
-          "nomisBookingId",
-          "nomisSanctionSequence"
-        ],
-        "type": "object",
-        "properties": {
-          "nomisBookingId": {
-            "type": "integer",
-            "description": "NOMIS booking id",
-            "format": "int64",
-            "example": 123456
-          },
-          "nomisSanctionSequence": {
-            "type": "integer",
-            "description": "NOMIS sanction sequence",
-            "format": "int32",
-            "example": 4
-          },
-          "dpsPunishmentId": {
-            "type": "string",
-            "description": "DPS punishment id",
-            "example": "123456"
-          },
-          "label": {
-            "maxLength": 20,
-            "minLength": 0,
-            "type": "string",
-            "description": "Label (a timestamp for migrated ids)"
-          },
-          "mappingType": {
-            "maxLength": 20,
-            "minLength": 0,
-            "type": "string",
-            "description": "Mapping type",
-            "default": "ADJUDICATION_CREATED",
-            "enum": [
-              "MIGRATED",
-              "ADJUDICATION_CREATED"
-            ]
-          },
-          "whenCreated": {
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
-            "type": "string",
-            "description": "Date-time the mapping was created",
-            "example": "2021-07-05T10:35:17"
-          }
-        },
-        "description": "Adjudication punishment (aka award) mapping"
       },
       "ActivityMigrationMappingDto": {
         "required": [
