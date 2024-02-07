@@ -1,0 +1,358 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Incident Reporting API",
+    "description": "API for viewing and managing incident reports",
+    "contact": {
+      "name": "HMPPS Digital Studio",
+      "email": "feedback@digital.justice.gov.uk"
+    },
+    "version": "2024-02-05.370.30c9c74"
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Current url"
+    }
+  ],
+  "security": [
+    {
+      "bearer-jwt": [
+        "read",
+        "write"
+      ]
+    },
+    {
+      "hmpps-auth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Test API endpoint",
+      "description": "Tests the API endpoint"
+    }
+  ],
+  "paths": {
+    "/queue-admin/retry-dlq/{dlqName}": {
+      "put": {
+        "tags": [
+          "hmpps-queue-resource"
+        ],
+        "operationId": "retryDlq",
+        "parameters": [
+          {
+            "name": "dlqName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetryDlqResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/queue-admin/retry-all-dlqs": {
+      "put": {
+        "tags": [
+          "hmpps-queue-resource"
+        ],
+        "operationId": "retryAllDlqs",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RetryDlqResult"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/queue-admin/purge-queue/{queueName}": {
+      "put": {
+        "tags": [
+          "hmpps-queue-resource"
+        ],
+        "operationId": "purgeQueue",
+        "parameters": [
+          {
+            "name": "queueName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurgeQueueResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/test/hello": {
+      "get": {
+        "tags": [
+          "Test API endpoint"
+        ],
+        "summary": "Say hello",
+        "description": "Says hello",
+        "operationId": "sayHello",
+        "responses": {
+          "200": {
+            "description": "Returns hello",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HelloResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/queue-admin/get-dlq-messages/{dlqName}": {
+      "get": {
+        "tags": [
+          "hmpps-queue-resource"
+        ],
+        "operationId": "getDlqMessages",
+        "parameters": [
+          {
+            "name": "dlqName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "maxMessages",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetDlqResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DlqMessage": {
+        "required": [
+          "body",
+          "messageId"
+        ],
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "messageId": {
+            "type": "string"
+          }
+        }
+      },
+      "RetryDlqResult": {
+        "required": [
+          "messages",
+          "messagesFoundCount"
+        ],
+        "type": "object",
+        "properties": {
+          "messagesFoundCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DlqMessage"
+            }
+          }
+        }
+      },
+      "PurgeQueueResult": {
+        "required": [
+          "messagesFoundCount"
+        ],
+        "type": "object",
+        "properties": {
+          "messagesFoundCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "required": [
+          "developerMessage",
+          "status",
+          "userMessage"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "integer",
+            "description": "HTTP status code",
+            "format": "int32",
+            "example": 500
+          },
+          "userMessage": {
+            "type": "string",
+            "description": "User message for the error",
+            "example": "No incident report found for ID `55544222`"
+          },
+          "developerMessage": {
+            "type": "string",
+            "description": "More detailed error message",
+            "example": "[Details, sometimes a stack trace]"
+          },
+          "errorCode": {
+            "type": "integer",
+            "description": "When present, uniquely identifies the type of error making it easier for clients to discriminate without relying on error description or HTTP status code; see `uk.gov.justice.digital.hmpps.hmppsnonassociationsapi.config.ErrorCode` enumeration in hmpps-incident-reporting-api",
+            "format": "int32",
+            "example": 101
+          },
+          "moreInfo": {
+            "type": "string",
+            "description": "More information about the error",
+            "example": "[Rarely used, error-specific]"
+          }
+        },
+        "description": "Error response"
+      },
+      "HelloResponse": {
+        "required": [
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "The message response",
+            "example": "Hello"
+          }
+        },
+        "description": "Hello response"
+      },
+      "GetDlqResult": {
+        "required": [
+          "messages",
+          "messagesFoundCount",
+          "messagesReturnedCount"
+        ],
+        "type": "object",
+        "properties": {
+          "messagesFoundCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "messagesReturnedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DlqMessage"
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearer-jwt": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "hmpps-auth": {
+        "type": "oauth2",
+        "flows": {
+          "clientCredentials": {
+            "tokenUrl": "https://sign-in-dev.hmpps.service.justice.gov.uk/auth/oauth/token",
+            "scopes": {
+              "read": "Allows read of data",
+              "write": "Allows write of data"
+            }
+          },
+          "authorizationCode": {
+            "authorizationUrl": "https://sign-in-dev.hmpps.service.justice.gov.uk/auth/oauth/authorize",
+            "tokenUrl": "https://sign-in-dev.hmpps.service.justice.gov.uk/auth/oauth/token",
+            "scopes": {
+              "read": "Allows read of data",
+              "write": "Allows write of data"
+            }
+          }
+        }
+      }
+    }
+  }
+}

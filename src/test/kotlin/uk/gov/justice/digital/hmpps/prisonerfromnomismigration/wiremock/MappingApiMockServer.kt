@@ -43,6 +43,7 @@ class MappingApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallb
       "/mapping/sentencing/adjustments/nomis-adjustment-category/KEY_DATE/nomis-adjustment-id"
     const val ADJUSTMENTS_CREATE_MAPPING_URL = "/mapping/sentencing/adjustments"
     const val NON_ASSOCIATIONS_CREATE_MAPPING_URL = "/mapping/non-associations"
+    const val INCIDENTS_CREATE_MAPPING_URL = "/mapping/incidents"
   }
 
   override fun beforeAll(context: ExtensionContext) {
@@ -765,6 +766,113 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
               }""",
             ),
         ),
+    )
+  }
+
+  fun verifyCreateMappingIncidentIds(incidentIds: Array<Long>, times: Int = 1) =
+    incidentIds.forEach {
+      verify(
+        times,
+        postRequestedFor(urlPathEqualTo("/mapping/incidents")).withRequestBody(
+          matchingJsonPath(
+            "incidentId",
+            equalTo(it.toString()),
+          ),
+        ),
+      )
+    }
+
+  fun stubIncidentMappingCreateConflict(
+    nomisIncidentId: Long,
+    duplicateNomisIncidentId: Long,
+  ) {
+    stubFor(
+      post(urlPathEqualTo("/mapping/incidents"))
+        .willReturn(
+          aResponse()
+            .withStatus(409)
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
+              "moreInfo": 
+              {
+                "existing" :  {
+                  "nomisIncidentId": $nomisIncidentId,
+                  "incidentId": "4321",
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "NOMIS_CREATED"
+                 },
+                 "duplicate" : {
+                  "nomisIncidentId": $duplicateNomisIncidentId,
+                  "incidentId": "4321",
+                  "activityScheduleId": 123,
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "NOMIS_CREATED"
+                }
+              }
+              }""",
+            ),
+        ),
+    )
+  }
+
+  fun stubGetAnyIncidentNotFound() {
+    stubFor(
+      get(urlPathMatching("/mapping/incidents/nomis-incident-id/\\d"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NOT_FOUND.value()),
+        ),
+    )
+  }
+
+  fun stubIncidentsLatestMigration(migrationId: String) {
+    stubFor(
+      get(urlEqualTo("/mapping/incidents/migrated/latest")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(
+            """
+            {
+              "incidentId": "4321",
+              "nomisIncident": 1234,                                       
+              "label": "$migrationId",
+              "whenCreated": "2020-01-01T11:10:00",
+              "mappingType": "MIGRATED"
+            }              
+            """,
+          ),
+      ),
+    )
+  }
+
+  fun stubIncidentMappingDelete(incidentId: String = "4321") {
+    stubFor(
+      delete(urlEqualTo("/mapping/incidents/incident-id/$incidentId"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NO_CONTENT.value()),
+        ),
+    )
+  }
+
+  fun stubIncidentsMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 54327) {
+    val content = """{
+      "incidentId": "4321",
+      "nomisIncidentId": 1234,                                       
+      "label": "2022-02-14T09:58:45",
+      "whenCreated": "$whenCreated",
+      "mappingType": "MIGRATED"
+    }"""
+    stubFor(
+      get(urlPathMatching("/mapping/incidents/migration-id/.*")).willReturn(
+        okJson(pageContent(content, count)),
+      ),
+
     )
   }
 

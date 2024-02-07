@@ -19,6 +19,9 @@ hmpps.sqs:
     migrationadjudications:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    migrationincidents:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
     migrationnonassociations:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}

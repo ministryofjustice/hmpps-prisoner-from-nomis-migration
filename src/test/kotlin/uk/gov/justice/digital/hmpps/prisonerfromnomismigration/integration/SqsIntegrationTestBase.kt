@@ -25,12 +25,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ACTIVITIE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ADJUDICATIONS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ALLOCATIONS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.APPOINTMENTS_QUEUE_ID
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.INCIDENTS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NON_ASSOCIATIONS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SENTENCING_ADJUSTMENTS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VISITS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.AdjudicationsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.HmppsAuthApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.IncidentsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NonAssociationsApiExtension
@@ -49,6 +51,7 @@ import java.util.concurrent.TimeUnit
   SentencingApiExtension::class,
   AdjudicationsApiExtension::class,
   ActivitiesApiExtension::class,
+  IncidentsApiExtension::class,
   NonAssociationsApiExtension::class,
 )
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -66,6 +69,7 @@ class SqsIntegrationTestBase : TestBase() {
   internal val activitiesMigrationQueue by lazy { hmppsQueueService.findByQueueId(ACTIVITIES_QUEUE_ID) as HmppsQueue }
   internal val allocationsMigrationQueue by lazy { hmppsQueueService.findByQueueId(ALLOCATIONS_QUEUE_ID) as HmppsQueue }
   internal val adjudicationsMigrationQueue by lazy { hmppsQueueService.findByQueueId(ADJUDICATIONS_QUEUE_ID) as HmppsQueue }
+  internal val incidentsMigrationQueue by lazy { hmppsQueueService.findByQueueId(INCIDENTS_QUEUE_ID) as HmppsQueue }
   internal val nonAssociationsMigrationQueue by lazy { hmppsQueueService.findByQueueId(NON_ASSOCIATIONS_QUEUE_ID) as HmppsQueue }
 
   internal val awsSqsVisitsMigrationClient by lazy { visitsMigrationQueue.sqsClient }
@@ -80,6 +84,7 @@ class SqsIntegrationTestBase : TestBase() {
   internal val awsSqsAllocationsMigrationClient by lazy { allocationsMigrationQueue.sqsClient }
   internal val awsSqsAllocationsMigrationDlqClient by lazy { allocationsMigrationQueue.sqsDlqClient }
   internal val awsSqsAdjudicationsMigrationDlqClient by lazy { adjudicationsMigrationQueue.sqsDlqClient }
+  internal val awsSqsIncidentsMigrationDlqClient by lazy { incidentsMigrationQueue.sqsDlqClient }
   internal val awsSqsNonAssociationsMigrationDlqClient by lazy { nonAssociationsMigrationQueue.sqsDlqClient }
   internal val visitsMigrationQueueUrl by lazy { visitsMigrationQueue.queueUrl }
   internal val visitsMigrationDlqUrl by lazy { visitsMigrationQueue.dlqUrl }
@@ -93,6 +98,7 @@ class SqsIntegrationTestBase : TestBase() {
   internal val allocationsMigrationUrl by lazy { allocationsMigrationQueue.queueUrl }
   internal val allocationsMigrationDlqUrl by lazy { allocationsMigrationQueue.dlqUrl }
   internal val adjudicationsMigrationDlqUrl by lazy { adjudicationsMigrationQueue.dlqUrl }
+  internal val incidentsMigrationDlqUrl by lazy { incidentsMigrationQueue.dlqUrl }
   internal val nonAssociationsMigrationDlqUrl by lazy { nonAssociationsMigrationQueue.dlqUrl }
 
   internal val visitsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId("eventvisits") as HmppsQueue }
@@ -118,6 +124,7 @@ class SqsIntegrationTestBase : TestBase() {
       activitiesMigrationQueue,
       adjudicationsMigrationQueue,
       appointmentsMigrationQueue,
+      incidentsMigrationQueue,
       nonAssociationsMigrationQueue,
       sentencingMigrationQueue,
       visitsMigrationQueue,
