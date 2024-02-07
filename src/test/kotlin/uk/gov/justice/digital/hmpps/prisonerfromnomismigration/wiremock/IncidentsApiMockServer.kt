@@ -51,7 +51,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubIncidentForMigration(incidentId: Long = 1234) {
     stubFor(
-      post(urlMatching("/migrate")).willReturn(
+      post(urlMatching("/incidents/migrate")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(CREATED.value())
@@ -65,7 +65,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun createIncidentMigrationCount() =
-    findAll(postRequestedFor(urlMatching("/migrate"))).count()
+    findAll(postRequestedFor(urlMatching("/incidents/migrate"))).count()
 }
 
 private fun Any.toJson(): String = ObjectMapper().writeValueAsString(this)

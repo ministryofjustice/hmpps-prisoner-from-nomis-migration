@@ -24,7 +24,7 @@ internal class IncidentsServiceTest {
   private lateinit var incidentsService: IncidentsService
 
   @Nested
-  @DisplayName("POST /migrate")
+  @DisplayName("POST /incidents/migrate")
   inner class CreateIncidentForMigration {
     @BeforeEach
     internal fun setUp() {
@@ -43,7 +43,7 @@ internal class IncidentsServiceTest {
     @Test
     fun `should call api with OAuth2 token`() {
       incidentsApi.verify(
-        postRequestedFor(urlEqualTo("/migrate"))
+        postRequestedFor(urlEqualTo("/incidents/migrate"))
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
@@ -51,7 +51,7 @@ internal class IncidentsServiceTest {
     @Test
     fun `will pass data to the api`() {
       incidentsApi.verify(
-        postRequestedFor(urlEqualTo("/migrate"))
+        postRequestedFor(urlEqualTo("/incidents/migrate"))
           .withRequestBody(matchingJsonPath("incidentId", equalTo("$INCIDENT_ID")))
           .withRequestBody(matchingJsonPath("description", equalTo("Fighting on Prisoner Cell Block H"))),
       )

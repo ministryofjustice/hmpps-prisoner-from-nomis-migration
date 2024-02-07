@@ -324,7 +324,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubMultipleGetIncidentIdCounts(totalElements: Long, pageSize: Long) {
-    // for each page create a response for each non-association id starting from 1 up to `totalElements`
+    // for each page create a response for each incident id starting from 1 up to `totalElements`
 
     val pages = (totalElements / pageSize) + 1
     (0..pages).forEach { page ->
