@@ -23,6 +23,14 @@ generic-service:
     FEATURE_EVENT_SENTENCE_ADJUSTMENT_DELETED: false
     FEATURE_EVENT_KEY_DATE_ADJUSTMENT_UPSERTED: false
     FEATURE_EVENT_KEY_DATE_ADJUSTMENT_DELETED: false
+    FEATURE_EVENT_INCIDENT-CHANGED-CASES: false
+    FEATURE_EVENT_INCIDENT-CHANGED-PARTIES: false
+    FEATURE_EVENT_INCIDENT-CHANGED-RESPONSES: false
+    FEATURE_EVENT_INCIDENT-CHANGED-REQUIREMENTS: false
+    FEATURE_EVENT_INCIDENT-DELETED-CASES: false
+    FEATURE_EVENT_INCIDENT-DELETED-PARTIES: false
+    FEATURE_EVENT_INCIDENT-DELETED-RESPONSES: false
+    FEATURE_EVENT_INCIDENT-DELETED-REQUIREMENTS: false
 
 generic-prometheus-alerts:
   rdsAlertsDatabases:
@@ -34,6 +42,8 @@ generic-prometheus-alerts:
     - "syscon-devs-prod-prisoner_from_nomis_sentencing_dl_queue"
     - "syscon-devs-prod-prisoner_from_nomis_nonassociations_queue"
     - "syscon-devs-prod-prisoner_from_nomis_nonassociations_dl_queue"
+    - "syscon-devs-prod-prisoner_from_nomis_incidents_queue"
+    - "syscon-devs-prod-prisoner_from_nomis_incidents_dl_queue"
     - "syscon-devs-prod-migration_sentencing_queue"
     - "syscon-devs-prod-migration_sentencing_dlq"
     - "syscon-devs-prod-migration_visits_queue"
