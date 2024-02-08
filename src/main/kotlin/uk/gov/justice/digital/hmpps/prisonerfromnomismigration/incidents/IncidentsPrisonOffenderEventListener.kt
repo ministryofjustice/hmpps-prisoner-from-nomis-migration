@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.INCIDENTS_SYNC_QUEUE_ID
 import java.util.concurrent.CompletableFuture
 
@@ -40,19 +40,19 @@ class IncidentsPrisonOffenderEventListener(
             when {
               // INCIDENT-CHANGED-CASES, INCIDENT-CHANGED-PARTIES, INCIDENT-CHANGED-RESPONSES, INCIDENT-CHANGED-REQUIREMENTS,
               eventType.startsWith("INCIDENT-CHANGED") ->
-                log.debug("Update event $eventType received", (sqsMessage.Message.fromJson()))
+                log.debug("Update event $eventType received {}", sqsMessage.Message.fromJson())
 
               // INCIDENT-DELETED-CASES, INCIDENT-DELETED-PARTIES, INCIDENT-DELETED-RESPONSES, INCIDENT-DELETED-REQUIREMENTS,
               eventType.startsWith("INCIDENT-DELETED") ->
-                log.debug("Delete event $eventType received", (sqsMessage.Message.fromJson()))
+                log.debug("Delete event $eventType received {}", sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
             log.info("Feature switch is disabled for event {}", eventType)
           }
         }
-        SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING.name -> log.debug(
-          "INCIDENT retry sync received",
+        RETRY_SYNCHRONISATION_MAPPING.name -> log.debug(
+          "INCIDENT retry sync received {} ",
           sqsMessage.Message.fromJson(),
         )
       }
