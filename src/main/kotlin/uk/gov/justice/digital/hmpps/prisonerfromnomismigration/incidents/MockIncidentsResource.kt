@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.Operation
 import jakarta.validation.Valid
 import org.slf4j.Logger
@@ -29,7 +28,7 @@ class MockIncidentsResource {
     incidentRequest: IncidentMigrateRequest,
   ): Incident {
     log.info("Created incident for migration with id ${incidentRequest.nomisIncidentId} ")
-    return Incident("$incidentRequest.nomisIncidentId")
+    return Incident("DPS-${incidentRequest.nomisIncidentId}")
   }
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_INCIDENTS')")
@@ -40,7 +39,7 @@ class MockIncidentsResource {
     incidentRequest: IncidentSyncRequest,
   ): Incident {
     log.info("Synced incident for migration with id ${incidentRequest.nomisIncidentId} ")
-    return Incident("$incidentRequest.nomisIncidentId")
+    return Incident("DPS-${incidentRequest.nomisIncidentId}")
   }
 }
 
@@ -61,6 +60,5 @@ data class IncidentSyncRequest(
 
 data class Incident(
   /* DPS Incident ID */
-  @field:JsonProperty("incidentId")
   val id: kotlin.String,
 )

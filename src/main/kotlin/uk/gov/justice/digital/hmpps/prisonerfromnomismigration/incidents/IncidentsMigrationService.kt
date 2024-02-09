@@ -77,7 +77,7 @@ class IncidentsMigrationService(
         val migratedIncident = incidentsService.migrateIncident(nomisIncidentResponse.toMigrateRequest())
           .also {
             createIncidentMapping(
-              incidentId = it.id.toString(),
+              incidentId = it.id,
               nomisIncidentId = nomisIncidentId,
               context = context,
             )
@@ -86,7 +86,7 @@ class IncidentsMigrationService(
           "${MigrationType.INCIDENTS.telemetryName}-migration-entity-migrated",
           mapOf(
             "nomisIncidentId" to nomisIncidentId.toString(),
-            "incidentId" to migratedIncident.id.toString(),
+            "incidentId" to migratedIncident.id,
             "migrationId" to migrationId,
           ),
           null,
