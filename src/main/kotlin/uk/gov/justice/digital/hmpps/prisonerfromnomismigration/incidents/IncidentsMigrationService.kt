@@ -77,7 +77,7 @@ class IncidentsMigrationService(
         val migratedIncident = incidentsService.migrateIncident(nomisIncidentResponse.toMigrateRequest())
           .also {
             createIncidentMapping(
-              incidentId = it.incidentId.toString(),
+              incidentId = it.id.toString(),
               nomisIncidentId = nomisIncidentId,
               context = context,
             )
@@ -86,7 +86,7 @@ class IncidentsMigrationService(
           "${MigrationType.INCIDENTS.telemetryName}-migration-entity-migrated",
           mapOf(
             "nomisIncidentId" to nomisIncidentId.toString(),
-            "incidentId" to migratedIncident.incidentId.toString(),
+            "incidentId" to migratedIncident.id.toString(),
             "migrationId" to migrationId,
           ),
           null,
@@ -114,10 +114,10 @@ class IncidentsMigrationService(
           "nomis-migration-incident-duplicate",
           mapOf<String, String>(
             "migrationId" to context.migrationId,
-            "duplicateIncidentId" to duplicateErrorDetails.duplicate.incidentId,
+            "existingNomisIncidentId" to duplicateErrorDetails.existing.nomisIncidentId.toString(),
             "duplicateNomisIncidentId" to duplicateErrorDetails.duplicate.nomisIncidentId.toString(),
             "existingIncidentId" to duplicateErrorDetails.existing.incidentId,
-            "existingNomisIncidentId" to duplicateErrorDetails.existing.nomisIncidentId.toString(),
+            "duplicateIncidentId" to duplicateErrorDetails.duplicate.incidentId,
             "durationMinutes" to context.durationMinutes().toString(),
           ),
           null,

@@ -181,35 +181,38 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
       assertThat(incidentsApi.createIncidentMigrationCount()).isEqualTo(1)
 
       // should retry to create mapping twice
-      mappingApi.verifyCreateMappingIncidentIds(arrayOf(1234), times = 2)
+      mappingApi.verifyCreateMappingIncidentIds(arrayOf(4321), times = 2)
     }
 
     @Test
     internal fun `it will not retry after a 409 (duplicate incident written to Incidents API)`() {
+      val nomisIncidentId = "1234"
+      val existingIncidentId = "4321"
+      val duplicateIncidentId = "9876"
+
       nomisApi.stubGetInitialCount(NomisApiExtension.INCIDENTS_ID_URL, 1) { incidentIdsPagedResponse(it) }
       nomisApi.stubMultipleGetIncidentIdCounts(totalElements = 1, pageSize = 10)
       nomisApi.stubMultipleGetIncidents(1..1)
       mappingApi.stubGetAnyIncidentNotFound()
       mappingApi.stubIncidentsMappingByMigrationId()
-      incidentsApi.stubIncidentForMigration(1234)
-      mappingApi.stubIncidentMappingCreateConflict(1234, 9876)
-
+      incidentsApi.stubIncidentForMigration(duplicateIncidentId)
+      mappingApi.stubIncidentMappingCreateConflict()
       webTestClient.performMigration()
 
       // check that one incident is created
       assertThat(incidentsApi.createIncidentMigrationCount()).isEqualTo(1)
 
       // doesn't retry
-      mappingApi.verifyCreateMappingIncidentIds(arrayOf(1234), times = 1)
+      mappingApi.verifyCreateMappingIncidentIds(arrayOf(duplicateIncidentId.toLong()), times = 1)
 
       verify(telemetryClient).trackEvent(
         eq("nomis-migration-incident-duplicate"),
         check {
-          assertThat(it["migrationId"]).isNotNull
-          assertThat(it["duplicateIncidentId"]).isEqualTo("4321")
-          assertThat(it["duplicateNomisIncidentId"]).isEqualTo("9876")
-          assertThat(it["existingIncidentId"]).isEqualTo("4321")
-          assertThat(it["existingNomisIncidentId"]).isEqualTo("1234")
+          assertThat(it["existingNomisIncidentId"]).isEqualTo(nomisIncidentId)
+          assertThat(it["duplicateNomisIncidentId"]).isEqualTo(nomisIncidentId)
+          assertThat(it["existingIncidentId"]).isEqualTo(existingIncidentId)
+          assertThat(it["duplicateIncidentId"]).isEqualTo(duplicateIncidentId)
+          assertThat(it["migrationId"]).isNotNull()
         },
         isNull(),
       )

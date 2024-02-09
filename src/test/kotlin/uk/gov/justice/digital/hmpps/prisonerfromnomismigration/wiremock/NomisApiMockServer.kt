@@ -350,6 +350,30 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }
   }
 
+  fun stubGetIncident(nomisIncidentId: Long = 1234) {
+    nomisApi.stubFor(
+      get(
+        urlPathEqualTo("/incidents/$nomisIncidentId"),
+      )
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+            .withBody(incidentResponse(nomisIncidentId)),
+        ),
+    )
+  }
+
+  fun stubGetIncidentNotFound(nomisIncidentId: Long = 1234) {
+    nomisApi.stubFor(
+      get(
+        urlPathEqualTo("/incidents/$nomisIncidentId"),
+      )
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NOT_FOUND.value()),
+        ),
+    )
+  }
+
   fun stubMultipleGetIncidents(intProgression: IntProgression) {
     (intProgression).forEach {
       nomisApi.stubFor(

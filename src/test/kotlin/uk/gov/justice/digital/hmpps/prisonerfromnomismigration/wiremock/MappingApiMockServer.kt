@@ -44,6 +44,7 @@ class MappingApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallb
     const val ADJUSTMENTS_CREATE_MAPPING_URL = "/mapping/sentencing/adjustments"
     const val NON_ASSOCIATIONS_CREATE_MAPPING_URL = "/mapping/non-associations"
     const val INCIDENTS_CREATE_MAPPING_URL = "/mapping/incidents"
+    const val INCIDENTS_GET_MAPPING_URL = "/mapping/incidents/nomis-incident-id"
   }
 
   override fun beforeAll(context: ExtensionContext) {
@@ -776,15 +777,16 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
         postRequestedFor(urlPathEqualTo("/mapping/incidents")).withRequestBody(
           matchingJsonPath(
             "incidentId",
-            equalTo(it.toString()),
+            equalTo("$it"),
           ),
         ),
       )
     }
 
   fun stubIncidentMappingCreateConflict(
-    nomisIncidentId: Long,
-    duplicateNomisIncidentId: Long,
+    nomisIncidentId: Long = 1234,
+    existingIncidentId: String = "4321",
+    duplicateIncidentId: String = "9876",
   ) {
     stubFor(
       post(urlPathEqualTo("/mapping/incidents"))
@@ -798,15 +800,14 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
               {
                 "existing" :  {
                   "nomisIncidentId": $nomisIncidentId,
-                  "incidentId": "4321",
+                  "incidentId": "$existingIncidentId",
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",
                   "mappingType": "NOMIS_CREATED"
                  },
                  "duplicate" : {
-                  "nomisIncidentId": $duplicateNomisIncidentId,
-                  "incidentId": "4321",
-                  "activityScheduleId": 123,
+                  "nomisIncidentId": $nomisIncidentId,
+                  "incidentId": "$duplicateIncidentId",
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",
                   "mappingType": "NOMIS_CREATED"
@@ -815,6 +816,20 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
               }""",
             ),
         ),
+    )
+  }
+
+  fun stubGetIncident(nomisIncidentId: Long = 1234) {
+    val content = """{
+      "incidentId": "4321",
+      "nomisIncidentId": $nomisIncidentId,   
+      "label": "2022-02-14T09:58:45",
+      "whenCreated": "2020-01-01T11:10:00",
+      "mappingType": "NOMIS_CREATED"
+    }"""
+    stubFor(
+      get(urlPathMatching("/mapping/incidents/nomis-incident-id/$nomisIncidentId"))
+        .willReturn(okJson(content)),
     )
   }
 
@@ -838,7 +853,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
             """
             {
               "incidentId": "4321",
-              "nomisIncident": 1234,                                       
+              "nomisIncidentId": 1234,                                       
               "label": "$migrationId",
               "whenCreated": "2020-01-01T11:10:00",
               "mappingType": "MIGRATED"

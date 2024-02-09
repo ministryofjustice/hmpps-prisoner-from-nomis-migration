@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.IncidentsApiExtension.Companion.incidentsApi
 
-private const val INCIDENT_ID = 1234L
+private const val NOMIS_INCIDENT_ID = 1234L
 
 @SpringAPIServiceTest
 @Import(IncidentsService::class, IncidentsConfiguration::class)
@@ -28,12 +28,12 @@ internal class IncidentsServiceTest {
   inner class CreateIncidentForMigration {
     @BeforeEach
     internal fun setUp() {
-      incidentsApi.stubIncidentForMigration(incidentId = INCIDENT_ID)
+      incidentsApi.stubIncidentForMigration()
 
       runBlocking {
         incidentsService.migrateIncident(
           IncidentMigrateRequest(
-            incidentId = INCIDENT_ID,
+            nomisIncidentId = NOMIS_INCIDENT_ID,
             description = "Fighting on Prisoner Cell Block H",
           ),
         )
@@ -52,7 +52,7 @@ internal class IncidentsServiceTest {
     fun `will pass data to the api`() {
       incidentsApi.verify(
         postRequestedFor(urlEqualTo("/incidents/migrate"))
-          .withRequestBody(matchingJsonPath("incidentId", equalTo("$INCIDENT_ID")))
+          .withRequestBody(matchingJsonPath("nomisIncidentId", equalTo("$NOMIS_INCIDENT_ID")))
           .withRequestBody(matchingJsonPath("description", equalTo("Fighting on Prisoner Cell Block H"))),
       )
     }
