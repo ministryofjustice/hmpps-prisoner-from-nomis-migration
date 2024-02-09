@@ -7,6 +7,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 
@@ -23,25 +24,43 @@ class MockIncidentsResource {
   @PreAuthorize("hasRole('ROLE_MIGRATE_INCIDENTS')")
   @PostMapping("/incidents/migrate")
   @Operation(hidden = true)
-  suspend fun createAdjudicationsForMigration(
+  suspend fun createIncidentsForMigration(
     @RequestBody @Valid
     incidentRequest: IncidentMigrateRequest,
-  ): IncidentMigrateResponse {
-    log.info("Created incident for migration with id ${incidentRequest.incidentId} ")
-    return IncidentMigrateResponse(incidentRequest.incidentId)
+  ): Incident {
+    log.info("Created incident for migration with id ${incidentRequest.nomisIncidentId} ")
+    return Incident("$incidentRequest.nomisIncidentId")
+  }
+
+  @PreAuthorize("hasRole('ROLE_MIGRATE_INCIDENTS')")
+  @PutMapping("/incidents/sync")
+  @Operation(hidden = true)
+  suspend fun syncIncidentsForMigration(
+    @RequestBody @Valid
+    incidentRequest: IncidentSyncRequest,
+  ): Incident {
+    log.info("Synced incident for migration with id ${incidentRequest.nomisIncidentId} ")
+    return Incident("$incidentRequest.nomisIncidentId")
   }
 }
 
+// TODO Add more fields to the request
 data class IncidentMigrateRequest(
   /* NOMIS Incident ID */
-  val incidentId: Long,
+  val nomisIncidentId: Long,
   /* Basic Description for the incident */
   val description: String?,
 )
 
-data class IncidentMigrateResponse(
+data class IncidentSyncRequest(
+  /* NOMIS Incident ID */
+  val nomisIncidentId: Long,
+  /* Basic Description for the incident */
+  val description: String?,
+)
+
+data class Incident(
   /* DPS Incident ID */
   @field:JsonProperty("incidentId")
-  val incidentId: kotlin.Long,
-
+  val id: kotlin.String,
 )

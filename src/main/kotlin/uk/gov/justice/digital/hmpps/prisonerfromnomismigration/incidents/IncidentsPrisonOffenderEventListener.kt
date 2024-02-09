@@ -19,6 +19,7 @@ import java.util.concurrent.CompletableFuture
 
 @Service
 class IncidentsPrisonOffenderEventListener(
+  private val incidentsSynchronisationService: IncidentsSynchronisationService,
   private val objectMapper: ObjectMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
 ) {
@@ -38,19 +39,21 @@ class IncidentsPrisonOffenderEventListener(
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
           if (eventFeatureSwitch.isEnabled(eventType)) {
             when {
-              // INCIDENT-CHANGED-CASES, INCIDENT-CHANGED-PARTIES, INCIDENT-CHANGED-RESPONSES, INCIDENT-CHANGED-REQUIREMENTS,
               eventType.startsWith("INCIDENT-CHANGED") ->
-                log.debug("Update event $eventType received {}", sqsMessage.Message.fromJson())
+                // INCIDENT-CHANGED-CASES, INCIDENT-CHANGED-PARTIES, INCIDENT-CHANGED-RESPONSES, INCIDENT-CHANGED-REQUIREMENTS,
+                incidentsSynchronisationService.synchroniseIncidentUpdate((sqsMessage.Message.fromJson()))
 
-              // INCIDENT-DELETED-CASES, INCIDENT-DELETED-PARTIES, INCIDENT-DELETED-RESPONSES, INCIDENT-DELETED-REQUIREMENTS,
               eventType.startsWith("INCIDENT-DELETED") ->
-                log.debug("Delete event $eventType received {}", sqsMessage.Message.fromJson())
+                // INCIDENT-DELETED-CASES, INCIDENT-DELETED-PARTIES, INCIDENT-DELETED-RESPONSES, INCIDENT-DELETED-REQUIREMENTS,
+                log.debug("Delete event $eventType received {}", (sqsMessage.Message.fromJson()))
+
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
             log.info("Feature switch is disabled for event {}", eventType)
           }
         }
+
         RETRY_SYNCHRONISATION_MAPPING.name -> log.debug(
           "INCIDENT retry sync received {} ",
           sqsMessage.Message.fromJson(),
@@ -62,6 +65,13 @@ class IncidentsPrisonOffenderEventListener(
   private inline fun <reified T> String.fromJson(): T =
     objectMapper.readValue(this)
 }
+
+// Depending on the type of update/delete there will be additional params
+// (e.g. incidentPartySeq for INCIDENT-CHANGED-PARTIES, but we're currently only interested in the whole incident, not just the changed item)
+data class IncidentsOffenderEvent(
+  val incidentCaseId: Long,
+  val auditModuleName: String?,
+)
 
 private fun asCompletableFuture(
   process: suspend () -> Unit,

@@ -18,6 +18,7 @@ import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentMigrateRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.EndActivitiesRequest
@@ -471,6 +472,12 @@ fun NonAssociationResponse.toUpsertSyncRequest(nonAssociationId: Long? = null) =
 
 fun IncidentResponse.toMigrateRequest() =
   IncidentMigrateRequest(
-    incidentId = id,
+    nomisIncidentId = id,
+    description = description,
+  )
+
+fun IncidentResponse.toSyncRequest() =
+  IncidentSyncRequest(
+    nomisIncidentId = id,
     description = description,
   )

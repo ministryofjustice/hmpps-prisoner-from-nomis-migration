@@ -7,10 +7,17 @@ import org.springframework.web.reactive.function.client.awaitBody
 
 @Service
 class IncidentsService(@Qualifier("incidentsApiWebClient") private val webClient: WebClient) {
-  suspend fun migrateIncident(migrateRequest: IncidentMigrateRequest): IncidentMigrateResponse =
+  suspend fun migrateIncident(migrateRequest: IncidentMigrateRequest): Incident =
     webClient.post()
       .uri("/incidents/migrate")
       .bodyValue(migrateRequest)
+      .retrieve()
+      .awaitBody()
+
+  suspend fun syncIncident(syncRequest: IncidentSyncRequest): Incident =
+    webClient.put()
+      .uri("/incidents/sync")
+      .bodyValue(syncRequest)
       .retrieve()
       .awaitBody()
 }

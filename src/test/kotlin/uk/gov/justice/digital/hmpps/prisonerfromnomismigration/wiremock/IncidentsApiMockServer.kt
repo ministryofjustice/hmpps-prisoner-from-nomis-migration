@@ -6,13 +6,16 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.put
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus.CREATED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentMigrateResponse
+import org.springframework.http.HttpStatus.OK
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.Incident
 
 class IncidentsApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
   companion object {
@@ -49,15 +52,30 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubIncidentForMigration(incidentId: Long = 1234) {
+  fun stubIncidentForMigration(incidentId: String = "4321") {
     stubFor(
-      post(urlMatching("/incidents/migrate")).willReturn(
+      post("/incidents/migrate").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(CREATED.value())
           .withBody(
-            IncidentMigrateResponse(
-              incidentId = incidentId,
+            Incident(
+              id = "$incidentId",
+            ).toJson(),
+          ),
+      ),
+    )
+  }
+
+  fun stubIncidentForSync(incidentId: String = "4321") {
+    stubFor(
+      put("/incidents/sync").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(OK.value())
+          .withBody(
+            Incident(
+              id = incidentId,
             ).toJson(),
           ),
       ),
@@ -66,6 +84,9 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun createIncidentMigrationCount() =
     findAll(postRequestedFor(urlMatching("/incidents/migrate"))).count()
+
+  fun createIncidentSynchronisationCount() =
+    findAll(putRequestedFor(urlMatching("/incidents/sync"))).count()
 }
 
 private fun Any.toJson(): String = ObjectMapper().writeValueAsString(this)

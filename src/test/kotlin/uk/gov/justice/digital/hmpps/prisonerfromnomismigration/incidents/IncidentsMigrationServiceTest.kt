@@ -848,7 +848,7 @@ internal class IncidentsMigrationServiceTest {
       verify(incidentsService).migrateIncident(
         eq(
           IncidentMigrateRequest(
-            incidentId = 1234,
+            nomisIncidentId = 1234,
             description = "On 12/04/2023 approx 16:45 John Smith punched Fred Jones",
           ),
         ),
@@ -1015,7 +1015,7 @@ fun aNomisIncidentResponse() =
   )
 
 fun aDPSIncidentMigrateResponse() =
-  IncidentMigrateResponse(4321)
+  Incident("4321")
 
 fun pages(total: Long, startId: Long = 1): PageImpl<IncidentIdResponse> = PageImpl<IncidentIdResponse>(
   (startId..total - 1 + startId).map { IncidentIdResponse(it) },
