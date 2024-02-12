@@ -41,11 +41,11 @@ class IncidentsPrisonOffenderEventListener(
             when {
               eventType.startsWith("INCIDENT-CHANGED") ->
                 // INCIDENT-CHANGED-CASES, INCIDENT-CHANGED-PARTIES, INCIDENT-CHANGED-RESPONSES, INCIDENT-CHANGED-REQUIREMENTS,
-                incidentsSynchronisationService.synchroniseIncidentUpdate((sqsMessage.Message.fromJson()))
+                incidentsSynchronisationService.synchroniseIncidentUpdate(sqsMessage.Message.fromJson())
 
               eventType.startsWith("INCIDENT-DELETED") ->
                 // INCIDENT-DELETED-CASES, INCIDENT-DELETED-PARTIES, INCIDENT-DELETED-RESPONSES, INCIDENT-DELETED-REQUIREMENTS,
-                log.debug("Delete event $eventType received {}", (sqsMessage.Message.fromJson()))
+                incidentsSynchronisationService.synchroniseIncidentDelete(sqsMessage.Message.fromJson())
 
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
@@ -54,8 +54,7 @@ class IncidentsPrisonOffenderEventListener(
           }
         }
 
-        RETRY_SYNCHRONISATION_MAPPING.name -> log.debug(
-          "INCIDENT retry sync received {} ",
+        RETRY_SYNCHRONISATION_MAPPING.name -> incidentsSynchronisationService.retryCreateIncidentMapping(
           sqsMessage.Message.fromJson(),
         )
       }

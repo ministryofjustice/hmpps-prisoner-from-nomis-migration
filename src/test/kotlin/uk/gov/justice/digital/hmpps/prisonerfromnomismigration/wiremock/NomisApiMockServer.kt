@@ -8,7 +8,6 @@ import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
-import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
@@ -660,45 +659,6 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
       request,
     )
   }
-
-  fun stubGetNonAssociation(offenderNo: String, nsOffenderNo: String, typeSequence: Int) {
-    nomisApi.stubFor(
-      get(
-        urlEqualTo("/non-associations/offender/$offenderNo/ns-offender/$nsOffenderNo?typeSequence=$typeSequence"),
-
-      )
-        .willReturn(
-          aResponse().withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.OK.value())
-            .withBody(nonAssociationResponse(offenderNo = offenderNo, nsOffenderNo = nsOffenderNo, typeSequence = typeSequence)),
-        ),
-    )
-  }
-
-  fun stubGetNonAssociationWithMinimalData(offenderNo: String, nsOffenderNo: String, typeSequence: Int) {
-    nomisApi.stubFor(
-      get(
-        urlEqualTo("/non-associations/offender/$offenderNo/ns-offender/$nsOffenderNo?typeSequence=$typeSequence"),
-      )
-        .willReturn(
-          aResponse().withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.OK.value())
-            .withBody(nonAssociationResponseMinimalData(offenderNo = offenderNo, nsOffenderNo = nsOffenderNo, typeSequence = typeSequence)),
-        ),
-    )
-  }
-
-  fun stubGetNonAssociationNotFound(offenderNo: String, nsOffenderNo: String, typeSequence: Int) {
-    nomisApi.stubFor(
-      get(
-        urlEqualTo("/non-associations/offender/$offenderNo/ns-offender/$nsOffenderNo?typeSequence=$typeSequence"),
-      )
-        .willReturn(
-          aResponse().withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.NOT_FOUND.value()),
-        ),
-    )
-  }
 }
 
 private fun visitResponse(visitId: Long) = """
@@ -806,17 +766,6 @@ fun incidentIdsPagedResponse(
 ): String {
   val content = incidentIds.map { """{ "incidentId": $it }""" }.joinToString { it }
   return pageContent(content, pageSize, pageNumber, totalElements, incidentIds.size)
-}
-
-fun nonAssociationIdsPagedResponse(
-  totalElements: Long = 10,
-  nonAssociationIds: List<Long> = (0L..10L).toList(),
-  pageSize: Long = 10,
-  pageNumber: Long = 0,
-): String {
-  val content = nonAssociationIds.map { idJsonCreator(it) }
-    .joinToString { it }
-  return pageContent(content, pageSize, pageNumber, totalElements, nonAssociationIds.size)
 }
 
 fun appointmentIdsPagedResponse(
@@ -1293,67 +1242,6 @@ private fun incidentResponse(
   "history": []
   }
     
-  """.trimIndent()
-
-private fun allNonAssociationResponse(
-  offenderNo: String = "A1234BC",
-  nsOffenderNo: String = "D5678EF",
-): String =
-  """
-    [
-    {
-      "offenderNo": "$offenderNo",
-      "nsOffenderNo": "$nsOffenderNo",
-      "typeSequence": 1,
-      "reason": "VIC",
-      "recipReason": "PER",
-      "type": "WING",
-      "authorisedBy": "Jim Smith",
-      "effectiveDate": "2023-10-25",
-      "expiryDate": "2023-10-26",
-      "updatedBy": "TJONES_ADM",
-      "comment": "Fight on Wing C"
-    }
-    ]
-  """.trimIndent()
-
-private fun nonAssociationResponse(
-  offenderNo: String = "A1234BC",
-  nsOffenderNo: String = "D5678EF",
-  typeSequence: Int = 1,
-): String =
-  """
-    {
-      "offenderNo": "$offenderNo",
-      "nsOffenderNo": "$nsOffenderNo",
-      "typeSequence": $typeSequence,
-      "reason": "VIC",
-      "recipReason": "PER",
-      "type": "WING",
-      "authorisedBy": "Jim Smith",
-      "effectiveDate": "2023-10-25",
-      "expiryDate": "2023-10-26",
-      "updatedBy": "FADAMS_ADM",
-      "comment": "Fight on Wing C"
-    }
-  """.trimIndent()
-
-private fun nonAssociationResponseMinimalData(
-  offenderNo: String = "A1234BC",
-  nsOffenderNo: String = "D5678EF",
-  typeSequence: Int = 1,
-): String =
-  """
-    {
-      "offenderNo": "$offenderNo",
-      "nsOffenderNo": "$nsOffenderNo",
-      "typeSequence": $typeSequence,
-      "reason": "VIC",
-      "recipReason": "PER",
-      "type": "WING",
-      "effectiveDate": "2023-10-25",
-      "updatedBy": "JSMITH_ADM"
-    }
   """.trimIndent()
 
 private fun appointmentResponse(

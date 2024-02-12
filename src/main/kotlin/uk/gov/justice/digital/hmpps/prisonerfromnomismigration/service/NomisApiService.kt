@@ -18,6 +18,7 @@ import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentMigrateRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentReportDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeResponse
@@ -411,8 +412,16 @@ inline fun <reified T> typeReference() = object : ParameterizedTypeReference<T>(
 
 fun IncidentResponse.toMigrateRequest() =
   IncidentMigrateRequest(
-    nomisIncidentId = id,
-    description = description,
+    incidentReportNumber = id,
+    reportDetails = IncidentReportDetails(
+      reportType = type,
+      title = title,
+      comments = description,
+      status = status,
+      reportDate = LocalDateTime.parse(reportedDateTime),
+      incidentDate = LocalDateTime.parse(incidentDateTime),
+      reportedBy = "${reportedStaff.firstName} ${reportedStaff.lastName}",
+    ),
   )
 
 fun IncidentResponse.toSyncRequest() =

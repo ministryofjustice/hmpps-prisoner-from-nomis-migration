@@ -37,6 +37,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.incident
 import java.time.Duration
 import java.time.LocalDateTime
 
+private const val INCIDENT_ID = "4321"
+private const val NOMIS_INCIDENT_ID = 1234L
+
 class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
 
   @Autowired
@@ -181,13 +184,11 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
       assertThat(incidentsApi.createIncidentMigrationCount()).isEqualTo(1)
 
       // should retry to create mapping twice
-      mappingApi.verifyCreateMappingIncidentIds(arrayOf(4321), times = 2)
+      mappingApi.verifyCreateMappingIncidentIds(arrayOf(INCIDENT_ID.toLong()), times = 2)
     }
 
     @Test
     internal fun `it will not retry after a 409 (duplicate incident written to Incidents API)`() {
-      val nomisIncidentId = "1234"
-      val existingIncidentId = "4321"
       val duplicateIncidentId = "9876"
 
       nomisApi.stubGetInitialCount(NomisApiExtension.INCIDENTS_ID_URL, 1) { incidentIdsPagedResponse(it) }
@@ -208,9 +209,9 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
       verify(telemetryClient).trackEvent(
         eq("nomis-migration-incident-duplicate"),
         check {
-          assertThat(it["existingNomisIncidentId"]).isEqualTo(nomisIncidentId)
-          assertThat(it["duplicateNomisIncidentId"]).isEqualTo(nomisIncidentId)
-          assertThat(it["existingIncidentId"]).isEqualTo(existingIncidentId)
+          assertThat(it["existingNomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
+          assertThat(it["duplicateNomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
+          assertThat(it["existingIncidentId"]).isEqualTo(INCIDENT_ID)
           assertThat(it["duplicateIncidentId"]).isEqualTo(duplicateIncidentId)
           assertThat(it["migrationId"]).isNotNull()
         },

@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.exactly
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
@@ -228,7 +229,6 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @Nested
       inner class WhenDuplicateMapping {
-
         private val duplicateIncidentId = "9876"
 
         @Test
@@ -261,6 +261,144 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
                 assertThat(it["existingIncidentId"]).isEqualTo(INCIDENT_ID)
                 assertThat(it["duplicateIncidentId"]).isEqualTo(duplicateIncidentId)
                 assertThat(it["migrationId"]).isNull()
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("INCIDENT-DELETED-*")
+  inner class IncidentDeleted {
+
+    @Nested
+    inner class WhenDeleteByDPS {
+      @BeforeEach
+      fun setUp() {
+        awsSqsIncidentsOffenderEventsClient.sendMessage(
+          incidentsQueueOffenderEventsUrl,
+          incidentEvent(
+            eventType = "INCIDENT-DELETED-PARTIES",
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        )
+      }
+
+      @Test
+      fun `the event is ignored`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            eq("incident-delete-synchronisation-skipped"),
+            check {
+              assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
+            },
+            isNull(),
+          )
+        }
+        nomisApi.verify(exactly(0), anyRequestedFor(anyUrl()))
+        mappingApi.verify(exactly(0), getRequestedFor(anyUrl()))
+        incidentsApi.verify(exactly(0), anyRequestedFor(anyUrl()))
+      }
+    }
+
+    @Nested
+    inner class WhenDeleteByNomisWithNoMapping {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetAnyIncidentNotFound()
+
+        awsSqsIncidentsOffenderEventsClient.sendMessage(
+          incidentsQueueOffenderEventsUrl,
+          incidentEvent(
+            eventType = "INCIDENT-DELETED-PARTIES",
+            auditModuleName = "OIUDINCRS",
+          ),
+        )
+        await untilAsserted {
+          verify(telemetryClient, Times(1)).trackEvent(any(), any(), isNull())
+        }
+      }
+
+      @Test
+      fun `will attempt to retrieve mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo(NOMIS_MAPPING_API_URL)))
+      }
+
+      @Test
+      fun `will not delete the incident in the incidents service`() {
+        incidentsApi.verify(exactly(0), deleteRequestedFor(anyUrl()))
+      }
+
+      @Test
+      fun `will not attempt to delete a mapping`() {
+        mappingApi.verify(exactly(0), deleteRequestedFor(anyUrl()))
+      }
+
+      @Test
+      fun `will create telemetry tracking the ignored delete`() {
+        verify(telemetryClient).trackEvent(
+          eq("incident-delete-synchronisation-ignored"),
+          check {
+            assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @DisplayName("When there is a delete incident")
+    inner class WhenDeleteByNomis {
+
+      @Nested
+      inner class WhenDeleteByNomisSuccess {
+        @BeforeEach
+        fun setUp() {
+          mappingApi.stubGetIncident()
+          incidentsApi.stubIncidentForSyncDelete(INCIDENT_ID)
+          mappingApi.stubIncidentMappingDelete()
+
+          awsSqsIncidentsOffenderEventsClient.sendMessage(
+            incidentsQueueOffenderEventsUrl,
+            incidentEvent(
+              eventType = "INCIDENT-DELETED-PARTIES",
+              auditModuleName = "OIUDINCRS",
+            ),
+          )
+        }
+
+        @Test
+        fun `will retrieve mapping`() {
+          await untilAsserted {
+            mappingApi.verify(getRequestedFor(urlPathEqualTo(NOMIS_MAPPING_API_URL)))
+          }
+        }
+
+        @Test
+        fun `will delete the incident in the incidents service`() {
+          await untilAsserted {
+            incidentsApi.verify(deleteRequestedFor(urlPathEqualTo("/incidents/sync/$INCIDENT_ID")))
+          }
+        }
+
+        @Test
+        fun `will delete mapping`() {
+          await untilAsserted {
+            mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/incidents/incident-id/$INCIDENT_ID")))
+          }
+        }
+
+        @Test
+        fun `will create telemetry tracking the delete`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("incident-delete-synchronisation-success"),
+              check {
+                assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
+                assertThat(it["incidentId"]).isEqualTo(INCIDENT_ID)
               },
               isNull(),
             )
