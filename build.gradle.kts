@@ -195,7 +195,7 @@ tasks.register("buildSentencingApiModel", GenerateTask::class) {
 */
 
 val generatedProjectDirs =
-  listOf("activities", "adjudications", "nomissync", "mappings", "sentencingadjustments")
+  listOf("activities", "adjudications", "incidents", "nonassociations", "nomissync", "mappings", "sentencingadjustments")
 
 kotlin {
   generatedProjectDirs.forEach { generatedProject ->

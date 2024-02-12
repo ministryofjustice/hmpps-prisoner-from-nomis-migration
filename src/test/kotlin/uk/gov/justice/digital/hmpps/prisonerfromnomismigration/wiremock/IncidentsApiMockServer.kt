@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
+import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.CREATED
 import org.springframework.http.HttpStatus.OK
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.Incident
@@ -60,7 +62,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withStatus(CREATED.value())
           .withBody(
             Incident(
-              id = "$incidentId",
+              id = incidentId,
             ).toJson(),
           ),
       ),
@@ -78,6 +80,24 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
               id = incidentId,
             ).toJson(),
           ),
+      ),
+    )
+  }
+
+  fun stubIncidentForSyncDelete(incidentId: String = "4321") {
+    stubFor(
+      delete("/incidents/sync/$incidentId").willReturn(
+        aResponse()
+          .withStatus(HttpStatus.NO_CONTENT.value()),
+      ),
+    )
+  }
+
+  fun stubIncidentForSyncDeleteNotFound(incidentId: String = "4321") {
+    stubFor(
+      delete("/incidents/sync/$incidentId").willReturn(
+        aResponse()
+          .withStatus(HttpStatus.NOT_FOUND.value()),
       ),
     )
   }

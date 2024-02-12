@@ -29,6 +29,7 @@ class IncidentsSynchronisationService(
   }
 
   suspend fun synchroniseIncidentUpdate(event: IncidentsOffenderEvent) {
+    // Should never happen
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent(
         "incident-synchronisation-skipped",
@@ -41,7 +42,7 @@ class IncidentsSynchronisationService(
     incidentsMappingService.findNomisIncidentMapping(
       nomisIncidentId = event.incidentCaseId,
     )?.let {
-      log.debug("Found incident mapping: $it")
+      log.debug("Found incident mapping: {}", it)
       log.debug("Sending incident update sync {}", nomisIncident.toSyncRequest())
 
       incidentsService.syncIncident(nomisIncident.toSyncRequest())
@@ -50,7 +51,7 @@ class IncidentsSynchronisationService(
         event.toTelemetryProperties(it.incidentId),
       )
     } ?: let {
-      log.debug("No incident mapping - sending incident upsert sync {} ", nomisIncident.toSyncRequest())
+      log.debug("No incident mapping - sending incident sync {} ", nomisIncident.toSyncRequest())
 
       incidentsService.syncIncident(nomisIncident.toSyncRequest()).also { incident ->
         tryToCreateIncidentMapping(event, incident.id).also { result ->
@@ -63,6 +64,35 @@ class IncidentsSynchronisationService(
           )
         }
       }
+    }
+  }
+
+  suspend fun synchroniseIncidentDelete(event: IncidentsOffenderEvent) {
+    // Should never happen
+    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      telemetryClient.trackEvent(
+        "incident-delete-synchronisation-skipped",
+        event.toTelemetryProperties(),
+      )
+      return
+    }
+
+    incidentsMappingService.findNomisIncidentMapping(
+      nomisIncidentId = event.incidentCaseId,
+    )?.let {
+      log.debug("Found incident mapping: {}", it)
+
+      incidentsService.deleteIncident(it.incidentId)
+      incidentsMappingService.deleteIncidentMapping(it.incidentId)
+      telemetryClient.trackEvent(
+        "incident-delete-synchronisation-success",
+        event.toTelemetryProperties(incidentId = it.incidentId),
+      )
+    } ?: let {
+      telemetryClient.trackEvent(
+        "incident-delete-synchronisation-ignored",
+        event.toTelemetryProperties(),
+      )
     }
   }
 

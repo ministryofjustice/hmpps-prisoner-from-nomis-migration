@@ -73,7 +73,7 @@ internal class IncidentsMappingServiceTest {
               """
               {
                   "incidentId": "4321",
-                  "nomisIncidentId": 1234,                                       
+                  "nomisIncidentId": $NOMIS_INCIDENT_ID,                                       
                   "label": "5678",
                   "mappingType": "MIGRATED",
                   "whenCreated": "2020-01-01T00:00:00"
@@ -84,11 +84,11 @@ internal class IncidentsMappingServiceTest {
       )
 
       val mapping = incidentsMappingService.findNomisIncidentMapping(
-        nomisIncidentId = 1234,
+        nomisIncidentId = NOMIS_INCIDENT_ID,
       )
       assertThat(mapping).isNotNull
       assertThat(mapping!!.incidentId).isEqualTo("4321")
-      assertThat(mapping.nomisIncidentId).isEqualTo(1234)
+      assertThat(mapping.nomisIncidentId).isEqualTo(NOMIS_INCIDENT_ID)
       assertThat(mapping.label).isEqualTo("5678")
       assertThat(mapping.mappingType).isEqualTo(MIGRATED)
       assertThat(mapping.whenCreated).isEqualTo("2020-01-01T00:00:00")
@@ -108,7 +108,7 @@ internal class IncidentsMappingServiceTest {
       assertThatThrownBy {
         runBlocking {
           incidentsMappingService.findNomisIncidentMapping(
-            nomisIncidentId = 1234,
+            nomisIncidentId = NOMIS_INCIDENT_ID,
           )
         }
       }.isInstanceOf(WebClientResponseException.InternalServerError::class.java)
@@ -137,7 +137,7 @@ internal class IncidentsMappingServiceTest {
         incidentsMappingService.createMapping(
           IncidentMappingDto(
             incidentId = "4321",
-            nomisIncidentId = 1234,
+            nomisIncidentId = NOMIS_INCIDENT_ID,
             label = "some-migration-id",
             mappingType = MIGRATED,
           ),
@@ -158,7 +158,7 @@ internal class IncidentsMappingServiceTest {
         incidentsMappingService.createMapping(
           IncidentMappingDto(
             incidentId = "4321",
-            nomisIncidentId = 1234,
+            nomisIncidentId = NOMIS_INCIDENT_ID,
             mappingType = MIGRATED,
             label = "5678",
             whenCreated = "2020-01-01T00:00:00",
@@ -173,7 +173,7 @@ internal class IncidentsMappingServiceTest {
                 """
                   {
                   "incidentId": "4321",
-                  "nomisIncidentId": 1234,                                       
+                  "nomisIncidentId": $NOMIS_INCIDENT_ID,                                       
                   "label": "5678",
                   "mappingType": "MIGRATED",
                   "whenCreated": "2020-01-01T00:00:00"
@@ -200,7 +200,7 @@ internal class IncidentsMappingServiceTest {
           incidentsMappingService.createMapping(
             IncidentMappingDto(
               incidentId = "4321",
-              nomisIncidentId = 1234,
+              nomisIncidentId = NOMIS_INCIDENT_ID,
               mappingType = MIGRATED,
               label = "5678",
               whenCreated = "2020-01-01T00:00:00",
