@@ -57,6 +57,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiS
 import java.time.LocalDate
 import java.time.LocalDateTime
 
+private const val NOMIS_INCIDENT_ID = 1234L
+private const val INCIDENT_ID = "4321"
+
 @ExtendWith(MockitoExtension::class)
 internal class IncidentsMigrationServiceTest {
   private val nomisApiService: NomisApiService = mock()
@@ -825,11 +828,11 @@ internal class IncidentsMigrationServiceTest {
           type = INCIDENTS,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
-          body = IncidentIdResponse(1234),
+          body = IncidentIdResponse(NOMIS_INCIDENT_ID),
         ),
       )
 
-      verify(nomisApiService).getIncident(1234)
+      verify(nomisApiService).getIncident(NOMIS_INCIDENT_ID)
     }
 
     @Test
@@ -841,15 +844,23 @@ internal class IncidentsMigrationServiceTest {
           type = INCIDENTS,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
-          body = IncidentIdResponse(1234),
+          body = IncidentIdResponse(NOMIS_INCIDENT_ID),
         ),
       )
 
       verify(incidentsService).migrateIncident(
         eq(
           IncidentMigrateRequest(
-            nomisIncidentId = 1234,
-            description = "On 12/04/2023 approx 16:45 John Smith punched Fred Jones",
+            incidentReportNumber = NOMIS_INCIDENT_ID,
+            reportDetails = IncidentReportDetails(
+              title = "There was a fight",
+              incidentDate = LocalDateTime.parse("2023-04-12T16:45:00"),
+              reportDate = LocalDateTime.parse("2023-04-14T17:55:00"),
+              reportedBy = "JANE BAKER",
+              reportType = "ASSAULT",
+              comments = "On 12/04/2023 approx 16:45 John Smith punched Fred Jones",
+              status = "AWAN",
+            ),
           ),
         ),
       )
@@ -864,7 +875,7 @@ internal class IncidentsMigrationServiceTest {
           type = INCIDENTS,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 100_200,
-          body = IncidentIdResponse(1234),
+          body = IncidentIdResponse(NOMIS_INCIDENT_ID),
         ),
       )
 
@@ -889,14 +900,14 @@ internal class IncidentsMigrationServiceTest {
             type = INCIDENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = IncidentIdResponse(1234),
+            body = IncidentIdResponse(NOMIS_INCIDENT_ID),
           ),
         )
 
         verify(incidentsMappingService).createMapping(
           IncidentMappingDto(
-            incidentId = "4321",
-            nomisIncidentId = 1234,
+            incidentId = INCIDENT_ID,
+            nomisIncidentId = NOMIS_INCIDENT_ID,
             label = "2020-05-23T11:30:00",
             mappingType = MappingType.MIGRATED,
           ),
@@ -924,7 +935,7 @@ internal class IncidentsMigrationServiceTest {
             type = INCIDENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = IncidentIdResponse(1234),
+            body = IncidentIdResponse(NOMIS_INCIDENT_ID),
           ),
         )
 
@@ -932,8 +943,8 @@ internal class IncidentsMigrationServiceTest {
           message = eq(RETRY_MIGRATION_MAPPING),
           context = check<MigrationContext<IncidentMappingDto>> {
             assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
-            assertThat(it.body.nomisIncidentId).isEqualTo(1234)
-            assertThat(it.body.incidentId).isEqualTo("4321")
+            assertThat(it.body.nomisIncidentId).isEqualTo(NOMIS_INCIDENT_ID)
+            assertThat(it.body.incidentId).isEqualTo(INCIDENT_ID)
           },
           delaySeconds = eq(0),
         )
@@ -945,8 +956,8 @@ internal class IncidentsMigrationServiceTest {
       internal fun setUp(): Unit = runTest {
         whenever(incidentsMappingService.findNomisIncidentMapping(any())).thenReturn(
           IncidentMappingDto(
-            incidentId = "4321",
-            nomisIncidentId = 1234,
+            incidentId = INCIDENT_ID,
+            nomisIncidentId = NOMIS_INCIDENT_ID,
             mappingType = MappingType.NOMIS_CREATED,
           ),
         )
@@ -959,7 +970,7 @@ internal class IncidentsMigrationServiceTest {
             type = INCIDENTS,
             migrationId = "2020-05-23T11:30:00",
             estimatedCount = 100_200,
-            body = IncidentIdResponse(1234),
+            body = IncidentIdResponse(NOMIS_INCIDENT_ID),
           ),
         )
 
@@ -998,14 +1009,14 @@ internal class IncidentsMigrationServiceTest {
 
 fun aNomisIncidentResponse() =
   IncidentResponse(
-    id = 1234,
+    id = NOMIS_INCIDENT_ID,
     title = "There was a fight",
     description = "On 12/04/2023 approx 16:45 John Smith punched Fred Jones",
     status = "AWAN",
     type = "ASSAULT",
     lockedResponse = false,
     incidentDateTime = "2023-04-12T16:45:00",
-    reportedDateTime = "2023-04-12T16:45:00",
+    reportedDateTime = "2023-04-14T17:55:00",
     reportedStaff = Staff(username = "BQL16C", staffId = 16288, firstName = "JANE", lastName = "BAKER"),
     history = listOf(),
     offenderParties = listOf(),
@@ -1015,7 +1026,7 @@ fun aNomisIncidentResponse() =
   )
 
 fun aDPSIncidentMigrateResponse() =
-  Incident("4321")
+  Incident(INCIDENT_ID)
 
 fun pages(total: Long, startId: Long = 1): PageImpl<IncidentIdResponse> = PageImpl<IncidentIdResponse>(
   (startId..total - 1 + startId).map { IncidentIdResponse(it) },

@@ -72,8 +72,8 @@ internal class IncidentsMappingServiceTest {
             .withBody(
               """
               {
-                  "incidentId": "4321",
-                  "nomisIncidentId": 1234,                                       
+                  "incidentId": "$INCIDENT_ID",
+                  "nomisIncidentId": $NOMIS_INCIDENT_ID,                                       
                   "label": "5678",
                   "mappingType": "MIGRATED",
                   "whenCreated": "2020-01-01T00:00:00"
@@ -84,11 +84,11 @@ internal class IncidentsMappingServiceTest {
       )
 
       val mapping = incidentsMappingService.findNomisIncidentMapping(
-        nomisIncidentId = 1234,
+        nomisIncidentId = NOMIS_INCIDENT_ID,
       )
       assertThat(mapping).isNotNull
-      assertThat(mapping!!.incidentId).isEqualTo("4321")
-      assertThat(mapping.nomisIncidentId).isEqualTo(1234)
+      assertThat(mapping!!.incidentId).isEqualTo(INCIDENT_ID)
+      assertThat(mapping.nomisIncidentId).isEqualTo(NOMIS_INCIDENT_ID)
       assertThat(mapping.label).isEqualTo("5678")
       assertThat(mapping.mappingType).isEqualTo(MIGRATED)
       assertThat(mapping.whenCreated).isEqualTo("2020-01-01T00:00:00")
@@ -108,7 +108,7 @@ internal class IncidentsMappingServiceTest {
       assertThatThrownBy {
         runBlocking {
           incidentsMappingService.findNomisIncidentMapping(
-            nomisIncidentId = 1234,
+            nomisIncidentId = NOMIS_INCIDENT_ID,
           )
         }
       }.isInstanceOf(WebClientResponseException.InternalServerError::class.java)
@@ -136,8 +136,8 @@ internal class IncidentsMappingServiceTest {
       runBlocking {
         incidentsMappingService.createMapping(
           IncidentMappingDto(
-            incidentId = "4321",
-            nomisIncidentId = 1234,
+            incidentId = INCIDENT_ID,
+            nomisIncidentId = NOMIS_INCIDENT_ID,
             label = "some-migration-id",
             mappingType = MIGRATED,
           ),
@@ -153,12 +153,12 @@ internal class IncidentsMappingServiceTest {
     }
 
     @Test
-    internal fun `will pass all parameters visit id, migration Id and MIGRATED indicator to mapping service`(): Unit =
+    internal fun `will pass all parameters incident id, migration Id and MIGRATED indicator to mapping service`(): Unit =
       runBlocking {
         incidentsMappingService.createMapping(
           IncidentMappingDto(
-            incidentId = "4321",
-            nomisIncidentId = 1234,
+            incidentId = INCIDENT_ID,
+            nomisIncidentId = NOMIS_INCIDENT_ID,
             mappingType = MIGRATED,
             label = "5678",
             whenCreated = "2020-01-01T00:00:00",
@@ -172,8 +172,8 @@ internal class IncidentsMappingServiceTest {
               equalToJson(
                 """
                   {
-                  "incidentId": "4321",
-                  "nomisIncidentId": 1234,                                       
+                  "incidentId": "$INCIDENT_ID",
+                  "nomisIncidentId": $NOMIS_INCIDENT_ID,                                       
                   "label": "5678",
                   "mappingType": "MIGRATED",
                   "whenCreated": "2020-01-01T00:00:00"
@@ -199,8 +199,8 @@ internal class IncidentsMappingServiceTest {
         runBlocking {
           incidentsMappingService.createMapping(
             IncidentMappingDto(
-              incidentId = "4321",
-              nomisIncidentId = 1234,
+              incidentId = INCIDENT_ID,
+              nomisIncidentId = NOMIS_INCIDENT_ID,
               mappingType = MIGRATED,
               label = "5678",
               whenCreated = "2020-01-01T00:00:00",
@@ -275,8 +275,8 @@ internal class IncidentsMappingServiceTest {
             .withBody(
               """
                 {
-                  "incidentId": 14478380,
-                  "nomisIncidentId": "3456",                                                         
+                  "incidentId": "$INCIDENT_ID",
+                  "nomisIncidentId": $NOMIS_INCIDENT_ID,                                                         
                   "label": "2022-02-16T14:20:15",
                   "mappingType": "MIGRATED",
                   "whenCreated": "2022-02-16T16:21:15.589091"
