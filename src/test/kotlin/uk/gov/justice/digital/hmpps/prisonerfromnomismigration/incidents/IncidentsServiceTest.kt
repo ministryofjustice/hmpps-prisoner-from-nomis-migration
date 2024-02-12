@@ -40,6 +40,7 @@ internal class IncidentsServiceTest {
             reportDetails = IncidentReportDetails(
               title = "There was a fight",
               status = "AWAN",
+              prisonId = "BXI",
               incidentDate = LocalDateTime.parse("2023-04-12T16:45:00"),
               reportDate = LocalDateTime.parse("2023-04-14T17:55:00"),
               reportedBy = "JANE BAKER",

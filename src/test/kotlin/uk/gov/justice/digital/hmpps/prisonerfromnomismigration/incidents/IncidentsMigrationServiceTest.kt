@@ -42,6 +42,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Migrati
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.RETRY_MIGRATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.IncidentMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.IncidentMappingDto.MappingType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Staff
@@ -854,6 +855,7 @@ internal class IncidentsMigrationServiceTest {
             incidentReportNumber = NOMIS_INCIDENT_ID,
             reportDetails = IncidentReportDetails(
               title = "There was a fight",
+              prisonId = "BXI",
               incidentDate = LocalDateTime.parse("2023-04-12T16:45:00"),
               reportDate = LocalDateTime.parse("2023-04-14T17:55:00"),
               reportedBy = "JANE BAKER",
@@ -1014,6 +1016,7 @@ fun aNomisIncidentResponse() =
     description = "On 12/04/2023 approx 16:45 John Smith punched Fred Jones",
     status = "AWAN",
     type = "ASSAULT",
+    prison = CodeDescription(code = "BXI", description = "Brixton"),
     lockedResponse = false,
     incidentDateTime = "2023-04-12T16:45:00",
     reportedDateTime = "2023-04-14T17:55:00",

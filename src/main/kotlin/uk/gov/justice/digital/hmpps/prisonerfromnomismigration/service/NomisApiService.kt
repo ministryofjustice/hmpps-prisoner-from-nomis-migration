@@ -414,6 +414,7 @@ fun IncidentResponse.toMigrateRequest() =
   IncidentMigrateRequest(
     incidentReportNumber = id,
     reportDetails = IncidentReportDetails(
+      prisonId = prison.code,
       reportType = type,
       title = title,
       comments = description,
