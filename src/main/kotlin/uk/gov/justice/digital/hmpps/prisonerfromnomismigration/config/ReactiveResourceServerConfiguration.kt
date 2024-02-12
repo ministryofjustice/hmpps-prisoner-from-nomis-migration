@@ -8,7 +8,7 @@ import uk.gov.justice.hmpps.kotlin.auth.dsl.ResourceServerConfigurationCustomize
 class ReactiveResourceServerConfiguration {
 
   @Bean
-  fun resourceServerCustomizer() = ResourceServerConfigurationCustomizer.build {
+  fun resourceServerCustomizer() = ResourceServerConfigurationCustomizer {
     unauthorizedRequestPaths {
       addPaths = setOf("/queue-admin/retry-all-dlqs")
     }
