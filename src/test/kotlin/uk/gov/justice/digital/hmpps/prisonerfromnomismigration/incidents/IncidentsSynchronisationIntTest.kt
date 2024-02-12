@@ -397,8 +397,8 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
             verify(telemetryClient).trackEvent(
               eq("incident-delete-synchronisation-success"),
               check {
-                //   assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
-                //  assertThat(it["incidentId"]).isEqualTo(INCIDENT_ID)
+                assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
+                assertThat(it["incidentId"]).isEqualTo(INCIDENT_ID)
               },
               isNull(),
             )
