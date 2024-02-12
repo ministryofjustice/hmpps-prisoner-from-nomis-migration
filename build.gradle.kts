@@ -65,7 +65,6 @@ tasks {
       "buildNomisSyncApiModel",
       "buildAdjudicationApiModel",
       "buildIncidentsApiModel",
-      "buildNonAssociationsApiModel",
       "buildMappingServiceApiModel",
       "buildSentencingAdjustmentsApiModel",
     )
@@ -80,7 +79,6 @@ tasks {
       "buildNomisSyncApiModel",
       "buildAdjudicationApiModel",
       "buildIncidentsApiModel",
-      "buildNonAssociationsApiModel",
       "buildMappingServiceApiModel",
       "buildSentencingAdjustmentsApiModel",
     )
@@ -92,7 +90,6 @@ tasks {
       "buildNomisSyncApiModel",
       "buildAdjudicationApiModel",
       "buildIncidentsApiModel",
-      "buildNonAssociationsApiModel",
       "buildMappingServiceApiModel",
       "buildSentencingAdjustmentsApiModel",
     )
@@ -164,16 +161,6 @@ tasks.register("buildIncidentsApiModel", GenerateTask::class) {
   globalProperties.set(mapOf("models" to ""))
 }
 
-tasks.register("buildNonAssociationsApiModel", GenerateTask::class) {
-  generatorName.set("kotlin")
-  inputSpec.set("openapi-specs/non-associations-api-docs.json")
-  outputDir.set("$buildDirectory/generated/nonassociations")
-  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.model")
-  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nonassociations.api")
-  configOptions.set(configValues)
-  globalProperties.set(mapOf("models" to ""))
-}
-
 tasks.register("buildSentencingAdjustmentsApiModel", GenerateTask::class) {
   generatorName.set("kotlin")
   skipValidateSpec.set(true)
@@ -208,7 +195,7 @@ tasks.register("buildSentencingApiModel", GenerateTask::class) {
 */
 
 val generatedProjectDirs =
-  listOf("activities", "adjudications", "nonassociations", "nomissync", "mappings", "sentencingadjustments")
+  listOf("activities", "adjudications", "nomissync", "mappings", "sentencingadjustments")
 
 kotlin {
   generatedProjectDirs.forEach { generatedProject ->

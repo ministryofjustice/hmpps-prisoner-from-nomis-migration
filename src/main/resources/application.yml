@@ -63,11 +63,6 @@ spring:
             client-id: ${incidents.client.id}
             client-secret: ${incidents.client.secret}
             authorization-grant-type: client_credentials
-          non-associations-api:
-            provider: hmpps-auth
-            client-id: ${non.associations.client.id}
-            client-secret: ${non.associations.client.secret}
-            authorization-grant-type: client_credentials
         provider:
           hmpps-auth:
             token-uri: ${api.base.url.oauth}/oauth/token
