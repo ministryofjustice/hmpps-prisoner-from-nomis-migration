@@ -1225,14 +1225,18 @@ private fun incidentResponse(
   "title": "This is a test incident",
   "description": "On 12/04/2023 approx 16:45 Mr Smith tried to escape.",
   "status": "AWAN",
+  "prison": {
+    "code":"BXI",
+    "description":"Brixton"
+  },
   "type": "ATT_ESC_E",
   "lockedResponse": false,
   "incidentDateTime": "2017-04-12T16:45:00",
   "reportedStaff": {
-      "username": "DBULL_GEN",
-      "staffId": 485572,
-      "firstName": "DOM",
-      "lastName": "BULL"
+    "username": "DBULL_GEN",
+    "staffId": 485572,
+    "firstName": "DOM",
+    "lastName": "BULL"
   },
   "reportedDateTime": "2024-02-06T12:36:00",
   "staffParties": [],
@@ -1387,15 +1391,3 @@ private fun suspendedAllocationsResponse(): String =
       }
     ]
   """
-
-private fun idJsonCreator(id: Long): String {
-  val fourDigitString = String.format("%04d", id)
-  return """
-    {"offenderNo1": "A${fourDigitString}BC", "offenderNo2": "D${fourDigitString}EF"}
-  """.trimMargin()
-}
-
-private fun idCreator(id: Long): Map<String, String> {
-  val fourDigitString = String.format("%04d", id)
-  return mapOf("offenderNo1" to "A${fourDigitString}BC", "offenderNo2" to "D${fourDigitString}EF")
-}

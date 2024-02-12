@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-02-09.3578.0fa8021"
+    "version": "2024-02-12.3597.7e91003"
   },
   "servers": [
     {
@@ -764,6 +764,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DuplicateMappingErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "incident-mapping-resource"
+        ],
+        "summary": "Deletes incident mappings.",
+        "description": "Deletes all rows from the incidents mapping table. Requires role NOMIS_INCIDENTS",
+        "operationId": "deleteIncidentMappings",
+        "parameters": [
+          {
+            "name": "onlyMigrated",
+            "in": "query",
+            "description": "if true delete mapping entries created by the migration process only (synchronisation records are unaffected)",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "example": true
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Incident mappings deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -2574,6 +2617,43 @@
           },
           "404": {
             "description": "Incident id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "incident-mapping-resource"
+        ],
+        "summary": "Deletes a specific incident mapping by incident id",
+        "description": "Deletes the incident from the mapping table. Requires role NOMIS_INCIDENTS",
+        "operationId": "deleteIncidentMapping",
+        "parameters": [
+          {
+            "name": "incidentId",
+            "in": "path",
+            "description": "Incident Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Incident Id",
+              "example": 4321
+            },
+            "example": 4321
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Incident mapping deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
             "content": {
               "application/json": {
                 "schema": {

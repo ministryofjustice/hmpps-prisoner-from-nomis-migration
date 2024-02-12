@@ -68,11 +68,11 @@ data class Incident(
 data class IncidentReportDetails(
   val title: String?,
   val status: String,
-  val reportType: String?,
+  val reportType: String,
   val comments: String?,
-//  val prisonId: String?,
-  val reportDate: LocalDateTime?,
-  val incidentDate: LocalDateTime?,
-  val reportedBy: String?,
+  val prisonId: String,
+  val reportDate: LocalDateTime,
+  val incidentDate: LocalDateTime,
+  val reportedBy: String,
 
 )
