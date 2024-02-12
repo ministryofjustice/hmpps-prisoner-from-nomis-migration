@@ -72,7 +72,7 @@ internal class IncidentsMappingServiceTest {
             .withBody(
               """
               {
-                  "incidentId": "4321",
+                  "incidentId": "$INCIDENT_ID",
                   "nomisIncidentId": $NOMIS_INCIDENT_ID,                                       
                   "label": "5678",
                   "mappingType": "MIGRATED",
@@ -87,7 +87,7 @@ internal class IncidentsMappingServiceTest {
         nomisIncidentId = NOMIS_INCIDENT_ID,
       )
       assertThat(mapping).isNotNull
-      assertThat(mapping!!.incidentId).isEqualTo("4321")
+      assertThat(mapping!!.incidentId).isEqualTo(INCIDENT_ID)
       assertThat(mapping.nomisIncidentId).isEqualTo(NOMIS_INCIDENT_ID)
       assertThat(mapping.label).isEqualTo("5678")
       assertThat(mapping.mappingType).isEqualTo(MIGRATED)
@@ -136,7 +136,7 @@ internal class IncidentsMappingServiceTest {
       runBlocking {
         incidentsMappingService.createMapping(
           IncidentMappingDto(
-            incidentId = "4321",
+            incidentId = INCIDENT_ID,
             nomisIncidentId = NOMIS_INCIDENT_ID,
             label = "some-migration-id",
             mappingType = MIGRATED,
@@ -153,11 +153,11 @@ internal class IncidentsMappingServiceTest {
     }
 
     @Test
-    internal fun `will pass all parameters visit id, migration Id and MIGRATED indicator to mapping service`(): Unit =
+    internal fun `will pass all parameters incident id, migration Id and MIGRATED indicator to mapping service`(): Unit =
       runBlocking {
         incidentsMappingService.createMapping(
           IncidentMappingDto(
-            incidentId = "4321",
+            incidentId = INCIDENT_ID,
             nomisIncidentId = NOMIS_INCIDENT_ID,
             mappingType = MIGRATED,
             label = "5678",
@@ -172,7 +172,7 @@ internal class IncidentsMappingServiceTest {
               equalToJson(
                 """
                   {
-                  "incidentId": "4321",
+                  "incidentId": "$INCIDENT_ID",
                   "nomisIncidentId": $NOMIS_INCIDENT_ID,                                       
                   "label": "5678",
                   "mappingType": "MIGRATED",
@@ -199,7 +199,7 @@ internal class IncidentsMappingServiceTest {
         runBlocking {
           incidentsMappingService.createMapping(
             IncidentMappingDto(
-              incidentId = "4321",
+              incidentId = INCIDENT_ID,
               nomisIncidentId = NOMIS_INCIDENT_ID,
               mappingType = MIGRATED,
               label = "5678",
@@ -275,8 +275,8 @@ internal class IncidentsMappingServiceTest {
             .withBody(
               """
                 {
-                  "incidentId": 14478380,
-                  "nomisIncidentId": "3456",                                                         
+                  "incidentId": "$INCIDENT_ID",
+                  "nomisIncidentId": $NOMIS_INCIDENT_ID,                                                         
                   "label": "2022-02-16T14:20:15",
                   "mappingType": "MIGRATED",
                   "whenCreated": "2022-02-16T16:21:15.589091"
