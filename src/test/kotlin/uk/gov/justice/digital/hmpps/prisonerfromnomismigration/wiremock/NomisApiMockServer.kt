@@ -27,7 +27,6 @@ class NomisApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallbac
     const val ACTIVITIES_ID_URL = "/activities/ids"
     const val ALLOCATIONS_ID_URL = "/allocations/ids"
     const val INCIDENTS_ID_URL = "/incidents/ids"
-    const val NON_ASSOCIATIONS_ID_URL = "/non-associations/ids"
 
     @JvmField
     val nomisApi = NomisApiMockServer()
@@ -383,48 +382,6 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .willReturn(
             aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
               .withBody(incidentResponse(it.toLong())),
-          ),
-      )
-    }
-  }
-
-  fun stubMultipleGetNonAssociationIdCounts(totalElements: Long, pageSize: Long) {
-    // for each page create a response for each non-association id starting from 1 up to `totalElements`
-
-    val pages = (totalElements / pageSize) + 1
-    (0..pages).forEach { page ->
-      val startNonAssociationId = (page * pageSize) + 1
-      val endNonAssociationId = min((page * pageSize) + pageSize, totalElements)
-      nomisApi.stubFor(
-        get(
-          urlPathEqualTo("/non-associations/ids"),
-        )
-          .withQueryParam("page", equalTo(page.toString()))
-          .willReturn(
-            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-              .withBody(
-                nonAssociationIdsPagedResponse(
-                  totalElements = totalElements,
-                  nonAssociationIds = (startNonAssociationId..endNonAssociationId).map { it },
-                  pageNumber = page,
-                  pageSize = pageSize,
-                ),
-              ),
-          ),
-      )
-    }
-  }
-
-  fun stubMultipleGetNonAssociations(intProgression: IntProgression) {
-    (intProgression).forEach {
-      val offenders = idCreator(it.toLong())
-      nomisApi.stubFor(
-        get(
-          urlPathEqualTo("/non-associations/offender/${offenders["offenderNo1"]}/ns-offender/${offenders["offenderNo2"]}/all"),
-        )
-          .willReturn(
-            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-              .withBody(allNonAssociationResponse(offenders["offenderNo1"]!!, offenders["offenderNo2"]!!)),
           ),
       )
     }

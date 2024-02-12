@@ -22,9 +22,6 @@ hmpps.sqs:
     migrationincidents:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
-    migrationnonassociations:
-      queueName: ${random.uuid}
-      dlqName: ${random.uuid}
     audit:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
@@ -32,9 +29,6 @@ hmpps.sqs:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
     eventsentencing:
-      queueName: ${random.uuid}
-      dlqName: ${random.uuid}
-    eventnonassociations:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
     eventincidents:

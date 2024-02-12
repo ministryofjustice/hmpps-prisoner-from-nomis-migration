@@ -13,7 +13,6 @@ api.base.url:
   sentencing: http://localhost:8085
   activities: http://localhost:8086
   adjudications: http://localhost:8087
-  non-associations: http://localhost:8088
   incidents: http://localhost:8089
 
 visits:
@@ -35,9 +34,6 @@ adjudications:
   page:
     size: 10
 incidents:
-  page:
-    size: 10
-non-associations:
   page:
     size: 10
 
