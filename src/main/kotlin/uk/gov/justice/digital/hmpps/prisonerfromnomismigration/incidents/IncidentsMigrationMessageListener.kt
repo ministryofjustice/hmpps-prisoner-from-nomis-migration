@@ -25,7 +25,7 @@ class IncidentsMigrationMessageListener(
   incidentsMigrationService,
 ) {
 
-  @SqsListener(INCIDENTS_QUEUE_ID, factory = "hmppsQueueContainerFactoryProxy")
+  @SqsListener(INCIDENTS_QUEUE_ID, factory = "hmppsQueueContainerFactoryProxy", maxConcurrentMessages = "8", maxMessagesPerPoll = "8")
   @WithSpan(value = "dps-syscon-migration_incidents_queue", kind = SpanKind.SERVER)
   fun onIncidentMessage(message: String, rawMessage: Message): CompletableFuture<Void>? {
     return onMessage(message, rawMessage)
