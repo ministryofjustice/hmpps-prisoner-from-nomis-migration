@@ -34,3 +34,6 @@ hmpps.sqs:
     eventincidents:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    eventalerts:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}

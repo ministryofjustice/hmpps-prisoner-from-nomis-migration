@@ -101,6 +101,10 @@ generic-service:
       HMPPS_SQS_QUEUES_EVENTINCIDENTS_QUEUE_NAME: "sqs_name"
     prisoner-from-nomis-incidents-dl-queue:
       HMPPS_SQS_QUEUES_EVENTINCIDENTS_DLQ_NAME: "sqs_name"
+    prison-events-alerts-queue:
+      HMPPS_SQS_QUEUES_EVENTALERTS_QUEUE_NAME: "sqs_name"
+    prison-events-alerts-dl-queue:
+      HMPPS_SQS_QUEUES_EVENTALERTS_DLQ_NAME: "sqs_name"
     rds-database:
       SPRING_FLYWAY_USER: "database_username"
       SPRING_FLYWAY_PASSWORD: "database_password"
