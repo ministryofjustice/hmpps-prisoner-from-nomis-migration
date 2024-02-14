@@ -30,6 +30,8 @@ generic-service:
     FEATURE_EVENT_INCIDENT-DELETED-PARTIES: false
     FEATURE_EVENT_INCIDENT-DELETED-RESPONSES: false
     FEATURE_EVENT_INCIDENT-DELETED-REQUIREMENTS: false
+    FEATURE_EVENT_ALERT-UPDATED: false
+    FEATURE_EVENT_ALERT-INSERTED: false
 
 generic-prometheus-alerts:
   rdsAlertsDatabases:
@@ -41,6 +43,8 @@ generic-prometheus-alerts:
     - "syscon-devs-prod-prisoner_from_nomis_sentencing_dl_queue"
     - "syscon-devs-prod-prisoner_from_nomis_incidents_queue"
     - "syscon-devs-prod-prisoner_from_nomis_incidents_dl_queue"
+    - "syscon-devs-prod-prisoner_from_nomis_alerts_queue"
+    - "syscon-devs-prod-prisoner_from_nomis_alerts_dl_queue"
     - "syscon-devs-prod-migration_sentencing_queue"
     - "syscon-devs-prod-migration_sentencing_dlq"
     - "syscon-devs-prod-migration_visits_queue"

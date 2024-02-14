@@ -110,6 +110,12 @@ class SqsIntegrationTestBase : TestBase() {
   internal val awsSqsIncidentsOffenderEventsClient by lazy { incidentsOffenderEventsQueue.sqsClient }
   internal val awsSqsIncidentsOffenderEventDlqClient by lazy { incidentsOffenderEventsQueue.sqsDlqClient as SqsAsyncClient }
 
+  internal val alertsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId("eventalerts") as HmppsQueue }
+  internal val alertsQueueOffenderEventsUrl by lazy { alertsOffenderEventsQueue.queueUrl }
+  internal val alertsQueueOffenderEventsDlqUrl by lazy { alertsOffenderEventsQueue.dlqUrl as String }
+  internal val awsSqsAlertOffenderEventsClient by lazy { alertsOffenderEventsQueue.sqsClient }
+  internal val awsSqsAlertsOffenderEventDlqClient by lazy { alertsOffenderEventsQueue.sqsDlqClient as SqsAsyncClient }
+
   private val allQueues by lazy {
     listOf(
       incidentsOffenderEventsQueue,
@@ -121,6 +127,7 @@ class SqsIntegrationTestBase : TestBase() {
       incidentsMigrationQueue,
       sentencingMigrationQueue,
       visitsMigrationQueue,
+      alertsOffenderEventsQueue,
     )
   }
 

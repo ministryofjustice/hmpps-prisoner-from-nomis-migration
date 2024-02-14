@@ -1,11 +1,14 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration
 
+import org.junit.jupiter.api.extension.ExtendWith
+import org.springframework.boot.test.system.OutputCaptureExtension
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.PostgresContainer
 
 @ActiveProfiles("test")
+@ExtendWith(OutputCaptureExtension::class)
 abstract class TestBase {
 
   companion object {
