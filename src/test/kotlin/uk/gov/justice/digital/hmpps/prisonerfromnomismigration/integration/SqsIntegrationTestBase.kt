@@ -19,6 +19,7 @@ import org.springframework.test.web.reactive.server.WebTestClient
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.JwtAuthHelper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.LocalStackContainer.setLocalStackProperties
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ACTIVITIES_QUEUE_ID
@@ -50,6 +51,7 @@ import java.util.concurrent.TimeUnit
   AdjudicationsApiExtension::class,
   ActivitiesApiExtension::class,
   IncidentsApiExtension::class,
+  AlertsDpsApiExtension::class,
 )
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")

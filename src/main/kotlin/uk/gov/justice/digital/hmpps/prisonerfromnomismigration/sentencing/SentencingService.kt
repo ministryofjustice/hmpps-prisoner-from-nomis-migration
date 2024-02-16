@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNotFound
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.model.LegacyAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.model.LegacyAdjustmentCreatedResponse
 
@@ -43,6 +43,6 @@ class SentencingService(@Qualifier("sentencingApiWebClient") private val webClie
       .uri("/legacy/adjustments/{adjustmentId}", adjustmentId)
       .header("Content-Type", LEGACY_CONTENT_TYPE)
       .retrieve()
-      .awaitBodyOrNotFound<Unit>()
+      .awaitBodyOrNullWhenNotFound<Unit>()
   }
 }

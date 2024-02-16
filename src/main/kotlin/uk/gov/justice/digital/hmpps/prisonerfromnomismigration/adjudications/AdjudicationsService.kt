@@ -6,8 +6,8 @@ import org.springframework.web.reactive.function.client.WebClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.AdjudicationMigrateDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.MigrateResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model.ReportedAdjudicationResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNotAcceptable
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNotFound
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotAcceptable
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 
 @Service
 class AdjudicationsService(@Qualifier("adjudicationsApiWebClient") private val webClient: WebClient) {
@@ -16,13 +16,13 @@ class AdjudicationsService(@Qualifier("adjudicationsApiWebClient") private val w
       .uri("/reported-adjudications/migrate")
       .bodyValue(adjudicationMigrateRequest)
       .retrieve()
-      .awaitBodyOrNotAcceptable()
+      .awaitBodyOrNullWhenNotAcceptable()
 
   suspend fun getCharge(chargeNumber: String, prisonId: String): ReportedAdjudicationResponse? {
     return webClient.get()
       .uri("/reported-adjudications/{chargeNumber}/v2", chargeNumber)
       .header("Active-Caseload", prisonId)
       .retrieve()
-      .awaitBodyOrNotFound()
+      .awaitBodyOrNullWhenNotFound()
   }
 }

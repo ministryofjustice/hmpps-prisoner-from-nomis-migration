@@ -65,6 +65,7 @@ tasks {
       "buildIncidentsApiModel",
       "buildMappingServiceApiModel",
       "buildSentencingAdjustmentsApiModel",
+      "buildAlertsApiModel",
     )
     kotlinOptions {
       jvmTarget = "21"
@@ -79,6 +80,7 @@ tasks {
       "buildIncidentsApiModel",
       "buildMappingServiceApiModel",
       "buildSentencingAdjustmentsApiModel",
+      "buildAlertsApiModel",
     )
   }
   withType<KtLintFormatTask> {
@@ -90,6 +92,7 @@ tasks {
       "buildIncidentsApiModel",
       "buildMappingServiceApiModel",
       "buildSentencingAdjustmentsApiModel",
+      "buildAlertsApiModel",
     )
   }
 }
@@ -170,6 +173,17 @@ tasks.register("buildSentencingAdjustmentsApiModel", GenerateTask::class) {
   globalProperties.set(mapOf("models" to ""))
 }
 
+tasks.register("buildAlertsApiModel", GenerateTask::class) {
+  generatorName.set("kotlin")
+  skipValidateSpec.set(true)
+  inputSpec.set("openapi-specs/alerts-api-docs.json")
+  outputDir.set("$buildDirectory/generated/alerts")
+  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model")
+  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.api")
+  configOptions.set(configValues)
+  globalProperties.set(mapOf("models" to ""))
+}
+
 /* TODO when sentencing API created
 
 tasks.register("buildSentencingApiModel", GenerateTask::class) {
@@ -193,7 +207,7 @@ tasks.register("buildSentencingApiModel", GenerateTask::class) {
 */
 
 val generatedProjectDirs =
-  listOf("activities", "adjudications", "incidents", "nomissync", "mappings", "sentencingadjustments")
+  listOf("activities", "adjudications", "incidents", "nomissync", "mappings", "sentencingadjustments", "alerts")
 
 kotlin {
   generatedProjectDirs.forEach { generatedProject ->

@@ -5,7 +5,11 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
-class AlertsSynchronisationService {
+class AlertsSynchronisationService(
+  private val mappingApiService: AlertsMappingApiService,
+  private val nomisApiService: AlertsNomisApiService,
+  private val dpsApiService: AlertsDpsApiService,
+) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
