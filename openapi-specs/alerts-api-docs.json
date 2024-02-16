@@ -1,0 +1,619 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Alerts API",
+    "description": "API for retrieving and managing alerts relating to a person",
+    "contact": {
+      "name": "HMPPS Digital Studio",
+      "email": "feedback@digital.justice.gov.uk"
+    },
+    "version": "2024-02-16.167.45acb33"
+  },
+  "servers": [
+    {
+      "url": "https://alerts-api-dev.hmpps.service.justice.gov.uk",
+      "description": "Generated server url"
+    }
+  ],
+  "security": [
+    {
+      "bearer-jwt": [
+        "read",
+        "write"
+      ]
+    }
+  ],
+  "paths": {
+    "/nomis-alerts": {
+      "post": {
+        "tags": [
+          "nomis-alerts-controller"
+        ],
+        "summary": "Create or update an alert from NOMIS alert data. An upsert endpoint. SYNC ONLY",
+        "description": "Accepts alerts data in NOMIS format and creates a corresponding alert in this service if one does not exist or updates an existing alert if a corresponding alert already exists in the new service. This can be disambiguated by the response code, A 201 Created indicates the request caused a new alert to be created, a 200 OK is returned when an existing alert was updated by the request. In both cases, the alert's unique identifier is returned for mapping purposes. This endpoint is therefore idempotent and will not create duplicate alert records. This endpoint does not validate the supplied data as it must accept all NOMIS alert data. This endpoint is intended to be used by the synchronisation process to migrate existing alerts and sync new and updated ones. The 'Sync-Suppress-Events' header should be used to suppress domain event publishing when alerts are initially migrated. It should not be used or should be set to false (the default) when syncing new and updated alerts. \n\nRequires one of the following roles:\n* ROLE_NOMIS_ALERTS\n* ROLE_ALERTS_ADMIN",
+        "operationId": "upsertNomisAlert",
+        "parameters": [
+          {
+            "name": "Sync-Suppress-Events",
+            "in": "header",
+            "description": "Prevents domain events being published if set to true. This should only be used when migrating existing data from NOMIS to the new service. The value of this header will default to false if not provided.",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NomisAlert"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Alert created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NomisAlertMapping"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Alert updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NomisAlertMapping"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alerts": {
+      "post": {
+        "tags": [
+          "alerts-controller"
+        ],
+        "summary": "Create or update an alert. An upsert endpoint",
+        "description": "\n\nRequires one of the following roles:\n* ROLE_ALERTS_WRITER\n* ROLE_ALERTS_ADMIN",
+        "operationId": "createAlert",
+        "parameters": [
+          {
+            "name": "Sync-Suppress-Events",
+            "in": "header",
+            "description": "Prevents domain events being published if set to true. This should only be used when migrating existing data from NOMIS to the new service. The value of this header will default to false if not provided.",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Alert"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Alert created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Alert"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Alert updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Alert"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/nomis-alerts/{alertUuid}": {
+      "get": {
+        "tags": [
+          "nomis-alerts-controller"
+        ],
+        "summary": "Get an alert in NOMIS format by its unique identifier. SYNC ONLY",
+        "description": "Returns the alert with the matching identifier in the NOMIS data format. This endpoint is intended to be used by the synchronisation process to retrieve the latest state of an alert.\n\nRequires one of the following roles:\n* ROLE_NOMIS_ALERTS\n* ROLE_ALERTS_ADMIN",
+        "operationId": "retrieveNomisAlert",
+        "parameters": [
+          {
+            "name": "alertUuid",
+            "in": "path",
+            "description": "Alert unique identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "The alert associated with this identifier was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Alert found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NomisAlert"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NomisAlert"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NomisAlert"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "nomis-alerts-controller"
+        ],
+        "summary": "Deletes an alert. SYNC ONLY",
+        "description": "This endpoint fully removes the alert from the system. It is used when an alert has been created in error or otherwise removed from NOMIS and should therefore also be removed from this service. This endpoint will return 200 OK if the alert was not found or already deleted. This is to prevent low value warnings being logged. This endpoint is intended to be used by the synchronisation process to sync the deletion of existing alerts.\n\nRequires one of the following roles:\n* ROLE_NOMIS_ALERTS\n* ROLE_ALERTS_ADMIN",
+        "operationId": "deleteNomisAlert",
+        "parameters": [
+          {
+            "name": "alertUuid",
+            "in": "path",
+            "description": "Alert unique identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "Alert deleted"
+          },
+          "200": {
+            "description": "Alert was not found or already deleted"
+          }
+        }
+      }
+    },
+    "/alerts/{alertUuid}": {
+      "get": {
+        "tags": [
+          "alerts-controller"
+        ],
+        "summary": "Get an alert by its unique identifier",
+        "description": "Returns the alert with the matching identifier.\n\nRequires one of the following roles:\n* ROLE_ALERTS_READER\n* ROLE_ALERTS_ADMIN",
+        "operationId": "retrieveAlert",
+        "parameters": [
+          {
+            "name": "alertUuid",
+            "in": "path",
+            "description": "Alert unique identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Alert"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The alert associated with this identifier was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Alert"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Alert found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Alert"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "alerts-controller"
+        ],
+        "summary": "Deletes an alert",
+        "description": "This endpoint fully removes the alert from the system. It is used when an alert has been created in error or should otherwise be removed from this service. This endpoint will return 200 OK if the alert was not found or already deleted. This is to prevent low value warnings being logged.\n\nRequires one of the following roles:\n* ROLE_ALERTS_WRITER\n* ROLE_ALERTS_ADMIN",
+        "operationId": "deleteAlert",
+        "parameters": [
+          {
+            "name": "alertUuid",
+            "in": "path",
+            "description": "Alert unique identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "Alert deleted"
+          },
+          "200": {
+            "description": "Alert was not found or already deleted"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "NomisAlert": {
+        "required": [
+          "alertCode",
+          "alertDate",
+          "alertSeq",
+          "alertStatus",
+          "alertType",
+          "createDatetime",
+          "offenderBookId",
+          "offenderNo",
+          "verifiedFlag"
+        ],
+        "type": "object",
+        "properties": {
+          "alertDate": {
+            "type": "string",
+            "description": "The date the alert came into effect. Maps to the ALERT_DATE column in the NOMIS database.",
+            "format": "date",
+            "example": "2021-09-27"
+          },
+          "offenderBookId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "rootOffenderId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "offenderNo": {
+            "type": "string"
+          },
+          "alertSeq": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "alertType": {
+            "type": "string"
+          },
+          "alertCode": {
+            "type": "string"
+          },
+          "authorizePersonText": {
+            "type": "string"
+          },
+          "createDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "alertStatus": {
+            "type": "string"
+          },
+          "verifiedFlag": {
+            "type": "boolean"
+          },
+          "verifiedDatetime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "verifiedUserId": {
+            "type": "string"
+          },
+          "expiryDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "commentText": {
+            "type": "string"
+          },
+          "caseloadId": {
+            "type": "string"
+          },
+          "modifyUserId": {
+            "type": "string"
+          },
+          "modifyDatetime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "caseloadType": {
+            "type": "string"
+          },
+          "createDatetime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createUserId": {
+            "type": "string"
+          },
+          "auditTimestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "auditUserId": {
+            "type": "string"
+          },
+          "auditModuleName": {
+            "type": "string"
+          },
+          "auditClientUserId": {
+            "type": "string"
+          },
+          "auditClientIpAddress": {
+            "type": "string"
+          },
+          "auditClientWorkstationName": {
+            "type": "string"
+          },
+          "auditAdditionalInfo": {
+            "type": "string"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "required": [
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "errorCode": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "userMessage": {
+            "type": "string"
+          },
+          "developerMessage": {
+            "type": "string"
+          },
+          "moreInfo": {
+            "type": "string"
+          }
+        }
+      },
+      "NomisAlertMapping": {
+        "required": [
+          "alertSeq",
+          "alertUuid",
+          "offenderBookId",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "offenderBookId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "alertSeq": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "alertUuid": {
+            "type": "string",
+            "description": "The unique identifier assigned to the alert",
+            "format": "uuid",
+            "example": "8cdadcf3-b003-4116-9956-c99bd8df6a00"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "CREATED",
+              "UPDATED"
+            ]
+          }
+        },
+        "description": "The mapping between a NOMIS alert and an alert in the HMPPS Alerts API. NOMIS uses a composite key of offender book ID and alert sequence number to uniquely identify an alert. The alert UUID is the unique identifier assigned to the alert in the HMPPS Alerts API."
+      },
+      "Alert": {
+        "required": [
+          "alertUuid"
+        ],
+        "type": "object",
+        "properties": {
+          "alertUuid": {
+            "type": "string",
+            "description": "The unique identifier assigned to the alert",
+            "format": "uuid",
+            "example": "8cdadcf3-b003-4116-9956-c99bd8df6a00"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearer-jwt": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
