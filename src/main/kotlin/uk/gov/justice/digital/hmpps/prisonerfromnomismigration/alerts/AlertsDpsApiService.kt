@@ -12,17 +12,17 @@ class AlertsDpsApiService(@Qualifier("alertsApiWebClient") private val webClient
   suspend fun createAlert(alert: NomisAlert): NomisAlertMapping =
     webClient
       .post()
-      .uri("/alerts")
+      .uri("/nomis-alerts")
       .bodyValue(alert)
       .retrieve()
       .awaitBody()
 
+  // for now DPS provide the same endpoint for update and insert
+  // I wouldn't be surprised of this changes given it ties DPS to NOMIS
   suspend fun updateAlert(alert: NomisAlert): NomisAlertMapping =
-    // for now DPS provide the same endpoint for update and insert
-    // I wouldn't be surprised of this changes given it ties DPS to NOMIS
     webClient
       .post()
-      .uri("/alerts")
+      .uri("/nomis-alerts")
       .bodyValue(alert)
       .retrieve()
       .awaitBody()
