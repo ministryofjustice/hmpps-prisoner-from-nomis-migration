@@ -65,8 +65,8 @@ spring:
             authorization-grant-type: client_credentials
           alerts-api:
             provider: hmpps-auth
-            client-id: ${incidents.client.id} # TODO - get some credentials
-            client-secret: ${incidents.client.secret} # TODO - get some credentials
+            client-id: ${alerts.client.id}
+            client-secret: ${alerts.client.secret}
             authorization-grant-type: client_credentials
         provider:
           hmpps-auth:

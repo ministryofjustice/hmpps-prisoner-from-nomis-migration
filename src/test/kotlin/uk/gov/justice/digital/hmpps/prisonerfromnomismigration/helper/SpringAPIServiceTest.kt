@@ -13,6 +13,7 @@ import org.springframework.security.config.annotation.web.reactive.EnableWebFlux
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.BootstrapWith
 import org.springframework.web.reactive.config.EnableWebFlux
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.WebClientConfiguration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.AdjudicationsApiExtension
@@ -46,6 +47,7 @@ import kotlin.annotation.AnnotationTarget.CLASS
   ActivitiesApiExtension::class,
   AdjudicationsApiExtension::class,
   IncidentsApiExtension::class,
+  AlertsDpsApiExtension::class,
 )
 @ActiveProfiles("test")
 @EnableWebFlux
