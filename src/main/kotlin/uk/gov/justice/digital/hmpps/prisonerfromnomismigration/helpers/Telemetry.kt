@@ -4,6 +4,8 @@ import com.microsoft.applicationinsights.TelemetryClient
 
 fun TelemetryClient.trackEvent(name: String, properties: Map<String, Any>) = this.trackEvent(
   name,
-  properties.entries.associate { it.key to it.value.toString() },
+  properties.valuesAsStrings(),
   null,
 )
+
+fun Map<String, Any>.valuesAsStrings(): Map<String, String> = this.entries.associate { it.key to it.value.toString() }

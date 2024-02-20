@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
+import com.github.tomakehurst.wiremock.client.WireMock.exactly
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
@@ -9,7 +10,9 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
+import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilAsserted
+import org.awaitility.kotlin.untilCallTo
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -20,6 +23,7 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.system.CapturedOutput
+import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension.Companion.dpsAlertsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.NomisAlertMapping
@@ -29,9 +33,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
+import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.AbstractMap.SimpleEntry
 import java.util.UUID
 
 private const val BOOKING_ID = 1234L
@@ -168,6 +174,171 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBody(matchingJsonPath("nomisAlertSequence", equalTo(alertSequence.toString())))
                 .withRequestBody(matchingJsonPath("mappingType", equalTo("DPS_CREATED"))),
             )
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("alert-synchronisation-created-synchronisation-success"),
+              check {
+                // assertThat(it["offenderNo"]).isEqualTo("???")  // TODO - not in event right now
+                assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+                assertThat(it["alertSequence"]).isEqualTo(alertSequence.toString())
+                assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("When mapping POST fails")
+      inner class MappingFail {
+        private val dpsAlertId = "a04f7a8d-61aa-400c-9395-f4dc62f36ab0"
+
+        @BeforeEach
+        fun setUp() {
+          alertsMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
+          dpsAlertsServer.stubPostAlertForCreate(
+            NomisAlertMapping(
+              offenderBookId = bookingId,
+              alertSeq = alertSequence.toInt(),
+              alertUuid = UUID.fromString(dpsAlertId),
+              status = CREATED,
+            ),
+          )
+        }
+
+        @Nested
+        @DisplayName("Fails once")
+        inner class FailsOnce {
+          @BeforeEach
+          fun setUp() {
+            alertsMappingApiMockServer.stubPostMappingFailureFollowedBySuccess()
+            awsSqsAlertOffenderEventsClient.sendMessage(
+              alertsQueueOffenderEventsUrl,
+              alertEvent(
+                eventType = "ALERT-INSERTED",
+                bookingId = bookingId,
+                alertSequence = alertSequence,
+              ),
+            )
+          }
+
+          @Test
+          fun `will create alert in DPS`() {
+            await untilAsserted {
+              dpsAlertsServer.verify(
+                postRequestedFor(urlPathEqualTo("/nomis-alerts"))
+                  .withRequestBody(matchingJsonPath("alertCode", equalTo("XNR")))
+                  .withRequestBody(matchingJsonPath("alertType", equalTo("X"))),
+              )
+            }
+          }
+
+          @Test
+          fun `will attempt to create mapping two times and succeed`() {
+            await untilAsserted {
+              alertsMappingApiMockServer.verify(
+                exactly(2),
+                postRequestedFor(urlPathEqualTo("/mapping/alerts"))
+                  .withRequestBody(matchingJsonPath("dpsAlertId", equalTo(dpsAlertId)))
+                  .withRequestBody(matchingJsonPath("nomisBookingId", equalTo(bookingId.toString())))
+                  .withRequestBody(matchingJsonPath("nomisAlertSequence", equalTo(alertSequence.toString())))
+                  .withRequestBody(matchingJsonPath("mappingType", equalTo("DPS_CREATED"))),
+              )
+            }
+
+            assertThat(
+              awsSqsAlertsOffenderEventDlqClient.countAllMessagesOnQueue(alertsQueueOffenderEventsDlqUrl).get(),
+            ).isEqualTo(0)
+          }
+
+          @Test
+          fun `will track a telemetry event for partial success`() {
+            await untilAsserted {
+              verify(telemetryClient).trackEvent(
+                eq("alert-synchronisation-created-synchronisation-success"),
+                check {
+                  // assertThat(it["offenderNo"]).isEqualTo("???")  // TODO - not in event right now
+                  assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+                  assertThat(it["alertSequence"]).isEqualTo(alertSequence.toString())
+                  assertThat(it["mapping"]).isEqualTo("initial-failure")
+                },
+                isNull(),
+              )
+            }
+
+            await untilAsserted {
+              verify(telemetryClient).trackEvent(
+                eq("alert-mapping-created-synchronisation-success"),
+                check {
+                  // assertThat(it["offenderNo"]).isEqualTo("???")  // TODO - not in event right now
+                  assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+                  assertThat(it["alertSequence"]).isEqualTo(alertSequence.toString())
+                },
+                isNull(),
+              )
+            }
+          }
+        }
+
+        @Nested
+        @DisplayName("Fails constantly")
+        inner class FailsConstantly {
+          @BeforeEach
+          fun setUp() {
+            alertsMappingApiMockServer.stubPostMapping(status = INTERNAL_SERVER_ERROR)
+            awsSqsAlertOffenderEventsClient.sendMessage(
+              alertsQueueOffenderEventsUrl,
+              alertEvent(
+                eventType = "ALERT-INSERTED",
+                bookingId = bookingId,
+                alertSequence = alertSequence,
+              ),
+            )
+            await untilCallTo {
+              awsSqsAlertsOffenderEventDlqClient.countAllMessagesOnQueue(alertsQueueOffenderEventsDlqUrl).get()
+            } matches { it == 1 }
+          }
+
+          @Test
+          fun `will create alert in DPS`() {
+            await untilAsserted {
+              dpsAlertsServer.verify(
+                1,
+                postRequestedFor(urlPathEqualTo("/nomis-alerts"))
+                  .withRequestBody(matchingJsonPath("alertCode", equalTo("XNR")))
+                  .withRequestBody(matchingJsonPath("alertType", equalTo("X"))),
+              )
+            }
+          }
+
+          @Test
+          fun `will attempt to create mapping several times and keep failing`() {
+            alertsMappingApiMockServer.verify(
+              exactly(3),
+              postRequestedFor(urlPathEqualTo("/mapping/alerts")),
+            )
+          }
+
+          @Test
+          fun `will track a telemetry event for success`() {
+            await untilAsserted {
+              verify(telemetryClient).trackEvent(
+                eq("alert-synchronisation-created-synchronisation-success"),
+                check {
+                  // assertThat(it["offenderNo"]).isEqualTo("???")  // TODO - not in event right now
+                  assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+                  assertThat(it["alertSequence"]).isEqualTo(alertSequence.toString())
+                  assertThat(it["mapping"]).isEqualTo("initial-failure")
+                },
+                isNull(),
+              )
+            }
           }
         }
       }
