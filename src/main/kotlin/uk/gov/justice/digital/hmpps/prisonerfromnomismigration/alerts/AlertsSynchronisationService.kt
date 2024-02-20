@@ -4,15 +4,26 @@ import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.MappingResponse.MAPPING_CREATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.MappingResponse.MAPPING_FAILED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.NomisAlertMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto.MappingType.DPS_CREATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 
 @Service
 class AlertsSynchronisationService(
   private val mappingApiService: AlertsMappingApiService,
   private val nomisApiService: AlertsNomisApiService,
   private val dpsApiService: AlertsDpsApiService,
+  private val queueService: SynchronisationQueueService,
   private val telemetryClient: TelemetryClient,
 ) {
   private companion object {
@@ -30,15 +41,19 @@ class AlertsSynchronisationService(
         // TODO - probably update alert??
       } else {
         dpsApiService.createAlert(nomisAlert.toDPsAlert()).run {
-          // TODO - deal wit error scenario
-          mappingApiService.createMapping(
-            AlertMappingDto(
-              dpsAlertId = this.alertUuid.toString(),
-              nomisBookingId = nomisAlert.bookingId,
-              nomisAlertSequence = nomisAlert.alertSequence,
-              mappingType = DPS_CREATED,
-            ),
-          )
+          tryToCreateMapping(
+            nomisAlert = nomisAlert,
+            dpsAlert = this,
+            telemetry = telemetry,
+          ).also { mappingCreateResult ->
+            val additionalTelemetry =
+              if (mappingCreateResult == MAPPING_CREATED) mapOf() else mapOf("mapping" to "initial-failure")
+
+            telemetryClient.trackEvent(
+              "alert-synchronisation-created-synchronisation-success",
+              telemetry + additionalTelemetry,
+            )
+          }
         }
       }
     }
@@ -47,4 +62,47 @@ class AlertsSynchronisationService(
   suspend fun nomisAlertUpdated(event: AlertUpdatedEvent) {
     log.debug("TODO: handle {}", event)
   }
+
+  private suspend fun tryToCreateMapping(
+    nomisAlert: AlertResponse,
+    dpsAlert: NomisAlertMapping,
+    telemetry: Map<String, Any>,
+  ): MappingResponse {
+    val mapping = AlertMappingDto(
+      dpsAlertId = dpsAlert.alertUuid.toString(),
+      nomisBookingId = nomisAlert.bookingId,
+      nomisAlertSequence = nomisAlert.alertSequence,
+      mappingType = DPS_CREATED,
+    )
+
+    try {
+      mappingApiService.createMapping(mapping)
+      return MAPPING_CREATED
+    } catch (e: Exception) {
+      log.error("Failed to create mapping for alert id $mapping", e)
+      queueService.sendMessage(
+        messageType = SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING.name,
+        synchronisationType = SynchronisationType.ALERTS,
+        message = mapping,
+        telemetryAttributes = telemetry.valuesAsStrings(),
+      )
+      return MAPPING_FAILED
+    }
+  }
+
+  suspend fun retryCreateMapping(retryMessage: InternalMessage<AlertMappingDto>) {
+    mappingApiService.createMapping(
+      retryMessage.body,
+    ).also {
+      telemetryClient.trackEvent(
+        "alert-mapping-created-synchronisation-success",
+        retryMessage.telemetryAttributes,
+      )
+    }
+  }
+}
+
+private enum class MappingResponse {
+  MAPPING_CREATED,
+  MAPPING_FAILED,
 }

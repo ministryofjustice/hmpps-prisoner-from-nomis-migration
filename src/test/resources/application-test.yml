@@ -72,3 +72,5 @@ hmpps.sqs:
       dlqMaxReceiveCount: 2
     eventsentencing:
       dlqMaxReceiveCount: 2
+    eventalerts:
+      dlqMaxReceiveCount: 2
