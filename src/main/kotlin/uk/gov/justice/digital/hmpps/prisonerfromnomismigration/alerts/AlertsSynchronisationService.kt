@@ -31,7 +31,7 @@ class AlertsSynchronisationService(
   }
 
   suspend fun nomisAlertInserted(event: AlertInsertedEvent) {
-    val telemetry = mapOf("bookingId" to event.bookingId, "alertSequence" to event.alertSeq)
+    val telemetry = mapOf("bookingId" to event.bookingId, "alertSequence" to event.alertSeq, "offenderNo" to event.offenderIdDisplay)
     val nomisAlert = nomisApiService.getAlert(bookingId = event.bookingId, alertSequence = event.alertSeq)
     if (nomisAlert.audit.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent("alert-synchronisation-skipped", telemetry)
@@ -40,7 +40,7 @@ class AlertsSynchronisationService(
       if (mapping != null) {
         // TODO - probably update alert??
       } else {
-        dpsApiService.createAlert(nomisAlert.toDPsAlert()).run {
+        dpsApiService.createAlert(nomisAlert.toDPsAlert(event.offenderIdDisplay)).run {
           tryToCreateMapping(
             nomisAlert = nomisAlert,
             dpsAlert = this,
@@ -50,7 +50,7 @@ class AlertsSynchronisationService(
               if (mappingCreateResult == MAPPING_CREATED) mapOf() else mapOf("mapping" to "initial-failure")
 
             telemetryClient.trackEvent(
-              "alert-synchronisation-created-synchronisation-success",
+              "alert-synchronisation-created-success",
               telemetry + additionalTelemetry,
             )
           }
