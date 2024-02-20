@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.NomisAlertMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.NomisAlertMapping.Status.CREATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.NomisAlertMapping.Status.UPDATED
 import java.util.UUID
 
 class AlertsDpsApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
@@ -40,7 +41,7 @@ class AlertsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     private const val WIREMOCK_PORT = 8092
   }
 
-  fun stubPostAlert(
+  fun stubPostAlertForCreate(
     response: NomisAlertMapping = NomisAlertMapping(
       offenderBookId = 12345,
       alertSeq = 2,
@@ -49,7 +50,26 @@ class AlertsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     ),
   ) {
     stubFor(
-      post("/alerts")
+      post("/nomis-alerts")
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader("Content-Type", "application/json")
+            .withBody(AlertsDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubPostAlertForUpdate(
+    response: NomisAlertMapping = NomisAlertMapping(
+      offenderBookId = 12345,
+      alertSeq = 2,
+      alertUuid = UUID.randomUUID(),
+      status = UPDATED,
+    ),
+  ) {
+    stubFor(
+      post("/nomis-alerts")
         .willReturn(
           aResponse()
             .withStatus(200)

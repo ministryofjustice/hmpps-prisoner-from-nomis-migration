@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsA
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.NomisAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.NomisAlertMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.NomisAlertMapping.Status.CREATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.NomisAlertMapping.Status.UPDATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -30,7 +31,7 @@ class AlertsDpsApiServiceTest {
   inner class CreateAlert {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
-      dpsAlertsServer.stubPostAlert()
+      dpsAlertsServer.stubPostAlertForCreate()
 
       apiService.createAlert(
         alert = NomisAlert(
@@ -54,7 +55,7 @@ class AlertsDpsApiServiceTest {
 
     @Test
     internal fun `will pass alert to service`() = runTest {
-      dpsAlertsServer.stubPostAlert()
+      dpsAlertsServer.stubPostAlertForCreate()
 
       apiService.createAlert(
         alert = NomisAlert(
@@ -71,7 +72,7 @@ class AlertsDpsApiServiceTest {
       )
 
       dpsAlertsServer.verify(
-        postRequestedFor(urlMatching("/alerts"))
+        postRequestedFor(urlMatching("/nomis-alerts"))
           .withRequestBody(matchingJsonPath("alertType", equalTo("X")))
           .withRequestBody(matchingJsonPath("alertCode", equalTo("XA"))),
       )
@@ -79,12 +80,92 @@ class AlertsDpsApiServiceTest {
 
     @Test
     fun `will return dpsAlertId`() = runTest {
-      dpsAlertsServer.stubPostAlert(
+      dpsAlertsServer.stubPostAlertForCreate(
         NomisAlertMapping(
           offenderBookId = 12345,
           alertSeq = 2,
           alertUuid = UUID.fromString("f3f31737-6ee3-4ec5-8a79-0ac110fe50e2"),
           status = CREATED,
+        ),
+      )
+
+      val dpsAlert = apiService.createAlert(
+        alert = NomisAlert(
+          alertDate = LocalDate.now(),
+          offenderBookId = 1234567,
+          offenderNo = "A1234KL",
+          alertSeq = 3,
+          alertType = "X",
+          alertCode = "XA",
+          alertStatus = "ACTIVE",
+          verifiedFlag = false,
+          createDatetime = LocalDateTime.now(),
+        ),
+      )
+
+      assertThat(dpsAlert.alertUuid.toString()).isEqualTo("f3f31737-6ee3-4ec5-8a79-0ac110fe50e2")
+    }
+  }
+
+  @Nested
+  inner class UpdateAlert {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      dpsAlertsServer.stubPostAlertForUpdate()
+
+      apiService.updateAlert(
+        alert = NomisAlert(
+          alertDate = LocalDate.now(),
+          offenderBookId = 1234567,
+          offenderNo = "A1234KL",
+          alertSeq = 3,
+          alertType = "X",
+          alertCode = "XA",
+          alertStatus = "ACTIVE",
+          verifiedFlag = false,
+          createDatetime = LocalDateTime.now(),
+        ),
+      )
+
+      dpsAlertsServer.verify(
+        postRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass alert to service`() = runTest {
+      dpsAlertsServer.stubPostAlertForUpdate()
+
+      apiService.createAlert(
+        alert = NomisAlert(
+          alertDate = LocalDate.now(),
+          offenderBookId = 1234567,
+          offenderNo = "A1234KL",
+          alertSeq = 3,
+          alertType = "X",
+          alertCode = "XA",
+          alertStatus = "ACTIVE",
+          verifiedFlag = false,
+          createDatetime = LocalDateTime.now(),
+        ),
+      )
+
+      dpsAlertsServer.verify(
+        postRequestedFor(urlMatching("/nomis-alerts"))
+          .withRequestBody(matchingJsonPath("alertType", equalTo("X")))
+          .withRequestBody(matchingJsonPath("alertCode", equalTo("XA"))),
+      )
+    }
+
+    @Test
+    fun `will return dpsAlertId`() = runTest {
+      dpsAlertsServer.stubPostAlertForUpdate(
+        NomisAlertMapping(
+          offenderBookId = 12345,
+          alertSeq = 2,
+          alertUuid = UUID.fromString("f3f31737-6ee3-4ec5-8a79-0ac110fe50e2"),
+          status = UPDATED,
         ),
       )
 
