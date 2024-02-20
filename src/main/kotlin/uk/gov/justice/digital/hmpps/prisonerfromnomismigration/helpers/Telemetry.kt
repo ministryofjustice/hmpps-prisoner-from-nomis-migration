@@ -1,0 +1,9 @@
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers
+
+import com.microsoft.applicationinsights.TelemetryClient
+
+fun TelemetryClient.trackEvent(name: String, properties: Map<String, Any>) = this.trackEvent(
+  name,
+  properties.entries.associate { it.key to it.value.toString() },
+  null,
+)

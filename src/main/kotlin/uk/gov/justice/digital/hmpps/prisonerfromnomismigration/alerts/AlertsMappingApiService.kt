@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
 
@@ -16,4 +17,12 @@ class AlertsMappingApiService(@Qualifier("mappingApiWebClient") private val webC
     )
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
+
+  suspend fun createMapping(alertMappingDto: AlertMappingDto) {
+    webClient.post()
+      .uri("/mapping/alerts")
+      .bodyValue(alertMappingDto)
+      .retrieve()
+      .awaitBodilessEntity()
+  }
 }
