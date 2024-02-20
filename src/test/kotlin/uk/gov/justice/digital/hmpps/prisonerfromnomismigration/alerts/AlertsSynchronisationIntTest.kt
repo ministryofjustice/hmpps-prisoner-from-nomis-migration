@@ -42,6 +42,7 @@ import java.util.UUID
 
 private const val BOOKING_ID = 1234L
 private const val ALERT_SEQUENCE = 1L
+private const val OFFENDER_ID_DISPLAY = "A3864DZ"
 
 class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
   @Autowired
@@ -110,6 +111,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class NomisCreated {
       private val bookingId = 12345L
       private val alertSequence = 3L
+      private val offenderNo = "A3864DZ"
 
       @BeforeEach
       fun setUp() {
@@ -149,6 +151,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
               eventType = "ALERT-INSERTED",
               bookingId = bookingId,
               alertSequence = alertSequence,
+              offenderNo = offenderNo,
             ),
           )
         }
@@ -181,9 +184,9 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will track a telemetry event for success`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("alert-synchronisation-created-synchronisation-success"),
+              eq("alert-synchronisation-created-success"),
               check {
-                // assertThat(it["offenderNo"]).isEqualTo("???")  // TODO - not in event right now
+                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
                 assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
                 assertThat(it["alertSequence"]).isEqualTo(alertSequence.toString())
                 assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
@@ -224,6 +227,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
                 eventType = "ALERT-INSERTED",
                 bookingId = bookingId,
                 alertSequence = alertSequence,
+                offenderNo = offenderNo,
               ),
             )
           }
@@ -261,9 +265,9 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
           fun `will track a telemetry event for partial success`() {
             await untilAsserted {
               verify(telemetryClient).trackEvent(
-                eq("alert-synchronisation-created-synchronisation-success"),
+                eq("alert-synchronisation-created-success"),
                 check {
-                  // assertThat(it["offenderNo"]).isEqualTo("???")  // TODO - not in event right now
+                  assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
                   assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
                   assertThat(it["alertSequence"]).isEqualTo(alertSequence.toString())
                   assertThat(it["mapping"]).isEqualTo("initial-failure")
@@ -276,7 +280,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
               verify(telemetryClient).trackEvent(
                 eq("alert-mapping-created-synchronisation-success"),
                 check {
-                  // assertThat(it["offenderNo"]).isEqualTo("???")  // TODO - not in event right now
+                  assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
                   assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
                   assertThat(it["alertSequence"]).isEqualTo(alertSequence.toString())
                 },
@@ -298,6 +302,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
                 eventType = "ALERT-INSERTED",
                 bookingId = bookingId,
                 alertSequence = alertSequence,
+                offenderNo = offenderNo,
               ),
             )
             await untilCallTo {
@@ -329,9 +334,9 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
           fun `will track a telemetry event for success`() {
             await untilAsserted {
               verify(telemetryClient).trackEvent(
-                eq("alert-synchronisation-created-synchronisation-success"),
+                eq("alert-synchronisation-created-success"),
                 check {
-                  // assertThat(it["offenderNo"]).isEqualTo("???")  // TODO - not in event right now
+                  assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
                   assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
                   assertThat(it["alertSequence"]).isEqualTo(alertSequence.toString())
                   assertThat(it["mapping"]).isEqualTo("initial-failure")
@@ -365,7 +370,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will read the message`(output: CapturedOutput) {
         await untilAsserted {
           await untilAsserted {
-            assertThat(output.out).contains("AlertUpdatedEvent(bookingId=1234, alertSeq=1)")
+            assertThat(output.out).contains("AlertUpdatedEvent(bookingId=1234, alertSeq=1, offenderIdDisplay=A3864DZ)")
           }
         }
       }
@@ -377,9 +382,10 @@ fun alertEvent(
   eventType: String,
   bookingId: Long = BOOKING_ID,
   alertSequence: Long = ALERT_SEQUENCE,
+  offenderNo: String = OFFENDER_ID_DISPLAY,
 ) = """{
     "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
-    "Message": "{\"eventId\":\"5958295\",\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"bookingId\": \"$bookingId\",\"alertSeq\": \"$alertSequence\",\"nomisEventType\":\"OFF_ALERT_UPDATE\",\"alertType\":\"L\",\"alertCode\":\"LCE\",\"alertDateTime\":\"2024-02-14T13:24:11\" }",
+    "Message": "{\"eventId\":\"5958295\",\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"bookingId\": \"$bookingId\",\"alertSeq\": \"$alertSequence\",\"offenderIdDisplay\": \"$offenderNo\",\"nomisEventType\":\"OFF_ALERT_UPDATE\",\"alertType\":\"L\",\"alertCode\":\"LCE\",\"alertDateTime\":\"2024-02-14T13:24:11\" }",
     "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
     "MessageAttributes": {
       "eventType": {"Type": "String", "Value": "$eventType"}, 
