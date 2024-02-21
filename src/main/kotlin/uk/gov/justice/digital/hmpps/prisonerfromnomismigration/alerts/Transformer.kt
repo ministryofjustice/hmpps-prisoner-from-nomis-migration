@@ -7,11 +7,10 @@ import java.time.format.DateTimeFormatter
 
 // The initial contract with DPS was to send the entire NOMIS alert, hence the DTO name. This is likely to change
 // but for now copy as if we are sending all this data
-@Suppress("ktlint:standard:discouraged-comment-location")
-fun AlertResponse.toDPsAlert() = NomisAlert(
+fun AlertResponse.toDPsAlert(offenderNo: String) = NomisAlert(
   alertDate = this.date,
   offenderBookId = this.bookingId,
-  offenderNo = "A1234TT", // TODO - return in NOMIS API
+  offenderNo = offenderNo,
   alertSeq = this.alertSequence.toInt(),
   alertType = this.type.code,
   alertCode = this.alertCode.code,
@@ -22,17 +21,23 @@ fun AlertResponse.toDPsAlert() = NomisAlert(
   },
   verifiedFlag = this.isVerified,
   createDatetime = LocalDateTime.parse(this.audit.createDatetime, DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-  rootOffenderId = 0, // TODO - this will be removed
+  // TODO - this will be removed
+  rootOffenderId = 0,
   authorizePersonText = this.authorisedBy,
-  createDate = null, // TODO - always null and will be removed
-  verifiedDatetime = null, // TODO - not being returned from NOMIS yet
-  verifiedUserId = null, // TODO - not being returned from NOMIS yet
+  // TODO - always null and will be removed
+  createDate = null,
+  // TODO - not being returned from NOMIS yet
+  verifiedDatetime = null,
+  // TODO - not being returned from NOMIS yet
+  verifiedUserId = null,
   expiryDate = this.expiryDate,
   commentText = this.comment,
-  caseloadId = null, // TODO - always NULL and will be removed
+  // TODO - always NULL and will be removed
+  caseloadId = null,
   modifyUserId = this.audit.modifyUserId,
   modifyDatetime = this.audit.modifyDatetime?.let { LocalDateTime.parse(it, DateTimeFormatter.ISO_LOCAL_DATE_TIME) },
-  caseloadType = "INST", // TODO always this value and will be removed
+  // TODO always this value and will be removed
+  caseloadType = "INST",
   createUserId = this.audit.createUsername,
   auditTimestamp = this.audit.auditTimestamp?.let { LocalDateTime.parse(it, DateTimeFormatter.ISO_LOCAL_DATE_TIME) },
   auditUserId = this.audit.auditUserId,

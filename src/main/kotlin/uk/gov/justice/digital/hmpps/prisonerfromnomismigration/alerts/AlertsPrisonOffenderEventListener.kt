@@ -62,11 +62,13 @@ class AlertsPrisonOffenderEventListener(
 data class AlertInsertedEvent(
   val bookingId: Long,
   val alertSeq: Long,
+  val offenderIdDisplay: String,
 )
 
 data class AlertUpdatedEvent(
   val bookingId: Long,
   val alertSeq: Long,
+  val offenderIdDisplay: String,
 )
 
 private fun asCompletableFuture(
