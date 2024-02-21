@@ -17,7 +17,7 @@ configurations {
 }
 
 dependencies {
-  implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:0.1.0")
+  implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:0.1.1")
   implementation("org.springframework.boot:spring-boot-starter-webflux")
   implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:3.1.1")
   implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
@@ -42,9 +42,9 @@ dependencies {
   testImplementation("io.jsonwebtoken:jjwt-impl:0.12.5")
   testImplementation("io.jsonwebtoken:jjwt-jackson:0.12.5")
 
-  testImplementation("org.wiremock:wiremock-standalone:3.3.1")
+  testImplementation("org.wiremock:wiremock-standalone:3.4.0")
   testImplementation("org.testcontainers:localstack:1.19.5")
-  testImplementation("com.amazonaws:aws-java-sdk-core:1.12.658")
+  testImplementation("com.amazonaws:aws-java-sdk-core:1.12.662")
   testImplementation("org.awaitility:awaitility-kotlin:4.2.0")
   testImplementation("org.testcontainers:postgresql:1.19.5")
   testImplementation("io.mockk:mockk:1.13.9")
