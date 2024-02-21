@@ -30,6 +30,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.Nomi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.NomisAlertMapping.Status.CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto.MappingType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
@@ -78,6 +80,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
             eventType = "ALERT-INSERTED",
             bookingId = bookingId,
             alertSequence = alertSequence,
+            offenderNo = "A3864DZ",
           ),
         )
       }
@@ -86,9 +89,9 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `the event is ignored`() {
         await untilAsserted {
           verify(telemetryClient).trackEvent(
-            eq("alert-synchronisation-skipped"),
+            eq("alert-synchronisation-created-skipped"),
             check {
-              // assertThat(it["offenderNo"]).isEqualTo("???")  // TODO - not in event right now
+              assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
               assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
               assertThat(it["alertSequence"]).isEqualTo(alertSequence.toString())
             },
@@ -189,11 +192,59 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
                 assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
                 assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
                 assertThat(it["alertSequence"]).isEqualTo(alertSequence.toString())
+                assertThat(it["dpsAlertId"]).isEqualTo(dpsAlertId)
                 assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
               },
               isNull(),
             )
           }
+        }
+      }
+
+      @Nested
+      @DisplayName("When mapping already existS")
+      inner class MappingExists {
+        private val dpsAlertId = "a04f7a8d-61aa-400c-9395-f4dc62f36ab0"
+
+        @BeforeEach
+        fun setUp() {
+          alertsMappingApiMockServer.stubGetByNomisId(
+            bookingId = bookingId,
+            alertSequence = alertSequence,
+            AlertMappingDto(
+              nomisBookingId = bookingId,
+              nomisAlertSequence = alertSequence,
+              dpsAlertId = dpsAlertId,
+              mappingType = MIGRATED,
+            ),
+          )
+          awsSqsAlertOffenderEventsClient.sendMessage(
+            alertsQueueOffenderEventsUrl,
+            alertEvent(
+              eventType = "ALERT-INSERTED",
+              bookingId = bookingId,
+              alertSequence = alertSequence,
+              offenderNo = offenderNo,
+            ),
+          )
+        }
+
+        @Test
+        fun `the event is ignored`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("alert-synchronisation-created-ignored"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+                assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+                assertThat(it["alertSequence"]).isEqualTo(alertSequence.toString())
+                assertThat(it["dpsAlertId"]).isEqualTo(dpsAlertId)
+              },
+              isNull(),
+            )
+          }
+          // will not create an alert in DPS
+          dpsAlertsServer.verify(0, postRequestedFor(anyUrl()))
         }
       }
 
@@ -270,6 +321,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
                   assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
                   assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
                   assertThat(it["alertSequence"]).isEqualTo(alertSequence.toString())
+                  assertThat(it["dpsAlertId"]).isEqualTo(dpsAlertId)
                   assertThat(it["mapping"]).isEqualTo("initial-failure")
                 },
                 isNull(),
@@ -339,6 +391,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
                   assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
                   assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
                   assertThat(it["alertSequence"]).isEqualTo(alertSequence.toString())
+                  assertThat(it["dpsAlertId"]).isEqualTo(dpsAlertId)
                   assertThat(it["mapping"]).isEqualTo("initial-failure")
                 },
                 isNull(),
