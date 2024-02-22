@@ -33,6 +33,7 @@ generic-service:
 
 generic-prometheus-alerts:
   businessHoursOnly: true
+  alertSeverity: syscon-nonprod
   rdsAlertsDatabases:
     cloud-platform-62a9415f993d9717: "prisoner nomis migration"
   sqsAlertsQueueNames:
