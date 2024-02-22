@@ -65,7 +65,27 @@ class AlertsSynchronisationService(
   }
 
   suspend fun nomisAlertUpdated(event: AlertUpdatedEvent) {
-    log.debug("TODO: handle {}", event)
+    val telemetry =
+      mapOf("bookingId" to event.bookingId, "alertSequence" to event.alertSeq, "offenderNo" to event.offenderIdDisplay)
+    val nomisAlert = nomisApiService.getAlert(bookingId = event.bookingId, alertSequence = event.alertSeq)
+    if (nomisAlert.audit.auditModuleName == "DPS_SYNCHRONISATION") {
+      telemetryClient.trackEvent("alert-synchronisation-updated-skipped", telemetry)
+    } else {
+      val mapping = mappingApiService.getOrNullByNomisId(event.bookingId, event.alertSeq)
+      if (mapping == null) {
+        telemetryClient.trackEvent(
+          "alert-synchronisation-updated-failed",
+          telemetry,
+        )
+        throw IllegalStateException("Received ALERT-UPDATED for alert that has never been created")
+      } else {
+        dpsApiService.updateAlert(nomisAlert.toDPsAlert(event.offenderIdDisplay))
+        telemetryClient.trackEvent(
+          "alert-synchronisation-updated-success",
+          telemetry + ("dpsAlertId" to mapping.dpsAlertId),
+        )
+      }
+    }
   }
 
   private suspend fun tryToCreateMapping(
