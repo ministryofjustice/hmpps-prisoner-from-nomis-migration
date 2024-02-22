@@ -17,12 +17,12 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito.atLeastOnce
 import org.mockito.Mockito.eq
 import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.system.CapturedOutput
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension.Companion.dpsAlertsServer
@@ -407,23 +407,179 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
   @DisplayName("ALERT-UPDATED")
   inner class AlertUpdated {
     @Nested
-    @DisplayName("Check queue config")
-    inner class QueueConfig {
+    @DisplayName("When alert was updated in DPS")
+    inner class DPSCreated {
+      private val bookingId = 12345L
+      private val alertSequence = 3L
+
       @BeforeEach
       fun setUp() {
+        alertsNomisApiMockServer.stubGetAlert(
+          bookingId = bookingId,
+          alertSequence = alertSequence,
+          alert = alert(bookingId = bookingId, alertSequence = alertSequence).copy(
+            audit = alert().audit.copy(
+              auditModuleName = "DPS_SYNCHRONISATION",
+            ),
+          ),
+        )
         awsSqsAlertOffenderEventsClient.sendMessage(
           alertsQueueOffenderEventsUrl,
           alertEvent(
             eventType = "ALERT-UPDATED",
+            bookingId = bookingId,
+            alertSequence = alertSequence,
+            offenderNo = "A3864DZ",
           ),
         )
       }
 
       @Test
-      fun `will read the message`(output: CapturedOutput) {
+      fun `the event is ignored`() {
         await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            eq("alert-synchronisation-updated-skipped"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+              assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+              assertThat(it["alertSequence"]).isEqualTo(alertSequence.toString())
+            },
+            isNull(),
+          )
+        }
+
+        // will not bother getting mapping
+        alertsMappingApiMockServer.verify(
+          count = 0,
+          getRequestedFor(urlPathMatching("/mapping/alerts/nomis-booking-id/\\d+/nomis-alert-sequence/\\d+")),
+        )
+        // will not update the alert in DPS
+        dpsAlertsServer.verify(
+          0,
+          // TODO this POST will become a PUT when DPS has new endpoints
+          postRequestedFor(anyUrl()),
+        )
+      }
+    }
+
+    @Nested
+    @DisplayName("When alert was update in NOMIS")
+    inner class NomisCreated {
+      private val bookingId = 12345L
+      private val alertSequence = 3L
+      private val offenderNo = "A3864DZ"
+
+      @BeforeEach
+      fun setUp() {
+        alertsNomisApiMockServer.stubGetAlert(
+          bookingId = bookingId,
+          alertSequence = alertSequence,
+          alert = alert(bookingId = bookingId, alertSequence = alertSequence).copy(
+            alertCode = CodeDescription("XNR", "Not For Release"),
+            type = CodeDescription("X", "Security"),
+            audit = alert().audit.copy(
+              auditModuleName = "OCDALERT",
+            ),
+          ),
+        )
+      }
+
+      @Nested
+      @DisplayName("When mapping doesn't exist")
+      inner class MappingDoesNotExist {
+        @BeforeEach
+        fun setUp() {
+          alertsMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
+          awsSqsAlertOffenderEventsClient.sendMessage(
+            alertsQueueOffenderEventsUrl,
+            alertEvent(
+              eventType = "ALERT-UPDATED",
+              bookingId = bookingId,
+              alertSequence = alertSequence,
+              offenderNo = offenderNo,
+            ),
+          )
+        }
+
+        @Test
+        fun `telemetry added to track the failure`() {
           await untilAsserted {
-            assertThat(output.out).contains("AlertUpdatedEvent(bookingId=1234, alertSeq=1, offenderIdDisplay=A3864DZ)")
+            verify(telemetryClient, atLeastOnce()).trackEvent(
+              eq("alert-synchronisation-updated-failed"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+                assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+                assertThat(it["alertSequence"]).isEqualTo(alertSequence.toString())
+              },
+              isNull(),
+            )
+          }
+        }
+
+        @Test
+        fun `the event is placed on dead letter queue`() {
+          await untilAsserted {
+            assertThat(
+              awsSqsAlertsOffenderEventDlqClient.countAllMessagesOnQueue(alertsQueueOffenderEventsDlqUrl).get(),
+            ).isEqualTo(1)
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("When mapping does exist")
+      inner class MappingExists {
+        private val dpsAlertId = "a04f7a8d-61aa-400c-9395-f4dc62f36ab0"
+
+        @BeforeEach
+        fun setUp() {
+          alertsMappingApiMockServer.stubGetByNomisId(
+            bookingId = bookingId,
+            alertSequence = alertSequence,
+            AlertMappingDto(
+              nomisBookingId = bookingId,
+              nomisAlertSequence = alertSequence,
+              dpsAlertId = dpsAlertId,
+              mappingType = MIGRATED,
+            ),
+          )
+          dpsAlertsServer.stubPostAlertForUpdate()
+          awsSqsAlertOffenderEventsClient.sendMessage(
+            alertsQueueOffenderEventsUrl,
+            alertEvent(
+              eventType = "ALERT-UPDATED",
+              bookingId = bookingId,
+              alertSequence = alertSequence,
+              offenderNo = offenderNo,
+            ),
+          )
+        }
+
+        @Test
+        fun `will update DPS with the changes`() {
+          await untilAsserted {
+            dpsAlertsServer.verify(
+              1,
+              postRequestedFor(urlPathEqualTo("/nomis-alerts")) // TODO will switch to PUT
+                .withRequestBody(matchingJsonPath("alertCode", equalTo("XNR")))
+                .withRequestBody(matchingJsonPath("alertType", equalTo("X"))),
+            )
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("alert-synchronisation-updated-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+                assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+                assertThat(it["alertSequence"]).isEqualTo(alertSequence.toString())
+                assertThat(it["dpsAlertId"]).isEqualTo(dpsAlertId)
+              },
+              isNull(),
+            )
           }
         }
       }
