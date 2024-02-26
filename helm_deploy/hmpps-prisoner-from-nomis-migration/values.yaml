@@ -32,10 +32,6 @@ generic-service:
     SPRING_PROFILES_ACTIVE: "logstash"
     APPLICATIONINSIGHTS_CONNECTION_STRING: "InstrumentationKey=$(APPINSIGHTS_INSTRUMENTATIONKEY);IngestionEndpoint=https://northeurope-0.in.applicationinsights.azure.com/;LiveEndpoint=https://northeurope.livediagnostics.monitor.azure.com/"
     APPLICATIONINSIGHTS_CONFIGURATION_FILE: applicationinsights.json
-    FEATURE_EVENT_SENTENCE_ADJUSTMENT_UPSERTED: true
-    FEATURE_EVENT_SENTENCE_ADJUSTMENT_DELETED: true
-    FEATURE_EVENT_KEY_DATE_ADJUSTMENT_UPSERTED: true
-    FEATURE_EVENT_KEY_DATE_ADJUSTMENT_DELETED: true
     FEATURE_ADJUDICATIONS_REPORT_MODE: false
     HMPPS_SQS_USE_WEB_TOKEN: true
 
