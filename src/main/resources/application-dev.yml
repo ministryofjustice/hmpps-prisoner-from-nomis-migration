@@ -3,7 +3,7 @@ server:
 
 api.base.url:
   nomis: http://localhost:8082
-  oauth: http://localhost:8090/auth
+  hmpps-auth: http://localhost:8090/auth
   visits: http://localhost:8083
   sentencing: http://localhost:8085
   activities: http://localhost:8086

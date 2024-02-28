@@ -7,9 +7,9 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientManager
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.authorisedWebClient
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.healthWebClient
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.health.HealthCheck
+import uk.gov.justice.hmpps.kotlin.auth.reactiveAuthorisedWebClient
+import uk.gov.justice.hmpps.kotlin.auth.reactiveHealthWebClient
+import uk.gov.justice.hmpps.kotlin.health.ReactiveHealthPingCheck
 import java.time.Duration
 
 @Configuration
@@ -20,12 +20,12 @@ class SentencingConfiguration(
 ) {
 
   @Bean
-  fun sentencingApiHealthWebClient(builder: WebClient.Builder): WebClient = builder.healthWebClient(sentencingApiBaseUri, healthTimeout)
+  fun sentencingApiHealthWebClient(builder: WebClient.Builder): WebClient = builder.reactiveHealthWebClient(sentencingApiBaseUri, healthTimeout)
 
   @Bean
   fun sentencingApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager, builder: WebClient.Builder): WebClient =
-    builder.authorisedWebClient(authorizedClientManager, registrationId = "sentencing-api", url = sentencingApiBaseUri, timeout)
+    builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "sentencing-api", url = sentencingApiBaseUri, timeout)
 
   @Component("sentencingApi")
-  class SentencingApiHealth(@Qualifier("sentencingApiHealthWebClient") webClient: WebClient) : HealthCheck(webClient)
+  class SentencingApiHealth(@Qualifier("sentencingApiHealthWebClient") webClient: WebClient) : ReactiveHealthPingCheck(webClient)
 }
