@@ -4,6 +4,8 @@ import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
@@ -12,13 +14,11 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension.Companion.dpsAlertsServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.NomisAlert
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.NomisAlertMapping
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.NomisAlertMapping.Status.CREATED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.NomisAlertMapping.Status.UPDATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.dpsAlert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.CreateAlert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.UpdateAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.util.UUID
 
 @SpringAPIServiceTest
@@ -31,20 +31,15 @@ class AlertsDpsApiServiceTest {
   inner class CreateAlert {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
-      dpsAlertsServer.stubPostAlertForCreate()
+      dpsAlertsServer.stubPostAlert()
 
       apiService.createAlert(
-        alert = NomisAlert(
-          alertDate = LocalDate.now(),
-          offenderBookId = 1234567,
-          offenderNo = "A1234KL",
-          alertSeq = 3,
-          alertType = "X",
+        alert = CreateAlert(
+          prisonNumber = "A1234KL",
+          activeFrom = LocalDate.now(),
           alertCode = "XA",
-          alertStatus = "ACTIVE",
-          verifiedFlag = false,
-          createDatetime = LocalDateTime.now(),
         ),
+        createdByUsername = "B.MORRIS",
       )
 
       dpsAlertsServer.verify(
@@ -55,52 +50,53 @@ class AlertsDpsApiServiceTest {
 
     @Test
     internal fun `will pass alert to service`() = runTest {
-      dpsAlertsServer.stubPostAlertForCreate()
+      dpsAlertsServer.stubPostAlert()
 
       apiService.createAlert(
-        alert = NomisAlert(
-          alertDate = LocalDate.now(),
-          offenderBookId = 1234567,
-          offenderNo = "A1234KL",
-          alertSeq = 3,
-          alertType = "X",
+        alert = CreateAlert(
+          prisonNumber = "A1234KL",
+          activeFrom = LocalDate.now(),
           alertCode = "XA",
-          alertStatus = "ACTIVE",
-          verifiedFlag = false,
-          createDatetime = LocalDateTime.now(),
         ),
+        createdByUsername = "B.MORRIS",
       )
 
       dpsAlertsServer.verify(
-        postRequestedFor(urlMatching("/nomis-alerts"))
-          .withRequestBody(matchingJsonPath("alertType", equalTo("X")))
+        postRequestedFor(urlMatching("/alerts"))
           .withRequestBody(matchingJsonPath("alertCode", equalTo("XA"))),
       )
     }
 
     @Test
-    fun `will return dpsAlertId`() = runTest {
-      dpsAlertsServer.stubPostAlertForCreate(
-        NomisAlertMapping(
-          offenderBookId = 12345,
-          alertSeq = 2,
-          alertUuid = UUID.fromString("f3f31737-6ee3-4ec5-8a79-0ac110fe50e2"),
-          status = CREATED,
+    internal fun `will pass username to service via header`() = runTest {
+      dpsAlertsServer.stubPostAlert()
+
+      apiService.createAlert(
+        alert = CreateAlert(
+          prisonNumber = "A1234KL",
+          activeFrom = LocalDate.now(),
+          alertCode = "XA",
         ),
+        createdByUsername = "B.MORRIS",
       )
 
+      dpsAlertsServer.verify(
+        postRequestedFor(urlMatching("/alerts"))
+          .withHeader("Username", equalTo("B.MORRIS")),
+      )
+    }
+
+    @Test
+    fun `will return dpsAlertId`() = runTest {
+      dpsAlertsServer.stubPostAlert(response = dpsAlert().copy(alertUuid = UUID.fromString("f3f31737-6ee3-4ec5-8a79-0ac110fe50e2")))
+
       val dpsAlert = apiService.createAlert(
-        alert = NomisAlert(
-          alertDate = LocalDate.now(),
-          offenderBookId = 1234567,
-          offenderNo = "A1234KL",
-          alertSeq = 3,
-          alertType = "X",
+        alert = CreateAlert(
+          prisonNumber = "A1234KL",
+          activeFrom = LocalDate.now(),
           alertCode = "XA",
-          alertStatus = "ACTIVE",
-          verifiedFlag = false,
-          createDatetime = LocalDateTime.now(),
         ),
+        createdByUsername = "B.MORRIS",
       )
 
       assertThat(dpsAlert.alertUuid.toString()).isEqualTo("f3f31737-6ee3-4ec5-8a79-0ac110fe50e2")
@@ -111,79 +107,60 @@ class AlertsDpsApiServiceTest {
   inner class UpdateAlert {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
-      dpsAlertsServer.stubPostAlertForUpdate()
+      dpsAlertsServer.stubPutAlert()
 
       apiService.updateAlert(
-        alert = NomisAlert(
-          alertDate = LocalDate.now(),
-          offenderBookId = 1234567,
-          offenderNo = "A1234KL",
-          alertSeq = 3,
-          alertType = "X",
-          alertCode = "XA",
-          alertStatus = "ACTIVE",
-          verifiedFlag = false,
-          createDatetime = LocalDateTime.now(),
+        alertId = "f3f31737-6ee3-4ec5-8a79-0ac110fe50e2",
+        alert = UpdateAlert(
+          activeFrom = LocalDate.now().minusDays(1),
+          activeTo = LocalDate.now(),
         ),
+        updatedByUsername = "C.MORRIS",
       )
 
       dpsAlertsServer.verify(
-        postRequestedFor(anyUrl())
+        putRequestedFor(anyUrl())
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
     @Test
     internal fun `will pass alert to service`() = runTest {
-      dpsAlertsServer.stubPostAlertForUpdate()
+      dpsAlertsServer.stubPutAlert()
 
-      apiService.createAlert(
-        alert = NomisAlert(
-          alertDate = LocalDate.now(),
-          offenderBookId = 1234567,
-          offenderNo = "A1234KL",
-          alertSeq = 3,
-          alertType = "X",
-          alertCode = "XA",
-          alertStatus = "ACTIVE",
-          verifiedFlag = false,
-          createDatetime = LocalDateTime.now(),
+      apiService.updateAlert(
+        alertId = "f3f31737-6ee3-4ec5-8a79-0ac110fe50e2",
+        alert = UpdateAlert(
+          activeFrom = LocalDate.parse("2020-01-23"),
+          activeTo = LocalDate.parse("2023-01-23"),
         ),
+        updatedByUsername = "C.MORRIS",
       )
 
       dpsAlertsServer.verify(
-        postRequestedFor(urlMatching("/nomis-alerts"))
-          .withRequestBody(matchingJsonPath("alertType", equalTo("X")))
-          .withRequestBody(matchingJsonPath("alertCode", equalTo("XA"))),
+        putRequestedFor(urlEqualTo("/alerts/f3f31737-6ee3-4ec5-8a79-0ac110fe50e2"))
+          .withRequestBody(matchingJsonPath("activeFrom", equalTo("2020-01-23")))
+          .withRequestBody(matchingJsonPath("activeTo", equalTo("2023-01-23"))),
       )
     }
 
     @Test
-    fun `will return dpsAlertId`() = runTest {
-      dpsAlertsServer.stubPostAlertForUpdate(
-        NomisAlertMapping(
-          offenderBookId = 12345,
-          alertSeq = 2,
-          alertUuid = UUID.fromString("f3f31737-6ee3-4ec5-8a79-0ac110fe50e2"),
-          status = UPDATED,
+    internal fun `will pass username to service via header`() = runTest {
+      dpsAlertsServer.stubPutAlert()
+
+      apiService.updateAlert(
+        alertId = "f3f31737-6ee3-4ec5-8a79-0ac110fe50e2",
+        alert = UpdateAlert(
+          activeFrom = LocalDate.parse("2020-01-23"),
+          activeTo = LocalDate.parse("2023-01-23"),
         ),
+        updatedByUsername = "C.MORRIS",
       )
 
-      val dpsAlert = apiService.createAlert(
-        alert = NomisAlert(
-          alertDate = LocalDate.now(),
-          offenderBookId = 1234567,
-          offenderNo = "A1234KL",
-          alertSeq = 3,
-          alertType = "X",
-          alertCode = "XA",
-          alertStatus = "ACTIVE",
-          verifiedFlag = false,
-          createDatetime = LocalDateTime.now(),
-        ),
+      dpsAlertsServer.verify(
+        putRequestedFor(anyUrl())
+          .withHeader("Username", equalTo("C.MORRIS")),
       )
-
-      assertThat(dpsAlert.alertUuid.toString()).isEqualTo("f3f31737-6ee3-4ec5-8a79-0ac110fe50e2")
     }
   }
 }

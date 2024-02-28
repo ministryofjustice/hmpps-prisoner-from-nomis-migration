@@ -37,6 +37,8 @@ adjudications:
 incidents:
   page:
     size: 10
+alerts:
+  has-migrated-data: true
 
 spring:
   r2dbc:

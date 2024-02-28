@@ -6,6 +6,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.exactly
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.assertj.core.api.Assertions.assertThat
@@ -26,8 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension.Companion.dpsAlertsServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.NomisAlertMapping
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.NomisAlertMapping.Status.CREATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.dpsAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
@@ -139,14 +139,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           alertsMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
-          dpsAlertsServer.stubPostAlertForCreate(
-            NomisAlertMapping(
-              offenderBookId = bookingId,
-              alertSeq = alertSequence.toInt(),
-              alertUuid = UUID.fromString(dpsAlertId),
-              status = CREATED,
-            ),
-          )
+          dpsAlertsServer.stubPostAlert(dpsAlert().copy(alertUuid = UUID.fromString(dpsAlertId)))
           alertsMappingApiMockServer.stubPostMapping()
           awsSqsAlertOffenderEventsClient.sendMessage(
             alertsQueueOffenderEventsUrl,
@@ -163,9 +156,8 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create alert in DPS`() {
           await untilAsserted {
             dpsAlertsServer.verify(
-              postRequestedFor(urlPathEqualTo("/nomis-alerts"))
-                .withRequestBody(matchingJsonPath("alertCode", equalTo("XNR")))
-                .withRequestBody(matchingJsonPath("alertType", equalTo("X"))),
+              postRequestedFor(urlPathEqualTo("/alerts"))
+                .withRequestBody(matchingJsonPath("alertCode", equalTo("XNR"))),
             )
           }
         }
@@ -256,14 +248,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           alertsMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
-          dpsAlertsServer.stubPostAlertForCreate(
-            NomisAlertMapping(
-              offenderBookId = bookingId,
-              alertSeq = alertSequence.toInt(),
-              alertUuid = UUID.fromString(dpsAlertId),
-              status = CREATED,
-            ),
-          )
+          dpsAlertsServer.stubPostAlert(dpsAlert().copy(alertUuid = UUID.fromString(dpsAlertId)))
         }
 
         @Nested
@@ -287,9 +272,8 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
           fun `will create alert in DPS`() {
             await untilAsserted {
               dpsAlertsServer.verify(
-                postRequestedFor(urlPathEqualTo("/nomis-alerts"))
-                  .withRequestBody(matchingJsonPath("alertCode", equalTo("XNR")))
-                  .withRequestBody(matchingJsonPath("alertType", equalTo("X"))),
+                postRequestedFor(urlPathEqualTo("/alerts"))
+                  .withRequestBody(matchingJsonPath("alertCode", equalTo("XNR"))),
               )
             }
           }
@@ -367,9 +351,8 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
             await untilAsserted {
               dpsAlertsServer.verify(
                 1,
-                postRequestedFor(urlPathEqualTo("/nomis-alerts"))
-                  .withRequestBody(matchingJsonPath("alertCode", equalTo("XNR")))
-                  .withRequestBody(matchingJsonPath("alertType", equalTo("X"))),
+                postRequestedFor(urlPathEqualTo("/alerts"))
+                  .withRequestBody(matchingJsonPath("alertCode", equalTo("XNR"))),
               )
             }
           }
@@ -456,8 +439,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
         // will not update the alert in DPS
         dpsAlertsServer.verify(
           0,
-          // TODO this POST will become a PUT when DPS has new endpoints
-          postRequestedFor(anyUrl()),
+          putRequestedFor(anyUrl()),
         )
       }
     }
@@ -468,6 +450,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
       private val bookingId = 12345L
       private val alertSequence = 3L
       private val offenderNo = "A3864DZ"
+      private val alertExpiryDate = "2023-08-12"
 
       @BeforeEach
       fun setUp() {
@@ -480,6 +463,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
             audit = alert().audit.copy(
               auditModuleName = "OCDALERT",
             ),
+            expiryDate = LocalDate.parse(alertExpiryDate),
           ),
         )
       }
@@ -543,7 +527,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
               mappingType = MIGRATED,
             ),
           )
-          dpsAlertsServer.stubPostAlertForUpdate()
+          dpsAlertsServer.stubPutAlert()
           awsSqsAlertOffenderEventsClient.sendMessage(
             alertsQueueOffenderEventsUrl,
             alertEvent(
@@ -560,9 +544,8 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             dpsAlertsServer.verify(
               1,
-              postRequestedFor(urlPathEqualTo("/nomis-alerts")) // TODO will switch to PUT
-                .withRequestBody(matchingJsonPath("alertCode", equalTo("XNR")))
-                .withRequestBody(matchingJsonPath("alertType", equalTo("X"))),
+              putRequestedFor(urlPathEqualTo("/alerts/$dpsAlertId"))
+                .withRequestBody(matchingJsonPath("activeTo", equalTo(alertExpiryDate))),
             )
           }
         }

@@ -3,10 +3,11 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts
 import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.MappingResponse.MAPPING_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.MappingResponse.MAPPING_FAILED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.NomisAlertMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.Alert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
@@ -25,6 +26,8 @@ class AlertsSynchronisationService(
   private val dpsApiService: AlertsDpsApiService,
   private val queueService: SynchronisationQueueService,
   private val telemetryClient: TelemetryClient,
+  @Value("\${alerts.has-migrated-data:false}")
+  private val hasMigratedAllData: Boolean,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -44,7 +47,10 @@ class AlertsSynchronisationService(
           telemetry + ("dpsAlertId" to mapping.dpsAlertId),
         )
       } else {
-        dpsApiService.createAlert(nomisAlert.toDPsAlert(event.offenderIdDisplay)).run {
+        dpsApiService.createAlert(
+          nomisAlert.toDPSCreateAlert(event.offenderIdDisplay),
+          createdByUsername = nomisAlert.audit.createUsername,
+        ).run {
           tryToCreateMapping(
             nomisAlert = nomisAlert,
             dpsAlert = this,
@@ -77,9 +83,16 @@ class AlertsSynchronisationService(
           "alert-synchronisation-updated-failed",
           telemetry,
         )
-        throw IllegalStateException("Received ALERT-UPDATED for alert that has never been created")
+        if (hasMigratedAllData) {
+          // after migration has run this should not happen so make sure this message goes in DLQ
+          throw IllegalStateException("Received ALERT-UPDATED for alert that has never been created")
+        }
       } else {
-        dpsApiService.updateAlert(nomisAlert.toDPsAlert(event.offenderIdDisplay))
+        dpsApiService.updateAlert(
+          alertId = mapping.dpsAlertId,
+          nomisAlert.toDPSUpdateAlert(),
+          updatedByUsername = nomisAlert.audit.modifyUserId ?: nomisAlert.audit.createUsername,
+        )
         telemetryClient.trackEvent(
           "alert-synchronisation-updated-success",
           telemetry + ("dpsAlertId" to mapping.dpsAlertId),
@@ -90,7 +103,7 @@ class AlertsSynchronisationService(
 
   private suspend fun tryToCreateMapping(
     nomisAlert: AlertResponse,
-    dpsAlert: NomisAlertMapping,
+    dpsAlert: Alert,
     telemetry: Map<String, Any>,
   ): MappingResponse {
     val mapping = AlertMappingDto(
