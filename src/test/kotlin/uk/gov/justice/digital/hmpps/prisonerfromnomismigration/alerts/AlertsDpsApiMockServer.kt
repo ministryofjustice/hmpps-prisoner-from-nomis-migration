@@ -5,14 +5,17 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.put
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.NomisAlertMapping
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.NomisAlertMapping.Status.CREATED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.NomisAlertMapping.Status.UPDATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.Alert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.AlertCodeSummary
+import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.UUID
 
 class AlertsDpsApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
@@ -39,18 +42,36 @@ class AlertsDpsApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCal
 class AlertsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   companion object {
     private const val WIREMOCK_PORT = 8092
+    fun dpsAlert() = Alert(
+      alertUuid = UUID.randomUUID(),
+      prisonNumber = "A1234AA",
+      alertCode = AlertCodeSummary(
+        alertTypeCode = "A",
+        code = "ABC",
+        description = "Alert code description",
+        listSequence = 3,
+        isActive = true,
+      ),
+      description = "Alert description",
+      authorisedBy = "A. Nurse, An Agency",
+      activeFrom = LocalDate.parse("2021-09-27"),
+      activeTo = LocalDate.parse("2022-07-15"),
+      isActive = true,
+      comments = emptyList(),
+      createdAt = LocalDateTime.parse("2024-02-28T13:56:10"),
+      createdBy = "USER1234",
+      createdByDisplayName = "Firstname Lastname",
+      lastModifiedAt = LocalDateTime.parse("2024-02-28T13:56:10"),
+      lastModifiedBy = "USER1234",
+      lastModifiedByDisplayName = "Firstname Lastname",
+    )
   }
 
-  fun stubPostAlertForCreate(
-    response: NomisAlertMapping = NomisAlertMapping(
-      offenderBookId = 12345,
-      alertSeq = 2,
-      alertUuid = UUID.randomUUID(),
-      status = CREATED,
-    ),
+  fun stubPostAlert(
+    response: Alert = dpsAlert(),
   ) {
     stubFor(
-      post("/nomis-alerts")
+      post("/alerts")
         .willReturn(
           aResponse()
             .withStatus(201)
@@ -60,16 +81,11 @@ class AlertsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubPostAlertForUpdate(
-    response: NomisAlertMapping = NomisAlertMapping(
-      offenderBookId = 12345,
-      alertSeq = 2,
-      alertUuid = UUID.randomUUID(),
-      status = UPDATED,
-    ),
+  fun stubPutAlert(
+    response: Alert = dpsAlert(),
   ) {
     stubFor(
-      post("/nomis-alerts")
+      put(urlPathMatching("/alerts/.*"))
         .willReturn(
           aResponse()
             .withStatus(200)

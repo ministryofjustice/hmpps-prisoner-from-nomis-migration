@@ -4,26 +4,27 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.NomisAlert
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.NomisAlertMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.Alert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.CreateAlert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.UpdateAlert
 
 @Service
 class AlertsDpsApiService(@Qualifier("alertsApiWebClient") private val webClient: WebClient) {
-  suspend fun createAlert(alert: NomisAlert): NomisAlertMapping =
+  suspend fun createAlert(alert: CreateAlert, createdByUsername: String): Alert =
     webClient
       .post()
-      .uri("/nomis-alerts")
+      .uri("/alerts")
       .bodyValue(alert)
+      .header("Username", createdByUsername)
       .retrieve()
       .awaitBody()
 
-  // for now DPS provide the same endpoint for update and insert
-  // I wouldn't be surprised of this changes given it ties DPS to NOMIS
-  suspend fun updateAlert(alert: NomisAlert): NomisAlertMapping =
+  suspend fun updateAlert(alertId: String, alert: UpdateAlert, updatedByUsername: String): Alert =
     webClient
-      .post()
-      .uri("/nomis-alerts")
+      .put()
+      .uri("/alerts/{alertId}", alertId)
       .bodyValue(alert)
+      .header("Username", updatedByUsername)
       .retrieve()
       .awaitBody()
 }
