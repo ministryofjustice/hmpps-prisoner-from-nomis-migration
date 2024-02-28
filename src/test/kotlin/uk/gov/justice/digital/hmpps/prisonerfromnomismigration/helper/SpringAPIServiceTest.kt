@@ -4,7 +4,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.boot.autoconfigure.http.codec.CodecsAutoConfiguration
 import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration
 import org.springframework.boot.autoconfigure.security.oauth2.client.reactive.ReactiveOAuth2ClientAutoConfiguration
-import org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration
 import org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration
 import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration
 import org.springframework.boot.test.context.SpringBootTest
@@ -23,6 +22,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingA
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.SentencingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsApiExtension
+import uk.gov.justice.hmpps.kotlin.auth.HmppsReactiveWebClientConfiguration
 import java.lang.annotation.Inherited
 import kotlin.annotation.AnnotationTarget.ANNOTATION_CLASS
 import kotlin.annotation.AnnotationTarget.CLASS
@@ -52,6 +52,6 @@ import kotlin.annotation.AnnotationTarget.CLASS
 @ActiveProfiles("test")
 @EnableWebFlux
 @EnableWebFluxSecurity
-@SpringBootTest(classes = [JacksonAutoConfiguration::class, CodecsAutoConfiguration::class, WebClientConfiguration::class, WebClientAutoConfiguration::class, ReactiveSecurityAutoConfiguration::class, ReactiveOAuth2ClientAutoConfiguration::class, OAuth2ClientAutoConfiguration::class])
+@SpringBootTest(classes = [JacksonAutoConfiguration::class, CodecsAutoConfiguration::class, WebClientConfiguration::class, WebClientAutoConfiguration::class, ReactiveSecurityAutoConfiguration::class, ReactiveOAuth2ClientAutoConfiguration::class, HmppsReactiveWebClientConfiguration::class])
 @BootstrapWith(SpringBootTestContextBootstrapper::class)
 annotation class SpringAPIServiceTest
