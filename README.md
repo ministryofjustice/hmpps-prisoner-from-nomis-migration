@@ -14,6 +14,7 @@ to the new service.
 Since migration is a typically a process that takes many hours, this service relies heavily on SQS messaging to guarantee that the migration is completed, where any transient errors are
 automatically retried. Any persistent errors can be inspected and are retained in a SQS dead letter queue.
 
+# Running the service
 ## Running locally
 
 For running locally against docker instances of the following services:
@@ -55,11 +56,11 @@ The first 2 of the 3 steps is required but instead of step 3
 
 Then run any of the `bash` scripts at the root of this project to send events to the local topic
 
-## Generating APi client models
+# Generating API client models
 
 For some of our external API calls we use `openapi-generator` to generate the models used in the API clients. The Open API specifications used can be found in directory `openapi-specs`.
 
-### Updating the Open API specs
+## Updating the Open API specs
 
 Run the following commands to take a copy of the latest specs:
 
@@ -83,14 +84,14 @@ Now build the project and deal with any compile errors caused by changes to the 
 
 Finally run the tests and fix any issues caused by changes to the models.
 
-### Adding new Open API specs
+## Adding new Open API specs
 
 Add the instructions for the curl command above but obviously with a different file name
 
 In the build.gradle add a new task similar to the `buildActivityApiModel` task
 In the build.gradle add dependencies in the appropriate tasks e.g. in `withType<KotlinCompile>` for the new task
 
-## Mock services
+# Mock services
 
 There a circumstances where you want to run this service end to end but without the consuming service being available, for example the consuming service
 has not be written yet. To emulate the publishing service we may provide a mock, for instance MockVisitsResource which consumes migrated data.
@@ -99,15 +100,15 @@ Details of the configuration follows:
 `API_BASE_URL_VISITS=https://prisoner-to-nomis-update-dev.hmpps.service.justice.gov.uk`
 
 
-### Runbook
+# Runbook
 
-#### Queue Dead letter queue maintenance
+## Queue Dead letter queue maintenance
 
 Since this services uses the HMPPS SQS library with defaults this has all the default endpoints for queue maintenance as documented in the [SQS library](https://github.com/ministryofjustice/hmpps-spring-boot-sqs/blob/main/README.md).
 
 For purging queues the queue name can be found in the [health check](https://prisoner-nomis-migration.hmpps.service.justice.gov.uk/health) and the required role is the default `ROLE_QUEUE_ADMIN`.
 
-#### Visit a Person in Prison (VSIP)
+## Visit a Person in Prison (VSIP)
 
 With the kubernetes pods scaled to around 12, around `200,000` visits can be migrated per hour.
 
@@ -144,13 +145,13 @@ The response from this call will be an information JSON structure which echos th
 
 Given the health check page reports the number of messages in the main queue and DLQ, it is possible to see at a glance how far the migration has progressed from the `/health` endpoint.
 
-##### Application Insights Events
+### Application Insights Events
 
 ```azure
-customEvents 
-| where cloud_RoleName == 'hmpps-prisoner-from-nomis-migration' 
-| where name startswith "nomis-migration" 
-| summarize count() by name
+AppEvents 
+| where AppRoleName == 'hmpps-prisoner-from-nomis-migration' 
+| where Name startswith "nomis-migration" 
+| summarize count() by Name
 ```
 
 will show all significant visit migration events
@@ -163,9 +164,9 @@ will show all significant visit migration events
 `nomis-migration-visit-mapping-failed` requires the 2 IDs are extracted from application insights and manually added to the mapping table via the API
 
 ```azure
-customEvents 
-| where cloud_RoleName == 'hmpps-prisoner-from-nomis-migration' 
-| where name == 'nomis-migration-visit-mapping-failed'
+AppEvents 
+| where AppRoleName == 'hmpps-prisoner-from-nomis-migration' 
+| where Name == 'nomis-migration-visit-mapping-failed'
 | extend migrationId_ = tostring(customDimensions.migrationId)
 | extend nomisVisitId_ = tostring(customDimensions.nomisVisitId)
 | extend vsipVisitId_ = tostring(customDimensions.vsipVisitId)
@@ -185,82 +186,24 @@ curl --location --request POST 'https://nomis-sync-prisoner-mapping.hmpps.servic
     "label": "2022-02-14T09:58:45"
 }'
 ```
-#### Adjudications
- 
-##### DSP Migration 500 error resolution
+## Sentencing Adjustments
 
-A 500 error returned from DPS service `POST /reported-adjudications/migrate` typically means we have previously migrated an adjudication and the migration service is trying to migrate the same record again.
-This can happen when the `POST /reported-adjudications/migrate` was successful but a network issue meant the migration service never received the response. The migration service will retry the migration and the DPS service will return a 500 error since it detects a duplicate record.
+### Synchronisation Duplicate handling
 
-Records in this state will end up on the DLQ and this query will find the unique adjudications:
+When a `From NOMIS synchronisation duplicate adjustment detected` alert is fired in the Alerts Slack channel manual steps are required to correct the data.
 
-```azure
-traces
-| where timestamp > todatetime('2023-09-26T11:00:00')
-| where timestamp < todatetime('2023-09-26T11:00:20')
-| where operation_Name == "POST /reported-adjudications/migrate"
-| summarize by  message
+The alert happens when the check to see if an Adjustment already exists in DPS happens in two threads before either one has created an Adjustment in DPS yet. This can happen either multiple NOMIS events arrive at the same time or the creation of the DPS adjustment or mapping record hangs and succeeds at the same time.
+
+Find the duplicate DPS adjustment ID from the AppInights query related to the Slack alert. This will be the `duplicateAdjustmentId` Property from the  `from-nomis-synch-adjustment-duplicate` AppEvent.
+
+With this ID (which is a UUID string) call the DPS DELETE endpoint, e.g.
+
+```bash
+curl --location --request DELETE https://adjustments-api.hmpps.service.justice.gov.uk/legacy/adjustments/{dpsDuplicateAdjustmentId} \
+--header 'Content-Type: application/vnd.nomis-offence+json' \
+--header 'Authorization: Bearer <token with role SENTENCE_ADJUSTMENTS_SYNCHRONISATION >' 
 ```
 
-Where the correct time range for a retry attempt is supplied. This should return results something like:
-
-```ERROR: duplicate key value violates unique constraint "unique_report_number" Detail: Key (charge_number)=(3057925-1) already exists.```
-
-Given this we have enough information to call the NOMIS API and the DPS Adjudication API to manually create a mapping record.
-
-Call the NOMIS API as follows:
-
-Requires a token with `NOMIS_ADJUDICATIONS` 
-
-`https://nomis-prisoner.aks-live-1.studio-hosting.service.justice.gov.uk/adjudications/adjudication-number/3057925/charge-sequence/1`
-
-From this extract the prison id (agency Id) for the incident since this is needed for the DPS call.
-
-Call the DPS API as follows:
-
-Requires a token with `VIEW_ADJUDICATIONS`
-
-Set Header `Active-Caseload` to the prison id from the NOMIS call
-`https://manage-adjudications-api.hmpps.service.justice.gov.uk/reported-adjudications/3057925-1/v2`
-
-
-Lastly we need to create manually a mapping record by POSTing an adjudication mapping record to the mapping service.
-
-POST url is `https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk/mapping/adjudications/all`
-
-Requires a token with `NOMIS_ADJUDICATIONS`
-
-Body would be similar to this 
-```json
-{
-  "label": "2023-09-26T07:59:02",
-  "mappingType": "MIGRATED",
-  "adjudicationId": {
-        "adjudicationNumber": "3057925",
-        "chargeNumber": "3057925-1",
-        "chargeSequence": "1"
-    },
-    "hearings": [
-        {
-            "dpsHearingId": "3755641",
-            "nomisHearingId": "3434190"
-        }
-    ],
-    "punishments": [
-        {
-            "dpsPunishmentId": "2980481",
-            "nomisBookingId": "2375870",
-            "nomisSanctionSequence": "13"
-        },
-        {
-            "dpsPunishmentId": "2980479",
-            "nomisBookingId": "2375870",
-            "nomisSanctionSequence": "14"
-        }
-    ]
-}
-```
-where the IDs are extracted from the DPS and NOMIS calls and where label is this migration id.
-### Architecture
+# Architecture
 
 Architecture decision records start [here](doc/architecture/decisions/0001-use-adr.md)
