@@ -198,7 +198,23 @@ class SentencingAdjustmentsSynchronisationService(
       sentencingAdjustmentsMappingService.createMapping(
         mapping,
         object : ParameterizedTypeReference<DuplicateErrorResponse<SentencingAdjustmentNomisMapping>>() {},
-      )
+      ).also {
+        if (it.isError) {
+          val duplicateErrorDetails = (it.errorResponse!!).moreInfo
+          telemetryClient.trackEvent(
+            "from-nomis-synch-adjustment-duplicate",
+            mapOf<String, String>(
+              "duplicateAdjustmentId" to duplicateErrorDetails.duplicate.adjustmentId,
+              "duplicateNomisAdjustmentId" to duplicateErrorDetails.duplicate.nomisAdjustmentId.toString(),
+              "duplicateNomisAdjustmentCategory" to duplicateErrorDetails.duplicate.nomisAdjustmentCategory,
+              "existingAdjustmentId" to duplicateErrorDetails.existing.adjustmentId,
+              "existingNomisAdjustmentId" to duplicateErrorDetails.existing.nomisAdjustmentId.toString(),
+              "existingNomisAdjustmentCategory" to duplicateErrorDetails.existing.nomisAdjustmentCategory,
+            ),
+            null,
+          )
+        }
+      }
       return MAPPING_CREATED
     } catch (e: Exception) {
       log.error(

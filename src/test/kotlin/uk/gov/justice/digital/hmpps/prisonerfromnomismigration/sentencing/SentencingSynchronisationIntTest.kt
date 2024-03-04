@@ -320,6 +320,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     }
 
     @Nested
+    @DisplayName("When mapping has duplicate - adjustment already created by another message")
     inner class WhenDuplicate {
 
       @Test
@@ -346,7 +347,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         // wait for all mappings to be created before verifying
         await untilCallTo { mappingApi.createMappingCount(ADJUSTMENTS_CREATE_MAPPING_URL) } matches { it == 1 }
 
-        // check that one sentence-adjustment is created
+        // check that one sentence-adjustment is still created - despite it being a duplicate
         assertThat(sentencingApi.createSentenceAdjustmentForSynchronisationCount()).isEqualTo(1)
 
         // doesn't retry
@@ -1201,6 +1202,58 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               isNull(),
             )
           }
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName("When mapping has duplicate - adjustment already created by another message")
+    inner class WhenDuplicate {
+
+      @Test
+      internal fun `it will not retry after a 409 (duplicate adjustment written to Sentencing API)`() {
+        nomisApi.stubGetKeyDateAdjustment(adjustmentId = NOMIS_ADJUSTMENT_ID)
+        sentencingApi.stubCreateSentencingAdjustmentForSynchronisation(sentenceAdjustmentId = ADJUSTMENT_ID)
+        mappingApi.stubSentenceAdjustmentMappingCreateConflict(
+          duplicateAdjustmentId = ADJUSTMENT_ID,
+          nomisAdjustmentId = NOMIS_ADJUSTMENT_ID,
+          nomisAdjustmentCategory = "KEY-DATE",
+        )
+
+        awsSqsSentencingOffenderEventsClient.sendMessage(
+          sentencingQueueOffenderEventsUrl,
+          sentencingEvent(
+            eventType = "KEY_DATE_ADJUSTMENT_UPSERTED",
+            auditModuleName = "OIDSENAD",
+            adjustmentId = NOMIS_ADJUSTMENT_ID,
+            bookingId = BOOKING_ID,
+            offenderIdDisplay = OFFENDER_NUMBER,
+          ),
+        )
+
+        // wait for all mappings to be created before verifying
+        await untilCallTo { mappingApi.createMappingCount(ADJUSTMENTS_CREATE_MAPPING_URL) } matches { it == 1 }
+
+        // check that one sentence-adjustment is still created - despite it being a duplicate
+        assertThat(sentencingApi.createSentenceAdjustmentForSynchronisationCount()).isEqualTo(1)
+
+        // doesn't retry
+        mappingApi.verifyCreateMappingSentenceAdjustmentIds(arrayOf(ADJUSTMENT_ID), times = 1)
+
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            eq("from-nomis-synch-adjustment-duplicate"),
+            check {
+              assertThat(it["migrationId"]).isNull()
+              assertThat(it["existingAdjustmentId"]).isEqualTo("10")
+              assertThat(it["duplicateAdjustmentId"]).isEqualTo(ADJUSTMENT_ID)
+              assertThat(it["existingNomisAdjustmentId"]).isEqualTo("$NOMIS_ADJUSTMENT_ID")
+              assertThat(it["duplicateNomisAdjustmentId"]).isEqualTo("$NOMIS_ADJUSTMENT_ID")
+              assertThat(it["existingNomisAdjustmentCategory"]).isEqualTo("KEY-DATE")
+              assertThat(it["duplicateNomisAdjustmentCategory"]).isEqualTo("KEY-DATE")
+            },
+            isNull(),
+          )
         }
       }
     }
