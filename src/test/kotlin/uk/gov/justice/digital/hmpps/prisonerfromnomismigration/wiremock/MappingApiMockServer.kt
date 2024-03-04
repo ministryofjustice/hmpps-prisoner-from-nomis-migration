@@ -301,6 +301,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     existingAdjustmentId: String = "10",
     duplicateAdjustmentId: String = "11",
     nomisAdjustmentId: Long = 123,
+    nomisAdjustmentCategory: String = "SENTENCE",
   ) {
     stubFor(
       post(urlPathEqualTo("/mapping/sentencing/adjustments"))
@@ -315,7 +316,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
                 "existing" :  {
                   "adjustmentId": "$existingAdjustmentId",
                   "nomisAdjustmentId": $nomisAdjustmentId,
-                  "nomisAdjustmentCategory": "SENTENCE",
+                  "nomisAdjustmentCategory": "$nomisAdjustmentCategory",
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",
                   "mappingType": "MIGRATED"
@@ -323,7 +324,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
                  "duplicate" : {
                   "adjustmentId": "$duplicateAdjustmentId",
                   "nomisAdjustmentId": $nomisAdjustmentId,
-                  "nomisAdjustmentCategory": "SENTENCE",
+                  "nomisAdjustmentCategory": "$nomisAdjustmentCategory",
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",
                   "mappingType": "MIGRATED"
