@@ -87,6 +87,25 @@ class AlertsDpsApiServiceTest {
     }
 
     @Test
+    internal fun `will pass source as NOMIS to service via header`() = runTest {
+      dpsAlertsServer.stubPostAlert()
+
+      apiService.createAlert(
+        alert = CreateAlert(
+          prisonNumber = "A1234KL",
+          activeFrom = LocalDate.now(),
+          alertCode = "XA",
+        ),
+        createdByUsername = "B.MORRIS",
+      )
+
+      dpsAlertsServer.verify(
+        postRequestedFor(urlMatching("/alerts"))
+          .withHeader("Source", equalTo("NOMIS")),
+      )
+    }
+
+    @Test
     fun `will return dpsAlertId`() = runTest {
       dpsAlertsServer.stubPostAlert(response = dpsAlert().copy(alertUuid = UUID.fromString("f3f31737-6ee3-4ec5-8a79-0ac110fe50e2")))
 
@@ -160,6 +179,25 @@ class AlertsDpsApiServiceTest {
       dpsAlertsServer.verify(
         putRequestedFor(anyUrl())
           .withHeader("Username", equalTo("C.MORRIS")),
+      )
+    }
+
+    @Test
+    internal fun `will pass source as NOMIS to service via header`() = runTest {
+      dpsAlertsServer.stubPutAlert()
+
+      apiService.updateAlert(
+        alertId = "f3f31737-6ee3-4ec5-8a79-0ac110fe50e2",
+        alert = UpdateAlert(
+          activeFrom = LocalDate.parse("2020-01-23"),
+          activeTo = LocalDate.parse("2023-01-23"),
+        ),
+        updatedByUsername = "C.MORRIS",
+      )
+
+      dpsAlertsServer.verify(
+        putRequestedFor(anyUrl())
+          .withHeader("Source", equalTo("NOMIS")),
       )
     }
   }
