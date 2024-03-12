@@ -1221,31 +1221,37 @@ private fun incidentResponse(
 ): String =
   """
   {
-  "id": $id,
-  "title": "This is a test incident",
-  "description": "On 12/04/2023 approx 16:45 Mr Smith tried to escape.",
-  "status": "AWAN",
-  "prison": {
-    "code":"BXI",
-    "description":"Brixton"
-  },
-  "type": "ATT_ESC_E",
-  "lockedResponse": false,
-  "incidentDateTime": "2017-04-12T16:45:00",
-  "reportedStaff": {
-    "username": "DBULL_GEN",
-    "staffId": 485572,
-    "firstName": "DOM",
-    "lastName": "BULL"
-  },
-  "reportedDateTime": "2024-02-06T12:36:00",
-  "staffParties": [],
-  "offenderParties": [],
-  "requirements": [],
-  "questions": [],
-  "history": []
+    "incidentId": $id,
+    "questionnaireId": 45456,
+    "title": "This is a test incident",
+    "description": "On 12/04/2023 approx 16:45 Mr Smith tried to escape.",
+    "status":{
+      "code": "AWAN",
+      "description": "Awaiting Analysis",
+      "listSequence": 1,
+      "standardUser": true,
+      "enhancedUser": true
+    },
+    "prison": {
+      "code": "BXI",
+      "description": "Brixton"
+    },
+    "type": "ATT_ESC_E",
+    "lockedResponse": false,
+    "incidentDateTime": "2017-04-12T16:45:00",
+    "reportingStaff": {
+      "username": "FSTAFF_GEN",
+      "staffId": 485572,
+      "firstName": "FRED",
+      "lastName": "STAFF"
+    },
+    "reportedDateTime": "2024-02-06T12:36:00",
+    "staffParties": [],
+    "offenderParties": [],
+    "requirements": [],
+    "questions": [],
+    "history": []
   }
-    
   """.trimIndent()
 
 private fun appointmentResponse(

@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.IncidentsApiExtension.Companion.incidentsApi
-import java.time.LocalDateTime
 
 private const val NOMIS_INCIDENT_ID = 1234L
 private const val INCIDENT_ID = "4321"
@@ -34,21 +33,7 @@ internal class IncidentsServiceTest {
       incidentsApi.stubIncidentForMigration()
 
       runBlocking {
-        incidentsService.migrateIncident(
-          IncidentMigrateRequest(
-            incidentReportNumber = NOMIS_INCIDENT_ID,
-            reportDetails = IncidentReportDetails(
-              title = "There was a fight",
-              status = "AWAN",
-              prisonId = "BXI",
-              incidentDate = LocalDateTime.parse("2023-04-12T16:45:00"),
-              reportDate = LocalDateTime.parse("2023-04-14T17:55:00"),
-              reportedBy = "JANE BAKER",
-              reportType = "ASSAULT",
-              comments = "On 12/04/2023 approx 16:45 John Smith punched Fred Jones",
-            ),
-          ),
-        )
+        incidentsService.migrateIncident(aNomisIncidentResponse())
       }
     }
 
@@ -64,8 +49,8 @@ internal class IncidentsServiceTest {
     fun `will pass data to the api`() {
       incidentsApi.verify(
         postRequestedFor(urlEqualTo("/incidents/migrate"))
-          .withRequestBody(matchingJsonPath("incidentReportNumber", equalTo("$NOMIS_INCIDENT_ID")))
-          .withRequestBody(matchingJsonPath("reportDetails.comments", equalTo("On 12/04/2023 approx 16:45 John Smith punched Fred Jones"))),
+          .withRequestBody(matchingJsonPath("incidentId", equalTo("$NOMIS_INCIDENT_ID")))
+          .withRequestBody(matchingJsonPath("title", equalTo("There was a fight"))),
       )
     }
   }

@@ -45,6 +45,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Staff
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
@@ -850,21 +851,7 @@ internal class IncidentsMigrationServiceTest {
       )
 
       verify(incidentsService).migrateIncident(
-        eq(
-          IncidentMigrateRequest(
-            incidentReportNumber = NOMIS_INCIDENT_ID,
-            reportDetails = IncidentReportDetails(
-              title = "There was a fight",
-              prisonId = "BXI",
-              incidentDate = LocalDateTime.parse("2023-04-12T16:45:00"),
-              reportDate = LocalDateTime.parse("2023-04-14T17:55:00"),
-              reportedBy = "JANE BAKER",
-              reportType = "ASSAULT",
-              comments = "On 12/04/2023 approx 16:45 John Smith punched Fred Jones",
-              status = "AWAN",
-            ),
-          ),
-        ),
+        eq(aNomisIncidentResponse()),
       )
     }
 
@@ -1011,16 +998,17 @@ internal class IncidentsMigrationServiceTest {
 
 fun aNomisIncidentResponse() =
   IncidentResponse(
-    id = NOMIS_INCIDENT_ID,
+    incidentId = NOMIS_INCIDENT_ID,
+    questionnaireId = 543,
     title = "There was a fight",
     description = "On 12/04/2023 approx 16:45 John Smith punched Fred Jones",
-    status = "AWAN",
+    status = IncidentStatus(code = "AWAN", description = "Awaiting Analysis", standardUser = true, enhancedUser = false),
     type = "ASSAULT",
     prison = CodeDescription(code = "BXI", description = "Brixton"),
     lockedResponse = false,
     incidentDateTime = "2023-04-12T16:45:00",
     reportedDateTime = "2023-04-14T17:55:00",
-    reportedStaff = Staff(username = "BQL16C", staffId = 16288, firstName = "JANE", lastName = "BAKER"),
+    reportingStaff = Staff(username = "BQL16C", staffId = 16288, firstName = "JANE", lastName = "BAKER"),
     history = listOf(),
     offenderParties = listOf(),
     staffParties = listOf(),
