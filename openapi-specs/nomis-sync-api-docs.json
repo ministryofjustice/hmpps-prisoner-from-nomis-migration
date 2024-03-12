@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-02-21.6689.8338044"
+    "version": "2024-03-11.6891.143d6b5"
   },
   "servers": [
     {
@@ -3615,6 +3615,92 @@
         }
       }
     },
+    "/prisoners/{offenderNo}/alerts": {
+      "post": {
+        "tags": [
+          "alerts-resource"
+        ],
+        "summary": "Creates an alert on a prisoner",
+        "description": "Creates an alert on the prisoner's latest booking. Requires ROLE_NOMIS_ALERTS",
+        "operationId": "createAlert",
+        "parameters": [
+          {
+            "name": "offenderNo",
+            "in": "path",
+            "description": "Offender no (aka prisoner number)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Offender no (aka prisoner number)",
+              "example": "A1234AK"
+            },
+            "example": "A1234AK"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAlertRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Alert Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateAlertResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_ALERTS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Prisoner does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Active alert of this type already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/prisoners/{offenderNo}/adjudications": {
       "post": {
         "tags": [
@@ -5938,6 +6024,84 @@
         "summary": "get an alert by bookingId and alert sequence",
         "description": "Retrieves an prisoner alert. Requires ROLE_NOMIS_ALERTS",
         "operationId": "getAlert",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "description": "Booking Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Booking Id",
+              "example": 12345
+            },
+            "example": 12345
+          },
+          {
+            "name": "alertSequence",
+            "in": "path",
+            "description": "Alert sequence",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Alert sequence",
+              "example": 3
+            },
+            "example": 3
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Alert Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_ALERTS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Alert does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisoners/booking-id/{bookingId}/alerts/{alertSequence}": {
+      "get": {
+        "tags": [
+          "alerts-resource"
+        ],
+        "summary": "get an alert by bookingId and alert sequence",
+        "description": "Retrieves an prisoner alert. Requires ROLE_NOMIS_ALERTS",
+        "operationId": "getAlert_1",
         "parameters": [
           {
             "name": "bookingId",
@@ -8383,7 +8547,8 @@
         "required": [
           "active",
           "adjustmentDays",
-          "adjustmentTypeCode"
+          "adjustmentTypeCode",
+          "sentenceSequence"
         ],
         "type": "object",
         "properties": {
@@ -8423,6 +8588,12 @@
             "type": "boolean",
             "description": "Flag to indicate if the adjustment is being applied",
             "default": true
+          },
+          "sentenceSequence": {
+            "minimum": 0,
+            "type": "integer",
+            "description": "Sentence sequence",
+            "format": "int64"
           }
         },
         "description": "Sentence adjustment update request"
@@ -8758,6 +8929,30 @@
         },
         "description": "Offender NonAssociation update request"
       },
+      "ProfileRequest": {
+        "required": [
+          "profileCode",
+          "profileType"
+        ],
+        "type": "object",
+        "properties": {
+          "profileType": {
+            "type": "string",
+            "description": "Reference Domain for the attribute",
+            "enum": [
+              "HOU_SANI_FIT",
+              "HOU_UNIT_ATT",
+              "HOU_USED_FOR",
+              "SUP_LVL_TYPE"
+            ]
+          },
+          "profileCode": {
+            "type": "string",
+            "description": "Reference Code within the domain for the attribute"
+          }
+        },
+        "description": "Location profile or attribute"
+      },
       "UpdateLocationRequest": {
         "required": [
           "description",
@@ -8860,13 +9055,109 @@
             "type": "string",
             "description": "Comment",
             "example": "Some comment"
+          },
+          "profiles": {
+            "type": "array",
+            "description": "Profiles",
+            "items": {
+              "$ref": "#/components/schemas/ProfileRequest"
+            }
+          },
+          "usages": {
+            "type": "array",
+            "description": "Usages",
+            "items": {
+              "$ref": "#/components/schemas/UsageRequest"
+            }
           }
         },
         "description": "Location update request"
       },
+      "UsageRequest": {
+        "required": [
+          "internalLocationUsageType"
+        ],
+        "type": "object",
+        "properties": {
+          "internalLocationUsageType": {
+            "type": "string",
+            "description": "Types of location that the usage applies to",
+            "enum": [
+              "APP",
+              "MOVEMENT",
+              "OCCUR",
+              "OIC",
+              "OTHER",
+              "PROG",
+              "PROP",
+              "VISIT"
+            ]
+          },
+          "usageLocationType": {
+            "type": "string",
+            "description": "Non-residential usage type",
+            "enum": [
+              "ADJU",
+              "ADMI",
+              "APP",
+              "AREA",
+              "ASSO",
+              "BOOT",
+              "BOX",
+              "CELL",
+              "CLAS",
+              "EXER",
+              "EXTE",
+              "FAIT",
+              "GROU",
+              "HCEL",
+              "HOLD",
+              "IGRO",
+              "INSI",
+              "INTE",
+              "LAND",
+              "LOCA",
+              "MEDI",
+              "MOVE",
+              "OFFI",
+              "OUTS",
+              "POSI",
+              "RESI",
+              "ROOM",
+              "RTU",
+              "SHEL",
+              "SPOR",
+              "SPUR",
+              "STOR",
+              "TABL",
+              "TRAI",
+              "TRRM",
+              "VIDE",
+              "VISIT",
+              "WING",
+              "WORK"
+            ]
+          },
+          "capacity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sequence": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "Location usage"
+      },
       "DeactivateRequest": {
         "type": "object",
         "properties": {
+          "deactivateDate": {
+            "type": "string",
+            "description": "The deactivation date, defaults to today",
+            "format": "date",
+            "example": "2024-12-31"
+          },
           "reasonCode": {
             "type": "string",
             "description": "The reason code for deactivation, reference data 'LIV_UN_RSN'",
@@ -10239,6 +10530,77 @@
         },
         "description": "Create adjustment response"
       },
+      "CreateAlertResponse": {
+        "required": [
+          "alertCode",
+          "alertSequence",
+          "bookingId",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "integer",
+            "description": "The prisoner's bookingId related to this alert",
+            "format": "int64"
+          },
+          "alertSequence": {
+            "type": "integer",
+            "description": "The sequence primary key within this booking",
+            "format": "int64"
+          },
+          "alertCode": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "type": {
+            "$ref": "#/components/schemas/CodeDescription"
+          }
+        },
+        "description": "A response after an alert created in NOMIS"
+      },
+      "CreateAlertRequest": {
+        "required": [
+          "alertCode",
+          "createUsername",
+          "date",
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "alertCode": {
+            "type": "string",
+            "description": "The alert code"
+          },
+          "date": {
+            "type": "string",
+            "description": "Date alert started",
+            "format": "date"
+          },
+          "expiryDate": {
+            "type": "string",
+            "description": "Date alert expired",
+            "format": "date"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "true if alert is active and has not expired"
+          },
+          "comment": {
+            "type": "string",
+            "description": "Free format comment"
+          },
+          "authorisedBy": {
+            "type": "string",
+            "description": "Free format text of person or department that authorised the alert",
+            "example": "security"
+          },
+          "createUsername": {
+            "type": "string",
+            "description": "Username of person that created the record (might also be a system) "
+          }
+        },
+        "description": "A request to create an alert in NOMIS"
+      },
       "AdjudicationCharge": {
         "required": [
           "chargeSequence",
@@ -11414,6 +11776,20 @@
             "type": "string",
             "description": "Comment",
             "example": "Some comment"
+          },
+          "profiles": {
+            "type": "array",
+            "description": "Profiles",
+            "items": {
+              "$ref": "#/components/schemas/ProfileRequest"
+            }
+          },
+          "usages": {
+            "type": "array",
+            "description": "Usages",
+            "items": {
+              "$ref": "#/components/schemas/UsageRequest"
+            }
           }
         },
         "description": "Location creation request"
@@ -11990,12 +12366,12 @@
             "type": "integer",
             "format": "int32"
           },
+          "paged": {
+            "type": "boolean"
+          },
           "pageNumber": {
             "type": "integer",
             "format": "int32"
-          },
-          "paged": {
-            "type": "boolean"
           },
           "unpaged": {
             "type": "boolean"
@@ -13593,12 +13969,14 @@
       },
       "LocationResponse": {
         "required": [
+          "active",
           "certified",
+          "createDatetime",
+          "createUsername",
           "description",
           "locationCode",
           "locationId",
           "locationType",
-          "parentLocationId",
           "prisonId"
         ],
         "type": "object",
@@ -13655,8 +14033,7 @@
           },
           "locationCode": {
             "type": "string",
-            "description": "Usually a number for a cell, a letter for a wing or landing. Used to calculate description",
-            "example": "xxxx"
+            "description": "Usually a number for a cell, a letter for a wing or landing. Used to calculate description"
           },
           "capacity": {
             "type": "integer",
@@ -13673,6 +14050,83 @@
             "type": "string",
             "description": "Comment",
             "example": "Some comment"
+          },
+          "unitType": {
+            "type": "string",
+            "description": "Housing unit type",
+            "example": "NA",
+            "enum": [
+              "HC",
+              "HOLC",
+              "NA",
+              "OU",
+              "REC",
+              "SEG",
+              "SPLC"
+            ]
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Whether the location is active or has been deactivated",
+            "example": true
+          },
+          "deactivateDate": {
+            "type": "string",
+            "description": "The deactivation date, defaults to today",
+            "format": "date",
+            "example": "2024-12-31"
+          },
+          "reasonCode": {
+            "type": "string",
+            "description": "The reason code for deactivation, reference data 'LIV_UN_RSN'",
+            "enum": [
+              "A",
+              "B",
+              "C",
+              "D",
+              "E",
+              "F",
+              "G",
+              "H",
+              "I",
+              "J",
+              "K",
+              "L"
+            ]
+          },
+          "reactivateDate": {
+            "type": "string",
+            "description": "The expected reactivation date if any",
+            "format": "date",
+            "example": "2024-12-31"
+          },
+          "profiles": {
+            "type": "array",
+            "description": "Profiles",
+            "items": {
+              "$ref": "#/components/schemas/ProfileRequest"
+            }
+          },
+          "usages": {
+            "type": "array",
+            "description": "Usages",
+            "items": {
+              "$ref": "#/components/schemas/UsageRequest"
+            }
+          },
+          "createDatetime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "Record created date",
+            "example": "2021-07-05T10:35:17"
+          },
+          "createUsername": {
+            "type": "string",
+            "description": "Record created by"
+          },
+          "modifyUsername": {
+            "type": "string",
+            "description": "Record modified by"
           }
         },
         "description": "Location request returned data"
@@ -13725,31 +14179,41 @@
       },
       "History": {
         "required": [
-          "questionnaire",
+          "incidentChangeDate",
+          "incidentChangeStaff",
           "questionnaireId",
-          "questions"
+          "questions",
+          "type"
         ],
         "type": "object",
         "properties": {
           "questionnaireId": {
             "type": "integer",
-            "description": "The historical incident questionnaire id",
+            "description": "The history questionnaire id for the incident",
             "format": "int64"
           },
-          "questionnaire": {
+          "type": {
             "type": "string",
-            "description": "The historical incident questionnaire code"
+            "description": "The questionnaire type"
           },
           "description": {
             "type": "string",
-            "description": "The historical incident questionnaire description"
+            "description": "The questionnaire description"
           },
           "questions": {
             "type": "array",
-            "description": "Questions asked for the historical incident questionnaire",
+            "description": "Questions asked for the questionnaire",
             "items": {
               "$ref": "#/components/schemas/HistoryQuestion"
             }
+          },
+          "incidentChangeDate": {
+            "type": "string",
+            "description": "When the questionnaire was changed",
+            "format": "date"
+          },
+          "incidentChangeStaff": {
+            "$ref": "#/components/schemas/Staff"
           }
         },
         "description": "Historical questionnaire details for the incident"
@@ -13758,13 +14222,19 @@
         "required": [
           "answers",
           "question",
+          "questionId",
           "sequence"
         ],
         "type": "object",
         "properties": {
+          "questionId": {
+            "type": "integer",
+            "description": "The sequence number of the response question for this incident",
+            "format": "int64"
+          },
           "sequence": {
             "type": "integer",
-            "description": "The sequence number of the historical question for this incident",
+            "description": "The sequence number of the question for this incident",
             "format": "int32"
           },
           "question": {
@@ -13779,17 +14249,23 @@
             }
           }
         },
-        "description": "Questions asked for the historical incident questionnaire"
+        "description": "Questions asked for the questionnaire"
       },
       "HistoryResponse": {
         "required": [
-          "sequence"
+          "recordingStaff",
+          "responseSequence"
         ],
         "type": "object",
         "properties": {
-          "sequence": {
+          "questionResponseId": {
             "type": "integer",
-            "description": "The sequence number of the answer",
+            "description": "The id of the questionnaire question answer",
+            "format": "int64"
+          },
+          "responseSequence": {
+            "type": "integer",
+            "description": "The sequence number of the response for this incident",
             "format": "int32"
           },
           "answer": {
@@ -13799,6 +14275,9 @@
           "comment": {
             "type": "string",
             "description": "Comment added to the response by recording staff"
+          },
+          "recordingStaff": {
+            "$ref": "#/components/schemas/Staff"
           }
         },
         "description": "Historical list of Responses to this question"
@@ -13806,14 +14285,15 @@
       "IncidentResponse": {
         "required": [
           "history",
-          "id",
           "incidentDateTime",
+          "incidentId",
           "lockedResponse",
           "offenderParties",
           "prison",
+          "questionnaireId",
           "questions",
           "reportedDateTime",
-          "reportedStaff",
+          "reportingStaff",
           "requirements",
           "staffParties",
           "status",
@@ -13821,9 +14301,14 @@
         ],
         "type": "object",
         "properties": {
-          "id": {
+          "incidentId": {
             "type": "integer",
             "description": "The incident id",
+            "format": "int64"
+          },
+          "questionnaireId": {
+            "type": "integer",
+            "description": "The id of the questionnaire associated with this incident",
             "format": "int64"
           },
           "title": {
@@ -13838,8 +14323,7 @@
             "$ref": "#/components/schemas/CodeDescription"
           },
           "status": {
-            "type": "string",
-            "description": "Current status code of the incident"
+            "$ref": "#/components/schemas/IncidentStatus"
           },
           "type": {
             "type": "string",
@@ -13855,7 +14339,7 @@
             "description": "The date and time of the incident",
             "example": "2021-07-05T10:35:17"
           },
-          "reportedStaff": {
+          "reportingStaff": {
             "$ref": "#/components/schemas/Staff"
           },
           "reportedDateTime": {
@@ -13901,6 +14385,34 @@
           }
         },
         "description": "Incident Details"
+      },
+      "IncidentStatus": {
+        "required": [
+          "code",
+          "description",
+          "enhancedUser",
+          "standardUser"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "listSequence": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "standardUser": {
+            "type": "boolean"
+          },
+          "enhancedUser": {
+            "type": "boolean"
+          }
+        },
+        "description": "Status details"
       },
       "Offender": {
         "required": [
@@ -13951,10 +14463,16 @@
         "required": [
           "answers",
           "question",
+          "questionId",
           "sequence"
         ],
         "type": "object",
         "properties": {
+          "questionId": {
+            "type": "integer",
+            "description": "The questionnaire question id",
+            "format": "int64"
+          },
           "sequence": {
             "type": "integer",
             "description": "The sequence number of the question for this incident",
@@ -14002,12 +14520,21 @@
         "description": "Requirements for completing the incident report"
       },
       "Response": {
+        "required": [
+          "recordingStaff",
+          "sequence"
+        ],
         "type": "object",
         "properties": {
-          "id": {
+          "questionResponseId": {
             "type": "integer",
-            "description": "The id of the answer",
+            "description": "The id of the questionnaire question answer",
             "format": "int64"
+          },
+          "sequence": {
+            "type": "integer",
+            "description": "The sequence number of the response for this incident",
+            "format": "int32"
           },
           "answer": {
             "type": "string",
@@ -14016,6 +14543,9 @@
           "comment": {
             "type": "string",
             "description": "Comment added to the response by recording staff"
+          },
+          "recordingStaff": {
+            "$ref": "#/components/schemas/Staff"
           }
         },
         "description": "List of Responses to this question"
