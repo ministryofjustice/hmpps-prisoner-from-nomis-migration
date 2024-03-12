@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
-import java.time.LocalDateTime
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentResponse
 
 /**
  * This represents the possible interface for the incidents api service.
@@ -26,10 +26,10 @@ class MockIncidentsResource {
   @Operation(hidden = true)
   suspend fun createIncidentsForMigration(
     @RequestBody @Valid
-    incidentRequest: IncidentMigrateRequest,
+    nomisIncident: IncidentResponse,
   ): Incident {
-    log.info("Created incident for migration with id ${incidentRequest.incidentReportNumber} ")
-    return Incident("DPS-${incidentRequest.incidentReportNumber}")
+    log.info("Created incident for migration with id ${nomisIncident.incidentId} ")
+    return Incident("DPS-${nomisIncident.incidentId}")
   }
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_INCIDENTS')")
@@ -37,42 +37,14 @@ class MockIncidentsResource {
   @Operation(hidden = true)
   suspend fun syncIncidentsForMigration(
     @RequestBody @Valid
-    incidentRequest: IncidentSyncRequest,
+    nomisIncident: IncidentResponse,
   ): Incident {
-    log.info("Synced incident for migration with id ${incidentRequest.nomisIncidentId} ")
-    return Incident("DPS-${incidentRequest.nomisIncidentId}")
+    log.info("Synced incident for migration with id ${nomisIncident.incidentId} ")
+    return Incident("DPS-${nomisIncident.incidentId}")
   }
 }
-
-// TODO Add more fields to the incident api migrate request once we know requirements/structure
-data class IncidentMigrateRequest(
-  /* NOMIS Incident ID */
-  val incidentReportNumber: Long,
-  val reportDetails: IncidentReportDetails,
-)
-
-// TODO Add more fields to the incident api sync request once we know requirements
-// Will we pass everything again - assume we will (for now) - it will just overwrite the old DPS incident
-data class IncidentSyncRequest(
-  /* NOMIS Incident ID */
-  val nomisIncidentId: Long,
-  /* Basic Description for the incident */
-  val description: String?,
-)
 
 data class Incident(
   /* DPS Incident ID */
   val id: String,
-)
-
-data class IncidentReportDetails(
-  val title: String?,
-  val status: String,
-  val reportType: String,
-  val comments: String?,
-  val prisonId: String,
-  val reportDate: LocalDateTime,
-  val incidentDate: LocalDateTime,
-  val reportedBy: String,
-
 )

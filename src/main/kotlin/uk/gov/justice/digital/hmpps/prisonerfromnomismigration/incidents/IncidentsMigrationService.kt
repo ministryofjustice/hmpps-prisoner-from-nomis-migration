@@ -20,7 +20,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationMinutes
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.toMigrateRequest
 
 @Service
 class IncidentsMigrationService(
@@ -74,7 +73,7 @@ class IncidentsMigrationService(
       }
       ?: run {
         val nomisIncidentResponse = nomisApiService.getIncident(nomisIncidentId)
-        val migratedIncident = incidentsService.migrateIncident(nomisIncidentResponse.toMigrateRequest())
+        val migratedIncident = incidentsService.migrateIncident(nomisIncidentResponse)
           .also {
             createIncidentMapping(
               incidentId = it.id,

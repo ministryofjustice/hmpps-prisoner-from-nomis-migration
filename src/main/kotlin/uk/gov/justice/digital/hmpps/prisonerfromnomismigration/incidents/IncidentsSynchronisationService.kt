@@ -14,7 +14,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.INCIDENTS
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.toSyncRequest
 
 @Service
 class IncidentsSynchronisationService(
@@ -43,17 +42,17 @@ class IncidentsSynchronisationService(
       nomisIncidentId = event.incidentCaseId,
     )?.let {
       log.debug("Found incident mapping: {}", it)
-      log.debug("Sending incident update sync {}", nomisIncident.toSyncRequest())
+      log.debug("Sending incident update sync {}", nomisIncident)
 
-      incidentsService.syncIncident(nomisIncident.toSyncRequest())
+      incidentsService.syncIncident(nomisIncident)
       telemetryClient.trackEvent(
         "incident-updated-synchronisation-success",
         event.toTelemetryProperties(it.incidentId),
       )
     } ?: let {
-      log.debug("No incident mapping - sending incident sync {} ", nomisIncident.toSyncRequest())
+      log.debug("No incident mapping - sending incident sync {} ", nomisIncident)
 
-      incidentsService.syncIncident(nomisIncident.toSyncRequest()).also { incident ->
+      incidentsService.syncIncident(nomisIncident).also { incident ->
         tryToCreateIncidentMapping(event, incident.id).also { result ->
           telemetryClient.trackEvent(
             "incident-created-synchronisation-success",
