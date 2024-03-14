@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-03-11.6891.143d6b5"
+    "version": "2024-03-14.6978.f56c655"
   },
   "servers": [
     {
@@ -519,7 +519,14 @@
         },
         "responses": {
           "200": {
-            "description": "Court Appearance updated"
+            "description": "Court Appearance updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateCourtAppearanceResponse"
+                }
+              }
+            }
           },
           "400": {
             "description": "Supplied data is invalid, for instance missing required fields or invalid values. See schema for details",
@@ -553,6 +560,180 @@
           },
           "404": {
             "description": "Court appearance does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisoners/booking-id/{bookingId}/alerts/{alertSequence}": {
+      "get": {
+        "tags": [
+          "alerts-resource"
+        ],
+        "summary": "get an alert by bookingId and alert sequence",
+        "description": "Retrieves an prisoner alert. Requires ROLE_NOMIS_ALERTS",
+        "operationId": "getAlert_1",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "description": "Booking Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Booking Id",
+              "example": 12345
+            },
+            "example": 12345
+          },
+          {
+            "name": "alertSequence",
+            "in": "path",
+            "description": "Alert sequence",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Alert sequence",
+              "example": 3
+            },
+            "example": 3
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Alert Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_ALERTS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Alert does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "alerts-resource"
+        ],
+        "summary": "Updates an alert on a prisoner",
+        "description": "Updates an alert on the specified prisoner's booking which should be the latest booking. Requires ROLE_NOMIS_ALERTS",
+        "operationId": "updateAlert",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "description": "Booking id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Booking id",
+              "example": 1234567
+            },
+            "example": 1234567
+          },
+          {
+            "name": "alertSequence",
+            "in": "path",
+            "description": "Alert sequence",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Alert sequence",
+              "example": 3
+            },
+            "example": 3
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAlertRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Alert Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "One or more fields in the request contains invalid data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_ALERTS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Alert does not exist",
             "content": {
               "application/json": {
                 "schema": {
@@ -3658,6 +3839,16 @@
               }
             }
           },
+          "400": {
+            "description": "One or more fields in the request contains invalid data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized to access this endpoint",
             "content": {
@@ -6024,84 +6215,6 @@
         "summary": "get an alert by bookingId and alert sequence",
         "description": "Retrieves an prisoner alert. Requires ROLE_NOMIS_ALERTS",
         "operationId": "getAlert",
-        "parameters": [
-          {
-            "name": "bookingId",
-            "in": "path",
-            "description": "Booking Id",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "Booking Id",
-              "example": 12345
-            },
-            "example": 12345
-          },
-          {
-            "name": "alertSequence",
-            "in": "path",
-            "description": "Alert sequence",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "Alert sequence",
-              "example": 3
-            },
-            "example": 3
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Alert Information Returned",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AlertResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized to access this endpoint",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_ALERTS",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Alert does not exist",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/prisoners/booking-id/{bookingId}/alerts/{alertSequence}": {
-      "get": {
-        "tags": [
-          "alerts-resource"
-        ],
-        "summary": "get an alert by bookingId and alert sequence",
-        "description": "Retrieves an prisoner alert. Requires ROLE_NOMIS_ALERTS",
-        "operationId": "getAlert_1",
         "parameters": [
           {
             "name": "bookingId",
@@ -8878,6 +8991,220 @@
         },
         "description": "Court Event"
       },
+      "CreateCourtEventChargesResponse": {
+        "required": [
+          "offenderChargeId"
+        ],
+        "type": "object",
+        "properties": {
+          "offenderChargeId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "description": "Create adjustment response"
+      },
+      "UpdateCourtAppearanceResponse": {
+        "required": [
+          "createdCourtEventChargesIds",
+          "deletedOffenderChargesIds"
+        ],
+        "type": "object",
+        "properties": {
+          "createdCourtEventChargesIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateCourtEventChargesResponse"
+            }
+          },
+          "deletedOffenderChargesIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateCourtEventChargesResponse"
+            }
+          },
+          "nextCourtAppearanceId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "description": "Create adjustment response"
+      },
+      "AlertResponse": {
+        "required": [
+          "alertCode",
+          "alertSequence",
+          "audit",
+          "bookingId",
+          "date",
+          "isActive",
+          "isVerified",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "integer",
+            "description": "The prisoner's bookingId related to this alert",
+            "format": "int64"
+          },
+          "alertSequence": {
+            "type": "integer",
+            "description": "The sequence primary key within this booking",
+            "format": "int64"
+          },
+          "alertCode": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "type": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "date": {
+            "type": "string",
+            "description": "Date alert started",
+            "format": "date"
+          },
+          "expiryDate": {
+            "type": "string",
+            "description": "Date alert expired",
+            "format": "date"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "true if alert is active and has not expired"
+          },
+          "isVerified": {
+            "type": "boolean",
+            "description": "true if alert has been verified by another member of staff"
+          },
+          "authorisedBy": {
+            "type": "string",
+            "description": "Free format text of person or department that authorised the alert",
+            "example": "security"
+          },
+          "comment": {
+            "type": "string",
+            "description": "Free format comment"
+          },
+          "audit": {
+            "$ref": "#/components/schemas/NomisAudit"
+          }
+        },
+        "description": "The data held in NOMIS about an alert associated with a prisoner"
+      },
+      "CodeDescription": {
+        "required": [
+          "code",
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "NomisAudit": {
+        "required": [
+          "createDatetime",
+          "createUsername"
+        ],
+        "type": "object",
+        "properties": {
+          "createDatetime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "Date time record was created",
+            "example": "2021-07-05T10:35:17"
+          },
+          "createUsername": {
+            "type": "string",
+            "description": "Username of person that created the record (might also be a system) "
+          },
+          "modifyUserId": {
+            "type": "string",
+            "description": "Username of person that last modified the record (might also be a system)"
+          },
+          "modifyDatetime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "Date time record was last modified",
+            "example": "2021-07-05T10:35:17"
+          },
+          "auditTimestamp": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "Audit Date time",
+            "example": "2021-07-05T10:35:17"
+          },
+          "auditUserId": {
+            "type": "string",
+            "description": "Audit username"
+          },
+          "auditModuleName": {
+            "type": "string",
+            "description": "NOMIS or DPS module that created the record"
+          },
+          "auditClientUserId": {
+            "type": "string",
+            "description": "Client userid"
+          },
+          "auditClientIpAddress": {
+            "type": "string",
+            "description": "IP Address where request originated from"
+          },
+          "auditClientWorkstationName": {
+            "type": "string",
+            "description": "Machine name where request originated from"
+          },
+          "auditAdditionalInfo": {
+            "type": "string",
+            "description": "Additional information that is audited"
+          }
+        },
+        "description": "The data held in NOMIS the person or system that created this record"
+      },
+      "UpdateAlertRequest": {
+        "required": [
+          "date",
+          "isActive",
+          "updateUsername"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "Date alert started",
+            "format": "date"
+          },
+          "expiryDate": {
+            "type": "string",
+            "description": "Date alert expired",
+            "format": "date"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "true if alert is active and has not expired"
+          },
+          "comment": {
+            "type": "string",
+            "description": "Free format comment"
+          },
+          "updateUsername": {
+            "type": "string",
+            "description": "Username of person that update the record (might also be a system) "
+          },
+          "authorisedBy": {
+            "type": "string",
+            "description": "Free format text of person or department that authorised the alert",
+            "example": "security"
+          }
+        },
+        "description": "A request to update an alert in NOMIS"
+      },
       "UpdateNonAssociationRequest": {
         "required": [
           "effectiveDate",
@@ -9516,21 +9843,6 @@
           }
         },
         "description": "Offender individual schedule update request"
-      },
-      "CodeDescription": {
-        "required": [
-          "code",
-          "description"
-        ],
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          }
-        }
       },
       "Repair": {
         "required": [
@@ -10513,19 +10825,6 @@
             "items": {
               "$ref": "#/components/schemas/CreateCourtAppearanceResponse"
             }
-          }
-        },
-        "description": "Create adjustment response"
-      },
-      "CreateCourtEventChargesResponse": {
-        "required": [
-          "offenderChargeId"
-        ],
-        "type": "object",
-        "properties": {
-          "offenderChargeId": {
-            "type": "integer",
-            "format": "int64"
           }
         },
         "description": "Create adjustment response"
@@ -12366,12 +12665,12 @@
             "type": "integer",
             "format": "int32"
           },
-          "paged": {
-            "type": "boolean"
-          },
           "pageNumber": {
             "type": "integer",
             "format": "int32"
+          },
+          "paged": {
+            "type": "boolean"
           },
           "unpaged": {
             "type": "boolean"
@@ -13704,128 +14003,6 @@
           }
         },
         "description": "Summary of adjudication for a booking"
-      },
-      "AlertResponse": {
-        "required": [
-          "alertCode",
-          "alertSequence",
-          "audit",
-          "bookingId",
-          "date",
-          "isActive",
-          "isVerified",
-          "type"
-        ],
-        "type": "object",
-        "properties": {
-          "bookingId": {
-            "type": "integer",
-            "description": "The prisoner's bookingId related to this alert",
-            "format": "int64"
-          },
-          "alertSequence": {
-            "type": "integer",
-            "description": "The sequence primary key within this booking",
-            "format": "int64"
-          },
-          "alertCode": {
-            "$ref": "#/components/schemas/CodeDescription"
-          },
-          "type": {
-            "$ref": "#/components/schemas/CodeDescription"
-          },
-          "date": {
-            "type": "string",
-            "description": "Date alert started",
-            "format": "date"
-          },
-          "expiryDate": {
-            "type": "string",
-            "description": "Date alert expired",
-            "format": "date"
-          },
-          "isActive": {
-            "type": "boolean",
-            "description": "true if alert is active and has not expired"
-          },
-          "isVerified": {
-            "type": "boolean",
-            "description": "true if alert has been verified by another member of staff"
-          },
-          "authorisedBy": {
-            "type": "string",
-            "description": "Free format text of person or department that authorised the alert",
-            "example": "security"
-          },
-          "comment": {
-            "type": "string",
-            "description": "Free format comment"
-          },
-          "audit": {
-            "$ref": "#/components/schemas/NomisAudit"
-          }
-        },
-        "description": "The data held in NOMIS about an alert associated with a prisoner"
-      },
-      "NomisAudit": {
-        "required": [
-          "createDatetime",
-          "createUsername"
-        ],
-        "type": "object",
-        "properties": {
-          "createDatetime": {
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
-            "type": "string",
-            "description": "Date time record was created",
-            "example": "2021-07-05T10:35:17"
-          },
-          "createUsername": {
-            "type": "string",
-            "description": "Username of person that created the record (might also be a system) "
-          },
-          "modifyUserId": {
-            "type": "string",
-            "description": "Username of person that last modified the record (might also be a system)"
-          },
-          "modifyDatetime": {
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
-            "type": "string",
-            "description": "Date time record was last modified",
-            "example": "2021-07-05T10:35:17"
-          },
-          "auditTimestamp": {
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
-            "type": "string",
-            "description": "Audit Date time",
-            "example": "2021-07-05T10:35:17"
-          },
-          "auditUserId": {
-            "type": "string",
-            "description": "Audit username"
-          },
-          "auditModuleName": {
-            "type": "string",
-            "description": "NOMIS or DPS module that created the record"
-          },
-          "auditClientUserId": {
-            "type": "string",
-            "description": "Client userid"
-          },
-          "auditClientIpAddress": {
-            "type": "string",
-            "description": "IP Address where request originated from"
-          },
-          "auditClientWorkstationName": {
-            "type": "string",
-            "description": "Machine name where request originated from"
-          },
-          "auditAdditionalInfo": {
-            "type": "string",
-            "description": "Additional information that is audited"
-          }
-        },
-        "description": "The data held in NOMIS the person or system that created this record"
       },
       "NonAssociationResponse": {
         "required": [

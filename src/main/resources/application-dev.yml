@@ -9,6 +9,7 @@ api.base.url:
   activities: http://localhost:8086
   adjudications: http://localhost:8087
   incidents: http://localhost:8089
+  locations: http://localhost:8091
   mapping: http://localhost:8083
 
 spring:

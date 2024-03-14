@@ -29,10 +29,12 @@ const val ADJUDICATIONS_QUEUE_ID = "migrationadjudications"
 const val ACTIVITIES_QUEUE_ID = "migrationactivities"
 const val ALLOCATIONS_QUEUE_ID = "migrationallocations"
 const val INCIDENTS_QUEUE_ID = "migrationincidents"
+const val LOCATIONS_QUEUE_ID = "migrationlocations"
 
 const val VISITS_SYNC_QUEUE_ID = "eventvisits"
 const val SENTENCING_ADJUSTMENTS_SYNC_QUEUE_ID = "eventsentencing"
 const val INCIDENTS_SYNC_QUEUE_ID = "eventincidents"
+const val LOCATIONS_SYNC_QUEUE_ID = "eventlocations"
 const val ALERTS_SYNC_QUEUE_ID = "eventalerts"
 
 enum class MigrationType(val queueId: String, val telemetryName: String) {
@@ -43,6 +45,7 @@ enum class MigrationType(val queueId: String, val telemetryName: String) {
   ACTIVITIES(ACTIVITIES_QUEUE_ID, "activity"),
   ALLOCATIONS(ALLOCATIONS_QUEUE_ID, "activity-allocation"),
   INCIDENTS(INCIDENTS_QUEUE_ID, "incidents"),
+  LOCATIONS(LOCATIONS_QUEUE_ID, "locations"),
 }
 
 enum class SynchronisationType(val queueId: String) {
@@ -50,6 +53,7 @@ enum class SynchronisationType(val queueId: String) {
   SENTENCING_ADJUSTMENTS(SENTENCING_ADJUSTMENTS_SYNC_QUEUE_ID),
   INCIDENTS(INCIDENTS_SYNC_QUEUE_ID),
   ALERTS(ALERTS_SYNC_QUEUE_ID),
+  LOCATIONS(LOCATIONS_SYNC_QUEUE_ID),
 }
 
 fun Any.asMap(): Map<String, String> {

@@ -14,6 +14,7 @@ api.base.url:
   activities: http://localhost:8086
   adjudications: http://localhost:8087
   incidents: http://localhost:8089
+  locations: http://localhost:8091
   alerts: http://localhost:8092
 
 visits:
@@ -35,6 +36,9 @@ adjudications:
   page:
     size: 10
 incidents:
+  page:
+    size: 10
+locations:
   page:
     size: 10
 alerts:
