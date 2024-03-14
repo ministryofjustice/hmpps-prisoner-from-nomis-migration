@@ -269,6 +269,23 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubGetNomisSentencingAdjustment(
+    adjustmentCategory: String = "SENTENCE",
+    nomisAdjustmentId: Long = 987L,
+    status: HttpStatus,
+  ) {
+    stubFor(
+      get(
+        urlPathMatching("/mapping/sentencing/adjustments/nomis-adjustment-category/$adjustmentCategory/nomis-adjustment-id/$nomisAdjustmentId"),
+      ).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody("""{"message":"Not found"}"""),
+      ),
+    )
+  }
+
   fun stubSentenceAdjustmentMappingDelete(adjustmentId: String = "567S") {
     stubFor(
       delete(urlEqualTo("/mapping/sentencing/adjustments/adjustment-id/$adjustmentId")).willReturn(

@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.KeyDateAdjustmentResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SentenceAdjustmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustmentsSynchronisationService.MappingResponse.MAPPING_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustmentsSynchronisationService.MappingResponse.MAPPING_FAILED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
@@ -19,6 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Synchroni
 class SentencingAdjustmentsSynchronisationService(
   private val sentencingAdjustmentsMappingService: SentencingAdjustmentsMappingService,
   private val nomisApiService: NomisApiService,
+  private val sentencingAdjustmentsNomisApiService: SentencingAdjustmentsNomisApiService,
   private val sentencingService: SentencingService,
   private val telemetryClient: TelemetryClient,
   private val queueService: SynchronisationQueueService,
@@ -242,6 +245,71 @@ class SentencingAdjustmentsSynchronisationService(
       )
     }
   }
+
+  suspend fun synchronisePrisonerMerge(prisonerMergeEvent: PrisonerMergeEvent) {
+    val adjustmentsInNomis = sentencingAdjustmentsNomisApiService.getAllByBookingId(prisonerMergeEvent.bookingId)
+
+    val sentenceAdjustmentsCreated = adjustmentsInNomis.sentenceAdjustments.mapNotNull { adjustment ->
+      adjustment.takeIf { doesNotExist(it) }?.also {
+        createAdjustment(prisonerMergeEvent, adjustment)
+      }
+    }
+    val keyDateAdjustmentsCreated = adjustmentsInNomis.keyDateAdjustments.mapNotNull { adjustment ->
+      adjustment.takeIf { doesNotExist(it) }?.also {
+        createAdjustment(prisonerMergeEvent, adjustment)
+      }
+    }
+
+    telemetryClient.trackEvent(
+      "from-nomis-synch-adjustment-merge",
+      mapOf(
+        "bookingId" to prisonerMergeEvent.bookingId.toString(),
+        "sentenceAdjustments" to adjustmentsInNomis.sentenceAdjustments.size.toString(),
+        "keyDateAdjustments" to adjustmentsInNomis.keyDateAdjustments.size.toString(),
+        "sentenceAdjustmentsCreated" to sentenceAdjustmentsCreated.size.toString(),
+        "keyDateAdjustmentsCreated" to keyDateAdjustmentsCreated.size.toString(),
+      ),
+    )
+  }
+
+  private suspend fun SentencingAdjustmentsSynchronisationService.createAdjustment(
+    prisonerMergeEvent: PrisonerMergeEvent,
+    adjustment: SentenceAdjustmentResponse,
+  ) {
+    synchroniseSentenceAdjustmentCreateOrUpdate(
+      SentenceAdjustmentOffenderEvent(
+        bookingId = prisonerMergeEvent.bookingId,
+        sentenceSeq = adjustment.sentenceSequence,
+        adjustmentId = adjustment.id,
+        offenderIdDisplay = adjustment.offenderNo,
+        auditModuleName = "MERGE",
+      ),
+    )
+  }
+  private suspend fun SentencingAdjustmentsSynchronisationService.createAdjustment(
+    prisonerMergeEvent: PrisonerMergeEvent,
+    adjustment: KeyDateAdjustmentResponse,
+  ) {
+    synchroniseKeyDateAdjustmentCreateOrUpdate(
+      KeyDateAdjustmentOffenderEvent(
+        bookingId = prisonerMergeEvent.bookingId,
+        adjustmentId = adjustment.id,
+        offenderIdDisplay = adjustment.offenderNo,
+        auditModuleName = "MERGE",
+      ),
+    )
+  }
+
+  private suspend fun doesNotExist(adjustment: SentenceAdjustmentResponse) =
+    sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMapping(
+      nomisAdjustmentId = adjustment.id,
+      nomisAdjustmentCategory = "SENTENCE",
+    ) == null
+  private suspend fun doesNotExist(adjustment: KeyDateAdjustmentResponse) =
+    sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMapping(
+      nomisAdjustmentId = adjustment.id,
+      nomisAdjustmentCategory = "KEY-DATE",
+    ) == null
 }
 
 private fun SentenceAdjustmentOffenderEvent.toTelemetryProperties(

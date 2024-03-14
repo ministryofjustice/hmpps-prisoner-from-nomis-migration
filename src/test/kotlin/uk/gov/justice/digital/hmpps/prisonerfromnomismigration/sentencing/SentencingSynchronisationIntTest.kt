@@ -10,6 +10,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
@@ -26,8 +27,13 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.KeyDateAdjustmentResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SentenceAdjustmentResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SentencingAdjustmentType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.ADJUSTMENTS_CREATE_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.KEYDATE_ADJUSTMENTS_GET_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.SENTENCE_ADJUSTMENTS_GET_MAPPING_URL
@@ -35,6 +41,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingA
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.SentencingApiExtension.Companion.sentencingApi
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
+import java.time.LocalDate
 
 private const val NOMIS_ADJUSTMENT_ID = 987L
 private const val ADJUSTMENT_ID = "05b332ad-58eb-4ec2-963c-c9c927856788"
@@ -43,6 +50,8 @@ private const val BOOKING_ID = 1234L
 private const val SENTENCE_SEQUENCE = 1L
 
 class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
+  @Autowired
+  private lateinit var sentencingAdjustmentsNomisApi: SentencingAdjustmentsNomisApiMockServer
 
   @Nested
   @DisplayName("SENTENCE_ADJUSTMENT_UPSERTED")
@@ -1530,6 +1539,219 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       }
     }
   }
+
+  @Nested
+  @DisplayName("BOOKING_NUMBER-CHANGED")
+  inner class PrisonerMerge {
+    @Nested
+    @DisplayName("When no adjustments exist at all in NOMIS")
+    inner class NoAdjustmentsInNomis {
+      val bookingId = BOOKING_ID
+
+      @BeforeEach
+      fun setUp() {
+        sentencingAdjustmentsNomisApi.stubGetAllByBookingId(
+          bookingId = bookingId,
+          sentenceAdjustments = emptyList(),
+          keyDateAdjustments = emptyList(),
+        )
+        awsSqsSentencingOffenderEventsClient.sendMessage(
+          sentencingQueueOffenderEventsUrl,
+          mergeEvent(
+            bookingId = bookingId,
+          ),
+        )
+        waitForAnyProcessingToComplete()
+      }
+
+      @Test
+      fun `will do nothing more than log no adjustments found`() {
+        verify(telemetryClient).trackEvent(
+          Mockito.eq("from-nomis-synch-adjustment-merge"),
+          check {
+            assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["sentenceAdjustments"]).isEqualTo("0")
+            assertThat(it["keyDateAdjustments"]).isEqualTo("0")
+            assertThat(it["sentenceAdjustmentsCreated"]).isEqualTo("0")
+            assertThat(it["keyDateAdjustmentsCreated"]).isEqualTo("0")
+          },
+          isNull(),
+        )
+
+        mappingApi.verify(0, getRequestedFor(urlPathMatching("/mapping/sentencing/adjustments/.*")))
+      }
+    }
+
+    @Nested
+    @DisplayName("When all adjustments exist in NOMIS and in DPS")
+    inner class SameAdjustmentsInNomisAndDps {
+      val bookingId = BOOKING_ID
+
+      @BeforeEach
+      fun setUp() {
+        sentencingAdjustmentsNomisApi.stubGetAllByBookingId(
+          bookingId = bookingId,
+          sentenceAdjustments = listOf(
+            sentenceAdjustmentResponse(bookingId = bookingId, sentenceAdjustmentId = 1001),
+            sentenceAdjustmentResponse(bookingId = bookingId, sentenceAdjustmentId = 1002),
+          ),
+          keyDateAdjustments = listOf(
+            keyDateAdjustmentResponse(bookingId = bookingId, keyDateAdjustmentId = 2001),
+            keyDateAdjustmentResponse(bookingId = bookingId, keyDateAdjustmentId = 2002),
+          ),
+        )
+
+        mappingApi.stubGetNomisSentencingAdjustment(adjustmentCategory = "SENTENCE", nomisAdjustmentId = 1001)
+        mappingApi.stubGetNomisSentencingAdjustment(adjustmentCategory = "SENTENCE", nomisAdjustmentId = 1002)
+        mappingApi.stubGetNomisSentencingAdjustment(adjustmentCategory = "KEY-DATE", nomisAdjustmentId = 2001)
+        mappingApi.stubGetNomisSentencingAdjustment(adjustmentCategory = "KEY-DATE", nomisAdjustmentId = 2002)
+
+        awsSqsSentencingOffenderEventsClient.sendMessage(
+          sentencingQueueOffenderEventsUrl,
+          mergeEvent(
+            bookingId = bookingId,
+          ),
+        )
+
+        waitForAnyProcessingToComplete()
+      }
+
+      @Test
+      fun `will log the number of adjustments found`() {
+        verify(telemetryClient).trackEvent(
+          Mockito.eq("from-nomis-synch-adjustment-merge"),
+          check {
+            assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["sentenceAdjustments"]).isEqualTo("2")
+            assertThat(it["keyDateAdjustments"]).isEqualTo("2")
+            assertThat(it["sentenceAdjustmentsCreated"]).isEqualTo("0")
+            assertThat(it["keyDateAdjustmentsCreated"]).isEqualTo("0")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will retrieve the mappings for each adjustment`() {
+        mappingApi.verify(
+          getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/1001")),
+        )
+        mappingApi.verify(
+          getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/1001")),
+        )
+        mappingApi.verify(
+          getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id/2001")),
+        )
+        mappingApi.verify(
+          getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id/2002")),
+        )
+      }
+
+      @Test
+      fun `will not update or create any adjustments in DPS`() {
+        sentencingApi.verify(0, postRequestedFor(urlPathEqualTo("/legacy/adjustments")))
+      }
+    }
+
+    @Nested
+    @DisplayName("When more adjustments exist in NOMIS than in DPS")
+    inner class MoreAdjustmentsInNomisThenDps {
+      val bookingId = BOOKING_ID
+
+      @BeforeEach
+      fun setUp() {
+        sentencingAdjustmentsNomisApi.stubGetAllByBookingId(
+          bookingId = bookingId,
+          sentenceAdjustments = listOf(
+            sentenceAdjustmentResponse(bookingId = bookingId, sentenceAdjustmentId = 1001),
+            sentenceAdjustmentResponse(bookingId = bookingId, sentenceAdjustmentId = 1002),
+          ),
+          keyDateAdjustments = listOf(
+            keyDateAdjustmentResponse(bookingId = bookingId, keyDateAdjustmentId = 2001),
+            keyDateAdjustmentResponse(bookingId = bookingId, keyDateAdjustmentId = 2002),
+          ),
+        )
+
+        mappingApi.stubGetNomisSentencingAdjustment(adjustmentCategory = "SENTENCE", nomisAdjustmentId = 1001)
+        mappingApi.stubGetNomisSentencingAdjustment(adjustmentCategory = "SENTENCE", nomisAdjustmentId = 1002, status = NOT_FOUND)
+        mappingApi.stubGetNomisSentencingAdjustment(adjustmentCategory = "KEY-DATE", nomisAdjustmentId = 2001)
+        mappingApi.stubGetNomisSentencingAdjustment(adjustmentCategory = "KEY-DATE", nomisAdjustmentId = 2002, status = NOT_FOUND)
+
+        nomisApi.stubGetSentenceAdjustment(1002)
+        nomisApi.stubGetKeyDateAdjustment(2002)
+
+        sentencingApi.stubCreateSentencingAdjustmentForSynchronisation()
+        sentencingApi.stubCreateSentencingAdjustmentForSynchronisation()
+
+        mappingApi.stubMappingCreate(ADJUSTMENTS_CREATE_MAPPING_URL)
+        mappingApi.stubMappingCreate(ADJUSTMENTS_CREATE_MAPPING_URL)
+
+        awsSqsSentencingOffenderEventsClient.sendMessage(
+          sentencingQueueOffenderEventsUrl,
+          mergeEvent(
+            bookingId = bookingId,
+          ),
+        )
+      }
+
+      @Test
+      fun `will log the number of adjustments found`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            Mockito.eq("from-nomis-synch-adjustment-merge"),
+            check {
+              assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+              assertThat(it["sentenceAdjustments"]).isEqualTo("2")
+              assertThat(it["keyDateAdjustments"]).isEqualTo("2")
+              assertThat(it["sentenceAdjustmentsCreated"]).isEqualTo("1")
+              assertThat(it["keyDateAdjustmentsCreated"]).isEqualTo("1")
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Test
+      fun `will retrieve the mappings for each adjustment`() {
+        await untilAsserted {
+          mappingApi.verify(
+            getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/1001")),
+          )
+          mappingApi.verify(
+            getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/1001")),
+          )
+          mappingApi.verify(
+            getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id/2001")),
+          )
+          mappingApi.verify(
+            getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/KEY-DATE/nomis-adjustment-id/2002")),
+          )
+        }
+      }
+
+      @Test
+      fun `will retrieve details of the 2 missing adjustments`() {
+        await untilAsserted {
+          nomisApi.verify(getRequestedFor(urlPathEqualTo("/sentence-adjustments/1002")))
+          nomisApi.verify(getRequestedFor(urlPathEqualTo("/key-date-adjustments/2002")))
+        }
+      }
+
+      @Test
+      fun `will create the two missing adjustments in DPS`() {
+        await untilAsserted {
+          sentencingApi.verify(2, postRequestedFor(urlPathEqualTo("/legacy/adjustments")))
+        }
+      }
+
+      @Test
+      fun `will create the two missing adjustments mappings`() {
+        await untilAsserted {
+          mappingApi.verify(2, postRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments")))
+        }
+      }
+    }
+  }
 }
 
 fun sentencingEvent(
@@ -1552,4 +1774,65 @@ fun sentencingEvent(
 }
 """.trimIndent()
 
+fun mergeEvent(
+  eventType: String = "BOOKING_NUMBER-CHANGED",
+  bookingId: Long = BOOKING_ID,
+) =
+  //language=JSON
+  """{
+    "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
+    "Message": "{\"eventId\":\"5958295\",\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"bookingId\": \"$bookingId\",\"nomisEventType\":\"BOOK_UPD_OASYS\",\"offenderId\":\"1234\",\"previousBookingNumber\":\"43719F\" }",
+    "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
+    "MessageAttributes": {
+      "eventType": {"Type": "String", "Value": "$eventType"}, 
+      "id": {"Type": "String", "Value": "8b07cbd9-0820-0a0f-c32f-a9429b618e0b"}, 
+      "contentType": {"Type": "String", "Value": "text/plain;charset=UTF-8"}, 
+      "timestamp": {"Type": "Number.java.lang.Long", "Value": "1571666478344"}
+    }
+}
+  """.trimIndent()
+
 private fun Long?.asJson() = if (this == null) "" else """ \"sentenceSeq\":\"$this\", """
+
+private fun sentenceAdjustmentResponse(
+  bookingId: Long = 2,
+  offenderNo: String = "G4803UT",
+  sentenceAdjustmentId: Long = 3,
+  hiddenForUsers: Boolean = false,
+): SentenceAdjustmentResponse = SentenceAdjustmentResponse(
+  bookingId = bookingId,
+  id = sentenceAdjustmentId,
+  offenderNo = offenderNo,
+  sentenceSequence = 0,
+  comment = "a comment",
+  adjustmentDate = LocalDate.parse("2021-10-06"),
+  adjustmentFromDate = LocalDate.parse("2021-10-07"),
+  active = true,
+  hiddenFromUsers = hiddenForUsers,
+  adjustmentDays = 8,
+  adjustmentType = SentencingAdjustmentType(
+    code = "RST",
+    description = "RST Desc",
+  ),
+  hasBeenReleased = false,
+)
+
+private fun keyDateAdjustmentResponse(
+  bookingId: Long = 2,
+  keyDateAdjustmentId: Long = 3,
+  offenderNo: String = "G4803UT",
+): KeyDateAdjustmentResponse = KeyDateAdjustmentResponse(
+  bookingId = bookingId,
+  id = keyDateAdjustmentId,
+  offenderNo = offenderNo,
+  comment = "a comment",
+  adjustmentDate = LocalDate.parse("2021-10-06"),
+  adjustmentFromDate = LocalDate.parse("2021-10-07"),
+  active = true,
+  adjustmentDays = 8,
+  adjustmentType = SentencingAdjustmentType(
+    code = "ADA",
+    description = "Additional days",
+  ),
+  hasBeenReleased = false,
+)

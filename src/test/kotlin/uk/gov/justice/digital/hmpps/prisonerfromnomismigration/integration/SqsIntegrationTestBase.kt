@@ -4,10 +4,14 @@ import com.microsoft.applicationinsights.TelemetryClient
 import org.awaitility.Awaitility
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
+import org.awaitility.kotlin.untilAsserted
 import org.awaitility.kotlin.untilCallTo
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.kotlin.any
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.reset
+import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.SpyBean
@@ -153,6 +157,10 @@ class SqsIntegrationTestBase : TestBase() {
     roles: List<String> = listOf(),
     scopes: List<String> = listOf(),
   ): (HttpHeaders) -> Unit = jwtAuthHelper.setAuthorisation(user, roles, scopes)
+
+  internal fun waitForAnyProcessingToComplete() {
+    await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
+  }
 
   companion object {
     private val localStackContainer = LocalStackContainer.instance

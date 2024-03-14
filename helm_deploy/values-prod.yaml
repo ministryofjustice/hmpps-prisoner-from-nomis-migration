@@ -30,6 +30,7 @@ generic-service:
     FEATURE_EVENT_INCIDENT-DELETED-REQUIREMENTS: false
     FEATURE_EVENT_ALERT-UPDATED: false
     FEATURE_EVENT_ALERT-INSERTED: false
+    FEATURE_EVENT_BOOKING_NUMBER-CHANGED: false
 
 generic-prometheus-alerts:
   rdsAlertsDatabases:
