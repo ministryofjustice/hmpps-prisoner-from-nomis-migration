@@ -106,11 +106,11 @@ class LocationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   ).toJson()
 
   private fun aLocationHistory() = ChangeHistory(
-      attribute = "Location Type",
-      oldValue = "CELL",
-      newValue = "WING",
-      amendedBy = "user",
-      amendedDate = "2021-07-05T10:35:17",
+    attribute = "Location Type",
+    oldValue = "CELL",
+    newValue = "WING",
+    amendedBy = "user",
+    amendedDate = "2021-07-05T10:35:17",
   ).toJson()
 }
 

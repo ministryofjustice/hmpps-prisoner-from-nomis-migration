@@ -63,7 +63,7 @@ internal class LocationsServiceTest {
           .withRequestBody(matchingJsonPath("description", equalTo("Wing C")))
           .withRequestBody(matchingJsonPath("prisonId", equalTo("LEI")))
           .withRequestBody(matchingJsonPath("comments", equalTo("Test comment")))
-          .withRequestBody(matchingJsonPath("lastUpdatedBy", equalTo("TJONES_ADM")))
+          .withRequestBody(matchingJsonPath("lastUpdatedBy", equalTo("TJONES_ADM"))),
       )
     }
   }
@@ -106,7 +106,7 @@ internal class LocationsServiceTest {
           .withRequestBody(matchingJsonPath("code", equalTo("C")))
           .withRequestBody(matchingJsonPath("description", equalTo("Wing C")))
           .withRequestBody(matchingJsonPath("prisonId", equalTo("LEI")))
-          .withRequestBody(matchingJsonPath("comments", equalTo("Test comment")))
+          .withRequestBody(matchingJsonPath("comments", equalTo("Test comment"))),
       )
     }
   }
@@ -147,7 +147,7 @@ internal class LocationsServiceTest {
           .withRequestBody(matchingJsonPath("amendedBy", equalTo("TJONES_ADM")))
           .withRequestBody(matchingJsonPath("amendedDate", equalTo("2022-12-02T10:00:00")))
           .withRequestBody(matchingJsonPath("oldValue", equalTo("1")))
-          .withRequestBody(matchingJsonPath("newValue", equalTo("2")))
+          .withRequestBody(matchingJsonPath("newValue", equalTo("2"))),
       )
     }
   }
