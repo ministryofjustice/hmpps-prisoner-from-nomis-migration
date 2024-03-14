@@ -87,6 +87,10 @@ generic-service:
       HMPPS_SQS_QUEUES_MIGRATIONINCIDENTS_QUEUE_NAME: "sqs_name"
     sqs-migration-incidents-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONINCIDENTS_DLQ_NAME: "sqs_name"
+    sqs-migration-locations-queue:
+      HMPPS_SQS_QUEUES_MIGRATIONLOCATIONS_QUEUE_NAME: "sqs_name"
+    sqs-migration-locations-dlq:
+      HMPPS_SQS_QUEUES_MIGRATIONLOCATIONS_DLQ_NAME: "sqs_name"
     prison-events-visits-queue:
       HMPPS_SQS_QUEUES_EVENTVISITS_QUEUE_NAME: "sqs_name"
     prison-events-visits-dl-queue:
@@ -99,6 +103,10 @@ generic-service:
       HMPPS_SQS_QUEUES_EVENTINCIDENTS_QUEUE_NAME: "sqs_name"
     prisoner-from-nomis-incidents-dl-queue:
       HMPPS_SQS_QUEUES_EVENTINCIDENTS_DLQ_NAME: "sqs_name"
+    prisoner-from-nomis-locations-queue:
+      HMPPS_SQS_QUEUES_EVENTLOCATIONS_QUEUE_NAME: "sqs_name"
+    prisoner-from-nomis-locations-dl-queue:
+      HMPPS_SQS_QUEUES_EVENTLOCATIONS_DLQ_NAME: "sqs_name"
     prison-events-alerts-queue:
       HMPPS_SQS_QUEUES_EVENTALERTS_QUEUE_NAME: "sqs_name"
     prison-events-alerts-dl-queue:

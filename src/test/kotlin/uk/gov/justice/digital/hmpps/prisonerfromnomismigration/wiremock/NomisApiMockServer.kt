@@ -26,6 +26,7 @@ class NomisApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallbac
     const val ACTIVITIES_ID_URL = "/activities/ids"
     const val ALLOCATIONS_ID_URL = "/allocations/ids"
     const val INCIDENTS_ID_URL = "/incidents/ids"
+    const val LOCATIONS_ID_URL = "/locations/ids"
 
     @JvmField
     val nomisApi = NomisApiMockServer()
@@ -321,6 +322,8 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }
   }
 
+  // //////////////////////////////////// Incidents //////////////////////////////////////
+
   fun stubMultipleGetIncidentIdCounts(totalElements: Long, pageSize: Long) {
     // for each page create a response for each incident id starting from 1 up to `totalElements`
 
@@ -338,7 +341,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
               .withBody(
                 incidentIdsPagedResponse(
                   totalElements = totalElements,
-                  incidentIds = (startIncidentId..endIncidentId).map { it },
+                  ids = (startIncidentId..endIncidentId).map { it },
                   pageNumber = page,
                   pageSize = pageSize,
                 ),
@@ -385,6 +388,87 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
       )
     }
   }
+
+  // //////////////////////////////////// Locations //////////////////////////////////////
+
+  fun stubMultipleGetLocationIdCounts(totalElements: Long, pageSize: Long) {
+    // for each page create a response for each location id starting from 1 up to `totalElements`
+
+    val pages = (totalElements / pageSize) + 1
+    (0..pages).forEach { page ->
+      val startLocationId = (page * pageSize) + 1
+      val endLocationId = min((page * pageSize) + pageSize, totalElements)
+      nomisApi.stubFor(
+        get(
+          urlPathEqualTo("/locations/ids"),
+        )
+          .withQueryParam("page", equalTo(page.toString()))
+          .willReturn(
+            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+              .withBody(
+                locationIdsPagedResponse(
+                  totalElements = totalElements,
+                  ids = (startLocationId..endLocationId).map { it },
+                  pageNumber = page,
+                  pageSize = pageSize,
+                ),
+              ),
+          ),
+      )
+    }
+  }
+
+  fun stubGetLocation(nomisLocationId: Long = 1234) {
+    nomisApi.stubFor(
+      get(
+        urlPathEqualTo("/locations/$nomisLocationId"),
+      )
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+            .withBody(locationResponse(nomisLocationId)),
+        ),
+    )
+  }
+
+  fun stubGetLocationWithMinimalData(nomisLocationId: Long = 1234) {
+    nomisApi.stubFor(
+      get(
+        urlPathEqualTo("/locations/$nomisLocationId"),
+      )
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+            .withBody(basicLocationResponse(nomisLocationId)),
+        ),
+    )
+  }
+
+  fun stubGetLocationNotFound(nomisLocationId: Long = 1234) {
+    nomisApi.stubFor(
+      get(
+        urlPathEqualTo("/locations/$nomisLocationId"),
+      )
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NOT_FOUND.value()),
+        ),
+    )
+  }
+
+  fun stubMultipleGetLocations(intProgression: IntProgression) {
+    (intProgression).forEach {
+      nomisApi.stubFor(
+        get(
+          urlPathEqualTo("/locations/$it"),
+        )
+          .willReturn(
+            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+              .withBody(locationResponse(it.toLong())),
+          ),
+      )
+    }
+  }
+
+  // //////////////////////////////////// Sentencing //////////////////////////////////////
 
   fun stubMultipleGetKeyDateAdjustments(intProgression: IntProgression) {
     (intProgression).forEach {
@@ -760,12 +844,22 @@ fun adjustmentIdsPagedResponse(
 
 fun incidentIdsPagedResponse(
   totalElements: Long = 10,
-  incidentIds: List<Long> = (0L..10L).toList(),
+  ids: List<Long> = (0L..10L).toList(),
   pageSize: Long = 10,
   pageNumber: Long = 0,
 ): String {
-  val content = incidentIds.map { """{ "incidentId": $it }""" }.joinToString { it }
-  return pageContent(content, pageSize, pageNumber, totalElements, incidentIds.size)
+  val content = ids.map { """{ "incidentId": $it }""" }.joinToString { it }
+  return pageContent(content, pageSize, pageNumber, totalElements, ids.size)
+}
+
+fun locationIdsPagedResponse(
+  totalElements: Long = 10,
+  ids: List<Long> = (0L..10L).toList(),
+  pageSize: Long = 10,
+  pageNumber: Long = 0,
+): String {
+  val content = ids.map { """{ "locationId": $it }""" }.joinToString { it }
+  return pageContent(content, pageSize, pageNumber, totalElements, ids.size)
 }
 
 fun appointmentIdsPagedResponse(
@@ -1251,6 +1345,59 @@ private fun incidentResponse(
     "requirements": [],
     "questions": [],
     "history": []
+  }
+  """.trimIndent()
+
+private fun locationResponse(id: Long = 1234, parentLocationId: Long = 5678): String =
+  """
+  {
+    "locationId": $id,
+    "locationCode": "001",
+    "locationType": "CELL",
+    "description": "MDI-1-1-001",
+    "prisonId": "MDI",
+    "operationalCapacity": 1,
+    "userDescription": "MDI-1-1-001",
+    "certified": true,
+    "active": true,
+    "createDatetime": "2023-01-01T11:00:01.234567",
+    "createUsername": "ITAG1",
+    "modifyUsername": "ITAG2",
+    "parentLocationId": $parentLocationId,
+    "capacity": 1,
+    "cnaCapacity": 1,
+    "listSequence": 1,
+    "comment": "A comment",
+    "unitType": "NA",
+    "profiles": [
+      {
+        "profileType": "HOU_SANI_FIT",
+        "profileCode": "ACB"
+      }
+    ],
+    "usages": [
+      {
+        "internalLocationUsageType": "MOVEMENT",
+        "usageLocationType": "FAIT",
+        "capacity": 2,
+        "sequence": 3
+      }
+    ]
+  }
+  """.trimIndent()
+
+private fun basicLocationResponse(id: Long = 1234): String =
+  """
+  {
+    "locationId": $id,
+    "locationCode": "001",
+    "locationType": "CELL",
+    "description": "MDI-1-1-001",
+    "prisonId": "MDI",
+    "certified": true,
+    "active": true,
+    "createDatetime": "2023-01-01T11:00:01.234567",
+    "createUsername": "ITAG1"
   }
   """.trimIndent()
 

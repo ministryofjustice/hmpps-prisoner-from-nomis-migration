@@ -44,6 +44,8 @@ class MappingApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallb
     const val ADJUSTMENTS_CREATE_MAPPING_URL = "/mapping/sentencing/adjustments"
     const val INCIDENTS_CREATE_MAPPING_URL = "/mapping/incidents"
     const val INCIDENTS_GET_MAPPING_URL = "/mapping/incidents/nomis-incident-id"
+    const val LOCATIONS_CREATE_MAPPING_URL = "/mapping/locations"
+    const val LOCATIONS_GET_MAPPING_URL = "/mapping/locations/nomis"
   }
 
   override fun beforeAll(context: ExtensionContext) {
@@ -904,7 +906,117 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       get(urlPathMatching("/mapping/incidents/migration-id/.*")).willReturn(
         okJson(pageContent(content, count)),
       ),
+    )
+  }
 
+  // /////////////////////////////////////////// Locations /////////////////////////////////////////////
+
+  fun verifyCreateMappingLocationIds(locationIds: Array<String>, times: Int = 1) =
+    locationIds.forEach {
+      verify(
+        times,
+        postRequestedFor(urlPathEqualTo("/mapping/locations")).withRequestBody(
+          matchingJsonPath(
+            "dpsLocationId",
+            equalTo(it),
+          ),
+        ),
+      )
+    }
+
+  fun stubLocationMappingCreateConflict(
+    nomisLocationId: Long = 1234,
+    existingLocationId: String = "4321",
+    duplicateLocationId: String = "9876",
+  ) {
+    stubFor(
+      post(urlPathEqualTo("/mapping/locations"))
+        .willReturn(
+          aResponse()
+            .withStatus(409)
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
+                "moreInfo": 
+                {
+                  "existing" :  {
+                    "nomisLocationId": $nomisLocationId,
+                    "dpsLocationId": "$existingLocationId",
+                    "label": "2022-02-14T09:58:45",
+                    "whenCreated": "2022-02-14T09:58:45",
+                    "mappingType": "NOMIS_CREATED"
+                   },
+                   "duplicate" : {
+                    "nomisLocationId": $nomisLocationId,
+                    "dpsLocationId": "$duplicateLocationId",
+                    "label": "2022-02-14T09:58:45",
+                    "whenCreated": "2022-02-14T09:58:45",
+                    "mappingType": "NOMIS_CREATED"
+                  }
+                }
+              }""",
+            ),
+        ),
+    )
+  }
+
+  fun stubGetLocation(dpsLocationId: String, nomisLocationId: Long) {
+    val content = """{
+      "dpsLocationId": "$dpsLocationId",
+      "nomisLocationId": $nomisLocationId,   
+      "label": "2022-02-14T09:58:45",
+      "whenCreated": "2020-01-01T11:10:00",
+      "mappingType": "NOMIS_CREATED"
+    }"""
+    stubFor(
+      get(urlPathMatching("/mapping/locations/nomis/$nomisLocationId"))
+        .willReturn(okJson(content)),
+    )
+  }
+
+  fun stubGetAnyLocationNotFound() {
+    stubFor(
+      get(urlPathMatching("/mapping/locations/nomis/\\d"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NOT_FOUND.value()),
+        ),
+    )
+  }
+
+  fun stubLocationsLatestMigration(migrationId: String) {
+    stubFor(
+      get(urlEqualTo("/mapping/locations/migrated/latest")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(
+            """
+            {
+              "dpsLocationId": "abcdef12-1234-5678-9101-abcdef123456",
+              "nomisLocationId": 1234,                                       
+              "label": "$migrationId",
+              "whenCreated": "2024-01-01T11:10:00",
+              "mappingType": "MIGRATED"
+            }              
+            """,
+          ),
+      ),
+    )
+  }
+
+  fun stubLocationsMappingByMigrationId(whenCreated: String = "2024-01-01T11:10:00", count: Int = 54327) {
+    val content = """{
+      "dpsLocationId": "abcdef12",
+      "nomisLocationId": 1234,                                       
+      "label": "2022-02-14T09:58:45",
+      "whenCreated": "$whenCreated",
+      "mappingType": "MIGRATED"
+    }"""
+    stubFor(
+      get(urlPathMatching("/mapping/locations/migration-id/.*")).willReturn(
+        okJson(pageContent(content, count)),
+      ),
     )
   }
 

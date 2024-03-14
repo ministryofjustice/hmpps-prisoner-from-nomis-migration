@@ -27,6 +27,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.G
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetAllocationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.LocationIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.LocationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.model.LegacyAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.model.LegacyAdjustment.AdjustmentType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomUsageResponse
@@ -255,6 +257,8 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       }
       .awaitSingle()
 
+  // /////////////////////////////////////// Incidents
+
   suspend fun getIncident(incidentId: Long): IncidentResponse =
     webClient.get()
       .uri("/incidents/{incidentId}", incidentId)
@@ -279,6 +283,30 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       }
       .retrieve()
       .bodyToMono(typeReference<RestResponsePage<IncidentIdResponse>>())
+      .awaitSingle()
+
+  // /////////////////////////////////////// Locations
+
+  suspend fun getLocation(locationId: Long): LocationResponse =
+    webClient.get()
+      .uri("/locations/{locationId}", locationId)
+      .retrieve()
+      .bodyToMono(LocationResponse::class.java)
+      .awaitSingle()
+
+  suspend fun getLocationIds(
+    pageNumber: Long,
+    pageSize: Long,
+  ): PageImpl<LocationIdResponse> =
+    webClient.get()
+      .uri {
+        it.path("/locations/ids")
+          .queryParam("page", pageNumber)
+          .queryParam("size", pageSize)
+          .build()
+      }
+      .retrieve()
+      .bodyToMono(typeReference<RestResponsePage<LocationIdResponse>>())
       .awaitSingle()
 }
 
