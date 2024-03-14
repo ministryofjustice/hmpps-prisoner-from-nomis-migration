@@ -346,7 +346,7 @@ fun SqsAsyncClient.waitForMessageCountOnQueue(queueUrl: String, messageCount: In
 fun locationEvent(
   eventType: String = "AGENCY_INTERNAL_LOCATIONS-UPDATED",
   locationId: Long = NOMIS_LOCATION_ID,
-  auditModuleName: String = "OIDOXXXX",
+  auditModuleName: String = "OIMILOCA",
 ) = """{
     "Type" : "Notification",
     "MessageId" : "be8e7273-0446-5590-8c7f-2f24e966322e",
