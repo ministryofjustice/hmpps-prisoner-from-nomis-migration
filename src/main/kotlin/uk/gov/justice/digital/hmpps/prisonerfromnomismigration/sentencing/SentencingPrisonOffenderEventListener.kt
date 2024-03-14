@@ -54,6 +54,10 @@ class SentencingPrisonOffenderEventListener(
                 (sqsMessage.Message.fromJson()),
               )
 
+              "BOOKING_NUMBER-CHANGED" -> sentencingAdjustmentsSynchronisationService.synchronisePrisonerMerge(
+                (sqsMessage.Message.fromJson()),
+              )
+
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
@@ -87,6 +91,9 @@ data class KeyDateAdjustmentOffenderEvent(
   val auditModuleName: String?,
 )
 
+data class PrisonerMergeEvent(
+  val bookingId: Long,
+)
 private fun asCompletableFuture(
   process: suspend () -> Unit,
 ): CompletableFuture<Void> {
