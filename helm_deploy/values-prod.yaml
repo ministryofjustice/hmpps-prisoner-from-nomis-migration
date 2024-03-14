@@ -17,6 +17,7 @@ generic-service:
     API_BASE_URL_ACTIVITIES: https://activities-api.prison.service.justice.gov.uk
     # currently set to self for a mock API until real API is ready
     API_BASE_URL_INCIDENTS: https://prisoner-nomis-migration.hmpps.service.justice.gov.uk
+    API_BASE_URL_LOCATIONS: https://locations-inside-prison-api.hmpps.service.justice.gov.uk
     API_BASE_URL_ADJUDICATIONS: https://manage-adjudications-api.hmpps.service.justice.gov.uk
     # currently set to self for a mock API until real API is ready
     API_BASE_URL_ALERTS: https://prisoner-nomis-migration.hmpps.service.justice.gov.uk
@@ -28,6 +29,9 @@ generic-service:
     FEATURE_EVENT_INCIDENT-DELETED-PARTIES: false
     FEATURE_EVENT_INCIDENT-DELETED-RESPONSES: false
     FEATURE_EVENT_INCIDENT-DELETED-REQUIREMENTS: false
+    FEATURE_EVENT_AGENCY_INTERNAL_LOCATIONS-UPDATED: false
+    FEATURE_EVENT_AGY_INT_LOC_PROFILES-UPDATED: false
+    FEATURE_EVENT_INT_LOC_USAGE_LOCATIONS-UPDATED: false
     FEATURE_EVENT_ALERT-UPDATED: false
     FEATURE_EVENT_ALERT-INSERTED: false
     FEATURE_EVENT_BOOKING_NUMBER-CHANGED: false
@@ -42,6 +46,8 @@ generic-prometheus-alerts:
     - "syscon-devs-prod-prisoner_from_nomis_sentencing_dl_queue"
     - "syscon-devs-prod-prisoner_from_nomis_incidents_queue"
     - "syscon-devs-prod-prisoner_from_nomis_incidents_dl_queue"
+    - "syscon-devs-prod-prisoner_from_nomis_locations_queue"
+    - "syscon-devs-prod-prisoner_from_nomis_locations_dl_queue"
     - "syscon-devs-prod-prisoner_from_nomis_alerts_queue"
     - "syscon-devs-prod-prisoner_from_nomis_alerts_dl_queue"
     - "syscon-devs-prod-migration_sentencing_queue"
@@ -58,5 +64,7 @@ generic-prometheus-alerts:
     - "syscon-devs-prod-migration_adjudications_dlq"
     - "syscon-devs-prod-migration_incidents_queue"
     - "syscon-devs-prod-migration_incidents_dlq"
+    - "syscon-devs-prod-migration_locations_queue"
+    - "syscon-devs-prod-migration_locations_dlq"
   sqsAlertsOldestThreshold: 2
   sqsAlertsTotalMessagesThreshold: 1
