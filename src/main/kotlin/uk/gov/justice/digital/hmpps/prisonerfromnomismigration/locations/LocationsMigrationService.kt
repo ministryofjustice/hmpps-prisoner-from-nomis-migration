@@ -315,7 +315,7 @@ private fun toAttribute(type: String, code: String): UpsertLocationRequest.Attri
         "LOW" -> UpsertLocationRequest.Attributes.LOW
         "MED" -> UpsertLocationRequest.Attributes.MEDIUM
         "HI" -> UpsertLocationRequest.Attributes.HIGH
-        "N/A" -> UpsertLocationRequest.Attributes.NOT_APPLICABLE
+        "N/A", "NA" -> UpsertLocationRequest.Attributes.NOT_APPLICABLE
         "P" -> UpsertLocationRequest.Attributes.PROV_A
         "PEND" -> UpsertLocationRequest.Attributes.PENDING
         "REF/REVIEW" -> UpsertLocationRequest.Attributes.REF_REVIEW
@@ -329,9 +329,6 @@ private fun toAttribute(type: String, code: String): UpsertLocationRequest.Attri
         "Y" -> UpsertLocationRequest.Attributes.YES
         "N" -> UpsertLocationRequest.Attributes.NO
         else -> throw IllegalArgumentException("Unknown location attribute type $type, code $code")
-        // Dont know how these map to Nomis
-//        UpsertLocationRequest.Attributes.ELIGIBLE
-//        UpsertLocationRequest.Attributes.INELIGIBLE
       }
 
     else -> throw IllegalArgumentException("Unknown location attribute type $type, code $code")
