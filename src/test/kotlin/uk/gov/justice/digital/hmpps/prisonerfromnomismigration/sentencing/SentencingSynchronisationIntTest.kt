@@ -1794,7 +1794,7 @@ fun mergeEvent(
 
 private fun Long?.asJson() = if (this == null) "" else """ \"sentenceSeq\":\"$this\", """
 
-private fun sentenceAdjustmentResponse(
+internal fun sentenceAdjustmentResponse(
   bookingId: Long = 2,
   offenderNo: String = "G4803UT",
   sentenceAdjustmentId: Long = 3,
@@ -1817,7 +1817,7 @@ private fun sentenceAdjustmentResponse(
   hasBeenReleased = false,
 )
 
-private fun keyDateAdjustmentResponse(
+internal fun keyDateAdjustmentResponse(
   bookingId: Long = 2,
   keyDateAdjustmentId: Long = 3,
   offenderNo: String = "G4803UT",

@@ -272,6 +272,8 @@ class SentencingAdjustmentsSynchronisationService(
     )
   }
 
+  suspend fun repairPostMergeAdjustments(bookingId: Long) = synchronisePrisonerMerge(PrisonerMergeEvent(bookingId))
+
   private suspend fun SentencingAdjustmentsSynchronisationService.createAdjustment(
     prisonerMergeEvent: PrisonerMergeEvent,
     adjustment: SentenceAdjustmentResponse,
