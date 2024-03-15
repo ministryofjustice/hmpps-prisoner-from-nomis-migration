@@ -66,8 +66,12 @@ class LocationsPrisonOffenderEventListener(
 }
 
 data class LocationsOffenderEvent(
-  val locationId: Long,
+  val internalLocationId: Long,
+  val description: String?,
+  val oldDescription: String?,
+  val prisonId: String?,
   val auditModuleName: String?,
+  val recordDeleted: Boolean?,
 )
 
 private fun asCompletableFuture(
