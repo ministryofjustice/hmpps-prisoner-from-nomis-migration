@@ -38,7 +38,7 @@ class LocationsApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCal
 
 class LocationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   companion object {
-    private const val WIREMOCK_PORT = 8091
+    private const val WIREMOCK_PORT = 8093
   }
 
   fun stubHealthPing(status: Int) {

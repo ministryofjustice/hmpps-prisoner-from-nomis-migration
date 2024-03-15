@@ -14,8 +14,9 @@ api.base.url:
   activities: http://localhost:8086
   adjudications: http://localhost:8087
   incidents: http://localhost:8089
-  locations: http://localhost:8091
+  # do not use port 8091 - clashes on some Macs
   alerts: http://localhost:8092
+  locations: http://localhost:8093
 
 visits:
   page:
