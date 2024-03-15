@@ -38,8 +38,8 @@ class LocationsSynchronisationService(
       return
     }
 
-    val nomisLocation = nomisApiService.getLocation(event.locationId)
-    locationsMappingService.getMappingGivenNomisId(event.locationId)?.let {
+    val nomisLocation = nomisApiService.getLocation(event.internalLocationId)
+    locationsMappingService.getMappingGivenNomisId(event.internalLocationId)?.let {
       val upsertSyncRequest = toUpsertSyncRequest(UUID.fromString(it.dpsLocationId), nomisLocation)
       log.debug("Found location mapping: {}, sending location upsert sync {}", it, upsertSyncRequest)
 
@@ -77,7 +77,7 @@ class LocationsSynchronisationService(
   ): MappingResponse {
     val mapping = LocationMappingDto(
       dpsLocationId = locationId,
-      nomisLocationId = event.locationId,
+      nomisLocationId = event.internalLocationId,
       mappingType = NOMIS_CREATED,
     )
     try {
@@ -102,7 +102,7 @@ class LocationsSynchronisationService(
       return MappingResponse.MAPPING_CREATED
     } catch (e: Exception) {
       log.error(
-        "Failed to create mapping for dpsLocation id $locationId, nomisLocationId ${event.locationId}",
+        "Failed to create mapping for dpsLocation id $locationId, nomisLocationId ${event.internalLocationId}",
         e,
       )
       queueService.sendMessage(
@@ -132,7 +132,7 @@ private fun LocationsOffenderEvent.toTelemetryProperties(
   dpsLocationId: String? = null,
   mappingFailed: Boolean? = null,
 ) = mapOf(
-  "nomisLocationId" to this.locationId.toString(),
+  "nomisLocationId" to this.internalLocationId.toString(),
 ) + (dpsLocationId?.let { mapOf("dpsLocationId" to it) } ?: emptyMap()) + (
   mappingFailed?.takeIf { it }
     ?.let { mapOf("mapping" to "initial-failure") } ?: emptyMap()

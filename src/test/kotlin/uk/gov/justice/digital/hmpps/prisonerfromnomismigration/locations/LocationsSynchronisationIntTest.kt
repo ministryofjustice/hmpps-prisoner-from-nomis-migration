@@ -351,7 +351,7 @@ fun locationEvent(
     "Type" : "Notification",
     "MessageId" : "be8e7273-0446-5590-8c7f-2f24e966322e",
     "TopicArn" : "arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-f221e27fcfcf78f6ab4f4c3cc165eee7",
-    "Message" : "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2023-08-17T10:39:44\",\"locationId\":$locationId,\"nomisEventType\":\"$eventType\",\"comment\":\"Test comment\",\"auditModuleName\":\"$auditModuleName\"}",
+    "Message" : "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2023-08-17T10:39:44\",\"internalLocationId\":$locationId,\"nomisEventType\":\"$eventType\",\"auditModuleName\":\"$auditModuleName\"}",
     "Timestamp" : "2023-08-17T09:39:44.790Z",
     "SignatureVersion" : "1",
     "Signature" : "ppyNS9XAEwLaSdtXpVxZ+pYKT7g4uZLGGXUaquKKwtgpkcRCoTwG2Vcjbgh4HpqF0zNXTIQJHAckXBqXMXW6CeJuKcvndqOXO7yw+qzbL4iOkPecUkl4pJFWT0PJ4q6gptDOWf/nKP+Wd/ggozuGa27NJ5eEEGn/YbxnqH98h9C0pUjVPhaukoSp0fP6+2L8eyuFEPGgefT+reKZZ2E9VjUStaNNsNjdjVfkjrkHrVQwpey8PbucOQYLEwyo/WV6ho+gqjQYpM+WjghDWvGn6UNbnJKTQGxy3shInPsY2kfyCJAyUoOU0CJ6ALHKnlN7OMr1lbvmHMARgKNY6ELJoA==",
