@@ -161,7 +161,7 @@ fun toUpsertSyncRequest(nomisLocationResponse: LocationResponse) =
     description = nomisLocationResponse.userDescription,
     comments = nomisLocationResponse.comment,
     orderWithinParentLocation = nomisLocationResponse.listSequence,
-    // TODO residentialHousingType = toResidentialHousingType(nomisLocationResponse.unitType),
+    residentialHousingType = toResidentialHousingType(nomisLocationResponse.unitType),
     parentLocationPath = nomisLocationResponse.parentLocationId
       ?.let {
         // locationsMappingService.getMappingGivenNomisId(it)!!.nomisLocationId
@@ -180,7 +180,9 @@ fun toUpsertSyncRequest(nomisLocationResponse: LocationResponse) =
     } else {
       null
     },
-    attributes = nomisLocationResponse.profiles?.map { toAttribute(it.profileType.name, it.profileCode) }?.toSet(),
+    attributes = nomisLocationResponse.profiles
+      ?.mapNotNull { toAttribute(it.profileType.name, it.profileCode) }
+      ?.toSet(),
     usage = nomisLocationResponse.usages?.map { toUsage(it) }?.toSet(),
 
     createDate = nomisLocationResponse.createDatetime,
@@ -231,7 +233,19 @@ private fun toLocationType(locationType: String): UpsertLocationRequest.Location
     else -> throw IllegalArgumentException("Unknown location type $locationType")
   }
 
-private fun toAttribute(type: String, code: String): UpsertLocationRequest.Attributes =
+private fun toResidentialHousingType(unitType: LocationResponse.UnitType?): UpsertLocationRequest.ResidentialHousingType? =
+  when (unitType) {
+    LocationResponse.UnitType.HC -> UpsertLocationRequest.ResidentialHousingType.HEALTHCARE
+    LocationResponse.UnitType.HOLC -> UpsertLocationRequest.ResidentialHousingType.HOLDING_CELL
+    LocationResponse.UnitType.NA -> UpsertLocationRequest.ResidentialHousingType.NORMAL_ACCOMMODATION
+    LocationResponse.UnitType.OU -> UpsertLocationRequest.ResidentialHousingType.OTHER_USE
+    LocationResponse.UnitType.REC -> UpsertLocationRequest.ResidentialHousingType.RECEPTION
+    LocationResponse.UnitType.SEG -> UpsertLocationRequest.ResidentialHousingType.SEGREGATION
+    LocationResponse.UnitType.SPLC -> UpsertLocationRequest.ResidentialHousingType.SPECIALIST_CELL
+    null -> null
+  }
+
+private fun toAttribute(type: String, code: String): UpsertLocationRequest.Attributes? =
   when (type) {
     "HOU_SANI_FIT" ->
       when (code) {
@@ -331,21 +345,22 @@ private fun toAttribute(type: String, code: String): UpsertLocationRequest.Attri
         else -> throw IllegalArgumentException("Unknown location attribute type $type, code $code")
       }
 
+    "NON_ASSO_TYP" -> null
+
     else -> throw IllegalArgumentException("Unknown location attribute type $type, code $code")
   }
 
 private fun toUsage(it: UsageRequest) =
   NonResidentialUsageDto(
-    when (it.internalLocationUsageType.name) {
-      "APP" -> NonResidentialUsageDto.UsageType.APPOINTMENT
-      "VISIT" -> NonResidentialUsageDto.UsageType.VISIT
-      "MOVEMENT" -> NonResidentialUsageDto.UsageType.MOVEMENT
-      "OCCUR" -> NonResidentialUsageDto.UsageType.OCCURRENCE
-      "OIC" -> NonResidentialUsageDto.UsageType.ADJUDICATION_HEARING
-      "OTHER" -> NonResidentialUsageDto.UsageType.OTHER
-      "PROG" -> NonResidentialUsageDto.UsageType.PROGRAMMES_ACTIVITIES
-      "PROP" -> NonResidentialUsageDto.UsageType.PROPERTY
-      else -> throw IllegalArgumentException("Unknown location usage type ${it.usageLocationType?.name}")
+    when (it.internalLocationUsageType) {
+      UsageRequest.InternalLocationUsageType.APP -> NonResidentialUsageDto.UsageType.APPOINTMENT
+      UsageRequest.InternalLocationUsageType.VISIT -> NonResidentialUsageDto.UsageType.VISIT
+      UsageRequest.InternalLocationUsageType.MOVEMENT -> NonResidentialUsageDto.UsageType.MOVEMENT
+      UsageRequest.InternalLocationUsageType.OCCUR -> NonResidentialUsageDto.UsageType.OCCURRENCE
+      UsageRequest.InternalLocationUsageType.OIC -> NonResidentialUsageDto.UsageType.ADJUDICATION_HEARING
+      UsageRequest.InternalLocationUsageType.OTHER, UsageRequest.InternalLocationUsageType.OTH -> NonResidentialUsageDto.UsageType.OTHER
+      UsageRequest.InternalLocationUsageType.PROG -> NonResidentialUsageDto.UsageType.PROGRAMMES_ACTIVITIES
+      UsageRequest.InternalLocationUsageType.PROP -> NonResidentialUsageDto.UsageType.PROPERTY
     },
     it.sequence ?: 0,
     it.capacity,
