@@ -266,26 +266,7 @@ private fun toAttribute(type: String, code: String): UpsertLocationRequest.Attri
           null
         }
       }
-    /*
-      nown location attribute type HOU_UNIT_ATT, code SC  Added
-    17492
-    Unknown location attribute type HOU_USED_FOR, code V sup lvl type added
-    12106
-    Unknown location attribute type HOU_USED_FOR, code MB ??
-    2748
-    Unknown location attribute type HOU_USED_FOR, code BM ??
-    824
-    Unknown location attribute type HOU_USED_FOR, code H added
-    178
-    Unknown location attribute type HOU_SANI_FIT, code ABC ?? prob typo, should be ADC or ABD?
-    76
-    Unknown location attribute type HOU_UNIT_ATT, code LISTENER ??
-    74
-    Unknown location attribute type HOU_SANI_FIT, code TVP ??
-    18
-    Unknown location attribute type HOU_SANI_FIT, code ST ??
-    18
-     */
+
     "HOU_UNIT_ATT" ->
       when (code) {
         "A" -> UpsertLocationRequest.Attributes.CAT_A_CELL
