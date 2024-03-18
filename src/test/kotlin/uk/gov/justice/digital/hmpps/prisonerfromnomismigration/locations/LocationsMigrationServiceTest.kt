@@ -40,11 +40,16 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Migrati
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_ENTITY
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_STATUS_CHECK
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.RETRY_MIGRATION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Capacity
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Certification
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Location
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.NonResidentialUsageDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.UpsertLocationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.LocationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.LocationIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.LocationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ProfileRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.UsageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
@@ -802,12 +807,12 @@ internal class LocationsMigrationServiceTest {
     internal fun setUp() = runTest {
       whenever(locationsMappingService.getMappingGivenNomisId(any())).thenReturn(null)
       whenever(nomisApiService.getLocation(any())).thenReturn(aNomisLocationResponse())
-      whenever(locationsService.migrateLocation(any())).thenReturn(aLocation())
+      whenever(locationsService.migrateLocation(any())).thenReturn(aDpsLocation())
       whenever(locationsMappingService.createMapping(any(), any())).thenReturn(CreateMappingResult())
     }
 
     @Test
-    internal fun `will retrieve all locations between offender pair from NOMIS`() = runTest {
+    internal fun `will retrieve location from NOMIS`() = runTest {
       service.migrateNomisEntity(
         MigrationContext(
           type = LOCATIONS,
@@ -836,13 +841,28 @@ internal class LocationsMigrationServiceTest {
       verify(locationsService).migrateLocation(
         eq(
           UpsertLocationRequest(
-            code = "C",
-            description = "Wing C",
-            locationType = UpsertLocationRequest.LocationType.WING,
-            comments = "Wing C",
+            code = "3",
+            description = "Wing C, landing 3",
+            comments = "landing 3",
+            locationType = UpsertLocationRequest.LocationType.LANDING,
             prisonId = "MDI",
+            orderWithinParentLocation = 1,
+            parentLocationPath = "C",
+            residentialHousingType = UpsertLocationRequest.ResidentialHousingType.RECEPTION,
+            capacity = Capacity(42, 41),
+            certification = Certification(true, 40),
             lastUpdatedBy = "TJONES_ADM",
             createDate = "2023-09-25T11:12:45",
+            attributes = setOf(
+              UpsertLocationRequest.Attributes.CAT_C,
+            ),
+            usage = setOf(
+              NonResidentialUsageDto(
+                usageType = NonResidentialUsageDto.UsageType.OCCURRENCE,
+                capacity = 42,
+                sequence = 5,
+              ),
+            ),
           ),
         ),
       )
@@ -876,7 +896,7 @@ internal class LocationsMigrationServiceTest {
     internal fun `will create a mapping between a new Location and a NOMIS Location`() =
       runTest {
         whenever(nomisApiService.getLocation(any())).thenReturn(aNomisLocationResponse())
-        whenever(locationsService.migrateLocation(any())).thenReturn(aLocation())
+        whenever(locationsService.migrateLocation(any())).thenReturn(aDpsLocation())
 
         service.migrateNomisEntity(
           MigrationContext(
@@ -902,7 +922,7 @@ internal class LocationsMigrationServiceTest {
     internal fun `will not throw an exception (and place message back on queue) but create a new retry message`() =
       runTest {
         whenever(nomisApiService.getLocation(any())).thenReturn(aNomisLocationResponse())
-        whenever(locationsService.migrateLocation(any())).thenReturn(aLocation())
+        whenever(locationsService.migrateLocation(any())).thenReturn(aDpsLocation())
 
         whenever(
           locationsMappingService.createMapping(
@@ -992,21 +1012,32 @@ internal class LocationsMigrationServiceTest {
 
 fun aNomisLocationResponse() = LocationResponse(
   locationId = 12345L,
-  comment = "Wing C",
-  locationType = "WING",
-  locationCode = "C",
-  description = "MDI-C",
-  userDescription = "Wing C",
+  comment = "landing 3",
+  locationType = "LAND",
+  locationCode = "3",
+  description = "MDI-C-3",
+  parentLocationId = 23456L,
+  userDescription = "Wing C, landing 3",
   prisonId = "MDI",
+  listSequence = 1,
+  unitType = LocationResponse.UnitType.REC,
+  capacity = 42,
+  operationalCapacity = 41,
+  cnaCapacity = 40,
+  certified = true,
   createUsername = "TJONES_ADM",
   createDatetime = "2023-09-25T11:12:45",
   active = true,
+  profiles = listOf(ProfileRequest(ProfileRequest.ProfileType.SUP_LVL_TYPE, "C")),
+  usages = listOf(
+    UsageRequest(UsageRequest.InternalLocationUsageType.OCCUR, UsageRequest.UsageLocationType.MEDI, 42, 5),
+  ),
 )
 
-fun aLocation() = Location(
+fun aDpsLocation() = Location(
   id = UUID.fromString("f1c1e3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e"),
-  locationType = Location.LocationType.WING,
-  code = "C",
+  locationType = Location.LocationType.LANDING,
+  code = "3",
   description = "Wing C",
   prisonId = "MDI",
   comments = "Test comment",

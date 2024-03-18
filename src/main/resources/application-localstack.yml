@@ -25,6 +25,7 @@ hmpps.sqs:
     migrationlocations:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+      errorVisibilityTimeout: 0
     audit:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}

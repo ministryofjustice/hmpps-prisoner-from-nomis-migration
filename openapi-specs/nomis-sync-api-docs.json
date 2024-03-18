@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-03-14.6978.f56c655"
+    "version": "2024-03-18.6999.25cb8c2"
   },
   "servers": [
     {
@@ -6027,6 +6027,16 @@
               "example": 12345
             },
             "example": 12345
+          },
+          {
+            "name": "active-only",
+            "in": "query",
+            "description": "Indicate if should return just active adjustments",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Indicate if should return just active adjustments"
+            }
           }
         ],
         "responses": {
@@ -9270,7 +9280,8 @@
               "HOU_SANI_FIT",
               "HOU_UNIT_ATT",
               "HOU_USED_FOR",
-              "SUP_LVL_TYPE"
+              "SUP_LVL_TYPE",
+              "NON_ASSO_TYP"
             ]
           },
           "profileCode": {
@@ -9415,6 +9426,7 @@
               "OCCUR",
               "OIC",
               "OTHER",
+              "OTH",
               "PROG",
               "PROP",
               "VISIT"
@@ -12665,15 +12677,15 @@
             "type": "integer",
             "format": "int32"
           },
-          "pageNumber": {
-            "type": "integer",
-            "format": "int32"
-          },
           "paged": {
             "type": "boolean"
           },
           "unpaged": {
             "type": "boolean"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
