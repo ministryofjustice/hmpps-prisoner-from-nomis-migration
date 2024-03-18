@@ -139,4 +139,4 @@ hmpps.sqs:
     # The locations migration involves cells, landings etc. which have a parent which may not yet exist. These may fail initially
     # and there needs to be a significant delay before they are retried which is long enough for the parent to be created.
     migrationlocations:
-      errorVisibilityTimeout: 90
+      errorVisibilityTimeout: 60

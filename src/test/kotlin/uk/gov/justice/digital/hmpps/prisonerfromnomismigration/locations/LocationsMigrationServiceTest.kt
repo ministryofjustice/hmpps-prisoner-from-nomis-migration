@@ -18,6 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
@@ -915,6 +916,32 @@ internal class LocationsMigrationServiceTest {
             mappingType = LocationMappingDto.MappingType.MIGRATED,
           ),
           object : ParameterizedTypeReference<DuplicateErrorResponse<LocationMappingDto>>() {},
+        )
+      }
+
+    @Test
+    internal fun `will skip an invalid attribute`() =
+      runTest {
+        whenever(nomisApiService.getLocation(any())).thenReturn(
+          aNomisLocationResponse().copy(
+            profiles = listOf(ProfileRequest(ProfileRequest.ProfileType.SUP_LVL_TYPE, "DUFF")),
+          ),
+        )
+        whenever(locationsService.migrateLocation(any())).thenReturn(aDpsLocation())
+
+        service.migrateNomisEntity(
+          MigrationContext(
+            type = LOCATIONS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = LocationIdResponse(12345L),
+          ),
+        )
+
+        verify(locationsService).migrateLocation(
+          argThat {
+            attributes!!.isEmpty()
+          },
         )
       }
 

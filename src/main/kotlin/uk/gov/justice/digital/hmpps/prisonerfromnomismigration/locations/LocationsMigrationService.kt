@@ -149,6 +149,8 @@ class LocationsMigrationService(
   }
 }
 
+private val warningLogger = LoggerFactory.getLogger(LocationsMigrationService::class.java)
+
 fun toUpsertSyncRequest(id: UUID, nomisLocationResponse: LocationResponse) =
   toUpsertSyncRequest(nomisLocationResponse).copy(id = id)
 
@@ -259,9 +261,31 @@ private fun toAttribute(type: String, code: String): UpsertLocationRequest.Attri
         "SCB" -> UpsertLocationRequest.Attributes.STANDARD_CELL_BELL
         "SETO" -> UpsertLocationRequest.Attributes.SEPARATE_TOILET
         "WD" -> UpsertLocationRequest.Attributes.WOODEN_DOOR
-        else -> throw IllegalArgumentException("Unknown location attribute type $type, code $code")
+        else -> {
+          warningLogger.warn("Unknown location attribute type $type, code $code")
+          null
+        }
       }
-
+    /*
+      nown location attribute type HOU_UNIT_ATT, code SC  Added
+    17492
+    Unknown location attribute type HOU_USED_FOR, code V sup lvl type added
+    12106
+    Unknown location attribute type HOU_USED_FOR, code MB ??
+    2748
+    Unknown location attribute type HOU_USED_FOR, code BM ??
+    824
+    Unknown location attribute type HOU_USED_FOR, code H added
+    178
+    Unknown location attribute type HOU_SANI_FIT, code ABC ?? prob typo, should be ADC or ABD?
+    76
+    Unknown location attribute type HOU_UNIT_ATT, code LISTENER ??
+    74
+    Unknown location attribute type HOU_SANI_FIT, code TVP ??
+    18
+    Unknown location attribute type HOU_SANI_FIT, code ST ??
+    18
+     */
     "HOU_UNIT_ATT" ->
       when (code) {
         "A" -> UpsertLocationRequest.Attributes.CAT_A_CELL
@@ -273,11 +297,14 @@ private fun toAttribute(type: String, code: String): UpsertLocationRequest.Attri
         "MO" -> UpsertLocationRequest.Attributes.MULTIPLE_OCCUPANCY
         "NSMC" -> UpsertLocationRequest.Attributes.NON_SMOKER_CELL
         "OC" -> UpsertLocationRequest.Attributes.OBSERVATION_CELL
-        "SAFE_CELL" -> UpsertLocationRequest.Attributes.SAFE_CELL
+        "SC" -> UpsertLocationRequest.Attributes.SAFE_CELL
         "SO" -> UpsertLocationRequest.Attributes.SINGLE_OCCUPANCY
         "SPC" -> UpsertLocationRequest.Attributes.SPECIAL_CELL
         "WA" -> UpsertLocationRequest.Attributes.WHEELCHAIR_ACCESS
-        else -> throw IllegalArgumentException("Unknown location attribute type $type, code $code")
+        else -> {
+          warningLogger.warn("Unknown location attribute type $type, code $code")
+          null
+        }
       }
 
     "HOU_USED_FOR" ->
@@ -299,15 +326,20 @@ private fun toAttribute(type: String, code: String): UpsertLocationRequest.Attri
         "C" -> UpsertLocationRequest.Attributes.CLOSED_PRISON
         "D" -> UpsertLocationRequest.Attributes.OPEN_TRAINING
         "E" -> UpsertLocationRequest.Attributes.HOSTEL
+        "H" -> UpsertLocationRequest.Attributes.NATIONAL_RESOURCE_HOSPITAL
         "I" -> UpsertLocationRequest.Attributes.CLOSED_YOUNG_OFFENDER
         "J" -> UpsertLocationRequest.Attributes.OPEN_YOUNG_OFFENDER
         "K" -> UpsertLocationRequest.Attributes.REMAND_UNDER_18
         "L" -> UpsertLocationRequest.Attributes.SENTENCED_UNDER_18
         "R" -> UpsertLocationRequest.Attributes.ECL_COMPONENT
         "T" -> UpsertLocationRequest.Attributes.ADDITIONAL_SPECIAL_UNIT
+        "V" -> UpsertLocationRequest.Attributes.VULNERABLE_PRISONER_UNIT
         "Y" -> UpsertLocationRequest.Attributes.SECOND_CLOSED_TRAINER
         "Z" -> UpsertLocationRequest.Attributes.IMMIGRATION_DETAINEES
-        else -> throw IllegalArgumentException("Unknown location attribute type $type, code $code")
+        else -> {
+          warningLogger.warn("Unknown location attribute type $type, code $code")
+          null
+        }
       }
 
     "SUP_LVL_TYPE" ->
@@ -342,12 +374,21 @@ private fun toAttribute(type: String, code: String): UpsertLocationRequest.Attri
         "U" -> UpsertLocationRequest.Attributes.UN_SENTENCED
         "Y" -> UpsertLocationRequest.Attributes.YES
         "N" -> UpsertLocationRequest.Attributes.NO
-        else -> throw IllegalArgumentException("Unknown location attribute type $type, code $code")
+        else -> {
+          warningLogger.warn("Unknown location attribute type $type, code $code")
+          null
+        }
       }
 
-    "NON_ASSO_TYP" -> null
+    "NON_ASSO_TYP" -> {
+      warningLogger.warn("Ignoring location attribute type $type, code $code")
+      null
+    }
 
-    else -> throw IllegalArgumentException("Unknown location attribute type $type, code $code")
+    else -> {
+      warningLogger.warn("Unknown location attribute type $type, code $code")
+      null
+    }
   }
 
 private fun toUsage(it: UsageRequest) =
