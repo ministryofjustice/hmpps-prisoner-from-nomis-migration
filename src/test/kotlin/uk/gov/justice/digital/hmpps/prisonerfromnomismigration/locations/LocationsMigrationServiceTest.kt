@@ -801,7 +801,7 @@ internal class LocationsMigrationServiceTest {
   }
 
   @Nested
-  @DisplayName("migrateLocations")
+  @DisplayName("migrateLocation")
   inner class MigrateLocation {
 
     @BeforeEach

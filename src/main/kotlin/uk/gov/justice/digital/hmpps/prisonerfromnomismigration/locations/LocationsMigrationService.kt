@@ -67,36 +67,41 @@ class LocationsMigrationService(
 
       // Determine all valid locations for this offender pair
       val nomisLocationResponse = nomisApiService.getLocation(locationId)
-      locationsMappingService.getMappingGivenNomisId(locationId)
-        ?.run {
-          log.info(
-            """Will not migrate the location since it is migrated already, NOMIS locationId is $locationId, as part migration ${this.label ?: "NONE"} (${this.mappingType})""",
-          )
-        }
-        ?: run {
-          val upsertSyncRequest = toUpsertSyncRequest(nomisLocationResponse)
-          log.debug(
-            "No location mapping - sending location migrate upsert {}",
-            upsertSyncRequest,
-          )
-          val migratedLocation = locationsService.migrateLocation(upsertSyncRequest)
-            .also {
-              createLocationMapping(
-                dpsLocationId = it.id.toString(),
-                nomisLocationId = nomisLocationResponse.locationId,
-                context = context,
-              )
-            }
-          telemetryClient.trackEvent(
-            "locations-migration-entity-migrated",
-            mapOf(
-              "dpsLocationId" to migratedLocation.id.toString(),
-              "nomisLocationId" to nomisLocationResponse.locationId.toString(),
-              "migrationId" to context.migrationId,
-            ),
-            null,
-          )
-        }
+
+      if (nomisLocationResponse.prisonId == "ZZGHI" || nomisLocationResponse.prisonId == "UNKNWN") {
+        log.info("Will not migrate invalid prison locations, NOMIS location is $locationId, ${nomisLocationResponse.description}")
+      } else {
+        locationsMappingService.getMappingGivenNomisId(locationId)
+          ?.run {
+            log.info(
+              """Will not migrate the location since it is migrated already, NOMIS location is $locationId, ${nomisLocationResponse.description}, as part migration ${this.label ?: "NONE"} (${this.mappingType})""",
+            )
+          }
+          ?: run {
+            val upsertSyncRequest = toUpsertSyncRequest(nomisLocationResponse)
+            log.debug(
+              "No location mapping for ${nomisLocationResponse.description}, sending location migrate upsert {}",
+              upsertSyncRequest,
+            )
+            val migratedLocation = locationsService.migrateLocation(upsertSyncRequest)
+              .also {
+                createLocationMapping(
+                  dpsLocationId = it.id.toString(),
+                  nomisLocationId = nomisLocationResponse.locationId,
+                  context = context,
+                )
+              }
+            telemetryClient.trackEvent(
+              "locations-migration-entity-migrated",
+              mapOf(
+                "dpsLocationId" to migratedLocation.id.toString(),
+                "nomisLocationId" to nomisLocationResponse.locationId.toString(),
+                "migrationId" to context.migrationId,
+              ),
+              null,
+            )
+          }
+      }
     }
   }
 
@@ -193,9 +198,9 @@ fun toUpsertSyncRequest(nomisLocationResponse: LocationResponse) =
 
 private fun toLocationType(locationType: String): UpsertLocationRequest.LocationType =
   when (locationType) {
-    "WING" -> UpsertLocationRequest.LocationType.WING
+    "WING", "BLK" -> UpsertLocationRequest.LocationType.WING
     "SPUR" -> UpsertLocationRequest.LocationType.SPUR
-    "LAND", "TIER" -> UpsertLocationRequest.LocationType.LANDING
+    "LAND", "TIER", "LAN" -> UpsertLocationRequest.LocationType.LANDING
     "CELL" -> UpsertLocationRequest.LocationType.CELL
     "ADJU" -> UpsertLocationRequest.LocationType.ADJUDICATION_ROOM
     "ADMI" -> UpsertLocationRequest.LocationType.ADMINISTRATION_AREA
@@ -247,6 +252,21 @@ private fun toResidentialHousingType(unitType: LocationResponse.UnitType?): Upse
     null -> null
   }
 
+/*
+Unknown location attribute type HOU_USED_FOR, code MB
+143
+Unknown location attribute type HOU_USED_FOR, code BM
+35
+Unknown location attribute type HOU_UNIT_ATT, code LISTENER
+2
+Unknown location attribute type HOU_SANI_FIT, code TVP
+2
+Unknown location attribute type HOU_SANI_FIT, code ST
+2
+Unknown location attribute type HOU_SANI_FIT, code ABC
+2
+
+ */
 private fun toAttribute(type: String, code: String): UpsertLocationRequest.Attributes? =
   when (type) {
     "HOU_SANI_FIT" ->
