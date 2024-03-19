@@ -1044,6 +1044,7 @@ fun aNomisLocationResponse() = LocationResponse(
   locationCode = "3",
   description = "MDI-C-3",
   parentLocationId = 23456L,
+  parentKey = "MDI-C",
   userDescription = "Wing C, landing 3",
   prisonId = "MDI",
   listSequence = 1,

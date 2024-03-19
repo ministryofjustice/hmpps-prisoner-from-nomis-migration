@@ -169,10 +169,9 @@ fun toUpsertSyncRequest(nomisLocationResponse: LocationResponse) =
     comments = nomisLocationResponse.comment,
     orderWithinParentLocation = nomisLocationResponse.listSequence,
     residentialHousingType = toResidentialHousingType(nomisLocationResponse.unitType),
-    parentLocationPath = nomisLocationResponse.parentLocationId
+    parentLocationPath = nomisLocationResponse.parentKey
       ?.let {
-        // locationsMappingService.getMappingGivenNomisId(it)!!.nomisLocationId
-        nomisLocationResponse.description.substringAfter("-").substringBeforeLast("-")
+        nomisLocationResponse.parentKey.substringAfter("-")
       },
     capacity = if (nomisLocationResponse.capacity != null || nomisLocationResponse.operationalCapacity != null) {
       Capacity(
@@ -182,8 +181,8 @@ fun toUpsertSyncRequest(nomisLocationResponse: LocationResponse) =
     } else {
       null
     },
-    certification = if (nomisLocationResponse.certified || nomisLocationResponse.cnaCapacity != null) {
-      Certification(nomisLocationResponse.certified, nomisLocationResponse.cnaCapacity ?: 0)
+    certification = if (nomisLocationResponse.certified != null || nomisLocationResponse.cnaCapacity != null) {
+      Certification(nomisLocationResponse.certified ?: false, nomisLocationResponse.cnaCapacity ?: 0)
     } else {
       null
     },
@@ -252,21 +251,6 @@ private fun toResidentialHousingType(unitType: LocationResponse.UnitType?): Upse
     null -> null
   }
 
-/*
-Unknown location attribute type HOU_USED_FOR, code MB
-143
-Unknown location attribute type HOU_USED_FOR, code BM
-35
-Unknown location attribute type HOU_UNIT_ATT, code LISTENER
-2
-Unknown location attribute type HOU_SANI_FIT, code TVP
-2
-Unknown location attribute type HOU_SANI_FIT, code ST
-2
-Unknown location attribute type HOU_SANI_FIT, code ABC
-2
-
- */
 private fun toAttribute(type: String, code: String): UpsertLocationRequest.Attributes? =
   when (type) {
     "HOU_SANI_FIT" ->

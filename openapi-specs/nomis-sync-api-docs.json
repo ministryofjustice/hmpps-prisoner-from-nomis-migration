@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-03-18.6999.25cb8c2"
+    "version": "2024-03-19.7034.1382fd2"
   },
   "servers": [
     {
@@ -734,6 +734,65 @@
           },
           "404": {
             "description": "Alert does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "alerts-resource"
+        ],
+        "summary": "Deletes an alert by bookingId and alert sequence",
+        "description": "Deletes an prisoner alert. Requires ROLE_NOMIS_ALERTS",
+        "operationId": "deleteAlert",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "description": "Booking Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Booking Id",
+              "example": 12345
+            },
+            "example": 12345
+          },
+          {
+            "name": "alertSequence",
+            "in": "path",
+            "description": "Alert sequence",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Alert sequence",
+              "example": 3
+            },
+            "example": 3
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Alert Deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_ALERTS",
             "content": {
               "application/json": {
                 "schema": {
@@ -8668,7 +8727,6 @@
       },
       "UpdateSentenceAdjustmentRequest": {
         "required": [
-          "active",
           "adjustmentDays",
           "adjustmentTypeCode",
           "sentenceSequence"
@@ -8723,13 +8781,10 @@
       },
       "UpsertAttendanceRequest": {
         "required": [
-          "authorisedAbsence",
           "endTime",
           "eventStatusCode",
-          "paid",
           "scheduleDate",
-          "startTime",
-          "unexcusedAbsence"
+          "startTime"
         ],
         "type": "object",
         "properties": {
@@ -9564,7 +9619,6 @@
       },
       "UpdateKeyDateAdjustmentRequest": {
         "required": [
-          "active",
           "adjustmentDays",
           "adjustmentFromDate",
           "adjustmentTypeCode"
@@ -11756,7 +11810,6 @@
       },
       "CreateSentenceAdjustmentRequest": {
         "required": [
-          "active",
           "adjustmentDays",
           "adjustmentTypeCode"
         ],
@@ -11836,7 +11889,6 @@
       },
       "CreateKeyDateAdjustmentRequest": {
         "required": [
-          "active",
           "adjustmentDays",
           "adjustmentFromDate",
           "adjustmentTypeCode"
@@ -11956,7 +12008,6 @@
       },
       "CreateLocationRequest": {
         "required": [
-          "certified",
           "description",
           "locationCode",
           "locationType",
@@ -12649,7 +12700,10 @@
             "format": "int32"
           },
           "sort": {
-            "$ref": "#/components/schemas/SortObject"
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
           },
           "numberOfElements": {
             "type": "integer",
@@ -12671,9 +12725,16 @@
             "format": "int64"
           },
           "sort": {
-            "$ref": "#/components/schemas/SortObject"
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
           },
           "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageNumber": {
             "type": "integer",
             "format": "int32"
           },
@@ -12682,23 +12743,25 @@
           },
           "unpaged": {
             "type": "boolean"
-          },
-          "pageNumber": {
-            "type": "integer",
-            "format": "int32"
           }
         }
       },
       "SortObject": {
         "type": "object",
         "properties": {
-          "empty": {
+          "direction": {
+            "type": "string"
+          },
+          "nullHandling": {
+            "type": "string"
+          },
+          "ascending": {
             "type": "boolean"
           },
-          "sorted": {
-            "type": "boolean"
+          "property": {
+            "type": "string"
           },
-          "unsorted": {
+          "ignoreCase": {
             "type": "boolean"
           }
         }
@@ -13082,7 +13145,10 @@
             "format": "int32"
           },
           "sort": {
-            "$ref": "#/components/schemas/SortObject"
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
           },
           "numberOfElements": {
             "type": "integer",
@@ -13579,7 +13645,10 @@
             "format": "int32"
           },
           "sort": {
-            "$ref": "#/components/schemas/SortObject"
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
           },
           "numberOfElements": {
             "type": "integer",
@@ -14142,7 +14211,10 @@
             "format": "int32"
           },
           "sort": {
-            "$ref": "#/components/schemas/SortObject"
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
           },
           "numberOfElements": {
             "type": "integer",
@@ -14159,7 +14231,6 @@
       "LocationResponse": {
         "required": [
           "active",
-          "certified",
           "createDatetime",
           "createUsername",
           "description",
@@ -14197,6 +14268,11 @@
             "description": "The containing location id",
             "format": "int64",
             "example": 1234567
+          },
+          "parentKey": {
+            "type": "string",
+            "description": "The containing location id's key (Nomis description field)",
+            "example": "WWI-B-2"
           },
           "operationalCapacity": {
             "type": "integer",
@@ -14352,7 +14428,10 @@
             "format": "int32"
           },
           "sort": {
-            "$ref": "#/components/schemas/SortObject"
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
           },
           "numberOfElements": {
             "type": "integer",
@@ -14805,7 +14884,10 @@
             "format": "int32"
           },
           "sort": {
-            "$ref": "#/components/schemas/SortObject"
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
           },
           "numberOfElements": {
             "type": "integer",
@@ -14871,7 +14953,10 @@
             "format": "int32"
           },
           "sort": {
-            "$ref": "#/components/schemas/SortObject"
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
           },
           "numberOfElements": {
             "type": "integer",
@@ -15145,7 +15230,10 @@
             "format": "int32"
           },
           "sort": {
-            "$ref": "#/components/schemas/SortObject"
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
           },
           "numberOfElements": {
             "type": "integer",
@@ -15471,7 +15559,10 @@
             "format": "int32"
           },
           "sort": {
-            "$ref": "#/components/schemas/SortObject"
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
           },
           "numberOfElements": {
             "type": "integer",
@@ -15536,7 +15627,10 @@
             "format": "int32"
           },
           "sort": {
-            "$ref": "#/components/schemas/SortObject"
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
           },
           "numberOfElements": {
             "type": "integer",
@@ -15607,7 +15701,10 @@
             "format": "int32"
           },
           "sort": {
-            "$ref": "#/components/schemas/SortObject"
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
           },
           "numberOfElements": {
             "type": "integer",
@@ -15912,7 +16009,10 @@
             "format": "int32"
           },
           "sort": {
-            "$ref": "#/components/schemas/SortObject"
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
           },
           "numberOfElements": {
             "type": "integer",
@@ -15962,6 +16062,8 @@
     "securitySchemes": {
       "bearer-jwt": {
         "type": "http",
+        "name": "Authorization",
+        "in": "header",
         "scheme": "bearer",
         "bearerFormat": "JWT"
       }
