@@ -71,7 +71,6 @@ class LocationsMigrationService(
       if (nomisLocationResponse.prisonId == "ZZGHI" || nomisLocationResponse.prisonId == "UNKNWN") {
         log.info("Will not migrate invalid prison locations, NOMIS location is $locationId, ${nomisLocationResponse.description}")
       } else {
-
         locationsMappingService.getMappingGivenNomisId(locationId)
           ?.run {
             log.info(
