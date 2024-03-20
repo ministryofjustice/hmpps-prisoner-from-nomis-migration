@@ -38,8 +38,9 @@ class AlertsPrisonOffenderEventListener(
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
           if (eventFeatureSwitch.isEnabled(eventType)) {
             when (eventType) {
-              "ALERT-UPDATED" -> alertsSynchronisationService.nomisAlertUpdated((sqsMessage.Message.fromJson()))
-              "ALERT-INSERTED" -> alertsSynchronisationService.nomisAlertInserted((sqsMessage.Message.fromJson()))
+              "ALERT-UPDATED" -> alertsSynchronisationService.nomisAlertUpdated(sqsMessage.Message.fromJson())
+              "ALERT-INSERTED" -> alertsSynchronisationService.nomisAlertInserted(sqsMessage.Message.fromJson())
+              "ALERT-DELETED" -> alertsSynchronisationService.nomisAlertDeleted(sqsMessage.Message.fromJson())
 
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }

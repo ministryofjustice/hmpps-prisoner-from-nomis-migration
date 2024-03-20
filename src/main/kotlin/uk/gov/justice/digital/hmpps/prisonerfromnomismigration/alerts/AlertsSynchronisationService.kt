@@ -101,6 +101,25 @@ class AlertsSynchronisationService(
     }
   }
 
+  suspend fun nomisAlertDeleted(event: AlertUpdatedEvent) {
+    val telemetry =
+      mapOf("bookingId" to event.bookingId, "alertSequence" to event.alertSeq, "offenderNo" to event.offenderIdDisplay)
+    val mapping = mappingApiService.getOrNullByNomisId(event.bookingId, event.alertSeq)
+    if (mapping == null) {
+      telemetryClient.trackEvent(
+        "alert-synchronisation-deleted-ignored",
+        telemetry,
+      )
+    } else {
+      dpsApiService.deleteAlert(alertId = mapping.dpsAlertId)
+      tryToDeletedMapping(mapping.dpsAlertId)
+      telemetryClient.trackEvent(
+        "alert-synchronisation-deleted-success",
+        telemetry + ("dpsAlertId" to mapping.dpsAlertId),
+      )
+    }
+  }
+
   private suspend fun tryToCreateMapping(
     nomisAlert: AlertResponse,
     dpsAlert: Alert,
@@ -137,6 +156,13 @@ class AlertsSynchronisationService(
         retryMessage.telemetryAttributes,
       )
     }
+  }
+
+  private suspend fun tryToDeletedMapping(dpsAlertId: String) = runCatching {
+    mappingApiService.deleteMappingByDpsId(dpsAlertId)
+  }.onFailure { e ->
+    telemetryClient.trackEvent("alert-mapping-deleted-failed", mapOf("dpsAlertId" to dpsAlertId))
+    log.warn("Unable to delete mapping for alert $dpsAlertId. Please delete manually", e)
   }
 }
 
