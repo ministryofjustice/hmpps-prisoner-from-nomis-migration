@@ -36,7 +36,7 @@ internal class LocationsServiceTest {
         locationsService.upsertLocation(
           UpsertLocationRequest(
             code = "C",
-            description = "Wing C",
+            localName = "Wing C",
             locationType = UpsertLocationRequest.LocationType.WING,
             comments = "Test comment",
             prisonId = "LEI",
@@ -60,7 +60,7 @@ internal class LocationsServiceTest {
         postRequestedFor(urlEqualTo("/sync/upsert"))
           .withRequestBody(matchingJsonPath("locationType", equalTo("WING")))
           .withRequestBody(matchingJsonPath("code", equalTo("C")))
-          .withRequestBody(matchingJsonPath("description", equalTo("Wing C")))
+          .withRequestBody(matchingJsonPath("localName", equalTo("Wing C")))
           .withRequestBody(matchingJsonPath("prisonId", equalTo("LEI")))
           .withRequestBody(matchingJsonPath("comments", equalTo("Test comment")))
           .withRequestBody(matchingJsonPath("lastUpdatedBy", equalTo("TJONES_ADM"))),
@@ -79,11 +79,12 @@ internal class LocationsServiceTest {
           UpsertLocationRequest(
             id = UUID.fromString(LOCATION_ID),
             code = "C",
-            description = "Wing C",
+            localName = "Wing C",
             locationType = UpsertLocationRequest.LocationType.WING,
             comments = "Test comment",
             prisonId = "LEI",
             lastUpdatedBy = "TJONES_ADM",
+            parentId = UUID.fromString("12345678-1234-1234-1234-1234567890ab"),
           ),
         )
       }
@@ -104,9 +105,10 @@ internal class LocationsServiceTest {
           .withRequestBody(matchingJsonPath("id", equalTo(LOCATION_ID)))
           .withRequestBody(matchingJsonPath("locationType", equalTo("WING")))
           .withRequestBody(matchingJsonPath("code", equalTo("C")))
-          .withRequestBody(matchingJsonPath("description", equalTo("Wing C")))
+          .withRequestBody(matchingJsonPath("localName", equalTo("Wing C")))
           .withRequestBody(matchingJsonPath("prisonId", equalTo("LEI")))
-          .withRequestBody(matchingJsonPath("comments", equalTo("Test comment"))),
+          .withRequestBody(matchingJsonPath("comments", equalTo("Test comment")))
+          .withRequestBody(matchingJsonPath("parentId", equalTo("12345678-1234-1234-1234-1234567890ab"))),
       )
     }
   }

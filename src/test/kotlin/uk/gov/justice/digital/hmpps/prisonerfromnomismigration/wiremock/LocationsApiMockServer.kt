@@ -95,7 +95,7 @@ class LocationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     id = UUID.fromString(locationId),
     locationType = Location.LocationType.WING,
     code = "C",
-    description = "Wing C",
+    localName = "Wing C",
     prisonId = "MDI",
     comments = "Test comment",
     active = true,

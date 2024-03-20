@@ -64,6 +64,9 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 
+private const val NOMIS_PARENT_ID = 23456L
+private const val DPS_PARENT_ID = "fedcba98-3e3e-3e3e-3e3e-3e3e3e3e3e3e"
+
 @ExtendWith(MockitoExtension::class)
 internal class LocationsMigrationServiceTest {
   private val nomisApiService: NomisApiService = mock()
@@ -807,6 +810,14 @@ internal class LocationsMigrationServiceTest {
     @BeforeEach
     internal fun setUp() = runTest {
       whenever(locationsMappingService.getMappingGivenNomisId(any())).thenReturn(null)
+      whenever(locationsMappingService.getMappingGivenNomisId(NOMIS_PARENT_ID)).thenReturn(
+        LocationMappingDto(
+          dpsLocationId = DPS_PARENT_ID,
+          nomisLocationId = NOMIS_PARENT_ID,
+          label = "2020-05-23T11:30:00",
+          mappingType = LocationMappingDto.MappingType.MIGRATED,
+        ),
+      )
       whenever(nomisApiService.getLocation(any())).thenReturn(aNomisLocationResponse())
       whenever(locationsService.migrateLocation(any())).thenReturn(aDpsLocation())
       whenever(locationsMappingService.createMapping(any(), any())).thenReturn(CreateMappingResult())
@@ -843,12 +854,12 @@ internal class LocationsMigrationServiceTest {
         eq(
           UpsertLocationRequest(
             code = "3",
-            description = "Wing C, landing 3",
+            localName = "Wing C, landing 3",
             comments = "landing 3",
             locationType = UpsertLocationRequest.LocationType.LANDING,
             prisonId = "MDI",
             orderWithinParentLocation = 1,
-            parentLocationPath = "C",
+            parentId = UUID.fromString(DPS_PARENT_ID),
             residentialHousingType = UpsertLocationRequest.ResidentialHousingType.RECEPTION,
             capacity = Capacity(42, 41),
             certification = Certification(true, 40),
@@ -1043,7 +1054,7 @@ fun aNomisLocationResponse() = LocationResponse(
   locationType = "LAND",
   locationCode = "3",
   description = "MDI-C-3",
-  parentLocationId = 23456L,
+  parentLocationId = NOMIS_PARENT_ID,
   parentKey = "MDI-C",
   userDescription = "Wing C, landing 3",
   prisonId = "MDI",
@@ -1066,14 +1077,15 @@ fun aDpsLocation() = Location(
   id = UUID.fromString("f1c1e3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e"),
   locationType = Location.LocationType.LANDING,
   code = "3",
-  description = "Wing C",
+  localName = "Wing C",
   prisonId = "MDI",
   comments = "Test comment",
   active = true,
   isResidential = true,
   key = "key",
-  topLevelId = UUID.fromString("f1c1e3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e"),
+  topLevelId = UUID.fromString(DPS_PARENT_ID),
   pathHierarchy = "MDI-C",
+  parentId = UUID.fromString(DPS_PARENT_ID),
 )
 
 fun pages(total: Long, startId: Long = 1): PageImpl<LocationIdResponse> = PageImpl<LocationIdResponse>(

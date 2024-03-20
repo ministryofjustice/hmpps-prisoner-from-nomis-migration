@@ -39,8 +39,17 @@ class LocationsSynchronisationService(
     }
 
     val nomisLocation = nomisApiService.getLocation(event.internalLocationId)
+
+    val parent = nomisLocation.parentLocationId?.let {
+      locationsMappingService.getMappingGivenNomisId(nomisLocation.parentLocationId)
+    }
+    if (parent == null && nomisLocation.parentLocationId != null) {
+      throw IllegalStateException("No mapping found for parent NOMIS location ${nomisLocation.parentLocationId} syncing NOMIS location ${event.internalLocationId}, ${nomisLocation.description}")
+    }
+
     locationsMappingService.getMappingGivenNomisId(event.internalLocationId)?.let {
-      val upsertSyncRequest = toUpsertSyncRequest(UUID.fromString(it.dpsLocationId), nomisLocation)
+      val upsertSyncRequest =
+        toUpsertSyncRequest(UUID.fromString(it.dpsLocationId), nomisLocation, parent?.dpsLocationId)
       log.debug("Found location mapping: {}, sending location upsert sync {}", it, upsertSyncRequest)
 
       locationsService.upsertLocation(upsertSyncRequest)
@@ -49,7 +58,7 @@ class LocationsSynchronisationService(
         event.toTelemetryProperties(it.dpsLocationId),
       )
     } ?: let {
-      val upsertSyncRequest = toUpsertSyncRequest(nomisLocation)
+      val upsertSyncRequest = toUpsertSyncRequest(nomisLocation, parent?.dpsLocationId)
       log.debug("No location mapping - sending location upsert sync {} ", upsertSyncRequest)
 
       locationsService.upsertLocation(upsertSyncRequest).also { location ->
@@ -133,7 +142,7 @@ private fun LocationsOffenderEvent.toTelemetryProperties(
   mappingFailed: Boolean? = null,
 ) = mapOf(
   "nomisLocationId" to this.internalLocationId.toString(),
+  "key" to (this.description ?: ""),
 ) + (dpsLocationId?.let { mapOf("dpsLocationId" to it) } ?: emptyMap()) + (
-  mappingFailed?.takeIf { it }
-    ?.let { mapOf("mapping" to "initial-failure") } ?: emptyMap()
+  mappingFailed?.let { mapOf("mapping" to "initial-failure") } ?: emptyMap()
   )

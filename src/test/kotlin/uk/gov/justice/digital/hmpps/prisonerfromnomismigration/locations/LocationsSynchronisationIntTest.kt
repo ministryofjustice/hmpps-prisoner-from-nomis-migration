@@ -38,6 +38,8 @@ private const val DPS_LOCATION_ID = "abcdef12-1234-1234-1234-1234567890ab"
 private const val NOMIS_LOCATION_ID = 12345L
 private const val NOMIS_API_URL = "/locations/$NOMIS_LOCATION_ID"
 private const val NOMIS_MAPPING_API_URL = "$LOCATIONS_GET_MAPPING_URL/$NOMIS_LOCATION_ID"
+private const val DPS_PARENT_LOCATION_ID = "fedcba98-1234-1234-1234-1234567890ab"
+private const val NOMIS_PARENT_LOCATION_ID = 45678L
 
 class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
@@ -81,8 +83,9 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class WhenCreateByNomisSuccess {
         @BeforeEach
         fun setUp() {
-          nomisApi.stubGetLocation(NOMIS_LOCATION_ID)
+          nomisApi.stubGetLocation(NOMIS_LOCATION_ID, NOMIS_PARENT_LOCATION_ID)
           mappingApi.stubGetAnyLocationNotFound()
+          mappingApi.stubGetLocation(DPS_PARENT_LOCATION_ID, NOMIS_PARENT_LOCATION_ID)
           locationsApi.stubUpsertLocationForSynchronisation(DPS_LOCATION_ID)
           mappingApi.stubMappingCreate(LOCATIONS_CREATE_MAPPING_URL)
 
@@ -234,8 +237,9 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class WhenUpdateByNomisSuccess {
         @BeforeEach
         fun setUp() {
-          nomisApi.stubGetLocation(NOMIS_LOCATION_ID)
+          nomisApi.stubGetLocation(NOMIS_LOCATION_ID, NOMIS_PARENT_LOCATION_ID)
           mappingApi.stubGetLocation(DPS_LOCATION_ID, NOMIS_LOCATION_ID)
+          mappingApi.stubGetLocation(DPS_PARENT_LOCATION_ID, NOMIS_PARENT_LOCATION_ID)
           locationsApi.stubUpsertLocationForSynchronisation(DPS_LOCATION_ID)
 
           awsSqsLocationsOffenderEventsClient.sendMessage(
@@ -295,7 +299,7 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         internal fun `it will not retry after a 409 (duplicate location written to Location API)`() {
-          nomisApi.stubGetLocation(NOMIS_LOCATION_ID)
+          nomisApi.stubGetLocationWithMinimalData(NOMIS_LOCATION_ID)
           mappingApi.stubGetAnyLocationNotFound()
           locationsApi.stubUpsertLocationForSynchronisation(locationId = duplicationLocationId)
           mappingApi.stubLocationMappingCreateConflict(
