@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
@@ -197,6 +198,50 @@ class AlertsDpsApiServiceTest {
 
       dpsAlertsServer.verify(
         putRequestedFor(anyUrl())
+          .withHeader("Source", equalTo("NOMIS")),
+      )
+    }
+  }
+
+  @Nested
+  inner class DeleteAlert {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      dpsAlertsServer.stubDeleteAlert()
+
+      apiService.deleteAlert(
+        alertId = "f3f31737-6ee3-4ec5-8a79-0ac110fe50e2",
+      )
+
+      dpsAlertsServer.verify(
+        deleteRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass alert id to service`() = runTest {
+      dpsAlertsServer.stubDeleteAlert()
+
+      apiService.deleteAlert(
+        alertId = "f3f31737-6ee3-4ec5-8a79-0ac110fe50e2",
+      )
+
+      dpsAlertsServer.verify(
+        deleteRequestedFor(urlEqualTo("/alerts/f3f31737-6ee3-4ec5-8a79-0ac110fe50e2")),
+      )
+    }
+
+    @Test
+    internal fun `will pass source as NOMIS to service via header`() = runTest {
+      dpsAlertsServer.stubDeleteAlert()
+
+      apiService.deleteAlert(
+        alertId = "f3f31737-6ee3-4ec5-8a79-0ac110fe50e2",
+      )
+
+      dpsAlertsServer.verify(
+        deleteRequestedFor(anyUrl())
           .withHeader("Source", equalTo("NOMIS")),
       )
     }

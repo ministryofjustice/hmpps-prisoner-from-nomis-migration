@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.exactly
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.atLeastOnce
 import org.mockito.Mockito.eq
+import org.mockito.kotlin.any
 import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
@@ -555,6 +557,191 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
               eq("alert-synchronisation-updated-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+                assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+                assertThat(it["alertSequence"]).isEqualTo(alertSequence.toString())
+                assertThat(it["dpsAlertId"]).isEqualTo(dpsAlertId)
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("ALERT-DELETED")
+  inner class AlertDeleted {
+    @Nested
+    @DisplayName("When alert was deleted in either NOMIS or DPS")
+    inner class NomisCreated {
+      private val bookingId = 12345L
+      private val alertSequence = 3L
+      private val offenderNo = "A3864DZ"
+
+      @Nested
+      @DisplayName("When mapping doesn't exist")
+      inner class MappingDoesNotExist {
+        @BeforeEach
+        fun setUp() {
+          alertsMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
+          awsSqsAlertOffenderEventsClient.sendMessage(
+            alertsQueueOffenderEventsUrl,
+            alertEvent(
+              eventType = "ALERT-DELETED",
+              bookingId = bookingId,
+              alertSequence = alertSequence,
+              offenderNo = offenderNo,
+            ),
+          )
+        }
+
+        @Test
+        fun `telemetry added to track that the delete was ignored`() {
+          await untilAsserted {
+            verify(telemetryClient, atLeastOnce()).trackEvent(
+              eq("alert-synchronisation-deleted-ignored"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+                assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+                assertThat(it["alertSequence"]).isEqualTo(alertSequence.toString())
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("When mapping does exist")
+      inner class MappingExists {
+        private val dpsAlertId = "a04f7a8d-61aa-400c-9395-f4dc62f36ab0"
+
+        @BeforeEach
+        fun setUp() {
+          alertsMappingApiMockServer.stubGetByNomisId(
+            bookingId = bookingId,
+            alertSequence = alertSequence,
+            AlertMappingDto(
+              nomisBookingId = bookingId,
+              nomisAlertSequence = alertSequence,
+              dpsAlertId = dpsAlertId,
+              mappingType = MIGRATED,
+            ),
+          )
+          dpsAlertsServer.stubDeleteAlert()
+          alertsMappingApiMockServer.stubDeleteMapping()
+          awsSqsAlertOffenderEventsClient.sendMessage(
+            alertsQueueOffenderEventsUrl,
+            alertEvent(
+              eventType = "ALERT-DELETED",
+              bookingId = bookingId,
+              alertSequence = alertSequence,
+              offenderNo = offenderNo,
+            ),
+          )
+        }
+
+        @Test
+        fun `will delete Alert in DPS`() {
+          await untilAsserted {
+            dpsAlertsServer.verify(
+              1,
+              deleteRequestedFor(urlPathEqualTo("/alerts/$dpsAlertId")),
+            )
+          }
+        }
+
+        @Test
+        fun `will delete Alert mapping`() {
+          await untilAsserted {
+            alertsMappingApiMockServer.verify(
+              1,
+              deleteRequestedFor(urlPathEqualTo("/mapping/alerts/dps-alert-id/$dpsAlertId")),
+            )
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("alert-synchronisation-deleted-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+                assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+                assertThat(it["alertSequence"]).isEqualTo(alertSequence.toString())
+                assertThat(it["dpsAlertId"]).isEqualTo(dpsAlertId)
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("When mapping fails to be deleted")
+      inner class MappingDeleteFails {
+        private val dpsAlertId = "a04f7a8d-61aa-400c-9395-f4dc62f36ab0"
+
+        @BeforeEach
+        fun setUp() {
+          alertsMappingApiMockServer.stubGetByNomisId(
+            bookingId = bookingId,
+            alertSequence = alertSequence,
+            AlertMappingDto(
+              nomisBookingId = bookingId,
+              nomisAlertSequence = alertSequence,
+              dpsAlertId = dpsAlertId,
+              mappingType = MIGRATED,
+            ),
+          )
+          dpsAlertsServer.stubDeleteAlert()
+          alertsMappingApiMockServer.stubDeleteMapping(status = INTERNAL_SERVER_ERROR)
+          awsSqsAlertOffenderEventsClient.sendMessage(
+            alertsQueueOffenderEventsUrl,
+            alertEvent(
+              eventType = "ALERT-DELETED",
+              bookingId = bookingId,
+              alertSequence = alertSequence,
+              offenderNo = offenderNo,
+            ),
+          )
+        }
+
+        @Test
+        fun `will delete Alert in DPS`() {
+          await untilAsserted {
+            dpsAlertsServer.verify(
+              1,
+              deleteRequestedFor(urlPathEqualTo("/alerts/$dpsAlertId")),
+            )
+          }
+        }
+
+        @Test
+        fun `will try to delete Alert mapping once and record failure`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("alert-mapping-deleted-failed"),
+              any(),
+              isNull(),
+            )
+
+            alertsMappingApiMockServer.verify(
+              1,
+              deleteRequestedFor(urlPathEqualTo("/mapping/alerts/dps-alert-id/$dpsAlertId")),
+            )
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("alert-synchronisation-deleted-success"),
               check {
                 assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
                 assertThat(it["bookingId"]).isEqualTo(bookingId.toString())

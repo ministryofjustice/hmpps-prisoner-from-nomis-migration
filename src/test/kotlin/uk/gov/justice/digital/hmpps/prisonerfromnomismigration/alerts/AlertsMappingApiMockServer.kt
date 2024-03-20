@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
@@ -72,6 +73,27 @@ class AlertsMappingApiMockServer(private val objectMapper: ObjectMapper) {
 
   fun stubPostMappingFailureFollowedBySuccess() {
     mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/alerts")
+  }
+
+  fun stubDeleteMapping() {
+    mappingApi.stubFor(
+      delete(urlPathMatching("/mapping/alerts/dps-alert-id/.*")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.NO_CONTENT.value()),
+      ),
+    )
+  }
+
+  fun stubDeleteMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      delete(urlPathMatching("/mapping/alerts/dps-alert-id/.*")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
   }
 
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)

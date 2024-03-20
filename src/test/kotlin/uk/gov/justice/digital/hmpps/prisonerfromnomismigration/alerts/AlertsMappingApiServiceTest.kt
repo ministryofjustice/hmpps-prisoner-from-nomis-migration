@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
@@ -87,6 +88,34 @@ class AlertsMappingApiServiceTest {
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.getOrNullByNomisId(bookingId = 1234567, alertSequence = 4)
       }
+    }
+  }
+
+  @Nested
+  inner class DeleteMapping {
+    private val dpsAlertId = UUID.randomUUID().toString()
+
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      alertsMappingApiMockServer.stubDeleteMapping()
+
+      apiService.deleteMappingByDpsId(dpsAlertId)
+
+      alertsMappingApiMockServer.verify(
+        deleteRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass ids to service`() = runTest {
+      val dpsAlertId = "a04f7a8d-61aa-400c-9395-f4dc62f36ab0"
+      alertsMappingApiMockServer.stubDeleteMapping()
+
+      apiService.deleteMappingByDpsId(dpsAlertId)
+
+      alertsMappingApiMockServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/mapping/alerts/dps-alert-id/$dpsAlertId")),
+      )
     }
   }
 

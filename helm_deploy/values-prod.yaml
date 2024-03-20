@@ -34,6 +34,7 @@ generic-service:
     FEATURE_EVENT_INT_LOC_USAGE_LOCATIONS-UPDATED: false
     FEATURE_EVENT_ALERT-UPDATED: false
     FEATURE_EVENT_ALERT-INSERTED: false
+    FEATURE_EVENT_ALERT-DELETED: false
 
 generic-prometheus-alerts:
   rdsAlertsDatabases:
