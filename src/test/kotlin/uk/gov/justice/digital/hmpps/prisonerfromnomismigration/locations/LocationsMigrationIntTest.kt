@@ -40,6 +40,8 @@ import java.time.Duration
 import java.time.LocalDateTime
 
 private const val DPS_LOCATION_ID = "abcde123-1234-1234-1234-1234567890ab"
+private const val DPS_PARENT_LOCATION_ID = "fedcba98-1234-1234-1234-1234567890ab"
+private const val NOMIS_PARENT_LOCATION_ID = 45678L
 
 class LocationsMigrationIntTest : SqsIntegrationTestBase() {
 
@@ -101,9 +103,10 @@ class LocationsMigrationIntTest : SqsIntegrationTestBase() {
     fun `will start processing pages of locations`() {
       nomisApi.stubGetInitialCount(NomisApiExtension.LOCATIONS_ID_URL, 86) { locationIdsPagedResponse(it) }
       nomisApi.stubMultipleGetLocationIdCounts(totalElements = 86, pageSize = 10)
-      nomisApi.stubMultipleGetLocations(1..86)
+      nomisApi.stubMultipleGetLocations(1..86, NOMIS_PARENT_LOCATION_ID)
 
       mappingApi.stubGetAnyLocationNotFound()
+      mappingApi.stubGetLocation(DPS_PARENT_LOCATION_ID, NOMIS_PARENT_LOCATION_ID)
       mappingApi.stubMappingCreate(LOCATIONS_CREATE_MAPPING_URL)
 
       locationsApi.stubUpsertLocationForMigration()
@@ -123,9 +126,10 @@ class LocationsMigrationIntTest : SqsIntegrationTestBase() {
     fun `will add analytical events for starting, ending and each migrated record`() {
       nomisApi.stubGetInitialCount(NomisApiExtension.LOCATIONS_ID_URL, 26) { locationIdsPagedResponse(it) }
       nomisApi.stubMultipleGetLocationIdCounts(totalElements = 26, pageSize = 10)
-      nomisApi.stubMultipleGetLocations(1..26)
+      nomisApi.stubMultipleGetLocations(1..26, NOMIS_PARENT_LOCATION_ID)
       locationsApi.stubUpsertLocationForMigration()
       mappingApi.stubGetAnyLocationNotFound()
+      mappingApi.stubGetLocation(DPS_PARENT_LOCATION_ID, NOMIS_PARENT_LOCATION_ID)
       mappingApi.stubMappingCreate(LOCATIONS_CREATE_MAPPING_URL)
 
       // stub 25 migrated records and 1 fake a failure
@@ -163,8 +167,9 @@ class LocationsMigrationIntTest : SqsIntegrationTestBase() {
     fun `will retry to create a mapping, and only the mapping, if it fails first time`() {
       nomisApi.stubGetInitialCount(NomisApiExtension.LOCATIONS_ID_URL, 1) { locationIdsPagedResponse(it) }
       nomisApi.stubMultipleGetLocationIdCounts(totalElements = 1, pageSize = 10)
-      nomisApi.stubMultipleGetLocations(1..1)
+      nomisApi.stubMultipleGetLocations(1..1, NOMIS_PARENT_LOCATION_ID)
       mappingApi.stubGetAnyLocationNotFound()
+      mappingApi.stubGetLocation(DPS_PARENT_LOCATION_ID, NOMIS_PARENT_LOCATION_ID)
       mappingApi.stubLocationsMappingByMigrationId()
       locationsApi.stubUpsertLocationForMigration(DPS_LOCATION_ID)
       mappingApi.stubMappingCreateFailureFollowedBySuccess(LOCATIONS_CREATE_MAPPING_URL)
@@ -182,8 +187,9 @@ class LocationsMigrationIntTest : SqsIntegrationTestBase() {
     fun `it will not retry after a 409 (duplicate location written to locations API)`() {
       nomisApi.stubGetInitialCount(NomisApiExtension.LOCATIONS_ID_URL, 1) { locationIdsPagedResponse(it) }
       nomisApi.stubMultipleGetLocationIdCounts(totalElements = 1, pageSize = 10)
-      nomisApi.stubMultipleGetLocations(1..1)
+      nomisApi.stubMultipleGetLocations(1..1, NOMIS_PARENT_LOCATION_ID)
       mappingApi.stubGetAnyLocationNotFound()
+      mappingApi.stubGetLocation(DPS_PARENT_LOCATION_ID, NOMIS_PARENT_LOCATION_ID)
       mappingApi.stubLocationsMappingByMigrationId()
       locationsApi.stubUpsertLocationForMigration(DPS_LOCATION_ID)
       val duplicateLocationId = "abcde123-1234-1234-1234-deadbeefcafe"

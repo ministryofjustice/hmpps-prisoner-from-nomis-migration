@@ -55,6 +55,8 @@ class LocationsMigrationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
+  private val invalidPrisons = listOf("ZZGHI", "UNKNWN", "TRN", "LT4")
+
   override suspend fun getIds(
     migrationFilter: LocationsMigrationFilter,
     pageSize: Long,
@@ -68,7 +70,7 @@ class LocationsMigrationService(
       // Determine all valid locations for this offender pair
       val nomisLocationResponse = nomisApiService.getLocation(locationId)
 
-      if (nomisLocationResponse.prisonId == "ZZGHI" || nomisLocationResponse.prisonId == "UNKNWN") {
+      if (invalidPrisons.contains(nomisLocationResponse.prisonId)) {
         log.info("Will not migrate invalid prison locations, NOMIS location is $locationId, ${nomisLocationResponse.description}")
       } else {
         locationsMappingService.getMappingGivenNomisId(locationId)
@@ -78,7 +80,14 @@ class LocationsMigrationService(
             )
           }
           ?: run {
-            val upsertSyncRequest = toUpsertSyncRequest(nomisLocationResponse)
+            val parent = nomisLocationResponse.parentLocationId?.let {
+              locationsMappingService.getMappingGivenNomisId(nomisLocationResponse.parentLocationId)
+            }
+            if (parent == null && nomisLocationResponse.parentLocationId != null) {
+              throw IllegalStateException("Parent NOMIS location ${nomisLocationResponse.parentLocationId} not yet migrated for NOMIS location $locationId, ${nomisLocationResponse.description}")
+            }
+
+            val upsertSyncRequest = toUpsertSyncRequest(nomisLocationResponse, parent?.dpsLocationId)
             log.debug(
               "No location mapping for ${nomisLocationResponse.description}, sending location migrate upsert {}",
               upsertSyncRequest,
@@ -96,6 +105,7 @@ class LocationsMigrationService(
               mapOf(
                 "dpsLocationId" to migratedLocation.id.toString(),
                 "nomisLocationId" to nomisLocationResponse.locationId.toString(),
+                "key" to nomisLocationResponse.description,
                 "migrationId" to context.migrationId,
               ),
               null,
@@ -156,23 +166,24 @@ class LocationsMigrationService(
 
 private val warningLogger = LoggerFactory.getLogger(LocationsMigrationService::class.java)
 
-fun toUpsertSyncRequest(id: UUID, nomisLocationResponse: LocationResponse) =
-  toUpsertSyncRequest(nomisLocationResponse).copy(id = id)
+fun toUpsertSyncRequest(id: UUID, nomisLocationResponse: LocationResponse, parentId: String?) =
+  toUpsertSyncRequest(nomisLocationResponse, parentId).copy(id = id)
 
-fun toUpsertSyncRequest(nomisLocationResponse: LocationResponse) =
+fun toUpsertSyncRequest(nomisLocationResponse: LocationResponse, parentId: String?) =
   UpsertLocationRequest(
     prisonId = nomisLocationResponse.prisonId,
     code = nomisLocationResponse.locationCode,
     locationType = toLocationType(nomisLocationResponse.locationType),
     lastUpdatedBy = nomisLocationResponse.modifyUsername ?: nomisLocationResponse.createUsername,
-    description = nomisLocationResponse.userDescription,
+    localName = nomisLocationResponse.userDescription,
     comments = nomisLocationResponse.comment,
     orderWithinParentLocation = nomisLocationResponse.listSequence,
     residentialHousingType = toResidentialHousingType(nomisLocationResponse.unitType),
-    parentLocationPath = nomisLocationResponse.parentKey
-      ?.let {
-        nomisLocationResponse.parentKey.substringAfter("-")
-      },
+    parentId = parentId?.let { UUID.fromString(parentId) },
+//    parentLocationPath = nomisLocationResponse.parentKey
+//      ?.let {
+//        nomisLocationResponse.parentKey.substringAfter("-")
+//      },
     capacity = if (nomisLocationResponse.capacity != null || nomisLocationResponse.operationalCapacity != null) {
       Capacity(
         nomisLocationResponse.capacity ?: 0,

@@ -418,14 +418,14 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }
   }
 
-  fun stubGetLocation(nomisLocationId: Long = 1234) {
+  fun stubGetLocation(nomisLocationId: Long = 1234, parentLocationId: Long = 5678) {
     nomisApi.stubFor(
       get(
         urlPathEqualTo("/locations/$nomisLocationId"),
       )
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(locationResponse(nomisLocationId)),
+            .withBody(locationResponse(nomisLocationId, parentLocationId)),
         ),
     )
   }
@@ -454,7 +454,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubMultipleGetLocations(intProgression: IntProgression) {
+  fun stubMultipleGetLocations(intProgression: IntProgression, parentId: Long = 5678L) {
     (intProgression).forEach {
       nomisApi.stubFor(
         get(
@@ -462,7 +462,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
         )
           .willReturn(
             aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-              .withBody(locationResponse(it.toLong())),
+              .withBody(locationResponse(it.toLong(), parentId)),
           ),
       )
     }
