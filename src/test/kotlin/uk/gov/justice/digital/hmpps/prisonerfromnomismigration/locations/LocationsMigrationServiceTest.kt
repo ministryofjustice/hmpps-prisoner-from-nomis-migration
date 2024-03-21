@@ -898,7 +898,6 @@ class LocationsMigrationServiceTest {
 
     @Test
     fun `will transform and send history to the Locations service`() = runTest {
-
       whenever(nomisApiService.getLocation(any())).thenReturn(aNomisLocationResponse())
       whenever(locationsService.migrateLocation(any())).thenReturn(basicLocation)
 

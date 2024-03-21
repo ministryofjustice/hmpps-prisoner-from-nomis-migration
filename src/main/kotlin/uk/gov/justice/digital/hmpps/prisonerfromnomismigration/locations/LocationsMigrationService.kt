@@ -119,7 +119,6 @@ class LocationsMigrationService(
                   ),
                 )
                 historyCount++
-
               } catch (e: Exception) {
                 log.error(
                   "Failed to migrate history item $it for NOMIS location $locationId, ${nomisLocationResponse.description}",
