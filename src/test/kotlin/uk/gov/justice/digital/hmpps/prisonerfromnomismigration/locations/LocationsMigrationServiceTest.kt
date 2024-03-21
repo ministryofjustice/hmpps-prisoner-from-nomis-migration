@@ -44,9 +44,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Migrati
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Capacity
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Certification
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Location
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.MigrateHistoryRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.NonResidentialUsageDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.UpsertLocationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.LocationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AmendmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.LocationIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.LocationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ProfileRequest
@@ -68,7 +70,7 @@ private const val NOMIS_PARENT_ID = 23456L
 private const val DPS_PARENT_ID = "fedcba98-3e3e-3e3e-3e3e-3e3e3e3e3e3e"
 
 @ExtendWith(MockitoExtension::class)
-internal class LocationsMigrationServiceTest {
+class LocationsMigrationServiceTest {
   private val nomisApiService: NomisApiService = mock()
   private val queueService: MigrationQueueService = mock()
   private val migrationHistoryService: MigrationHistoryService = mock()
@@ -113,7 +115,7 @@ internal class LocationsMigrationServiceTest {
     )
 
     @BeforeEach
-    internal fun setUp() {
+    fun setUp() {
       coEvery { nomisApiService.getLocationIds(any(), any()) } returns
         pages(1)
 
@@ -126,7 +128,7 @@ internal class LocationsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will pass filter through to get total count along with a tiny page count`() {
+    fun `will pass filter through to get total count along with a tiny page count`() {
       runTest {
         service.startMigration(
           LocationsMigrationFilter(
@@ -145,7 +147,7 @@ internal class LocationsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will pass location count and filter to queue`() = runBlocking {
+    fun `will pass location count and filter to queue`() = runBlocking {
       coEvery { nomisApiService.getLocationIds(any(), any()) } returns
         pages(23)
 
@@ -170,7 +172,7 @@ internal class LocationsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will write migration history record`() {
+    fun `will write migration history record`() {
       val locationsMigrationFilter = LocationsMigrationFilter(
         fromDate = LocalDate.parse("2020-01-01"),
         toDate = LocalDate.parse("2020-01-02"),
@@ -202,7 +204,7 @@ internal class LocationsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will write analytic with estimated count and filter`() {
+    fun `will write analytic with estimated count and filter`() {
       coEvery { nomisApiService.getLocationIds(any(), any()) } returns
         pages(23)
 
@@ -228,7 +230,7 @@ internal class LocationsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will write analytics with empty filter`() {
+    fun `will write analytics with empty filter`() {
       coEvery {
         nomisApiService.getLocationIds(
           pageNumber = any(),
@@ -259,12 +261,12 @@ internal class LocationsMigrationServiceTest {
   inner class DivideLocationsByPage {
 
     @BeforeEach
-    internal fun setUp() = runTest {
+    fun setUp() = runTest {
       whenever(nomisApiService.getLocationIds(any(), any())).thenReturn(pages(100_200))
     }
 
     @Test
-    internal fun `will send a page message for every page (200) of locations `() = runTest {
+    fun `will send a page message for every page (200) of locations `() = runTest {
       service.divideEntitiesByPage(
         MigrationContext(
           type = LOCATIONS,
@@ -285,7 +287,7 @@ internal class LocationsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will also send a single MIGRATION_STATUS_CHECK message`() = runTest {
+    fun `will also send a single MIGRATION_STATUS_CHECK message`() = runTest {
       service.divideEntitiesByPage(
         MigrationContext(
           type = LOCATIONS,
@@ -306,7 +308,7 @@ internal class LocationsMigrationServiceTest {
     }
 
     @Test
-    internal fun `each page with have the filter and context attached`() = runTest {
+    fun `each page with have the filter and context attached`() = runTest {
       service.divideEntitiesByPage(
         MigrationContext(
           type = LOCATIONS,
@@ -332,7 +334,7 @@ internal class LocationsMigrationServiceTest {
     }
 
     @Test
-    internal fun `each page will contain page number and page size`() = runTest {
+    fun `each page will contain page number and page size`() = runTest {
       val context: KArgumentCaptor<MigrationContext<MigrationPage<LocationsMigrationFilter>>> = argumentCaptor()
 
       service.divideEntitiesByPage(
@@ -378,12 +380,12 @@ internal class LocationsMigrationServiceTest {
     @DisplayName("when there are still messages on the queue")
     inner class MessagesOnQueue {
       @BeforeEach
-      internal fun setUp() = runTest {
+      fun setUp() = runTest {
         whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed(any())).thenReturn(true)
       }
 
       @Test
-      internal fun `will check again in 10 seconds`() = runTest {
+      fun `will check again in 10 seconds`() = runTest {
         service.migrateStatusCheck(
           MigrationContext(
             type = LOCATIONS,
@@ -401,7 +403,7 @@ internal class LocationsMigrationServiceTest {
       }
 
       @Test
-      internal fun `will check again in 10 second and reset even when previously started finishing up phase`() =
+      fun `will check again in 10 second and reset even when previously started finishing up phase`() =
         runTest {
           service.migrateStatusCheck(
             MigrationContext(
@@ -426,14 +428,14 @@ internal class LocationsMigrationServiceTest {
     @DisplayName("when there are no messages on the queue")
     inner class NoMessagesOnQueue {
       @BeforeEach
-      internal fun setUp() = runTest {
+      fun setUp() = runTest {
         whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed(any())).thenReturn(false)
         whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(0)
         whenever(locationsMappingService.getMigrationCount(any())).thenReturn(0)
       }
 
       @Test
-      internal fun `will increment check count and try again a second when only checked 9 times`() = runTest {
+      fun `will increment check count and try again a second when only checked 9 times`() = runTest {
         service.migrateStatusCheck(
           MigrationContext(
             type = LOCATIONS,
@@ -453,7 +455,7 @@ internal class LocationsMigrationServiceTest {
       }
 
       @Test
-      internal fun `will finish off when checked 10 times previously`() = runTest {
+      fun `will finish off when checked 10 times previously`() = runTest {
         service.migrateStatusCheck(
           MigrationContext(
             type = LOCATIONS,
@@ -471,7 +473,7 @@ internal class LocationsMigrationServiceTest {
       }
 
       @Test
-      internal fun `will add completed telemetry when finishing off`() = runTest {
+      fun `will add completed telemetry when finishing off`() = runTest {
         service.migrateStatusCheck(
           MigrationContext(
             type = LOCATIONS,
@@ -493,7 +495,7 @@ internal class LocationsMigrationServiceTest {
       }
 
       @Test
-      internal fun `will update migration history record when finishing off`() = runTest {
+      fun `will update migration history record when finishing off`() = runTest {
         whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(2)
         whenever(locationsMappingService.getMigrationCount("2020-05-23T11:30:00")).thenReturn(21)
 
@@ -522,12 +524,12 @@ internal class LocationsMigrationServiceTest {
     @DisplayName("when there are still messages on the queue")
     inner class MessagesOnQueue {
       @BeforeEach
-      internal fun setUp() = runTest {
+      fun setUp() = runTest {
         whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed(any())).thenReturn(true)
       }
 
       @Test
-      internal fun `will check again in 10 seconds`() = runTest {
+      fun `will check again in 10 seconds`() = runTest {
         service.cancelMigrateStatusCheck(
           MigrationContext(
             type = LOCATIONS,
@@ -546,7 +548,7 @@ internal class LocationsMigrationServiceTest {
       }
 
       @Test
-      internal fun `will check again in 10 second and reset even when previously started finishing up phase`() =
+      fun `will check again in 10 second and reset even when previously started finishing up phase`() =
         runTest {
           service.cancelMigrateStatusCheck(
             MigrationContext(
@@ -572,14 +574,14 @@ internal class LocationsMigrationServiceTest {
     @DisplayName("when there are no messages on the queue")
     inner class NoMessagesOnQueue {
       @BeforeEach
-      internal fun setUp() = runTest {
+      fun setUp() = runTest {
         whenever(queueService.isItProbableThatThereAreStillMessagesToBeProcessed(any())).thenReturn(false)
         whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(0)
         whenever(locationsMappingService.getMigrationCount(any())).thenReturn(0)
       }
 
       @Test
-      internal fun `will increment check count and try again a second when only checked 9 times`() = runTest {
+      fun `will increment check count and try again a second when only checked 9 times`() = runTest {
         service.cancelMigrateStatusCheck(
           MigrationContext(
             type = LOCATIONS,
@@ -601,7 +603,7 @@ internal class LocationsMigrationServiceTest {
       }
 
       @Test
-      internal fun `will finish off when checked 10 times previously`() = runTest {
+      fun `will finish off when checked 10 times previously`() = runTest {
         service.cancelMigrateStatusCheck(
           MigrationContext(
             type = LOCATIONS,
@@ -620,7 +622,7 @@ internal class LocationsMigrationServiceTest {
       }
 
       @Test
-      internal fun `will add completed telemetry when finishing off`() = runTest {
+      fun `will add completed telemetry when finishing off`() = runTest {
         service.cancelMigrateStatusCheck(
           MigrationContext(
             type = LOCATIONS,
@@ -642,7 +644,7 @@ internal class LocationsMigrationServiceTest {
       }
 
       @Test
-      internal fun `will update migration history record when cancelling`() = runTest {
+      fun `will update migration history record when cancelling`() = runTest {
         whenever(queueService.countMessagesThatHaveFailed(any())).thenReturn(2)
         whenever(locationsMappingService.getMigrationCount("2020-05-23T11:30:00")).thenReturn(21)
 
@@ -668,7 +670,7 @@ internal class LocationsMigrationServiceTest {
   @DisplayName("migrateEntitiesForPage")
   inner class MigrateLocationsForPage {
     @BeforeEach
-    internal fun setUp() = runTest {
+    fun setUp() = runTest {
       whenever(migrationHistoryService.isCancelling(any())).thenReturn(false)
       whenever(nomisApiService.getLocationIds(any(), any())).thenReturn(
         pages(15),
@@ -676,7 +678,7 @@ internal class LocationsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will pass filter through to get total count along with a tiny page count`() = runTest {
+    fun `will pass filter through to get total count along with a tiny page count`() = runTest {
       service.migrateEntitiesForPage(
         MigrationContext(
           type = LOCATIONS,
@@ -700,7 +702,7 @@ internal class LocationsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will send MIGRATE_LOCATION with context for each location`() =
+    fun `will send MIGRATE_LOCATION with context for each location`() =
       runTest {
         service.migrateEntitiesForPage(
           MigrationContext(
@@ -729,7 +731,7 @@ internal class LocationsMigrationServiceTest {
       }
 
     @Test
-    internal fun `will send MIGRATE_LOCATION with id for each location`() =
+    fun `will send MIGRATE_LOCATION with id for each location`() =
       runTest {
         val context: KArgumentCaptor<MigrationContext<LocationIdResponse>> = argumentCaptor()
 
@@ -773,7 +775,7 @@ internal class LocationsMigrationServiceTest {
       }
 
     @Test
-    internal fun `will not send MIGRATE_LOCATION when cancelling`() = runTest {
+    fun `will not send MIGRATE_LOCATION when cancelling`() = runTest {
       whenever(migrationHistoryService.isCancelling(any())).thenReturn(true)
 
       whenever(nomisApiService.getLocationIds(any(), any())).thenReturn(
@@ -806,9 +808,23 @@ internal class LocationsMigrationServiceTest {
   @Nested
   @DisplayName("migrateLocation")
   inner class MigrateLocation {
+    val createdId = "45678901-3e3e-3e3e-3e3e-3e3e3e3e3e3e"
+
+    val basicLocation = Location(
+      id = UUID.fromString(createdId),
+      // Note we only care about the id
+      code = "3",
+      locationType = Location.LocationType.LANDING,
+      prisonId = "MDI",
+      active = true,
+      isResidential = true,
+      key = "key",
+      topLevelId = UUID.fromString(DPS_PARENT_ID),
+      pathHierarchy = "MDI-C",
+    )
 
     @BeforeEach
-    internal fun setUp() = runTest {
+    fun setUp() = runTest {
       whenever(locationsMappingService.getMappingGivenNomisId(any())).thenReturn(null)
       whenever(locationsMappingService.getMappingGivenNomisId(NOMIS_PARENT_ID)).thenReturn(
         LocationMappingDto(
@@ -824,7 +840,7 @@ internal class LocationsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will retrieve location from NOMIS`() = runTest {
+    fun `will retrieve location from NOMIS`() = runTest {
       service.migrateNomisEntity(
         MigrationContext(
           type = LOCATIONS,
@@ -881,7 +897,36 @@ internal class LocationsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will add telemetry events for migrated entries`() = runTest {
+    fun `will transform and send history to the Locations service`() = runTest {
+
+      whenever(nomisApiService.getLocation(any())).thenReturn(aNomisLocationResponse())
+      whenever(locationsService.migrateLocation(any())).thenReturn(basicLocation)
+
+      service.migrateNomisEntity(
+        MigrationContext(
+          type = LOCATIONS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = LocationIdResponse(12345L),
+        ),
+      )
+
+      verify(locationsService).migrateLocationHistory(
+        eq(UUID.fromString(createdId)),
+        eq(
+          MigrateHistoryRequest(
+            amendedDate = "2023-09-25T11:12:45",
+            attribute = MigrateHistoryRequest.Attribute.LOCATION_TYPE,
+            oldValue = "41",
+            newValue = "42",
+            amendedBy = "STEVE_ADM",
+          ),
+        ),
+      )
+    }
+
+    @Test
+    fun `will add telemetry events for migrated entries`() = runTest {
       whenever(nomisApiService.getLocation(any())).thenReturn(aNomisLocationResponse())
 
       service.migrateNomisEntity(
@@ -898,6 +943,7 @@ internal class LocationsMigrationServiceTest {
         check {
           assertThat(it["migrationId"]).isNotNull
           assertThat(it["dpsLocationId"]).isNotNull
+          assertThat(it["key"]).isNotNull
           assertThat(it["nomisLocationId"]).isEqualTo("12345")
         },
         isNull(),
@@ -905,7 +951,67 @@ internal class LocationsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will create a mapping between a new Location and a NOMIS Location`() =
+    fun `will add telemetry events for history`() = runTest {
+      whenever(nomisApiService.getLocation(any())).thenReturn(aNomisLocationResponse())
+      whenever(locationsService.migrateLocation(any())).thenReturn(basicLocation)
+
+      service.migrateNomisEntity(
+        MigrationContext(
+          type = LOCATIONS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = LocationIdResponse(12345L),
+        ),
+      )
+
+      verify(telemetryClient).trackEvent(
+        eq("locations-migration-entity-migrated"),
+        check {
+          assertThat(it["migrationId"]).isNotNull
+          assertThat(it["dpsLocationId"]).isNotNull
+          assertThat(it["key"]).isEqualTo("MDI-C-3")
+          assertThat(it["historyRows"]).isEqualTo("1")
+          assertThat(it["nomisLocationId"]).isEqualTo("12345")
+        },
+        isNull(),
+      )
+    }
+
+    @Test
+    fun `will add telemetry events for history failure`() = runTest {
+      whenever(nomisApiService.getLocation(any())).thenReturn(aNomisLocationResponse())
+      whenever(locationsService.migrateLocation(any())).thenReturn(basicLocation)
+      whenever(
+        locationsService.migrateLocationHistory(
+          eq(UUID.fromString(createdId)),
+          any(),
+        ),
+      ).thenThrow(RuntimeException("Something went wrong"))
+
+      service.migrateNomisEntity(
+        MigrationContext(
+          type = LOCATIONS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = LocationIdResponse(12345L),
+        ),
+      )
+
+      verify(telemetryClient).trackEvent(
+        eq("locations-migration-entity-migrated-history-failure"),
+        check {
+          assertThat(it["migrationId"]).isNotNull
+          assertThat(it["dpsLocationId"]).isNotNull
+          assertThat(it["key"]).isEqualTo("MDI-C-3")
+          assertThat(it["historyRows"]).isEqualTo("0")
+          assertThat(it["nomisLocationId"]).isEqualTo("12345")
+        },
+        isNull(),
+      )
+    }
+
+    @Test
+    fun `will create a mapping between a new Location and a NOMIS Location`() =
       runTest {
         whenever(nomisApiService.getLocation(any())).thenReturn(aNomisLocationResponse())
         whenever(locationsService.migrateLocation(any())).thenReturn(aDpsLocation())
@@ -931,7 +1037,7 @@ internal class LocationsMigrationServiceTest {
       }
 
     @Test
-    internal fun `will skip an invalid attribute`() =
+    fun `will skip an invalid attribute`() =
       runTest {
         whenever(nomisApiService.getLocation(any())).thenReturn(
           aNomisLocationResponse().copy(
@@ -957,7 +1063,7 @@ internal class LocationsMigrationServiceTest {
       }
 
     @Test
-    internal fun `will not throw an exception (and place message back on queue) but create a new retry message`() =
+    fun `will not throw an exception (and place message back on queue) but create a new retry message`() =
       runTest {
         whenever(nomisApiService.getLocation(any())).thenReturn(aNomisLocationResponse())
         whenever(locationsService.migrateLocation(any())).thenReturn(aDpsLocation())
@@ -994,7 +1100,7 @@ internal class LocationsMigrationServiceTest {
     @Nested
     inner class WhenMigratedAlready {
       @BeforeEach
-      internal fun setUp() = runTest {
+      fun setUp() = runTest {
         whenever(locationsMappingService.getMappingGivenNomisId(any())).thenReturn(
           LocationMappingDto(
             dpsLocationId = "4321abcd",
@@ -1005,7 +1111,7 @@ internal class LocationsMigrationServiceTest {
       }
 
       @Test
-      internal fun `will do nothing`() = runTest {
+      fun `will do nothing`() = runTest {
         service.migrateNomisEntity(
           MigrationContext(
             type = LOCATIONS,
@@ -1021,7 +1127,7 @@ internal class LocationsMigrationServiceTest {
   }
 
   @Test
-  internal fun `will create audit event on user cancel`() {
+  fun `will create audit event on user cancel`() {
     runTest {
       whenever(migrationHistoryService.get("123-2020-01-01")).thenReturn(
         MigrationHistory(
@@ -1070,6 +1176,15 @@ fun aNomisLocationResponse() = LocationResponse(
   profiles = listOf(ProfileRequest(ProfileRequest.ProfileType.SUP_LVL_TYPE, "C")),
   usages = listOf(
     UsageRequest(UsageRequest.InternalLocationUsageType.OCCUR, UsageRequest.UsageLocationType.MEDI, 42, 5),
+  ),
+  amendments = listOf(
+    AmendmentResponse(
+      amendDateTime = "2023-09-25T11:12:45",
+      columnName = "Accommodation Type",
+      oldValue = "41",
+      newValue = "42",
+      amendedBy = "STEVE_ADM",
+    ),
   ),
 )
 

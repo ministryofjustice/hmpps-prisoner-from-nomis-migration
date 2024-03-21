@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Capacity
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Certification
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.MigrateHistoryRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.NonResidentialUsageDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.UpsertLocationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.LocationMappingDto
@@ -100,12 +101,41 @@ class LocationsMigrationService(
                   context = context,
                 )
               }
+
+            log.info("Migrating history for NOMIS location $locationId, ${nomisLocationResponse.description}")
+            var historyCount = 0
+            var telemetryName = "locations-migration-entity-migrated"
+
+            nomisLocationResponse.amendments?.forEach {
+              try {
+                locationsService.migrateLocationHistory(
+                  migratedLocation.id,
+                  MigrateHistoryRequest(
+                    attribute = toHistoryAttribute(it.columnName),
+                    amendedDate = it.amendDateTime,
+                    oldValue = it.oldValue,
+                    newValue = it.newValue,
+                    amendedBy = it.amendedBy,
+                  ),
+                )
+                historyCount++
+
+              } catch (e: Exception) {
+                log.error(
+                  "Failed to migrate history item $it for NOMIS location $locationId, ${nomisLocationResponse.description}",
+                  e,
+                )
+                telemetryName = "locations-migration-entity-migrated-history-failure"
+              }
+            }
+
             telemetryClient.trackEvent(
-              "locations-migration-entity-migrated",
+              telemetryName,
               mapOf(
                 "dpsLocationId" to migratedLocation.id.toString(),
                 "nomisLocationId" to nomisLocationResponse.locationId.toString(),
                 "key" to nomisLocationResponse.description,
+                "historyRows" to historyCount.toString(),
                 "migrationId" to context.migrationId,
               ),
               null,
@@ -180,10 +210,6 @@ fun toUpsertSyncRequest(nomisLocationResponse: LocationResponse, parentId: Strin
     orderWithinParentLocation = nomisLocationResponse.listSequence,
     residentialHousingType = toResidentialHousingType(nomisLocationResponse.unitType),
     parentId = parentId?.let { UUID.fromString(parentId) },
-//    parentLocationPath = nomisLocationResponse.parentKey
-//      ?.let {
-//        nomisLocationResponse.parentKey.substringAfter("-")
-//      },
     capacity = if (nomisLocationResponse.capacity != null || nomisLocationResponse.operationalCapacity != null) {
       Capacity(
         nomisLocationResponse.capacity ?: 0,
@@ -402,3 +428,25 @@ private fun toUsage(it: UsageRequest) =
     it.sequence ?: 0,
     it.capacity,
   )
+
+private fun toHistoryAttribute(
+  columnName: String?,
+): MigrateHistoryRequest.Attribute =
+  when (columnName) {
+    "Unit Type" -> MigrateHistoryRequest.Attribute.RESIDENTIAL_HOUSING_TYPE
+    "Active" -> MigrateHistoryRequest.Attribute.ACTIVE
+    "Living Unit Id" -> MigrateHistoryRequest.Attribute.CODE
+    "Comments" -> MigrateHistoryRequest.Attribute.COMMENTS
+    "Accommodation Type" -> MigrateHistoryRequest.Attribute.LOCATION_TYPE
+    "Certified" -> MigrateHistoryRequest.Attribute.CERTIFIED
+    "Description" -> MigrateHistoryRequest.Attribute.DESCRIPTION
+    "Baseline CNA" -> MigrateHistoryRequest.Attribute.CERTIFIED_CAPACITY
+    "Operational Capacity" -> MigrateHistoryRequest.Attribute.OPERATIONAL_CAPACITY
+    "Deactivate Reason" -> MigrateHistoryRequest.Attribute.DEACTIVATED_REASON
+    "Proposed Reactivate Date" -> MigrateHistoryRequest.Attribute.PROPOSED_REACTIVATION_DATE
+    "Sequence" -> MigrateHistoryRequest.Attribute.ORDER_WITHIN_PARENT_LOCATION
+    "Deactivate Date" -> MigrateHistoryRequest.Attribute.DEACTIVATED_DATE
+    "Maximum Capacity" -> MigrateHistoryRequest.Attribute.CAPACITY
+    null -> MigrateHistoryRequest.Attribute.ATTRIBUTES
+    else -> throw IllegalArgumentException("Unknown history attribute column name $columnName")
+  }
