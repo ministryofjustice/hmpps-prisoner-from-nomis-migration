@@ -22,19 +22,7 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubGetAlert(
     bookingId: Long = 123456,
     alertSequence: Long = 1,
-    alert: AlertResponse = AlertResponse(
-      bookingId = bookingId,
-      alertSequence = alertSequence,
-      alertCode = CodeDescription("XA", "TACT"),
-      type = CodeDescription("X", "Security"),
-      date = LocalDate.now(),
-      isActive = true,
-      isVerified = false,
-      audit = NomisAudit(
-        createDatetime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-        createUsername = "Q1251T",
-      ),
-    ),
+    alert: AlertResponse = alertResponse(bookingId = bookingId, alertSequence = alertSequence),
   ) {
     nomisApi.stubFor(
       get(urlEqualTo("/prisoner/booking-id/$bookingId/alerts/$alertSequence")).willReturn(
@@ -59,3 +47,17 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
 
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
 }
+
+fun alertResponse(bookingId: Long = 1234567, alertSequence: Long = 3): AlertResponse = AlertResponse(
+  bookingId = bookingId,
+  alertSequence = alertSequence,
+  alertCode = CodeDescription("XA", "TACT"),
+  type = CodeDescription("X", "Security"),
+  date = LocalDate.now(),
+  isActive = true,
+  isVerified = false,
+  audit = NomisAudit(
+    createDatetime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+    createUsername = "Q1251T",
+  ),
+)

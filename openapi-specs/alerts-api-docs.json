@@ -532,12 +532,12 @@
             "format": "date",
             "example": "2022-07-15"
           },
-          "appendComment": {
-            "maxLength": 1000,
-            "minLength": 0,
-            "type": "string",
-            "description": "An additional comment to append to comments thread associated with the alert. Will be ignored if null or empty. It is a free text field limited to 1000 characters.",
-            "example": "Additional user comment on the alert comment thread"
+          "comments": {
+            "type": "array",
+            "description": "The comments thread associated with the alert. The comments are ordered by the date and time they were created, with the most recent comment first.",
+            "items": {
+              "$ref": "#/components/schemas/CommentRequest"
+            }
           }
         },
         "description": "The alert data to use to update an alert in the service"
@@ -711,6 +711,32 @@
             "type": "string",
             "description": "The displayable name of the user who created the comment and appended it to the alert comment thread",
             "example": "Firstname Lastname"
+          }
+        },
+        "description": "A comment appended to an alert comment thread"
+      },
+      "CommentRequest": {
+        "required": [
+          "comment",
+          "createdAt",
+          "createdBy"
+        ],
+        "type": "object",
+        "properties": {
+          "comment": {
+            "type": "string",
+            "description": "The comment text appended to the alert comment thread. It is a free text field limited to 1000 characters.",
+            "example": "Additional user comment on the alert comment thread"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "The date and time the comment was created and appended to the alert comment thread",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "The username of the user who created the comment and appended it to the alert comment thread",
+            "example": "USER1234"
           }
         },
         "description": "A comment appended to an alert comment thread"
