@@ -31,5 +31,6 @@ class GeneralMappingService(
       MigrationType.ALLOCATIONS -> allocationsMappingService.getMigrationCount(migrationId)
       MigrationType.INCIDENTS -> incidentsMappingService.getMigrationCount(migrationId)
       MigrationType.LOCATIONS -> locationsMappingService.getMigrationCount(migrationId)
+      MigrationType.ALERTS -> TODO()
     }
 }

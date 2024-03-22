@@ -30,6 +30,7 @@ const val ACTIVITIES_QUEUE_ID = "migrationactivities"
 const val ALLOCATIONS_QUEUE_ID = "migrationallocations"
 const val INCIDENTS_QUEUE_ID = "migrationincidents"
 const val LOCATIONS_QUEUE_ID = "migrationlocations"
+const val ALERTS_QUEUE_ID = "migrationalerts"
 
 const val VISITS_SYNC_QUEUE_ID = "eventvisits"
 const val SENTENCING_ADJUSTMENTS_SYNC_QUEUE_ID = "eventsentencing"
@@ -46,6 +47,7 @@ enum class MigrationType(val queueId: String, val telemetryName: String) {
   ALLOCATIONS(ALLOCATIONS_QUEUE_ID, "activity-allocation"),
   INCIDENTS(INCIDENTS_QUEUE_ID, "incidents"),
   LOCATIONS(LOCATIONS_QUEUE_ID, "locations"),
+  ALERTS(ALERTS_QUEUE_ID, "alerts"),
 }
 
 enum class SynchronisationType(val queueId: String) {

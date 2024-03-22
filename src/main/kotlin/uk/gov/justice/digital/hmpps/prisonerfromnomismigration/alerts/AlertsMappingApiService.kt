@@ -5,10 +5,12 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
 
 @Service
-class AlertsMappingApiService(@Qualifier("mappingApiWebClient") private val webClient: WebClient) {
+class AlertsMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) :
+  MigrationMapping<AlertMappingDto>(domainUrl = "/mapping/alerts", webClient) {
   suspend fun getOrNullByNomisId(bookingId: Long, alertSequence: Long): AlertMappingDto? = webClient.get()
     .uri(
       "/mapping/alerts/nomis-booking-id/{bookingId}/nomis-alert-sequence/{alertSequence}",
