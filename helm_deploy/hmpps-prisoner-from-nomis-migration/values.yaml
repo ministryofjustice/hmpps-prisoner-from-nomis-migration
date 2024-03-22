@@ -93,6 +93,10 @@ generic-service:
       HMPPS_SQS_QUEUES_MIGRATIONLOCATIONS_QUEUE_NAME: "sqs_name"
     sqs-migration-locations-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONLOCATIONS_DLQ_NAME: "sqs_name"
+    sqs-migration-alerts-queue:
+      HMPPS_SQS_QUEUES_MIGRATIONALERTS_QUEUE_NAME: "sqs_name"
+    sqs-migration-alerts-dlq:
+      HMPPS_SQS_QUEUES_MIGRATIONALERTS_DLQ_NAME: "sqs_name"
     prison-events-visits-queue:
       HMPPS_SQS_QUEUES_EVENTVISITS_QUEUE_NAME: "sqs_name"
     prison-events-visits-dl-queue:
