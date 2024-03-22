@@ -18,6 +18,5 @@ fun AlertResponse.toDPSUpdateAlert() = UpdateAlert(
   activeFrom = this.date,
   activeTo = this.expiryDate,
   authorisedBy = this.authorisedBy,
-  // TODO - not sure how to deal with this from NOMIS yet
   appendComment = null,
 )

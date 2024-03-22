@@ -19,8 +19,7 @@ generic-service:
     API_BASE_URL_INCIDENTS: https://prisoner-nomis-migration.hmpps.service.justice.gov.uk
     API_BASE_URL_LOCATIONS: https://locations-inside-prison-api.hmpps.service.justice.gov.uk
     API_BASE_URL_ADJUDICATIONS: https://manage-adjudications-api.hmpps.service.justice.gov.uk
-    # currently set to self for a mock API until real API is ready
-    API_BASE_URL_ALERTS: https://prisoner-nomis-migration.hmpps.service.justice.gov.uk
+    API_BASE_URL_ALERTS: https://alerts-api.hmpps.service.justice.gov.uk
     FEATURE_EVENT_INCIDENT-CHANGED-CASES: false
     FEATURE_EVENT_INCIDENT-CHANGED-PARTIES: false
     FEATURE_EVENT_INCIDENT-CHANGED-RESPONSES: false
@@ -66,5 +65,7 @@ generic-prometheus-alerts:
     - "syscon-devs-prod-migration_incidents_dlq"
     - "syscon-devs-prod-migration_locations_queue"
     - "syscon-devs-prod-migration_locations_dlq"
+    - "syscon-devs-prod-migration_alerts_queue"
+    - "syscon-devs-prod-migration_alerts_dlq"
   sqsAlertsOldestThreshold: 2
   sqsAlertsTotalMessagesThreshold: 1

@@ -43,6 +43,8 @@ locations:
   page:
     size: 10
 alerts:
+  page:
+    size: 10
   has-migrated-data: true
 
 spring:
