@@ -919,47 +919,6 @@ fun adjudicationsIdsPagedResponse(
   )
 }
 
-private fun pageContent(
-  content: String,
-  pageSize: Long,
-  pageNumber: Long,
-  totalElements: Long,
-  size: Int,
-) =
-  // language=json
-  """
-{
-    "content": [
-        $content
-    ],
-    "pageable": {
-        "sort": {
-            "empty": false,
-            "sorted": true,
-            "unsorted": false
-        },
-        "offset": 0,
-        "pageSize": $pageSize,
-        "pageNumber": $pageNumber,
-        "paged": true,
-        "unpaged": false
-    },
-    "last": false,
-    "totalPages": ${totalElements / pageSize + 1},
-    "totalElements": $totalElements,
-    "size": $pageSize,
-    "number": $pageNumber,
-    "sort": {
-        "empty": false,
-        "sorted": true,
-        "unsorted": false
-    },
-    "first": true,
-    "numberOfElements": $size,
-    "empty": false
-}
-  """.trimIndent()
-
 private fun getAdjustmentCategory(it: Long) = if (it % 2L == 0L) "KEY_DATE" else "SENTENCE"
 
 private fun sentenceAdjustmentResponse(

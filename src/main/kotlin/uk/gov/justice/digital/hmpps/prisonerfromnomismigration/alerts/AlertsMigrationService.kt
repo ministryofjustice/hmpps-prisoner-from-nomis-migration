@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
@@ -27,7 +28,7 @@ class AlertsMigrationService(
   @Value("\${alerts.page.size:1000}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
-) : MigrationService<AlertsMigrationFilter, NomisAlertId, AlertResponse, AlertMappingDto>(
+) : MigrationService<AlertsMigrationFilter, AlertIdResponse, AlertResponse, AlertMappingDto>(
   queueService = queueService,
   auditService = auditService,
   migrationHistoryService = migrationHistoryService,
@@ -46,7 +47,7 @@ class AlertsMigrationService(
     migrationFilter: AlertsMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
-  ): PageImpl<NomisAlertId> {
+  ): PageImpl<AlertIdResponse> {
     return alertsNomisService.getAlertIds(
       fromDate = migrationFilter.fromDate,
       toDate = migrationFilter.toDate,
@@ -55,7 +56,7 @@ class AlertsMigrationService(
     )
   }
 
-  override suspend fun migrateNomisEntity(context: MigrationContext<NomisAlertId>) {
+  override suspend fun migrateNomisEntity(context: MigrationContext<AlertIdResponse>) {
     log.info("attempting to migrate ${context.body}")
     val nomisBookingId = context.body.bookingId
     val nomisAlertSequence = context.body.alertSequence
