@@ -24,7 +24,7 @@ class AlertsMigrationService(
   migrationHistoryService: MigrationHistoryService,
   telemetryClient: TelemetryClient,
   auditService: AuditService,
-  alertsMappingService: AlertsMappingApiService,
+  private val alertsMappingService: AlertsMappingApiService,
   @Value("\${alerts.page.size:1000}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
@@ -61,13 +61,17 @@ class AlertsMigrationService(
     val nomisBookingId = context.body.bookingId
     val nomisAlertSequence = context.body.alertSequence
 
-    telemetryClient.trackEvent(
-      "alerts-migration-entity-migrated",
-      mapOf(
-        "nomisBookingId" to nomisBookingId,
-        "nomisAlertSequence" to nomisAlertSequence,
-        "migrationId" to context.migrationId,
-      ),
-    )
+    alertsMappingService.getOrNullByNomisId(nomisBookingId, nomisAlertSequence)?.run {
+      log.info("Will not migrate the alert since it is migrated already, NOMIS booking id is $nomisBookingId, sequence is $nomisAlertSequence, DPS Alert id is ${this.dpsAlertId} as part migration ${this.label ?: "NONE"} (${this.mappingType})")
+    } ?: run {
+      telemetryClient.trackEvent(
+        "alerts-migration-entity-migrated",
+        mapOf(
+          "nomisBookingId" to nomisBookingId,
+          "nomisAlertSequence" to nomisAlertSequence,
+          "migrationId" to context.migrationId,
+        ),
+      )
+    }
   }
 }

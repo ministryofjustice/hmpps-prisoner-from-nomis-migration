@@ -19,6 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageCont
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import kotlin.math.min
 
 @Component
 class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
@@ -61,10 +62,10 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
   }
 
   fun stubGetAlertIds(totalElements: Long = 20, pageSize: Long = 20, bookingId: Long = 123456, offenderNo: String = "A1234KT") {
-    val content: List<AlertIdResponse> = (1..pageSize.toInt()).map { i ->
+    val content: List<AlertIdResponse> = (1..min(pageSize, totalElements)).map {
       AlertIdResponse(
         bookingId = bookingId,
-        alertSequence = i.toLong(),
+        alertSequence = it,
         offenderNo = offenderNo,
       )
     }
