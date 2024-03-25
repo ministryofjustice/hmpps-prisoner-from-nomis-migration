@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-03-20.720.c4b3dbd"
+    "version": "2024-03-25.746.b5fa309"
   },
   "servers": [
     {
@@ -849,73 +849,6 @@
           }
         }
       },
-      "delete": {
-        "tags": [
-          "Locations"
-        ],
-        "summary": "Deletes a location",
-        "description": "Requires role MAINTAIN_LOCATIONS and write scope",
-        "operationId": "deleteLocation",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The location Id",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "The location Id",
-              "example": "de91dfa7-821f-4552-a427-bf2f32eafeb0"
-            },
-            "example": "de91dfa7-821f-4552-a427-bf2f32eafeb0"
-          }
-        ],
-        "responses": {
-          "202": {
-            "description": "Returns deleted location"
-          },
-          "400": {
-            "description": "Invalid Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized to access this endpoint",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Missing required role. Requires the MAINTAIN_LOCATIONS role with write scope.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Data not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      },
       "patch": {
         "tags": [
           "Locations"
@@ -1712,6 +1645,7 @@
         "required": [
           "active",
           "code",
+          "deactivatedByParent",
           "id",
           "isResidential",
           "key",
@@ -1930,6 +1864,11 @@
             "description": "Indicates the location is enabled",
             "example": true
           },
+          "deactivatedByParent": {
+            "type": "boolean",
+            "description": "Indicates the location in inactive as a parent is deactivated",
+            "example": false
+          },
           "deactivatedDate": {
             "type": "string",
             "description": "Date the location was deactivated",
@@ -1960,12 +1899,6 @@
             "description": "Proposed Date for location reactivation",
             "format": "date",
             "example": "2026-01-24"
-          },
-          "reactivatedDate": {
-            "type": "string",
-            "description": "Date the location was reactivated (deprecated)",
-            "format": "date",
-            "example": "2023-01-24"
           },
           "topLevelId": {
             "type": "string",
@@ -2182,6 +2115,37 @@
               "SEGREGATION",
               "SPECIALIST_CELL"
             ]
+          },
+          "deactivationReason": {
+            "type": "string",
+            "description": "Reason for deactivation",
+            "example": "DAMAGED",
+            "enum": [
+              "NEW_BUILDING",
+              "CELL_RECLAIMS",
+              "CHANGE_OF_USE",
+              "REFURBISHMENT",
+              "CLOSURE",
+              "OTHER",
+              "LOCAL_WORK",
+              "STAFF_SHORTAGE",
+              "MOTHBALLED",
+              "DAMAGED",
+              "OUT_OF_USE",
+              "CELLS_RETURNING_TO_USE"
+            ]
+          },
+          "proposedReactivationDate": {
+            "type": "string",
+            "description": "Proposed re-activation date",
+            "format": "date",
+            "example": "2025-01-05"
+          },
+          "deactivatedDate": {
+            "type": "string",
+            "description": "Date deactivation occurred",
+            "format": "date",
+            "example": "2023-01-05"
           },
           "parentLocationPath": {
             "type": "string",
@@ -3068,6 +3032,37 @@
             "items": {
               "$ref": "#/components/schemas/NonResidentialUsageDto"
             }
+          },
+          "deactivationReason": {
+            "type": "string",
+            "description": "Reason for deactivation",
+            "example": "DAMAGED",
+            "enum": [
+              "NEW_BUILDING",
+              "CELL_RECLAIMS",
+              "CHANGE_OF_USE",
+              "REFURBISHMENT",
+              "CLOSURE",
+              "OTHER",
+              "LOCAL_WORK",
+              "STAFF_SHORTAGE",
+              "MOTHBALLED",
+              "DAMAGED",
+              "OUT_OF_USE",
+              "CELLS_RETURNING_TO_USE"
+            ]
+          },
+          "proposedReactivationDate": {
+            "type": "string",
+            "description": "Proposed re-activation date",
+            "format": "date",
+            "example": "2025-01-05"
+          },
+          "deactivatedDate": {
+            "type": "string",
+            "description": "Date deactivation occurred",
+            "format": "date",
+            "example": "2023-01-05"
           }
         },
         "description": "Request to update a location"
@@ -3107,6 +3102,12 @@
             "type": "integer",
             "format": "int64"
           },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
           "size": {
             "type": "integer",
             "format": "int32"
@@ -3126,12 +3127,6 @@
             "items": {
               "$ref": "#/components/schemas/SortObject"
             }
-          },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
           },
           "numberOfElements": {
             "type": "integer",
@@ -3166,10 +3161,10 @@
             "type": "integer",
             "format": "int32"
           },
-          "paged": {
+          "unpaged": {
             "type": "boolean"
           },
-          "unpaged": {
+          "paged": {
             "type": "boolean"
           }
         }

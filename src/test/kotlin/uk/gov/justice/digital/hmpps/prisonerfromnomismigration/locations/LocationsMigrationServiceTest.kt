@@ -821,6 +821,7 @@ class LocationsMigrationServiceTest {
       key = "key",
       topLevelId = UUID.fromString(DPS_PARENT_ID),
       pathHierarchy = "MDI-C",
+      deactivatedByParent = false,
     )
 
     @BeforeEach
@@ -881,6 +882,9 @@ class LocationsMigrationServiceTest {
             certification = Certification(true, 40),
             lastUpdatedBy = "TJONES_ADM",
             createDate = "2023-09-25T11:12:45",
+            deactivatedDate = LocalDate.parse("2023-09-20"),
+            deactivationReason = UpsertLocationRequest.DeactivationReason.CELL_RECLAIMS,
+            proposedReactivationDate = LocalDate.parse("2023-09-30"),
             attributes = setOf(
               UpsertLocationRequest.Attributes.CAT_C,
             ),
@@ -1172,6 +1176,9 @@ fun aNomisLocationResponse() = LocationResponse(
   createUsername = "TJONES_ADM",
   createDatetime = "2023-09-25T11:12:45",
   active = true,
+  deactivateDate = LocalDate.parse("2023-09-20"),
+  reasonCode = LocationResponse.ReasonCode.B,
+  reactivateDate = LocalDate.parse("2023-09-30"),
   profiles = listOf(ProfileRequest(ProfileRequest.ProfileType.SUP_LVL_TYPE, "C")),
   usages = listOf(
     UsageRequest(UsageRequest.InternalLocationUsageType.OCCUR, UsageRequest.UsageLocationType.MEDI, 42, 5),
@@ -1200,6 +1207,7 @@ fun aDpsLocation() = Location(
   topLevelId = UUID.fromString(DPS_PARENT_ID),
   pathHierarchy = "MDI-C",
   parentId = UUID.fromString(DPS_PARENT_ID),
+  deactivatedByParent = false,
 )
 
 fun pages(total: Long, startId: Long = 1): PageImpl<LocationIdResponse> = PageImpl<LocationIdResponse>(
