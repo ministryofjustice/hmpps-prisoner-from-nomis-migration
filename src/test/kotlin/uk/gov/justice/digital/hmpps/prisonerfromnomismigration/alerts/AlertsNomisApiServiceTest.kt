@@ -100,4 +100,84 @@ class AlertsNomisApiServiceTest {
       }
     }
   }
+
+  @Nested
+  inner class GetAlertIds {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      alertsNomisApiMockServer.stubGetAlertIds()
+
+      apiService.getAlertIds(
+        fromDate = null,
+        toDate = null,
+        pageNumber = 0,
+        pageSize = 20,
+      )
+
+      alertsNomisApiMockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass page params to service`() = runTest {
+      alertsNomisApiMockServer.stubGetAlertIds()
+
+      apiService.getAlertIds(
+        fromDate = null,
+        toDate = null,
+        pageNumber = 5,
+        pageSize = 100,
+      )
+
+      alertsNomisApiMockServer.verify(
+        getRequestedFor(urlPathEqualTo("/alerts/ids"))
+          .withQueryParam("page", equalTo("5"))
+          .withQueryParam("size", equalTo("100")),
+      )
+    }
+
+    @Test
+    internal fun `will optional pass dates to service`() = runTest {
+      alertsNomisApiMockServer.stubGetAlertIds()
+
+      apiService.getAlertIds(
+        fromDate = LocalDate.parse("2022-07-19"),
+        toDate = LocalDate.parse("2022-07-20"),
+        pageNumber = 5,
+        pageSize = 100,
+      )
+
+      alertsNomisApiMockServer.verify(
+        getRequestedFor(urlPathEqualTo("/alerts/ids"))
+          .withQueryParam("fromDate", equalTo("2022-07-19"))
+          .withQueryParam("toDate", equalTo("2022-07-20")),
+      )
+    }
+
+    @Test
+    fun `will return a page of alerts`() = runTest {
+      alertsNomisApiMockServer.stubGetAlertIds(
+        pageSize = 10,
+        totalElements = 20,
+        bookingId = 123456,
+        offenderNo = "A1234KT",
+      )
+
+      val alertIds = apiService.getAlertIds(
+        fromDate = null,
+        toDate = null,
+        pageNumber = 5,
+        pageSize = 100,
+      )
+
+      assertThat(alertIds.content).hasSize(10)
+      assertThat(alertIds.content[0].alertSequence).isEqualTo(1)
+      assertThat(alertIds.content[0].bookingId).isEqualTo(123456)
+      assertThat(alertIds.content[0].offenderNo).isEqualTo("A1234KT")
+      assertThat(alertIds.content[1].alertSequence).isEqualTo(2)
+      assertThat(alertIds.content[1].bookingId).isEqualTo(123456)
+      assertThat(alertIds.content[1].offenderNo).isEqualTo("A1234KT")
+    }
+  }
 }

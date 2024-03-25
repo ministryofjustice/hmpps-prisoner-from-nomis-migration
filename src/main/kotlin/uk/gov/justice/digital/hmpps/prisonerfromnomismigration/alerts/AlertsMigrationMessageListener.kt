@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.Message
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ALERTS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
@@ -19,7 +20,7 @@ import java.util.concurrent.CompletableFuture
 class AlertsMigrationMessageListener(
   objectMapper: ObjectMapper,
   alertsMigrationService: AlertsMigrationService,
-) : MigrationMessageListener<AlertsMigrationFilter, NomisAlertId, AlertResponse, AlertMappingDto>(
+) : MigrationMessageListener<AlertsMigrationFilter, AlertIdResponse, AlertResponse, AlertMappingDto>(
   objectMapper,
   alertsMigrationService,
 ) {
@@ -38,7 +39,7 @@ class AlertsMigrationMessageListener(
     return objectMapper.readValue(json)
   }
 
-  override fun parseContextNomisId(json: String): MigrationMessage<*, NomisAlertId> {
+  override fun parseContextNomisId(json: String): MigrationMessage<*, AlertIdResponse> {
     return objectMapper.readValue(json)
   }
 
@@ -46,6 +47,3 @@ class AlertsMigrationMessageListener(
     return objectMapper.readValue(json)
   }
 }
-
-// TODO: define this in nomis api
-data class NomisAlertId(val bookingId: Long, val alertSequence: Long)

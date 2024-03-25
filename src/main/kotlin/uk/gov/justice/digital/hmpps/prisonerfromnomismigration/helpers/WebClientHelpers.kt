@@ -15,3 +15,8 @@ suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitBodyOrNullWhenN
   this.bodyToMono<T>()
     .onErrorResume(WebClientResponseException.NotAcceptable::class.java) { Mono.empty() }
     .awaitSingleOrNull()
+
+suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitBodyOrNullWhenConflict(): T? =
+  this.bodyToMono<T>()
+    .onErrorResume(WebClientResponseException.Conflict::class.java) { Mono.empty() }
+    .awaitSingleOrNull()

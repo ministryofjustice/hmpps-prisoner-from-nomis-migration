@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-03-08.630.9213ce3"
+    "version": "2024-03-25.879.2a5f14a"
   },
   "servers": [
     {
@@ -42,43 +42,11 @@
               "type": "string",
               "format": "uuid"
             }
-          },
-          {
-            "name": "Username",
-            "in": "header",
-            "description": "The username of the user interacting with the client service. This can be used instead of the `user_name` or `username` token claim when the client service is acting on behalf of a user. The value passed in the username header will only be used if a `user_name` or `username` token claim is not present.",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
           }
         ],
         "responses": {
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "The alert associated with this identifier was not found.",
             "content": {
               "application/json": {
                 "schema": {
@@ -93,6 +61,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Alert"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The alert associated with this identifier was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -118,23 +106,6 @@
             }
           },
           {
-            "name": "Source",
-            "in": "header",
-            "description": "The source of the request. Will default to 'ALERTS_SERVICE' if not suppliedThis value will be assigned to the additionalInformation.source property in published domain events. A source value of 'NOMIS' will allow any username value that is less than 32 characters to be supplied. If this username is not found, its value will be used for the user display name property. A source value of 'MIGRATION' will suppress all domain event publishing.",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "string",
-                  "enum": [
-                    "ALERTS_SERVICE",
-                    "NOMIS",
-                    "MIGRATION"
-                  ]
-                }
-              }
-            }
-          },
-          {
             "name": "Username",
             "in": "header",
             "description": "The username of the user interacting with the client service. This can be used instead of the `user_name` or `username` token claim when the client service is acting on behalf of a user. The value passed in the username header will only be used if a `user_name` or `username` token claim is not present.",
@@ -142,6 +113,22 @@
               "*/*": {
                 "schema": {
                   "type": "string"
+                }
+              }
+            }
+          },
+          {
+            "name": "Source",
+            "in": "header",
+            "description": "The source of the request. Will default to 'DPS' if not suppliedThis value will be assigned to the additionalInformation.source property in published domain events. A source value of 'NOMIS' will allow any username value that is less than 32 characters to be supplied. If this username is not found, its value will be used for the user display name property. A source value of 'NOMIS' will also allow no username value to be supplied and will use 'NOMIS' for both the username and display name properties.",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "DPS",
+                    "NOMIS"
+                  ]
                 }
               }
             }
@@ -158,18 +145,8 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "Alert updated successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Alert"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
+          "400": {
+            "description": "Bad request",
             "content": {
               "application/json": {
                 "schema": {
@@ -188,12 +165,22 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request",
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Alert updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Alert"
                 }
               }
             }
@@ -219,23 +206,6 @@
             }
           },
           {
-            "name": "Source",
-            "in": "header",
-            "description": "The source of the request. Will default to 'ALERTS_SERVICE' if not suppliedThis value will be assigned to the additionalInformation.source property in published domain events. A source value of 'NOMIS' will allow any username value that is less than 32 characters to be supplied. If this username is not found, its value will be used for the user display name property. A source value of 'MIGRATION' will suppress all domain event publishing.",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "string",
-                  "enum": [
-                    "ALERTS_SERVICE",
-                    "NOMIS",
-                    "MIGRATION"
-                  ]
-                }
-              }
-            }
-          },
-          {
             "name": "Username",
             "in": "header",
             "description": "The username of the user interacting with the client service. This can be used instead of the `user_name` or `username` token claim when the client service is acting on behalf of a user. The value passed in the username header will only be used if a `user_name` or `username` token claim is not present.",
@@ -246,11 +216,27 @@
                 }
               }
             }
+          },
+          {
+            "name": "Source",
+            "in": "header",
+            "description": "The source of the request. Will default to 'DPS' if not suppliedThis value will be assigned to the additionalInformation.source property in published domain events. A source value of 'NOMIS' will allow any username value that is less than 32 characters to be supplied. If this username is not found, its value will be used for the user display name property. A source value of 'NOMIS' will also allow no username value to be supplied and will use 'NOMIS' for both the username and display name properties.",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "DPS",
+                    "NOMIS"
+                  ]
+                }
+              }
+            }
           }
         ],
         "responses": {
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
+          "404": {
+            "description": "Alert was not found or already deleted",
             "content": {
               "application/json": {
                 "schema": {
@@ -272,8 +258,80 @@
           "204": {
             "description": "Alert deleted"
           },
-          "404": {
-            "description": "Alert was not found or already deleted",
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/migrate/alerts": {
+      "post": {
+        "tags": [
+          "migrate-alerts-controller"
+        ],
+        "summary": "Migrate an alert from NOMIS",
+        "description": "\n\nRequires one of the following roles:\n* ROLE_ALERTS_ADMIN\n* ROLE_NOMIS_ALERTS",
+        "operationId": "createAlert",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MigrateAlertRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict, the person already has an active alert using the supplied alert code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Alert migrated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Alert"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
             "content": {
               "application/json": {
                 "schema": {
@@ -292,25 +350,8 @@
         ],
         "summary": "Create an alert",
         "description": "\n\nRequires one of the following roles:\n* ROLE_ALERTS_WRITER\n* ROLE_ALERTS_ADMIN\n* UPDATE_ALERT\n* ROLE_NOMIS_ALERTS",
-        "operationId": "createAlert",
+        "operationId": "createAlert_1",
         "parameters": [
-          {
-            "name": "Source",
-            "in": "header",
-            "description": "The source of the request. Will default to 'ALERTS_SERVICE' if not suppliedThis value will be assigned to the additionalInformation.source property in published domain events. A source value of 'NOMIS' will allow any username value that is less than 32 characters to be supplied. If this username is not found, its value will be used for the user display name property. A source value of 'MIGRATION' will suppress all domain event publishing.",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "string",
-                  "enum": [
-                    "ALERTS_SERVICE",
-                    "NOMIS",
-                    "MIGRATION"
-                  ]
-                }
-              }
-            }
-          },
           {
             "name": "Username",
             "in": "header",
@@ -319,6 +360,22 @@
               "*/*": {
                 "schema": {
                   "type": "string"
+                }
+              }
+            }
+          },
+          {
+            "name": "Source",
+            "in": "header",
+            "description": "The source of the request. Will default to 'DPS' if not suppliedThis value will be assigned to the additionalInformation.source property in published domain events. A source value of 'NOMIS' will allow any username value that is less than 32 characters to be supplied. If this username is not found, its value will be used for the user display name property. A source value of 'NOMIS' will also allow no username value to be supplied and will use 'NOMIS' for both the username and display name properties.",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "DPS",
+                    "NOMIS"
+                  ]
                 }
               }
             }
@@ -335,12 +392,32 @@
           "required": true
         },
         "responses": {
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "201": {
             "description": "Alert created successfully",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Alert"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -364,31 +441,11 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Unauthorised, requires a valid Oauth2 token",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
     },
-    "/prisoner/{prisonNumber}/alerts": {
+    "/prisoners/{prisonNumber}/alerts": {
       "get": {
         "tags": [
           "prisoner-alerts-controller"
@@ -404,12 +461,238 @@
             "required": true,
             "schema": {
               "type": "string"
+            },
+            "example": "A1234AA"
+          },
+          {
+            "name": "isActive",
+            "in": "query",
+            "description": "Return only active (true) or inactive (false) alerts. If not provided or a null value is supplied, all alerts are returned",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "example": true
+          },
+          {
+            "name": "alertType",
+            "in": "query",
+            "description": "Filter by alert type code or codes. Supply a comma separated list of alert type codes to filter by more than one code",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "M"
+          },
+          {
+            "name": "alertCode",
+            "in": "query",
+            "description": "Filter by alert code or codes. Supply a comma separated list of alert codes to filter by more than one code",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "AS"
+          },
+          {
+            "name": "activeFromStart",
+            "in": "query",
+            "description": "Filter alerts that have an active on date or after the supplied date",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2023-09-27"
+          },
+          {
+            "name": "activeFromEnd",
+            "in": "query",
+            "description": "Filter alerts that have an active on date up to or before the supplied date",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2021-11-15"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Filter alerts that contain the search text in their description, authorised by or comments. The search is case insensitive and will match any part of the description, authorised by or comment text",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "Search text"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Zero-based page index (0..N)",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer",
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "The size of the page to be returned",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "default": [
+                "activeFrom,DESC"
+              ]
             }
           }
         ],
         "responses": {
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Alerts found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageAlert"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisoners/alerts": {
+      "get": {
+        "tags": [
+          "prisoner-alerts-controller"
+        ],
+        "summary": "Gets all the alerts for prisoners by their prison numbers",
+        "description": "Returns all the alerts for the supplied prison numbers. The alerts are returned along with counts.\n\nRequires one of the following roles:\n* ROLE_ALERTS_READER\n* ROLE_ALERTS_ADMIN\n* PRISON",
+        "operationId": "retrievePrisonerAlerts_1",
+        "parameters": [
+          {
+            "name": "prisonNumbers",
+            "in": "query",
+            "description": "The prison numbers of the prisoners",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Alerts found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrisonersAlerts"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alerts/{alertUuid}/auditEvents": {
+      "get": {
+        "tags": [
+          "alerts-controller"
+        ],
+        "summary": "Get audit events for an alert",
+        "description": "This endpoint retrieves all the audit events for a given alert\n\nRequires one of the following roles:\n* ROLE_ALERTS_READER\n* ROLE_ALERTS_ADMIN\n* PRISON\n* ROLE_NOMIS_ALERTS",
+        "operationId": "retrieveAlertAuditEvents",
+        "parameters": [
+          {
+            "name": "alertUuid",
+            "in": "path",
+            "description": "Alert unique identifier",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Source",
+            "in": "header",
+            "description": "The source of the request. Will default to 'DPS' if not suppliedThis value will be assigned to the additionalInformation.source property in published domain events. A source value of 'NOMIS' will allow any username value that is less than 32 characters to be supplied. If this username is not found, its value will be used for the user display name property. A source value of 'NOMIS' will also allow no username value to be supplied and will use 'NOMIS' for both the username and display name properties.",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "DPS",
+                    "NOMIS"
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Alert was not found or already deleted",
             "content": {
               "application/json": {
                 "schema": {
@@ -428,14 +711,24 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "200": {
-            "description": "Alerts found",
+            "description": "Audit events retrieved for a given alert",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Alert"
+                    "$ref": "#/components/schemas/AuditEvent"
                   }
                 }
               }
@@ -464,12 +757,15 @@
           }
         ],
         "responses": {
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
+          "200": {
+            "description": "Alert types and codes found",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AlertType"
+                  }
                 }
               }
             }
@@ -484,15 +780,12 @@
               }
             }
           },
-          "200": {
-            "description": "Alert types and codes found",
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/AlertType"
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -541,6 +834,30 @@
           }
         },
         "description": "The alert data to use to update an alert in the service"
+      },
+      "ErrorResponse": {
+        "required": [
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "userMessage": {
+            "type": "string"
+          },
+          "developerMessage": {
+            "type": "string"
+          },
+          "moreInfo": {
+            "type": "string"
+          }
+        }
       },
       "Alert": {
         "required": [
@@ -640,10 +957,9 @@
       "AlertCodeSummary": {
         "required": [
           "alertTypeCode",
+          "alertTypeDescription",
           "code",
-          "description",
-          "isActive",
-          "listSequence"
+          "description"
         ],
         "type": "object",
         "properties": {
@@ -651,6 +967,11 @@
             "type": "string",
             "description": "The short code for the alert type",
             "example": "A"
+          },
+          "alertTypeDescription": {
+            "type": "string",
+            "description": "The description of the alert type",
+            "example": "Alert type description"
           },
           "code": {
             "type": "string",
@@ -661,17 +982,6 @@
             "type": "string",
             "description": "The description of the alert code",
             "example": "Alert code description"
-          },
-          "listSequence": {
-            "type": "integer",
-            "description": "The sequence number of the alert code within the alert type. Used for ordering alert codes correctly in lists and drop downs. A value of 0 indicates this is the default alert code for the alert type",
-            "format": "int32",
-            "example": 3
-          },
-          "isActive": {
-            "type": "boolean",
-            "description": "Indicates that the alert code is active and can be used. Inactive alert codes are not returned by default in the API",
-            "example": true
           }
         },
         "description": "The summary information of an alert code used to categorise alerts"
@@ -715,29 +1025,121 @@
         },
         "description": "A comment appended to an alert comment thread"
       },
-      "ErrorResponse": {
+      "MigrateAlertRequest": {
         "required": [
-          "status"
+          "activeFrom",
+          "alertCode",
+          "comments",
+          "createdAt",
+          "createdBy",
+          "createdByDisplayName",
+          "prisonNumber"
         ],
         "type": "object",
         "properties": {
-          "status": {
-            "type": "integer",
-            "format": "int32"
+          "prisonNumber": {
+            "type": "string",
+            "description": "The prison number of the person the alert is for. Also referred to as the offender number, offender id or NOMS id.",
+            "example": "A1234AA"
           },
-          "errorCode": {
-            "type": "string"
+          "alertCode": {
+            "type": "string",
+            "description": "The alert code for the alert. A person can only have one alert using each code active at any one time. The alert code must exist and be active.",
+            "example": "ABC"
           },
-          "userMessage": {
-            "type": "string"
+          "description": {
+            "type": "string",
+            "description": "The description of the alert. This is a free text field and can be used to provide additional information about the alert e.g. the reasons for adding it.It is limited to 1000 characters.",
+            "example": "Alert description"
           },
-          "developerMessage": {
-            "type": "string"
+          "authorisedBy": {
+            "type": "string",
+            "description": "The user, staff member, approving person or organisation that authorised the alert to be added. This is a free text field and can be used to record the name of the person who authorised the alert. It is limited to 40 characters.",
+            "example": "A. Nurse, An Agency"
           },
-          "moreInfo": {
-            "type": "string"
+          "activeFrom": {
+            "type": "string",
+            "description": "The date the alert should be active from. If not provided, the alert will be active from the current date. The active from date can be in the past or the future, but must be before the active to date",
+            "format": "date",
+            "example": "2021-09-27"
+          },
+          "activeTo": {
+            "type": "string",
+            "description": "The date the alert should be active until. If not provided, the alert will be active indefinitely. The active to date can be in the past or the future, but must be after the active from date",
+            "format": "date",
+            "example": "2022-07-15"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "The date the alert was created",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "The user ID of the person who created the alert",
+            "example": "AB11DZ"
+          },
+          "createdByDisplayName": {
+            "type": "string",
+            "description": "The friendly name of the person who created the alert",
+            "example": "C Reated"
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "The date the alert was updated",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": "string",
+            "description": "The user ID of the person who updated the alert",
+            "example": "AB11DZ"
+          },
+          "updatedByDisplayName": {
+            "type": "string",
+            "description": "The friendly name of the person who updated the alert",
+            "example": "C Reated"
+          },
+          "comments": {
+            "type": "array",
+            "description": "The threaded comments that are stored against an alert",
+            "items": {
+              "$ref": "#/components/schemas/MigrateCommentRequest"
+            }
           }
-        }
+        },
+        "description": "The alert data to use to create an alert in the service"
+      },
+      "MigrateCommentRequest": {
+        "required": [
+          "comment",
+          "createdAt",
+          "createdBy",
+          "createdByDisplayName"
+        ],
+        "type": "object",
+        "properties": {
+          "comment": {
+            "type": "string",
+            "description": "The text added at the comment",
+            "example": "This is a comment"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "The date the alert was created",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "The user ID of the person who created the alert",
+            "example": "AB11DZ"
+          },
+          "createdByDisplayName": {
+            "type": "string",
+            "description": "The friendly name of the person who created the alert",
+            "example": "C Reated"
+          }
+        },
+        "description": "The threaded comments that are stored against an alert"
       },
       "CreateAlert": {
         "required": [
@@ -786,6 +1188,176 @@
           }
         },
         "description": "The alert data to use to create an alert in the service"
+      },
+      "PageAlert": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Alert"
+            }
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PageableObject": {
+        "type": "object",
+        "properties": {
+          "offset": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sort": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "paged": {
+            "type": "boolean"
+          },
+          "unpaged": {
+            "type": "boolean"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "SortObject": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string"
+          },
+          "nullHandling": {
+            "type": "string"
+          },
+          "ascending": {
+            "type": "boolean"
+          },
+          "property": {
+            "type": "string"
+          },
+          "ignoreCase": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PrisonersAlerts": {
+        "required": [
+          "alerts",
+          "prisonNumbers"
+        ],
+        "type": "object",
+        "properties": {
+          "prisonNumbers": {
+            "type": "array",
+            "description": "The distinct list of prison numbers for the prisoners with alerts in the collection.",
+            "example": [
+              "A1234AA",
+              "B2345BB"
+            ],
+            "items": {
+              "type": "string",
+              "description": "The distinct list of prison numbers for the prisoners with alerts in the collection.",
+              "example": "[\"A1234AA\",\"B2345BB\"]"
+            }
+          },
+          "alerts": {
+            "type": "array",
+            "description": "The list of alerts for the prisoners in the collection.",
+            "items": {
+              "$ref": "#/components/schemas/Alert"
+            }
+          }
+        },
+        "description": "Collection of alerts for a list of prisoners"
+      },
+      "AuditEvent": {
+        "required": [
+          "action",
+          "actionedAt",
+          "actionedBy",
+          "actionedByDisplayName",
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "The audit event type",
+            "example": "CREATED",
+            "enum": [
+              "CREATED",
+              "UPDATED",
+              "DELETED"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "description": "A description of what has changed",
+            "example": "The active to date was updated from 2012-02-03 to 2012-04-05"
+          },
+          "actionedAt": {
+            "type": "string",
+            "description": "When the event happened",
+            "format": "date-time"
+          },
+          "actionedBy": {
+            "type": "string",
+            "description": "The user id of the person who was audited",
+            "example": "AB1234AA"
+          },
+          "actionedByDisplayName": {
+            "type": "string",
+            "description": "The friendly name of the person who was audited",
+            "example": "An Auditer"
+          }
+        }
       },
       "AlertCode": {
         "required": [
@@ -935,6 +1507,8 @@
     "securitySchemes": {
       "bearer-jwt": {
         "type": "http",
+        "name": "Authorization",
+        "in": "header",
         "scheme": "bearer",
         "bearerFormat": "JWT"
       }

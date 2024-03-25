@@ -7,7 +7,9 @@ import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.Alert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.CreateAlert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MigrateAlertRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.UpdateAlert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenConflict
 
 @Service
 class AlertsDpsApiService(@Qualifier("alertsApiWebClient") private val webClient: WebClient) {
@@ -39,4 +41,12 @@ class AlertsDpsApiService(@Qualifier("alertsApiWebClient") private val webClient
       .retrieve()
       .awaitBodilessEntity()
   }
+
+  suspend fun migrateAlert(alert: MigrateAlertRequest): Alert? =
+    webClient
+      .post()
+      .uri("/migrate/alerts")
+      .bodyValue(alert)
+      .retrieve()
+      .awaitBodyOrNullWhenConflict()
 }

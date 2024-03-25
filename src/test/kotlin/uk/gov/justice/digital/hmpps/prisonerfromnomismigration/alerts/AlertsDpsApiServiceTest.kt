@@ -12,14 +12,19 @@ import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
+import org.springframework.http.HttpStatus
+import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension.Companion.dpsAlertsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.dpsAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.CreateAlert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MigrateAlertRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.UpdateAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.UUID
 
 @SpringAPIServiceTest
@@ -244,6 +249,118 @@ class AlertsDpsApiServiceTest {
         deleteRequestedFor(anyUrl())
           .withHeader("Source", equalTo("NOMIS")),
       )
+    }
+  }
+
+  @Nested
+  inner class MigrateAlert {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      dpsAlertsServer.stubMigrateAlert()
+
+      apiService.migrateAlert(
+        alert = MigrateAlertRequest(
+          prisonNumber = "A1234KL",
+          activeFrom = LocalDate.now(),
+          alertCode = "XA",
+          comments = emptyList(),
+          authorisedBy = null,
+          description = null,
+          createdBy = "B.MORRIS",
+          createdByDisplayName = "B. Morris",
+          createdAt = LocalDateTime.now(),
+        ),
+      )
+
+      dpsAlertsServer.verify(
+        postRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass alert to service`() = runTest {
+      dpsAlertsServer.stubMigrateAlert()
+
+      apiService.migrateAlert(
+        alert = MigrateAlertRequest(
+          prisonNumber = "A1234KL",
+          activeFrom = LocalDate.now(),
+          alertCode = "XA",
+          comments = emptyList(),
+          authorisedBy = null,
+          description = null,
+          createdBy = "B.MORRIS",
+          createdByDisplayName = "B. Morris",
+          createdAt = LocalDateTime.now(),
+        ),
+      )
+
+      dpsAlertsServer.verify(
+        postRequestedFor(urlMatching("/migrate/alerts"))
+          .withRequestBody(matchingJsonPath("alertCode", equalTo("XA"))),
+      )
+    }
+
+    @Test
+    fun `will return dpsAlertId`() = runTest {
+      dpsAlertsServer.stubMigrateAlert(response = dpsAlert().copy(alertUuid = UUID.fromString("f3f31737-6ee3-4ec5-8a79-0ac110fe50e2")))
+
+      val dpsAlert = apiService.migrateAlert(
+        alert = MigrateAlertRequest(
+          prisonNumber = "A1234KL",
+          activeFrom = LocalDate.now(),
+          alertCode = "XA",
+          comments = emptyList(),
+          authorisedBy = null,
+          description = null,
+          createdBy = "B.MORRIS",
+          createdByDisplayName = "B. Morris",
+          createdAt = LocalDateTime.now(),
+        ),
+      )
+      assertThat(dpsAlert?.alertUuid.toString()).isEqualTo("f3f31737-6ee3-4ec5-8a79-0ac110fe50e2")
+    }
+
+    @Test
+    fun `will return nothing if DPS rejects alert as duplicate`() = runTest {
+      dpsAlertsServer.stubMigrateAlert(status = HttpStatus.CONFLICT)
+
+      val dpsAlert = apiService.migrateAlert(
+        alert = MigrateAlertRequest(
+          prisonNumber = "A1234KL",
+          activeFrom = LocalDate.now(),
+          alertCode = "XA",
+          comments = emptyList(),
+          authorisedBy = null,
+          description = null,
+          createdBy = "B.MORRIS",
+          createdByDisplayName = "B. Morris",
+          createdAt = LocalDateTime.now(),
+        ),
+      )
+      assertThat(dpsAlert).isNull()
+    }
+
+    @Test
+    fun `any other bad response is an error`() = runTest {
+      dpsAlertsServer.stubMigrateAlert(status = HttpStatus.BAD_REQUEST)
+
+      assertThrows<WebClientResponseException.BadRequest> {
+        apiService.migrateAlert(
+          alert = MigrateAlertRequest(
+            prisonNumber = "A1234KL",
+            activeFrom = LocalDate.now(),
+            alertCode = "XA",
+            comments = emptyList(),
+            authorisedBy = null,
+            description = null,
+            createdBy = "B.MORRIS",
+            createdByDisplayName = "B. Morris",
+            createdAt = LocalDateTime.now(),
+          ),
+        )
+      }
     }
   }
 }
