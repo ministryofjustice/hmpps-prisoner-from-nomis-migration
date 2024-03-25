@@ -103,6 +103,7 @@ class LocationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     key = "key",
     topLevelId = UUID.fromString("f1c1e3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e"),
     pathHierarchy = "MDI-C",
+    deactivatedByParent = false,
   ).toJson()
 
   private fun aLocationHistory() = ChangeHistory(
