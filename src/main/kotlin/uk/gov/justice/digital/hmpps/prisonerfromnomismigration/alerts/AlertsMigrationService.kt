@@ -4,10 +4,13 @@ import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertResponse
@@ -16,15 +19,17 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationMinutes
 
 @Service
 class AlertsMigrationService(
   queueService: MigrationQueueService,
   private val alertsNomisService: AlertsNomisApiService,
+  private val alertsMappingService: AlertsMappingApiService,
+  private val alertsDpsService: AlertsDpsApiService,
   migrationHistoryService: MigrationHistoryService,
   telemetryClient: TelemetryClient,
   auditService: AuditService,
-  private val alertsMappingService: AlertsMappingApiService,
   @Value("\${alerts.page.size:1000}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
@@ -64,14 +69,87 @@ class AlertsMigrationService(
     alertsMappingService.getOrNullByNomisId(nomisBookingId, nomisAlertSequence)?.run {
       log.info("Will not migrate the alert since it is migrated already, NOMIS booking id is $nomisBookingId, sequence is $nomisAlertSequence, DPS Alert id is ${this.dpsAlertId} as part migration ${this.label ?: "NONE"} (${this.mappingType})")
     } ?: run {
-      telemetryClient.trackEvent(
-        "alerts-migration-entity-migrated",
-        mapOf(
-          "nomisBookingId" to nomisBookingId,
-          "nomisAlertSequence" to nomisAlertSequence,
-          "migrationId" to context.migrationId,
-        ),
-      )
+      val nomisAlert = alertsNomisService.getAlert(nomisBookingId, nomisAlertSequence)
+      alertsDpsService.migrateAlert(nomisAlert.toDPSMigratedAlert(context.body.offenderNo))?.also {
+        createMapping(
+          nomisBookingId = nomisBookingId,
+          nomisAlertSequence = nomisAlertSequence,
+          dpsAlertId = it.alertUuid.toString(),
+          context = context,
+        )
+        telemetryClient.trackEvent(
+          "alerts-migration-entity-migrated",
+          mapOf(
+            "nomisBookingId" to nomisBookingId,
+            "nomisAlertSequence" to nomisAlertSequence,
+            "migrationId" to context.migrationId,
+            "dpsAlertId" to it.alertUuid.toString(),
+          ),
+        )
+      } ?: run {
+        telemetryClient.trackEvent(
+          "alerts-migration-entity-migration-rejected",
+          mapOf(
+            "nomisBookingId" to nomisBookingId,
+            "nomisAlertSequence" to nomisAlertSequence,
+            "migrationId" to context.migrationId,
+          ),
+        )
+      }
     }
+  }
+
+  private suspend fun createMapping(
+    nomisBookingId: Long,
+    nomisAlertSequence: Long,
+    dpsAlertId: String,
+    context: MigrationContext<*>,
+  ) = try {
+    alertsMappingService.createMapping(
+      AlertMappingDto(
+        nomisBookingId = nomisBookingId,
+        nomisAlertSequence = nomisAlertSequence,
+        dpsAlertId = dpsAlertId,
+        label = context.migrationId,
+        mappingType = AlertMappingDto.MappingType.MIGRATED,
+      ),
+      object : ParameterizedTypeReference<DuplicateErrorResponse<AlertMappingDto>>() {},
+    ).also {
+      if (it.isError) {
+        val duplicateErrorDetails = (it.errorResponse!!).moreInfo
+        telemetryClient.trackEvent(
+          "nomis-migration-alerts-duplicate",
+          mapOf<String, String>(
+            "migrationId" to context.migrationId,
+            "duplicateDpsAlertId" to duplicateErrorDetails.duplicate.dpsAlertId,
+            "duplicateNomisBookingId" to duplicateErrorDetails.duplicate.nomisBookingId.toString(),
+            "duplicateNomisAlertSequence" to duplicateErrorDetails.duplicate.nomisAlertSequence.toString(),
+            "existingDpsAlertId" to duplicateErrorDetails.existing.dpsAlertId,
+            "existingNomisBookingId" to duplicateErrorDetails.existing.nomisBookingId.toString(),
+            "existingNomisAlertSequence" to duplicateErrorDetails.existing.nomisAlertSequence.toString(),
+            "durationMinutes" to context.durationMinutes().toString(),
+          ),
+          null,
+        )
+      }
+    }
+  } catch (e: Exception) {
+    log.error(
+      "Failed to create mapping for alert booking nomis id: $nomisBookingId and sequence $nomisAlertSequence, dps id $dpsAlertId",
+      e,
+    )
+    queueService.sendMessage(
+      MigrationMessageType.RETRY_MIGRATION_MAPPING,
+      MigrationContext(
+        context = context,
+        body = AlertMappingDto(
+          nomisBookingId = nomisBookingId,
+          nomisAlertSequence = nomisAlertSequence,
+          dpsAlertId = dpsAlertId,
+          label = context.migrationId,
+          mappingType = AlertMappingDto.MappingType.MIGRATED,
+        ),
+      ),
+    )
   }
 }

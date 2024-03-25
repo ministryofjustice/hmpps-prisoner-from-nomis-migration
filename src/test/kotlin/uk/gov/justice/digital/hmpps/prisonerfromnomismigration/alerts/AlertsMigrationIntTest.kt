@@ -1,5 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts
 
+import com.github.tomakehurst.wiremock.client.WireMock
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
@@ -17,9 +19,12 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension.Companion.dpsAlertsServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.dpsAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.MigrationResult
 import java.time.Duration
+import java.util.UUID
 
 class AlertsMigrationIntTest : SqsIntegrationTestBase() {
   @Autowired
@@ -73,6 +78,9 @@ class AlertsMigrationIntTest : SqsIntegrationTestBase() {
         fun setUp() {
           alertsNomisApiMockServer.stubGetAlertIds(totalElements = 2, pageSize = 10, bookingId = 1234567)
           alertsMappingApiMockServer.stubGetByNomisId(bookingId = 1234567, alertSequence = 1)
+          alertsNomisApiMockServer.stubGetAlert(bookingId = 1234567, alertSequence = 2)
+          dpsAlertsServer.stubMigrateAlert(response = dpsAlert().copy(alertUuid = UUID.fromString("00000000-0000-0000-0000-000000000001")))
+          alertsMappingApiMockServer.stubPostMapping()
           migrationResult = performMigration()
         }
 
@@ -89,6 +97,37 @@ class AlertsMigrationIntTest : SqsIntegrationTestBase() {
               assertThat(it).containsEntry("nomisBookingId", "1234567")
               assertThat(it).containsEntry("nomisAlertSequence", "2")
             },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      inner class WillMigrateAllAlertsNotAlreadyMigrated {
+        @BeforeEach
+        fun setUp() {
+          alertsNomisApiMockServer.stubGetAlertIds(totalElements = 2, pageSize = 10, bookingId = 1234567)
+          alertsNomisApiMockServer.stubGetAlert(bookingId = 1234567, alertSequence = 1)
+          alertsNomisApiMockServer.stubGetAlert(bookingId = 1234567, alertSequence = 2)
+          dpsAlertsServer.stubMigrateAlert(response = dpsAlert().copy(alertUuid = UUID.fromString("00000000-0000-0000-0000-000000000001")))
+          dpsAlertsServer.stubMigrateAlert(response = dpsAlert().copy(alertUuid = UUID.fromString("00000000-0000-0000-0000-000000000002")))
+          alertsMappingApiMockServer.stubPostMapping()
+          migrationResult = performMigration()
+        }
+
+        @Test
+        fun `will POST all alerts to DPS`() {
+          dpsAlertsServer.verify(
+            2,
+            postRequestedFor(WireMock.urlPathEqualTo("/migrate/alerts")),
+          )
+        }
+
+        @Test
+        fun `will migrate all alerts`() {
+          verify(telemetryClient, times(2)).trackEvent(
+            eq("alerts-migration-entity-migrated"),
+            any(),
             isNull(),
           )
         }
