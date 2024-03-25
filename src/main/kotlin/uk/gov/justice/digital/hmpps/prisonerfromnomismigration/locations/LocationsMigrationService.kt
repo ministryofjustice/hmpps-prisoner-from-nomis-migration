@@ -237,6 +237,24 @@ fun toUpsertSyncRequest(nomisLocationResponse: LocationResponse, parentId: Strin
     proposedReactivationDate = nomisLocationResponse.reactivateDate,
   )
 
+fun toReason(reasonCode: LocationResponse.ReasonCode?): UpsertLocationRequest.DeactivationReason =
+  when (reasonCode) {
+    LocationResponse.ReasonCode.A ->  UpsertLocationRequest.DeactivationReason.NEW_BUILDING
+    LocationResponse.ReasonCode.B ->  UpsertLocationRequest.DeactivationReason.CELL_RECLAIMS
+    LocationResponse.ReasonCode.C ->  UpsertLocationRequest.DeactivationReason.CHANGE_OF_USE
+    LocationResponse.ReasonCode.D ->  UpsertLocationRequest.DeactivationReason.REFURBISHMENT
+    LocationResponse.ReasonCode.E ->  UpsertLocationRequest.DeactivationReason.CLOSURE
+    LocationResponse.ReasonCode.F ->  UpsertLocationRequest.DeactivationReason.OTHER
+    LocationResponse.ReasonCode.G ->  UpsertLocationRequest.DeactivationReason.LOCAL_WORK
+    LocationResponse.ReasonCode.H ->  UpsertLocationRequest.DeactivationReason.STAFF_SHORTAGE
+    LocationResponse.ReasonCode.I ->  UpsertLocationRequest.DeactivationReason.MOTHBALLED
+    LocationResponse.ReasonCode.J ->  UpsertLocationRequest.DeactivationReason.DAMAGED
+    LocationResponse.ReasonCode.K ->  UpsertLocationRequest.DeactivationReason.OUT_OF_USE
+    LocationResponse.ReasonCode.L ->  UpsertLocationRequest.DeactivationReason.CELLS_RETURNING_TO_USE
+    null ->  UpsertLocationRequest.DeactivationReason.OTHER
+  }
+
+
 private fun toLocationType(locationType: String): UpsertLocationRequest.LocationType =
   when (locationType) {
     "WING", "BLK" -> UpsertLocationRequest.LocationType.WING
