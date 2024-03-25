@@ -39,9 +39,12 @@ class IncidentsPrisonOffenderEventListener(
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
           if (eventFeatureSwitch.isEnabled(eventType)) {
             when {
+              eventType == "INCIDENT-INSERTED" ->
+                incidentsSynchronisationService.synchroniseIncidentUpsert(sqsMessage.Message.fromJson())
+
               eventType.startsWith("INCIDENT-CHANGED") ->
                 // INCIDENT-CHANGED-CASES, INCIDENT-CHANGED-PARTIES, INCIDENT-CHANGED-RESPONSES, INCIDENT-CHANGED-REQUIREMENTS,
-                incidentsSynchronisationService.synchroniseIncidentUpdate(sqsMessage.Message.fromJson())
+                incidentsSynchronisationService.synchroniseIncidentUpsert(sqsMessage.Message.fromJson())
 
               eventType.startsWith("INCIDENT-DELETED") ->
                 // INCIDENT-DELETED-CASES, INCIDENT-DELETED-PARTIES, INCIDENT-DELETED-RESPONSES, INCIDENT-DELETED-REQUIREMENTS,

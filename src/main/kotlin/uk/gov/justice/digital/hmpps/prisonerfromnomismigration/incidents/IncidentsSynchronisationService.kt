@@ -27,7 +27,7 @@ class IncidentsSynchronisationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  suspend fun synchroniseIncidentUpdate(event: IncidentsOffenderEvent) {
+  suspend fun synchroniseIncidentUpsert(event: IncidentsOffenderEvent) {
     // Should never happen
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent(
@@ -42,11 +42,11 @@ class IncidentsSynchronisationService(
       nomisIncidentId = event.incidentCaseId,
     )?.let {
       log.debug("Found incident mapping: {}", it)
-      log.debug("Sending incident update sync {}", nomisIncident)
+      log.debug("Sending incident upsert sync {}", nomisIncident)
 
       incidentsService.syncIncident(nomisIncident)
       telemetryClient.trackEvent(
-        "incident-updated-synchronisation-success",
+        "incident-upsert-synchronisation-success",
         event.toTelemetryProperties(it.incidentId),
       )
     } ?: let {
@@ -55,7 +55,7 @@ class IncidentsSynchronisationService(
       incidentsService.syncIncident(nomisIncident).also { incident ->
         tryToCreateIncidentMapping(event, incident.id).also { result ->
           telemetryClient.trackEvent(
-            "incident-created-synchronisation-success",
+            "incident-upsert-synchronisation-success",
             event.toTelemetryProperties(
               incident.id,
               result == MAPPING_FAILED,
