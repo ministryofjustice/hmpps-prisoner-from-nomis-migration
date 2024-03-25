@@ -20,6 +20,7 @@ generic-service:
     API_BASE_URL_LOCATIONS: https://locations-inside-prison-api.hmpps.service.justice.gov.uk
     API_BASE_URL_ADJUDICATIONS: https://manage-adjudications-api.hmpps.service.justice.gov.uk
     API_BASE_URL_ALERTS: https://alerts-api.hmpps.service.justice.gov.uk
+    FEATURE_EVENT_INCIDENT-INSERTED: false
     FEATURE_EVENT_INCIDENT-CHANGED-CASES: false
     FEATURE_EVENT_INCIDENT-CHANGED-PARTIES: false
     FEATURE_EVENT_INCIDENT-CHANGED-RESPONSES: false
