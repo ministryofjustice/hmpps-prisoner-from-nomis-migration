@@ -8,6 +8,7 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.doApiCallWithRetries
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Capacity
@@ -108,16 +109,18 @@ class LocationsMigrationService(
 
             nomisLocationResponse.amendments?.forEach {
               try {
-                locationsService.migrateLocationHistory(
-                  migratedLocation.id,
-                  MigrateHistoryRequest(
-                    attribute = toHistoryAttribute(it.columnName),
-                    amendedDate = it.amendDateTime,
-                    oldValue = it.oldValue,
-                    newValue = it.newValue,
-                    amendedBy = it.amendedBy,
-                  ),
-                )
+                doApiCallWithRetries {
+                  locationsService.migrateLocationHistory(
+                    migratedLocation.id,
+                    MigrateHistoryRequest(
+                      attribute = toHistoryAttribute(it.columnName),
+                      amendedDate = it.amendDateTime,
+                      oldValue = it.oldValue,
+                      newValue = it.newValue,
+                      amendedBy = it.amendedBy,
+                    ),
+                  )
+                }
                 historyCount++
               } catch (e: Exception) {
                 log.error(
@@ -229,6 +232,9 @@ fun toUpsertSyncRequest(nomisLocationResponse: LocationResponse, parentId: Strin
 
     createDate = nomisLocationResponse.createDatetime,
     // lastModifiedDate - no value available as it changes with occupancy
+    deactivatedDate = nomisLocationResponse.deactivateDate,
+    deactivationReason = toReason(nomisLocationResponse.reasonCode),
+    proposedReactivationDate = nomisLocationResponse.reactivateDate,
   )
 
 private fun toLocationType(locationType: String): UpsertLocationRequest.LocationType =
@@ -285,6 +291,23 @@ private fun toResidentialHousingType(unitType: LocationResponse.UnitType?): Upse
     LocationResponse.UnitType.SEG -> UpsertLocationRequest.ResidentialHousingType.SEGREGATION
     LocationResponse.UnitType.SPLC -> UpsertLocationRequest.ResidentialHousingType.SPECIALIST_CELL
     null -> null
+  }
+
+private fun toReason(reasonCode: LocationResponse.ReasonCode?): UpsertLocationRequest.DeactivationReason =
+  when (reasonCode) {
+    LocationResponse.ReasonCode.A -> UpsertLocationRequest.DeactivationReason.NEW_BUILDING
+    LocationResponse.ReasonCode.B -> UpsertLocationRequest.DeactivationReason.CELL_RECLAIMS
+    LocationResponse.ReasonCode.C -> UpsertLocationRequest.DeactivationReason.CHANGE_OF_USE
+    LocationResponse.ReasonCode.D -> UpsertLocationRequest.DeactivationReason.REFURBISHMENT
+    LocationResponse.ReasonCode.E -> UpsertLocationRequest.DeactivationReason.CLOSURE
+    LocationResponse.ReasonCode.F -> UpsertLocationRequest.DeactivationReason.OTHER
+    LocationResponse.ReasonCode.G -> UpsertLocationRequest.DeactivationReason.LOCAL_WORK
+    LocationResponse.ReasonCode.H -> UpsertLocationRequest.DeactivationReason.STAFF_SHORTAGE
+    LocationResponse.ReasonCode.I -> UpsertLocationRequest.DeactivationReason.MOTHBALLED
+    LocationResponse.ReasonCode.J -> UpsertLocationRequest.DeactivationReason.DAMAGED
+    LocationResponse.ReasonCode.K -> UpsertLocationRequest.DeactivationReason.OUT_OF_USE
+    LocationResponse.ReasonCode.L -> UpsertLocationRequest.DeactivationReason.CELLS_RETURNING_TO_USE
+    null -> UpsertLocationRequest.DeactivationReason.OTHER
   }
 
 private fun toAttribute(type: String, code: String): UpsertLocationRequest.Attributes? =
