@@ -67,7 +67,7 @@ class LocationsMigrationService(
 
   override suspend fun migrateNomisEntity(context: MigrationContext<LocationIdResponse>) {
     with(context.body) {
-      log.info("attempting to migrate $this")
+      log.info("attempting to migrate $locationId")
 
       // Determine all valid locations for this offender pair
       val nomisLocationResponse = nomisApiService.getLocation(locationId)
@@ -232,9 +232,21 @@ fun toUpsertSyncRequest(nomisLocationResponse: LocationResponse, parentId: Strin
 
     createDate = nomisLocationResponse.createDatetime,
     // lastModifiedDate - no value available as it changes with occupancy
-    deactivatedDate = nomisLocationResponse.deactivateDate,
-    deactivationReason = toReason(nomisLocationResponse.reasonCode),
-    proposedReactivationDate = nomisLocationResponse.reactivateDate,
+    deactivatedDate = if (nomisLocationResponse.active) {
+      null
+    } else {
+      nomisLocationResponse.deactivateDate
+    },
+    deactivationReason = if (nomisLocationResponse.active) {
+      null
+    } else {
+      toReason(nomisLocationResponse.reasonCode)
+    },
+    proposedReactivationDate = if (nomisLocationResponse.active) {
+      null
+    } else {
+      nomisLocationResponse.reactivateDate
+    },
   )
 
 private fun toLocationType(locationType: String): UpsertLocationRequest.LocationType =
@@ -293,7 +305,7 @@ private fun toResidentialHousingType(unitType: LocationResponse.UnitType?): Upse
     null -> null
   }
 
-private fun toReason(reasonCode: LocationResponse.ReasonCode?): UpsertLocationRequest.DeactivationReason =
+private fun toReason(reasonCode: LocationResponse.ReasonCode?): UpsertLocationRequest.DeactivationReason? =
   when (reasonCode) {
     LocationResponse.ReasonCode.A -> UpsertLocationRequest.DeactivationReason.NEW_BUILDING
     LocationResponse.ReasonCode.B -> UpsertLocationRequest.DeactivationReason.CELL_RECLAIMS
@@ -307,7 +319,7 @@ private fun toReason(reasonCode: LocationResponse.ReasonCode?): UpsertLocationRe
     LocationResponse.ReasonCode.J -> UpsertLocationRequest.DeactivationReason.DAMAGED
     LocationResponse.ReasonCode.K -> UpsertLocationRequest.DeactivationReason.OUT_OF_USE
     LocationResponse.ReasonCode.L -> UpsertLocationRequest.DeactivationReason.CELLS_RETURNING_TO_USE
-    null -> UpsertLocationRequest.DeactivationReason.OTHER
+    null -> null
   }
 
 private fun toAttribute(type: String, code: String): UpsertLocationRequest.Attributes? =

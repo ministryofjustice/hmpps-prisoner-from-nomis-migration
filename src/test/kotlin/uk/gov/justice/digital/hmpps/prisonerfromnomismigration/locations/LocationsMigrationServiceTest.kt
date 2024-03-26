@@ -882,9 +882,6 @@ class LocationsMigrationServiceTest {
             certification = Certification(true, 40),
             lastUpdatedBy = "TJONES_ADM",
             createDate = "2023-09-25T11:12:45",
-            deactivatedDate = LocalDate.parse("2023-09-20"),
-            deactivationReason = UpsertLocationRequest.DeactivationReason.CELL_RECLAIMS,
-            proposedReactivationDate = LocalDate.parse("2023-09-30"),
             attributes = setOf(
               UpsertLocationRequest.Attributes.CAT_C,
             ),
@@ -925,6 +922,29 @@ class LocationsMigrationServiceTest {
             amendedBy = "STEVE_ADM",
           ),
         ),
+      )
+    }
+
+    @Test
+    fun `will transform inactive location correctly`() = runTest {
+      whenever(nomisApiService.getLocation(any())).thenReturn(aNomisLocationResponse().copy(active = false))
+      whenever(locationsService.migrateLocation(any())).thenReturn(basicLocation)
+
+      service.migrateNomisEntity(
+        MigrationContext(
+          type = LOCATIONS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = LocationIdResponse(12345L),
+        ),
+      )
+
+      verify(locationsService).migrateLocation(
+        check {
+          assertThat(it.deactivatedDate).isEqualTo(LocalDate.parse("2023-09-20"))
+          assertThat(it.deactivationReason).isEqualTo(UpsertLocationRequest.DeactivationReason.CELL_RECLAIMS)
+          assertThat(it.proposedReactivationDate).isEqualTo(LocalDate.parse("2023-09-30"))
+        },
       )
     }
 
