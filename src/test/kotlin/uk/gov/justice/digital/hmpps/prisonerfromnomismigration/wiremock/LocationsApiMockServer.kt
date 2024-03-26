@@ -13,9 +13,8 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus.CREATED
 import org.springframework.http.HttpStatus.OK
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.ChangeHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Location
-import java.util.*
+import java.util.UUID
 
 class LocationsApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
   companion object {
@@ -63,13 +62,13 @@ class LocationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubUpsertLocationHistoryForMigration(locationId: String = "f1c1e3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e") {
+  fun stubUpsertLocationHistoryForMigration(locationId: String = "f1c1e3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e", response: String) {
     stubFor(
       post("/migrate/location/$locationId/history").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(CREATED.value())
-          .withBody(aLocationHistory()),
+          .withBody(response),
       ),
     )
   }
@@ -104,14 +103,6 @@ class LocationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     topLevelId = UUID.fromString("f1c1e3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e"),
     pathHierarchy = "MDI-C",
     deactivatedByParent = false,
-  ).toJson()
-
-  private fun aLocationHistory() = ChangeHistory(
-    attribute = "Location Type",
-    oldValue = "CELL",
-    newValue = "WING",
-    amendedBy = "user",
-    amendedDate = "2021-07-05T10:35:17",
   ).toJson()
 }
 

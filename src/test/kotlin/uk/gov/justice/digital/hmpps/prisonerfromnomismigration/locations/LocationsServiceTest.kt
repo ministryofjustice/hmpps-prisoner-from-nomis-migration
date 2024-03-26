@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.ChangeHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.MigrateHistoryRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.UpsertLocationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.LocationsApiExtension.Companion.locationsApi
@@ -116,9 +118,9 @@ internal class LocationsServiceTest {
   @Nested
   @DisplayName("POST /migrate/location/{locationId}/history")
   inner class CreateLocationHistoryForMigration {
-    @BeforeEach
-    internal fun setUp() {
-      locationsApi.stubUpsertLocationHistoryForMigration(locationId = LOCATION_ID)
+    @Test
+    fun `should call api with OAuth2 token`() {
+      locationsApi.stubUpsertLocationHistoryForMigration(LOCATION_ID, aLocationHistory())
       runBlocking {
         locationsService.migrateLocationHistory(
           UUID.fromString(LOCATION_ID),
@@ -131,10 +133,7 @@ internal class LocationsServiceTest {
           ),
         )
       }
-    }
 
-    @Test
-    fun `should call api with OAuth2 token`() {
       locationsApi.verify(
         postRequestedFor(urlEqualTo("/migrate/location/$LOCATION_ID/history"))
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -143,6 +142,46 @@ internal class LocationsServiceTest {
 
     @Test
     fun `will pass data to the api`() {
+      locationsApi.stubUpsertLocationHistoryForMigration(LOCATION_ID, aLocationHistory())
+      runBlocking {
+        locationsService.migrateLocationHistory(
+          UUID.fromString(LOCATION_ID),
+          MigrateHistoryRequest(
+            attribute = MigrateHistoryRequest.Attribute.ORDER_WITHIN_PARENT_LOCATION,
+            amendedBy = "TJONES_ADM",
+            amendedDate = "2022-12-02T10:00:00",
+            oldValue = "1",
+            newValue = "2",
+          ),
+        )
+      }
+
+      locationsApi.verify(
+        postRequestedFor(urlEqualTo("/migrate/location/$LOCATION_ID/history"))
+          .withRequestBody(matchingJsonPath("attribute", equalTo("ORDER_WITHIN_PARENT_LOCATION")))
+          .withRequestBody(matchingJsonPath("amendedBy", equalTo("TJONES_ADM")))
+          .withRequestBody(matchingJsonPath("amendedDate", equalTo("2022-12-02T10:00:00")))
+          .withRequestBody(matchingJsonPath("oldValue", equalTo("1")))
+          .withRequestBody(matchingJsonPath("newValue", equalTo("2"))),
+      )
+    }
+
+    @Test
+    fun `no data returned`() {
+      locationsApi.stubUpsertLocationHistoryForMigration(LOCATION_ID, "")
+      runBlocking {
+        locationsService.migrateLocationHistory(
+          UUID.fromString(LOCATION_ID),
+          MigrateHistoryRequest(
+            attribute = MigrateHistoryRequest.Attribute.ORDER_WITHIN_PARENT_LOCATION,
+            amendedBy = "TJONES_ADM",
+            amendedDate = "2022-12-02T10:00:00",
+            oldValue = "1",
+            newValue = "2",
+          ),
+        )
+      }
+
       locationsApi.verify(
         postRequestedFor(urlEqualTo("/migrate/location/$LOCATION_ID/history"))
           .withRequestBody(matchingJsonPath("attribute", equalTo("ORDER_WITHIN_PARENT_LOCATION")))
@@ -153,4 +192,14 @@ internal class LocationsServiceTest {
       )
     }
   }
+
+  private fun aLocationHistory() = ChangeHistory(
+    attribute = "Location Type",
+    oldValue = "CELL",
+    newValue = "WING",
+    amendedBy = "user",
+    amendedDate = "2021-07-05T10:35:17",
+  ).toJson()
+
+  private fun Any.toJson(): String = ObjectMapper().writeValueAsString(this)
 }
