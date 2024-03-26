@@ -949,6 +949,29 @@ class LocationsMigrationServiceTest {
     }
 
     @Test
+    fun `will transform inactive location with no reason`() = runTest {
+      whenever(nomisApiService.getLocation(any())).thenReturn(aNomisLocationResponse().copy(active = false, reasonCode = null))
+      whenever(locationsService.migrateLocation(any())).thenReturn(basicLocation)
+
+      service.migrateNomisEntity(
+        MigrationContext(
+          type = LOCATIONS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = LocationIdResponse(12345L),
+        ),
+      )
+
+      verify(locationsService).migrateLocation(
+        check {
+          assertThat(it.deactivatedDate).isEqualTo(LocalDate.parse("2023-09-20"))
+          assertThat(it.deactivationReason).isEqualTo(UpsertLocationRequest.DeactivationReason.OTHER)
+          assertThat(it.proposedReactivationDate).isEqualTo(LocalDate.parse("2023-09-30"))
+        },
+      )
+    }
+
+    @Test
     fun `will add telemetry events for migrated entries`() = runTest {
       whenever(nomisApiService.getLocation(any())).thenReturn(aNomisLocationResponse())
 
