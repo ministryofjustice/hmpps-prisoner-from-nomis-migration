@@ -73,7 +73,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             eq("court-case-synchronisation-created-skipped"),
             check {
               assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
-              assertThat(it["bookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
               assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
             },
             isNull(),
@@ -145,7 +145,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               eq("court-case-synchronisation-created-success"),
               check {
                 assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
-                assertThat(it["bookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
                 assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
                 assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
                 assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
@@ -187,7 +187,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               eq("court-case-synchronisation-created-ignored"),
               check {
                 assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
-                assertThat(it["bookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
                 assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
                 assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
               },
