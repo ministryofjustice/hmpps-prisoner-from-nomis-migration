@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
+import org.springframework.web.reactive.function.client.awaitBodyOrNull
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.ChangeHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Location
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.MigrateHistoryRequest
@@ -26,10 +27,10 @@ class LocationsService(@Qualifier("locationsApiWebClient") private val webClient
       .retrieve()
       .awaitBody()
 
-  suspend fun migrateLocationHistory(id: UUID, request: MigrateHistoryRequest): ChangeHistory =
+  suspend fun migrateLocationHistory(id: UUID, request: MigrateHistoryRequest): ChangeHistory? =
     webClient.post()
       .uri("/migrate/location/{id}/history", id)
       .bodyValue(request)
       .retrieve()
-      .awaitBody()
+      .awaitBodyOrNull()
 }
