@@ -17,6 +17,7 @@ api.base.url:
   # do not use port 8091 - clashes on some Macs
   alerts: http://localhost:8092
   locations: http://localhost:8093
+  court.sentencing: http://localhost:8094
 
 visits:
   page:
@@ -82,4 +83,6 @@ hmpps.sqs:
     eventsentencing:
       dlqMaxReceiveCount: 2
     eventalerts:
+      dlqMaxReceiveCount: 2
+    eventcourtsentencing:
       dlqMaxReceiveCount: 2

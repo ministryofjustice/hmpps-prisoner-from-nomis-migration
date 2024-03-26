@@ -48,3 +48,6 @@ hmpps.sqs:
     eventalerts:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    eventcourtsentencing:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}

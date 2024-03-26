@@ -20,6 +20,7 @@ generic-service:
     API_BASE_URL_LOCATIONS: https://locations-inside-prison-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_ADJUDICATIONS: https://manage-adjudications-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_ALERTS: https://alerts-api-dev.hmpps.service.justice.gov.uk
+    API_BASE_URL_COURT_SENTENCING: https://remand-and-sentencing-api-dev.hmpps.service.justice.gov.uk
 
 generic-prometheus-alerts:
   businessHoursOnly: true
@@ -37,6 +38,8 @@ generic-prometheus-alerts:
     - "syscon-devs-dev-prisoner_from_nomis_incidents_dl_queue"
     - "syscon-devs-dev-prisoner_from_nomis_locations_queue"
     - "syscon-devs-dev-prisoner_from_nomis_locations_dl_queue"
+    - "syscon-devs-dev-prisoner_from_nomis_court_sentencing_queue"
+    - "syscon-devs-dev-prisoner_from_nomis_court_sentencing_dl_queue"
     - "syscon-devs-dev-migration_sentencing_queue"
     - "syscon-devs-dev-migration_sentencing_dlq"
     - "syscon-devs-dev-migration_visits_queue"
