@@ -61,6 +61,8 @@ generic-service:
       LOCATIONS_CLIENT_SECRET: "LOCATIONS_CLIENT_SECRET"
       ALERTS_CLIENT_ID: "ALERTS_CLIENT_ID"
       ALERTS_CLIENT_SECRET: "ALERTS_CLIENT_SECRET"
+      COURT_SENTENCING_CLIENT_ID: "COURT_SENTENCING_CLIENT_ID"
+      COURT_SENTENCING_CLIENT_SECRET: "COURT_SENTENCING_CLIENT_SECRET"
     sqs-migration-visits-queue:
       HMPPS_SQS_QUEUES_MIGRATIONVISITS_QUEUE_NAME: "sqs_name"
     sqs-migration-visits-dlq:
@@ -117,6 +119,10 @@ generic-service:
       HMPPS_SQS_QUEUES_EVENTALERTS_QUEUE_NAME: "sqs_name"
     prison-events-alerts-dl-queue:
       HMPPS_SQS_QUEUES_EVENTALERTS_DLQ_NAME: "sqs_name"
+    prison-events-courtsentencing-queue:
+      HMPPS_SQS_QUEUES_EVENTCOURTSENTENCING_QUEUE_NAME: "sqs_name"
+    prison-events-courtsentencing-dl-queue:
+      HMPPS_SQS_QUEUES_EVENTCOURTSENTENCING_DLQ_NAME: "sqs_name"
     rds-database:
       SPRING_FLYWAY_USER: "database_username"
       SPRING_FLYWAY_PASSWORD: "database_password"

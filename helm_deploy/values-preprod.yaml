@@ -22,6 +22,7 @@ generic-service:
     # currently set to self for a mock API until real API is ready
     API_BASE_URL_ALERTS: https://prisoner-nomis-migration-preprod.hmpps.service.justice.gov.uk
     FEATURE_EVENT_INCIDENT-INSERTED: false
+    API_BASE_URL_COURT_SENTENCING: https://remand-and-sentencing-api-preprod.hmpps.service.justice.gov.uk
     FEATURE_EVENT_INCIDENT-CHANGED-CASES: false
     FEATURE_EVENT_INCIDENT-CHANGED-PARTIES: false
     FEATURE_EVENT_INCIDENT-CHANGED-RESPONSES: false
@@ -32,6 +33,7 @@ generic-service:
     FEATURE_EVENT_INCIDENT-DELETED-REQUIREMENTS: false
     FEATURE_EVENT_ALERT-UPDATED: false
     FEATURE_EVENT_ALERT-INSERTED: false
+    FEATURE_EVENT_OFFENDER_CASES-INSERTED: false
 
 generic-prometheus-alerts:
   businessHoursOnly: true
