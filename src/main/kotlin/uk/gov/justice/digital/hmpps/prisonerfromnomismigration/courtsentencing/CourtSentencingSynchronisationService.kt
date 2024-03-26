@@ -34,23 +34,22 @@ class CourtSentencingSynchronisationService(
         "offenderNo" to event.offenderIdDisplay,
         "nomisBookingId" to event.bookingId,
       )
-    val nomisCourtCase =
-      nomisApiService.getCourtCase(offenderNo = event.offenderIdDisplay, courtCaseId = event.courtCaseId)
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent("court-case-synchronisation-created-skipped", telemetry)
     } else {
-      val mapping = mappingApiService.getCourtCaseOrNullByNomisId(event.courtCaseId)
-      if (mapping != null) {
+      val nomisCourtCase =
+        nomisApiService.getCourtCase(offenderNo = event.offenderIdDisplay, courtCaseId = event.courtCaseId)
+      mappingApiService.getCourtCaseOrNullByNomisId(event.courtCaseId)?.let { mapping ->
         telemetryClient.trackEvent(
           "court-case-synchronisation-created-ignored",
           telemetry + ("dpsCourtCaseId" to mapping.dpsCourtCaseId),
         )
-      } else {
+      } ?: let {
         dpsApiService.createCourtCase(nomisCourtCase.toDPsCourtCase(event.offenderIdDisplay)).run {
           tryToCreateMapping(
             nomisCourtCase = nomisCourtCase,
             dpsCourtCaseResponse = this,
-            telemetry = telemetry,
+            telemetry = telemetry + ("dpsCourtCaseId" to this.courtCaseUuid),
           ).also { mappingCreateResult ->
             val mappingSuccessTelemetry =
               (if (mappingCreateResult == MappingResponse.MAPPING_CREATED) mapOf() else mapOf("mapping" to "initial-failure"))
