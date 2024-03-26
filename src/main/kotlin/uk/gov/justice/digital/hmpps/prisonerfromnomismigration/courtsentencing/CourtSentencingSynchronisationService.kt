@@ -80,10 +80,10 @@ class CourtSentencingSynchronisationService(
       mappingApiService.createMapping(mapping)
       return MappingResponse.MAPPING_CREATED
     } catch (e: Exception) {
-      log.error("Failed to create mapping for alert id $mapping", e)
+      log.error("Failed to create mapping for court case ids $mapping", e)
       queueService.sendMessage(
         messageType = SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING.name,
-        synchronisationType = SynchronisationType.ALERTS,
+        synchronisationType = SynchronisationType.COURT_SENTENCING,
         message = mapping,
         telemetryAttributes = telemetry.valuesAsStrings(),
       )
