@@ -32,9 +32,9 @@ fun AlertResponse.toDPSMigratedAlert(offenderNo: String) = MigrateAlertRequest(
   authorisedBy = this.authorisedBy,
   createdAt = LocalDateTime.parse(this.audit.createDatetime),
   createdBy = this.audit.createUsername,
-  createdByDisplayName = "TODO",
+  createdByDisplayName = this.audit.createDisplayName ?: this.audit.createUsername,
   updatedAt = this.audit.modifyDatetime?.let { LocalDateTime.parse(this.audit.modifyDatetime) },
   updatedBy = this.audit.modifyUserId,
-  updatedByDisplayName = "TODO",
+  updatedByDisplayName = this.audit.modifyDisplayName,
   comments = emptyList(),
 )
