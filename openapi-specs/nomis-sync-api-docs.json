@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-03-22.7074.925797a"
+    "version": "2024-03-26.7084.40101b9"
   },
   "servers": [
     {
@@ -9263,9 +9263,17 @@
             "type": "string",
             "description": "Username of person that created the record (might also be a system) "
           },
+          "createDisplayName": {
+            "type": "string",
+            "description": "Real name of person that created the record (might by null for system users)"
+          },
           "modifyUserId": {
             "type": "string",
             "description": "Username of person that last modified the record (might also be a system)"
+          },
+          "modifyDisplayName": {
+            "type": "string",
+            "description": "Real name of person that modified the record (might by null for system users)"
           },
           "modifyDatetime": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",

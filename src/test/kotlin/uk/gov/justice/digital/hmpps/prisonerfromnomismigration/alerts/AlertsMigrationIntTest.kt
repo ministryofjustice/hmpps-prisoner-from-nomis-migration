@@ -1,7 +1,9 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts
 
-import com.github.tomakehurst.wiremock.client.WireMock
+import com.github.tomakehurst.wiremock.client.WireMock.absent
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
@@ -22,8 +24,13 @@ import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension.Companion.dpsAlertsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.dpsAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.MigrationResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.Duration
+import java.time.LocalDate
 import java.util.UUID
 
 class AlertsMigrationIntTest : SqsIntegrationTestBase() {
@@ -106,9 +113,49 @@ class AlertsMigrationIntTest : SqsIntegrationTestBase() {
       inner class WillMigrateAllAlertsNotAlreadyMigrated {
         @BeforeEach
         fun setUp() {
-          alertsNomisApiMockServer.stubGetAlertIds(totalElements = 2, pageSize = 10, bookingId = 1234567)
-          alertsNomisApiMockServer.stubGetAlert(bookingId = 1234567, alertSequence = 1)
-          alertsNomisApiMockServer.stubGetAlert(bookingId = 1234567, alertSequence = 2)
+          alertsNomisApiMockServer.stubGetAlertIds(totalElements = 2, pageSize = 10, bookingId = 1234567, offenderNo = "A1234KT")
+          alertsNomisApiMockServer.stubGetAlert(
+            bookingId = 1234567,
+            alertSequence = 1,
+            alert = AlertResponse(
+              bookingId = 1234567,
+              alertSequence = 1,
+              alertCode = CodeDescription("XR", "Racist"),
+              type = CodeDescription("X", "Security"),
+              date = LocalDate.parse("2021-01-01"),
+              isActive = true,
+              isVerified = false,
+              audit = NomisAudit(
+                createDatetime = "2021-01-01T12:34:56",
+                createUsername = "SYS",
+                createDisplayName = null,
+              ),
+            ),
+          )
+          alertsNomisApiMockServer.stubGetAlert(
+            bookingId = 1234567,
+            alertSequence = 2,
+            alert = AlertResponse(
+              bookingId = 1234567,
+              alertSequence = 2,
+              comment = "This is a comment",
+              alertCode = CodeDescription("XEL", "Escape List"),
+              type = CodeDescription("X", "Security"),
+              date = LocalDate.parse("2021-01-01"),
+              isActive = false,
+              isVerified = true,
+              expiryDate = LocalDate.parse("2022-02-02"),
+              authorisedBy = "Security team",
+              audit = NomisAudit(
+                createDatetime = "2021-01-01T12:34:56",
+                createUsername = "A_MARKE",
+                createDisplayName = "ANDY MARKE",
+                modifyDatetime = "2021-02-02T12:24:56",
+                modifyUserId = "P_SNICKET",
+                modifyDisplayName = "PAULA SNICKET",
+              ),
+            ),
+          )
           dpsAlertsServer.stubMigrateAlert(response = dpsAlert().copy(alertUuid = UUID.fromString("00000000-0000-0000-0000-000000000001")))
           dpsAlertsServer.stubMigrateAlert(response = dpsAlert().copy(alertUuid = UUID.fromString("00000000-0000-0000-0000-000000000002")))
           alertsMappingApiMockServer.stubPostMapping()
@@ -119,7 +166,43 @@ class AlertsMigrationIntTest : SqsIntegrationTestBase() {
         fun `will POST all alerts to DPS`() {
           dpsAlertsServer.verify(
             2,
-            postRequestedFor(WireMock.urlPathEqualTo("/migrate/alerts")),
+            postRequestedFor(urlPathEqualTo("/migrate/alerts")),
+          )
+        }
+
+        @Test
+        fun `will transform NOMIS alert to DPS alert`() {
+          dpsAlertsServer.verify(
+            postRequestedFor(urlPathEqualTo("/migrate/alerts"))
+              .withRequestBodyJsonPath("prisonNumber", "A1234KT")
+              .withRequestBodyJsonPath("alertCode", "XR")
+              .withRequestBodyJsonPath("description", absent())
+              .withRequestBodyJsonPath("authorisedBy", absent())
+              .withRequestBodyJsonPath("activeFrom", "2021-01-01")
+              .withRequestBodyJsonPath("activeTo", absent())
+              .withRequestBodyJsonPath("createdAt", "2021-01-01T12:34:56")
+              .withRequestBodyJsonPath("createdBy", "SYS")
+              .withRequestBodyJsonPath("createdByDisplayName", "SYS")
+              .withRequestBodyJsonPath("updatedAt", absent())
+              .withRequestBodyJsonPath("updatedBy", absent())
+              .withRequestBodyJsonPath("updatedByDisplayName", absent())
+              .withRequestBodyJsonPath("comments.size()", equalTo("0")),
+          )
+          dpsAlertsServer.verify(
+            postRequestedFor(urlPathEqualTo("/migrate/alerts"))
+              .withRequestBodyJsonPath("prisonNumber", "A1234KT")
+              .withRequestBodyJsonPath("alertCode", "XEL")
+              .withRequestBodyJsonPath("description", "This is a comment")
+              .withRequestBodyJsonPath("authorisedBy", "Security team")
+              .withRequestBodyJsonPath("activeFrom", "2021-01-01")
+              .withRequestBodyJsonPath("activeTo", "2022-02-02")
+              .withRequestBodyJsonPath("createdAt", "2021-01-01T12:34:56")
+              .withRequestBodyJsonPath("createdBy", "A_MARKE")
+              .withRequestBodyJsonPath("createdByDisplayName", "ANDY MARKE")
+              .withRequestBodyJsonPath("updatedAt", "2021-02-02T12:24:56")
+              .withRequestBodyJsonPath("updatedBy", "P_SNICKET")
+              .withRequestBodyJsonPath("updatedByDisplayName", "PAULA SNICKET")
+              .withRequestBodyJsonPath("comments.size()", equalTo("0")),
           )
         }
 
