@@ -67,6 +67,7 @@ tasks {
       "buildMappingServiceApiModel",
       "buildSentencingAdjustmentsApiModel",
       "buildAlertsApiModel",
+      "buildCourtSentencingApiModel",
     )
     kotlinOptions {
       jvmTarget = "21"
@@ -83,6 +84,7 @@ tasks {
       "buildMappingServiceApiModel",
       "buildSentencingAdjustmentsApiModel",
       "buildAlertsApiModel",
+      "buildCourtSentencingApiModel",
     )
   }
   withType<KtLintFormatTask> {
@@ -96,6 +98,7 @@ tasks {
       "buildMappingServiceApiModel",
       "buildSentencingAdjustmentsApiModel",
       "buildAlertsApiModel",
+      "buildCourtSentencingApiModel",
     )
   }
 }
@@ -197,30 +200,19 @@ tasks.register("buildAlertsApiModel", GenerateTask::class) {
   globalProperties.set(mapOf("models" to ""))
 }
 
-/* TODO when sentencing API created
-
-tasks.register("buildSentencingApiModel", GenerateTask::class) {
+tasks.register("buildCourtSentencingApiModel", GenerateTask::class) {
   generatorName.set("kotlin")
-  inputSpec.set("sentences-api-docs.json")
-  outputDir.set("$buildDirectory/generated/sentencing")
-  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.model")
-  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.api")
-  configOptions.set(
-    mapOf(
-      "dateLibrary" to "java8-localdatetime",
-      "serializationLibrary" to "jackson"
-    )
-  )
-  globalProperties.set(
-    mapOf(
-      "models" to ""
-    )
-  )
+  skipValidateSpec.set(true)
+  inputSpec.set("openapi-specs/court-sentencing-api-docs.json")
+  outputDir.set("$buildDirectory/generated/courtsentencing")
+  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model")
+  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.api")
+  configOptions.set(configValues)
+  globalProperties.set(mapOf("models" to ""))
 }
-*/
 
 val generatedProjectDirs =
-  listOf("activities", "adjudications", "incidents", "locations", "nomissync", "mappings", "sentencingadjustments", "alerts")
+  listOf("activities", "adjudications", "incidents", "locations", "nomissync", "mappings", "sentencingadjustments", "alerts", "courtsentencing")
 
 kotlin {
   generatedProjectDirs.forEach { generatedProject ->

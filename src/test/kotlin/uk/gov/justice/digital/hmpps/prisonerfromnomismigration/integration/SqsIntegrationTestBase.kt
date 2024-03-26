@@ -24,6 +24,7 @@ import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.JwtAuthHelper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.LocalStackContainer.setLocalStackProperties
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ACTIVITIES_QUEUE_ID
@@ -59,6 +60,7 @@ import java.util.concurrent.TimeUnit
   IncidentsApiExtension::class,
   LocationsApiExtension::class,
   AlertsDpsApiExtension::class,
+  CourtSentencingDpsApiExtension::class,
 )
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -134,6 +136,12 @@ class SqsIntegrationTestBase : TestBase() {
   internal val awsSqsAlertOffenderEventsClient by lazy { alertsOffenderEventsQueue.sqsClient }
   internal val awsSqsAlertsOffenderEventDlqClient by lazy { alertsOffenderEventsQueue.sqsDlqClient as SqsAsyncClient }
 
+  internal val courtSentencingOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId("eventcourtsentencing") as HmppsQueue }
+  internal val courtSentencingQueueOffenderEventsUrl by lazy { courtSentencingOffenderEventsQueue.queueUrl }
+  internal val courtSentencingQueueOffenderEventsDlqUrl by lazy { courtSentencingOffenderEventsQueue.dlqUrl as String }
+  internal val awsSqsCourtSentencingOffenderEventsClient by lazy { courtSentencingOffenderEventsQueue.sqsClient }
+  internal val awsSqsCourtSentencingOffenderEventDlqClient by lazy { courtSentencingOffenderEventsQueue.sqsDlqClient as SqsAsyncClient }
+
   private val allQueues by lazy {
     listOf(
       incidentsOffenderEventsQueue,
@@ -148,6 +156,7 @@ class SqsIntegrationTestBase : TestBase() {
       sentencingMigrationQueue,
       visitsMigrationQueue,
       alertsOffenderEventsQueue,
+      courtSentencingOffenderEventsQueue,
     )
   }
 

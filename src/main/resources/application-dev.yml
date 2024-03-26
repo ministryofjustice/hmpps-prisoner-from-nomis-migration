@@ -11,6 +11,7 @@ api.base.url:
   incidents: http://localhost:8089
   locations: http://localhost:8091
   mapping: http://localhost:8083
+  court.sentencing: http://localhost:8090
 
 spring:
   r2dbc:
