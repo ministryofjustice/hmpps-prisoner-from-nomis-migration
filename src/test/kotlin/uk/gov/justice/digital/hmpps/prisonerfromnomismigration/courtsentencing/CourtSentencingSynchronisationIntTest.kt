@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
+import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
@@ -9,7 +10,9 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
+import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilAsserted
+import org.awaitility.kotlin.untilCallTo
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -19,11 +22,13 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.dpsCourtSentencingServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
+import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.util.AbstractMap.SimpleEntry
 
 private const val NOMIS_COURT_CASE_ID = 1234L
@@ -45,7 +50,6 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     @Nested
     @DisplayName("When court sentencing was created in DPS")
     inner class DPSCreated {
-      // private val nomisCourtCaseId = 12345L
 
       @BeforeEach
       fun setUp() {
@@ -58,9 +62,6 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           courtSentencingQueueOffenderEventsUrl,
           courtCaseEvent(
             eventType = "OFFENDER_CASES-INSERTED",
-            bookingId = NOMIS_BOOKING_ID,
-            offenderNo = OFFENDER_ID_DISPLAY,
-            courtCaseId = NOMIS_COURT_CASE_ID,
             auditModule = "DPS_SYNCHRONISATION",
           ),
         )
@@ -144,7 +145,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             verify(telemetryClient).trackEvent(
               eq("court-case-synchronisation-created-success"),
               check {
-                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
                 assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
                 assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
                 assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
@@ -196,6 +197,140 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           }
           // will not create a court case in DPS
           dpsCourtSentencingServer.verify(0, postRequestedFor(anyUrl()))
+        }
+      }
+
+      @Nested
+      @DisplayName("When mapping POST fails")
+      inner class MappingFail {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
+          dpsCourtSentencingServer.stubPostCourtCaseForCreate(courtCaseId = DPS_COURT_CASE_ID)
+        }
+
+        @Nested
+        @DisplayName("Fails once")
+        inner class FailsOnce {
+          @BeforeEach
+          fun setUp() {
+            courtSentencingMappingApiMockServer.stubPostMappingFailureFollowedBySuccess()
+            awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+              courtSentencingQueueOffenderEventsUrl,
+              courtCaseEvent(
+                eventType = "OFFENDER_CASES-INSERTED",
+              ),
+            )
+          }
+
+          @Test
+          fun `will create a court case in DPS`() {
+            await untilAsserted {
+              dpsCourtSentencingServer.verify(
+                postRequestedFor(urlPathEqualTo("/court-case")),
+              )
+            }
+          }
+
+          @Test
+          fun `will attempt to create mapping two times and succeed`() {
+            await untilAsserted {
+              courtSentencingMappingApiMockServer.verify(
+                WireMock.exactly(2),
+                postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases"))
+                  .withRequestBody(matchingJsonPath("dpsCourtCaseId", equalTo(DPS_COURT_CASE_ID)))
+                  .withRequestBody(matchingJsonPath("nomisCourtCaseId", equalTo(NOMIS_COURT_CASE_ID.toString())))
+                  .withRequestBody(matchingJsonPath("mappingType", equalTo("DPS_CREATED"))),
+              )
+            }
+
+            assertThat(
+              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(courtSentencingQueueOffenderEventsDlqUrl).get(),
+            ).isEqualTo(0)
+          }
+
+          @Test
+          fun `will track a telemetry event for partial success`() {
+            await untilAsserted {
+              verify(telemetryClient).trackEvent(
+                eq("court-case-synchronisation-created-success"),
+                check {
+                  assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                  assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                  assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+                  assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+                  assertThat(it["mapping"]).isEqualTo("initial-failure")
+                },
+                isNull(),
+              )
+            }
+
+            await untilAsserted {
+              verify(telemetryClient).trackEvent(
+                eq("court-case-mapping-created-synchronisation-success"),
+                check {
+                  assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+                  assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                  assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+                  assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+                },
+                isNull(),
+              )
+            }
+          }
+        }
+
+        @Nested
+        @DisplayName("Fails constantly")
+        inner class FailsConstantly {
+          @BeforeEach
+          fun setUp() {
+            courtSentencingMappingApiMockServer.stubPostMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
+            awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+              courtSentencingQueueOffenderEventsUrl,
+              courtCaseEvent(
+                eventType = "OFFENDER_CASES-INSERTED",
+              ),
+            )
+            await untilCallTo {
+              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(courtSentencingQueueOffenderEventsDlqUrl).get()
+            } matches { it == 1 }
+          }
+
+          @Test
+          fun `will create a court case in DPS`() {
+            await untilAsserted {
+              dpsCourtSentencingServer.verify(
+                1,
+                postRequestedFor(urlPathEqualTo("/court-case")),
+              )
+            }
+          }
+
+          @Test
+          fun `will attempt to create mapping several times and keep failing`() {
+            courtSentencingMappingApiMockServer.verify(
+              WireMock.exactly(3),
+              postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases")),
+            )
+          }
+
+          @Test
+          fun `will track a telemetry event for success`() {
+            await untilAsserted {
+              verify(telemetryClient).trackEvent(
+                eq("court-case-synchronisation-created-success"),
+                check {
+                  assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+                  assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                  assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+                  assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+                  assertThat(it["mapping"]).isEqualTo("initial-failure")
+                },
+                isNull(),
+              )
+            }
+          }
         }
       }
     }
