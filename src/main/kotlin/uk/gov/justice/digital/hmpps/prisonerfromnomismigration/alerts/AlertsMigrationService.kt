@@ -31,8 +31,8 @@ class AlertsMigrationService(
   telemetryClient: TelemetryClient,
   auditService: AuditService,
   @Value("\${alerts.page.size:1000}") pageSize: Long,
-  @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
-  @Value("\${complete-check.count}") completeCheckCount: Int,
+  @Value("\${alerts.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
+  @Value("\${alerts.complete-check.count}") completeCheckCount: Int,
 ) : MigrationService<AlertsMigrationFilter, AlertIdResponse, AlertResponse, AlertMappingDto>(
   queueService = queueService,
   auditService = auditService,

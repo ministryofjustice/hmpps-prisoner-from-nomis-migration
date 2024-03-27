@@ -44,6 +44,9 @@ locations:
   page:
     size: 10
 alerts:
+  complete-check:
+    delay-seconds: 1
+    count: 1
   page:
     size: 10
   has-migrated-data: true

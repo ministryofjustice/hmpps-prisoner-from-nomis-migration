@@ -134,6 +134,11 @@ complete-check:
   delay-seconds: 10
   count: 9
 
+alerts:
+  complete-check:
+    delay-seconds: 60
+    count: 9
+
 azure:
   application-insights:
     web:
