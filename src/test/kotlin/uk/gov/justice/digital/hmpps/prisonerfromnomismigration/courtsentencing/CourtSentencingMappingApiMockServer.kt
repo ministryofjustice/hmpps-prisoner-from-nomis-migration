@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
+import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
@@ -71,6 +72,45 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
   fun stubPostMappingFailureFollowedBySuccess() {
     mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/court-sentencing/court-cases")
   }
+
+  fun stubCourtCaseMappingCreateConflict(
+    existingDpsCourtCaseId: String = "10",
+    duplicateDpsCourtCaseId: String = "11",
+    nomisCourtCaseId: Long = 123,
+  ) {
+    mappingApi.stubFor(
+      post(WireMock.urlPathEqualTo("/mapping/court-sentencing/court-cases"))
+        .willReturn(
+          aResponse()
+            .withStatus(409)
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
+              "moreInfo": 
+              {
+                "existing" :  {
+                  "dpsCourtCaseId": "$existingDpsCourtCaseId",
+                  "nomisCourtCaseId": $nomisCourtCaseId,
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "MIGRATED"
+                 },
+                 "duplicate" : {
+                  "dpsCourtCaseId": "$duplicateDpsCourtCaseId",
+                  "nomisCourtCaseId": $nomisCourtCaseId,
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "MIGRATED"
+                  }
+              }
+              }""",
+            ),
+        ),
+    )
+  }
+
+  fun createMappingCount(url: String) =
+    mappingApi.findAll(WireMock.postRequestedFor(WireMock.urlPathEqualTo(url))).count()
 
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)

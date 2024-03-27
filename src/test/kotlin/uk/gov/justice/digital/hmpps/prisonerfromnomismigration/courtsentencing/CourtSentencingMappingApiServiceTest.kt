@@ -13,10 +13,12 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
+import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
 
 private const val NOMIS_COURT_CASE_ID = 1234L
@@ -100,6 +102,7 @@ class CourtSentencingMappingApiServiceTest {
           dpsCourtCaseId = DPS_COURT_CASE_ID,
           mappingType = CourtCaseMappingDto.MappingType.DPS_CREATED,
         ),
+        object : ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseMappingDto>>() {},
       )
 
       courtSentencingMappingApiMockServer.verify(
@@ -117,6 +120,7 @@ class CourtSentencingMappingApiServiceTest {
           dpsCourtCaseId = DPS_COURT_CASE_ID,
           mappingType = CourtCaseMappingDto.MappingType.DPS_CREATED,
         ),
+        object : ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseMappingDto>>() {},
       )
 
       courtSentencingMappingApiMockServer.verify(
