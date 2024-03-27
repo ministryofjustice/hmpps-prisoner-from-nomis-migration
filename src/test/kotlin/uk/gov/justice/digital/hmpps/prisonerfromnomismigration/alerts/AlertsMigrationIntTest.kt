@@ -123,7 +123,7 @@ class AlertsMigrationIntTest : SqsIntegrationTestBase() {
       inner class WillMigrateAllAlertsNotAlreadyMigrated {
         @BeforeEach
         fun setUp() {
-          alertsNomisApiMockServer.stubGetAlertIds(totalElements = 2, pageSize = 10, bookingId = 1234567, offenderNo = "A1234KT")
+          alertsNomisApiMockServer.stubGetAlertIds(totalElements = 3, pageSize = 10, bookingId = 1234567, offenderNo = "A1234KT")
           alertsNomisApiMockServer.stubGetAlert(
             bookingId = 1234567,
             alertSequence = 1,
@@ -166,8 +166,30 @@ class AlertsMigrationIntTest : SqsIntegrationTestBase() {
               ),
             ),
           )
+          alertsNomisApiMockServer.stubGetAlert(
+            bookingId = 1234567,
+            alertSequence = 3,
+            alert = AlertResponse(
+              bookingId = 1234567,
+              alertSequence = 3,
+              alertCode = CodeDescription("XCU", "Controlled Unlock"),
+              type = CodeDescription("X", "Security"),
+              date = LocalDate.parse("2021-01-01"),
+              isActive = false,
+              isVerified = true,
+              audit = NomisAudit(
+                createDatetime = "2021-01-01T12:34:56",
+                createUsername = "SYS",
+                createDisplayName = null,
+                modifyDatetime = "2021-02-02T12:24:56",
+                modifyUserId = "SYS",
+                modifyDisplayName = null,
+              ),
+            ),
+          )
           dpsAlertsServer.stubMigrateAlert(response = dpsAlert().copy(alertUuid = UUID.fromString("00000000-0000-0000-0000-000000000001")))
           dpsAlertsServer.stubMigrateAlert(response = dpsAlert().copy(alertUuid = UUID.fromString("00000000-0000-0000-0000-000000000002")))
+          dpsAlertsServer.stubMigrateAlert(response = dpsAlert().copy(alertUuid = UUID.fromString("00000000-0000-0000-0000-000000000003")))
           alertsMappingApiMockServer.stubPostMapping()
           migrationResult = performMigration()
         }
@@ -175,7 +197,7 @@ class AlertsMigrationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will POST all alerts to DPS`() {
           dpsAlertsServer.verify(
-            2,
+            3,
             postRequestedFor(urlPathEqualTo("/migrate/alerts")),
           )
         }
@@ -214,11 +236,20 @@ class AlertsMigrationIntTest : SqsIntegrationTestBase() {
               .withRequestBodyJsonPath("updatedByDisplayName", "PAULA SNICKET")
               .withRequestBodyJsonPath("comments.size()", equalTo("0")),
           )
+          dpsAlertsServer.verify(
+            postRequestedFor(urlPathEqualTo("/migrate/alerts"))
+              .withRequestBodyJsonPath("prisonNumber", "A1234KT")
+              .withRequestBodyJsonPath("alertCode", "XCU")
+              .withRequestBodyJsonPath("createdBy", "SYS")
+              .withRequestBodyJsonPath("createdByDisplayName", "SYS")
+              .withRequestBodyJsonPath("updatedBy", "SYS")
+              .withRequestBodyJsonPath("updatedByDisplayName", "SYS"),
+          )
         }
 
         @Test
         fun `will migrate all alerts`() {
-          verify(telemetryClient, times(2)).trackEvent(
+          verify(telemetryClient, times(3)).trackEvent(
             eq("alerts-migration-entity-migrated"),
             any(),
             isNull(),
