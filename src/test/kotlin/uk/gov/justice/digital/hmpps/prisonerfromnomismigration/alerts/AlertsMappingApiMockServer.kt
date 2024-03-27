@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto.MappingType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.util.UUID
 
 @Component
@@ -92,6 +93,34 @@ class AlertsMappingApiMockServer(private val objectMapper: ObjectMapper) {
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
           .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubSingleItemByMigrationId(migrationId: String = "2020-01-01T11:10:00", count: Int = 278887) {
+    mappingApi.stubFor(
+      get(urlPathMatching("/mapping/alerts/migration-id/.*")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(
+            pageContent(
+              objectMapper = objectMapper,
+              content = listOf(
+                AlertMappingDto(
+                  dpsAlertId = UUID.randomUUID().toString(),
+                  nomisBookingId = 123456,
+                  nomisAlertSequence = 1,
+                  mappingType = MIGRATED,
+                  label = migrationId,
+                  whenCreated = migrationId,
+                ),
+              ),
+              pageSize = 1L,
+              pageNumber = 0L,
+              totalElements = count.toLong(),
+              size = 1,
+            ),
+          ),
       ),
     )
   }
