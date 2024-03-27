@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.ActivitiesMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.AllocationsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.AdjudicationsMappingService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.AppointmentsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.LocationsMappingService
@@ -20,6 +21,7 @@ class GeneralMappingService(
   private val allocationsMappingService: AllocationsMappingService,
   private val incidentsMappingService: IncidentsMappingService,
   private val locationsMappingService: LocationsMappingService,
+  private val alertsMappingService: AlertsMappingApiService,
 ) {
   suspend fun getMigrationCount(migrationId: String, migrationType: MigrationType): Long? =
     when (migrationType) {
@@ -31,6 +33,6 @@ class GeneralMappingService(
       MigrationType.ALLOCATIONS -> allocationsMappingService.getMigrationCount(migrationId)
       MigrationType.INCIDENTS -> incidentsMappingService.getMigrationCount(migrationId)
       MigrationType.LOCATIONS -> locationsMappingService.getMigrationCount(migrationId)
-      MigrationType.ALERTS -> TODO()
+      MigrationType.ALERTS -> alertsMappingService.getMigrationCount(migrationId)
     }
 }
