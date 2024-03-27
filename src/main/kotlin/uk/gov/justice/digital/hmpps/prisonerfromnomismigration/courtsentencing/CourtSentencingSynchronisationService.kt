@@ -3,11 +3,13 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseResponse
@@ -76,7 +78,24 @@ class CourtSentencingSynchronisationService(
       mappingType = CourtCaseMappingDto.MappingType.DPS_CREATED,
     )
     try {
-      mappingApiService.createMapping(mapping)
+      mappingApiService.createMapping(
+        mapping,
+        object : ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseMappingDto>>() {},
+      ).also {
+        if (it.isError) {
+          val duplicateErrorDetails = (it.errorResponse!!).moreInfo
+          telemetryClient.trackEvent(
+            "from-nomis-sync-court-case-duplicate",
+            mapOf<String, String>(
+              "duplicateDpsCourtCaseId" to duplicateErrorDetails.duplicate.dpsCourtCaseId,
+              "duplicateNomisCourtCaseId" to duplicateErrorDetails.duplicate.nomisCourtCaseId.toString(),
+              "existingDpsCourtCaseId" to duplicateErrorDetails.existing.dpsCourtCaseId,
+              "existingNomisCourtCaseId" to duplicateErrorDetails.existing.nomisCourtCaseId.toString(),
+            ),
+            null,
+          )
+        }
+      }
       return MappingResponse.MAPPING_CREATED
     } catch (e: Exception) {
       log.error("Failed to create mapping for court case ids $mapping", e)
@@ -93,6 +112,7 @@ class CourtSentencingSynchronisationService(
   suspend fun retryCreateMapping(retryMessage: InternalMessage<CourtCaseMappingDto>) {
     mappingApiService.createMapping(
       retryMessage.body,
+      object : ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseMappingDto>>() {},
     ).also {
       telemetryClient.trackEvent(
         "court-case-mapping-created-synchronisation-success",
