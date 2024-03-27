@@ -35,6 +35,6 @@ fun AlertResponse.toDPSMigratedAlert(offenderNo: String) = MigrateAlertRequest(
   createdByDisplayName = this.audit.createDisplayName ?: this.audit.createUsername,
   updatedAt = this.audit.modifyDatetime?.let { LocalDateTime.parse(this.audit.modifyDatetime) },
   updatedBy = this.audit.modifyUserId,
-  updatedByDisplayName = this.audit.modifyDisplayName,
+  updatedByDisplayName = this.audit.modifyDisplayName ?: this.audit.modifyUserId,
   comments = emptyList(),
 )
