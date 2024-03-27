@@ -33,6 +33,7 @@ import java.util.AbstractMap.SimpleEntry
 
 private const val NOMIS_COURT_CASE_ID = 1234L
 private const val DPS_COURT_CASE_ID = "cc1"
+private const val EXISTING_DPS_COURT_CASE_ID = "cc2"
 private const val OFFENDER_ID_DISPLAY = "A3864DZ"
 private const val NOMIS_BOOKING_ID = 12344321L
 
@@ -245,7 +246,9 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             }
 
             assertThat(
-              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(courtSentencingQueueOffenderEventsDlqUrl).get(),
+              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
+                courtSentencingQueueOffenderEventsDlqUrl,
+              ).get(),
             ).isEqualTo(0)
           }
 
@@ -293,7 +296,9 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               ),
             )
             await untilCallTo {
-              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(courtSentencingQueueOffenderEventsDlqUrl).get()
+              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
+                courtSentencingQueueOffenderEventsDlqUrl,
+              ).get()
             } matches { it == 1 }
           }
 
@@ -331,6 +336,67 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               )
             }
           }
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName("duplicate mapping - two messages received at the same time")
+    inner class WhenDuplicate {
+
+      @Test
+      internal fun `it will not retry after a 409 (duplicate court case written to Sentencing API)`() {
+        // in the case of multiple events received at the same time - mapping doesn't exist
+        courtSentencingMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
+
+        courtSentencingNomisApiMockServer.stubGetCourtCase(
+          bookingId = NOMIS_BOOKING_ID,
+          courtCaseId = NOMIS_COURT_CASE_ID,
+        )
+        dpsCourtSentencingServer.stubPostCourtCaseForCreate(courtCaseId = DPS_COURT_CASE_ID)
+
+        courtSentencingMappingApiMockServer.stubCourtCaseMappingCreateConflict(
+          existingDpsCourtCaseId = EXISTING_DPS_COURT_CASE_ID,
+          duplicateDpsCourtCaseId = DPS_COURT_CASE_ID,
+          nomisCourtCaseId = NOMIS_COURT_CASE_ID,
+        )
+
+        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+          courtSentencingQueueOffenderEventsUrl,
+          courtCaseEvent(
+            eventType = "OFFENDER_CASES-INSERTED",
+            courtCaseId = NOMIS_COURT_CASE_ID,
+            bookingId = NOMIS_BOOKING_ID,
+            offenderNo = OFFENDER_ID_DISPLAY,
+          ),
+        )
+
+        // wait for mapping calls before verifying
+        await untilAsserted {
+          courtSentencingMappingApiMockServer.verify(
+            1,
+            postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases")),
+          )
+        }
+
+        // doesn't retry
+        dpsCourtSentencingServer.verify(
+          1,
+          postRequestedFor(urlPathEqualTo("/court-case")),
+        )
+
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            org.mockito.kotlin.eq("from-nomis-sync-court-case-duplicate"),
+            check {
+              assertThat(it["migrationId"]).isNull()
+              assertThat(it["existingDpsCourtCaseId"]).isEqualTo(EXISTING_DPS_COURT_CASE_ID)
+              assertThat(it["duplicateDpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+              assertThat(it["existingNomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+              assertThat(it["duplicateNomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+            },
+            isNull(),
+          )
         }
       }
     }
