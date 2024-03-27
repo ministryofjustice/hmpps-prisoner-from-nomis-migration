@@ -17,12 +17,4 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
     )
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
-
-  /*suspend fun createMapping(courtCaseMappingDto: CourtCaseMappingDto) {
-    webClient.post()
-      .uri("/mapping/court-sentencing/court-cases")
-      .bodyValue(courtCaseMappingDto)
-      .retrieve()
-      .awaitBodilessEntity()
-  }*/
 }
