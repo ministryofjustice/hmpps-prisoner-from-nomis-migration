@@ -9,10 +9,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 
 @Service
 class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") private val webClient: WebClient) {
-  suspend fun getCourtCaseOrNullByNomisId(courtCase: Long): CourtCaseMappingDto? = webClient.get()
+  suspend fun getCourtCaseOrNullByNomisId(courtCaseId: Long): CourtCaseMappingDto? = webClient.get()
     .uri(
       "/mapping/court-sentencing/court-cases/nomis-court-case-id/{courtCase}",
-      courtCase,
+      courtCaseId,
     )
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
