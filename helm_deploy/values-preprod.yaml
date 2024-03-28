@@ -66,5 +66,7 @@ generic-prometheus-alerts:
     - "syscon-devs-preprod-migration_incidents_dlq"
     - "syscon-devs-preprod-migration_locations_queue"
     - "syscon-devs-preprod-migration_locations_dlq"
+    - "syscon-devs-preprod-migration_alerts_queue"
+    - "syscon-devs-preprod-migration_alerts_dlq"
   sqsAlertsOldestThreshold: 2
   sqsAlertsTotalMessagesThreshold: 1
