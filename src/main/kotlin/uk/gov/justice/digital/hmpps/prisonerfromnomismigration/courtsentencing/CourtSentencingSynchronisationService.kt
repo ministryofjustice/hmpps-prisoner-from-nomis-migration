@@ -11,7 +11,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEven
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
@@ -72,15 +72,17 @@ class CourtSentencingSynchronisationService(
     dpsCourtCaseResponse: CreateCourtCaseResponse,
     telemetry: Map<String, Any>,
   ): MappingResponse {
-    val mapping = CourtCaseMappingDto(
+    val mapping = CourtCaseAllMappingDto(
       dpsCourtCaseId = dpsCourtCaseResponse.courtCaseUuid,
       nomisCourtCaseId = nomisCourtCase.id,
-      mappingType = CourtCaseMappingDto.MappingType.DPS_CREATED,
+      mappingType = CourtCaseAllMappingDto.MappingType.DPS_CREATED,
+      courtCharges = emptyList(),
+      courtAppearances = emptyList(),
     )
     try {
       mappingApiService.createMapping(
         mapping,
-        object : ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseMappingDto>>() {},
+        object : ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseAllMappingDto>>() {},
       ).also {
         if (it.isError) {
           val duplicateErrorDetails = (it.errorResponse!!).moreInfo
@@ -109,10 +111,10 @@ class CourtSentencingSynchronisationService(
     }
   }
 
-  suspend fun retryCreateMapping(retryMessage: InternalMessage<CourtCaseMappingDto>) {
+  suspend fun retryCreateMapping(retryMessage: InternalMessage<CourtCaseAllMappingDto>) {
     mappingApiService.createMapping(
       retryMessage.body,
-      object : ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseMappingDto>>() {},
+      object : ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseAllMappingDto>>() {},
     ).also {
       telemetryClient.trackEvent(
         "court-case-mapping-created-synchronisation-success",

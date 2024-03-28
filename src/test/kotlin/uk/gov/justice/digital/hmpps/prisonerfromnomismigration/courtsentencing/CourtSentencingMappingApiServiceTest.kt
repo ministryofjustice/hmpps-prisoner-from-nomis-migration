@@ -19,13 +19,18 @@ import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
 
 private const val NOMIS_COURT_CASE_ID = 1234L
 private const val DPS_COURT_CASE_ID = "cc1"
 
 @SpringAPIServiceTest
-@Import(CourtSentencingMappingApiService::class, CourtSentencingConfiguration::class, CourtSentencingMappingApiMockServer::class)
+@Import(
+  CourtSentencingMappingApiService::class,
+  CourtSentencingConfiguration::class,
+  CourtSentencingMappingApiMockServer::class,
+)
 class CourtSentencingMappingApiServiceTest {
 
   @Autowired
@@ -97,12 +102,14 @@ class CourtSentencingMappingApiServiceTest {
       courtSentencingMappingApiMockServer.stubPostMapping()
 
       apiService.createMapping(
-        CourtCaseMappingDto(
+        CourtCaseAllMappingDto(
           nomisCourtCaseId = NOMIS_COURT_CASE_ID,
           dpsCourtCaseId = DPS_COURT_CASE_ID,
-          mappingType = CourtCaseMappingDto.MappingType.DPS_CREATED,
+          mappingType = CourtCaseAllMappingDto.MappingType.DPS_CREATED,
+          courtCharges = emptyList(),
+          courtAppearances = emptyList(),
         ),
-        object : ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseMappingDto>>() {},
+        object : ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseAllMappingDto>>() {},
       )
 
       courtSentencingMappingApiMockServer.verify(
@@ -115,12 +122,14 @@ class CourtSentencingMappingApiServiceTest {
       courtSentencingMappingApiMockServer.stubPostMapping()
 
       apiService.createMapping(
-        CourtCaseMappingDto(
+        CourtCaseAllMappingDto(
           nomisCourtCaseId = NOMIS_COURT_CASE_ID,
           dpsCourtCaseId = DPS_COURT_CASE_ID,
-          mappingType = CourtCaseMappingDto.MappingType.DPS_CREATED,
+          mappingType = CourtCaseAllMappingDto.MappingType.DPS_CREATED,
+          courtCharges = emptyList(),
+          courtAppearances = emptyList(),
         ),
-        object : ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseMappingDto>>() {},
+        object : ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseAllMappingDto>>() {},
       )
 
       courtSentencingMappingApiMockServer.verify(

@@ -91,6 +91,8 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
                 "existing" :  {
                   "dpsCourtCaseId": "$existingDpsCourtCaseId",
                   "nomisCourtCaseId": $nomisCourtCaseId,
+                  "courtAppearances": [],
+                  "courtCharges": [],
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",
                   "mappingType": "MIGRATED"
@@ -98,6 +100,8 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
                  "duplicate" : {
                   "dpsCourtCaseId": "$duplicateDpsCourtCaseId",
                   "nomisCourtCaseId": $nomisCourtCaseId,
+                  "courtAppearances": [],
+                  "courtCharges": [],
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",
                   "mappingType": "MIGRATED"
