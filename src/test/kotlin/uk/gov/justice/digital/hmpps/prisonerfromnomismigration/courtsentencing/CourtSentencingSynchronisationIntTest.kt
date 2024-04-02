@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.eq
+import org.mockito.kotlin.any
 import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
@@ -397,6 +399,183 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             },
             isNull(),
           )
+        }
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("OFFENDER_CASES-DELETED")
+  inner class CourtCaseDeleted {
+
+    @Nested
+    @DisplayName("When court case was deleted in NOMIS")
+    inner class NomisDeleted {
+
+      @Nested
+      @DisplayName("When mapping does not exist")
+      inner class NoMapping {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            courtCaseEvent(
+              eventType = "OFFENDER_CASES-DELETED",
+            ),
+          )
+        }
+
+        @Test
+        fun `the event is ignored`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("court-case-synchronisation-deleted-ignored"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+              },
+              isNull(),
+            )
+          }
+          // will not create a court case in DPS
+          dpsCourtSentencingServer.verify(0, postRequestedFor(anyUrl()))
+        }
+      }
+
+      @Nested
+      @DisplayName("When mapping already exists")
+      inner class MappingExists {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetByNomisId(
+            nomisCourtCaseId = NOMIS_COURT_CASE_ID,
+            dpsCourtCaseId = DPS_COURT_CASE_ID,
+            mapping = CourtCaseMappingDto(
+              nomisCourtCaseId = NOMIS_COURT_CASE_ID,
+              dpsCourtCaseId = DPS_COURT_CASE_ID,
+            ),
+          )
+          courtSentencingMappingApiMockServer.stubDeleteCourtCaseMapping(dpsCourtCaseId = DPS_COURT_CASE_ID)
+          dpsCourtSentencingServer.stubDeleteCourtCase(DPS_COURT_CASE_ID)
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            courtCaseEvent(
+              eventType = "OFFENDER_CASES-DELETED",
+              bookingId = NOMIS_BOOKING_ID,
+              courtCaseId = NOMIS_COURT_CASE_ID,
+              offenderNo = OFFENDER_ID_DISPLAY,
+            ),
+          )
+        }
+
+        @Test
+        fun `will delete a court case in DPS`() {
+          await untilAsserted {
+            dpsCourtSentencingServer.verify(
+              1,
+              deleteRequestedFor(urlPathEqualTo("/court-case/$DPS_COURT_CASE_ID")),
+              // TODO DPS to implement this endpoint
+            )
+          }
+        }
+
+        @Test
+        fun `will delete mapping between DPS and NOMIS ids`() {
+          await untilAsserted {
+            courtSentencingMappingApiMockServer.verify(
+              1,
+              deleteRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases/dps-court-case-id/$DPS_COURT_CASE_ID")),
+            )
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("court-case-synchronisation-deleted-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+                assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("When mapping fails to be deleted")
+      inner class MappingCourtCaseDeleteFails {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetByNomisId(
+            nomisCourtCaseId = NOMIS_COURT_CASE_ID,
+            dpsCourtCaseId = DPS_COURT_CASE_ID,
+            mapping = CourtCaseMappingDto(
+              nomisCourtCaseId = NOMIS_COURT_CASE_ID,
+              dpsCourtCaseId = DPS_COURT_CASE_ID,
+            ),
+          )
+
+          courtSentencingMappingApiMockServer.stubDeleteCourtCaseMappingByDpsId(status = HttpStatus.INTERNAL_SERVER_ERROR)
+          dpsCourtSentencingServer.stubDeleteCourtCase(DPS_COURT_CASE_ID)
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            courtCaseEvent(
+              eventType = "OFFENDER_CASES-DELETED",
+              bookingId = NOMIS_BOOKING_ID,
+              courtCaseId = NOMIS_COURT_CASE_ID,
+              offenderNo = OFFENDER_ID_DISPLAY,
+            ),
+          )
+        }
+
+        @Test
+        fun `will delete a court case in DPS`() {
+          await untilAsserted {
+            dpsCourtSentencingServer.verify(
+              1,
+              deleteRequestedFor(urlPathEqualTo("/court-case/$DPS_COURT_CASE_ID")),
+              // TODO DPS to implement this endpoint
+            )
+          }
+        }
+
+        @Test
+        fun `will try to delete Alert mapping once and record failure`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("court-case-mapping-deleted-failed"),
+              any(),
+              isNull(),
+            )
+
+            courtSentencingMappingApiMockServer.verify(
+              1,
+              deleteRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases/dps-court-case-id/$DPS_COURT_CASE_ID")),
+            )
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("court-case-synchronisation-deleted-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+                assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+              },
+              isNull(),
+            )
+          }
         }
       }
     }

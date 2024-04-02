@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-03-06.3845.8293b3a"
+    "version": "2024-04-02.3978.c7633c5"
   },
   "servers": [
     {
@@ -96,6 +96,44 @@
           },
           "409": {
             "description": "One of the punishment mappings already exist"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/court-sentencing/court-charges": {
+      "put": {
+        "tags": [
+          "court-sentencing-mapping-resource"
+        ],
+        "summary": "Creates a new set of court charge mapping and deletes ones no longer required",
+        "description": "Creates a record of a DPS court charge id and NOMIS court charge id. The ones that require deleting are removed by NOMIS id. Requires NOMIS_COURT_SENTENCING",
+        "operationId": "courtChargeBatchUpdateMappings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CourtChargeBatchUpdateMappingDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Mapping entries created"
+          },
+          "409": {
+            "description": "One of the court charge mappings already exist"
           },
           "401": {
             "description": "Unauthorized to access this endpoint",
@@ -2195,6 +2233,53 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "punishments-mapping-resource"
+        ],
+        "summary": "Delete mapping",
+        "description": "Deletes a mapping by DPS punishment id. Requires role NOMIS_ADJUDICATIONS",
+        "operationId": "deleteMappingByDpsId",
+        "parameters": [
+          {
+            "name": "dpsPunishmentId",
+            "in": "path",
+            "description": "DPS Punishment Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "DPS Punishment Id",
+              "example": 12345
+            },
+            "example": 12345
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Record deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied to this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/mapping/non-associations/non-association-id/{nonAssociationId}": {
@@ -3966,6 +4051,70 @@
         }
       }
     },
+    "/mapping/alerts/migration-id/{migrationId}": {
+      "get": {
+        "tags": [
+          "alerts-mapping-resource"
+        ],
+        "summary": "Get paged mappings by migration id",
+        "description": "Retrieve all mappings of type 'MIGRATED' for the given migration id (identifies a single migration run). Results are paged.",
+        "operationId": "getMappingsByMigrationId_1",
+        "parameters": [
+          {
+            "name": "pageRequest",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          },
+          {
+            "name": "migrationId",
+            "in": "path",
+            "description": "Migration Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Migration Id",
+              "example": "2020-03-24T12:00:00"
+            },
+            "example": "2020-03-24T12:00:00"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping page returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageAlertMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/alerts/dps-alert-id/{dpsAlertId}": {
       "get": {
         "tags": [
@@ -4011,6 +4160,53 @@
           },
           "404": {
             "description": "Id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "alerts-mapping-resource"
+        ],
+        "summary": "Deletes mapping",
+        "description": "Deletes a mapping by DPS id. Requires role NOMIS_ALERTS",
+        "operationId": "deleteMappingByDpsId_2",
+        "parameters": [
+          {
+            "name": "dpsAlertId",
+            "in": "path",
+            "description": "DPS alert id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "DPS alert id",
+              "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+            },
+            "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Mapping Deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint",
             "content": {
               "application/json": {
                 "schema": {
@@ -4654,6 +4850,104 @@
         }
       }
     },
+    "/mapping/court-sentencing/court-cases/nomis-court-case-id/{nomisCourtCaseId}": {
+      "delete": {
+        "tags": [
+          "court-sentencing-mapping-resource"
+        ],
+        "summary": "Deletes court case mapping",
+        "description": "Deletes a court case mapping by NOMIS id. Requires role NOMIS_COURT_SENTENCING",
+        "operationId": "deleteMappingByNomisId",
+        "parameters": [
+          {
+            "name": "nomisCourtCaseId",
+            "in": "path",
+            "description": "NOMIS court case id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "NOMIS court case id",
+              "example": 33
+            },
+            "example": 33
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Mapping Deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/court-sentencing/court-cases/dps-court-case-id/{dpsCourtCaseId}": {
+      "delete": {
+        "tags": [
+          "court-sentencing-mapping-resource"
+        ],
+        "summary": "Deletes court case mapping",
+        "description": "Deletes a court case mapping by DPS id. Requires role NOMIS_COURT_SENTENCING",
+        "operationId": "deleteMappingByDpsId_1",
+        "parameters": [
+          {
+            "name": "dpsCourtCaseId",
+            "in": "path",
+            "description": "DPS court case id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "DPS court case id",
+              "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+            },
+            "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Mapping Deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/appointments/appointment-instance-id/{id}": {
       "delete": {
         "tags": [
@@ -4881,16 +5175,99 @@
             "format": "int32"
           },
           "errorCode": {
-            "type": "integer",
-            "format": "int32"
+            "type": "string"
           },
           "userMessage": {
             "type": "string"
           },
           "developerMessage": {
             "type": "string"
+          },
+          "moreInfo": {
+            "type": "string"
           }
         }
+      },
+      "CourtChargeBatchUpdateMappingDto": {
+        "required": [
+          "courtChargesToCreate",
+          "courtChargesToDelete"
+        ],
+        "type": "object",
+        "properties": {
+          "courtChargesToCreate": {
+            "type": "array",
+            "description": "Court Charge mappings to create",
+            "items": {
+              "$ref": "#/components/schemas/CourtChargeMappingDto"
+            }
+          },
+          "courtChargesToDelete": {
+            "type": "array",
+            "description": "Court Charge mappings to delete",
+            "items": {
+              "$ref": "#/components/schemas/CourtChargeNomisIdDto"
+            }
+          }
+        },
+        "description": "Batch of Court Charge mappings to create and delete"
+      },
+      "CourtChargeMappingDto": {
+        "required": [
+          "dpsCourtChargeId",
+          "nomisCourtChargeId"
+        ],
+        "type": "object",
+        "properties": {
+          "nomisCourtChargeId": {
+            "type": "integer",
+            "description": "NOMIS court charge id",
+            "format": "int64",
+            "example": 123456
+          },
+          "dpsCourtChargeId": {
+            "type": "string",
+            "description": "DPS court charge id",
+            "example": "123456"
+          },
+          "label": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": "string",
+            "description": "Label (a timestamp for migrated ids)"
+          },
+          "mappingType": {
+            "type": "string",
+            "description": "Mapping type",
+            "default": "DPS_CREATED",
+            "enum": [
+              "MIGRATED",
+              "DPS_CREATED"
+            ]
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "Date-time the mapping was created",
+            "example": "2021-07-05T10:35:17"
+          }
+        },
+        "description": "Court Charge mapping"
+      },
+      "CourtChargeNomisIdDto": {
+        "required": [
+          "nomisCourtChargeId"
+        ],
+        "type": "object",
+        "properties": {
+          "nomisCourtChargeId": {
+            "type": "integer",
+            "description": "NOMIS court charge id",
+            "format": "int64",
+            "example": 123456
+          }
+        },
+        "description": "ID of mapping identified by the NOMIS id for a Court Charge mapping"
       },
       "ActivityMappingDto": {
         "required": [
@@ -5063,26 +5440,99 @@
       },
       "DuplicateMappingErrorResponse": {
         "required": [
-          "status"
+          "errorCode",
+          "moreInfo",
+          "status",
+          "userMessage"
         ],
         "type": "object",
         "properties": {
           "moreInfo": {
             "$ref": "#/components/schemas/DuplicateErrorContentObject"
           },
+          "status": {
+            "type": "string",
+            "enum": [
+              "100 CONTINUE",
+              "101 SWITCHING_PROTOCOLS",
+              "102 PROCESSING",
+              "103 EARLY_HINTS",
+              "103 CHECKPOINT",
+              "200 OK",
+              "201 CREATED",
+              "202 ACCEPTED",
+              "203 NON_AUTHORITATIVE_INFORMATION",
+              "204 NO_CONTENT",
+              "205 RESET_CONTENT",
+              "206 PARTIAL_CONTENT",
+              "207 MULTI_STATUS",
+              "208 ALREADY_REPORTED",
+              "226 IM_USED",
+              "300 MULTIPLE_CHOICES",
+              "301 MOVED_PERMANENTLY",
+              "302 FOUND",
+              "302 MOVED_TEMPORARILY",
+              "303 SEE_OTHER",
+              "304 NOT_MODIFIED",
+              "305 USE_PROXY",
+              "307 TEMPORARY_REDIRECT",
+              "308 PERMANENT_REDIRECT",
+              "400 BAD_REQUEST",
+              "401 UNAUTHORIZED",
+              "402 PAYMENT_REQUIRED",
+              "403 FORBIDDEN",
+              "404 NOT_FOUND",
+              "405 METHOD_NOT_ALLOWED",
+              "406 NOT_ACCEPTABLE",
+              "407 PROXY_AUTHENTICATION_REQUIRED",
+              "408 REQUEST_TIMEOUT",
+              "409 CONFLICT",
+              "410 GONE",
+              "411 LENGTH_REQUIRED",
+              "412 PRECONDITION_FAILED",
+              "413 PAYLOAD_TOO_LARGE",
+              "413 REQUEST_ENTITY_TOO_LARGE",
+              "414 URI_TOO_LONG",
+              "414 REQUEST_URI_TOO_LONG",
+              "415 UNSUPPORTED_MEDIA_TYPE",
+              "416 REQUESTED_RANGE_NOT_SATISFIABLE",
+              "417 EXPECTATION_FAILED",
+              "418 I_AM_A_TEAPOT",
+              "419 INSUFFICIENT_SPACE_ON_RESOURCE",
+              "420 METHOD_FAILURE",
+              "421 DESTINATION_LOCKED",
+              "422 UNPROCESSABLE_ENTITY",
+              "423 LOCKED",
+              "424 FAILED_DEPENDENCY",
+              "425 TOO_EARLY",
+              "426 UPGRADE_REQUIRED",
+              "428 PRECONDITION_REQUIRED",
+              "429 TOO_MANY_REQUESTS",
+              "431 REQUEST_HEADER_FIELDS_TOO_LARGE",
+              "451 UNAVAILABLE_FOR_LEGAL_REASONS",
+              "500 INTERNAL_SERVER_ERROR",
+              "501 NOT_IMPLEMENTED",
+              "502 BAD_GATEWAY",
+              "503 SERVICE_UNAVAILABLE",
+              "504 GATEWAY_TIMEOUT",
+              "505 HTTP_VERSION_NOT_SUPPORTED",
+              "506 VARIANT_ALSO_NEGOTIATES",
+              "507 INSUFFICIENT_STORAGE",
+              "508 LOOP_DETECTED",
+              "509 BANDWIDTH_LIMIT_EXCEEDED",
+              "510 NOT_EXTENDED",
+              "511 NETWORK_AUTHENTICATION_REQUIRED"
+            ]
+          },
+          "errorCode": {
+            "type": "integer",
+            "format": "int32"
+          },
           "userMessage": {
             "type": "string"
           },
           "developerMessage": {
             "type": "string"
-          },
-          "status": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "errorCode": {
-            "type": "integer",
-            "format": "int32"
           }
         }
       },
@@ -5502,48 +5952,6 @@
           }
         },
         "description": "Court case mapping including child entity mapping"
-      },
-      "CourtChargeMappingDto": {
-        "required": [
-          "dpsCourtChargeId",
-          "nomisCourtChargeId"
-        ],
-        "type": "object",
-        "properties": {
-          "nomisCourtChargeId": {
-            "type": "integer",
-            "description": "NOMIS court charge id",
-            "format": "int64",
-            "example": 123456
-          },
-          "dpsCourtChargeId": {
-            "type": "string",
-            "description": "DPS court charge id",
-            "example": "123456"
-          },
-          "label": {
-            "maxLength": 20,
-            "minLength": 0,
-            "type": "string",
-            "description": "Label (a timestamp for migrated ids)"
-          },
-          "mappingType": {
-            "type": "string",
-            "description": "Mapping type",
-            "default": "DPS_CREATED",
-            "enum": [
-              "MIGRATED",
-              "DPS_CREATED"
-            ]
-          },
-          "whenCreated": {
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
-            "type": "string",
-            "description": "Date-time the mapping was created",
-            "example": "2021-07-05T10:35:17"
-          }
-        },
-        "description": "Court Charge mapping"
       },
       "CourtCaseMapping": {
         "required": [
@@ -6038,11 +6446,111 @@
           }
         },
         "description": "Court case mapping"
+      },
+      "PageAlertMappingDto": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AlertMappingDto"
+            }
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PageableObject": {
+        "type": "object",
+        "properties": {
+          "offset": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sort": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "paged": {
+            "type": "boolean"
+          },
+          "unpaged": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SortObject": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string"
+          },
+          "nullHandling": {
+            "type": "string"
+          },
+          "ascending": {
+            "type": "boolean"
+          },
+          "property": {
+            "type": "string"
+          },
+          "ignoreCase": {
+            "type": "boolean"
+          }
+        }
       }
     },
     "securitySchemes": {
       "bearer-jwt": {
         "type": "http",
+        "name": "Authorization",
+        "in": "header",
         "scheme": "bearer",
         "bearerFormat": "JWT"
       }

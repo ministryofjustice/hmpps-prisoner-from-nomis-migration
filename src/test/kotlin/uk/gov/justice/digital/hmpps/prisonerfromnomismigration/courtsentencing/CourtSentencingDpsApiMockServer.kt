@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import org.junit.jupiter.api.extension.AfterAllCallback
@@ -52,6 +53,19 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withStatus(201)
             .withHeader("Content-Type", "application/json")
             .withBody(CourtSentencingDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubDeleteCourtCase(
+    courtCaseId: String = UUID.randomUUID().toString(),
+  ) {
+    stubFor(
+      delete("/court-case/$courtCaseId")
+        .willReturn(
+          aResponse()
+            .withStatus(204)
+            .withHeader("Content-Type", "application/json"),
         ),
     )
   }
