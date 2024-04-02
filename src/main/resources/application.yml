@@ -136,7 +136,7 @@ complete-check:
 
 alerts:
   complete-check:
-    delay-seconds: 60
+    delay-seconds: 180
     count: 9
 
 azure:

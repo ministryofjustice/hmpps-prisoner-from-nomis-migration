@@ -65,9 +65,10 @@ class AlertsMigrationService(
     log.info("attempting to migrate ${context.body}")
     val nomisBookingId = context.body.bookingId
     val nomisAlertSequence = context.body.alertSequence
+    val offenderNo = context.body.offenderNo
 
     alertsMappingService.getOrNullByNomisId(nomisBookingId, nomisAlertSequence)?.run {
-      log.info("Will not migrate the alert since it is migrated already, NOMIS booking id is $nomisBookingId, sequence is $nomisAlertSequence, DPS Alert id is ${this.dpsAlertId} as part migration ${this.label ?: "NONE"} (${this.mappingType})")
+      log.info("Will not migrate the alert since it is migrated already, NOMIS booking id is $nomisBookingId for $offenderNo, sequence is $nomisAlertSequence, DPS Alert id is ${this.dpsAlertId} as part migration ${this.label ?: "NONE"} (${this.mappingType})")
     } ?: run {
       val nomisAlert = alertsNomisService.getAlert(nomisBookingId, nomisAlertSequence)
       alertsDpsService.migrateAlert(nomisAlert.toDPSMigratedAlert(context.body.offenderNo))?.also {
@@ -82,6 +83,7 @@ class AlertsMigrationService(
           mapOf(
             "nomisBookingId" to nomisBookingId,
             "nomisAlertSequence" to nomisAlertSequence,
+            "offenderNo" to offenderNo,
             "migrationId" to context.migrationId,
             "dpsAlertId" to it.alertUuid.toString(),
           ),
@@ -92,6 +94,7 @@ class AlertsMigrationService(
           mapOf(
             "nomisBookingId" to nomisBookingId,
             "nomisAlertSequence" to nomisAlertSequence,
+            "offenderNo" to offenderNo,
             "migrationId" to context.migrationId,
           ),
         )
