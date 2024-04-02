@@ -93,7 +93,7 @@ class AlertsMigrationIntTest : SqsIntegrationTestBase() {
       inner class WhenSomeHaveAlreadyBeenMigrated {
         @BeforeEach
         fun setUp() {
-          alertsNomisApiMockServer.stubGetAlertIds(totalElements = 2, pageSize = 10, bookingId = 1234567)
+          alertsNomisApiMockServer.stubGetAlertIds(totalElements = 2, pageSize = 10, bookingId = 1234567, offenderNo = "A1234KT")
           alertsMappingApiMockServer.stubGetByNomisId(bookingId = 1234567, alertSequence = 1)
           alertsNomisApiMockServer.stubGetAlert(bookingId = 1234567, alertSequence = 2)
           dpsAlertsServer.stubMigrateAlert(response = dpsAlert().copy(alertUuid = UUID.fromString("00000000-0000-0000-0000-000000000001")))
@@ -113,6 +113,7 @@ class AlertsMigrationIntTest : SqsIntegrationTestBase() {
             check {
               assertThat(it).containsEntry("nomisBookingId", "1234567")
               assertThat(it).containsEntry("nomisAlertSequence", "2")
+              assertThat(it).containsEntry("offenderNo", "A1234KT")
             },
             isNull(),
           )
