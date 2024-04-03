@@ -20,6 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationMinutes
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.toMigrateUpsertNomisIncident
 
 @Service
 class IncidentsMigrationService(
@@ -73,10 +74,10 @@ class IncidentsMigrationService(
       }
       ?: run {
         val nomisIncidentResponse = nomisApiService.getIncident(nomisIncidentId)
-        val migratedIncident = incidentsService.migrateIncident(nomisIncidentResponse)
+        val migratedIncident = incidentsService.upsertIncident(nomisIncidentResponse.toMigrateUpsertNomisIncident())
           .also {
             createIncidentMapping(
-              incidentId = it.id,
+              incidentId = it.id.toString(),
               nomisIncidentId = nomisIncidentId,
               context = context,
             )
@@ -85,7 +86,7 @@ class IncidentsMigrationService(
           "${MigrationType.INCIDENTS.telemetryName}-migration-entity-migrated",
           mapOf(
             "nomisIncidentId" to nomisIncidentId.toString(),
-            "incidentId" to migratedIncident.id,
+            "incidentId" to migratedIncident.id.toString(),
             "migrationId" to migrationId,
           ),
           null,
