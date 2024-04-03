@@ -33,6 +33,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
+import java.util.AbstractMap.SimpleEntry
 
 private const val NOMIS_COURT_CASE_ID = 1234L
 private const val DPS_COURT_CASE_ID = "cc1"
@@ -153,6 +154,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
                 assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
                 assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+                assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
               },
               isNull(),
             )

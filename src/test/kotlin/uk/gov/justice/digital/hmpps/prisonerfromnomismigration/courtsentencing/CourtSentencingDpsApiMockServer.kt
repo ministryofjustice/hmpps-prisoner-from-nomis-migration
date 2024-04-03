@@ -68,7 +68,7 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       put("/court-case/$courtCaseId")
         .willReturn(
           aResponse()
-            .withStatus(201)
+            .withStatus(200)
             .withHeader("Content-Type", "application/json")
             .withBody(CourtSentencingDpsApiExtension.objectMapper.writeValueAsString(response)),
         ),
