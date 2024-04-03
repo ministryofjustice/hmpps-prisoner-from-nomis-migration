@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
@@ -110,6 +111,27 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
               }""",
             ),
         ),
+    )
+  }
+
+  fun stubDeleteCourtCaseMapping(dpsCourtCaseId: String) {
+    mappingApi.stubFor(
+      delete("/mapping/court-sentencing/court-cases/dps-court-case-id/$dpsCourtCaseId").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
+  fun stubDeleteCourtCaseMappingByDpsId(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      delete(urlPathMatching("/mapping/court-sentencing/court-cases/dps-court-case-id/.*")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
     )
   }
 

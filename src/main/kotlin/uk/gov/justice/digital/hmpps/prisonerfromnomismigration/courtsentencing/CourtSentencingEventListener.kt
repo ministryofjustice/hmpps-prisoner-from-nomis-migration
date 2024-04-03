@@ -39,6 +39,7 @@ class CourtSentencingEventListener(
           if (eventFeatureSwitch.isEnabled(eventType)) {
             when (eventType) {
               "OFFENDER_CASES-INSERTED" -> courtSentencingSynchronisationService.nomisCourtCaseInserted((sqsMessage.Message.fromJson()))
+              "OFFENDER_CASES-DELETED" -> courtSentencingSynchronisationService.nomisCourtCaseDeleted((sqsMessage.Message.fromJson()))
 
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
@@ -58,7 +59,7 @@ class CourtSentencingEventListener(
     objectMapper.readValue(this)
 }
 
-data class CourtCaseInsertedEvent(
+data class CourtCaseEvent(
   val courtCaseId: Long,
   val offenderIdDisplay: String,
   val bookingId: Long,

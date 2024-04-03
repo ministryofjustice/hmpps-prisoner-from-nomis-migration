@@ -29,7 +29,7 @@ class CourtSentencingSynchronisationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  suspend fun nomisCourtCaseInserted(event: CourtCaseInsertedEvent) {
+  suspend fun nomisCourtCaseInserted(event: CourtCaseEvent) {
     val telemetry =
       mapOf(
         "nomisCourtCaseId" to event.courtCaseId,
@@ -65,6 +65,36 @@ class CourtSentencingSynchronisationService(
         }
       }
     }
+  }
+
+  suspend fun nomisCourtCaseDeleted(event: CourtCaseEvent) {
+    val telemetry =
+      mapOf(
+        "nomisCourtCaseId" to event.courtCaseId,
+        "offenderNo" to event.offenderIdDisplay,
+        "nomisBookingId" to event.bookingId,
+      )
+    val mapping = mappingApiService.getCourtCaseOrNullByNomisId(event.courtCaseId)
+    if (mapping == null) {
+      telemetryClient.trackEvent(
+        "court-case-synchronisation-deleted-ignored",
+        telemetry,
+      )
+    } else {
+      dpsApiService.deleteCourtCase(courtCaseId = mapping.dpsCourtCaseId)
+      tryToDeleteCourtCaseMapping(mapping.dpsCourtCaseId)
+      telemetryClient.trackEvent(
+        "court-case-synchronisation-deleted-success",
+        telemetry + ("dpsCourtCaseId" to mapping.dpsCourtCaseId),
+      )
+    }
+  }
+
+  private suspend fun tryToDeleteCourtCaseMapping(dpsCourtCaseId: String) = runCatching {
+    mappingApiService.deleteCourtCaseMappingByDpsId(dpsCourtCaseId)
+  }.onFailure { e ->
+    telemetryClient.trackEvent("court-case-mapping-deleted-failed", mapOf("dpsCourtCaseId" to dpsCourtCaseId))
+    log.warn("Unable to delete mapping for court case $dpsCourtCaseId. Please delete manually", e)
   }
 
   private suspend fun tryToCreateMapping(
