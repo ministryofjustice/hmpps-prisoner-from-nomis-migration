@@ -18,6 +18,14 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .retrieve()
       .awaitBody()
 
+  suspend fun updateCourtCase(courtCaseId: String, courtCase: CreateCourtCase): CreateCourtCaseResponse =
+    webClient
+      .put()
+      .uri("/court-case/{courtCaseId}", courtCaseId)
+      .bodyValue(courtCase)
+      .retrieve()
+      .awaitBody()
+
   suspend fun deleteCourtCase(courtCaseId: String) =
     webClient
       .delete()

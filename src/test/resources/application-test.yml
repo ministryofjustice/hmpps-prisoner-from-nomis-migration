@@ -50,6 +50,8 @@ alerts:
   page:
     size: 10
   has-migrated-data: true
+court.sentencing:
+  has-migrated-court-case-data: true
 
 spring:
   r2dbc:

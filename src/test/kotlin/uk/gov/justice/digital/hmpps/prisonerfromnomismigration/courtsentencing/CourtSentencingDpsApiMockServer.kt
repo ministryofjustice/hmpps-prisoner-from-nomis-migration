@@ -6,6 +6,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.put
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
@@ -48,6 +49,23 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   ) {
     stubFor(
       post("/court-case")
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader("Content-Type", "application/json")
+            .withBody(CourtSentencingDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubPutCourtCaseForUpdate(
+    courtCaseId: String = UUID.randomUUID().toString(),
+    response: CreateCourtCaseResponse = CreateCourtCaseResponse(
+      courtCaseUuid = courtCaseId,
+    ),
+  ) {
+    stubFor(
+      put("/court-case/$courtCaseId")
         .willReturn(
           aResponse()
             .withStatus(201)

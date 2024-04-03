@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
@@ -24,6 +25,8 @@ class CourtSentencingSynchronisationService(
   private val dpsApiService: CourtSentencingDpsApiService,
   private val queueService: SynchronisationQueueService,
   private val telemetryClient: TelemetryClient,
+  @Value("\${court.sentencing.has-migrated-court-case-data:false}")
+  private val hasMigratedAllData: Boolean,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -32,9 +35,9 @@ class CourtSentencingSynchronisationService(
   suspend fun nomisCourtCaseInserted(event: CourtCaseEvent) {
     val telemetry =
       mapOf(
-        "nomisCourtCaseId" to event.courtCaseId,
+        "nomisCourtCaseId" to event.courtCaseId.toString(),
         "offenderNo" to event.offenderIdDisplay,
-        "nomisBookingId" to event.bookingId,
+        "nomisBookingId" to event.bookingId.toString(),
       )
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent("court-case-synchronisation-created-skipped", telemetry)
@@ -47,7 +50,7 @@ class CourtSentencingSynchronisationService(
           telemetry + ("dpsCourtCaseId" to mapping.dpsCourtCaseId),
         )
       } ?: let {
-        dpsApiService.createCourtCase(nomisCourtCase.toDPsCourtCase(event.offenderIdDisplay)).run {
+        dpsApiService.createCourtCase(nomisCourtCase.toDpsCourtCase(event.offenderIdDisplay)).run {
           tryToCreateMapping(
             nomisCourtCase = nomisCourtCase,
             dpsCourtCaseResponse = this,
@@ -63,6 +66,36 @@ class CourtSentencingSynchronisationService(
             )
           }
         }
+      }
+    }
+  }
+
+  suspend fun nomisCourtCaseUpdated(event: CourtCaseEvent) {
+    val telemetry =
+      mapOf("nomisBookingId" to event.bookingId.toString(), "nomisCourtCaseId" to event.courtCaseId.toString(), "offenderNo" to event.offenderIdDisplay)
+    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      telemetryClient.trackEvent("court-case-synchronisation-updated-skipped", telemetry)
+    } else {
+      val mapping = mappingApiService.getCourtCaseOrNullByNomisId(event.courtCaseId)
+      if (mapping == null) {
+        telemetryClient.trackEvent(
+          "court-case-synchronisation-updated-failed",
+          telemetry,
+        )
+        if (hasMigratedAllData) {
+          // after migration has run this should not happen so make sure this message goes in DLQ
+          throw IllegalStateException("Received COURT_CASE-UPDATED for court-case that has never been created")
+        }
+      } else {
+        val nomisCourtCase = nomisApiService.getCourtCase(offenderNo = event.offenderIdDisplay, courtCaseId = event.courtCaseId)
+        dpsApiService.updateCourtCase(
+          courtCaseId = mapping.dpsCourtCaseId,
+          nomisCourtCase.toDpsCourtCase(offenderNo = event.offenderIdDisplay),
+        )
+        telemetryClient.trackEvent(
+          "court-case-synchronisation-updated-success",
+          telemetry + ("dpsCourtCaseId" to mapping.dpsCourtCaseId),
+        )
       }
     }
   }
