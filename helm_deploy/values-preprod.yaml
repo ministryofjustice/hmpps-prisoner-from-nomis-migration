@@ -15,8 +15,7 @@ generic-service:
     API_BASE_URL_MAPPING: https://nomis-sync-prisoner-mapping-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_SENTENCING: https://adjustments-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_ACTIVITIES: https://activities-api-preprod.prison.service.justice.gov.uk
-    # currently set to self for a mock API until real API is ready
-    API_BASE_URL_INCIDENTS: https://prisoner-nomis-migration-preprod.hmpps.service.justice.gov.uk
+    API_BASE_URL_INCIDENTS: https://incident-reporting-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_LOCATIONS: https://locations-inside-prison-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_ADJUDICATIONS: https://manage-adjudications-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_ALERTS: https://alerts-api-preprod.hmpps.service.justice.gov.uk
