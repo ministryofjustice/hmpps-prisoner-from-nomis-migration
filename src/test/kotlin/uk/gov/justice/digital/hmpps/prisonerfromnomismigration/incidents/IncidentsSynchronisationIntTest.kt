@@ -8,7 +8,6 @@ import com.github.tomakehurst.wiremock.client.WireMock.exactly
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
-import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
@@ -36,7 +35,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingA
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 
-private const val INCIDENT_ID = "4321"
+private const val INCIDENT_ID = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42"
 private const val NOMIS_INCIDENT_ID = 1234L
 private const val NOMIS_API_URL = "/incidents/$NOMIS_INCIDENT_ID"
 private const val NOMIS_MAPPING_API_URL = "$INCIDENTS_GET_MAPPING_URL/$NOMIS_INCIDENT_ID"
@@ -84,7 +83,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun setUp() {
           nomisApi.stubGetIncident()
           mappingApi.stubGetAnyIncidentNotFound()
-          incidentsApi.stubIncidentForSync()
+          incidentsApi.stubIncidentUpsert()
           mappingApi.stubMappingCreate(INCIDENTS_CREATE_MAPPING_URL)
 
           awsSqsIncidentsOffenderEventsClient.sendMessage(
@@ -110,7 +109,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will create the incident in the incidents service`() {
           await untilAsserted {
-            incidentsApi.verify(putRequestedFor(urlPathEqualTo("/incidents/sync")))
+            incidentsApi.verify(postRequestedFor(urlPathEqualTo("/sync/upsert")))
           }
         }
 
@@ -175,7 +174,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun setUp() {
           nomisApi.stubGetIncident()
           mappingApi.stubGetIncident()
-          incidentsApi.stubIncidentForSync()
+          incidentsApi.stubIncidentUpsert()
 
           awsSqsIncidentsOffenderEventsClient.sendMessage(
             incidentsQueueOffenderEventsUrl,
@@ -200,7 +199,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will send the update to the incident in the incidents service`() {
           await untilAsserted {
-            incidentsApi.verify(putRequestedFor(urlPathEqualTo("/incidents/sync")))
+            incidentsApi.verify(postRequestedFor(urlPathEqualTo("/sync/upsert")))
           }
         }
 
@@ -229,13 +228,13 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @Nested
       inner class WhenDuplicateMapping {
-        private val duplicateIncidentId = "9876"
+        private val duplicateIncidentId = "ddd596da-8eab-4d2a-a026-bc5afb8acda0"
 
         @Test
         internal fun `it will not retry after a 409 (duplicate incident written to Incident API)`() {
           nomisApi.stubGetIncident()
           mappingApi.stubGetAnyIncidentNotFound()
-          incidentsApi.stubIncidentForSync(duplicateIncidentId)
+          incidentsApi.stubIncidentUpsert(duplicateIncidentId)
           mappingApi.stubIncidentMappingCreateConflict()
 
           awsSqsIncidentsOffenderEventsClient.sendMessage(
@@ -247,10 +246,10 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilCallTo { mappingApi.createMappingCount(INCIDENTS_CREATE_MAPPING_URL) } matches { it == 1 }
 
           // check that one incident is created
-          assertThat(incidentsApi.createIncidentSynchronisationCount()).isEqualTo(1)
+          assertThat(incidentsApi.createIncidentUpsertCount()).isEqualTo(1)
 
           // doesn't retry
-          mappingApi.verifyCreateMappingIncidentIds(arrayOf(duplicateIncidentId.toLong()), times = 1)
+          mappingApi.verifyCreateMappingIncidentId(incidentId = duplicateIncidentId)
 
           await untilAsserted {
             verify(telemetryClient).trackEvent(
@@ -311,7 +310,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun setUp() {
           nomisApi.stubGetIncident()
           mappingApi.stubGetAnyIncidentNotFound()
-          incidentsApi.stubIncidentForSync()
+          incidentsApi.stubIncidentUpsert()
           mappingApi.stubMappingCreate(INCIDENTS_CREATE_MAPPING_URL)
 
           awsSqsIncidentsOffenderEventsClient.sendMessage(
@@ -337,7 +336,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will create the incident in the incidents service`() {
           await untilAsserted {
-            incidentsApi.verify(putRequestedFor(urlPathEqualTo("/incidents/sync")))
+            incidentsApi.verify(postRequestedFor(urlPathEqualTo("/sync/upsert")))
           }
         }
 
@@ -402,7 +401,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun setUp() {
           nomisApi.stubGetIncident()
           mappingApi.stubGetIncident()
-          incidentsApi.stubIncidentForSync()
+          incidentsApi.stubIncidentUpsert()
 
           awsSqsIncidentsOffenderEventsClient.sendMessage(
             incidentsQueueOffenderEventsUrl,
@@ -427,7 +426,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will send the update to the incident in the incidents service`() {
           await untilAsserted {
-            incidentsApi.verify(putRequestedFor(urlPathEqualTo("/incidents/sync")))
+            incidentsApi.verify(postRequestedFor(urlPathEqualTo("/sync/upsert")))
           }
         }
 
@@ -456,13 +455,13 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @Nested
       inner class WhenDuplicateMapping {
-        private val duplicateIncidentId = "9876"
+        private val duplicateIncidentId = "ddd596da-8eab-4d2a-a026-bc5afb8acda0"
 
         @Test
         internal fun `it will not retry after a 409 (duplicate incident written to Incident API)`() {
           nomisApi.stubGetIncident()
           mappingApi.stubGetAnyIncidentNotFound()
-          incidentsApi.stubIncidentForSync(duplicateIncidentId)
+          incidentsApi.stubIncidentUpsert(duplicateIncidentId)
           mappingApi.stubIncidentMappingCreateConflict()
 
           awsSqsIncidentsOffenderEventsClient.sendMessage(
@@ -474,10 +473,10 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilCallTo { mappingApi.createMappingCount(INCIDENTS_CREATE_MAPPING_URL) } matches { it == 1 }
 
           // check that one incident is created
-          assertThat(incidentsApi.createIncidentSynchronisationCount()).isEqualTo(1)
+          assertThat(incidentsApi.createIncidentUpsertCount()).isEqualTo(1)
 
           // doesn't retry
-          mappingApi.verifyCreateMappingIncidentIds(arrayOf(duplicateIncidentId.toLong()), times = 1)
+          mappingApi.verifyCreateMappingIncidentId(duplicateIncidentId)
 
           await untilAsserted {
             verify(telemetryClient).trackEvent(
@@ -585,7 +584,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           mappingApi.stubGetIncident()
-          incidentsApi.stubIncidentForSyncDelete(INCIDENT_ID)
+          incidentsApi.stubIncidentDelete(INCIDENT_ID)
           mappingApi.stubIncidentMappingDelete()
 
           awsSqsIncidentsOffenderEventsClient.sendMessage(
@@ -607,7 +606,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will delete the incident in the incidents service`() {
           await untilAsserted {
-            incidentsApi.verify(deleteRequestedFor(urlPathEqualTo("/incidents/sync/$INCIDENT_ID")))
+            incidentsApi.verify(deleteRequestedFor(urlPathEqualTo("/sync/upsert/$INCIDENT_ID")))
           }
         }
 

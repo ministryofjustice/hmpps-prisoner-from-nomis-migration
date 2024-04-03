@@ -37,7 +37,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.incident
 import java.time.Duration
 import java.time.LocalDateTime
 
-private const val INCIDENT_ID = "4321"
+private const val INCIDENT_ID = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42"
 private const val NOMIS_INCIDENT_ID = 1234L
 
 class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
@@ -105,7 +105,7 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
       mappingApi.stubGetAnyIncidentNotFound()
       mappingApi.stubMappingCreate(INCIDENTS_CREATE_MAPPING_URL)
 
-      incidentsApi.stubIncidentForMigration()
+      incidentsApi.stubIncidentUpsert()
       mappingApi.stubIncidentsMappingByMigrationId(count = 86)
 
       webTestClient.performMigration(
@@ -125,7 +125,7 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
       )
 
       await untilAsserted {
-        assertThat(incidentsApi.createIncidentMigrationCount()).isEqualTo(86)
+        assertThat(incidentsApi.createIncidentUpsertCount()).isEqualTo(86)
       }
     }
 
@@ -134,7 +134,7 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubGetInitialCount(NomisApiExtension.INCIDENTS_ID_URL, 26) { incidentIdsPagedResponse(it) }
       nomisApi.stubMultipleGetIncidentIdCounts(totalElements = 26, pageSize = 10)
       nomisApi.stubMultipleGetIncidents(1..26)
-      incidentsApi.stubIncidentForMigration()
+      incidentsApi.stubIncidentUpsert()
       mappingApi.stubGetAnyIncidentNotFound()
       mappingApi.stubMappingCreate(INCIDENTS_CREATE_MAPPING_URL)
 
@@ -175,36 +175,36 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.stubMultipleGetIncidents(1..1)
       mappingApi.stubGetAnyIncidentNotFound()
       mappingApi.stubIncidentsMappingByMigrationId()
-      incidentsApi.stubIncidentForMigration()
+      incidentsApi.stubIncidentUpsert()
       mappingApi.stubMappingCreateFailureFollowedBySuccess(INCIDENTS_CREATE_MAPPING_URL)
 
       webTestClient.performMigration()
 
       // check that one incident is created
-      assertThat(incidentsApi.createIncidentMigrationCount()).isEqualTo(1)
+      assertThat(incidentsApi.createIncidentUpsertCount()).isEqualTo(1)
 
       // should retry to create mapping twice
-      mappingApi.verifyCreateMappingIncidentIds(arrayOf(INCIDENT_ID.toLong()), times = 2)
+      mappingApi.verifyCreateMappingIncidentId(INCIDENT_ID, times = 2)
     }
 
     @Test
     internal fun `it will not retry after a 409 (duplicate incident written to Incidents API)`() {
-      val duplicateIncidentId = "9876"
+      val duplicateIncidentId = "ddd596da-8eab-4d2a-a026-bc5afb8acda0"
 
       nomisApi.stubGetInitialCount(NomisApiExtension.INCIDENTS_ID_URL, 1) { incidentIdsPagedResponse(it) }
       nomisApi.stubMultipleGetIncidentIdCounts(totalElements = 1, pageSize = 10)
       nomisApi.stubMultipleGetIncidents(1..1)
       mappingApi.stubGetAnyIncidentNotFound()
       mappingApi.stubIncidentsMappingByMigrationId()
-      incidentsApi.stubIncidentForMigration(duplicateIncidentId)
+      incidentsApi.stubIncidentUpsert(duplicateIncidentId)
       mappingApi.stubIncidentMappingCreateConflict()
       webTestClient.performMigration()
 
       // check that one incident is created
-      assertThat(incidentsApi.createIncidentMigrationCount()).isEqualTo(1)
+      assertThat(incidentsApi.createIncidentUpsertCount()).isEqualTo(1)
 
       // doesn't retry
-      mappingApi.verifyCreateMappingIncidentIds(arrayOf(duplicateIncidentId.toLong()), times = 1)
+      mappingApi.verifyCreateMappingIncidentId(duplicateIncidentId)
 
       verify(telemetryClient).trackEvent(
         eq("nomis-migration-incident-duplicate"),
@@ -562,7 +562,7 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `must have valid token to terminate a migration`() {
-      webTestClient.post().uri("/migrate/incidents/{migrationId}/cqncel/", "some id")
+      webTestClient.post().uri("/migrate/incidents/{migrationId}/cancel/", "some id")
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isUnauthorized

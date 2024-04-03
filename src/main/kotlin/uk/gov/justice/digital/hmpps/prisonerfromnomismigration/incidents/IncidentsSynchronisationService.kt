@@ -7,6 +7,7 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsSynchronisationService.MappingResponse.MAPPING_FAILED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.UpsertNomisIncident
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.IncidentMappingDto
@@ -14,6 +15,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.INCIDENTS
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.toNomisIncidentReport
+import java.util.UUID
 
 @Service
 class IncidentsSynchronisationService(
@@ -44,7 +47,13 @@ class IncidentsSynchronisationService(
       log.debug("Found incident mapping: {}", it)
       log.debug("Sending incident upsert sync {}", nomisIncident)
 
-      incidentsService.syncIncident(nomisIncident)
+      incidentsService.upsertIncident(
+        UpsertNomisIncident(
+          id = UUID.fromString(it.incidentId),
+          initialMigration = false,
+          incidentReport = nomisIncident.toNomisIncidentReport(),
+        ),
+      )
       telemetryClient.trackEvent(
         "incident-upsert-synchronisation-success",
         event.toTelemetryProperties(it.incidentId),
@@ -52,12 +61,17 @@ class IncidentsSynchronisationService(
     } ?: let {
       log.debug("No incident mapping - sending incident sync {} ", nomisIncident)
 
-      incidentsService.syncIncident(nomisIncident).also { incident ->
-        tryToCreateIncidentMapping(event, incident.id).also { result ->
+      incidentsService.upsertIncident(
+        UpsertNomisIncident(
+          initialMigration = false,
+          incidentReport = nomisIncident.toNomisIncidentReport(),
+        ),
+      ).also { incident ->
+        tryToCreateIncidentMapping(event, incident.id.toString()).also { result ->
           telemetryClient.trackEvent(
             "incident-upsert-synchronisation-success",
             event.toTelemetryProperties(
-              incident.id,
+              incident.id.toString(),
               result == MAPPING_FAILED,
             ),
           )

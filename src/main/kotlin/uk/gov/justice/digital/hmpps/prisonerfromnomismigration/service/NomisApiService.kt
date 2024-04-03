@@ -17,18 +17,32 @@ import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisIncidentReport
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisIncidentStatus
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.UpsertNomisIncident
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.EndActivitiesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveActivityIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveAllocationIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetActivityResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetAllocationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.History
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.HistoryQuestion
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.HistoryResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.LocationIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.LocationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Offender
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderParty
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Question
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Requirement
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Response
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Staff
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.StaffParty
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.model.LegacyAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.model.LegacyAdjustment.AdjustmentType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomUsageResponse
@@ -37,6 +51,17 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.CodeDescription as IncidentsApiCodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.History as IncidentsApiHistory
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.HistoryQuestion as IncidentsApiHistoryQuestion
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.HistoryResponse as IncidentsApiHistoryResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.Offender as IncidentsApiOffender
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.OffenderParty as IncidentsApiOffenderParty
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.Question as IncidentsApiQuestion
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.Requirement as IncidentsApiRequirement
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.Response as IncidentsApiResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.Staff as IncidentsApiStaff
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.StaffParty as IncidentsApiStaffParty
 
 @Service
 class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
@@ -434,3 +459,117 @@ class RestResponsePage<T>(
 ) : PageImpl<T>(content, PageRequest.of(number, size), totalElements)
 
 inline fun <reified T> typeReference() = object : ParameterizedTypeReference<T>() {}
+
+fun IncidentResponse.toMigrateUpsertNomisIncident() =
+  UpsertNomisIncident(
+    initialMigration = true,
+    incidentReport = toNomisIncidentReport(),
+  )
+
+fun IncidentResponse.toNomisIncidentReport() =
+  NomisIncidentReport(
+    incidentId = incidentId,
+    questionnaireId = questionnaireId,
+    prison = prison.toUpsertCodeDescription(),
+    status = NomisIncidentStatus(status.code, status.description),
+    type = type,
+    lockedResponse = lockedResponse,
+    incidentDateTime = incidentDateTime,
+    reportingStaff = reportingStaff.toUpsertStaff(),
+    reportedDateTime = reportedDateTime,
+    staffParties = staffParties.map { it.toUpsertStaffParty() },
+    offenderParties = offenderParties.map { it.toUpsertOffenderParty() },
+    requirements = requirements.map { it.toUpsertRequirement() },
+    questions = questions.map { it.toUpsertQuestion() },
+    history = history.map { it.toUpsertHistory() },
+    title = title,
+    description = description,
+  )
+
+fun CodeDescription.toUpsertCodeDescription() =
+  IncidentsApiCodeDescription(
+    code = code,
+    description = description,
+  )
+
+fun Staff.toUpsertStaff() =
+  IncidentsApiStaff(
+    username = username,
+    staffId = staffId,
+    firstName = firstName,
+    lastName = lastName,
+  )
+
+fun StaffParty.toUpsertStaffParty() =
+  IncidentsApiStaffParty(
+    staff = staff.toUpsertStaff(),
+    role = role.toUpsertCodeDescription(),
+    comment = comment,
+  )
+
+fun OffenderParty.toUpsertOffenderParty() =
+  IncidentsApiOffenderParty(
+    offender = offender.toUpsertOffender(),
+    role = role.toUpsertCodeDescription(),
+    outcome = outcome?.toUpsertCodeDescription(),
+    comment = comment,
+  )
+
+fun Offender.toUpsertOffender() =
+  IncidentsApiOffender(
+    offenderNo = offenderNo,
+    firstName = firstName,
+    lastName = lastName,
+  )
+
+fun Requirement.toUpsertRequirement() =
+  IncidentsApiRequirement(
+    date = date,
+    staff = staff.toUpsertStaff(),
+    prisonId = prisonId,
+    comment = comment,
+  )
+
+fun Question.toUpsertQuestion() =
+  IncidentsApiQuestion(
+    questionId = questionId,
+    sequence = sequence,
+    question = question,
+    answers = answers.map { it.toUpsertResponse() },
+  )
+
+fun Response.toUpsertResponse() =
+  IncidentsApiResponse(
+    sequence = sequence,
+    recordingStaff = recordingStaff.toUpsertStaff(),
+    questionResponseId = questionResponseId,
+    answer = answer,
+    comment = comment,
+  )
+
+fun History.toUpsertHistory() =
+  IncidentsApiHistory(
+    questionnaireId = questionnaireId,
+    type = type,
+    questions = questions.map { it.toUpsertHistoryQuestion() },
+    incidentChangeDate = incidentChangeDate,
+    incidentChangeStaff = incidentChangeStaff.toUpsertStaff(),
+    description = description,
+  )
+
+fun HistoryQuestion.toUpsertHistoryQuestion() =
+  IncidentsApiHistoryQuestion(
+    questionId = questionId,
+    sequence = sequence,
+    question = question,
+    answers = answers.map { it.toUpsertHistoryResponse() },
+  )
+
+fun HistoryResponse.toUpsertHistoryResponse() =
+  IncidentsApiHistoryResponse(
+    responseSequence = responseSequence,
+    recordingStaff = recordingStaff.toUpsertStaff(),
+    questionResponseId = questionResponseId,
+    answer = answer,
+    comment = comment,
+  )

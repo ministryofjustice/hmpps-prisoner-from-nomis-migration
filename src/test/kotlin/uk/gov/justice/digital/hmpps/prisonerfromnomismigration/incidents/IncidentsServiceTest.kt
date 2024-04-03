@@ -16,7 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.IncidentsApiExtension.Companion.incidentsApi
 
 private const val NOMIS_INCIDENT_ID = 1234L
-private const val INCIDENT_ID = "4321"
+private const val INCIDENT_ID = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42"
 
 @SpringAPIServiceTest
 @Import(IncidentsService::class, IncidentsConfiguration::class)
@@ -26,21 +26,21 @@ internal class IncidentsServiceTest {
   private lateinit var incidentsService: IncidentsService
 
   @Nested
-  @DisplayName("POST /incidents/migrate")
+  @DisplayName("POST /sync/upsert")
   inner class CreateIncidentForMigration {
     @BeforeEach
     internal fun setUp() {
-      incidentsApi.stubIncidentForMigration()
+      incidentsApi.stubIncidentUpsert()
 
       runBlocking {
-        incidentsService.migrateIncident(aNomisIncidentResponse())
+        incidentsService.upsertIncident(aMigrationRequest())
       }
     }
 
     @Test
     fun `should call api with OAuth2 token`() {
       incidentsApi.verify(
-        postRequestedFor(urlEqualTo("/incidents/migrate"))
+        postRequestedFor(urlEqualTo("/sync/upsert"))
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
@@ -48,21 +48,22 @@ internal class IncidentsServiceTest {
     @Test
     fun `will pass data to the api`() {
       incidentsApi.verify(
-        postRequestedFor(urlEqualTo("/incidents/migrate"))
-          .withRequestBody(matchingJsonPath("incidentId", equalTo("$NOMIS_INCIDENT_ID")))
-          .withRequestBody(matchingJsonPath("title", equalTo("There was a fight"))),
+        postRequestedFor(urlEqualTo("/sync/upsert"))
+          .withRequestBody(matchingJsonPath("incidentReport.incidentId", equalTo("$NOMIS_INCIDENT_ID")))
+          .withRequestBody(matchingJsonPath("incidentReport.title", equalTo("There was a fight")))
+          .withRequestBody(matchingJsonPath("initialMigration", equalTo("true"))),
       )
     }
   }
 
   @Nested
-  @DisplayName("DELETE /incidents/sync")
+  @DisplayName("DELETE /sync/upsert")
   inner class DeleteIncidentForSynchronisation {
     @Nested
     inner class IncidentExists {
       @BeforeEach
       internal fun setUp() {
-        incidentsApi.stubIncidentForSyncDelete()
+        incidentsApi.stubIncidentDelete()
         runBlocking {
           incidentsService.deleteIncident(incidentId = INCIDENT_ID)
         }
@@ -71,7 +72,7 @@ internal class IncidentsServiceTest {
       @Test
       fun `should call api with OAuth2 token`() {
         incidentsApi.verify(
-          deleteRequestedFor(urlEqualTo("/incidents/sync/$INCIDENT_ID"))
+          deleteRequestedFor(urlEqualTo("/sync/upsert/$INCIDENT_ID"))
             .withHeader("Authorization", equalTo("Bearer ABCDE")),
         )
       }
@@ -81,7 +82,7 @@ internal class IncidentsServiceTest {
     inner class IncidentAlreadyDeleted {
       @BeforeEach
       internal fun setUp() {
-        incidentsApi.stubIncidentForSyncDeleteNotFound()
+        incidentsApi.stubIncidentDeleteNotFound()
       }
 
       @Test

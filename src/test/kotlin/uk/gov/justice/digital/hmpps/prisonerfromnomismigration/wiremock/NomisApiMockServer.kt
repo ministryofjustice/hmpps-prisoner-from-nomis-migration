@@ -383,7 +383,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
         )
           .willReturn(
             aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-              .withBody(incidentResponse(it.toLong())),
+              .withBody(incidentResponse(nomisIncidentId = it.toLong())),
           ),
       )
     }
@@ -1270,11 +1270,11 @@ fun adjudicationResponse(
 }
 
 private fun incidentResponse(
-  id: Long = 1234,
+  nomisIncidentId: Long = 1234,
 ): String =
   """
   {
-    "incidentId": $id,
+    "incidentId": $nomisIncidentId,
     "questionnaireId": 45456,
     "title": "This is a test incident",
     "description": "On 12/04/2023 approx 16:45 Mr Smith tried to escape.",
