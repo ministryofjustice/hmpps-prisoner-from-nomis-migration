@@ -33,6 +33,7 @@ generic-service:
     FEATURE_EVENT_ALERT-INSERTED: false
     FEATURE_EVENT_OFFENDER_CASES-INSERTED: false
     FEATURE_EVENT_OFFENDER_CASES-DELETED: false
+    FEATURE_EVENT_OFFENDER_CASES-UPDATED: false
 
 generic-prometheus-alerts:
   businessHoursOnly: true
