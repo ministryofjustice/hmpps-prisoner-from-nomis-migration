@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -58,5 +57,5 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     )
   }
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
-  fun verify(count: Int, pattern: RequestPatternBuilder) = MappingApiExtension.mappingApi.verify(count, pattern)
+  fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
 }
