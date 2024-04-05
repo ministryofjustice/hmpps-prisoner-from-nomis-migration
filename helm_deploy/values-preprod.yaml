@@ -35,6 +35,11 @@ generic-service:
     FEATURE_EVENT_OFFENDER_CASES-DELETED: false
     FEATURE_EVENT_OFFENDER_CASES-UPDATED: false
 
+  scheduledDowntime:
+    enabled: true
+    startup: '49 6 * * 1-5' # Start at 6.49am UTC Monday-Friday
+    shutdown: '58 21 * * 1-5' # Stop at 9.58pm UTC Monday-Friday
+
 generic-prometheus-alerts:
   businessHoursOnly: true
   alertSeverity: syscon-nonprod
@@ -71,3 +76,6 @@ generic-prometheus-alerts:
     - "syscon-devs-preprod-migration_alerts_dlq"
   sqsAlertsOldestThreshold: 2
   sqsAlertsTotalMessagesThreshold: 1
+
+cron:
+  retry_dlqs_schedule: "*/10 7-20 * * 1-5"

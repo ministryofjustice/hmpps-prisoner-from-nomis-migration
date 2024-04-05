@@ -5,7 +5,7 @@ metadata:
   labels:
     {{- include "app.labels" . | nindent 4 }}
 spec:
-  schedule: "*/10 * * * *"
+  schedule: "{{ .Values.cron.retry_dlqs_schedule }}"
   concurrencyPolicy: Forbid
   failedJobsHistoryLimit: 5
   startingDeadlineSeconds: 600
@@ -17,7 +17,7 @@ spec:
       template:
         spec:
           containers:
-            - name: housekeeping
+            - name: retry-all-dlqs
               image: ghcr.io/ministryofjustice/hmpps-devops-tools
               args:
                 - /bin/sh
