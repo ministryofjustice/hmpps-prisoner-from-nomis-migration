@@ -21,6 +21,11 @@ generic-service:
     API_BASE_URL_ALERTS: https://alerts-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_COURT_SENTENCING: https://remand-and-sentencing-api-dev.hmpps.service.justice.gov.uk
 
+  scheduledDowntime:
+    enabled: true
+    startup: '49 6 * * 1-5' # Start at 6.49am UTC Monday-Friday
+    shutdown: '58 21 * * 1-5' # Stop at 9.58pm UTC Monday-Friday
+
 generic-prometheus-alerts:
   businessHoursOnly: true
   alertSeverity: syscon-nonprod
@@ -59,3 +64,6 @@ generic-prometheus-alerts:
     - "syscon-devs-dev-migration_alerts_dlq"
   sqsAlertsOldestThreshold: 2
   sqsAlertsTotalMessagesThreshold: 1
+
+cron:
+  retry_dlqs_schedule: "*/10 7-20 * * 1-5"
