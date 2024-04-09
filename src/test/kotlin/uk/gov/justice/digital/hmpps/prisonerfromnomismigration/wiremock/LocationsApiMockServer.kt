@@ -62,17 +62,6 @@ class LocationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubUpsertLocationHistoryForMigration(locationId: String = "f1c1e3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e", response: String) {
-    stubFor(
-      post("/migrate/location/$locationId/history").willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(CREATED.value())
-          .withBody(response),
-      ),
-    )
-  }
-
   fun stubUpsertLocationForSynchronisation(locationId: String = "f1c1e3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e") {
     stubFor(
       post("/sync/upsert").willReturn(
@@ -103,6 +92,7 @@ class LocationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     topLevelId = UUID.fromString("f1c1e3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e"),
     pathHierarchy = "MDI-C",
     deactivatedByParent = false,
+    permanentlyInactive = false,
   ).toJson()
 }
 

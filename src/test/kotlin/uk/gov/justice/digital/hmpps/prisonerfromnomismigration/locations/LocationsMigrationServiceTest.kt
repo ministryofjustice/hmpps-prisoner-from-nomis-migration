@@ -43,10 +43,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Migrati
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.RETRY_MIGRATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Capacity
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Certification
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.ChangeHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Location
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.MigrateHistoryRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.NomisMigrateLocationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.NonResidentialUsageDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.UpsertLocationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.LocationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AmendmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.LocationIdResponse
@@ -822,6 +822,7 @@ class LocationsMigrationServiceTest {
       topLevelId = UUID.fromString(DPS_PARENT_ID),
       pathHierarchy = "MDI-C",
       deactivatedByParent = false,
+      permanentlyInactive = false,
     )
 
     @BeforeEach
@@ -869,21 +870,21 @@ class LocationsMigrationServiceTest {
 
       verify(locationsService).migrateLocation(
         eq(
-          UpsertLocationRequest(
+          NomisMigrateLocationRequest(
             code = "3",
             localName = "Wing C, landing 3",
             comments = "landing 3",
-            locationType = UpsertLocationRequest.LocationType.LANDING,
+            locationType = NomisMigrateLocationRequest.LocationType.LANDING,
             prisonId = "MDI",
             orderWithinParentLocation = 1,
             parentId = UUID.fromString(DPS_PARENT_ID),
-            residentialHousingType = UpsertLocationRequest.ResidentialHousingType.RECEPTION,
+            residentialHousingType = NomisMigrateLocationRequest.ResidentialHousingType.RECEPTION,
             capacity = Capacity(42, 41),
             certification = Certification(true, 40),
             lastUpdatedBy = "TJONES_ADM",
             createDate = "2023-09-25T11:12:45",
             attributes = setOf(
-              UpsertLocationRequest.Attributes.CAT_C,
+              NomisMigrateLocationRequest.Attributes.CAT_C,
             ),
             usage = setOf(
               NonResidentialUsageDto(
@@ -892,34 +893,17 @@ class LocationsMigrationServiceTest {
                 sequence = 5,
               ),
             ),
-          ),
-        ),
-      )
-    }
-
-    @Test
-    fun `will transform and send history to the Locations service`() = runTest {
-      whenever(nomisApiService.getLocation(any())).thenReturn(aNomisLocationResponse())
-      whenever(locationsService.migrateLocation(any())).thenReturn(basicLocation)
-
-      service.migrateNomisEntity(
-        MigrationContext(
-          type = LOCATIONS,
-          migrationId = "2020-05-23T11:30:00",
-          estimatedCount = 100_200,
-          body = LocationIdResponse(12345L),
-        ),
-      )
-
-      verify(locationsService).migrateLocationHistory(
-        eq(UUID.fromString(createdId)),
-        eq(
-          MigrateHistoryRequest(
-            amendedDate = "2023-09-25T11:12:45",
-            attribute = MigrateHistoryRequest.Attribute.LOCATION_TYPE,
-            oldValue = "41",
-            newValue = "42",
-            amendedBy = "STEVE_ADM",
+            isDeactivated = false,
+            isCell = false,
+            history = listOf(
+              ChangeHistory(
+                amendedDate = "2023-09-25T11:12:45",
+                attribute = "LOCATION_TYPE",
+                oldValue = "41",
+                newValue = "42",
+                amendedBy = "STEVE_ADM",
+              ),
+            ),
           ),
         ),
       )
@@ -942,7 +926,7 @@ class LocationsMigrationServiceTest {
       verify(locationsService).migrateLocation(
         check {
           assertThat(it.deactivatedDate).isEqualTo(LocalDate.parse("2023-09-20"))
-          assertThat(it.deactivationReason).isEqualTo(UpsertLocationRequest.DeactivationReason.CELL_RECLAIMS)
+          assertThat(it.deactivationReason).isEqualTo(NomisMigrateLocationRequest.DeactivationReason.CELL_RECLAIMS)
           assertThat(it.proposedReactivationDate).isEqualTo(LocalDate.parse("2023-09-30"))
         },
       )
@@ -965,7 +949,7 @@ class LocationsMigrationServiceTest {
       verify(locationsService).migrateLocation(
         check {
           assertThat(it.deactivatedDate).isEqualTo(LocalDate.parse("2023-09-20"))
-          assertThat(it.deactivationReason).isEqualTo(UpsertLocationRequest.DeactivationReason.OTHER)
+          assertThat(it.deactivationReason).isEqualTo(NomisMigrateLocationRequest.DeactivationReason.OTHER)
           assertThat(it.proposedReactivationDate).isEqualTo(LocalDate.parse("2023-09-30"))
         },
       )
@@ -990,66 +974,6 @@ class LocationsMigrationServiceTest {
           assertThat(it["migrationId"]).isNotNull
           assertThat(it["dpsLocationId"]).isNotNull
           assertThat(it["key"]).isNotNull
-          assertThat(it["nomisLocationId"]).isEqualTo("12345")
-        },
-        isNull(),
-      )
-    }
-
-    @Test
-    fun `will add telemetry events for history`() = runTest {
-      whenever(nomisApiService.getLocation(any())).thenReturn(aNomisLocationResponse())
-      whenever(locationsService.migrateLocation(any())).thenReturn(basicLocation)
-
-      service.migrateNomisEntity(
-        MigrationContext(
-          type = LOCATIONS,
-          migrationId = "2020-05-23T11:30:00",
-          estimatedCount = 100_200,
-          body = LocationIdResponse(12345L),
-        ),
-      )
-
-      verify(telemetryClient).trackEvent(
-        eq("locations-migration-entity-migrated"),
-        check {
-          assertThat(it["migrationId"]).isNotNull
-          assertThat(it["dpsLocationId"]).isNotNull
-          assertThat(it["key"]).isEqualTo("MDI-C-3")
-          assertThat(it["historyRows"]).isEqualTo("1")
-          assertThat(it["nomisLocationId"]).isEqualTo("12345")
-        },
-        isNull(),
-      )
-    }
-
-    @Test
-    fun `will add telemetry events for history failure`() = runTest {
-      whenever(nomisApiService.getLocation(any())).thenReturn(aNomisLocationResponse())
-      whenever(locationsService.migrateLocation(any())).thenReturn(basicLocation)
-      whenever(
-        locationsService.migrateLocationHistory(
-          eq(UUID.fromString(createdId)),
-          any(),
-        ),
-      ).thenThrow(RuntimeException("Something went wrong"))
-
-      service.migrateNomisEntity(
-        MigrationContext(
-          type = LOCATIONS,
-          migrationId = "2020-05-23T11:30:00",
-          estimatedCount = 100_200,
-          body = LocationIdResponse(12345L),
-        ),
-      )
-
-      verify(telemetryClient).trackEvent(
-        eq("locations-migration-entity-migrated-history-failure"),
-        check {
-          assertThat(it["migrationId"]).isNotNull
-          assertThat(it["dpsLocationId"]).isNotNull
-          assertThat(it["key"]).isEqualTo("MDI-C-3")
-          assertThat(it["historyRows"]).isEqualTo("0")
           assertThat(it["nomisLocationId"]).isEqualTo("12345")
         },
         isNull(),
@@ -1224,7 +1148,7 @@ fun aNomisLocationResponse() = LocationResponse(
   reactivateDate = LocalDate.parse("2023-09-30"),
   profiles = listOf(ProfileRequest(ProfileRequest.ProfileType.SUP_LVL_TYPE, "C")),
   usages = listOf(
-    UsageRequest(UsageRequest.InternalLocationUsageType.OCCUR, UsageRequest.UsageLocationType.MEDI, 42, 5),
+    UsageRequest(UsageRequest.InternalLocationUsageType.OCCUR, 42, 5),
   ),
   amendments = listOf(
     AmendmentResponse(
@@ -1251,6 +1175,7 @@ fun aDpsLocation() = Location(
   pathHierarchy = "MDI-C",
   parentId = UUID.fromString(DPS_PARENT_ID),
   deactivatedByParent = false,
+  permanentlyInactive = false,
 )
 
 fun pages(total: Long, startId: Long = 1): PageImpl<LocationIdResponse> = PageImpl<LocationIdResponse>(
