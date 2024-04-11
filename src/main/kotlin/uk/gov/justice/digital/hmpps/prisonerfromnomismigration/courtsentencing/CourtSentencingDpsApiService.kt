@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import org.springframework.web.reactive.function.client.awaitBody
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearance
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearanceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCaseResponse
 
@@ -32,4 +34,12 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .uri("/court-case/{courtCaseId}", courtCaseId)
       .retrieve()
       .awaitBodilessEntity()
+
+  suspend fun createCourtAppearance(courtAppearance: CreateCourtAppearance): CreateCourtAppearanceResponse =
+    webClient
+      .post()
+      .uri("/court-appearance")
+      .bodyValue(courtAppearance)
+      .retrieve()
+      .awaitBody()
 }

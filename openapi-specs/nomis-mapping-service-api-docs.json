@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-04-02.3978.c7633c5"
+    "version": "2024-04-09.4016.0d3598c"
   },
   "servers": [
     {
@@ -3520,6 +3520,62 @@
         }
       }
     },
+    "/mapping/court-sentencing/court-appearances/nomis-court-appearance-id/{courtAppearanceId}": {
+      "get": {
+        "tags": [
+          "court-sentencing-mapping-resource"
+        ],
+        "summary": "get court appearance mapping",
+        "description": "Retrieves a mapping by NOMIS id. Requires role NOMIS_COURT_SENTENCING",
+        "operationId": "getCourtAppearanceMappingByNomisId",
+        "parameters": [
+          {
+            "name": "courtAppearanceId",
+            "in": "path",
+            "description": "NOMIS court appearance id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "NOMIS court appearance id",
+              "example": 123
+            },
+            "example": 123
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourtAppearanceAllMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/court-sentencing/court-appearances/dps-court-appearance-id/{courtAppearanceId}": {
       "get": {
         "tags": [
@@ -5883,7 +5939,8 @@
             "default": "DPS_CREATED",
             "enum": [
               "MIGRATED",
-              "DPS_CREATED"
+              "DPS_CREATED",
+              "NOMIS_CREATED"
             ]
           },
           "whenCreated": {
@@ -5941,7 +5998,8 @@
             "default": "DPS_CREATED",
             "enum": [
               "MIGRATED",
-              "DPS_CREATED"
+              "DPS_CREATED",
+              "NOMIS_CREATED"
             ]
           },
           "whenCreated": {
@@ -5978,7 +6036,8 @@
             "type": "string",
             "enum": [
               "MIGRATED",
-              "DPS_CREATED"
+              "DPS_CREATED",
+              "NOMIS_CREATED"
             ]
           },
           "new": {
@@ -6041,7 +6100,8 @@
             "default": "DPS_CREATED",
             "enum": [
               "MIGRATED",
-              "DPS_CREATED"
+              "DPS_CREATED",
+              "NOMIS_CREATED"
             ]
           },
           "whenCreated": {
@@ -6082,7 +6142,8 @@
             "type": "string",
             "enum": [
               "MIGRATED",
-              "DPS_CREATED"
+              "DPS_CREATED",
+              "NOMIS_CREATED"
             ]
           },
           "new": {
@@ -6435,7 +6496,8 @@
             "default": "DPS_CREATED",
             "enum": [
               "MIGRATED",
-              "DPS_CREATED"
+              "DPS_CREATED",
+              "NOMIS_CREATED"
             ]
           },
           "whenCreated": {

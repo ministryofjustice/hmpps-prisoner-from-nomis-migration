@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-04-09.7238.37eb391"
+    "version": "2024-04-10.7260.212f7df"
   },
   "servers": [
     {
@@ -5994,6 +5994,72 @@
           },
           "403": {
             "description": "Forbidden to access this endpoint when role SYNCHRONISATION_REPORTING not present",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisoners/{offenderNo}/alerts/to-migrate": {
+      "get": {
+        "tags": [
+          "alerts-resource"
+        ],
+        "summary": "Gets alert for latest booking plus unique list of alerts from previous bookings for a prisoner",
+        "description": "Retrieves alerts for a prisoner across all bookings. The latest booking all alerts will be returned, from the previous bookings the list will contain at most one alert per alert code type ordered by alert date with latest alert taken. Requires ROLE_NOMIS_ALERTS",
+        "operationId": "getAlertsToMigrate",
+        "parameters": [
+          {
+            "name": "offenderNo",
+            "in": "path",
+            "description": "Offender No AKA prisoner number",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Offender No AKA prisoner number",
+              "example": "A1234AK"
+            },
+            "example": "A1234AK"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Alerts Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrisonerAlertsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_ALERTS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Prisoner does not exist or has no bookings",
             "content": {
               "application/json": {
                 "schema": {
@@ -14034,6 +14100,28 @@
         },
         "description": "Details of a prisoner merge"
       },
+      "PrisonerAlertsResponse": {
+        "required": [
+          "latestBookingAlerts",
+          "previousBookingsAlerts"
+        ],
+        "type": "object",
+        "properties": {
+          "latestBookingAlerts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AlertResponse"
+            }
+          },
+          "previousBookingsAlerts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AlertResponse"
+            }
+          }
+        },
+        "description": "The list of unique alerts held against a prisoner"
+      },
       "PagePrisonerId": {
         "type": "object",
         "properties": {
@@ -15523,6 +15611,7 @@
           "offender",
           "plans",
           "reportedDate",
+          "saferCustodyScreening",
           "type"
         ],
         "type": "object",
@@ -15575,75 +15664,14 @@
               "$ref": "#/components/schemas/Plan"
             }
           },
+          "saferCustodyScreening": {
+            "$ref": "#/components/schemas/SaferCustodyScreening"
+          },
           "investigation": {
-            "$ref": "#/components/schemas/InvestigationDetails"
+            "$ref": "#/components/schemas/Investigation"
           }
         },
         "description": "CSIP Details"
-      },
-      "InterviewDetails": {
-        "required": [
-          "date",
-          "interviewee",
-          "role"
-        ],
-        "type": "object",
-        "properties": {
-          "interviewee": {
-            "type": "string",
-            "description": "Person being interviewed"
-          },
-          "date": {
-            "type": "string",
-            "description": "date of interview",
-            "format": "date"
-          },
-          "role": {
-            "$ref": "#/components/schemas/CodeDescription"
-          },
-          "comments": {
-            "type": "string",
-            "description": "Additional data regarding the interview"
-          }
-        },
-        "description": "Interview"
-      },
-      "InvestigationDetails": {
-        "type": "object",
-        "properties": {
-          "staffInvolved": {
-            "type": "string",
-            "description": "Staff involved in the incident"
-          },
-          "evidenceSecured": {
-            "type": "string",
-            "description": "Whether any evidence was secured"
-          },
-          "reasonOccurred": {
-            "type": "string",
-            "description": "Why the incident occurred"
-          },
-          "usualBehaviour": {
-            "type": "string",
-            "description": "Normal behaviour of the offender"
-          },
-          "trigger": {
-            "type": "string",
-            "description": "Offender's trigger"
-          },
-          "protectiveFactors": {
-            "type": "string",
-            "description": "Protective factors"
-          },
-          "interviews": {
-            "type": "array",
-            "description": "Interview",
-            "items": {
-              "$ref": "#/components/schemas/InterviewDetails"
-            }
-          }
-        },
-        "description": "Investigation of the incident"
       },
       "Plan": {
         "required": [
@@ -15693,6 +15721,28 @@
           }
         },
         "description": "CSIP Plans"
+      },
+      "SaferCustodyScreening": {
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "recordedBy": {
+            "type": "string",
+            "description": "Who recorded the data"
+          },
+          "recordedDate": {
+            "type": "string",
+            "description": "When the the SCS occurred",
+            "format": "date"
+          },
+          "reasonForDecision": {
+            "type": "string",
+            "description": "Why the decision was made"
+          }
+        },
+        "description": "Safer custody screening"
       },
       "CSIPIdResponse": {
         "required": [

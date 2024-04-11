@@ -7,6 +7,9 @@ import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
 
+const val RETRY_COURT_CASE_SYNCHRONISATION_MAPPING = "court_case_synchronisation_retry"
+const val RETRY_COURT_APPEARANCE_SYNCHRONISATION_MAPPING = "court_appearance_synchronisation_retry"
+
 @Service
 class SynchronisationQueueService(
   private val hmppsQueueService: HmppsQueueService,
@@ -42,4 +45,5 @@ class SynchronisationQueueService(
 data class InternalMessage<T>(
   val body: T,
   val telemetryAttributes: Map<String, String>,
+  val entityName: String? = null,
 )
