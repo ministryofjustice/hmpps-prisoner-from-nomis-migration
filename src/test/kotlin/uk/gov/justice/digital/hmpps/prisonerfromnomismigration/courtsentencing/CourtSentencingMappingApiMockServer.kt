@@ -12,6 +12,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
@@ -102,6 +103,100 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
                   "dpsCourtCaseId": "$duplicateDpsCourtCaseId",
                   "nomisCourtCaseId": $nomisCourtCaseId,
                   "courtAppearances": [],
+                  "courtCharges": [],
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "MIGRATED"
+                  }
+              }
+              }""",
+            ),
+        ),
+    )
+  }
+
+  fun stubGetCourtAppearanceByNomisId(
+    nomisCourtAppearanceId: Long = 123456,
+    dpsCourtAppearanceId: String = UUID.randomUUID().toString(),
+    mapping: CourtAppearanceAllMappingDto = CourtAppearanceAllMappingDto(
+      nomisCourtAppearanceId = nomisCourtAppearanceId,
+      dpsCourtAppearanceId = dpsCourtAppearanceId,
+      courtCharges = emptyList(),
+      mappingType = CourtAppearanceAllMappingDto.MappingType.MIGRATED,
+    ),
+  ) {
+    mappingApi.stubFor(
+      get(urlEqualTo("/mapping/court-sentencing/court-appearances/nomis-court-appearance-id/$nomisCourtAppearanceId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(objectMapper.writeValueAsString(mapping)),
+      ),
+    )
+  }
+
+  fun stubGetCourtAppearanceByNomisId(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      get(urlPathMatching("/mapping/court-sentencing/court-appearances/nomis-court-appearance-id/\\d+")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubPostCourtAppearanceMapping() {
+    mappingApi.stubFor(
+      post("/mapping/court-sentencing/court-appearances").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
+  fun stubPostCourtAppearanceMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      post("/mapping/court-sentencing/court-appearances").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubPostCourtAppearanceMappingFailureFollowedBySuccess() {
+    mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/court-sentencing/court-appearances")
+  }
+
+  fun stubCourtAppearanceMappingCreateConflict(
+    existingDpsCourtAppearanceId: String = "10",
+    duplicateDpsCourtAppearanceId: String = "11",
+    nomisCourtCaseId: Long = 123,
+  ) {
+    mappingApi.stubFor(
+      post(WireMock.urlPathEqualTo("/mapping/court-sentencing/court-appearances"))
+        .willReturn(
+          aResponse()
+            .withStatus(409)
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
+              "moreInfo": 
+              {
+                "existing" :  {
+                  "dpsCourtAppearanceId": "$existingDpsCourtAppearanceId",
+                  "nomisCourtCaseId": $nomisCourtCaseId,
+                  "courtCharges": [],
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "MIGRATED"
+                 },
+                 "duplicate" : {
+                  "dpsCourtCaseId": "$duplicateDpsCourtAppearanceId",
+                  "nomisCourtCaseId": $nomisCourtCaseId,
                   "courtCharges": [],
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",

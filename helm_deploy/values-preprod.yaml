@@ -34,6 +34,7 @@ generic-service:
     FEATURE_EVENT_OFFENDER_CASES-INSERTED: false
     FEATURE_EVENT_OFFENDER_CASES-DELETED: false
     FEATURE_EVENT_OFFENDER_CASES-UPDATED: false
+    FEATURE_EVENT_COURT_EVENTS-INSERTED: false
 
   scheduledDowntime:
     enabled: true

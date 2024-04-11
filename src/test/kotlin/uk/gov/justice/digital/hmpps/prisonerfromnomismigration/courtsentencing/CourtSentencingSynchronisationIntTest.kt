@@ -34,9 +34,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.util.AbstractMap.SimpleEntry
+import java.util.UUID
 
 private const val NOMIS_COURT_CASE_ID = 1234L
+private const val NOMIS_COURT_APPEARANCE_ID = 5555L
 private const val DPS_COURT_CASE_ID = "cc1"
+private const val DPS_COURT_APPEARANCE_ID = "6f35a357-f458-40b9-b824-de729ffeb459"
 private const val EXISTING_DPS_COURT_CASE_ID = "cc2"
 private const val OFFENDER_ID_DISPLAY = "A3864DZ"
 private const val NOMIS_BOOKING_ID = 12344321L
@@ -139,7 +142,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases"))
                 .withRequestBody(matchingJsonPath("dpsCourtCaseId", equalTo(DPS_COURT_CASE_ID)))
                 .withRequestBody(matchingJsonPath("nomisCourtCaseId", equalTo(NOMIS_COURT_CASE_ID.toString())))
-                .withRequestBody(matchingJsonPath("mappingType", equalTo("DPS_CREATED"))),
+                .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
             )
           }
         }
@@ -245,7 +248,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases"))
                   .withRequestBody(matchingJsonPath("dpsCourtCaseId", equalTo(DPS_COURT_CASE_ID)))
                   .withRequestBody(matchingJsonPath("nomisCourtCaseId", equalTo(NOMIS_COURT_CASE_ID.toString())))
-                  .withRequestBody(matchingJsonPath("mappingType", equalTo("DPS_CREATED"))),
+                  .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
               )
             }
 
@@ -725,6 +728,172 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       }
     }
   }
+
+  @Nested
+  @DisplayName("COURT_EVENTS-INSERTED")
+  inner class CourtAppearanceInserted {
+
+    @Nested
+    @DisplayName("When court appearance was created in DPS")
+    inner class DPSCreated {
+
+      @BeforeEach
+      fun setUp() {
+        courtSentencingNomisApiMockServer.stubGetCourtAppearance(
+          courtCaseId = NOMIS_COURT_CASE_ID,
+          offenderNo = OFFENDER_ID_DISPLAY,
+          courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+        )
+        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+          courtSentencingQueueOffenderEventsUrl,
+          courtAppearanceEvent(
+            eventType = "COURT_EVENTS-INSERTED",
+            auditModule = "DPS_SYNCHRONISATION",
+          ),
+        )
+      }
+
+      @Test
+      fun `the event is ignored`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            eq("court-appearance-synchronisation-created-skipped"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+              assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+            },
+            isNull(),
+          )
+        }
+
+        courtSentencingMappingApiMockServer.verify(
+          0,
+          getRequestedFor(urlPathMatching("/mapping/court-sentencing/court-appearances/nomis-court-appearance-id/\\d+")),
+        )
+        // will not create an court case in DPS
+        dpsCourtSentencingServer.verify(0, postRequestedFor(anyUrl()))
+      }
+    }
+
+    @Nested
+    @DisplayName("When court case was created in NOMIS")
+    inner class NomisCreated {
+      @BeforeEach
+      fun setUp() {
+        courtSentencingNomisApiMockServer.stubGetCourtAppearance(
+          courtCaseId = NOMIS_COURT_CASE_ID,
+          offenderNo = OFFENDER_ID_DISPLAY,
+          courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+        )
+      }
+
+      @Nested
+      @DisplayName("When mapping does not exist yet")
+      inner class NoMapping {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(status = NOT_FOUND)
+          courtSentencingMappingApiMockServer.stubGetByNomisId(nomisCourtCaseId = NOMIS_COURT_CASE_ID, dpsCourtCaseId = DPS_COURT_CASE_ID)
+          dpsCourtSentencingServer.stubPostCourtAppearanceForCreate(courtAppearanceId = UUID.fromString(DPS_COURT_APPEARANCE_ID))
+          courtSentencingMappingApiMockServer.stubPostCourtAppearanceMapping()
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            courtAppearanceEvent(
+              eventType = "COURT_EVENTS-INSERTED",
+            ),
+          )
+        }
+
+        @Test
+        fun `will create a court appearance in DPS`() {
+          await untilAsserted {
+            dpsCourtSentencingServer.verify(
+              postRequestedFor(urlPathEqualTo("/court-appearance")),
+              // TODO assert once DPS team have defined their dto
+            )
+          }
+        }
+
+        @Test
+        fun `will create mapping between DPS and NOMIS ids`() {
+          await untilAsserted {
+            courtSentencingMappingApiMockServer.verify(
+              postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-appearances"))
+                .withRequestBody(matchingJsonPath("dpsCourtAppearanceId", equalTo(DPS_COURT_APPEARANCE_ID)))
+                .withRequestBody(matchingJsonPath("nomisCourtAppearanceId", equalTo(NOMIS_COURT_APPEARANCE_ID.toString())))
+                .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
+            )
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("court-appearance-synchronisation-created-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+                assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+                assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+                assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("When mapping already exists")
+      inner class MappingExists {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+            dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
+          )
+          courtSentencingMappingApiMockServer.stubGetByNomisId(
+            nomisCourtCaseId = NOMIS_COURT_CASE_ID,
+            dpsCourtCaseId = DPS_COURT_CASE_ID,
+            mapping = CourtCaseMappingDto(
+              nomisCourtCaseId = NOMIS_COURT_CASE_ID,
+              dpsCourtCaseId = DPS_COURT_CASE_ID,
+            ),
+          )
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            courtAppearanceEvent(
+              eventType = "COURT_EVENTS-INSERTED",
+              bookingId = NOMIS_BOOKING_ID,
+              courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+              offenderNo = OFFENDER_ID_DISPLAY,
+            ),
+          )
+        }
+
+        @Test
+        fun `the event is ignored`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("court-appearance-synchronisation-created-ignored"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+                assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+              },
+              isNull(),
+            )
+          }
+          // will not create a court case in DPS
+          dpsCourtSentencingServer.verify(0, postRequestedFor(anyUrl()))
+        }
+      }
+    }
+  }
 }
 
 fun courtCaseEvent(
@@ -736,6 +905,25 @@ fun courtCaseEvent(
 ) = """{
     "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
     "Message": "{\"eventId\":\"5958295\",\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"bookingId\": \"$bookingId\",\"courtCaseId\": \"$courtCaseId\",\"offenderIdDisplay\": \"$offenderNo\",\"nomisEventType\":\"COURT_EVENT\",\"auditModuleName\":\"$auditModule\" }",
+    "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
+    "MessageAttributes": {
+      "eventType": {"Type": "String", "Value": "$eventType"}, 
+      "id": {"Type": "String", "Value": "8b07cbd9-0820-0a0f-c32f-a9429b618e0b"}, 
+      "contentType": {"Type": "String", "Value": "text/plain;charset=UTF-8"}, 
+      "timestamp": {"Type": "Number.java.lang.Long", "Value": "1571666478344"}
+    }
+}
+""".trimIndent()
+
+fun courtAppearanceEvent(
+  eventType: String,
+  bookingId: Long = NOMIS_BOOKING_ID,
+  courtAppearanceId: Long = NOMIS_COURT_APPEARANCE_ID,
+  offenderNo: String = OFFENDER_ID_DISPLAY,
+  auditModule: String = "DPS",
+) = """{
+    "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
+    "Message": "{\"eventId\":\"5958295\",\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"bookingId\": \"$bookingId\",\"courtAppearanceId\": \"$courtAppearanceId\",\"offenderIdDisplay\": \"$offenderNo\",\"nomisEventType\":\"COURT_EVENT\",\"auditModuleName\":\"$auditModule\" }",
     "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
     "MessageAttributes": {
       "eventType": {"Type": "String", "Value": "$eventType"}, 

@@ -13,7 +13,8 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_APPEARANCE_SYNCHRONISATION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CASE_SYNCHRONISATION_MAPPING
 import java.util.concurrent.CompletableFuture
 
 @Service
@@ -41,6 +42,7 @@ class CourtSentencingEventListener(
               "OFFENDER_CASES-INSERTED" -> courtSentencingSynchronisationService.nomisCourtCaseInserted(sqsMessage.Message.fromJson())
               "OFFENDER_CASES-UPDATED" -> courtSentencingSynchronisationService.nomisCourtCaseUpdated(sqsMessage.Message.fromJson())
               "OFFENDER_CASES-DELETED" -> courtSentencingSynchronisationService.nomisCourtCaseDeleted(sqsMessage.Message.fromJson())
+              "COURT_EVENTS-INSERTED" -> courtSentencingSynchronisationService.nomisCourtAppearanceInserted(sqsMessage.Message.fromJson())
 
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
@@ -49,9 +51,15 @@ class CourtSentencingEventListener(
           }
         }
 
-        RETRY_SYNCHRONISATION_MAPPING.name -> courtSentencingSynchronisationService.retryCreateMapping(
-          sqsMessage.Message.fromJson(),
-        )
+        RETRY_COURT_CASE_SYNCHRONISATION_MAPPING ->
+          courtSentencingSynchronisationService.retryCreateCourtCaseMapping(
+            sqsMessage.Message.fromJson(),
+          )
+
+        RETRY_COURT_APPEARANCE_SYNCHRONISATION_MAPPING ->
+          courtSentencingSynchronisationService.retryCreateCourtAppearanceMapping(
+            sqsMessage.Message.fromJson(),
+          )
       }
     }
   }
@@ -62,6 +70,13 @@ class CourtSentencingEventListener(
 
 data class CourtCaseEvent(
   val courtCaseId: Long,
+  val offenderIdDisplay: String,
+  val bookingId: Long,
+  val auditModuleName: String?,
+)
+
+data class CourtAppearanceEvent(
+  val courtAppearanceId: Long,
   val offenderIdDisplay: String,
   val bookingId: Long,
   val auditModuleName: String?,

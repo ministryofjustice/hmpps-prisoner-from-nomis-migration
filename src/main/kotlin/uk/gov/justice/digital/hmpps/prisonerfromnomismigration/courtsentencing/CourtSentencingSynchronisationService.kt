@@ -7,14 +7,18 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearanceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_APPEARANCE_SYNCHRONISATION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CASE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 
@@ -70,9 +74,61 @@ class CourtSentencingSynchronisationService(
     }
   }
 
+  suspend fun nomisCourtAppearanceInserted(event: CourtAppearanceEvent) {
+    val telemetry =
+      mutableMapOf(
+        "nomisCourtAppearanceId" to event.courtAppearanceId.toString(),
+        "offenderNo" to event.offenderIdDisplay,
+        "nomisBookingId" to event.bookingId.toString(),
+      )
+    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      telemetryClient.trackEvent("court-appearance-synchronisation-created-skipped", telemetry)
+    } else {
+      val nomisCourtAppearance =
+        nomisApiService.getCourtAppearance(
+          offenderNo = event.offenderIdDisplay,
+          courtAppearanceId = event.courtAppearanceId,
+        )
+      mappingApiService.getCourtAppearanceOrNullByNomisId(event.courtAppearanceId)?.let { mapping ->
+        telemetryClient.trackEvent(
+          "court-appearance-synchronisation-created-ignored",
+          telemetry + ("dpsCourtAppearanceId" to mapping.dpsCourtAppearanceId),
+        )
+      } ?: let {
+        val dpsCaseId =
+          nomisCourtAppearance.caseId?.let { mappingApiService.getCourtCaseOrNullByNomisId(it)?.dpsCourtCaseId }
+        telemetry.put("nomisCourtCaseId", nomisCourtAppearance.caseId?.toString() ?: "no nomis court case")
+        telemetry.put("dpsCourtCaseId", dpsCaseId ?: "null")
+        dpsApiService.createCourtAppearance(
+          nomisCourtAppearance.toDpsCourtAppearance(
+            event.offenderIdDisplay,
+            dpsCaseId,
+          ),
+        ).run {
+          telemetry.put("dpsCourtAppearanceId", this.appearanceUuid.toString())
+          tryToCreateCourtAppearanceMapping(
+            nomisCourtAppearance = nomisCourtAppearance,
+            dpsCourtAppearanceResponse = this,
+            telemetry,
+          ).also { mappingCreateResult ->
+            if (mappingCreateResult == MappingResponse.MAPPING_FAILED) telemetry.put("mapping", "initial-failure")
+            telemetryClient.trackEvent(
+              "court-appearance-synchronisation-created-success",
+              telemetry,
+            )
+          }
+        }
+      }
+    }
+  }
+
   suspend fun nomisCourtCaseUpdated(event: CourtCaseEvent) {
     val telemetry =
-      mapOf("nomisBookingId" to event.bookingId.toString(), "nomisCourtCaseId" to event.courtCaseId.toString(), "offenderNo" to event.offenderIdDisplay)
+      mapOf(
+        "nomisBookingId" to event.bookingId.toString(),
+        "nomisCourtCaseId" to event.courtCaseId.toString(),
+        "offenderNo" to event.offenderIdDisplay,
+      )
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent("court-case-synchronisation-updated-skipped", telemetry)
     } else {
@@ -87,7 +143,8 @@ class CourtSentencingSynchronisationService(
           throw IllegalStateException("Received COURT_CASE-UPDATED for court-case that has never been created")
         }
       } else {
-        val nomisCourtCase = nomisApiService.getCourtCase(offenderNo = event.offenderIdDisplay, courtCaseId = event.courtCaseId)
+        val nomisCourtCase =
+          nomisApiService.getCourtCase(offenderNo = event.offenderIdDisplay, courtCaseId = event.courtCaseId)
         dpsApiService.updateCourtCase(
           courtCaseId = mapping.dpsCourtCaseId,
           nomisCourtCase.toDpsCourtCase(offenderNo = event.offenderIdDisplay),
@@ -138,7 +195,7 @@ class CourtSentencingSynchronisationService(
     val mapping = CourtCaseAllMappingDto(
       dpsCourtCaseId = dpsCourtCaseResponse.courtCaseUuid,
       nomisCourtCaseId = nomisCourtCase.id,
-      mappingType = CourtCaseAllMappingDto.MappingType.DPS_CREATED,
+      mappingType = CourtCaseAllMappingDto.MappingType.NOMIS_CREATED,
       courtCharges = emptyList(),
       courtAppearances = emptyList(),
     )
@@ -165,7 +222,7 @@ class CourtSentencingSynchronisationService(
     } catch (e: Exception) {
       log.error("Failed to create mapping for court case ids $mapping", e)
       queueService.sendMessage(
-        messageType = SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING.name,
+        messageType = RETRY_COURT_CASE_SYNCHRONISATION_MAPPING,
         synchronisationType = SynchronisationType.COURT_SENTENCING,
         message = mapping,
         telemetryAttributes = telemetry.valuesAsStrings(),
@@ -174,13 +231,66 @@ class CourtSentencingSynchronisationService(
     }
   }
 
-  suspend fun retryCreateMapping(retryMessage: InternalMessage<CourtCaseAllMappingDto>) {
+  private suspend fun tryToCreateCourtAppearanceMapping(
+    nomisCourtAppearance: CourtEventResponse,
+    dpsCourtAppearanceResponse: CreateCourtAppearanceResponse,
+    telemetry: Map<String, Any>,
+  ): MappingResponse {
+    val mapping = CourtAppearanceAllMappingDto(
+      dpsCourtAppearanceId = dpsCourtAppearanceResponse.appearanceUuid.toString(),
+      nomisCourtAppearanceId = nomisCourtAppearance.id,
+      mappingType = CourtAppearanceAllMappingDto.MappingType.NOMIS_CREATED,
+      courtCharges = emptyList(),
+    )
+    try {
+      mappingApiService.createCourtAppearanceMapping(
+        mapping,
+      ).also {
+        if (it.isError) {
+          val duplicateErrorDetails = (it.errorResponse!!).moreInfo
+          telemetryClient.trackEvent(
+            "from-nomis-sync-court-appearance-duplicate",
+            mapOf<String, String>(
+              "duplicateDpsCourtAppearanceId" to duplicateErrorDetails.duplicate.dpsCourtAppearanceId,
+              "duplicateNomisCourtAppearanceId" to duplicateErrorDetails.duplicate.nomisCourtAppearanceId.toString(),
+              "existingDpsCourtAppearanceId" to duplicateErrorDetails.existing.dpsCourtAppearanceId,
+              "existingNomisCourtAppearanceId" to duplicateErrorDetails.existing.nomisCourtAppearanceId.toString(),
+            ),
+            null,
+          )
+        }
+      }
+      return MappingResponse.MAPPING_CREATED
+    } catch (e: Exception) {
+      log.error("Failed to create mapping for court appearance ids $mapping", e)
+      queueService.sendMessage(
+        messageType = RETRY_COURT_APPEARANCE_SYNCHRONISATION_MAPPING,
+        synchronisationType = SynchronisationType.COURT_SENTENCING,
+        message = mapping,
+        telemetryAttributes = telemetry.valuesAsStrings(),
+      )
+      return MappingResponse.MAPPING_FAILED
+    }
+  }
+
+  suspend fun retryCreateCourtCaseMapping(retryMessage: InternalMessage<CourtCaseAllMappingDto>) {
     mappingApiService.createMapping(
       retryMessage.body,
       object : ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseAllMappingDto>>() {},
     ).also {
       telemetryClient.trackEvent(
         "court-case-mapping-created-synchronisation-success",
+        retryMessage.telemetryAttributes,
+      )
+    }
+  }
+
+  suspend fun retryCreateCourtAppearanceMapping(retryMessage: InternalMessage<CourtAppearanceAllMappingDto>) {
+    mappingApiService.createCourtAppearanceMapping(
+      retryMessage.body,
+    ).also {
+      telemetryClient.trackEvent(
+        "court-appearance-mapping-created-synchronisation-success",
         retryMessage.telemetryAttributes,
       )
     }

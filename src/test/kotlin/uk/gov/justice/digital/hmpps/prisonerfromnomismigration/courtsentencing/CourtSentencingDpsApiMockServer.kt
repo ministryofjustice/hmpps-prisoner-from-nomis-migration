@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearanceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCaseResponse
 import java.util.UUID
 
@@ -84,6 +85,23 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(204)
             .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
+  fun stubPostCourtAppearanceForCreate(
+    courtAppearanceId: UUID = UUID.randomUUID(),
+    response: CreateCourtAppearanceResponse = CreateCourtAppearanceResponse(
+      appearanceUuid = courtAppearanceId,
+    ),
+  ) {
+    stubFor(
+      post("/court-appearance")
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader("Content-Type", "application/json")
+            .withBody(CourtSentencingDpsApiExtension.objectMapper.writeValueAsString(response)),
         ),
     )
   }
