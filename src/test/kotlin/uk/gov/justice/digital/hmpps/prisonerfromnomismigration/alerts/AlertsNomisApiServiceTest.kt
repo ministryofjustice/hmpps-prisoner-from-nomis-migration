@@ -121,7 +121,7 @@ class AlertsNomisApiServiceTest {
       apiService.getAlertsToMigrate("A1234TT")
 
       alertsNomisApiMockServer.verify(
-        getRequestedFor(urlPathEqualTo("/prisoner/A1234TT/alerts/to-migrate")),
+        getRequestedFor(urlPathEqualTo("/prisoners/A1234TT/alerts/to-migrate")),
       )
     }
 
