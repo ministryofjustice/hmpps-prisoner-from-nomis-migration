@@ -10,19 +10,18 @@ import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.Message
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertIdResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ALERTS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import java.util.concurrent.CompletableFuture
 
 @Service
-@ConditionalOnProperty(name = ["alerts.migration.type"], havingValue = "all")
-class AlertsMigrationMessageListener(
+@ConditionalOnProperty(name = ["alerts.migration.type"], havingValue = "by-prisoner")
+class AlertsByPrisonerMigrationMessageListener(
   objectMapper: ObjectMapper,
-  alertsMigrationService: AlertsMigrationService,
-) : MigrationMessageListener<AlertsMigrationFilter, AlertIdResponse, AlertResponse, AlertMappingDto>(
+  alertsMigrationService: AlertsByPrisonerMigrationService,
+) : MigrationMessageListener<AlertsMigrationFilter, PrisonerId, AlertsForPrisonerResponse, List<AlertMappingDto>>(
   objectMapper,
   alertsMigrationService,
 ) {
@@ -41,11 +40,11 @@ class AlertsMigrationMessageListener(
     return objectMapper.readValue(json)
   }
 
-  override fun parseContextNomisId(json: String): MigrationMessage<*, AlertIdResponse> {
+  override fun parseContextNomisId(json: String): MigrationMessage<*, PrisonerId> {
     return objectMapper.readValue(json)
   }
 
-  override fun parseContextMapping(json: String): MigrationMessage<*, AlertMappingDto> {
+  override fun parseContextMapping(json: String): MigrationMessage<*, List<AlertMappingDto>> {
     return objectMapper.readValue(json)
   }
 }

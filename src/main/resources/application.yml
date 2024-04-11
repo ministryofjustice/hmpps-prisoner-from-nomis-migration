@@ -135,6 +135,8 @@ complete-check:
   count: 9
 
 alerts:
+  migration:
+    type: "by-prisoner"
   complete-check:
     delay-seconds: 180
     count: 9

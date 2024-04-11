@@ -6,6 +6,8 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerAlertsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RestResponsePage
 import java.time.LocalDate
 
@@ -29,6 +31,25 @@ class AlertsNomisApiService(@Qualifier("nomisApiWebClient") private val webClien
         .queryParam("toDate", toDate)
         .build()
     }
+    .retrieve()
+    .awaitBody()
+
+  suspend fun getPrisonerIds(pageNumber: Long, pageSize: Long): RestResponsePage<PrisonerId> = webClient.get()
+    .uri {
+      it.path("/prisoners/ids")
+        .queryParam("page", pageNumber)
+        .queryParam("size", pageSize)
+        .queryParam("active", false)
+        .build()
+    }
+    .retrieve()
+    .awaitBody()
+
+  suspend fun getAlertsToMigrate(offenderNo: String): PrisonerAlertsResponse = webClient.get()
+    .uri(
+      "/prisoner/{offenderNo}/alerts/to-migrate",
+      offenderNo,
+    )
     .retrieve()
     .awaitBody()
 }
