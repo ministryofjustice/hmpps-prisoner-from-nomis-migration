@@ -113,7 +113,7 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
       previousBookingsAlerts = (1..previousAlertCount).map { alert.copy(bookingId = it + 1, alertSequence = 1) },
     )
     nomisApi.stubFor(
-      get(urlEqualTo("/prisoner/$offenderNo/alerts/to-migrate")).willReturn(
+      get(urlEqualTo("/prisoners/$offenderNo/alerts/to-migrate")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())

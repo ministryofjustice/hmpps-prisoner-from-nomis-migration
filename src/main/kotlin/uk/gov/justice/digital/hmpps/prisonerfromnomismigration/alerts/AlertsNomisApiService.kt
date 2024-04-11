@@ -47,7 +47,7 @@ class AlertsNomisApiService(@Qualifier("nomisApiWebClient") private val webClien
 
   suspend fun getAlertsToMigrate(offenderNo: String): PrisonerAlertsResponse = webClient.get()
     .uri(
-      "/prisoner/{offenderNo}/alerts/to-migrate",
+      "/prisoners/{offenderNo}/alerts/to-migrate",
       offenderNo,
     )
     .retrieve()
