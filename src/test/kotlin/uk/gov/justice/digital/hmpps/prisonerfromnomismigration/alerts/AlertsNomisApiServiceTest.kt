@@ -102,6 +102,58 @@ class AlertsNomisApiServiceTest {
   }
 
   @Nested
+  inner class GetAlertsToMigrate {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      alertsNomisApiMockServer.stubGetAlertsToMigrate(offenderNo = "A1234TT")
+
+      apiService.getAlertsToMigrate("A1234TT")
+
+      alertsNomisApiMockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass NOMIS ids to service`() = runTest {
+      alertsNomisApiMockServer.stubGetAlertsToMigrate(offenderNo = "A1234TT")
+
+      apiService.getAlertsToMigrate("A1234TT")
+
+      alertsNomisApiMockServer.verify(
+        getRequestedFor(urlPathEqualTo("/prisoner/A1234TT/alerts/to-migrate")),
+      )
+    }
+
+    @Test
+    fun `will return alerts`() = runTest {
+      alertsNomisApiMockServer.stubGetAlertsToMigrate(
+        offenderNo = "A1234TT",
+        currentAlertCount = 3,
+        previousAlertCount = 1,
+        alert = AlertResponse(
+          bookingId = 1,
+          alertSequence = 1,
+          alertCode = CodeDescription("CPC", "PPRC"),
+          type = CodeDescription("C", "Child Communication Measures"),
+          date = LocalDate.parse("2022-07-19"),
+          isActive = true,
+          isVerified = false,
+          audit = NomisAudit(
+            createDatetime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+            createUsername = "Q1251T",
+          ),
+        ),
+      )
+
+      val alerts = apiService.getAlertsToMigrate("A1234TT")
+
+      assertThat(alerts.latestBookingAlerts).hasSize(3)
+      assertThat(alerts.previousBookingsAlerts).hasSize(1)
+    }
+  }
+
+  @Nested
   inner class GetAlertIds {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
@@ -178,6 +230,58 @@ class AlertsNomisApiServiceTest {
       assertThat(alertIds.content[1].alertSequence).isEqualTo(2)
       assertThat(alertIds.content[1].bookingId).isEqualTo(123456)
       assertThat(alertIds.content[1].offenderNo).isEqualTo("A1234KT")
+    }
+  }
+
+  @Nested
+  inner class GetPrisonerIds {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      alertsNomisApiMockServer.stubGetPrisonIds()
+
+      apiService.getPrisonerIds(
+        pageNumber = 0,
+        pageSize = 20,
+      )
+
+      alertsNomisApiMockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass page params to service`() = runTest {
+      alertsNomisApiMockServer.stubGetPrisonIds()
+
+      apiService.getPrisonerIds(
+        pageNumber = 5,
+        pageSize = 100,
+      )
+
+      alertsNomisApiMockServer.verify(
+        getRequestedFor(urlPathEqualTo("/prisoners/ids"))
+          .withQueryParam("active", equalTo("false"))
+          .withQueryParam("page", equalTo("5"))
+          .withQueryParam("size", equalTo("100")),
+      )
+    }
+
+    @Test
+    fun `will return a page of alerts`() = runTest {
+      alertsNomisApiMockServer.stubGetPrisonIds(totalElements = 10, bookingId = 0, offenderNo = "A0001KT")
+
+      val prisonerIds = apiService.getPrisonerIds(
+        pageNumber = 5,
+        pageSize = 100,
+      )
+
+      assertThat(prisonerIds.content).hasSize(10)
+      assertThat(prisonerIds.content[0].status).isEqualTo("ACTIVE IN")
+      assertThat(prisonerIds.content[0].bookingId).isEqualTo(1)
+      assertThat(prisonerIds.content[0].offenderNo).isEqualTo("A0001KT")
+      assertThat(prisonerIds.content[1].status).isEqualTo("ACTIVE IN")
+      assertThat(prisonerIds.content[1].bookingId).isEqualTo(2)
+      assertThat(prisonerIds.content[1].offenderNo).isEqualTo("A0002KT")
     }
   }
 }

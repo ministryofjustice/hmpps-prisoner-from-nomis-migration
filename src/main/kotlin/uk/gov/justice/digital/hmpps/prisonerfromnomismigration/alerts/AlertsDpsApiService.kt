@@ -49,4 +49,11 @@ class AlertsDpsApiService(@Qualifier("alertsApiWebClient") private val webClient
       .bodyValue(alert)
       .retrieve()
       .awaitBodyOrNullWhenConflict()
+
+  // TODO - real DPS service which is not ready yet
+  suspend fun migrateAlerts(alerts: List<MigrateAlertRequest>): List<Alert>? = emptyList()
 }
+
+data class AlertsForPrisonerResponse(
+  val alerts: List<Alert>,
+)

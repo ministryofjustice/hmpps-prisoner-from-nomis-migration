@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-04-10.7260.212f7df"
+    "version": "2024-04-10.7270.32c3b17"
   },
   "servers": [
     {
@@ -6076,7 +6076,7 @@
         "tags": [
           "prisoners-resource"
         ],
-        "summary": "Gets the identifiers for all prisoners. Currently only active prisoners are supported",
+        "summary": "Gets the identifiers for all prisoners. By default only active prisoners will be return unless active=false",
         "description": "Requires role SYNCHRONISATION_REPORTING.",
         "operationId": "getPrisonerIdentifiers",
         "parameters": [
@@ -6091,7 +6091,7 @@
           {
             "name": "active",
             "in": "query",
-            "description": "Only return active prisoners currently in prison",
+            "description": "When true only return active prisoners currently in prison else all prisoners that at some point has been in prison are returned",
             "required": false,
             "schema": {
               "type": "boolean",
@@ -14174,18 +14174,29 @@
       "PrisonerId": {
         "required": [
           "bookingId",
-          "offenderNo"
+          "offenderNo",
+          "status"
         ],
         "type": "object",
         "properties": {
           "bookingId": {
             "type": "integer",
-            "format": "int64"
+            "description": "Latest booking id",
+            "format": "int64",
+            "example": 12345
           },
           "offenderNo": {
-            "type": "string"
+            "type": "string",
+            "description": "The NOMIS reference AKA prisoner number",
+            "example": "A1234AA"
+          },
+          "status": {
+            "type": "string",
+            "description": "The prisoner's current status",
+            "example": "ACTIVE IN"
           }
-        }
+        },
+        "description": "Prisoner identifier"
       },
       "SentenceResponse": {
         "required": [
