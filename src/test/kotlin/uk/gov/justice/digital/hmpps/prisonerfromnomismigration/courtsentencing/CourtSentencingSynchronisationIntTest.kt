@@ -41,6 +41,7 @@ private const val NOMIS_COURT_APPEARANCE_ID = 5555L
 private const val DPS_COURT_CASE_ID = "cc1"
 private const val DPS_COURT_APPEARANCE_ID = "6f35a357-f458-40b9-b824-de729ffeb459"
 private const val EXISTING_DPS_COURT_CASE_ID = "cc2"
+private const val EXISTING_DPS_COURT_APPEARANCE_ID = "9d99a357-f458-40b9-b824-de729ffeb459"
 private const val OFFENDER_ID_DISPLAY = "A3864DZ"
 private const val NOMIS_BOOKING_ID = 12344321L
 
@@ -678,7 +679,9 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `the event is placed on dead letter queue`() {
           await untilAsserted {
             assertThat(
-              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(courtSentencingQueueOffenderEventsDlqUrl).get(),
+              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
+                courtSentencingQueueOffenderEventsDlqUrl,
+              ).get(),
             ).isEqualTo(1)
           }
         }
@@ -689,7 +692,10 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class MappingExists {
         @BeforeEach
         fun setUp() {
-          courtSentencingMappingApiMockServer.stubGetByNomisId(nomisCourtCaseId = NOMIS_COURT_CASE_ID, dpsCourtCaseId = DPS_COURT_CASE_ID)
+          courtSentencingMappingApiMockServer.stubGetByNomisId(
+            nomisCourtCaseId = NOMIS_COURT_CASE_ID,
+            dpsCourtCaseId = DPS_COURT_CASE_ID,
+          )
 
           dpsCourtSentencingServer.stubPutCourtCaseForUpdate(courtCaseId = DPS_COURT_CASE_ID)
           awsSqsCourtSentencingOffenderEventsClient.sendMessage(
@@ -793,8 +799,15 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(status = NOT_FOUND)
-          courtSentencingMappingApiMockServer.stubGetByNomisId(nomisCourtCaseId = NOMIS_COURT_CASE_ID, dpsCourtCaseId = DPS_COURT_CASE_ID)
-          dpsCourtSentencingServer.stubPostCourtAppearanceForCreate(courtAppearanceId = UUID.fromString(DPS_COURT_APPEARANCE_ID))
+          courtSentencingMappingApiMockServer.stubGetByNomisId(
+            nomisCourtCaseId = NOMIS_COURT_CASE_ID,
+            dpsCourtCaseId = DPS_COURT_CASE_ID,
+          )
+          dpsCourtSentencingServer.stubPostCourtAppearanceForCreate(
+            courtAppearanceId = UUID.fromString(
+              DPS_COURT_APPEARANCE_ID,
+            ),
+          )
           courtSentencingMappingApiMockServer.stubPostCourtAppearanceMapping()
           awsSqsCourtSentencingOffenderEventsClient.sendMessage(
             courtSentencingQueueOffenderEventsUrl,
@@ -820,7 +833,12 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             courtSentencingMappingApiMockServer.verify(
               postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-appearances"))
                 .withRequestBody(matchingJsonPath("dpsCourtAppearanceId", equalTo(DPS_COURT_APPEARANCE_ID)))
-                .withRequestBody(matchingJsonPath("nomisCourtAppearanceId", equalTo(NOMIS_COURT_APPEARANCE_ID.toString())))
+                .withRequestBody(
+                  matchingJsonPath(
+                    "nomisCourtAppearanceId",
+                    equalTo(NOMIS_COURT_APPEARANCE_ID.toString()),
+                  ),
+                )
                 .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
             )
           }
@@ -890,6 +908,223 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           }
           // will not create a court case in DPS
           dpsCourtSentencingServer.verify(0, postRequestedFor(anyUrl()))
+        }
+      }
+
+      @Nested
+      @DisplayName("When mapping POST fails")
+      inner class MappingFail {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(status = NOT_FOUND)
+          courtSentencingMappingApiMockServer.stubGetByNomisId(
+            nomisCourtCaseId = NOMIS_COURT_CASE_ID,
+            dpsCourtCaseId = DPS_COURT_CASE_ID,
+          )
+          dpsCourtSentencingServer.stubPostCourtAppearanceForCreate(courtAppearanceId = UUID.fromString(DPS_COURT_APPEARANCE_ID))
+        }
+
+        @Nested
+        @DisplayName("Fails once")
+        inner class FailsOnce {
+          @BeforeEach
+          fun setUp() {
+            courtSentencingMappingApiMockServer.stubPostCourtAppearanceMappingFailureFollowedBySuccess()
+            awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+              courtSentencingQueueOffenderEventsUrl,
+              courtAppearanceEvent(
+                eventType = "COURT_EVENTS-INSERTED",
+              ),
+            )
+          }
+
+          @Test
+          fun `will create a court case in DPS`() {
+            await untilAsserted {
+              dpsCourtSentencingServer.verify(
+                postRequestedFor(urlPathEqualTo("/court-appearance")),
+              )
+            }
+          }
+
+          @Test
+          fun `will attempt to create mapping two times and succeed`() {
+            await untilAsserted {
+              courtSentencingMappingApiMockServer.verify(
+                WireMock.exactly(2),
+                postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-appearances"))
+                  .withRequestBody(matchingJsonPath("dpsCourtAppearanceId", equalTo(DPS_COURT_APPEARANCE_ID)))
+                  .withRequestBody(matchingJsonPath("nomisCourtAppearanceId", equalTo(NOMIS_COURT_APPEARANCE_ID.toString())))
+                  .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
+              )
+            }
+
+            assertThat(
+              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
+                courtSentencingQueueOffenderEventsDlqUrl,
+              ).get(),
+            ).isEqualTo(0)
+          }
+
+          @Test
+          fun `will track a telemetry event for partial success`() {
+            await untilAsserted {
+              verify(telemetryClient).trackEvent(
+                eq("court-appearance-synchronisation-created-success"),
+                check {
+                  assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                  assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                  assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+                  assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+                  assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+                  assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+                  assertThat(it["mapping"]).isEqualTo("initial-failure")
+                },
+                isNull(),
+              )
+            }
+
+            await untilAsserted {
+              verify(telemetryClient).trackEvent(
+                eq("court-appearance-mapping-created-synchronisation-success"),
+                check {
+                  assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+                  assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                  assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+                  assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+                },
+                isNull(),
+              )
+            }
+          }
+        }
+
+        @Nested
+        @DisplayName("Fails constantly")
+        inner class FailsConstantly {
+          @BeforeEach
+          fun setUp() {
+            courtSentencingMappingApiMockServer.stubPostCourtAppearanceMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
+            awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+              courtSentencingQueueOffenderEventsUrl,
+              courtAppearanceEvent(
+                eventType = "COURT_EVENTS-INSERTED",
+              ),
+            )
+            await untilCallTo {
+              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
+                courtSentencingQueueOffenderEventsDlqUrl,
+              ).get()
+            } matches { it == 1 }
+          }
+
+          @Test
+          fun `will create a court case in DPS`() {
+            await untilAsserted {
+              dpsCourtSentencingServer.verify(
+                1,
+                postRequestedFor(urlPathEqualTo("/court-appearance")),
+              )
+            }
+          }
+
+          @Test
+          fun `will attempt to create mapping several times and keep failing`() {
+            courtSentencingMappingApiMockServer.verify(
+              WireMock.exactly(3),
+              postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-appearances")),
+            )
+          }
+
+          @Test
+          fun `will track a telemetry event for success`() {
+            await untilAsserted {
+              verify(telemetryClient).trackEvent(
+                eq("court-appearance-synchronisation-created-success"),
+                check {
+                  assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+                  assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                  assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+                  assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+                  assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+                  assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+                  assertThat(it["mapping"]).isEqualTo("initial-failure")
+                },
+                isNull(),
+              )
+            }
+          }
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName("duplicate mapping - two messages received at the same time")
+    inner class WhenDuplicate {
+
+      @Test
+      internal fun `it will not retry after a 409 (duplicate court appearance written to Sentencing API)`() {
+        // in the case of multiple events received at the same time - mapping doesn't exist
+        courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(status = NOT_FOUND)
+
+        courtSentencingMappingApiMockServer.stubGetByNomisId(
+          nomisCourtCaseId = NOMIS_COURT_CASE_ID,
+          dpsCourtCaseId = DPS_COURT_CASE_ID,
+        )
+
+        courtSentencingNomisApiMockServer.stubGetCourtAppearance(
+          offenderNo = OFFENDER_ID_DISPLAY,
+          courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+          courtCaseId = NOMIS_COURT_CASE_ID,
+        )
+        dpsCourtSentencingServer.stubPostCourtAppearanceForCreate(
+          courtAppearanceId = UUID.fromString(
+            DPS_COURT_APPEARANCE_ID,
+          ),
+        )
+
+        courtSentencingMappingApiMockServer.stubCourtAppearanceMappingCreateConflict(
+          existingDpsCourtAppearanceId = EXISTING_DPS_COURT_APPEARANCE_ID,
+          duplicateDpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
+          nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+        )
+
+        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+          courtSentencingQueueOffenderEventsUrl,
+          courtAppearanceEvent(
+            eventType = "COURT_EVENTS-INSERTED",
+            courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+            bookingId = NOMIS_BOOKING_ID,
+            offenderNo = OFFENDER_ID_DISPLAY,
+          ),
+        )
+
+        // wait for mapping calls before verifying
+        await untilAsserted {
+          courtSentencingMappingApiMockServer.verify(
+            1,
+            postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-appearances")),
+          )
+        }
+
+        // doesn't retry
+        dpsCourtSentencingServer.verify(
+          1,
+          postRequestedFor(urlPathEqualTo("/court-appearance")),
+        )
+
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            org.mockito.kotlin.eq("from-nomis-sync-court-appearance-duplicate"),
+            check {
+              assertThat(it["migrationId"]).isNull()
+              assertThat(it["existingDpsCourtAppearanceId"]).isEqualTo(EXISTING_DPS_COURT_APPEARANCE_ID)
+              assertThat(it["duplicateDpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+              assertThat(it["existingNomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+              assertThat(it["duplicateNomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+            },
+            isNull(),
+          )
         }
       }
     }
