@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-03-25.879.2a5f14a"
+    "version": "2024-04-11.1084.d624656"
   },
   "servers": [
     {
@@ -45,16 +45,6 @@
           }
         ],
         "responses": {
-          "401": {
-            "description": "Unauthorised, requires a valid Oauth2 token",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "200": {
             "description": "Alert found",
             "content": {
@@ -67,6 +57,16 @@
           },
           "403": {
             "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
               "application/json": {
                 "schema": {
@@ -145,6 +145,16 @@
           "required": true
         },
         "responses": {
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Bad request",
             "content": {
@@ -157,16 +167,6 @@
           },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
             "content": {
               "application/json": {
                 "schema": {
@@ -235,8 +235,8 @@
           }
         ],
         "responses": {
-          "404": {
-            "description": "Alert was not found or already deleted",
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
             "content": {
               "application/json": {
                 "schema": {
@@ -258,12 +258,93 @@
           "204": {
             "description": "Alert deleted"
           },
+          "404": {
+            "description": "Alert was not found or already deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/migrate/{prisonNumber}/alerts": {
+      "post": {
+        "tags": [
+          "migrate-prisoner-alerts-controller"
+        ],
+        "summary": "Migrate all alerts for a prisoner from NOMIS",
+        "description": "\n\nRequires one of the following roles:\n* ROLE_ALERTS_ADMIN\n* ROLE_NOMIS_ALERTS",
+        "operationId": "createAlert",
+        "parameters": [
+          {
+            "name": "prisonNumber",
+            "in": "path",
+            "description": "Prison number of the prisoner. Also referred to as the offender number, offender id or NOMS id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "A1234AA"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "description": "The alert data to use to create an alert in the service",
+                "items": {
+                  "$ref": "#/components/schemas/MigrateAlert"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
           "403": {
             "description": "Forbidden, requires an appropriate role",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Alerts migrated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Alert"
+                  }
                 }
               }
             }
@@ -278,7 +359,7 @@
         ],
         "summary": "Migrate an alert from NOMIS",
         "description": "\n\nRequires one of the following roles:\n* ROLE_ALERTS_ADMIN\n* ROLE_NOMIS_ALERTS",
-        "operationId": "createAlert",
+        "operationId": "createAlert_1",
         "requestBody": {
           "content": {
             "application/json": {
@@ -290,6 +371,16 @@
           "required": true
         },
         "responses": {
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Bad request",
             "content": {
@@ -329,16 +420,6 @@
                 }
               }
             }
-          },
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -350,7 +431,7 @@
         ],
         "summary": "Create an alert",
         "description": "\n\nRequires one of the following roles:\n* ROLE_ALERTS_WRITER\n* ROLE_ALERTS_ADMIN\n* UPDATE_ALERT\n* ROLE_NOMIS_ALERTS",
-        "operationId": "createAlert_1",
+        "operationId": "createAlert_2",
         "parameters": [
           {
             "name": "Username",
@@ -392,8 +473,8 @@
           "required": true
         },
         "responses": {
-          "400": {
-            "description": "Bad request",
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
             "content": {
               "application/json": {
                 "schema": {
@@ -402,12 +483,12 @@
               }
             }
           },
-          "201": {
-            "description": "Alert created successfully",
+          "400": {
+            "description": "Bad request",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Alert"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -432,12 +513,231 @@
               }
             }
           },
+          "201": {
+            "description": "Alert created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Alert"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alert-types": {
+      "get": {
+        "tags": [
+          "alert-types-controller"
+        ],
+        "summary": "Get all alert types",
+        "description": "Returns the full list of alert types and the alert codes within those types. By default this endpoint only returns active alert types and codes. The include inactive parameter can be used to return all alert types and codes.\n\nRequires one of the following roles:\n* ROLE_ALERTS_READER\n* ROLE_ALERTS_ADMIN\n* PRISON",
+        "operationId": "retrieveAlertTypes",
+        "parameters": [
+          {
+            "name": "includeInactive",
+            "in": "query",
+            "description": "Include inactive alert types and codes. Defaults to false",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
           "403": {
             "description": "Forbidden, requires an appropriate role",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Alert types and codes found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AlertType"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "alert-types-controller"
+        ],
+        "summary": "Create an alert type",
+        "description": "Create a new alert type, typically from the Alerts UI\n\nRequires one of the following roles:\n* ROLE_ALERTS_ADMIN",
+        "operationId": "createAlertType",
+        "parameters": [
+          {
+            "name": "Username",
+            "in": "header",
+            "description": "The username of the user interacting with the client service. This can be used instead of the `user_name` or `username` token claim when the client service is acting on behalf of a user. The value passed in the username header will only be used if a `user_name` or `username` token claim is not present.",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAlertTypeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Alert type created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AlertType"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict, the alert type code already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alert-codes": {
+      "post": {
+        "tags": [
+          "alert-codes-controller"
+        ],
+        "summary": "Create an alert code",
+        "description": "Create a new alert code, typically from the Alerts UI\n\nRequires one of the following roles:\n* ROLE_ALERTS_ADMIN",
+        "operationId": "createAlertCode",
+        "parameters": [
+          {
+            "name": "Username",
+            "in": "header",
+            "description": "The username of the user interacting with the client service. This can be used instead of the `user_name` or `username` token claim when the client service is acting on behalf of a user. The value passed in the username header will only be used if a `user_name` or `username` token claim is not present.",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAlertCodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "404": {
+            "description": "Not found, the parent alert type has not been found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict, the alert code already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Alert code created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertCode"
                 }
               }
             }
@@ -565,6 +865,16 @@
           }
         ],
         "responses": {
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
@@ -584,16 +894,6 @@
                 }
               }
             }
-          },
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -604,7 +904,7 @@
           "prisoner-alerts-controller"
         ],
         "summary": "Gets all the alerts for prisoners by their prison numbers",
-        "description": "Returns all the alerts for the supplied prison numbers. The alerts are returned along with counts.\n\nRequires one of the following roles:\n* ROLE_ALERTS_READER\n* ROLE_ALERTS_ADMIN\n* PRISON",
+        "description": "Returns all the alerts for the supplied prison numbers. The alerts for each prisoner are mapped to their prison number.\n\nRequires one of the following roles:\n* ROLE_ALERTS_READER\n* ROLE_ALERTS_ADMIN\n* PRISON",
         "operationId": "retrievePrisonerAlerts_1",
         "parameters": [
           {
@@ -621,6 +921,16 @@
           }
         ],
         "responses": {
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
@@ -636,17 +946,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PrisonersAlerts"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Alert"
+                    }
+                  }
                 }
               }
             }
@@ -691,8 +997,8 @@
           }
         ],
         "responses": {
-          "404": {
-            "description": "Alert was not found or already deleted",
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
             "content": {
               "application/json": {
                 "schema": {
@@ -711,8 +1017,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
+          "404": {
+            "description": "Alert was not found or already deleted",
             "content": {
               "application/json": {
                 "schema": {
@@ -730,62 +1036,6 @@
                   "items": {
                     "$ref": "#/components/schemas/AuditEvent"
                   }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/alert-types": {
-      "get": {
-        "tags": [
-          "alert-types-controller"
-        ],
-        "summary": "Get all alert types",
-        "description": "Returns the full list of alert types and the alert codes within those types. By default this endpoint only returns active alert types and codes. The include inactive parameter can be used to return all alert types and codes.\n\nRequires one of the following roles:\n* ROLE_ALERTS_READER\n* ROLE_ALERTS_ADMIN\n* PRISON",
-        "operationId": "getAlertTypes",
-        "parameters": [
-          {
-            "name": "includeInactive",
-            "in": "query",
-            "description": "Include inactive alert types and codes. Defaults to false",
-            "required": false,
-            "schema": {
-              "type": "boolean"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Alert types and codes found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/AlertType"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorised, requires a valid Oauth2 token",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1025,6 +1275,110 @@
         },
         "description": "A comment appended to an alert comment thread"
       },
+      "MigrateAlert": {
+        "required": [
+          "activeFrom",
+          "alertCode",
+          "alertSeq",
+          "bookingSeq",
+          "createdAt",
+          "createdBy",
+          "createdByDisplayName",
+          "offenderBookId"
+        ],
+        "type": "object",
+        "properties": {
+          "offenderBookId": {
+            "type": "integer",
+            "description": "The internal NOMIS id for the offender booking. An alert in NOMIS is uniquely identified by the offender booking id and alert sequence.This is returned as part of the migrated alert response for mapping between NOMIS and DPS.",
+            "format": "int64",
+            "example": 12345
+          },
+          "bookingSeq": {
+            "type": "integer",
+            "description": "The sequence of the NOMIS offender booking. A sequence of 1 means the alert is from the current booking. A sequence of > 1 means the alert is from a historic booking.This is returned as part of the migrated alert response for mapping between NOMIS and DPS.",
+            "format": "int32",
+            "example": 1
+          },
+          "alertSeq": {
+            "type": "integer",
+            "description": "The NOMIS alert sequence. An alert in NOMIS is uniquely identified by the offender booking id and alert sequence.This is returned as part of the migrated alert response for mapping between NOMIS and DPS.",
+            "format": "int32",
+            "example": 2
+          },
+          "alertCode": {
+            "maxLength": 12,
+            "minLength": 1,
+            "type": "string",
+            "description": "The alert code for the alert. A person can only have one alert using each code active at any one time. The alert code must exist but can be inactive when migrating an alert.",
+            "example": "ABC"
+          },
+          "description": {
+            "maxLength": 4000,
+            "minLength": 0,
+            "type": "string",
+            "description": "The description of the alert. This is a free text field and can be used to provide additional information about the alert e.g. the reasons for adding it.It is limited to 4000 characters when migrating an alert.",
+            "example": "Alert description"
+          },
+          "authorisedBy": {
+            "maxLength": 40,
+            "minLength": 0,
+            "type": "string",
+            "description": "The user, staff member, approving person or organisation that authorised the alert to be added. This is a free text field and can be used to record the name of the person who authorised the alert. It is limited to 40 characters.",
+            "example": "A. Nurse, An Agency"
+          },
+          "activeFrom": {
+            "type": "string",
+            "description": "The date the alert should be active from. The active from date can be in the past or the future, but must be on or before the active to date",
+            "format": "date",
+            "example": "2021-09-27"
+          },
+          "activeTo": {
+            "type": "string",
+            "description": "The date the alert should be active until. If not provided, the alert will be active indefinitely. The active to date can be in the past or the future, but must be on or after the active from date",
+            "format": "date",
+            "example": "2022-07-15"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "The date and time the alert was created.",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "maxLength": 32,
+            "minLength": 1,
+            "type": "string",
+            "description": "The user id of the person who created the alert.",
+            "example": "AB11DZ"
+          },
+          "createdByDisplayName": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string",
+            "description": "The displayable name of the person who created the alert.",
+            "example": "C Reated"
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "The date and time the alert was updated. Only provide if the alert has been updated since creation.",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "maxLength": 32,
+            "minLength": 1,
+            "type": "string",
+            "description": "The user id of the person who updated the alert. Required if updated at has been supplied.",
+            "example": "AB11DZ"
+          },
+          "updatedByDisplayName": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string",
+            "description": "The displayable name of the person who updated the alert. Required if updated at has been supplied.",
+            "example": "Up Dated"
+          }
+        }
+      },
       "MigrateAlertRequest": {
         "required": [
           "activeFrom",
@@ -1150,12 +1504,14 @@
         "properties": {
           "prisonNumber": {
             "maxLength": 10,
-            "minLength": 0,
+            "minLength": 1,
             "type": "string",
             "description": "The prison number of the person the alert is for. Also referred to as the offender number, offender id or NOMS id.",
             "example": "A1234AA"
           },
           "alertCode": {
+            "maxLength": 12,
+            "minLength": 1,
             "type": "string",
             "description": "The alert code for the alert. A person can only have one alert using each code active at any one time. The alert code must exist and be active.",
             "example": "ABC"
@@ -1189,175 +1545,29 @@
         },
         "description": "The alert data to use to create an alert in the service"
       },
-      "PageAlert": {
-        "type": "object",
-        "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
-          },
-          "size": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Alert"
-            }
-          },
-          "number": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "sort": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SortObject"
-            }
-          },
-          "numberOfElements": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "empty": {
-            "type": "boolean"
-          }
-        }
-      },
-      "PageableObject": {
-        "type": "object",
-        "properties": {
-          "offset": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "sort": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SortObject"
-            }
-          },
-          "pageSize": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "paged": {
-            "type": "boolean"
-          },
-          "unpaged": {
-            "type": "boolean"
-          },
-          "pageNumber": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
-      "SortObject": {
-        "type": "object",
-        "properties": {
-          "direction": {
-            "type": "string"
-          },
-          "nullHandling": {
-            "type": "string"
-          },
-          "ascending": {
-            "type": "boolean"
-          },
-          "property": {
-            "type": "string"
-          },
-          "ignoreCase": {
-            "type": "boolean"
-          }
-        }
-      },
-      "PrisonersAlerts": {
+      "CreateAlertTypeRequest": {
         "required": [
-          "alerts",
-          "prisonNumbers"
-        ],
-        "type": "object",
-        "properties": {
-          "prisonNumbers": {
-            "type": "array",
-            "description": "The distinct list of prison numbers for the prisoners with alerts in the collection.",
-            "example": [
-              "A1234AA",
-              "B2345BB"
-            ],
-            "items": {
-              "type": "string",
-              "description": "The distinct list of prison numbers for the prisoners with alerts in the collection.",
-              "example": "[\"A1234AA\",\"B2345BB\"]"
-            }
-          },
-          "alerts": {
-            "type": "array",
-            "description": "The list of alerts for the prisoners in the collection.",
-            "items": {
-              "$ref": "#/components/schemas/Alert"
-            }
-          }
-        },
-        "description": "Collection of alerts for a list of prisoners"
-      },
-      "AuditEvent": {
-        "required": [
-          "action",
-          "actionedAt",
-          "actionedBy",
-          "actionedByDisplayName",
+          "code",
           "description"
         ],
         "type": "object",
         "properties": {
-          "action": {
+          "code": {
+            "maxLength": 12,
+            "minLength": 1,
             "type": "string",
-            "description": "The audit event type",
-            "example": "CREATED",
-            "enum": [
-              "CREATED",
-              "UPDATED",
-              "DELETED"
-            ]
+            "description": "The short code for the alert type",
+            "example": "A"
           },
           "description": {
+            "maxLength": 40,
+            "minLength": 1,
             "type": "string",
-            "description": "A description of what has changed",
-            "example": "The active to date was updated from 2012-02-03 to 2012-04-05"
-          },
-          "actionedAt": {
-            "type": "string",
-            "description": "When the event happened",
-            "format": "date-time"
-          },
-          "actionedBy": {
-            "type": "string",
-            "description": "The user id of the person who was audited",
-            "example": "AB1234AA"
-          },
-          "actionedByDisplayName": {
-            "type": "string",
-            "description": "The friendly name of the person who was audited",
-            "example": "An Auditer"
+            "description": "The description of the alert type",
+            "example": "Alert type description"
           }
-        }
+        },
+        "description": "The request body for creating a new alert type"
       },
       "AlertCode": {
         "required": [
@@ -1502,6 +1712,178 @@
           }
         },
         "description": "An alert type used to categorise alerts"
+      },
+      "CreateAlertCodeRequest": {
+        "required": [
+          "code",
+          "description",
+          "parent"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "maxLength": 12,
+            "minLength": 1,
+            "type": "string",
+            "description": "The short code for the alert code",
+            "example": "A"
+          },
+          "description": {
+            "maxLength": 40,
+            "minLength": 1,
+            "type": "string",
+            "description": "The description of the alert code",
+            "example": "Alert code description"
+          },
+          "parent": {
+            "maxLength": 12,
+            "minLength": 1,
+            "type": "string",
+            "description": "The short code for the parent type",
+            "example": "A"
+          }
+        },
+        "description": "The request body for creating a new alert code"
+      },
+      "PageAlert": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Alert"
+            }
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PageableObject": {
+        "type": "object",
+        "properties": {
+          "offset": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sort": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "paged": {
+            "type": "boolean"
+          },
+          "unpaged": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SortObject": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string"
+          },
+          "nullHandling": {
+            "type": "string"
+          },
+          "ascending": {
+            "type": "boolean"
+          },
+          "property": {
+            "type": "string"
+          },
+          "ignoreCase": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AuditEvent": {
+        "required": [
+          "action",
+          "actionedAt",
+          "actionedBy",
+          "actionedByDisplayName",
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "The audit event type",
+            "example": "CREATED",
+            "enum": [
+              "CREATED",
+              "UPDATED",
+              "DELETED"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "description": "A description of what has changed",
+            "example": "The active to date was updated from 2012-02-03 to 2012-04-05"
+          },
+          "actionedAt": {
+            "type": "string",
+            "description": "When the event happened",
+            "format": "date-time"
+          },
+          "actionedBy": {
+            "type": "string",
+            "description": "The user id of the person who was audited",
+            "example": "AB1234AA"
+          },
+          "actionedByDisplayName": {
+            "type": "string",
+            "description": "The friendly name of the person who was audited",
+            "example": "An Auditer"
+          }
+        }
       }
     },
     "securitySchemes": {

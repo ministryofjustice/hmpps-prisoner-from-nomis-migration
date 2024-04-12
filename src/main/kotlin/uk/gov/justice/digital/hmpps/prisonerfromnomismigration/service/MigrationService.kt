@@ -214,7 +214,7 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, NOMIS_ENTITY : Any
     )
   }
 
-  suspend fun retryCreateMapping(context: MigrationContext<MAPPING>) {
+  open suspend fun retryCreateMapping(context: MigrationContext<MAPPING>) {
     mappingService.createMapping(
       context.body,
       object : ParameterizedTypeReference<DuplicateErrorResponse<MAPPING>>() {},

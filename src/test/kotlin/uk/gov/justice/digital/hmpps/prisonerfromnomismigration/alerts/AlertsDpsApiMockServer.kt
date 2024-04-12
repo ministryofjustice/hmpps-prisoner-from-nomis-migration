@@ -97,6 +97,21 @@ class AlertsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubMigrateAlerts(
+    offenderNo: String,
+    response: List<Alert> = listOf(dpsAlert()),
+  ) {
+    stubFor(
+      post("/migrate/$offenderNo/alerts")
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader("Content-Type", "application/json")
+            .withBody(AlertsDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
   fun stubMigrateAlert(
     status: HttpStatus,
     error: ErrorResponse = ErrorResponse(status = status.value()),
