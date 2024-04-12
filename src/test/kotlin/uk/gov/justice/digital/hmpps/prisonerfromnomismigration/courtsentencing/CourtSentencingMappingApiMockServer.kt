@@ -174,7 +174,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
   fun stubCourtAppearanceMappingCreateConflict(
     existingDpsCourtAppearanceId: String = "10",
     duplicateDpsCourtAppearanceId: String = "11",
-    nomisCourtCaseId: Long = 123,
+    nomisCourtAppearanceId: Long = 123,
   ) {
     mappingApi.stubFor(
       post(WireMock.urlPathEqualTo("/mapping/court-sentencing/court-appearances"))
@@ -188,15 +188,15 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
               {
                 "existing" :  {
                   "dpsCourtAppearanceId": "$existingDpsCourtAppearanceId",
-                  "nomisCourtCaseId": $nomisCourtCaseId,
+                  "nomisCourtAppearanceId": $nomisCourtAppearanceId,
                   "courtCharges": [],
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",
                   "mappingType": "MIGRATED"
                  },
                  "duplicate" : {
-                  "dpsCourtCaseId": "$duplicateDpsCourtAppearanceId",
-                  "nomisCourtCaseId": $nomisCourtCaseId,
+                  "dpsCourtAppearanceId": "$duplicateDpsCourtAppearanceId",
+                  "nomisCourtAppearanceId": $nomisCourtAppearanceId,
                   "courtCharges": [],
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",

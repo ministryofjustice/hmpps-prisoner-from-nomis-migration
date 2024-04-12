@@ -45,5 +45,4 @@ class SynchronisationQueueService(
 data class InternalMessage<T>(
   val body: T,
   val telemetryAttributes: Map<String, String>,
-  val entityName: String? = null,
 )
