@@ -1,5 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts
 
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
@@ -20,6 +22,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension.Companion.dpsAlertsServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.dpsAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
@@ -28,6 +32,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import java.time.Duration
 import java.time.LocalDateTime
+import java.util.UUID
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = ["alerts.migration.type=by-prisoner"])
 class AlertsByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
@@ -84,11 +89,14 @@ class AlertsByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
         alertsNomisApiMockServer.stubGetPrisonIds(totalElements = 2, pageSize = 10, bookingId = 1234567, offenderNo = "A0001KT")
         alertsNomisApiMockServer.stubGetAlertsToMigrate(offenderNo = "A0001KT", currentAlertCount = 1, previousAlertCount = 0)
         alertsNomisApiMockServer.stubGetAlertsToMigrate(offenderNo = "A0002KT", currentAlertCount = 1, previousAlertCount = 0)
+        dpsAlertsServer.stubMigrateAlerts(offenderNo = "A0001KT", response = listOf(dpsAlert().copy(alertUuid = UUID.fromString("00000000-0000-0000-0000-000000000001"))))
+        dpsAlertsServer.stubMigrateAlerts(offenderNo = "A0002KT", response = listOf(dpsAlert().copy(alertUuid = UUID.fromString("00000000-0000-0000-0000-000000000002"))))
+        alertsMappingApiMockServer.stubPostMappings()
         migrationResult = performMigration()
       }
 
       @Test
-      fun `will only migrate all prisoners of the alerts`() {
+      fun `will migrate all prisoner's alerts`() {
         verify(telemetryClient, times(2)).trackEvent(
           eq("alerts-migration-entity-migrated"),
           any(),
@@ -108,6 +116,17 @@ class AlertsByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
           },
           isNull(),
         )
+      }
+
+      @Test
+      fun `will POST all alerts to DPS for each prisoner`() {
+        dpsAlertsServer.verify(postRequestedFor(urlPathEqualTo("/migrate/A0001KT/alerts")))
+        dpsAlertsServer.verify(postRequestedFor(urlPathEqualTo("/migrate/A0002KT/alerts")))
+      }
+
+      @Test
+      fun `will POST mappings for alerts created for each prisoner`() {
+        alertsMappingApiMockServer.verify(2, postRequestedFor(urlPathEqualTo("/mapping/alerts/all")))
       }
     }
   }
