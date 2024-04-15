@@ -25,12 +25,17 @@ import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension.Companion.dpsAlertsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.migratedAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.Duration
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -87,7 +92,32 @@ class AlertsByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         alertsNomisApiMockServer.stubGetPrisonIds(totalElements = 2, pageSize = 10, bookingId = 1234567, offenderNo = "A0001KT")
-        alertsNomisApiMockServer.stubGetAlertsToMigrate(offenderNo = "A0001KT", currentAlertCount = 1, previousAlertCount = 0)
+        alertsNomisApiMockServer.stubGetAlertsToMigrate(
+          offenderNo = "A0001KT",
+          currentAlertCount = 1,
+          previousAlertCount = 0,
+          alert = AlertResponse(
+            bookingId = 1,
+            alertSequence = 1,
+            bookingSequence = 10,
+            alertCode = CodeDescription("XCU", "Controlled Unlock"),
+            type = CodeDescription("X", "Security"),
+            date = LocalDate.parse("2021-01-01"),
+            expiryDate = LocalDate.parse("2022-01-01"),
+            isActive = false,
+            isVerified = true,
+            comment = "Due to the past",
+            authorisedBy = "Security dept",
+            audit = NomisAudit(
+              createDatetime = "2021-01-01T12:34:56",
+              createUsername = "SYS",
+              createDisplayName = null,
+              modifyDatetime = "2021-02-02T12:24:56",
+              modifyUserId = "G.BARNES",
+              modifyDisplayName = "GARRY BARNES",
+            ),
+          ),
+        )
         alertsNomisApiMockServer.stubGetAlertsToMigrate(offenderNo = "A0002KT", currentAlertCount = 1, previousAlertCount = 0)
         dpsAlertsServer.stubMigrateAlerts(offenderNo = "A0001KT", response = listOf(migratedAlert().copy(alertUuid = UUID.fromString("00000000-0000-0000-0000-000000000001"), offenderBookId = 1234567, alertSeq = 1)))
         dpsAlertsServer.stubMigrateAlerts(offenderNo = "A0002KT", response = listOf(migratedAlert().copy(alertUuid = UUID.fromString("00000000-0000-0000-0000-000000000002"), offenderBookId = 1234567, alertSeq = 2)))
@@ -126,6 +156,49 @@ class AlertsByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will POST mappings for alerts created for each prisoner`() {
+        alertsMappingApiMockServer.verify(2, postRequestedFor(urlPathEqualTo("/mapping/alerts/all")))
+      }
+
+      @Test
+      fun `will transform NOMIS alert to DPS alert`() {
+        dpsAlertsServer.verify(
+          postRequestedFor(urlPathEqualTo("/migrate/A0001KT/alerts"))
+            .withRequestBodyJsonPath("$[0].offenderBookId", "1")
+            .withRequestBodyJsonPath("$[0].alertCode", "XCU")
+            .withRequestBodyJsonPath("$[0].bookingSeq", "10")
+            .withRequestBodyJsonPath("$[0].alertSeq", "1")
+            .withRequestBodyJsonPath("$[0].description", "Due to the past")
+            .withRequestBodyJsonPath("$[0].authorisedBy", "Security dept")
+            .withRequestBodyJsonPath("$[0].activeFrom", "2021-01-01")
+            .withRequestBodyJsonPath("$[0].activeTo", "2022-01-01")
+            .withRequestBodyJsonPath("$[0].createdAt", "2021-01-01T12:34:56")
+            .withRequestBodyJsonPath("$[0].createdBy", "SYS")
+            .withRequestBodyJsonPath("$[0].createdByDisplayName", "SYS")
+            .withRequestBodyJsonPath("$[0].updatedAt", "2021-02-02T12:24:56")
+            .withRequestBodyJsonPath("$[0].updatedBy", "G.BARNES")
+            .withRequestBodyJsonPath("$[0].updatedByDisplayName", "GARRY BARNES"),
+        )
+      }
+    }
+
+    @Nested
+    inner class ErrorRecovery {
+      @BeforeEach
+      fun setUp() {
+        alertsNomisApiMockServer.stubGetPrisonIds(totalElements = 1, pageSize = 10, bookingId = 1234567, offenderNo = "A0001KT")
+        alertsNomisApiMockServer.stubGetAlertsToMigrate(offenderNo = "A0001KT", currentAlertCount = 1, previousAlertCount = 0)
+        dpsAlertsServer.stubMigrateAlerts(offenderNo = "A0001KT", response = listOf(migratedAlert().copy(alertUuid = UUID.fromString("00000000-0000-0000-0000-000000000001"), offenderBookId = 1234567, alertSeq = 1)))
+        alertsMappingApiMockServer.stubPostMappingsFailureFollowedBySuccess()
+        performMigration()
+      }
+
+      @Test
+      fun `will POST the alerts to DPS only once`() {
+        dpsAlertsServer.verify(1, postRequestedFor(urlPathEqualTo("/migrate/A0001KT/alerts")))
+      }
+
+      @Test
+      fun `will POST mappings for alerts twice due to the single error`() {
         alertsMappingApiMockServer.verify(2, postRequestedFor(urlPathEqualTo("/mapping/alerts/all")))
       }
     }
