@@ -106,6 +106,23 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubPutCourtAppearanceForUpdate(
+    courtAppearanceId: UUID = UUID.randomUUID(),
+    response: CreateCourtAppearanceResponse = CreateCourtAppearanceResponse(
+      appearanceUuid = courtAppearanceId,
+    ),
+  ) {
+    stubFor(
+      put("/court-appearance/$courtAppearanceId")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(CourtSentencingDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
   fun stubHealthPing(status: Int) {
     stubFor(
       get("/health/ping").willReturn(

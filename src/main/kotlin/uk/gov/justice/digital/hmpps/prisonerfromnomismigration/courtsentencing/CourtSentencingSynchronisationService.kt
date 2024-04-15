@@ -140,7 +140,7 @@ class CourtSentencingSynchronisationService(
         )
         if (hasMigratedAllData) {
           // after migration has run this should not happen so make sure this message goes in DLQ
-          throw IllegalStateException("Received COURT_CASE-UPDATED for court-case that has never been created")
+          throw IllegalStateException("Received OFFENDER_CASES-UPDATED for court-case that has never been created")
         }
       } else {
         val nomisCourtCase =
@@ -270,6 +270,37 @@ class CourtSentencingSynchronisationService(
         telemetryAttributes = telemetry.valuesAsStrings(),
       )
       return MappingResponse.MAPPING_FAILED
+    }
+  }
+
+  suspend fun nomisCourtAppearanceUpdated(event: CourtAppearanceEvent) {
+    val telemetry =
+      mapOf("nomisBookingId" to event.bookingId.toString(), "nomisCourtAppearanceId" to event.courtAppearanceId.toString(), "offenderNo" to event.offenderIdDisplay)
+    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      telemetryClient.trackEvent("court-appearance-synchronisation-updated-skipped", telemetry)
+    } else {
+      val mapping = mappingApiService.getCourtAppearanceOrNullByNomisId(event.courtAppearanceId)
+      if (mapping == null) {
+        telemetryClient.trackEvent(
+          "court-appearance-synchronisation-updated-failed",
+          telemetry,
+        )
+        if (hasMigratedAllData) {
+          // after migration has run this should not happen so make sure this message goes in DLQ
+          throw IllegalStateException("Received COURT_EVENTS-UPDATED for court-case that has never been created")
+        }
+      } else {
+        val nomisCourtCase = nomisApiService.getCourtAppearance(offenderNo = event.offenderIdDisplay, courtAppearanceId = event.courtAppearanceId)
+        // TODO DPS have yet to implement an update - expecting a new update DTO without a caseId
+        dpsApiService.updateCourtAppearance(
+          courtAppearanceId = mapping.dpsCourtAppearanceId,
+          nomisCourtCase.toDpsCourtAppearance(offenderNo = event.offenderIdDisplay, dpsCaseId = "DUMMY"),
+        )
+        telemetryClient.trackEvent(
+          "court-appearance-synchronisation-updated-success",
+          telemetry + ("dpsCourtAppearanceId" to mapping.dpsCourtAppearanceId),
+        )
+      }
     }
   }
 
