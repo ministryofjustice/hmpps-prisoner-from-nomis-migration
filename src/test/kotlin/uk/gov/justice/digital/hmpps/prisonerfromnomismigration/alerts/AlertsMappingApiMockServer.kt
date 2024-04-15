@@ -86,6 +86,8 @@ class AlertsMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
+  fun stubPostMappingsFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/alerts/all")
+
   fun stubDeleteMapping() {
     mappingApi.stubFor(
       delete(urlPathMatching("/mapping/alerts/dps-alert-id/.*")).willReturn(

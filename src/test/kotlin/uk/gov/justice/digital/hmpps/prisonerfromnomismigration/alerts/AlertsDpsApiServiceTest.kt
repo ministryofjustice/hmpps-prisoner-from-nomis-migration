@@ -19,7 +19,9 @@ import org.springframework.http.HttpStatus
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension.Companion.dpsAlertsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.dpsAlert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.migratedAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.CreateAlert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MigrateAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MigrateAlertRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.UpdateAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
@@ -253,7 +255,7 @@ class AlertsDpsApiServiceTest {
   }
 
   @Nested
-  inner class MigrateAlert {
+  inner class TestMigrateAlert {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
       dpsAlertsServer.stubMigrateAlert()
@@ -361,6 +363,90 @@ class AlertsDpsApiServiceTest {
           ),
         )
       }
+    }
+  }
+
+  @Nested
+  inner class MigrateAlerts {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      dpsAlertsServer.stubMigrateAlerts(offenderNo = "A1234KL")
+
+      apiService.migrateAlerts(
+        offenderNo = "A1234KL",
+        alerts = listOf(
+          MigrateAlert(
+            offenderBookId = 1234567,
+            bookingSeq = 1,
+            alertSeq = 2,
+            activeFrom = LocalDate.now(),
+            alertCode = "XA",
+            authorisedBy = null,
+            description = null,
+            createdBy = "B.MORRIS",
+            createdByDisplayName = "B. Morris",
+            createdAt = LocalDateTime.now(),
+          ),
+        ),
+      )
+
+      dpsAlertsServer.verify(
+        postRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass alerts to service`() = runTest {
+      dpsAlertsServer.stubMigrateAlerts(offenderNo = "A1234KL")
+
+      apiService.migrateAlerts(
+        offenderNo = "A1234KL",
+        alerts = listOf(
+          MigrateAlert(
+            offenderBookId = 1234567,
+            bookingSeq = 1,
+            alertSeq = 2,
+            activeFrom = LocalDate.now(),
+            alertCode = "XA",
+            authorisedBy = null,
+            description = null,
+            createdBy = "B.MORRIS",
+            createdByDisplayName = "B. Morris",
+            createdAt = LocalDateTime.now(),
+          ),
+        ),
+      )
+
+      dpsAlertsServer.verify(
+        postRequestedFor(urlMatching("/migrate/A1234KL/alerts"))
+          .withRequestBody(matchingJsonPath("$[0].alertCode", equalTo("XA"))),
+      )
+    }
+
+    @Test
+    fun `will return dpsAlertIds`() = runTest {
+      dpsAlertsServer.stubMigrateAlerts(offenderNo = "A1234KL", response = listOf(migratedAlert().copy(alertUuid = UUID.fromString("f3f31737-6ee3-4ec5-8a79-0ac110fe50e2"))))
+
+      val dpsAlerts = apiService.migrateAlerts(
+        offenderNo = "A1234KL",
+        alerts = listOf(
+          MigrateAlert(
+            offenderBookId = 1234567,
+            bookingSeq = 1,
+            alertSeq = 2,
+            activeFrom = LocalDate.now(),
+            alertCode = "XA",
+            authorisedBy = null,
+            description = null,
+            createdBy = "B.MORRIS",
+            createdByDisplayName = "B. Morris",
+            createdAt = LocalDateTime.now(),
+          ),
+        ),
+      )
+
+      assertThat(dpsAlerts[0].alertUuid.toString()).isEqualTo("f3f31737-6ee3-4ec5-8a79-0ac110fe50e2")
     }
   }
 }
