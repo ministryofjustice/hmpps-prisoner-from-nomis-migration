@@ -42,4 +42,12 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .bodyValue(courtAppearance)
       .retrieve()
       .awaitBody()
+
+  suspend fun updateCourtAppearance(courtAppearanceId: String, courtAppearance: CreateCourtAppearance): CreateCourtAppearanceResponse =
+    webClient
+      .put()
+      .uri("/court-appearance/{courtAppearanceId}", courtAppearanceId)
+      .bodyValue(courtAppearance)
+      .retrieve()
+      .awaitBody()
 }
