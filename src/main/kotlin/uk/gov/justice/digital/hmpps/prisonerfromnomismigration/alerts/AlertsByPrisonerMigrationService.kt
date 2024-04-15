@@ -66,21 +66,17 @@ class AlertsByPrisonerMigrationService(
 
     val nomisAlerts = alertsNomisService.getAlertsToMigrate(offenderNo)
     val activeAlertsFromPreviousBookings = nomisAlerts.previousBookingsAlerts.filter { it.isActive }
-    // TODO - API does not return the actual booking sequence so fake it for more (we know latest is always 1)
-    val allNomisAlerts = nomisAlerts.latestBookingAlerts.map { it.toDPSMigratedAlert(true) } +
-      nomisAlerts.previousBookingsAlerts.map { it.toDPSMigratedAlert(false) }
+    val allNomisAlerts = (nomisAlerts.latestBookingAlerts + nomisAlerts.previousBookingsAlerts).map { it.toDPSMigratedAlert() }
     alertsDpsService.migrateAlerts(
       offenderNo = offenderNo,
       alerts = allNomisAlerts,
     ).also {
       createMapping(
-        // TODO - DPS is not echoing back alert noms keys so assume the same order but get DPS changed
-        // so it returns these values
-        it.zip(allNomisAlerts).map { dpsAndNomisAlert ->
+        it.map { dpsAlert ->
           AlertMappingDto(
-            nomisBookingId = dpsAndNomisAlert.second.offenderBookId,
-            nomisAlertSequence = dpsAndNomisAlert.second.alertSeq.toLong(),
-            dpsAlertId = dpsAndNomisAlert.first.alertUuid.toString(),
+            nomisBookingId = dpsAlert.offenderBookId,
+            nomisAlertSequence = dpsAlert.alertSeq.toLong(),
+            dpsAlertId = dpsAlert.alertUuid.toString(),
             label = context.migrationId,
             mappingType = AlertMappingDto.MappingType.MIGRATED,
           )

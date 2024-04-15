@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-04-10.7270.32c3b17"
+    "version": "2024-04-12.7300.edd78ee"
   },
   "servers": [
     {
@@ -9580,6 +9580,7 @@
           "alertSequence",
           "audit",
           "bookingId",
+          "bookingSequence",
           "date",
           "isActive",
           "isVerified",
@@ -9590,6 +9591,11 @@
           "bookingId": {
             "type": "integer",
             "description": "The prisoner's bookingId related to this alert",
+            "format": "int64"
+          },
+          "bookingSequence": {
+            "type": "integer",
+            "description": "The prisoner's bookingId sequence related to this alert. Used to show if this is on latest bookings",
             "format": "int64"
           },
           "alertSequence": {
@@ -13180,10 +13186,10 @@
             "type": "integer",
             "format": "int32"
           },
-          "paged": {
+          "unpaged": {
             "type": "boolean"
           },
-          "unpaged": {
+          "paged": {
             "type": "boolean"
           }
         }
@@ -15616,13 +15622,15 @@
         "required": [
           "areaOfWork",
           "id",
-          "incidentDateTime",
           "investigation",
           "location",
           "offender",
           "plans",
+          "proActiveReferral",
+          "reportDetails",
           "reportedDate",
           "saferCustodyScreening",
+          "staffAssaulted",
           "type"
         ],
         "type": "object",
@@ -15668,6 +15676,21 @@
             "description": "Date reported",
             "format": "date"
           },
+          "proActiveReferral": {
+            "type": "boolean",
+            "description": "proActive Referral"
+          },
+          "staffAssaulted": {
+            "type": "boolean",
+            "description": "If a staff member was assaulted"
+          },
+          "staffAssaultedName": {
+            "type": "string",
+            "description": "If assaulted, the staff member name"
+          },
+          "reportDetails": {
+            "$ref": "#/components/schemas/ReportDetails"
+          },
           "plans": {
             "type": "array",
             "description": "CSIP Plans",
@@ -15683,6 +15706,28 @@
           }
         },
         "description": "CSIP Details"
+      },
+      "FactorResponse": {
+        "required": [
+          "id",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Factor type id",
+            "format": "int64"
+          },
+          "type": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "comment": {
+            "type": "string",
+            "description": "Factor comment"
+          }
+        },
+        "description": "Contributory factors"
       },
       "Plan": {
         "required": [
@@ -15732,6 +15777,37 @@
           }
         },
         "description": "CSIP Plans"
+      },
+      "ReportDetails": {
+        "required": [
+          "factors"
+        ],
+        "type": "object",
+        "properties": {
+          "involvement": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "concern": {
+            "type": "string",
+            "description": "Concern description"
+          },
+          "knownReasons": {
+            "type": "string",
+            "description": "What was the concern"
+          },
+          "otherInformation": {
+            "type": "string",
+            "description": "What was the concern"
+          },
+          "factors": {
+            "type": "array",
+            "description": "Contributory factors",
+            "items": {
+              "$ref": "#/components/schemas/FactorResponse"
+            }
+          }
+        },
+        "description": "Additional information for the CSIP Report"
       },
       "SaferCustodyScreening": {
         "type": "object",

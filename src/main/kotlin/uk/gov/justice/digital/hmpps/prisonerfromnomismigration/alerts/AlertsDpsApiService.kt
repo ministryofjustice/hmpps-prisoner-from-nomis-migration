@@ -9,6 +9,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.Aler
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.CreateAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MigrateAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MigrateAlertRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MigratedAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.UpdateAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenConflict
 
@@ -51,7 +52,7 @@ class AlertsDpsApiService(@Qualifier("alertsApiWebClient") private val webClient
       .retrieve()
       .awaitBodyOrNullWhenConflict()
 
-  suspend fun migrateAlerts(offenderNo: String, alerts: List<MigrateAlert>): List<Alert> = webClient
+  suspend fun migrateAlerts(offenderNo: String, alerts: List<MigrateAlert>): List<MigratedAlert> = webClient
     .post()
     .uri("/migrate/{offenderNo}/alerts", offenderNo)
     .bodyValue(alerts)

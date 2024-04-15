@@ -31,6 +31,7 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
     alert: AlertResponse = AlertResponse(
       bookingId = bookingId,
       alertSequence = alertSequence,
+      bookingSequence = 10,
       alertCode = CodeDescription("XA", "TACT"),
       type = CodeDescription("X", "Security"),
       date = LocalDate.now(),
@@ -97,6 +98,7 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
     alert: AlertResponse = AlertResponse(
       bookingId = 1,
       alertSequence = 1,
+      bookingSequence = 10,
       alertCode = CodeDescription("XA", "TACT"),
       type = CodeDescription("X", "Security"),
       date = LocalDate.now(),

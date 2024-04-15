@@ -63,6 +63,7 @@ class AlertsNomisApiServiceTest {
         alert = AlertResponse(
           bookingId = 1234567,
           alertSequence = 3,
+          bookingSequence = 10,
           alertCode = CodeDescription("CPC", "PPRC"),
           type = CodeDescription("C", "Child Communication Measures"),
           date = LocalDate.parse("2022-07-19"),
@@ -134,6 +135,7 @@ class AlertsNomisApiServiceTest {
         alert = AlertResponse(
           bookingId = 1,
           alertSequence = 1,
+          bookingSequence = 10,
           alertCode = CodeDescription("CPC", "PPRC"),
           type = CodeDescription("C", "Child Communication Measures"),
           date = LocalDate.parse("2022-07-19"),

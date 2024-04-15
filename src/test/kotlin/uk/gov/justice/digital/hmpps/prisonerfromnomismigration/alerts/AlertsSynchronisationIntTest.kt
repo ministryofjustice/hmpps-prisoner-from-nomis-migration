@@ -778,6 +778,7 @@ fun alertEvent(
 private fun alert(bookingId: Long = 123456, alertSequence: Long = 3) = AlertResponse(
   bookingId = bookingId,
   alertSequence = alertSequence,
+  bookingSequence = 10,
   alertCode = CodeDescription("XA", "TACT"),
   type = CodeDescription("X", "Security"),
   date = LocalDate.now(),
