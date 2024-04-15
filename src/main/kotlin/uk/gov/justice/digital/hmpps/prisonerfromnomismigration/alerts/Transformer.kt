@@ -40,10 +40,9 @@ fun AlertResponse.toDPSMigratedAlert(offenderNo: String) = MigrateAlertRequest(
   comments = emptyList(),
 )
 
-fun AlertResponse.toDPSMigratedAlert(latestBooking: Boolean) = MigrateAlert(
+fun AlertResponse.toDPSMigratedAlert() = MigrateAlert(
   offenderBookId = this.bookingId,
-  // TODO get real booking sequence
-  bookingSeq = if (latestBooking) 1 else 99,
+  bookingSeq = this.bookingSequence.toInt(),
   alertSeq = this.alertSequence.toInt(),
   alertCode = this.alertCode.code,
   description = this.comment,

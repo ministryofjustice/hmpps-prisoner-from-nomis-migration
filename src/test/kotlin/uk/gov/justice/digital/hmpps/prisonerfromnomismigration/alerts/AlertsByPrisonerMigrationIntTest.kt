@@ -23,7 +23,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension.Companion.dpsAlertsServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.dpsAlert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.migratedAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
@@ -89,8 +89,8 @@ class AlertsByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
         alertsNomisApiMockServer.stubGetPrisonIds(totalElements = 2, pageSize = 10, bookingId = 1234567, offenderNo = "A0001KT")
         alertsNomisApiMockServer.stubGetAlertsToMigrate(offenderNo = "A0001KT", currentAlertCount = 1, previousAlertCount = 0)
         alertsNomisApiMockServer.stubGetAlertsToMigrate(offenderNo = "A0002KT", currentAlertCount = 1, previousAlertCount = 0)
-        dpsAlertsServer.stubMigrateAlerts(offenderNo = "A0001KT", response = listOf(dpsAlert().copy(alertUuid = UUID.fromString("00000000-0000-0000-0000-000000000001"))))
-        dpsAlertsServer.stubMigrateAlerts(offenderNo = "A0002KT", response = listOf(dpsAlert().copy(alertUuid = UUID.fromString("00000000-0000-0000-0000-000000000002"))))
+        dpsAlertsServer.stubMigrateAlerts(offenderNo = "A0001KT", response = listOf(migratedAlert().copy(alertUuid = UUID.fromString("00000000-0000-0000-0000-000000000001"), offenderBookId = 1234567, alertSeq = 1)))
+        dpsAlertsServer.stubMigrateAlerts(offenderNo = "A0002KT", response = listOf(migratedAlert().copy(alertUuid = UUID.fromString("00000000-0000-0000-0000-000000000002"), offenderBookId = 1234567, alertSeq = 2)))
         alertsMappingApiMockServer.stubPostMappings()
         migrationResult = performMigration()
       }

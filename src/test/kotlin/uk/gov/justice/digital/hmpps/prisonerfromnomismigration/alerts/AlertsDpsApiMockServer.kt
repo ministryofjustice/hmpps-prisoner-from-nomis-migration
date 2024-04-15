@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.Alert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.AlertCodeSummary
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MigratedAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -67,6 +68,13 @@ class AlertsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       lastModifiedBy = "USER1234",
       lastModifiedByDisplayName = "Firstname Lastname",
     )
+
+    fun migratedAlert() = MigratedAlert(
+      alertUuid = UUID.randomUUID(),
+      bookingSeq = 1,
+      alertSeq = 1,
+      offenderBookId = 1234567,
+    )
   }
 
   fun stubPostAlert(
@@ -99,7 +107,7 @@ class AlertsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubMigrateAlerts(
     offenderNo: String,
-    response: List<Alert> = listOf(dpsAlert()),
+    response: List<MigratedAlert> = listOf(migratedAlert()),
   ) {
     stubFor(
       post("/migrate/$offenderNo/alerts")

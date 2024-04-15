@@ -131,6 +131,7 @@ class AlertsMigrationIntTest : SqsIntegrationTestBase() {
             alert = AlertResponse(
               bookingId = 1234567,
               alertSequence = 1,
+              bookingSequence = 10,
               alertCode = CodeDescription("XR", "Racist"),
               type = CodeDescription("X", "Security"),
               date = LocalDate.parse("2021-01-01"),
@@ -149,6 +150,7 @@ class AlertsMigrationIntTest : SqsIntegrationTestBase() {
             alert = AlertResponse(
               bookingId = 1234567,
               alertSequence = 2,
+              bookingSequence = 10,
               comment = "This is a comment",
               alertCode = CodeDescription("XEL", "Escape List"),
               type = CodeDescription("X", "Security"),
@@ -173,6 +175,7 @@ class AlertsMigrationIntTest : SqsIntegrationTestBase() {
             alert = AlertResponse(
               bookingId = 1234567,
               alertSequence = 3,
+              bookingSequence = 10,
               alertCode = CodeDescription("XCU", "Controlled Unlock"),
               type = CodeDescription("X", "Security"),
               date = LocalDate.parse("2021-01-01"),
