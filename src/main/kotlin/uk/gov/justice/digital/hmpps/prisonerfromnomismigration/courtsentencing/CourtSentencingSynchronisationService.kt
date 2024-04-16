@@ -304,6 +304,36 @@ class CourtSentencingSynchronisationService(
     }
   }
 
+  suspend fun nomisCourtAppearanceDeleted(event: CourtAppearanceEvent) {
+    val telemetry =
+      mapOf(
+        "nomisCourtAppearanceId" to event.courtAppearanceId,
+        "offenderNo" to event.offenderIdDisplay,
+        "nomisBookingId" to event.bookingId,
+      )
+    val mapping = mappingApiService.getCourtAppearanceOrNullByNomisId(event.courtAppearanceId)
+    if (mapping == null) {
+      telemetryClient.trackEvent(
+        "court-appearance-synchronisation-deleted-ignored",
+        telemetry,
+      )
+    } else {
+      dpsApiService.deleteCourtAppearance(courtAppearanceId = mapping.dpsCourtAppearanceId)
+      tryToDeleteCourtAppearanceMapping(mapping.dpsCourtAppearanceId)
+      telemetryClient.trackEvent(
+        "court-appearance-synchronisation-deleted-success",
+        telemetry + ("dpsCourtAppearanceId" to mapping.dpsCourtAppearanceId),
+      )
+    }
+  }
+
+  private suspend fun tryToDeleteCourtAppearanceMapping(dpsCourtAppearanceId: String) = runCatching {
+    mappingApiService.deleteCourtAppearanceMappingByDpsId(dpsCourtAppearanceId)
+  }.onFailure { e ->
+    telemetryClient.trackEvent("court-appearance-mapping-deleted-failed", mapOf("dpsCourtAppearanceId" to dpsCourtAppearanceId))
+    log.warn("Unable to delete mapping for court appearance $dpsCourtAppearanceId. Please delete manually", e)
+  }
+
   suspend fun retryCreateCourtCaseMapping(retryMessage: InternalMessage<CourtCaseAllMappingDto>) {
     mappingApiService.createMapping(
       retryMessage.body,
