@@ -50,4 +50,11 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .bodyValue(courtAppearance)
       .retrieve()
       .awaitBody()
+
+  suspend fun deleteCourtAppearance(courtAppearanceId: String) =
+    webClient
+      .delete()
+      .uri("/court-appearance/{courtAppearanceId}", courtAppearanceId)
+      .retrieve()
+      .awaitBodilessEntity()
 }

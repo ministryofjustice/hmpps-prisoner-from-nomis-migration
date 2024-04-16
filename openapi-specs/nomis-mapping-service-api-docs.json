@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-04-10.4026.0fb6602"
+    "version": "2024-04-15.4045.f7ddc56"
   },
   "servers": [
     {
@@ -5062,6 +5062,104 @@
         }
       }
     },
+    "/mapping/court-sentencing/court-appearances/nomis-court-appearance-id/{nomisCourtAppearanceId}": {
+      "delete": {
+        "tags": [
+          "court-sentencing-mapping-resource"
+        ],
+        "summary": "Deletes court appearance mapping",
+        "description": "Deletes a court appearance mapping by NOMIS id. Requires role NOMIS_COURT_SENTENCING",
+        "operationId": "deleteCourtAppearanceMappingByNomisId",
+        "parameters": [
+          {
+            "name": "nomisCourtAppearanceId",
+            "in": "path",
+            "description": "NOMIS court appearance id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "NOMIS court appearance id",
+              "example": 33
+            },
+            "example": 33
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Mapping Deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/court-sentencing/court-appearances/dps-court-appearance-id/{dpsCourtAppearanceId}": {
+      "delete": {
+        "tags": [
+          "court-sentencing-mapping-resource"
+        ],
+        "summary": "Deletes court appearances mapping",
+        "description": "Deletes a court appearances mapping by DPS id. Requires role NOMIS_COURT_SENTENCING",
+        "operationId": "deleteCourtAppearanceMappingByDpsId",
+        "parameters": [
+          {
+            "name": "dpsCourtAppearanceId",
+            "in": "path",
+            "description": "DPS court appearances id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "DPS court appearances id",
+              "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+            },
+            "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Mapping Deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/appointments/appointment-instance-id/{id}": {
       "delete": {
         "tags": [
@@ -6633,15 +6731,15 @@
             "type": "integer",
             "format": "int32"
           },
-          "pageNumber": {
-            "type": "integer",
-            "format": "int32"
-          },
           "paged": {
             "type": "boolean"
           },
           "unpaged": {
             "type": "boolean"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
