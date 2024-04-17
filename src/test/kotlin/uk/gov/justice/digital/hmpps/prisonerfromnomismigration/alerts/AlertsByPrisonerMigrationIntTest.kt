@@ -121,7 +121,8 @@ class AlertsByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
         alertsNomisApiMockServer.stubGetAlertsToMigrate(offenderNo = "A0002KT", currentAlertCount = 1, previousAlertCount = 0)
         dpsAlertsServer.stubMigrateAlerts(offenderNo = "A0001KT", response = listOf(migratedAlert().copy(alertUuid = UUID.fromString("00000000-0000-0000-0000-000000000001"), offenderBookId = 1234567, alertSeq = 1)))
         dpsAlertsServer.stubMigrateAlerts(offenderNo = "A0002KT", response = listOf(migratedAlert().copy(alertUuid = UUID.fromString("00000000-0000-0000-0000-000000000002"), offenderBookId = 1234567, alertSeq = 2)))
-        alertsMappingApiMockServer.stubPostMappings()
+        alertsMappingApiMockServer.stubPostMappings("A0001KT")
+        alertsMappingApiMockServer.stubPostMappings("A0002KT")
         alertsMappingApiMockServer.stubMigrationCount(recordsMigrated = 2)
         migrationResult = performMigration()
       }
@@ -157,7 +158,8 @@ class AlertsByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will POST mappings for alerts created for each prisoner`() {
-        alertsMappingApiMockServer.verify(2, postRequestedFor(urlPathEqualTo("/mapping/alerts/all")))
+        alertsMappingApiMockServer.verify(postRequestedFor(urlPathEqualTo("/mapping/alerts/A0001KT/all")))
+        alertsMappingApiMockServer.verify(postRequestedFor(urlPathEqualTo("/mapping/alerts/A0002KT/all")))
       }
 
       @Test
@@ -202,7 +204,7 @@ class AlertsByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
         alertsNomisApiMockServer.stubGetPrisonIds(totalElements = 1, pageSize = 10, bookingId = 1234567, offenderNo = "A0001KT")
         alertsNomisApiMockServer.stubGetAlertsToMigrate(offenderNo = "A0001KT", currentAlertCount = 1, previousAlertCount = 0)
         dpsAlertsServer.stubMigrateAlerts(offenderNo = "A0001KT", response = listOf(migratedAlert().copy(alertUuid = UUID.fromString("00000000-0000-0000-0000-000000000001"), offenderBookId = 1234567, alertSeq = 1)))
-        alertsMappingApiMockServer.stubPostMappingsFailureFollowedBySuccess()
+        alertsMappingApiMockServer.stubPostMappingsFailureFollowedBySuccess(offenderNo = "A0001KT")
         performMigration()
       }
 
@@ -213,7 +215,7 @@ class AlertsByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will POST mappings for alerts twice due to the single error`() {
-        alertsMappingApiMockServer.verify(2, postRequestedFor(urlPathEqualTo("/mapping/alerts/all")))
+        alertsMappingApiMockServer.verify(2, postRequestedFor(urlPathEqualTo("/mapping/alerts/A0001KT/all")))
       }
     }
   }

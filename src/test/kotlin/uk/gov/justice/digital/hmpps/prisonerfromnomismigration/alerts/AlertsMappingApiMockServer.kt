@@ -77,15 +77,16 @@ class AlertsMappingApiMockServer(private val objectMapper: ObjectMapper) {
     mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/alerts")
   }
 
-  fun stubPostMappings() {
+  fun stubPostMappings(offenderNo: String) {
     mappingApi.stubFor(
-      post("/mapping/alerts/all").willReturn(
+      post("/mapping/alerts/$offenderNo/all").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(201),
       ),
     )
   }
+
   fun stubMigrationCount(recordsMigrated: Long) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/alerts/migration-id/.*/grouped-by-prisoner")).willReturn(
@@ -108,7 +109,7 @@ class AlertsMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubPostMappingsFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/alerts/all")
+  fun stubPostMappingsFailureFollowedBySuccess(offenderNo: String) = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/alerts/$offenderNo/all")
 
   fun stubDeleteMapping() {
     mappingApi.stubFor(

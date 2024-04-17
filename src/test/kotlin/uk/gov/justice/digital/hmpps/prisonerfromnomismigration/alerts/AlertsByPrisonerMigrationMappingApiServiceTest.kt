@@ -13,7 +13,9 @@ import org.springframework.core.ParameterizedTypeReference
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto.MappingType.DPS_CREATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingIdDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerAlertMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerAlertMappingsDto.MappingType.DPS_CREATED
 import java.util.UUID
 
 @SpringAPIServiceTest
@@ -29,15 +31,18 @@ class AlertsByPrisonerMigrationMappingApiServiceTest {
   inner class PostMappings {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
-      alertsMappingApiMockServer.stubPostMappings()
+      alertsMappingApiMockServer.stubPostMappings("A1234KT")
 
       apiService.createMapping(
-        listOf(
-          AlertMappingDto(
-            nomisBookingId = 123456,
-            nomisAlertSequence = 1,
-            dpsAlertId = UUID.randomUUID().toString(),
-            mappingType = DPS_CREATED,
+        offenderNo = "A1234KT",
+        PrisonerAlertMappingsDto(
+          mappingType = DPS_CREATED,
+          mappings = listOf(
+            AlertMappingIdDto(
+              nomisBookingId = 123456,
+              nomisAlertSequence = 1,
+              dpsAlertId = UUID.randomUUID().toString(),
+            ),
           ),
         ),
         object : ParameterizedTypeReference<DuplicateErrorResponse<AlertMappingDto>>() {},
@@ -51,15 +56,18 @@ class AlertsByPrisonerMigrationMappingApiServiceTest {
     @Test
     internal fun `will pass ids to service`() = runTest {
       val dpsAlertId = "a04f7a8d-61aa-400c-9395-f4dc62f36ab0"
-      alertsMappingApiMockServer.stubPostMappings()
+      alertsMappingApiMockServer.stubPostMappings("A1234KT")
 
       apiService.createMapping(
-        listOf(
-          AlertMappingDto(
-            nomisBookingId = 123456,
-            nomisAlertSequence = 1,
-            dpsAlertId = dpsAlertId,
-            mappingType = DPS_CREATED,
+        offenderNo = "A1234KT",
+        PrisonerAlertMappingsDto(
+          mappingType = DPS_CREATED,
+          mappings = listOf(
+            AlertMappingIdDto(
+              nomisBookingId = 123456,
+              nomisAlertSequence = 1,
+              dpsAlertId = dpsAlertId,
+            ),
           ),
         ),
         object : ParameterizedTypeReference<DuplicateErrorResponse<AlertMappingDto>>() {},
@@ -67,10 +75,10 @@ class AlertsByPrisonerMigrationMappingApiServiceTest {
 
       alertsMappingApiMockServer.verify(
         postRequestedFor(anyUrl())
-          .withRequestBody(matchingJsonPath("$[0].nomisBookingId", equalTo("123456")))
-          .withRequestBody(matchingJsonPath("$[0].nomisAlertSequence", equalTo("1")))
-          .withRequestBody(matchingJsonPath("$[0].dpsAlertId", equalTo(dpsAlertId)))
-          .withRequestBody(matchingJsonPath("$[0].mappingType", equalTo("DPS_CREATED"))),
+          .withRequestBody(matchingJsonPath("mappings[0].nomisBookingId", equalTo("123456")))
+          .withRequestBody(matchingJsonPath("mappings[0].nomisAlertSequence", equalTo("1")))
+          .withRequestBody(matchingJsonPath("mappings[0].dpsAlertId", equalTo(dpsAlertId)))
+          .withRequestBody(matchingJsonPath("mappingType", equalTo("DPS_CREATED"))),
       )
     }
   }

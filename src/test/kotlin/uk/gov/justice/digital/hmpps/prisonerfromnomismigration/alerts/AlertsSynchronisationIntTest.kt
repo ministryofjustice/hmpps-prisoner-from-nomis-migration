@@ -171,6 +171,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
               postRequestedFor(urlPathEqualTo("/mapping/alerts"))
                 .withRequestBody(matchingJsonPath("dpsAlertId", equalTo(dpsAlertId)))
                 .withRequestBody(matchingJsonPath("nomisBookingId", equalTo(bookingId.toString())))
+                .withRequestBody(matchingJsonPath("offenderNo", equalTo(offenderNo)))
                 .withRequestBody(matchingJsonPath("nomisAlertSequence", equalTo(alertSequence.toString())))
                 .withRequestBody(matchingJsonPath("mappingType", equalTo("DPS_CREATED"))),
             )

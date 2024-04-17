@@ -52,6 +52,7 @@ class AlertsSynchronisationService(
           createdByUsername = nomisAlert.audit.createUsername,
         ).run {
           tryToCreateMapping(
+            offenderNo = event.offenderIdDisplay,
             nomisAlert = nomisAlert,
             dpsAlert = this,
             telemetry = telemetry,
@@ -121,11 +122,13 @@ class AlertsSynchronisationService(
   }
 
   private suspend fun tryToCreateMapping(
+    offenderNo: String,
     nomisAlert: AlertResponse,
     dpsAlert: Alert,
     telemetry: Map<String, Any>,
   ): MappingResponse {
     val mapping = AlertMappingDto(
+      offenderNo = offenderNo,
       dpsAlertId = dpsAlert.alertUuid.toString(),
       nomisBookingId = nomisAlert.bookingId,
       nomisAlertSequence = nomisAlert.alertSequence,
