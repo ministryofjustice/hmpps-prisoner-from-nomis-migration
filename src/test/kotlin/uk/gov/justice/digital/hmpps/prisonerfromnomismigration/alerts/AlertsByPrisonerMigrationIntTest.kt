@@ -122,6 +122,7 @@ class AlertsByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
         dpsAlertsServer.stubMigrateAlerts(offenderNo = "A0001KT", response = listOf(migratedAlert().copy(alertUuid = UUID.fromString("00000000-0000-0000-0000-000000000001"), offenderBookId = 1234567, alertSeq = 1)))
         dpsAlertsServer.stubMigrateAlerts(offenderNo = "A0002KT", response = listOf(migratedAlert().copy(alertUuid = UUID.fromString("00000000-0000-0000-0000-000000000002"), offenderBookId = 1234567, alertSeq = 2)))
         alertsMappingApiMockServer.stubPostMappings()
+        alertsMappingApiMockServer.stubMigrationCount(recordsMigrated = 2)
         migrationResult = performMigration()
       }
 
@@ -157,6 +158,19 @@ class AlertsByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will POST mappings for alerts created for each prisoner`() {
         alertsMappingApiMockServer.verify(2, postRequestedFor(urlPathEqualTo("/mapping/alerts/all")))
+      }
+
+      @Test
+      fun `will record the number of prisoners migrated`() {
+        webTestClient.get().uri("/migrate/alerts/history/${migrationResult.migrationId}")
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ALERTS")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.migrationId").isEqualTo(migrationResult.migrationId)
+          .jsonPath("$.status").isEqualTo("COMPLETED")
+          .jsonPath("$.recordsMigrated").isEqualTo("2")
       }
 
       @Test

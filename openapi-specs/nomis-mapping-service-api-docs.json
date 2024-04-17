@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-04-15.4045.f7ddc56"
+    "version": "2024-04-16.4057.d8ead57"
   },
   "servers": [
     {
@@ -1285,6 +1285,75 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/alerts/{offenderNo}/all": {
+      "post": {
+        "tags": [
+          "alerts-mapping-resource"
+        ],
+        "summary": "Creates a set of new alert mapping for a prisoner",
+        "description": "Creates a mapping between all the nomis alert ids and dps alert id. Requires ROLE_NOMIS_ALERTS",
+        "operationId": "createMappingsForPrisoner",
+        "parameters": [
+          {
+            "name": "offenderNo",
+            "in": "path",
+            "description": "NOMIS offender no",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "NOMIS offender no",
+              "example": "A1234KT"
+            },
+            "example": "A1234KT"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrisonerAlertMappingsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Mapping created"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access forbidden for this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Indicates a duplicate mapping has been rejected. If Error code = 1409 the body will return a DuplicateErrorResponse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateMappingErrorResponse"
                 }
               }
             }
@@ -4165,6 +4234,70 @@
         }
       }
     },
+    "/mapping/alerts/migration-id/{migrationId}/grouped-by-prisoner": {
+      "get": {
+        "tags": [
+          "alerts-mapping-resource"
+        ],
+        "summary": "Get paged mappings by migration id grouped by prisoner",
+        "description": "Retrieve all mappings of type 'MIGRATED' for the given migration id (identifies a single migration run) grouped by prisoner. Results are paged.",
+        "operationId": "getMappingsByMigrationIdGroupByPrisoner",
+        "parameters": [
+          {
+            "name": "pageRequest",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          },
+          {
+            "name": "migrationId",
+            "in": "path",
+            "description": "Migration Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Migration Id",
+              "example": "2020-03-24T12:00:00"
+            },
+            "example": "2020-03-24T12:00:00"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping page returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagePrisonerAlertMappingsSummaryDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/alerts/migration-id/{migrationId}": {
       "get": {
         "tags": [
@@ -6400,6 +6533,67 @@
         },
         "description": "NOMIS to Activities allocation mapping"
       },
+      "AlertMappingIdDto": {
+        "required": [
+          "dpsAlertId",
+          "nomisAlertSequence",
+          "nomisBookingId"
+        ],
+        "type": "object",
+        "properties": {
+          "dpsAlertId": {
+            "type": "string",
+            "description": "DPS alert id"
+          },
+          "nomisBookingId": {
+            "type": "integer",
+            "description": "NOMIS booking id",
+            "format": "int64"
+          },
+          "nomisAlertSequence": {
+            "type": "integer",
+            "description": "NOMIS alert sequence",
+            "format": "int64"
+          }
+        },
+        "description": "NOMIS to Alert mapping IDs"
+      },
+      "PrisonerAlertMappingsDto": {
+        "required": [
+          "mappingType",
+          "mappings"
+        ],
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Label (a timestamp for migrated ids)"
+          },
+          "mappingType": {
+            "type": "string",
+            "description": "Mapping type",
+            "enum": [
+              "MIGRATED",
+              "DPS_CREATED",
+              "NOMIS_CREATED"
+            ]
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "Date time the mapping was created",
+            "example": "2021-07-05T10:35:17"
+          },
+          "mappings": {
+            "type": "array",
+            "description": "Mapping IDs",
+            "items": {
+              "$ref": "#/components/schemas/AlertMappingIdDto"
+            }
+          }
+        },
+        "description": "Mappings for a prisoner created during migration"
+      },
       "AlertMappingDto": {
         "required": [
           "dpsAlertId",
@@ -6422,6 +6616,10 @@
             "type": "integer",
             "description": "NOMIS alert sequence",
             "format": "int64"
+          },
+          "offenderNo": {
+            "type": "string",
+            "description": "Prisoner number"
           },
           "label": {
             "type": "string",
@@ -6665,6 +6863,123 @@
         },
         "description": "Court case mapping"
       },
+      "PagePrisonerAlertMappingsSummaryDto": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PrisonerAlertMappingsSummaryDto"
+            }
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PageableObject": {
+        "type": "object",
+        "properties": {
+          "offset": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sort": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "paged": {
+            "type": "boolean"
+          },
+          "unpaged": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PrisonerAlertMappingsSummaryDto": {
+        "required": [
+          "mappingsCount",
+          "offenderNo"
+        ],
+        "type": "object",
+        "properties": {
+          "offenderNo": {
+            "type": "string",
+            "description": "The prisoner number for the set of mappings"
+          },
+          "mappingsCount": {
+            "type": "integer",
+            "description": "Count of the number mappings migrated (does not include subsequent alerts synchronised",
+            "format": "int32"
+          }
+        },
+        "description": "Summary of mappings for a prisoner created during migration"
+      },
+      "SortObject": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string"
+          },
+          "nullHandling": {
+            "type": "string"
+          },
+          "ascending": {
+            "type": "boolean"
+          },
+          "property": {
+            "type": "string"
+          },
+          "ignoreCase": {
+            "type": "boolean"
+          }
+        }
+      },
       "PageAlertMappingDto": {
         "type": "object",
         "properties": {
@@ -6710,55 +7025,6 @@
             "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
-            "type": "boolean"
-          }
-        }
-      },
-      "PageableObject": {
-        "type": "object",
-        "properties": {
-          "offset": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "sort": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SortObject"
-            }
-          },
-          "pageSize": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "paged": {
-            "type": "boolean"
-          },
-          "unpaged": {
-            "type": "boolean"
-          },
-          "pageNumber": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
-      "SortObject": {
-        "type": "object",
-        "properties": {
-          "direction": {
-            "type": "string"
-          },
-          "nullHandling": {
-            "type": "string"
-          },
-          "ascending": {
-            "type": "boolean"
-          },
-          "property": {
-            "type": "string"
-          },
-          "ignoreCase": {
             "type": "boolean"
           }
         }

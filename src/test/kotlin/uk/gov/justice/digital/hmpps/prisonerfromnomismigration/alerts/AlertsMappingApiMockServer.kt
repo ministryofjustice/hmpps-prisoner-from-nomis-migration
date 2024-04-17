@@ -16,6 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
+import java.time.LocalDateTime
 import java.util.UUID
 
 @Component
@@ -82,6 +83,27 @@ class AlertsMappingApiMockServer(private val objectMapper: ObjectMapper) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(201),
+      ),
+    )
+  }
+  fun stubMigrationCount(recordsMigrated: Long) {
+    mappingApi.stubFor(
+      get(urlPathMatching("/mapping/alerts/migration-id/.*/grouped-by-prisoner")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(200)
+          .withBody(
+            """
+              {
+                "totalElements": $recordsMigrated,
+                "content": [
+                  {
+                    "whenCreated": "${LocalDateTime.now()}"
+                  }
+                ]           
+              }
+            """.trimIndent(),
+          ),
       ),
     )
   }
