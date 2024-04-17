@@ -9,7 +9,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.Message
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ALERTS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
@@ -21,7 +20,7 @@ import java.util.concurrent.CompletableFuture
 class AlertsByPrisonerMigrationMessageListener(
   objectMapper: ObjectMapper,
   alertsMigrationService: AlertsByPrisonerMigrationService,
-) : MigrationMessageListener<AlertsMigrationFilter, PrisonerId, AlertsForPrisonerResponse, List<AlertMappingDto>>(
+) : MigrationMessageListener<AlertsMigrationFilter, PrisonerId, AlertsForPrisonerResponse, AlertMigrationMapping>(
   objectMapper,
   alertsMigrationService,
 ) {
@@ -44,7 +43,7 @@ class AlertsByPrisonerMigrationMessageListener(
     return objectMapper.readValue(json)
   }
 
-  override fun parseContextMapping(json: String): MigrationMessage<*, List<AlertMappingDto>> {
+  override fun parseContextMapping(json: String): MigrationMessage<*, AlertMigrationMapping> {
     return objectMapper.readValue(json)
   }
 }

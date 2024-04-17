@@ -12,6 +12,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEven
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingIdDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerAlertMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
@@ -32,7 +34,7 @@ class AlertsByPrisonerMigrationService(
   @Value("\${alerts.page.size:1000}") pageSize: Long,
   @Value("\${alerts.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${alerts.complete-check.count}") completeCheckCount: Int,
-) : MigrationService<AlertsMigrationFilter, PrisonerId, AlertsForPrisonerResponse, List<AlertMappingDto>>(
+) : MigrationService<AlertsMigrationFilter, PrisonerId, AlertsForPrisonerResponse, AlertMigrationMapping> (
   queueService = queueService,
   auditService = auditService,
   migrationHistoryService = migrationHistoryService,
@@ -72,15 +74,18 @@ class AlertsByPrisonerMigrationService(
       alerts = allNomisAlerts,
     ).also {
       createMapping(
-        it.map { dpsAlert ->
-          AlertMappingDto(
-            nomisBookingId = dpsAlert.offenderBookId,
-            nomisAlertSequence = dpsAlert.alertSeq.toLong(),
-            dpsAlertId = dpsAlert.alertUuid.toString(),
-            label = context.migrationId,
-            mappingType = AlertMappingDto.MappingType.MIGRATED,
-          )
-        },
+        offenderNo = offenderNo,
+        PrisonerAlertMappingsDto(
+          label = context.migrationId,
+          mappingType = PrisonerAlertMappingsDto.MappingType.MIGRATED,
+          mappings = it.map { dpsAlert ->
+            AlertMappingIdDto(
+              nomisBookingId = dpsAlert.offenderBookId,
+              nomisAlertSequence = dpsAlert.alertSeq.toLong(),
+              dpsAlertId = dpsAlert.alertUuid.toString(),
+            )
+          },
+        ),
         context = context,
       )
       telemetryClient.trackEvent(
@@ -104,11 +109,13 @@ class AlertsByPrisonerMigrationService(
   }
 
   private suspend fun createMapping(
-    mappings: List<AlertMappingDto>,
+    offenderNo: String,
+    prisonerMappings: PrisonerAlertMappingsDto,
     context: MigrationContext<PrisonerId>,
   ) = try {
     alertsMappingService.createMapping(
-      mappings,
+      offenderNo,
+      prisonerMappings,
       object : ParameterizedTypeReference<DuplicateErrorResponse<AlertMappingDto>>() {},
     ).also {
       if (it.isError) {
@@ -139,15 +146,21 @@ class AlertsByPrisonerMigrationService(
       MigrationMessageType.RETRY_MIGRATION_MAPPING,
       MigrationContext(
         context = context,
-        body = mappings,
+        body = AlertMigrationMapping(prisonerMappings, offenderNo = offenderNo),
       ),
     )
   }
 
-  override suspend fun retryCreateMapping(context: MigrationContext<List<AlertMappingDto>>) {
+  override suspend fun retryCreateMapping(context: MigrationContext<AlertMigrationMapping>) {
     alertsMappingService.createMapping(
-      context.body,
+      context.body.offenderNo,
+      context.body.prisonerMappings,
       object : ParameterizedTypeReference<DuplicateErrorResponse<AlertMappingDto>>() {},
     )
   }
 }
+
+data class AlertMigrationMapping(
+  val prisonerMappings: PrisonerAlertMappingsDto,
+  val offenderNo: String,
+)

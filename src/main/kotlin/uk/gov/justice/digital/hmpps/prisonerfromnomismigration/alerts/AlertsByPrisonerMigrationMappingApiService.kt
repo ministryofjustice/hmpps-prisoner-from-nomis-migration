@@ -13,18 +13,20 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerAlertMappingsDto
 
 @Service
 class AlertsByPrisonerMigrationMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) :
-  MigrationMapping<List<AlertMappingDto>>(domainUrl = "/mapping/alerts/all", webClient) {
+  MigrationMapping<AlertMigrationMapping>(domainUrl = "/mapping/alerts/all", webClient) {
   suspend fun createMapping(
-    mappings: List<AlertMappingDto>,
+    offenderNo: String,
+    prisonerMapping: PrisonerAlertMappingsDto,
     errorJavaClass: ParameterizedTypeReference<DuplicateErrorResponse<AlertMappingDto>>,
   ): CreateMappingResult<AlertMappingDto> {
     return webClient.post()
-      .uri(createMappingUrl())
+      .uri("/mapping/alerts/{offenderNo}/all", offenderNo)
       .bodyValue(
-        mappings,
+        prisonerMapping,
       )
       .retrieve()
       .bodyToMono(Unit::class.java)
