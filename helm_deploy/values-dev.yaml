@@ -20,6 +20,14 @@ generic-service:
     API_BASE_URL_ADJUDICATIONS: https://manage-adjudications-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_ALERTS: https://alerts-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_COURT_SENTENCING: https://remand-and-sentencing-api-dev.hmpps.service.justice.gov.uk
+    FEATURE_EVENT_INCIDENT-CHANGED-CASES: false
+    FEATURE_EVENT_INCIDENT-CHANGED-PARTIES: false
+    FEATURE_EVENT_INCIDENT-CHANGED-RESPONSES: false
+    FEATURE_EVENT_INCIDENT-CHANGED-REQUIREMENTS: false
+    FEATURE_EVENT_INCIDENT-DELETED-CASES: false
+    FEATURE_EVENT_INCIDENT-DELETED-PARTIES: false
+    FEATURE_EVENT_INCIDENT-DELETED-RESPONSES: false
+    FEATURE_EVENT_INCIDENT-DELETED-REQUIREMENTS: false
 
   scheduledDowntime:
     enabled: true
