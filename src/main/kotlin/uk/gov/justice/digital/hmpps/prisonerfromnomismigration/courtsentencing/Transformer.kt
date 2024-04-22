@@ -27,7 +27,9 @@ fun CourtEventResponse.toDpsCourtAppearance(offenderNo: String, dpsCaseId: Strin
 
 fun OffenderChargeResponse.toDpsCharge() = CreateCharge(
   offenceCode = this.offence.offenceCode,
-  offenceStartDate = this.offenceDate!!, // TODO determine if this is ever optional on NOMIS
-  outcome = this.resultCode1?.code ?: "PLACEHOLDER", // TODO can be persisted without a result code in NOMIS
+  // TODO determine if this is ever optional on NOMIS
+  offenceStartDate = this.offenceDate!!,
+  // TODO can be persisted without a result code in NOMIS
+  outcome = this.resultCode1?.code ?: "PLACEHOLDER",
   offenceEndDate = this.offenceEndDate,
 )
