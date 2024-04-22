@@ -35,47 +35,60 @@ class LocationsSynchronisationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  suspend fun synchroniseLocationCreateOrUpdate(event: LocationsOffenderEvent) {
+  suspend fun synchroniseLocation(event: LocationsOffenderEvent) {
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent(
-        "location-synchronisation-skipped",
+        "locations-synchronisation-skipped",
         event.toTelemetryProperties(),
       )
       return
     }
+    val mapping = locationsMappingService.getMappingGivenNomisId(event.internalLocationId)
+    if (event.recordDeleted == true) {
+      if (mapping == null) {
+        throw IllegalStateException("Cannot find mapping for location ${event.internalLocationId} to delete")
+      }
+      locationsService.deleteLocation(mapping.dpsLocationId)
+      tryToDeleteMapping(mapping.dpsLocationId)
 
-    val nomisLocation = nomisApiService.getLocation(event.internalLocationId)
-
-    val parent = nomisLocation.parentLocationId?.let {
-      locationsMappingService.getMappingGivenNomisId(nomisLocation.parentLocationId)
-    }
-    if (parent == null && nomisLocation.parentLocationId != null) {
-      throw IllegalStateException("No mapping found for parent NOMIS location ${nomisLocation.parentLocationId} syncing NOMIS location ${event.internalLocationId}, ${nomisLocation.description}")
-    }
-
-    locationsMappingService.getMappingGivenNomisId(event.internalLocationId)?.let {
-      val upsertSyncRequest =
-        toUpsertSyncRequest(UUID.fromString(it.dpsLocationId), nomisLocation, parent?.dpsLocationId)
-      log.debug("Found location mapping: {}, sending location upsert sync {}", it, upsertSyncRequest)
-
-      locationsService.upsertLocation(upsertSyncRequest)
       telemetryClient.trackEvent(
-        "location-updated-synchronisation-success",
-        event.toTelemetryProperties(it.dpsLocationId),
+        "locations-deleted-synchronisation-success",
+        event.toTelemetryProperties(mapping.dpsLocationId),
       )
-    } ?: let {
-      val upsertSyncRequest = toUpsertSyncRequest(nomisLocation, parent?.dpsLocationId)
-      log.debug("No location mapping - sending location upsert sync {} ", upsertSyncRequest)
+    } else {
+      val nomisLocation = nomisApiService.getLocation(event.internalLocationId)
 
-      locationsService.upsertLocation(upsertSyncRequest).also { location ->
-        tryToCreateLocationMapping(event, location.id.toString()).also { result ->
-          telemetryClient.trackEvent(
-            "location-created-synchronisation-success",
-            event.toTelemetryProperties(
-              location.id.toString(),
-              result == MAPPING_FAILED,
-            ),
-          )
+      val parent = nomisLocation.parentLocationId?.let {
+        locationsMappingService.getMappingGivenNomisId(nomisLocation.parentLocationId)
+      }
+      if (parent == null && nomisLocation.parentLocationId != null) {
+        throw IllegalStateException("No mapping found for parent NOMIS location ${nomisLocation.parentLocationId} syncing NOMIS location ${event.internalLocationId}, ${nomisLocation.description}")
+      }
+
+      mapping?.let {
+        val upsertSyncRequest =
+          toUpsertSyncRequest(UUID.fromString(it.dpsLocationId), nomisLocation, parent?.dpsLocationId)
+        log.debug("Found location mapping: {}, sending location upsert sync {}", it, upsertSyncRequest)
+
+        locationsService.upsertLocation(upsertSyncRequest)
+        telemetryClient.trackEvent(
+          "locations-updated-synchronisation-success",
+          event.toTelemetryProperties(it.dpsLocationId),
+        )
+      } ?: let {
+        val upsertSyncRequest = toUpsertSyncRequest(nomisLocation, parent?.dpsLocationId)
+        log.debug("No location mapping - sending location upsert sync {} ", upsertSyncRequest)
+
+        locationsService.upsertLocation(upsertSyncRequest).also { location ->
+          tryToCreateLocationMapping(event, location.id.toString()).also { result ->
+            telemetryClient.trackEvent(
+              "locations-created-synchronisation-success",
+              event.toTelemetryProperties(
+                location.id.toString(),
+                result == MAPPING_FAILED,
+              ),
+            )
+          }
         }
       }
     }
@@ -130,13 +143,21 @@ class LocationsSynchronisationService(
     }
   }
 
+  private suspend fun tryToDeleteMapping(dpsId: String) = runCatching {
+    locationsMappingService.deleteMappingGivenDpsId(dpsId)
+    telemetryClient.trackEvent("locations-deleted-mapping-success", mapOf("dpsLocationId" to dpsId))
+  }.onFailure { e ->
+    telemetryClient.trackEvent("locations-deleted-mapping-failed", mapOf("dpsLocationId" to dpsId))
+    log.warn("Unable to delete mapping for alert $dpsId. Please delete manually", e)
+  }
+
   suspend fun retryCreateLocationMapping(retryMessage: InternalMessage<LocationMappingDto>) {
     locationsMappingService.createMapping(
       retryMessage.body,
       object : ParameterizedTypeReference<DuplicateErrorResponse<LocationMappingDto>>() {},
     ).also {
       telemetryClient.trackEvent(
-        "location-mapping-created-synchronisation-success",
+        "locations-mapping-created-synchronisation-success",
         retryMessage.telemetryAttributes,
       )
     }

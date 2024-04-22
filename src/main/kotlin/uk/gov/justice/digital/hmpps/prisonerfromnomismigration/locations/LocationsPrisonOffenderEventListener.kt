@@ -43,9 +43,7 @@ class LocationsPrisonOffenderEventListener(
               "AGY_INT_LOC_PROFILES-UPDATED",
               "INT_LOC_USAGE_LOCATIONS-UPDATED",
               ->
-                locationsSynchronisationService.synchroniseLocationCreateOrUpdate(
-                  sqsMessage.Message.fromJson(),
-                )
+                locationsSynchronisationService.synchroniseLocation(sqsMessage.Message.fromJson())
 
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }

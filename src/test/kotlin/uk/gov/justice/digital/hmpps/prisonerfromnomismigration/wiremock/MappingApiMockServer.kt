@@ -1018,6 +1018,20 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubLocationsDeleteMapping(dpsLocationId: String) {
+    stubFor(
+      delete(urlPathMatching("/mapping/locations/dps/$dpsLocationId")).willReturn(
+        aResponse().withStatus(HttpStatus.NO_CONTENT.value())),
+    )
+  }
+
+  fun stubLocationsDeleteMappingWithError(dpsLocationId: String, status: Int = 500) {
+    stubFor(
+      delete(urlPathMatching("/mapping/locations/dps/$dpsLocationId")).willReturn(
+        aResponse().withStatus(status)),
+    )
+  }
+
   fun createMappingCount(url: String) =
     findAll(postRequestedFor(urlPathEqualTo(url))).count()
 }

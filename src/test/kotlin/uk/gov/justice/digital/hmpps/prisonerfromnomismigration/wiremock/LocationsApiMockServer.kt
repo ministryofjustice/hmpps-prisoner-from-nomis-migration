@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus.CREATED
+import org.springframework.http.HttpStatus.NO_CONTENT
 import org.springframework.http.HttpStatus.OK
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Location
 import java.util.UUID
@@ -69,6 +71,26 @@ class LocationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withHeader("Content-Type", "application/json")
           .withStatus(OK.value())
           .withBody(aLocation(locationId)),
+      ),
+    )
+  }
+
+  fun stubDeleteLocation(locationId: String) {
+    stubFor(
+      delete("/sync/delete/$locationId").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(NO_CONTENT.value()),
+      ),
+    )
+  }
+
+  fun stubDeleteLocationWithError(locationId: String, status: Int = 500) {
+    stubFor(
+      delete("/sync/delete/$locationId").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status),
       ),
     )
   }

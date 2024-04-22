@@ -31,4 +31,11 @@ class LocationsMappingService(@Qualifier("mappingApiWebClient") webClient: WebCl
         Mono.empty()
       }
       .awaitSingleOrNull()
+
+  suspend fun deleteMappingGivenDpsId(id: String) {
+    webClient.delete()
+      .uri("/mapping/locations/dps/{id}", id)
+      .retrieve()
+      .awaitBodilessEntity()
+  }
 }
