@@ -45,6 +45,7 @@ class CourtSentencingEventListener(
               "COURT_EVENTS-INSERTED" -> courtSentencingSynchronisationService.nomisCourtAppearanceInserted(sqsMessage.Message.fromJson())
               "COURT_EVENTS-UPDATED" -> courtSentencingSynchronisationService.nomisCourtAppearanceUpdated(sqsMessage.Message.fromJson())
               "COURT_EVENTS-DELETED" -> courtSentencingSynchronisationService.nomisCourtAppearanceDeleted(sqsMessage.Message.fromJson())
+              "COURT_EVENT_CHARGES-INSERTED" -> courtSentencingSynchronisationService.nomisCourtChargeInserted(sqsMessage.Message.fromJson())
 
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
@@ -79,6 +80,14 @@ data class CourtCaseEvent(
 
 data class CourtAppearanceEvent(
   val courtAppearanceId: Long,
+  val offenderIdDisplay: String,
+  val bookingId: Long,
+  val auditModuleName: String?,
+)
+
+data class CourtEventChargeEvent(
+  val eventId: Long,
+  val chargeId: Long,
   val offenderIdDisplay: String,
   val bookingId: Long,
   val auditModuleName: String?,

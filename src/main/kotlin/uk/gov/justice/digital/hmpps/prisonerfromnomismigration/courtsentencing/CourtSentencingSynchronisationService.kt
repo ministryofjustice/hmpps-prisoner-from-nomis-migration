@@ -14,11 +14,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseAllMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_APPEARANCE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CASE_SYNCHRONISATION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CHARGE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 
@@ -273,6 +276,47 @@ class CourtSentencingSynchronisationService(
     }
   }
 
+  private suspend fun tryToCreateChargeMapping(
+    nomisOffenderCharge: OffenderChargeResponse,
+    dpsChargeResponse: CreateNewChargeResponse,
+    telemetry: Map<String, Any>,
+  ): MappingResponse {
+    val mapping = CourtChargeMappingDto(
+      dpsCourtChargeId = dpsChargeResponse.chargeUuid.toString(),
+      nomisCourtChargeId = nomisOffenderCharge.id,
+      mappingType = CourtChargeMappingDto.MappingType.NOMIS_CREATED,
+    )
+    try {
+      mappingApiService.createCourtChargeMapping(
+        mapping,
+      ).also {
+        if (it.isError) {
+          val duplicateErrorDetails = (it.errorResponse!!).moreInfo
+          telemetryClient.trackEvent(
+            "from-nomis-sync-charge-duplicate",
+            mapOf<String, String>(
+              "duplicateDpsCourtChargeId" to duplicateErrorDetails.duplicate.dpsCourtChargeId,
+              "duplicateNomisCourtChargeId" to duplicateErrorDetails.duplicate.nomisCourtChargeId.toString(),
+              "existingDpsCourtChargeId" to duplicateErrorDetails.existing.dpsCourtChargeId,
+              "existingNomisCourtChargeId" to duplicateErrorDetails.existing.nomisCourtChargeId.toString(),
+            ),
+            null,
+          )
+        }
+      }
+      return MappingResponse.MAPPING_CREATED
+    } catch (e: Exception) {
+      log.error("Failed to create mapping for court Charge ids $mapping", e)
+      queueService.sendMessage(
+        messageType = RETRY_COURT_CHARGE_SYNCHRONISATION_MAPPING,
+        synchronisationType = SynchronisationType.COURT_SENTENCING,
+        message = mapping,
+        telemetryAttributes = telemetry.valuesAsStrings(),
+      )
+      return MappingResponse.MAPPING_FAILED
+    }
+  }
+
   suspend fun nomisCourtAppearanceUpdated(event: CourtAppearanceEvent) {
     val telemetry =
       mapOf("nomisBookingId" to event.bookingId.toString(), "nomisCourtAppearanceId" to event.courtAppearanceId.toString(), "offenderNo" to event.offenderIdDisplay)
@@ -324,6 +368,59 @@ class CourtSentencingSynchronisationService(
         "court-appearance-synchronisation-deleted-success",
         telemetry + ("dpsCourtAppearanceId" to mapping.dpsCourtAppearanceId),
       )
+    }
+  }
+
+  // New Court event charge.
+  // is it a new underlying offender charge? 2 DPS endpoints - create charge or just apply to appearance
+  suspend fun nomisCourtChargeInserted(event: CourtEventChargeEvent) {
+    val telemetry =
+      mutableMapOf(
+        "nomisCourtAppearanceId" to event.eventId.toString(),
+        "nomisChargeId" to event.chargeId.toString(),
+        "offenderNo" to event.offenderIdDisplay,
+        "nomisBookingId" to event.bookingId.toString(),
+      )
+    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      telemetryClient.trackEvent("court-charge-synchronisation-created-skipped", telemetry)
+    } else {
+      // Check court appearance is mapped and throw exception to retry if not
+      mappingApiService.getCourtAppearanceOrNullByNomisId(event.eventId)?.let { courtAppearanceMapping ->
+        telemetry.put("dpsCourtAppearanceId", courtAppearanceMapping.dpsCourtAppearanceId)
+        val nomisOffenderCharge =
+          nomisApiService.getOffenderCharge(
+            offenderNo = event.offenderIdDisplay,
+            offenderChargeId = event.chargeId,
+          )
+
+        mappingApiService.getOffenderChargeOrNullByNomisId(event.chargeId)?.let { mapping ->
+          // mapping means this is an existing offender charge to be applied to the appearance
+          dpsApiService.associateExistingCourtCharge(courtAppearanceMapping.dpsCourtAppearanceId, nomisOffenderCharge.toDpsCharge())
+        } ?: let {
+          // no mapping means this is a new offender charge to be created and applied to the appearance
+          dpsApiService.addNewCourtCharge(
+            courtAppearanceId = courtAppearanceMapping.dpsCourtAppearanceId,
+            nomisOffenderCharge.toDpsCharge(),
+          ).run {
+            tryToCreateChargeMapping(
+              nomisOffenderCharge = nomisOffenderCharge,
+              dpsChargeResponse = this,
+              telemetry,
+            ).also { mappingCreateResult ->
+              if (mappingCreateResult == MappingResponse.MAPPING_FAILED) telemetry.put("mapping", "initial-failure")
+              telemetryClient.trackEvent(
+                "court-charge-synchronisation-created-success",
+                telemetry,
+              )
+            }
+          }
+        }
+      } ?: let {
+        if (hasMigratedAllData) {
+          // after migration has run this should not happen so make sure this message goes in DLQ
+          throw IllegalStateException("Received COURT_EVENT_CHARGES-INSERTED for court appearance ${event.eventId} that has never been created")
+        }
+      }
     }
   }
 

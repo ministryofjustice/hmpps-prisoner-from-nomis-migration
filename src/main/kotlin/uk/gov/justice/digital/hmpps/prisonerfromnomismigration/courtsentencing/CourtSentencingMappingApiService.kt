@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
 
 @Service
 class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) :
@@ -67,4 +68,29 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
     )
     .retrieve()
     .awaitBodilessEntity()
+
+  suspend fun createCourtChargeMapping(
+    mapping: CourtChargeMappingDto,
+  ): CreateMappingResult<CourtChargeMappingDto> {
+    return webClient.post()
+      .uri("/mapping/court-sentencing/court-charges")
+      .bodyValue(
+        mapping,
+      )
+      .retrieve()
+      .bodyToMono(Unit::class.java)
+      .map { CreateMappingResult<CourtChargeMappingDto>() }
+      .onErrorResume(WebClientResponseException.Conflict::class.java) {
+        Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CourtChargeMappingDto>>() {})))
+      }
+      .awaitFirstOrDefault(CreateMappingResult())
+  }
+
+  suspend fun getOffenderChargeOrNullByNomisId(offenderChargeId: Long): CourtChargeMappingDto? = webClient.get()
+    .uri(
+      "/mapping/court-sentencing/court-charges/nomis-court-charge-id/{offenderChargeId}",
+      offenderChargeId,
+    )
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
 }
