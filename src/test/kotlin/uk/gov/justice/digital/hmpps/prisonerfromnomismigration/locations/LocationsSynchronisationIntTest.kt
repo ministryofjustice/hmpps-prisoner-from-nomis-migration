@@ -429,7 +429,7 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             locationsApi.verify(
               exactly(0),
-              deleteRequestedFor(urlPathEqualTo("/sync/delete/$DPS_LOCATION_ID"))
+              deleteRequestedFor(urlPathEqualTo("/sync/delete/$DPS_LOCATION_ID")),
             )
           }
         }
@@ -516,7 +516,7 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             locationsApi.verify(
               exactly(1),
-              deleteRequestedFor(urlPathEqualTo("/sync/delete/$DPS_LOCATION_ID"))
+              deleteRequestedFor(urlPathEqualTo("/sync/delete/$DPS_LOCATION_ID")),
             )
           }
         }
