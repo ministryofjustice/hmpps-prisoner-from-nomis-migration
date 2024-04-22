@@ -65,6 +65,7 @@ class AlertsMappingApiServiceTest {
           dpsAlertId = "d94c3c31-ecdc-4a0e-b8bb-94e8cb8262bc",
           nomisBookingId = 123456,
           nomisAlertSequence = 1,
+          offenderNo = "A1234KT",
           mappingType = MIGRATED,
         ),
       )
@@ -130,6 +131,7 @@ class AlertsMappingApiServiceTest {
           nomisBookingId = 123456,
           nomisAlertSequence = 1,
           dpsAlertId = UUID.randomUUID().toString(),
+          offenderNo = "A1234KT",
           mappingType = DPS_CREATED,
         ),
       )
@@ -149,6 +151,7 @@ class AlertsMappingApiServiceTest {
           nomisBookingId = 123456,
           nomisAlertSequence = 1,
           dpsAlertId = dpsAlertId,
+          offenderNo = "A1234KT",
           mappingType = DPS_CREATED,
         ),
       )
