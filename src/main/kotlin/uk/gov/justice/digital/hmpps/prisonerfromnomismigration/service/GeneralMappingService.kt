@@ -1,9 +1,11 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.ActivitiesMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.AllocationsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.AdjudicationsMappingService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsByPrisonerMigrationMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.AppointmentsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsMappingService
@@ -22,6 +24,8 @@ class GeneralMappingService(
   private val incidentsMappingService: IncidentsMappingService,
   private val locationsMappingService: LocationsMappingService,
   private val alertsMappingService: AlertsMappingApiService,
+  private val alertsByPrisonerMappingService: AlertsByPrisonerMigrationMappingApiService,
+  @Value("\${alerts.migration.type}") private val alertsMigrationType: String,
 ) {
   suspend fun getMigrationCount(migrationId: String, migrationType: MigrationType): Long? =
     when (migrationType) {
@@ -33,6 +37,10 @@ class GeneralMappingService(
       MigrationType.ALLOCATIONS -> allocationsMappingService.getMigrationCount(migrationId)
       MigrationType.INCIDENTS -> incidentsMappingService.getMigrationCount(migrationId)
       MigrationType.LOCATIONS -> locationsMappingService.getMigrationCount(migrationId)
-      MigrationType.ALERTS -> alertsMappingService.getMigrationCount(migrationId)
+      MigrationType.ALERTS -> if (alertsMigrationType == "by-prisoner") {
+        alertsByPrisonerMappingService.getMigrationCount(migrationId)
+      } else {
+        alertsMappingService.getMigrationCount(migrationId)
+      }
     }
 }
