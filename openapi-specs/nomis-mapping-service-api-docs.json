@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-04-16.4057.d8ead57"
+    "version": "2024-04-22.4140.b54cf1a"
   },
   "servers": [
     {
@@ -141,6 +141,66 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "court-sentencing-mapping-resource"
+        ],
+        "summary": "Creates a new single charge mapping",
+        "description": "Creates a mapping between nomis offender charge ID and DPS charge ID. Requires ROLE_NOMIS_COURT_SENTENCING",
+        "operationId": "createCourtChargeMapping",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CourtChargeMappingDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Mapping created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourtChargeMapping"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access forbidden for this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Indicates a duplicate mapping has been rejected. If Error code = 1409 the body will return a DuplicateErrorResponse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateMappingErrorResponse"
                 }
               }
             }
@@ -1319,64 +1379,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PrisonerAlertMappingsDto"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Mapping created"
-          },
-          "401": {
-            "description": "Unauthorized to access this endpoint",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Access forbidden for this endpoint",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Indicates a duplicate mapping has been rejected. If Error code = 1409 the body will return a DuplicateErrorResponse",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DuplicateMappingErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/mapping/alerts/all": {
-      "post": {
-        "tags": [
-          "alerts-mapping-resource"
-        ],
-        "summary": "Creates a set of new alert mapping",
-        "description": "Creates a mapping between all the nomis alert ids and dps alert id. Requires ROLE_NOMIS_ALERTS",
-        "operationId": "createMappings",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/AlertMappingDto"
-                }
               }
             }
           },
@@ -3503,7 +3505,7 @@
         ],
         "summary": "Deletes a specific mapping by DPS hearing id",
         "description": "Deletes the mapping table row. Requires role NOMIS_ADJUDICATIONS",
-        "operationId": "deleteMapping_1",
+        "operationId": "deleteMapping",
         "parameters": [
           {
             "name": "id",
@@ -3524,6 +3526,62 @@
           },
           "401": {
             "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/court-sentencing/court-charges/nomis-court-charge-id/{courtChargeId}": {
+      "get": {
+        "tags": [
+          "court-sentencing-mapping-resource"
+        ],
+        "summary": "get court charge mapping",
+        "description": "Retrieves a mapping by NOMIS id. Requires role NOMIS_COURT_SENTENCING",
+        "operationId": "getCourtChargeMappingByNomisId",
+        "parameters": [
+          {
+            "name": "courtChargeId",
+            "in": "path",
+            "description": "NOMIS court charge id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "NOMIS court charge id",
+              "example": 123
+            },
+            "example": 123
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourtAppearanceAllMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Id does not exist in mapping table",
             "content": {
               "application/json": {
                 "schema": {
@@ -4622,7 +4680,7 @@
         ],
         "summary": "Deletes a specific mapping by DPS charge number",
         "description": "Deletes the mapping table row. Requires role NOMIS_ADJUDICATIONS",
-        "operationId": "deleteMapping_3",
+        "operationId": "deleteMapping_2",
         "parameters": [
           {
             "name": "chargeNumber",
@@ -5058,6 +5116,45 @@
         }
       }
     },
+    "/mapping/locations/nomis/{locationId}": {
+      "delete": {
+        "tags": [
+          "location-mapping-resource"
+        ],
+        "summary": "Deletes a specific location mapping by Nomis location id",
+        "description": "Deletes the location from the mapping table. Requires role NOMIS_LOCATIONS",
+        "operationId": "deleteMappingGivenNomisId",
+        "parameters": [
+          {
+            "name": "locationId",
+            "in": "path",
+            "description": "Nomis Location Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Nomis Location Id",
+              "example": 12345678
+            },
+            "example": 12345678
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Location mapping deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/locations/dps/{locationId}": {
       "delete": {
         "tags": [
@@ -5065,7 +5162,7 @@
         ],
         "summary": "Deletes a specific location mapping by DPS location id",
         "description": "Deletes the location from the mapping table. Requires role NOMIS_LOCATIONS",
-        "operationId": "deleteMapping",
+        "operationId": "deleteMappingGivenDpsId",
         "parameters": [
           {
             "name": "locationId",
@@ -5075,9 +5172,9 @@
             "schema": {
               "type": "string",
               "description": "DPS Location Id",
-              "example": 12345678
+              "example": "1234abcd-5678-1234-5678-0123456789ab"
             },
-            "example": 12345678
+            "example": "1234abcd-5678-1234-5678-0123456789ab"
           }
         ],
         "responses": {
@@ -5300,7 +5397,7 @@
         ],
         "summary": "Deletes a specific mapping by appointment instance id",
         "description": "Deletes the mapping table row. Requires role NOMIS_APPOINTMENTS",
-        "operationId": "deleteMapping_2",
+        "operationId": "deleteMapping_1",
         "parameters": [
           {
             "name": "id",
@@ -5378,7 +5475,7 @@
         ],
         "summary": "Deletes a specific mapping by activity schedule id",
         "description": "Deletes the mapping table row. Requires role NOMIS_ACTIVITIES",
-        "operationId": "deleteMapping_4",
+        "operationId": "deleteMapping_3",
         "parameters": [
           {
             "name": "id",
@@ -5587,7 +5684,8 @@
             "default": "DPS_CREATED",
             "enum": [
               "MIGRATED",
-              "DPS_CREATED"
+              "DPS_CREATED",
+              "NOMIS_CREATED"
             ]
           },
           "whenCreated": {
@@ -6003,7 +6101,7 @@
             "example": "2021-07-05T10:35:17"
           }
         },
-        "description": "Non-association mapping (same value for NOMIS and DPS)"
+        "description": "Non-association mapping"
       },
       "LocationMappingDto": {
         "required": [
@@ -6046,7 +6144,7 @@
             "example": "2021-07-05T10:35:17"
           }
         },
-        "description": "Location mapping (same value for NOMIS and DPS)"
+        "description": "Location mapping"
       },
       "IncidentMappingDto": {
         "required": [
@@ -6089,7 +6187,7 @@
             "example": "2021-07-05T10:35:17"
           }
         },
-        "description": "Incident mapping (same value for NOMIS and DPS)"
+        "description": "Incident mapping"
       },
       "IncentiveMappingDto": {
         "required": [
@@ -6191,6 +6289,51 @@
           }
         },
         "description": "Adjudication mapping (same value for NOMIS and DPS)"
+      },
+      "CourtChargeMapping": {
+        "required": [
+          "dpsCourtChargeId",
+          "id",
+          "isNew",
+          "mappingType",
+          "new",
+          "nomisCourtChargeId"
+        ],
+        "type": "object",
+        "properties": {
+          "dpsCourtChargeId": {
+            "type": "string"
+          },
+          "nomisCourtChargeId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "label": {
+            "type": "string"
+          },
+          "mappingType": {
+            "type": "string",
+            "enum": [
+              "MIGRATED",
+              "DPS_CREATED",
+              "NOMIS_CREATED"
+            ]
+          },
+          "new": {
+            "type": "boolean"
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "example": "2021-07-05T10:35:17"
+          },
+          "id": {
+            "type": "string"
+          },
+          "isNew": {
+            "type": "boolean"
+          }
+        }
       },
       "CourtAppearanceMappingDto": {
         "required": [
@@ -6599,7 +6742,8 @@
           "dpsAlertId",
           "mappingType",
           "nomisAlertSequence",
-          "nomisBookingId"
+          "nomisBookingId",
+          "offenderNo"
         ],
         "type": "object",
         "properties": {
@@ -6956,6 +7100,12 @@
             "type": "integer",
             "description": "Count of the number mappings migrated (does not include subsequent alerts synchronised",
             "format": "int32"
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "Date time the mapping was created",
+            "example": "2021-07-05T10:35:17"
           }
         },
         "description": "Summary of mappings for a prisoner created during migration"
