@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-04-12.7300.edd78ee"
+    "version": "2024-04-18.7325.5fbd49e"
   },
   "servers": [
     {
@@ -5768,6 +5768,84 @@
           },
           "404": {
             "description": "Prison not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisoners/{offenderNo}/sentencing/offender-charges/{offenderChargeId}": {
+      "get": {
+        "tags": [
+          "sentencing-resource"
+        ],
+        "summary": "get an offender charge",
+        "description": "Requires role NOMIS_SENTENCING. Retrieves offender charge details. Offender Charges are at the booking level.",
+        "operationId": "getOffenderCharge",
+        "parameters": [
+          {
+            "name": "offenderChargeId",
+            "in": "path",
+            "description": "Offender Charge id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Offender Charge id",
+              "example": 12345
+            },
+            "example": 12345
+          },
+          {
+            "name": "offenderNo",
+            "in": "path",
+            "description": "Offender No",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Offender No",
+              "example": 12345
+            },
+            "example": 12345
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the court appearance details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OffenderChargeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint when role NOMIS_SENTENCING not present",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Offender not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -13186,10 +13264,10 @@
             "type": "integer",
             "format": "int32"
           },
-          "unpaged": {
+          "paged": {
             "type": "boolean"
           },
-          "paged": {
+          "unpaged": {
             "type": "boolean"
           }
         }
@@ -13644,6 +13722,96 @@
         },
         "description": "An incentive levels"
       },
+      "OffenceResponse": {
+        "required": [
+          "description",
+          "offenceCode",
+          "statuteCode"
+        ],
+        "type": "object",
+        "properties": {
+          "offenceCode": {
+            "type": "string"
+          },
+          "statuteCode": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "description": "Offence"
+      },
+      "OffenderChargeResponse": {
+        "required": [
+          "id",
+          "mostSeriousFlag",
+          "offence"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "offence": {
+            "$ref": "#/components/schemas/OffenceResponse"
+          },
+          "offencesCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "offenceDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "offenceEndDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "plea": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "propertyValue": {
+            "type": "number"
+          },
+          "totalPropertyValue": {
+            "type": "number"
+          },
+          "cjitCode1": {
+            "type": "string"
+          },
+          "cjitCode2": {
+            "type": "string"
+          },
+          "cjitCode3": {
+            "type": "string"
+          },
+          "chargeStatus": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "resultCode1": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "resultCode2": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "resultCode1Indicator": {
+            "type": "string"
+          },
+          "resultCode2Indicator": {
+            "type": "string"
+          },
+          "mostSeriousFlag": {
+            "type": "boolean"
+          },
+          "lidsOffenceNumber": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "Offender Charge"
+      },
       "CourtCaseResponse": {
         "required": [
           "bookingId",
@@ -13953,96 +14121,6 @@
           }
         },
         "description": "Court Order"
-      },
-      "OffenceResponse": {
-        "required": [
-          "description",
-          "offenceCode",
-          "statuteCode"
-        ],
-        "type": "object",
-        "properties": {
-          "offenceCode": {
-            "type": "string"
-          },
-          "statuteCode": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          }
-        },
-        "description": "Offence"
-      },
-      "OffenderChargeResponse": {
-        "required": [
-          "id",
-          "mostSeriousFlag",
-          "offence"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "offence": {
-            "$ref": "#/components/schemas/OffenceResponse"
-          },
-          "offencesCount": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "offenceDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "offenceEndDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "plea": {
-            "$ref": "#/components/schemas/CodeDescription"
-          },
-          "propertyValue": {
-            "type": "number"
-          },
-          "totalPropertyValue": {
-            "type": "number"
-          },
-          "cjitCode1": {
-            "type": "string"
-          },
-          "cjitCode2": {
-            "type": "string"
-          },
-          "cjitCode3": {
-            "type": "string"
-          },
-          "chargeStatus": {
-            "$ref": "#/components/schemas/CodeDescription"
-          },
-          "resultCode1": {
-            "$ref": "#/components/schemas/CodeDescription"
-          },
-          "resultCode2": {
-            "$ref": "#/components/schemas/CodeDescription"
-          },
-          "resultCode1Indicator": {
-            "type": "string"
-          },
-          "resultCode2Indicator": {
-            "type": "string"
-          },
-          "mostSeriousFlag": {
-            "type": "boolean"
-          },
-          "lidsOffenceNumber": {
-            "type": "integer",
-            "format": "int32"
-          }
-        },
-        "description": "Offender Charge"
       },
       "SentencePurposeResponse": {
         "required": [
@@ -15618,6 +15696,34 @@
         },
         "description": "Incentive information"
       },
+      "Attendee": {
+        "required": [
+          "If attended (otherwise contributor)",
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Review Attendee/Contributor Id",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of attendee/contributor"
+          },
+          "Role of attendee/contributor": {
+            "type": "string"
+          },
+          "If attended (otherwise contributor)": {
+            "type": "boolean"
+          },
+          "Contribution": {
+            "type": "string"
+          }
+        },
+        "description": "Summary details"
+      },
       "CSIPResponse": {
         "required": [
           "areaOfWork",
@@ -15629,6 +15735,7 @@
           "proActiveReferral",
           "reportDetails",
           "reportedDate",
+          "reviews",
           "saferCustodyScreening",
           "staffAssaulted",
           "type"
@@ -15691,6 +15798,25 @@
           "reportDetails": {
             "$ref": "#/components/schemas/ReportDetails"
           },
+          "saferCustodyScreening": {
+            "$ref": "#/components/schemas/SaferCustodyScreening"
+          },
+          "investigation": {
+            "$ref": "#/components/schemas/Investigation"
+          },
+          "caseManager": {
+            "type": "string",
+            "description": "Case Manager involved"
+          },
+          "planReason": {
+            "type": "string",
+            "description": "Reason for plan"
+          },
+          "firstCaseReviewDate": {
+            "type": "string",
+            "description": "Date of first review",
+            "format": "date"
+          },
           "plans": {
             "type": "array",
             "description": "CSIP Plans",
@@ -15698,11 +15824,12 @@
               "$ref": "#/components/schemas/Plan"
             }
           },
-          "saferCustodyScreening": {
-            "$ref": "#/components/schemas/SaferCustodyScreening"
-          },
-          "investigation": {
-            "$ref": "#/components/schemas/Investigation"
+          "reviews": {
+            "type": "array",
+            "description": "CSIP Reviews",
+            "items": {
+              "$ref": "#/components/schemas/Review"
+            }
           }
         },
         "description": "CSIP Details"
@@ -15780,10 +15907,17 @@
       },
       "ReportDetails": {
         "required": [
-          "factors"
+          "factors",
+          "referralComplete",
+          "saferCustodyTeamInformed"
         ],
         "type": "object",
         "properties": {
+          "releaseDate": {
+            "type": "string",
+            "description": "Date the offender is released",
+            "format": "date"
+          },
           "involvement": {
             "$ref": "#/components/schemas/CodeDescription"
           },
@@ -15791,23 +15925,107 @@
             "type": "string",
             "description": "Concern description"
           },
-          "knownReasons": {
-            "type": "string",
-            "description": "What was the concern"
-          },
-          "otherInformation": {
-            "type": "string",
-            "description": "What was the concern"
-          },
           "factors": {
             "type": "array",
             "description": "Contributory factors",
             "items": {
               "$ref": "#/components/schemas/FactorResponse"
             }
+          },
+          "knownReasons": {
+            "type": "string",
+            "description": "known reasons for the involvement"
+          },
+          "otherInformation": {
+            "type": "string",
+            "description": "Additional information"
+          },
+          "saferCustodyTeamInformed": {
+            "type": "boolean",
+            "description": "If the safer custody team were informed"
+          },
+          "referralComplete": {
+            "type": "boolean",
+            "description": "If the referral has been completed"
+          },
+          "referralCompletedBy": {
+            "type": "string",
+            "description": "Who completed the referral"
+          },
+          "referralCompletedDate": {
+            "type": "string",
+            "description": "Date the referral was completed",
+            "format": "date"
           }
         },
         "description": "Additional information for the CSIP Report"
+      },
+      "Review": {
+        "required": [
+          "attendees",
+          "caseNote",
+          "closeCSIP",
+          "csipUpdated",
+          "id",
+          "peopleInformed",
+          "remainOnCSIP",
+          "reviewSequence"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Review Id",
+            "format": "int64"
+          },
+          "reviewSequence": {
+            "type": "integer",
+            "description": "Sequence number",
+            "format": "int32"
+          },
+          "attendees": {
+            "type": "array",
+            "description": "Summary details",
+            "items": {
+              "$ref": "#/components/schemas/Attendee"
+            }
+          },
+          "remainOnCSIP": {
+            "type": "boolean",
+            "description": "Summary details"
+          },
+          "csipUpdated": {
+            "type": "boolean",
+            "description": "Summary details"
+          },
+          "caseNote": {
+            "type": "boolean",
+            "description": "Summary details"
+          },
+          "closeCSIP": {
+            "type": "boolean",
+            "description": "Summary details"
+          },
+          "peopleInformed": {
+            "type": "boolean",
+            "description": "Summary details"
+          },
+          "summary": {
+            "type": "string",
+            "description": "Summary details"
+          },
+          "nextReviewDate": {
+            "type": "string",
+            "description": "Next Review date",
+            "format": "date"
+          },
+          "closeDate": {
+            "type": "string",
+            "description": "Review closed date",
+            "format": "date"
+          }
+        },
+        "description": "CSIP Reviews"
       },
       "SaferCustodyScreening": {
         "type": "object",

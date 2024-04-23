@@ -210,6 +210,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
               nomisBookingId = bookingId,
               nomisAlertSequence = alertSequence,
               dpsAlertId = dpsAlertId,
+              offenderNo = "A1234KT",
               mappingType = MIGRATED,
             ),
           )
@@ -527,6 +528,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
               nomisBookingId = bookingId,
               nomisAlertSequence = alertSequence,
               dpsAlertId = dpsAlertId,
+              offenderNo = "A1234KT",
               mappingType = MIGRATED,
             ),
           )
@@ -629,6 +631,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
               nomisBookingId = bookingId,
               nomisAlertSequence = alertSequence,
               dpsAlertId = dpsAlertId,
+              offenderNo = "A1234KT",
               mappingType = MIGRATED,
             ),
           )
@@ -696,6 +699,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
               nomisBookingId = bookingId,
               nomisAlertSequence = alertSequence,
               dpsAlertId = dpsAlertId,
+              offenderNo = "A1234KT",
               mappingType = MIGRATED,
             ),
           )

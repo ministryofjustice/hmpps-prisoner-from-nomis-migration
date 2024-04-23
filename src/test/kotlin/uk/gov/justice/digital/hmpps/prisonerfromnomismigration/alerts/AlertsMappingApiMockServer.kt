@@ -28,6 +28,7 @@ class AlertsMappingApiMockServer(private val objectMapper: ObjectMapper) {
       nomisBookingId = 123456,
       nomisAlertSequence = 1,
       dpsAlertId = UUID.randomUUID().toString(),
+      offenderNo = "A1234KT",
       mappingType = MIGRATED,
     ),
   ) {
@@ -147,6 +148,7 @@ class AlertsMappingApiMockServer(private val objectMapper: ObjectMapper) {
                   nomisAlertSequence = 1,
                   mappingType = MIGRATED,
                   label = migrationId,
+                  offenderNo = "A1234KT",
                   whenCreated = migrationId,
                 ),
               ),

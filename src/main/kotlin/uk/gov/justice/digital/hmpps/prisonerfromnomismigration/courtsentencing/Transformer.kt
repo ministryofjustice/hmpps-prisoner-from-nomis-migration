@@ -1,9 +1,11 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderChargeResponse
 import java.time.LocalDateTime
 
 fun CourtCaseResponse.toDpsCourtCase(offenderNo: String) = CreateCourtCase(
@@ -21,4 +23,13 @@ fun CourtEventResponse.toDpsCourtAppearance(offenderNo: String, dpsCaseId: Strin
   appearanceDate = LocalDateTime.parse(this.eventDateTime).toLocalDate(),
   warrantType = "warrantType",
   charges = emptyList(),
+)
+
+fun OffenderChargeResponse.toDpsCharge() = CreateCharge(
+  offenceCode = this.offence.offenceCode,
+  // TODO determine if this is ever optional on NOMIS
+  offenceStartDate = this.offenceDate!!,
+  // TODO can be persisted without a result code in NOMIS
+  outcome = this.resultCode1?.code ?: "PLACEHOLDER",
+  offenceEndDate = this.offenceEndDate,
 )

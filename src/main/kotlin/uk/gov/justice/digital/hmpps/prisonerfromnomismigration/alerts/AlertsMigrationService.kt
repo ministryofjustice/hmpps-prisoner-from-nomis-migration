@@ -76,6 +76,7 @@ class AlertsMigrationService(
           nomisBookingId = nomisBookingId,
           nomisAlertSequence = nomisAlertSequence,
           dpsAlertId = it.alertUuid.toString(),
+          offenderNo = context.body.offenderNo,
           context = context,
         )
         telemetryClient.trackEvent(
@@ -106,6 +107,7 @@ class AlertsMigrationService(
     nomisBookingId: Long,
     nomisAlertSequence: Long,
     dpsAlertId: String,
+    offenderNo: String,
     context: MigrationContext<*>,
   ) = try {
     alertsMappingService.createMapping(
@@ -115,6 +117,7 @@ class AlertsMigrationService(
         dpsAlertId = dpsAlertId,
         label = context.migrationId,
         mappingType = AlertMappingDto.MappingType.MIGRATED,
+        offenderNo = offenderNo,
       ),
       object : ParameterizedTypeReference<DuplicateErrorResponse<AlertMappingDto>>() {},
     ).also {
@@ -151,6 +154,7 @@ class AlertsMigrationService(
           dpsAlertId = dpsAlertId,
           label = context.migrationId,
           mappingType = AlertMappingDto.MappingType.MIGRATED,
+          offenderNo = offenderNo,
         ),
       ),
     )

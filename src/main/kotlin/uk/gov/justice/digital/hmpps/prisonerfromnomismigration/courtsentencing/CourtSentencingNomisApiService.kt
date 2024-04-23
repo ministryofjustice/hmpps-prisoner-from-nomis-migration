@@ -6,6 +6,7 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderChargeResponse
 
 @Service
 class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
@@ -23,6 +24,15 @@ class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val
       "/prisoners/{offenderNo}/sentencing/court-appearances/{courtAppearanceId}",
       offenderNo,
       courtAppearanceId,
+    )
+    .retrieve()
+    .awaitBody()
+
+  suspend fun getOffenderCharge(offenderNo: String, offenderChargeId: Long): OffenderChargeResponse = webClient.get()
+    .uri(
+      "/prisoners/{offenderNo}/sentencing/offender-charges/{offenderChargeId}",
+      offenderNo,
+      offenderChargeId,
     )
     .retrieve()
     .awaitBody()
