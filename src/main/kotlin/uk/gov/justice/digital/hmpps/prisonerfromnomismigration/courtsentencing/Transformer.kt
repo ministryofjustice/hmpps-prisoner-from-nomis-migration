@@ -7,6 +7,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderChargeResponse
 import java.time.LocalDateTime
+import java.util.UUID
 
 fun CourtCaseResponse.toDpsCourtCase(offenderNo: String) = CreateCourtCase(
   prisonerId = offenderNo,
@@ -25,11 +26,12 @@ fun CourtEventResponse.toDpsCourtAppearance(offenderNo: String, dpsCaseId: Strin
   charges = emptyList(),
 )
 
-fun OffenderChargeResponse.toDpsCharge() = CreateCharge(
+fun OffenderChargeResponse.toDpsCharge(chargeId: String? = null) = CreateCharge(
   offenceCode = this.offence.offenceCode,
   // TODO determine if this is ever optional on NOMIS
   offenceStartDate = this.offenceDate!!,
   // TODO can be persisted without a result code in NOMIS
   outcome = this.resultCode1?.code ?: "PLACEHOLDER",
   offenceEndDate = this.offenceEndDate,
+  chargeUuid = chargeId?.let { UUID.fromString(chargeId) },
 )

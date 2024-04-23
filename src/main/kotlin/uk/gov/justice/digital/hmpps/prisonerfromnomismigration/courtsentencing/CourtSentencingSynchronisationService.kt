@@ -319,7 +319,11 @@ class CourtSentencingSynchronisationService(
 
   suspend fun nomisCourtAppearanceUpdated(event: CourtAppearanceEvent) {
     val telemetry =
-      mapOf("nomisBookingId" to event.bookingId.toString(), "nomisCourtAppearanceId" to event.courtAppearanceId.toString(), "offenderNo" to event.offenderIdDisplay)
+      mapOf(
+        "nomisBookingId" to event.bookingId.toString(),
+        "nomisCourtAppearanceId" to event.courtAppearanceId.toString(),
+        "offenderNo" to event.offenderIdDisplay,
+      )
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent("court-appearance-synchronisation-updated-skipped", telemetry)
     } else {
@@ -334,7 +338,10 @@ class CourtSentencingSynchronisationService(
           throw IllegalStateException("Received COURT_EVENTS-UPDATED for court-case that has never been created")
         }
       } else {
-        val nomisCourtCase = nomisApiService.getCourtAppearance(offenderNo = event.offenderIdDisplay, courtAppearanceId = event.courtAppearanceId)
+        val nomisCourtCase = nomisApiService.getCourtAppearance(
+          offenderNo = event.offenderIdDisplay,
+          courtAppearanceId = event.courtAppearanceId,
+        )
         // TODO DPS have yet to implement an update - expecting a new update DTO without a caseId
         dpsApiService.updateCourtAppearance(
           courtAppearanceId = mapping.dpsCourtAppearanceId,
@@ -377,7 +384,7 @@ class CourtSentencingSynchronisationService(
     val telemetry =
       mutableMapOf(
         "nomisCourtAppearanceId" to event.eventId.toString(),
-        "nomisChargeId" to event.chargeId.toString(),
+        "nomisOffenderChargeId" to event.chargeId.toString(),
         "offenderNo" to event.offenderIdDisplay,
         "nomisBookingId" to event.bookingId.toString(),
       )
@@ -395,26 +402,31 @@ class CourtSentencingSynchronisationService(
 
         mappingApiService.getOffenderChargeOrNullByNomisId(event.chargeId)?.let { mapping ->
           // mapping means this is an existing offender charge to be applied to the appearance
-          dpsApiService.associateExistingCourtCharge(courtAppearanceMapping.dpsCourtAppearanceId, nomisOffenderCharge.toDpsCharge())
+          telemetry.put("dpsChargeId", mapping.dpsCourtChargeId)
+          dpsApiService.associateExistingCourtCharge(
+            courtAppearanceMapping.dpsCourtAppearanceId,
+            nomisOffenderCharge.toDpsCharge(mapping.dpsCourtChargeId),
+          )
         } ?: let {
           // no mapping means this is a new offender charge to be created and applied to the appearance
           dpsApiService.addNewCourtCharge(
             courtAppearanceId = courtAppearanceMapping.dpsCourtAppearanceId,
             nomisOffenderCharge.toDpsCharge(),
           ).run {
+            telemetry.put("dpsChargeId", this.chargeUuid.toString())
             tryToCreateChargeMapping(
               nomisOffenderCharge = nomisOffenderCharge,
               dpsChargeResponse = this,
               telemetry,
             ).also { mappingCreateResult ->
               if (mappingCreateResult == MappingResponse.MAPPING_FAILED) telemetry.put("mapping", "initial-failure")
-              telemetryClient.trackEvent(
-                "court-charge-synchronisation-created-success",
-                telemetry,
-              )
             }
           }
         }
+        telemetryClient.trackEvent(
+          "court-charge-synchronisation-created-success",
+          telemetry,
+        )
       } ?: let {
         if (hasMigratedAllData) {
           // after migration has run this should not happen so make sure this message goes in DLQ
@@ -427,7 +439,10 @@ class CourtSentencingSynchronisationService(
   private suspend fun tryToDeleteCourtAppearanceMapping(dpsCourtAppearanceId: String) = runCatching {
     mappingApiService.deleteCourtAppearanceMappingByDpsId(dpsCourtAppearanceId)
   }.onFailure { e ->
-    telemetryClient.trackEvent("court-appearance-mapping-deleted-failed", mapOf("dpsCourtAppearanceId" to dpsCourtAppearanceId))
+    telemetryClient.trackEvent(
+      "court-appearance-mapping-deleted-failed",
+      mapOf("dpsCourtAppearanceId" to dpsCourtAppearanceId),
+    )
     log.warn("Unable to delete mapping for court appearance $dpsCourtAppearanceId. Please delete manually", e)
   }
 
@@ -449,6 +464,17 @@ class CourtSentencingSynchronisationService(
     ).also {
       telemetryClient.trackEvent(
         "court-appearance-mapping-created-synchronisation-success",
+        retryMessage.telemetryAttributes,
+      )
+    }
+  }
+
+  suspend fun retryCreateCourtChargeMapping(retryMessage: InternalMessage<CourtChargeMappingDto>) {
+    mappingApiService.createCourtChargeMapping(
+      retryMessage.body,
+    ).also {
+      telemetryClient.trackEvent(
+        "court-charge-mapping-created-synchronisation-success",
         retryMessage.telemetryAttributes,
       )
     }

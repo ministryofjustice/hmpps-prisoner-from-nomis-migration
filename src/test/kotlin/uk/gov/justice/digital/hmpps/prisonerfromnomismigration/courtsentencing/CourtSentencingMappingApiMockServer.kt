@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import java.util.UUID
@@ -248,6 +249,99 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
           .withStatus(status.value())
           .withBody(objectMapper.writeValueAsString(error)),
       ),
+    )
+  }
+
+  fun stubGetCourtChargeByNomisId(
+    nomisCourtChargeId: Long = 123456,
+    dpsCourtChargeId: String = UUID.randomUUID().toString(),
+    mapping: CourtChargeMappingDto = CourtChargeMappingDto(
+      nomisCourtChargeId = nomisCourtChargeId,
+      dpsCourtChargeId = dpsCourtChargeId,
+      mappingType = CourtChargeMappingDto.MappingType.MIGRATED,
+    ),
+  ) {
+    mappingApi.stubFor(
+      get(urlEqualTo("/mapping/court-sentencing/court-charges/nomis-court-charge-id/$nomisCourtChargeId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(objectMapper.writeValueAsString(mapping)),
+      ),
+    )
+  }
+
+  fun stubGetCourtChargeByNomisId(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      get(urlPathMatching("/mapping/court-sentencing/court-charges/nomis-court-charge-id/\\d+")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubPostCourtChargeMapping() {
+    mappingApi.stubFor(
+      post("/mapping/court-sentencing/court-charges").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
+  fun stubPostCourtChargeMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      post("/mapping/court-sentencing/court-charges").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubPostCourtChargeMappingFailureFollowedBySuccess() {
+    mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/court-sentencing/court-charges")
+  }
+
+  fun stubCourtChargeMappingCreateConflict(
+    existingDpsCourtChargeId: String = "10",
+    duplicateDpsCourtChargeId: String = "11",
+    nomisCourtChargeId: Long = 123,
+  ) {
+    mappingApi.stubFor(
+      post(WireMock.urlPathEqualTo("/mapping/court-sentencing/court-charges"))
+        .willReturn(
+          aResponse()
+            .withStatus(409)
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
+              "moreInfo": 
+              {
+                "existing" :  {
+                  "dpsCourtChargeId": "$existingDpsCourtChargeId",
+                  "nomisCourtChargeId": $nomisCourtChargeId,
+                  "courtCharges": [],
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "MIGRATED"
+                 },
+                 "duplicate" : {
+                  "dpsCourtChargeId": "$duplicateDpsCourtChargeId",
+                  "nomisCourtChargeId": $nomisCourtChargeId,
+                  "courtCharges": [],
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "MIGRATED"
+                  }
+              }
+              }""",
+            ),
+        ),
     )
   }
 
