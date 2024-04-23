@@ -40,31 +40,47 @@ class AlertsSynchronisationService(
     if (nomisAlert.audit.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent("alert-synchronisation-created-skipped", telemetry)
     } else {
-      val mapping = mappingApiService.getOrNullByNomisId(event.bookingId, event.alertSeq)
-      if (mapping != null) {
-        telemetryClient.trackEvent(
-          "alert-synchronisation-created-ignored",
-          telemetry + ("dpsAlertId" to mapping.dpsAlertId),
-        )
+      if (nomisAlert.audit.auditAdditionalInfo == "OMKCOPY.COPY_BOOKING_DATA") {
+        val previousBooking = nomisApiService.getBookingPreviousTo(offenderNo = event.offenderIdDisplay, bookingId = event.bookingId)
+        mappingApiService.updateNomisMappingId(previousBookingId = previousBooking.bookingId, alertSequence = event.alertSeq, newBookingId = event.bookingId)?.also { mapping ->
+          telemetryClient.trackEvent(
+            "alert-synchronisation-booking-transfer-success",
+            telemetry + mapOf("dpsAlertId" to mapping.dpsAlertId, "previousBookingId" to previousBooking.bookingId.toString()),
+          )
+        } ?: run {
+          telemetryClient.trackEvent(
+            "alert-synchronisation-booking-transfer-failed",
+            telemetry + ("previousBookingId" to previousBooking.bookingId.toString()),
+          )
+          throw IllegalStateException("Mapping was not found to update for booking ${previousBooking.bookingId} and alertSequence ${event.alertSeq}")
+        }
       } else {
-        dpsApiService.createAlert(
-          nomisAlert.toDPSCreateAlert(event.offenderIdDisplay),
-          createdByUsername = nomisAlert.audit.createUsername,
-        ).run {
-          tryToCreateMapping(
-            offenderNo = event.offenderIdDisplay,
-            nomisAlert = nomisAlert,
-            dpsAlert = this,
-            telemetry = telemetry,
-          ).also { mappingCreateResult ->
-            val mappingSuccessTelemetry =
-              (if (mappingCreateResult == MAPPING_CREATED) mapOf() else mapOf("mapping" to "initial-failure"))
-            val additionalTelemetry = mappingSuccessTelemetry + ("dpsAlertId" to this.alertUuid.toString())
+        val mapping = mappingApiService.getOrNullByNomisId(event.bookingId, event.alertSeq)
+        if (mapping != null) {
+          telemetryClient.trackEvent(
+            "alert-synchronisation-created-ignored",
+            telemetry + ("dpsAlertId" to mapping.dpsAlertId),
+          )
+        } else {
+          dpsApiService.createAlert(
+            nomisAlert.toDPSCreateAlert(event.offenderIdDisplay),
+            createdByUsername = nomisAlert.audit.createUsername,
+          ).run {
+            tryToCreateMapping(
+              offenderNo = event.offenderIdDisplay,
+              nomisAlert = nomisAlert,
+              dpsAlert = this,
+              telemetry = telemetry,
+            ).also { mappingCreateResult ->
+              val mappingSuccessTelemetry =
+                (if (mappingCreateResult == MAPPING_CREATED) mapOf() else mapOf("mapping" to "initial-failure"))
+              val additionalTelemetry = mappingSuccessTelemetry + ("dpsAlertId" to this.alertUuid.toString())
 
-            telemetryClient.trackEvent(
-              "alert-synchronisation-created-success",
-              telemetry + additionalTelemetry,
-            )
+              telemetryClient.trackEvent(
+                "alert-synchronisation-created-success",
+                telemetry + additionalTelemetry,
+              )
+            }
           }
         }
       }

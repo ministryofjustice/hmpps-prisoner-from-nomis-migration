@@ -44,7 +44,7 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
     ),
   ) {
     nomisApi.stubFor(
-      get(urlEqualTo("/prisoner/booking-id/$bookingId/alerts/$alertSequence")).willReturn(
+      get(urlEqualTo("/prisoners/booking-id/$bookingId/alerts/$alertSequence")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
@@ -55,7 +55,7 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
 
   fun stubGetAlert(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     nomisApi.stubFor(
-      get(urlPathMatching("/prisoner/booking-id/\\d+/alerts/\\d+")).willReturn(
+      get(urlPathMatching("/prisoners/booking-id/\\d+/alerts/\\d+")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -151,5 +151,24 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
+  fun stubGetPreviousBooking(offenderNo: String, bookingId: Long, oldBookingId: Long = 12345, oldBookingSequence: Long = 2) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/prisoners/$offenderNo/bookings/$bookingId/previous")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(
+            """
+              {
+                "bookingId": $oldBookingId,
+                "bookingSequence": $oldBookingSequence
+              }
+            """.trimIndent(),
+          ),
+      ),
+    )
+  }
+
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
+  fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
 }

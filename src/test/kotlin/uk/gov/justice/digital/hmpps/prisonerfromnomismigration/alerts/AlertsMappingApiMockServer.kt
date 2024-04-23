@@ -6,6 +6,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
@@ -158,6 +159,46 @@ class AlertsMappingApiMockServer(private val objectMapper: ObjectMapper) {
               size = 1,
             ),
           ),
+      ),
+    )
+  }
+
+  fun stubUpdateByNomisId(
+    previousBookingId: Long = 123456,
+    alertSequence: Long = 1,
+    newBookingId: Long = 5000,
+    dpsAlertId: String = UUID.randomUUID().toString(),
+  ) {
+    mappingApi.stubFor(
+      put("/mapping/alerts/nomis-booking-id/$previousBookingId/nomis-alert-sequence/$alertSequence").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(200)
+          .withBody(
+            objectMapper.writeValueAsString(
+              AlertMappingDto(
+                dpsAlertId = dpsAlertId,
+                nomisBookingId = newBookingId,
+                nomisAlertSequence = alertSequence,
+                mappingType = MIGRATED,
+                offenderNo = "A1234KT",
+              ),
+            ),
+          ),
+      ),
+    )
+  }
+
+  fun stubUpdateByNomisId(
+    status: HttpStatus,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    mappingApi.stubFor(
+      put(urlPathMatching("/mapping/alerts/nomis-booking-id/\\d+/nomis-alert-sequence/\\d+")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
       ),
     )
   }

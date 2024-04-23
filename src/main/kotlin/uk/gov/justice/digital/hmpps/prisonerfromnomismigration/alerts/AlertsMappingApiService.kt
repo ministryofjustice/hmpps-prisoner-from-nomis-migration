@@ -7,6 +7,7 @@ import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.NomisMappingIdUpdate
 
 @Service
 class AlertsMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) :
@@ -34,4 +35,15 @@ class AlertsMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebCl
       .retrieve()
       .awaitBodilessEntity()
   }
+
+  suspend fun updateNomisMappingId(previousBookingId: Long, alertSequence: Long, newBookingId: Long): AlertMappingDto? =
+    webClient.put()
+      .uri(
+        "/mapping/alerts/nomis-booking-id/{bookingId}/nomis-alert-sequence/{alertSequence}",
+        previousBookingId,
+        alertSequence,
+      )
+      .bodyValue(NomisMappingIdUpdate(bookingId = newBookingId))
+      .retrieve()
+      .awaitBodyOrNullWhenNotFound()
 }
