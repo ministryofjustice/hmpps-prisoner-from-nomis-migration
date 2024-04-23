@@ -482,7 +482,11 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       )
     }
 
-  fun stubActivitiesMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 7, migrationId: String = "2022-02-14T09:58:45") {
+  fun stubActivitiesMappingByMigrationId(
+    whenCreated: String = "2020-01-01T11:10:00",
+    count: Int = 7,
+    migrationId: String = "2022-02-14T09:58:45",
+  ) {
     fun aMigration(id: Int) = """{
       "nomisCourseActivityId": $id,
       "activityScheduleId": 456,
@@ -490,6 +494,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       "label": "$migrationId",
       "whenCreated": "$whenCreated"
     }"""
+
     val content = IntRange(1, count).joinToString { aMigration(it) }
     stubFor(
       get(urlPathMatching("/mapping/activities/migration/migration-id/.*")).willReturn(
@@ -497,6 +502,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       ),
     )
   }
+
   fun stubActivitiesMappingByMigrationIdFails(statusCode: Int) {
     stubFor(
       get(urlPathMatching("/mapping/activities/migration/migration-id/.*"))
@@ -510,7 +516,16 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun verifyActivitiesMappingByMigrationId(migrationId: String, count: Int) {
     verify(
-      getRequestedFor(urlPathEqualTo("/mapping/activities/migration/migration-id/${URLEncoder.encode(migrationId, "UTF-8")}"))
+      getRequestedFor(
+        urlPathEqualTo(
+          "/mapping/activities/migration/migration-id/${
+            URLEncoder.encode(
+              migrationId,
+              "UTF-8",
+            )
+          }",
+        ),
+      )
         .withQueryParam("size", equalTo("$count")),
     )
   }
@@ -1014,6 +1029,22 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     stubFor(
       get(urlPathMatching("/mapping/locations/migration-id/.*")).willReturn(
         okJson(pageContent(content, count)),
+      ),
+    )
+  }
+
+  fun stubLocationsDeleteMapping(dpsLocationId: String) {
+    stubFor(
+      delete(urlPathMatching("/mapping/locations/dps/$dpsLocationId")).willReturn(
+        aResponse().withStatus(HttpStatus.NO_CONTENT.value()),
+      ),
+    )
+  }
+
+  fun stubLocationsDeleteMappingWithError(dpsLocationId: String, status: Int = 500) {
+    stubFor(
+      delete(urlPathMatching("/mapping/locations/dps/$dpsLocationId")).willReturn(
+        aResponse().withStatus(status),
       ),
     )
   }

@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Location
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.NomisMigrateLocationRequest
@@ -16,6 +17,13 @@ class LocationsService(@Qualifier("locationsApiWebClient") private val webClient
       .bodyValue(upsertRequest)
       .retrieve()
       .awaitBody()
+
+  suspend fun deleteLocation(id: String) {
+    webClient.delete()
+      .uri("/sync/delete/{id}", id)
+      .retrieve()
+      .awaitBodilessEntity()
+  }
 
   suspend fun migrateLocation(request: NomisMigrateLocationRequest): Location =
     webClient.post()

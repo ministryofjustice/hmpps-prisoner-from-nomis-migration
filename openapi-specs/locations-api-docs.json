@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-04-09.836.b192bc2"
+    "version": "2024-04-22.926.50fae13"
   },
   "servers": [
     {
@@ -1374,6 +1374,75 @@
           },
           "403": {
             "description": "Missing required role. Requires the READ_LOCATION_REFERENCE_DATA role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sync/delete/{id}": {
+      "delete": {
+        "tags": [
+          "Sync"
+        ],
+        "summary": "Delete a location",
+        "description": "Requires role SYNC_LOCATIONS and write scope",
+        "operationId": "deleteLocation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Location UUID to remove",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Location UUID to remove",
+              "example": "2475f250-434a-4257-afe7-b911f1773a4d"
+            },
+            "example": "2475f250-434a-4257-afe7-b911f1773a4d"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted location"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the SYNC_LOCATIONS role with write scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -3323,15 +3392,15 @@
             "type": "integer",
             "format": "int32"
           },
-          "pageNumber": {
-            "type": "integer",
-            "format": "int32"
-          },
           "paged": {
             "type": "boolean"
           },
           "unpaged": {
             "type": "boolean"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
