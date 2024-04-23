@@ -170,4 +170,5 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
   }
 
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
+  fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
 }

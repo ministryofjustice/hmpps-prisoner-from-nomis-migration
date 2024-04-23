@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.atLeastOnce
 import org.mockito.Mockito.eq
+import org.mockito.Mockito.times
 import org.mockito.kotlin.any
 import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
@@ -501,6 +502,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will retrieve the alert from NOMIS`() {
           await untilAsserted {
             alertsNomisApiMockServer.verify(
+              2,
               getRequestedFor(urlPathEqualTo("/prisoners/booking-id/$bookingId/alerts/$alertSequence")),
             )
           }
@@ -510,6 +512,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will retrieve the previous booking id`() {
           await untilAsserted {
             alertsNomisApiMockServer.verify(
+              2,
               getRequestedFor(urlPathEqualTo("/prisoners/$offenderNo/bookings/$bookingId/previous")),
             )
           }
@@ -519,6 +522,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will attempt update the mapping`() {
           await untilAsserted {
             alertsMappingApiMockServer.verify(
+              2,
               putRequestedFor(urlPathEqualTo("/mapping/alerts/nomis-booking-id/$previousBookingId/nomis-alert-sequence/$alertSequence"))
                 .withRequestBody(matchingJsonPath("bookingId", equalTo("$bookingId"))),
             )
@@ -528,7 +532,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will track a telemetry event for failure`() {
           await untilAsserted {
-            verify(telemetryClient).trackEvent(
+            verify(telemetryClient, times(2)).trackEvent(
               eq("alert-synchronisation-booking-transfer-failed"),
               check {
                 assertThat(it["offenderNo"]).isEqualTo(offenderNo)
