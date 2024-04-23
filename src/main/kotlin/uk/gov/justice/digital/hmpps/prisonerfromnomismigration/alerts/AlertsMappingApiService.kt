@@ -34,4 +34,18 @@ class AlertsMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebCl
       .retrieve()
       .awaitBodilessEntity()
   }
+
+  suspend fun updateNomisMappingId(previousBookingId: Long, alertSequence: Long, newBookingId: Long): AlertMappingDto? =
+    webClient.put()
+      .uri(
+        "/mapping/alerts/nomis-booking-id/{bookingId}/nomis-alert-sequence/{alertSequence}",
+        previousBookingId,
+        alertSequence,
+      )
+      .bodyValue(NomisMappingIdUpdate(bookingId = newBookingId))
+      .retrieve()
+      .awaitBodyOrNullWhenNotFound()
 }
+
+// TODO replace with OpenAPI generated version
+data class NomisMappingIdUpdate(val bookingId: Long)

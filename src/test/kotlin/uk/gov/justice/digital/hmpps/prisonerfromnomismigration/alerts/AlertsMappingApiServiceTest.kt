@@ -6,6 +6,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
@@ -162,6 +163,32 @@ class AlertsMappingApiServiceTest {
           .withRequestBody(matchingJsonPath("nomisAlertSequence", equalTo("1")))
           .withRequestBody(matchingJsonPath("dpsAlertId", equalTo(dpsAlertId)))
           .withRequestBody(matchingJsonPath("mappingType", equalTo("DPS_CREATED"))),
+      )
+    }
+  }
+
+  @Nested
+  inner class UpdateNomisMappingId {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      alertsMappingApiMockServer.stubUpdateByNomisId(previousBookingId = 5000, alertSequence = 3)
+
+      apiService.updateNomisMappingId(previousBookingId = 5000, alertSequence = 3, newBookingId = 123456)
+
+      alertsMappingApiMockServer.verify(
+        putRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass ids to service`() = runTest {
+      alertsMappingApiMockServer.stubUpdateByNomisId(previousBookingId = 5000, alertSequence = 3)
+
+      apiService.updateNomisMappingId(previousBookingId = 5000, alertSequence = 3, newBookingId = 123456)
+
+      alertsMappingApiMockServer.verify(
+        putRequestedFor(urlPathEqualTo("/mapping/alerts/nomis-booking-id/5000/nomis-alert-sequence/3"))
+          .withRequestBody(matchingJsonPath("bookingId", equalTo("123456"))),
       )
     }
   }

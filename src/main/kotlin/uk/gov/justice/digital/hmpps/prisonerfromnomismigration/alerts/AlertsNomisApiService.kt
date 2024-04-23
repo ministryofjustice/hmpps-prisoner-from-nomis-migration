@@ -15,7 +15,7 @@ import java.time.LocalDate
 class AlertsNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
   suspend fun getAlert(bookingId: Long, alertSequence: Long): AlertResponse = webClient.get()
     .uri(
-      "/prisoner/booking-id/{bookingId}/alerts/{alertSequence}",
+      "/prisoners/booking-id/{bookingId}/alerts/{alertSequence}",
       bookingId,
       alertSequence,
     )
@@ -52,4 +52,16 @@ class AlertsNomisApiService(@Qualifier("nomisApiWebClient") private val webClien
     )
     .retrieve()
     .awaitBody()
+
+  suspend fun getBookingPreviousTo(offenderNo: String, bookingId: Long): PreviousBookingIId = webClient.get()
+    .uri(
+      "/prisoners/{offenderNo}/bookings/{bookingId}/previous",
+      offenderNo,
+      bookingId,
+    )
+    .retrieve()
+    .awaitBody()
 }
+
+// TODO replace with OpenAPI generated version
+data class PreviousBookingIId(val bookingId: Long, val bookingSequence: Long)

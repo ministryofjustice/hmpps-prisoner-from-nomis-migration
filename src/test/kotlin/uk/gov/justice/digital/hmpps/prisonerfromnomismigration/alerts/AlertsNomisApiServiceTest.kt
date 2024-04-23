@@ -51,7 +51,7 @@ class AlertsNomisApiServiceTest {
       apiService.getAlert(bookingId = 1234567, alertSequence = 3)
 
       alertsNomisApiMockServer.verify(
-        getRequestedFor(urlPathEqualTo("/prisoner/booking-id/1234567/alerts/3")),
+        getRequestedFor(urlPathEqualTo("/prisoners/booking-id/1234567/alerts/3")),
       )
     }
 
@@ -152,6 +152,41 @@ class AlertsNomisApiServiceTest {
 
       assertThat(alerts.latestBookingAlerts).hasSize(3)
       assertThat(alerts.previousBookingsAlerts).hasSize(1)
+    }
+  }
+
+  @Nested
+  inner class GetBookingPreviousTo {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      alertsNomisApiMockServer.stubGetPreviousBooking(offenderNo = "A1234TT", bookingId = 123456)
+
+      apiService.getBookingPreviousTo("A1234TT", 123456)
+
+      alertsNomisApiMockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass NOMIS ids to service`() = runTest {
+      alertsNomisApiMockServer.stubGetPreviousBooking(offenderNo = "A1234TT", bookingId = 123456)
+
+      apiService.getBookingPreviousTo("A1234TT", 123456)
+
+      alertsNomisApiMockServer.verify(
+        getRequestedFor(urlPathEqualTo("/prisoners/A1234TT/bookings/123456/previous")),
+      )
+    }
+
+    @Test
+    fun `will return booking ids`() = runTest {
+      alertsNomisApiMockServer.stubGetPreviousBooking(offenderNo = "A1234TT", bookingId = 123456, oldBookingId = 12000)
+
+      val previousBookingIds = apiService.getBookingPreviousTo("A1234TT", 123456)
+
+      assertThat(previousBookingIds.bookingId).isEqualTo(12000)
+      assertThat(previousBookingIds.bookingSequence).isEqualTo(2)
     }
   }
 

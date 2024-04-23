@@ -388,6 +388,169 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
         }
       }
     }
+
+    @Nested
+    @DisplayName("When alert was created in NOMIS due to a new booking")
+    inner class NewBookingCreatedInNomis {
+      private val bookingId = 12345L
+      private val previousBookingId = 5000L
+      private val alertSequence = 3L
+      private val offenderNo = "A3864DZ"
+
+      @BeforeEach
+      fun setUp() {
+        alertsNomisApiMockServer.stubGetAlert(
+          bookingId = bookingId,
+          alertSequence = alertSequence,
+          alert = alert(bookingId = bookingId, alertSequence = alertSequence).copy(
+            alertCode = CodeDescription("XNR", "Not For Release"),
+            type = CodeDescription("X", "Security"),
+            audit = alert().audit.copy(
+              auditModuleName = "OIDADMIS",
+              auditAdditionalInfo = "OMKCOPY.COPY_BOOKING_DATA",
+            ),
+          ),
+        )
+      }
+
+      @Nested
+      inner class HappyPath {
+        private val dpsAlertId = "a04f7a8d-61aa-400c-9395-f4dc62f36ab0"
+
+        @BeforeEach
+        fun setUp() {
+          alertsNomisApiMockServer.stubGetPreviousBooking(offenderNo, bookingId, previousBookingId)
+          alertsMappingApiMockServer.stubGetByNomisId(bookingId = bookingId, alertSequence = alertSequence)
+          alertsMappingApiMockServer.stubUpdateByNomisId(previousBookingId = previousBookingId, alertSequence = alertSequence, newBookingId = bookingId, dpsAlertId = dpsAlertId)
+          awsSqsAlertOffenderEventsClient.sendMessage(
+            alertsQueueOffenderEventsUrl,
+            alertEvent(
+              eventType = "ALERT-INSERTED",
+              bookingId = bookingId,
+              alertSequence = alertSequence,
+              offenderNo = offenderNo,
+            ),
+          )
+        }
+
+        @Test
+        fun `will retrieve the alert from NOMIS`() {
+          await untilAsserted {
+            alertsNomisApiMockServer.verify(
+              getRequestedFor(urlPathEqualTo("/prisoners/booking-id/$bookingId/alerts/$alertSequence")),
+            )
+          }
+        }
+
+        @Test
+        fun `will retrieve the previous booking id`() {
+          await untilAsserted {
+            alertsNomisApiMockServer.verify(
+              getRequestedFor(urlPathEqualTo("/prisoners/$offenderNo/bookings/$bookingId/previous")),
+            )
+          }
+        }
+
+        @Test
+        fun `will update the mapping`() {
+          await untilAsserted {
+            alertsMappingApiMockServer.verify(
+              putRequestedFor(urlPathEqualTo("/mapping/alerts/nomis-booking-id/$previousBookingId/nomis-alert-sequence/$alertSequence"))
+                .withRequestBody(matchingJsonPath("bookingId", equalTo("$bookingId"))),
+            )
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("alert-synchronisation-booking-transfer-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+                assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+                assertThat(it["previousBookingId"]).isEqualTo(previousBookingId.toString())
+                assertThat(it["alertSequence"]).isEqualTo(alertSequence.toString())
+                assertThat(it["dpsAlertId"]).isEqualTo(dpsAlertId)
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      inner class WhenNotFoundForMappingUpdate {
+        @BeforeEach
+        fun setUp() {
+          alertsNomisApiMockServer.stubGetPreviousBooking(offenderNo, bookingId, previousBookingId)
+          alertsMappingApiMockServer.stubGetByNomisId(bookingId = bookingId, alertSequence = alertSequence)
+          alertsMappingApiMockServer.stubUpdateByNomisId(status = NOT_FOUND)
+          awsSqsAlertOffenderEventsClient.sendMessage(
+            alertsQueueOffenderEventsUrl,
+            alertEvent(
+              eventType = "ALERT-INSERTED",
+              bookingId = bookingId,
+              alertSequence = alertSequence,
+              offenderNo = offenderNo,
+            ),
+          )
+        }
+
+        @Test
+        fun `will retrieve the alert from NOMIS`() {
+          await untilAsserted {
+            alertsNomisApiMockServer.verify(
+              getRequestedFor(urlPathEqualTo("/prisoners/booking-id/$bookingId/alerts/$alertSequence")),
+            )
+          }
+        }
+
+        @Test
+        fun `will retrieve the previous booking id`() {
+          await untilAsserted {
+            alertsNomisApiMockServer.verify(
+              getRequestedFor(urlPathEqualTo("/prisoners/$offenderNo/bookings/$bookingId/previous")),
+            )
+          }
+        }
+
+        @Test
+        fun `will attempt update the mapping`() {
+          await untilAsserted {
+            alertsMappingApiMockServer.verify(
+              putRequestedFor(urlPathEqualTo("/mapping/alerts/nomis-booking-id/$previousBookingId/nomis-alert-sequence/$alertSequence"))
+                .withRequestBody(matchingJsonPath("bookingId", equalTo("$bookingId"))),
+            )
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for failure`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("alert-synchronisation-booking-transfer-failed"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+                assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+                assertThat(it["previousBookingId"]).isEqualTo(previousBookingId.toString())
+                assertThat(it["alertSequence"]).isEqualTo(alertSequence.toString())
+              },
+              isNull(),
+            )
+          }
+        }
+
+        @Test
+        fun `the event is placed on dead letter queue`() {
+          await untilAsserted {
+            assertThat(
+              awsSqsAlertsOffenderEventDlqClient.countAllMessagesOnQueue(alertsQueueOffenderEventsDlqUrl).get(),
+            ).isEqualTo(1)
+          }
+        }
+      }
+    }
   }
 
   @Nested
