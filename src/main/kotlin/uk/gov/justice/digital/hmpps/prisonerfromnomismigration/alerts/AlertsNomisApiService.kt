@@ -6,6 +6,7 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PreviousBookingId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerAlertsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RestResponsePage
@@ -53,7 +54,7 @@ class AlertsNomisApiService(@Qualifier("nomisApiWebClient") private val webClien
     .retrieve()
     .awaitBody()
 
-  suspend fun getBookingPreviousTo(offenderNo: String, bookingId: Long): PreviousBookingIId = webClient.get()
+  suspend fun getBookingPreviousTo(offenderNo: String, bookingId: Long): PreviousBookingId = webClient.get()
     .uri(
       "/prisoners/{offenderNo}/bookings/{bookingId}/previous",
       offenderNo,
@@ -62,6 +63,3 @@ class AlertsNomisApiService(@Qualifier("nomisApiWebClient") private val webClien
     .retrieve()
     .awaitBody()
 }
-
-// TODO replace with OpenAPI generated version
-data class PreviousBookingIId(val bookingId: Long, val bookingSequence: Long)

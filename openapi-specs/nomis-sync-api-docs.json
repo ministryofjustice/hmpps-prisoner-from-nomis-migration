@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-04-18.7325.5fbd49e"
+    "version": "2024-04-23.7395.570b9dd"
   },
   "servers": [
     {
@@ -6072,6 +6072,85 @@
           },
           "403": {
             "description": "Forbidden to access this endpoint when role SYNCHRONISATION_REPORTING not present",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisoners/{offenderNo}/bookings/{bookingId}/previous": {
+      "get": {
+        "tags": [
+          "prisoners-resource"
+        ],
+        "summary": "Gets a prisoner's previous booking relative to the supplied booking id",
+        "description": "Requires role NOMIS_ALERTS.",
+        "operationId": "getPreviousBooking",
+        "parameters": [
+          {
+            "name": "offenderNo",
+            "in": "path",
+            "description": "Offender Noms Id",
+            "required": true,
+            "schema": {
+              "pattern": "[A-Z]\\d{4}[A-Z]{2}",
+              "type": "string",
+              "description": "Offender Noms Id",
+              "example": "A1234ZZ"
+            },
+            "example": "A1234ZZ"
+          },
+          {
+            "name": "bookingId",
+            "in": "path",
+            "description": "Booking Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Booking Id",
+              "example": 123
+            },
+            "example": 123
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ids of booking",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviousBookingId"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint when role NOMIS_ALERTS not present",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Booking or prisoner does not exist or has no previous booking",
             "content": {
               "application/json": {
                 "schema": {
@@ -14184,6 +14263,28 @@
         },
         "description": "Details of a prisoner merge"
       },
+      "PreviousBookingId": {
+        "required": [
+          "bookingId",
+          "bookingSequence"
+        ],
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "integer",
+            "description": "The NOMIS booking ID",
+            "format": "int64",
+            "example": 1234567
+          },
+          "bookingSequence": {
+            "type": "integer",
+            "description": "The NOMIS booking sequence",
+            "format": "int64",
+            "example": 3
+          }
+        },
+        "description": "ID of previous booking"
+      },
       "PrisonerAlertsResponse": {
         "required": [
           "latestBookingAlerts",
@@ -15696,6 +15797,42 @@
         },
         "description": "Incentive information"
       },
+      "Actions": {
+        "required": [
+          "csraOrRsraReview",
+          "nonAssociationsUpdated",
+          "observationBook",
+          "openCSIPAlert",
+          "serviceReferral",
+          "simReferral",
+          "unitOrCellMove"
+        ],
+        "type": "object",
+        "properties": {
+          "openCSIPAlert": {
+            "type": "boolean"
+          },
+          "nonAssociationsUpdated": {
+            "type": "boolean"
+          },
+          "observationBook": {
+            "type": "boolean"
+          },
+          "unitOrCellMove": {
+            "type": "boolean"
+          },
+          "csraOrRsraReview": {
+            "type": "boolean"
+          },
+          "serviceReferral": {
+            "type": "boolean"
+          },
+          "simReferral": {
+            "type": "boolean"
+          }
+        },
+        "description": "Action list"
+      },
       "Attendee": {
         "required": [
           "If attended (otherwise contributor)",
@@ -15727,10 +15864,13 @@
       "CSIPResponse": {
         "required": [
           "areaOfWork",
+          "decision",
+          "documents",
           "id",
           "investigation",
           "location",
           "offender",
+          "originalAgencyLocation",
           "plans",
           "proActiveReferral",
           "reportDetails",
@@ -15754,6 +15894,10 @@
             "type": "integer",
             "description": "The booking id associated with the CSIP",
             "format": "int64"
+          },
+          "originalAgencyLocation": {
+            "type": "string",
+            "description": "The original location when the CSIP was created"
           },
           "logNumber": {
             "type": "string",
@@ -15804,6 +15948,9 @@
           "investigation": {
             "$ref": "#/components/schemas/Investigation"
           },
+          "decision": {
+            "$ref": "#/components/schemas/Decision"
+          },
           "caseManager": {
             "type": "string",
             "description": "Case Manager involved"
@@ -15830,9 +15977,78 @@
             "items": {
               "$ref": "#/components/schemas/Review"
             }
+          },
+          "documents": {
+            "type": "array",
+            "description": "CSIP Documents",
+            "items": {
+              "$ref": "#/components/schemas/Document"
+            }
           }
         },
         "description": "CSIP Details"
+      },
+      "Decision": {
+        "required": [
+          "actions"
+        ],
+        "type": "object",
+        "properties": {
+          "conclusion": {
+            "type": "string",
+            "description": "Conclusion & Reason for decision"
+          },
+          "decisionOutcome": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "signedOffRole": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "recordedBy": {
+            "type": "string",
+            "description": "Recorded By"
+          },
+          "recordedDate": {
+            "type": "string",
+            "description": "Recorded Date",
+            "format": "date"
+          },
+          "nextSteps": {
+            "type": "string",
+            "description": "What to do next"
+          },
+          "otherDetails": {
+            "type": "string",
+            "description": "Other information to take into consideration"
+          },
+          "actions": {
+            "$ref": "#/components/schemas/Actions"
+          }
+        },
+        "description": "DecisionAndActions"
+      },
+      "Document": {
+        "required": [
+          "fileName",
+          "id",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Document Id",
+            "format": "int64"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "Name of the document"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CodeDescription"
+          }
+        },
+        "description": "CSIP Documents"
       },
       "FactorResponse": {
         "required": [
