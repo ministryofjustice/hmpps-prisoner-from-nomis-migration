@@ -20,7 +20,7 @@ class LocationsService(@Qualifier("locationsApiWebClient") private val webClient
 
   suspend fun deleteLocation(id: String) {
     webClient.delete()
-      .uri("/sync/delete/$id")
+      .uri("/sync/delete/{id}", id)
       .retrieve()
       .awaitBodilessEntity()
   }
