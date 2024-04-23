@@ -136,6 +136,42 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubPostCourtChargeForCreate(
+    courtChargeId: String = UUID.randomUUID().toString(),
+    courtAppearanceId: String = UUID.randomUUID().toString(),
+    response: CreateNewChargeResponse = CreateNewChargeResponse(
+      chargeUuid = UUID.fromString(courtChargeId),
+    ),
+  ) {
+    stubFor(
+      post("/court-appearance/$courtAppearanceId/charge")
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader("Content-Type", "application/json")
+            .withBody(CourtSentencingDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubPutCourtChargeForAddExistingChargeToAppearance(
+    courtChargeId: String = UUID.randomUUID().toString(),
+    courtAppearanceId: String = UUID.randomUUID().toString(),
+    response: CreateNewChargeResponse = CreateNewChargeResponse(
+      chargeUuid = UUID.fromString(courtChargeId),
+    ),
+  ) {
+    stubFor(
+      put("/court-appearance/$courtAppearanceId/charge/$courtChargeId")
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader("Content-Type", "application/json")
+            .withBody(CourtSentencingDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
   fun stubHealthPing(status: Int) {
     stubFor(
       get("/health/ping").willReturn(

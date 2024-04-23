@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_APPEARANCE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CASE_SYNCHRONISATION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CHARGE_SYNCHRONISATION_MAPPING
 import java.util.concurrent.CompletableFuture
 
 @Service
@@ -61,6 +62,11 @@ class CourtSentencingEventListener(
 
         RETRY_COURT_APPEARANCE_SYNCHRONISATION_MAPPING ->
           courtSentencingSynchronisationService.retryCreateCourtAppearanceMapping(
+            sqsMessage.Message.fromJson(),
+          )
+
+        RETRY_COURT_CHARGE_SYNCHRONISATION_MAPPING ->
+          courtSentencingSynchronisationService.retryCreateCourtChargeMapping(
             sqsMessage.Message.fromJson(),
           )
       }

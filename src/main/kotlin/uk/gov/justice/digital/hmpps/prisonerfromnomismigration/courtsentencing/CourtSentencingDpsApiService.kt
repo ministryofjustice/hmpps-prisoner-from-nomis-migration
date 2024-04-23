@@ -64,7 +64,7 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
   suspend fun associateExistingCourtCharge(courtAppearanceId: String, charge: CreateCharge): CreateCourtAppearanceResponse =
     webClient
       .put()
-      .uri("/court-appearance/{courtAppearanceId}/charge/{chargeId}", courtAppearanceId, charge.chargeUuid)
+      .uri("/court-appearance/{courtAppearanceId}/charge/{chargeId}", courtAppearanceId, charge.chargeUuid.toString())
       .bodyValue(charge)
       .retrieve()
       .awaitBody()
@@ -72,8 +72,8 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
   // add a court charge and associate it with the given appearance (will create sync mapping)
   suspend fun addNewCourtCharge(courtAppearanceId: String, charge: CreateCharge): CreateNewChargeResponse =
     webClient
-      .put()
-      .uri("/court-appearance/{courtAppearanceId}/charge/", courtAppearanceId)
+      .post()
+      .uri("/court-appearance/{courtAppearanceId}/charge", courtAppearanceId)
       .bodyValue(charge)
       .retrieve()
       .awaitBody()
