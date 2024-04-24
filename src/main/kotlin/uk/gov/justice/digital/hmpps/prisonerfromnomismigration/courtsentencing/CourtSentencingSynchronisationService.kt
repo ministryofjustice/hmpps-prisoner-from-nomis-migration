@@ -403,12 +403,14 @@ class CourtSentencingSynchronisationService(
         mappingApiService.getOffenderChargeOrNullByNomisId(event.chargeId)?.let { mapping ->
           // mapping means this is an existing offender charge to be applied to the appearance
           telemetry.put("dpsChargeId", mapping.dpsCourtChargeId)
+          telemetry.put("existingDpsCharge", "true")
           dpsApiService.associateExistingCourtCharge(
             courtAppearanceMapping.dpsCourtAppearanceId,
             nomisOffenderCharge.toDpsCharge(mapping.dpsCourtChargeId),
           )
         } ?: let {
           // no mapping means this is a new offender charge to be created and applied to the appearance
+          telemetry.put("existingDpsCharge", "false")
           dpsApiService.addNewCourtCharge(
             courtAppearanceId = courtAppearanceMapping.dpsCourtAppearanceId,
             nomisOffenderCharge.toDpsCharge(),

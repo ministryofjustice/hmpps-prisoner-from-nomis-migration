@@ -44,6 +44,7 @@ private const val DPS_COURT_CASE_ID = "cc1"
 private const val DPS_COURT_APPEARANCE_ID = "6f35a357-f458-40b9-b824-de729ffeb459"
 private const val EXISTING_DPS_COURT_CASE_ID = "cc2"
 private const val EXISTING_DPS_COURT_APPEARANCE_ID = "9d99a357-f458-40b9-b824-de729ffeb459"
+private const val EXISTING_DPS_CHARGE_ID = "88d8a357-f458-40b9-b824-de729ffeb459"
 private const val OFFENDER_ID_DISPLAY = "A3864DZ"
 private const val NOMIS_BOOKING_ID = 12344321L
 private const val NOMIS_OFFENDER_CHARGE_ID = 7777L
@@ -1527,7 +1528,6 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         courtSentencingNomisApiMockServer.stubGetOffenderCharge(
-          courtCaseId = NOMIS_COURT_CASE_ID,
           offenderNo = OFFENDER_ID_DISPLAY,
           offenderChargeId = NOMIS_OFFENDER_CHARGE_ID,
         )
@@ -1597,6 +1597,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
                 assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_ID)
                 assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+                assertThat(it["existingDpsCharge"]).isEqualTo("false")
                 assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
               },
               isNull(),
@@ -1657,6 +1658,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
                 assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_ID)
                 assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+                assertThat(it["existingDpsCharge"]).isEqualTo("true")
                 assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
               },
               isNull(),
@@ -1821,39 +1823,35 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenDuplicate {
 
       @Test
-      internal fun `it will not retry after a 409 (duplicate court appearance written to Sentencing API)`() {
+      internal fun `it will not retry after a 409 (duplicate charge written to Sentencing API)`() {
         // in the case of multiple events received at the same time - mapping doesn't exist
-        courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(status = NOT_FOUND)
+        courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(status = NOT_FOUND)
 
-        courtSentencingMappingApiMockServer.stubGetByNomisId(
-          nomisCourtCaseId = NOMIS_COURT_CASE_ID,
-          dpsCourtCaseId = DPS_COURT_CASE_ID,
-        )
-
-        courtSentencingNomisApiMockServer.stubGetCourtAppearance(
+        courtSentencingNomisApiMockServer.stubGetOffenderCharge(
           offenderNo = OFFENDER_ID_DISPLAY,
-          courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
-          courtCaseId = NOMIS_COURT_CASE_ID,
-        )
-        dpsCourtSentencingServer.stubPostCourtAppearanceForCreate(
-          courtAppearanceId = UUID.fromString(
-            DPS_COURT_APPEARANCE_ID,
-          ),
+          offenderChargeId = NOMIS_OFFENDER_CHARGE_ID,
         )
 
-        courtSentencingMappingApiMockServer.stubCourtAppearanceMappingCreateConflict(
-          existingDpsCourtAppearanceId = EXISTING_DPS_COURT_APPEARANCE_ID,
-          duplicateDpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
+        courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
           nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+          dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
+        )
+
+        dpsCourtSentencingServer.stubPostCourtChargeForCreate(
+          courtChargeId = DPS_CHARGE_ID,
+          courtAppearanceId = DPS_COURT_APPEARANCE_ID,
+        )
+
+        courtSentencingMappingApiMockServer.stubCourtChargeMappingCreateConflict(
+          existingDpsCourtChargeId = EXISTING_DPS_CHARGE_ID,
+          duplicateDpsCourtChargeId = DPS_CHARGE_ID,
+          nomisCourtChargeId = NOMIS_OFFENDER_CHARGE_ID,
         )
 
         awsSqsCourtSentencingOffenderEventsClient.sendMessage(
           courtSentencingQueueOffenderEventsUrl,
-          courtAppearanceEvent(
-            eventType = "COURT_EVENTS-INSERTED",
-            courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
-            bookingId = NOMIS_BOOKING_ID,
-            offenderNo = OFFENDER_ID_DISPLAY,
+          courtEventChargeEvent(
+            eventType = "COURT_EVENT_CHARGES-INSERTED",
           ),
         )
 
@@ -1861,25 +1859,25 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         await untilAsserted {
           courtSentencingMappingApiMockServer.verify(
             1,
-            postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-appearances")),
+            postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-charges")),
           )
         }
 
         // doesn't retry
         dpsCourtSentencingServer.verify(
           1,
-          postRequestedFor(urlPathEqualTo("/court-appearance")),
+          postRequestedFor(urlPathEqualTo("/court-appearance/$DPS_COURT_APPEARANCE_ID/charge")),
         )
 
         await untilAsserted {
           verify(telemetryClient).trackEvent(
-            org.mockito.kotlin.eq("from-nomis-sync-court-appearance-duplicate"),
+            org.mockito.kotlin.eq("from-nomis-sync-charge-duplicate"),
             check {
               assertThat(it["migrationId"]).isNull()
-              assertThat(it["existingDpsCourtAppearanceId"]).isEqualTo(EXISTING_DPS_COURT_APPEARANCE_ID)
-              assertThat(it["duplicateDpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
-              assertThat(it["existingNomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-              assertThat(it["duplicateNomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+              assertThat(it["existingDpsCourtChargeId"]).isEqualTo(EXISTING_DPS_CHARGE_ID)
+              assertThat(it["duplicateDpsCourtChargeId"]).isEqualTo(DPS_CHARGE_ID)
+              assertThat(it["existingNomisCourtChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+              assertThat(it["duplicateNomisCourtChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
             },
             isNull(),
           )
