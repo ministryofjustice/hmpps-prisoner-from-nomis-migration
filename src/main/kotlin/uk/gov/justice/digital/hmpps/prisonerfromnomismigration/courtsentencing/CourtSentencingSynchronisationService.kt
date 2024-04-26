@@ -472,7 +472,7 @@ class CourtSentencingSynchronisationService(
           logFailureAndThrowError(
             telemetry,
             "court-charge-synchronisation-deleted-failed",
-            "Received COURT_EVENT_CHARGES-DELETED for court charge ${event.chargeId} that is does not have a mapping",
+            "Received COURT_EVENT_CHARGES-DELETED for court charge ${event.chargeId} that does not have a mapping",
           )
         }
       } ?: let {
