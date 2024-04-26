@@ -154,6 +154,20 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubRemoveCourtCharge(
+    chargeId: String = UUID.randomUUID().toString(),
+    courtAppearanceId: String = UUID.randomUUID().toString(),
+  ) {
+    stubFor(
+      delete("/court-appearance/$courtAppearanceId/charge/$chargeId")
+        .willReturn(
+          aResponse()
+            .withStatus(204)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
   fun stubPutCourtChargeForAddExistingChargeToAppearance(
     courtChargeId: String = UUID.randomUUID().toString(),
     courtAppearanceId: String = UUID.randomUUID().toString(),
