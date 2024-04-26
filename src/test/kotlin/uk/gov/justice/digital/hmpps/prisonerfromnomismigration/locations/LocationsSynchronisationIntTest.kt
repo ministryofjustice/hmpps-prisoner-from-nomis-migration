@@ -282,7 +282,7 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
         }
 
         @Test
-        fun `will create telemetry tracking the create`() {
+        fun `will create telemetry tracking the update`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
               eq("locations-updated-synchronisation-success"),
@@ -549,6 +549,126 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
               isNull(),
             )
           }
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName("When Profile is deleted in Nomis")
+    inner class WhenProfileDeleted {
+      @BeforeEach
+      fun setUp() {
+        nomisApi.stubGetLocation(NOMIS_LOCATION_ID, NOMIS_PARENT_LOCATION_ID)
+        mappingApi.stubGetLocation(DPS_LOCATION_ID, NOMIS_LOCATION_ID)
+        mappingApi.stubGetLocation(DPS_PARENT_LOCATION_ID, NOMIS_PARENT_LOCATION_ID)
+        locationsApi.stubUpsertLocationForSynchronisation(DPS_LOCATION_ID)
+
+        awsSqsLocationsOffenderEventsClient.sendMessage(
+          locationsQueueOffenderEventsUrl,
+          locationEvent(eventType = "AGY_INT_LOC_PROFILES-UPDATED", recordDeleted = true),
+        )
+      }
+
+      @Test
+      fun `will retrieve details about the location from NOMIS`() {
+        await untilAsserted {
+          nomisApi.verify(getRequestedFor(urlEqualTo(NOMIS_API_URL)))
+        }
+      }
+
+      @Test
+      fun `will retrieve mapping to check if this is a new location`() {
+        await untilAsserted {
+          mappingApi.verify(getRequestedFor(urlPathEqualTo(NOMIS_MAPPING_API_URL)))
+        }
+      }
+
+      @Test
+      fun `will send an update to the location in the locations service`() {
+        await untilAsserted {
+          locationsApi.verify(postRequestedFor(urlPathEqualTo("/sync/upsert")))
+        }
+      }
+
+      @Test
+      fun `will not add a new mapping between the two records`() {
+        await untilAsserted {
+          verify(telemetryClient, Times(1)).trackEvent(any(), any(), isNull())
+          mappingApi.verify(exactly(0), postRequestedFor(anyUrl()))
+        }
+      }
+
+      @Test
+      fun `will create telemetry tracking the update`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            eq("locations-updated-synchronisation-success"),
+            check {
+              assertThat(it["dpsLocationId"]).isEqualTo(DPS_LOCATION_ID)
+              assertThat(it["nomisLocationId"]).isEqualTo(NOMIS_LOCATION_ID.toString())
+            },
+            isNull(),
+          )
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName("When Usage is deleted in Nomis")
+    inner class WhenUsageDeleted {
+      @BeforeEach
+      fun setUp() {
+        nomisApi.stubGetLocation(NOMIS_LOCATION_ID, NOMIS_PARENT_LOCATION_ID)
+        mappingApi.stubGetLocation(DPS_LOCATION_ID, NOMIS_LOCATION_ID)
+        mappingApi.stubGetLocation(DPS_PARENT_LOCATION_ID, NOMIS_PARENT_LOCATION_ID)
+        locationsApi.stubUpsertLocationForSynchronisation(DPS_LOCATION_ID)
+
+        awsSqsLocationsOffenderEventsClient.sendMessage(
+          locationsQueueOffenderEventsUrl,
+          locationEvent(eventType = "INT_LOC_USAGE_LOCATIONS-UPDATED", recordDeleted = true),
+        )
+      }
+
+      @Test
+      fun `will retrieve details about the location from NOMIS`() {
+        await untilAsserted {
+          nomisApi.verify(getRequestedFor(urlEqualTo(NOMIS_API_URL)))
+        }
+      }
+
+      @Test
+      fun `will retrieve mapping to check if this is a new location`() {
+        await untilAsserted {
+          mappingApi.verify(getRequestedFor(urlPathEqualTo(NOMIS_MAPPING_API_URL)))
+        }
+      }
+
+      @Test
+      fun `will send an update to the location in the locations service`() {
+        await untilAsserted {
+          locationsApi.verify(postRequestedFor(urlPathEqualTo("/sync/upsert")))
+        }
+      }
+
+      @Test
+      fun `will not add a new mapping between the two records`() {
+        await untilAsserted {
+          verify(telemetryClient, Times(1)).trackEvent(any(), any(), isNull())
+          mappingApi.verify(exactly(0), postRequestedFor(anyUrl()))
+        }
+      }
+
+      @Test
+      fun `will create telemetry tracking the update`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            eq("locations-updated-synchronisation-success"),
+            check {
+              assertThat(it["dpsLocationId"]).isEqualTo(DPS_LOCATION_ID)
+              assertThat(it["nomisLocationId"]).isEqualTo(NOMIS_LOCATION_ID.toString())
+            },
+            isNull(),
+          )
         }
       }
     }
