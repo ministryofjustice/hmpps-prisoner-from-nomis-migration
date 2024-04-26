@@ -36,6 +36,7 @@ generic-service:
     FEATURE_EVENT_COURT_EVENTS-UPDATED: false
     FEATURE_EVENT_COURT_EVENTS-DELETED: false
     FEATURE_EVENT_COURT_EVENT_CHARGES-INSERTED: false
+    FEATURE_EVENT_COURT_EVENT_CHARGES-DELETED: false
 
   scheduledDowntime:
     enabled: true

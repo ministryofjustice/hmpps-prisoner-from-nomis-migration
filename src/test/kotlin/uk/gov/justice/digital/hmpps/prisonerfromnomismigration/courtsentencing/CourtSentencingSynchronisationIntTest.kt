@@ -25,6 +25,7 @@ import org.mockito.Mockito.eq
 import org.mockito.kotlin.any
 import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
@@ -1296,7 +1297,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
   }
 
   @Nested
-  @DisplayName("OFFENDER_CASES-DELETED")
+  @DisplayName("COURT_EVENTS-DELETED")
   inner class CourtAppearanceDeleted {
 
     @Nested
@@ -1881,6 +1882,153 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             },
             isNull(),
           )
+        }
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("COURT_EVENT_CHARGES-DELETED")
+  inner class CourtEventChargeDeleted {
+
+    @Nested
+    @DisplayName("When court charge was deleted in NOMIS")
+    inner class NomisDeleted {
+
+      @Nested
+      @DisplayName("When charge mapping does not exist")
+      inner class NoChargeMapping {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(status = NOT_FOUND)
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+            dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
+            mapping = CourtAppearanceAllMappingDto(
+              nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+              dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
+              courtCharges = emptyList(),
+            ),
+          )
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            courtEventChargeEvent(
+              eventType = "COURT_EVENT_CHARGES-DELETED",
+            ),
+          )
+        }
+
+        @Test
+        fun `the event failed and is retried`() {
+          await untilAsserted {
+            verify(telemetryClient, times(2)).trackEvent(
+              eq("court-charge-synchronisation-deleted-failed"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+                assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+              },
+              isNull(),
+            )
+          }
+          // will not delete a court charge in DPS
+          dpsCourtSentencingServer.verify(0, postRequestedFor(anyUrl()))
+        }
+      }
+
+      @Nested
+      @DisplayName("When appearance mapping does not exist")
+      inner class NoAppearanceMapping {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(status = NOT_FOUND)
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            courtEventChargeEvent(
+              eventType = "COURT_EVENT_CHARGES-DELETED",
+            ),
+          )
+        }
+
+        @Test
+        fun `the failure event is recorded and retried`() {
+          await untilAsserted {
+            verify(telemetryClient, times(2)).trackEvent(
+              eq("court-charge-synchronisation-deleted-failed"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+                assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+              },
+              isNull(),
+            )
+          }
+          // will not delete a court charge in DPS
+          dpsCourtSentencingServer.verify(0, postRequestedFor(anyUrl()))
+        }
+      }
+
+      @Nested
+      @DisplayName("When mappings exists")
+      inner class MappingExists {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+            dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
+            mapping = CourtAppearanceAllMappingDto(
+              nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+              dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
+              courtCharges = emptyList(),
+            ),
+          )
+
+          courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
+            nomisCourtChargeId = NOMIS_OFFENDER_CHARGE_ID,
+            dpsCourtChargeId = DPS_CHARGE_ID,
+          )
+
+          dpsCourtSentencingServer.stubRemoveCourtCharge(
+            courtAppearanceId = DPS_COURT_APPEARANCE_ID,
+            chargeId = DPS_CHARGE_ID,
+          )
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            courtEventChargeEvent(
+              eventType = "COURT_EVENT_CHARGES-DELETED",
+            ),
+          )
+        }
+
+        @Test
+        fun `will delete a court appearance in DPS`() {
+          await untilAsserted {
+            dpsCourtSentencingServer.verify(
+              1,
+              deleteRequestedFor(urlPathEqualTo("/court-appearance/$DPS_COURT_APPEARANCE_ID/charge/$DPS_CHARGE_ID")),
+              // TODO DPS to implement this endpoint
+            )
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("court-charge-synchronisation-deleted-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+                assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+                assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_ID)
+                assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+              },
+              isNull(),
+            )
+          }
         }
       }
     }

@@ -335,7 +335,7 @@ class CourtSentencingSynchronisationService(
         )
         if (hasMigratedAllData) {
           // after migration has run this should not happen so make sure this message goes in DLQ
-          throw IllegalStateException("Received COURT_EVENTS-UPDATED for court-case that has never been created")
+          throw IllegalStateException("Received COURT_EVENTS-UPDATED for court appearance that has never been created")
         }
       } else {
         val nomisCourtCase = nomisApiService.getCourtAppearance(
@@ -430,11 +430,69 @@ class CourtSentencingSynchronisationService(
           telemetry,
         )
       } ?: let {
+        telemetryClient.trackEvent(
+          "court-charge-synchronisation-created-failed",
+          telemetry,
+        )
         if (hasMigratedAllData) {
           // after migration has run this should not happen so make sure this message goes in DLQ
           throw IllegalStateException("Received COURT_EVENT_CHARGES-INSERTED for court appearance ${event.eventId} that has never been created")
         }
       }
+    }
+  }
+
+  // This is a deleting of the association of a nomis charge and court appearance. Not the actual deletion of the underlying charge
+  suspend fun nomisCourtChargeDeleted(event: CourtEventChargeEvent) {
+    val telemetry =
+      mutableMapOf(
+        "nomisCourtAppearanceId" to event.eventId.toString(),
+        "nomisOffenderChargeId" to event.chargeId.toString(),
+        "offenderNo" to event.offenderIdDisplay,
+        "nomisBookingId" to event.bookingId.toString(),
+      )
+    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      telemetryClient.trackEvent("court-charge-synchronisation-deleted-skipped", telemetry)
+    } else {
+      mappingApiService.getCourtAppearanceOrNullByNomisId(event.eventId)?.let { courtAppearanceMapping ->
+        telemetry["dpsCourtAppearanceId"] = courtAppearanceMapping.dpsCourtAppearanceId
+
+        mappingApiService.getOffenderChargeOrNullByNomisId(event.chargeId)?.let { chargeMapping ->
+          telemetry.put("dpsChargeId", chargeMapping.dpsCourtChargeId)
+          dpsApiService.removeCourtCharge(
+            courtAppearanceId = courtAppearanceMapping.dpsCourtAppearanceId,
+            chargeId = chargeMapping.dpsCourtChargeId,
+          )
+          telemetryClient.trackEvent(
+            "court-charge-synchronisation-deleted-success",
+            telemetry,
+          )
+        } ?: let {
+          // TODO determine whether retry is the best option here
+          logFailureAndThrowError(
+            telemetry,
+            "court-charge-synchronisation-deleted-failed",
+            "Received COURT_EVENT_CHARGES-DELETED for court charge ${event.chargeId} that does not have a mapping",
+          )
+        }
+      } ?: let {
+        logFailureAndThrowError(
+          telemetry,
+          "court-charge-synchronisation-deleted-failed",
+          "Received COURT_EVENT_CHARGES-DELETED for court appearance ${event.eventId} without an appearance mapping",
+        )
+      }
+    }
+  }
+
+  private fun logFailureAndThrowError(telemetry: MutableMap<String, String>, eventName: String, errorMessage: String) {
+    telemetryClient.trackEvent(
+      eventName,
+      telemetry,
+    )
+    if (hasMigratedAllData) {
+      // after migration has run this should not happen so make sure this message goes in DLQ
+      throw IllegalStateException(errorMessage)
     }
   }
 

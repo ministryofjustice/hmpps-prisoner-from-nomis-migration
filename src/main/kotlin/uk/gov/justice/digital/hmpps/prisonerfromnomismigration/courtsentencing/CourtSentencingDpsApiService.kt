@@ -77,6 +77,14 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .bodyValue(charge)
       .retrieve()
       .awaitBody()
+
+  // remove association between court appearance and charge TODO determine whether DPS will delete any orphaned charges with no need to delete an unused charge explicitly
+  suspend fun removeCourtCharge(courtAppearanceId: String, chargeId: String) =
+    webClient
+      .delete()
+      .uri("/court-appearance/{courtAppearanceId}/charge/{chargeId}", courtAppearanceId, chargeId)
+      .retrieve()
+      .awaitBodilessEntity()
 }
 
 data class CreateNewChargeResponse(
