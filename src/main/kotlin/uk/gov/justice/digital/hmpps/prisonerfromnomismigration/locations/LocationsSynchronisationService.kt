@@ -21,7 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.LOCATIONS
-import java.util.UUID
+import java.util.*
 
 @Service
 class LocationsSynchronisationService(
@@ -35,12 +35,27 @@ class LocationsSynchronisationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
+  suspend fun synchroniseUsage(event: LocationsOffenderEvent) {
+    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      telemetryClient.trackEvent("locations-synchronisation-skipped", event.toTelemetryProperties())
+      return
+    }
+    val mapping = locationsMappingService.getMappingGivenNomisId(event.internalLocationId)
+    synchroniseUpdateOrCreate(event, mapping)
+  }
+
+  suspend fun synchroniseAttribute(event: LocationsOffenderEvent) {
+    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      telemetryClient.trackEvent("locations-synchronisation-skipped", event.toTelemetryProperties())
+      return
+    }
+    val mapping = locationsMappingService.getMappingGivenNomisId(event.internalLocationId)
+    synchroniseUpdateOrCreate(event, mapping)
+  }
+
   suspend fun synchroniseLocation(event: LocationsOffenderEvent) {
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
-      telemetryClient.trackEvent(
-        "locations-synchronisation-skipped",
-        event.toTelemetryProperties(),
-      )
+      telemetryClient.trackEvent("locations-synchronisation-skipped", event.toTelemetryProperties())
       return
     }
     val mapping = locationsMappingService.getMappingGivenNomisId(event.internalLocationId)
@@ -56,39 +71,40 @@ class LocationsSynchronisationService(
         event.toTelemetryProperties(mapping.dpsLocationId),
       )
     } else {
-      val nomisLocation = nomisApiService.getLocation(event.internalLocationId)
+      synchroniseUpdateOrCreate(event, mapping)
+    }
+  }
 
-      val parent = nomisLocation.parentLocationId?.let {
-        locationsMappingService.getMappingGivenNomisId(nomisLocation.parentLocationId)
-      }
-      if (parent == null && nomisLocation.parentLocationId != null) {
-        throw IllegalStateException("No mapping found for parent NOMIS location ${nomisLocation.parentLocationId} syncing NOMIS location ${event.internalLocationId}, ${nomisLocation.description}")
-      }
+  private suspend fun synchroniseUpdateOrCreate(event: LocationsOffenderEvent, mapping: LocationMappingDto?) {
+    val nomisLocation = nomisApiService.getLocation(event.internalLocationId)
 
-      mapping?.let {
-        val upsertSyncRequest =
-          toUpsertSyncRequest(UUID.fromString(it.dpsLocationId), nomisLocation, parent?.dpsLocationId)
-        log.debug("Found location mapping: {}, sending location upsert sync {}", it, upsertSyncRequest)
+    val parent = nomisLocation.parentLocationId?.let {
+      locationsMappingService.getMappingGivenNomisId(nomisLocation.parentLocationId)
+    }
+    if (parent == null && nomisLocation.parentLocationId != null) {
+      throw IllegalStateException("No mapping found for parent NOMIS location ${nomisLocation.parentLocationId} syncing NOMIS location ${event.internalLocationId}, ${nomisLocation.description}")
+    }
 
-        locationsService.upsertLocation(upsertSyncRequest)
-        telemetryClient.trackEvent(
-          "locations-updated-synchronisation-success",
-          event.toTelemetryProperties(it.dpsLocationId),
-        )
-      } ?: let {
-        val upsertSyncRequest = toUpsertSyncRequest(nomisLocation, parent?.dpsLocationId)
-        log.debug("No location mapping - sending location upsert sync {} ", upsertSyncRequest)
+    mapping?.let {
+      val upsertSyncRequest =
+        toUpsertSyncRequest(UUID.fromString(it.dpsLocationId), nomisLocation, parent?.dpsLocationId)
+      log.debug("Found location mapping: {}, sending location upsert sync {}", it, upsertSyncRequest)
 
-        locationsService.upsertLocation(upsertSyncRequest).also { location ->
-          tryToCreateLocationMapping(event, location.id.toString()).also { result ->
-            telemetryClient.trackEvent(
-              "locations-created-synchronisation-success",
-              event.toTelemetryProperties(
-                location.id.toString(),
-                result == MAPPING_FAILED,
-              ),
-            )
-          }
+      locationsService.upsertLocation(upsertSyncRequest)
+      telemetryClient.trackEvent(
+        "locations-updated-synchronisation-success",
+        event.toTelemetryProperties(it.dpsLocationId),
+      )
+    } ?: let {
+      val upsertSyncRequest = toUpsertSyncRequest(nomisLocation, parent?.dpsLocationId)
+      log.debug("No location mapping - sending location upsert sync {} ", upsertSyncRequest)
+
+      locationsService.upsertLocation(upsertSyncRequest).also { location ->
+        tryToCreateLocationMapping(event, location.id.toString()).also { result ->
+          telemetryClient.trackEvent(
+            "locations-created-synchronisation-success",
+            event.toTelemetryProperties(location.id.toString(), result == MAPPING_FAILED),
+          )
         }
       }
     }

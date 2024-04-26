@@ -39,11 +39,9 @@ class LocationsPrisonOffenderEventListener(
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
           if (eventFeatureSwitch.isEnabled(eventType)) {
             when (eventType) {
-              "AGENCY_INTERNAL_LOCATIONS-UPDATED",
-              "AGY_INT_LOC_PROFILES-UPDATED",
-              "INT_LOC_USAGE_LOCATIONS-UPDATED",
-              ->
-                locationsSynchronisationService.synchroniseLocation(sqsMessage.Message.fromJson())
+              "AGENCY_INTERNAL_LOCATIONS-UPDATED" -> locationsSynchronisationService.synchroniseLocation(sqsMessage.Message.fromJson())
+              "AGY_INT_LOC_PROFILES-UPDATED" -> locationsSynchronisationService.synchroniseAttribute(sqsMessage.Message.fromJson())
+              "INT_LOC_USAGE_LOCATIONS-UPDATED" -> locationsSynchronisationService.synchroniseUsage(sqsMessage.Message.fromJson())
 
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
