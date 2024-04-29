@@ -31,6 +31,7 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension.Companion.dpsAlertsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.dpsAlert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
@@ -925,6 +926,34 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
           }
         }
       }
+    }
+  }
+
+  @Nested
+  @DisplayName("BOOKING_NUMBER-CHANGED")
+  inner class PrisonerMerge {
+    val bookingId = BOOKING_ID
+
+    @BeforeEach
+    fun setUp() {
+      awsSqsSentencingOffenderEventsClient.sendMessage(
+        alertsQueueOffenderEventsUrl,
+        mergeEvent(
+          bookingId = bookingId,
+        ),
+      )
+      waitForAnyProcessingToComplete()
+    }
+
+    @Test
+    fun `will track telemetry for the merge`() {
+      verify(telemetryClient).trackEvent(
+        eq("from-nomis-synch-alerts-merge"),
+        check {
+          assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+        },
+        isNull(),
+      )
     }
   }
 }

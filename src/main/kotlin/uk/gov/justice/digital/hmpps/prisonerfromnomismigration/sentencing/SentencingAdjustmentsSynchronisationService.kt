@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.NomisPrisonerMergeEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.KeyDateAdjustmentResponse
@@ -246,7 +247,7 @@ class SentencingAdjustmentsSynchronisationService(
     }
   }
 
-  suspend fun synchronisePrisonerMerge(prisonerMergeEvent: PrisonerMergeEvent) {
+  suspend fun synchronisePrisonerMerge(prisonerMergeEvent: NomisPrisonerMergeEvent) {
     val adjustmentsInNomis = sentencingAdjustmentsNomisApiService.getAllByBookingId(prisonerMergeEvent.bookingId)
 
     val sentenceAdjustmentsCreated = adjustmentsInNomis.sentenceAdjustments.mapNotNull { adjustment ->
@@ -272,10 +273,10 @@ class SentencingAdjustmentsSynchronisationService(
     )
   }
 
-  suspend fun repairPostMergeAdjustments(bookingId: Long) = synchronisePrisonerMerge(PrisonerMergeEvent(bookingId))
+  suspend fun repairPostMergeAdjustments(bookingId: Long) = synchronisePrisonerMerge(NomisPrisonerMergeEvent(bookingId))
 
   private suspend fun SentencingAdjustmentsSynchronisationService.createAdjustment(
-    prisonerMergeEvent: PrisonerMergeEvent,
+    prisonerMergeEvent: NomisPrisonerMergeEvent,
     adjustment: SentenceAdjustmentResponse,
   ) {
     synchroniseSentenceAdjustmentCreateOrUpdate(
@@ -289,7 +290,7 @@ class SentencingAdjustmentsSynchronisationService(
     )
   }
   private suspend fun SentencingAdjustmentsSynchronisationService.createAdjustment(
-    prisonerMergeEvent: PrisonerMergeEvent,
+    prisonerMergeEvent: NomisPrisonerMergeEvent,
     adjustment: KeyDateAdjustmentResponse,
   ) {
     synchroniseKeyDateAdjustmentCreateOrUpdate(
