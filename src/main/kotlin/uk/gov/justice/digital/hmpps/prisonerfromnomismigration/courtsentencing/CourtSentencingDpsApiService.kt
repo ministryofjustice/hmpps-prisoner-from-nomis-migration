@@ -85,6 +85,15 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .uri("/court-appearance/{courtAppearanceId}/charge/{chargeId}", courtAppearanceId, chargeId)
       .retrieve()
       .awaitBodilessEntity()
+
+  // TODO not currently implement in DPS
+  suspend fun updateCourtCharge(chargeId: String, charge: CreateCharge) =
+    webClient
+      .put()
+      .uri("/charge/{chargeId}", chargeId)
+      .bodyValue(charge)
+      .retrieve()
+      .awaitBodilessEntity()
 }
 
 data class CreateNewChargeResponse(

@@ -12,8 +12,10 @@ import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearanceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCaseResponse
+import java.time.LocalDate
 import java.util.UUID
 
 class CourtSentencingDpsApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
@@ -182,6 +184,26 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withStatus(201)
             .withHeader("Content-Type", "application/json")
             .withBody(CourtSentencingDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubPutChargeForUpdate(
+    chargeId: UUID = UUID.randomUUID(),
+    charge: CreateCharge = CreateCharge(
+      offenceCode = "Code1",
+      offenceStartDate = LocalDate.now(),
+      outcome = "outcome",
+      offenceEndDate = LocalDate.now().plusDays(1),
+    ),
+  ) {
+    stubFor(
+      put("/charge/$chargeId")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(CourtSentencingDpsApiExtension.objectMapper.writeValueAsString(charge)),
         ),
     )
   }

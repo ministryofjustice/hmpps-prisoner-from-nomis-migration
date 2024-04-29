@@ -2033,6 +2033,157 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       }
     }
   }
+
+  @Nested
+  @DisplayName("OFFENDER_CHARGES-UPDATED")
+  inner class OffenderChargesUpdated {
+    @Nested
+    @DisplayName("When court charge was updated in DPS")
+    inner class DPSUpdated {
+      @BeforeEach
+      fun setUp() {
+        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+          courtSentencingQueueOffenderEventsUrl,
+          offenderChargeEvent(
+            eventType = "OFFENDER_CHARGES-UPDATED",
+            auditModule = "DPS_SYNCHRONISATION",
+          ),
+        )
+      }
+
+      @Test
+      fun `the event is ignored`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            eq("court-charge-synchronisation-updated-skipped"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+            },
+            isNull(),
+          )
+        }
+
+        // will not bother getting the court charge or the mapping
+        courtSentencingNomisApiMockServer.verify(
+          0,
+          getRequestedFor(urlPathMatching("/prisoners/\\d+/sentencing/offender-charges/\\d+")),
+        )
+
+        courtSentencingMappingApiMockServer.verify(
+          0,
+          getRequestedFor(urlPathMatching("/mapping/court-sentencing/court-charges/nomis-court-charge-id/\\d+")),
+        )
+        // will not update a court charge in DPS
+        dpsCourtSentencingServer.verify(0, putRequestedFor(anyUrl()))
+      }
+    }
+
+    @Nested
+    @DisplayName("When offender charge was updated in NOMIS")
+    inner class NomisUpdated {
+
+      @BeforeEach
+      fun setUp() {
+        courtSentencingNomisApiMockServer.stubGetOffenderCharge(
+          offenderChargeId = NOMIS_OFFENDER_CHARGE_ID,
+          offenderNo = OFFENDER_ID_DISPLAY,
+        )
+      }
+
+      @Nested
+      @DisplayName("When mapping doesn't exist")
+      inner class MappingDoesNotExist {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(status = NOT_FOUND)
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            offenderChargeEvent(
+              eventType = "OFFENDER_CHARGES-UPDATED",
+            ),
+          )
+        }
+
+        @Test
+        fun `telemetry added to track the failure`() {
+          await untilAsserted {
+            verify(telemetryClient, Mockito.atLeastOnce()).trackEvent(
+              eq("court-charge-synchronisation-updated-failed"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+              },
+              isNull(),
+            )
+          }
+        }
+
+        @Test
+        fun `the event is placed on dead letter queue`() {
+          await untilAsserted {
+            assertThat(
+              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
+                courtSentencingQueueOffenderEventsDlqUrl,
+              ).get(),
+            ).isEqualTo(1)
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("When mapping exists")
+      inner class MappingExists {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
+            nomisCourtChargeId = NOMIS_OFFENDER_CHARGE_ID,
+            dpsCourtChargeId = DPS_CHARGE_ID,
+          )
+
+          dpsCourtSentencingServer.stubPutChargeForUpdate(
+            chargeId = UUID.fromString(
+              DPS_CHARGE_ID,
+            ),
+          )
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            offenderChargeEvent(
+              eventType = "OFFENDER_CHARGES-UPDATED",
+            ),
+          )
+        }
+
+        @Test
+        fun `will update DPS with the changes`() {
+          await untilAsserted {
+            dpsCourtSentencingServer.verify(
+              1,
+              putRequestedFor(urlPathEqualTo("/charge/$DPS_CHARGE_ID")),
+            )
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("court-charge-synchronisation-updated-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+                assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_ID)
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+    }
+  }
 }
 
 fun courtCaseEvent(
@@ -2083,6 +2234,25 @@ fun courtEventChargeEvent(
 ) = """{
     "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
     "Message": "{\"eventId\":\"5958295\",\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"bookingId\": \"$bookingId\",\"eventId\": \"$eventId\",\"chargeId\": \"$chargeId\",\"offenderIdDisplay\": \"$offenderNo\",\"nomisEventType\":\"COURT_EVENT\",\"auditModuleName\":\"$auditModule\" }",
+    "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
+    "MessageAttributes": {
+      "eventType": {"Type": "String", "Value": "$eventType"}, 
+      "id": {"Type": "String", "Value": "8b07cbd9-0820-0a0f-c32f-a9429b618e0b"}, 
+      "contentType": {"Type": "String", "Value": "text/plain;charset=UTF-8"}, 
+      "timestamp": {"Type": "Number.java.lang.Long", "Value": "1571666478344"}
+    }
+}
+""".trimIndent()
+
+fun offenderChargeEvent(
+  eventType: String,
+  bookingId: Long = NOMIS_BOOKING_ID,
+  chargeId: Long = NOMIS_OFFENDER_CHARGE_ID,
+  offenderNo: String = OFFENDER_ID_DISPLAY,
+  auditModule: String = "DPS",
+) = """{
+    "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
+    "Message": "{\"eventId\":\"5958295\",\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"bookingId\": \"$bookingId\",\"chargeId\": \"$chargeId\",\"offenderIdDisplay\": \"$offenderNo\",\"nomisEventType\":\"COURT_EVENT\",\"auditModuleName\":\"$auditModule\" }",
     "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
     "MessageAttributes": {
       "eventType": {"Type": "String", "Value": "$eventType"}, 

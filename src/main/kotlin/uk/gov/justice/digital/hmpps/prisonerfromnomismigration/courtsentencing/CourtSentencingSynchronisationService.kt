@@ -485,6 +485,44 @@ class CourtSentencingSynchronisationService(
     }
   }
 
+  suspend fun nomisOffenderChargeUpdated(event: OffenderChargeEvent) {
+    val telemetry =
+      mapOf(
+        "nomisBookingId" to event.bookingId.toString(),
+        "nomisOffenderChargeId" to event.chargeId.toString(),
+        "offenderNo" to event.offenderIdDisplay,
+      )
+    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      telemetryClient.trackEvent("court-charge-synchronisation-updated-skipped", telemetry)
+    } else {
+      val mapping = mappingApiService.getOffenderChargeOrNullByNomisId(event.chargeId)
+      if (mapping == null) {
+        telemetryClient.trackEvent(
+          "court-charge-synchronisation-updated-failed",
+          telemetry,
+        )
+        if (hasMigratedAllData) {
+          // after migration has run this should not happen so make sure this message goes in DLQ
+          throw IllegalStateException("Received OFFENDER_CHARGES-UPDATED for charge that has never been mapped")
+        }
+      } else {
+        val nomisCourtCase = nomisApiService.getOffenderCharge(
+          offenderNo = event.offenderIdDisplay,
+          offenderChargeId = event.chargeId,
+        )
+        // TODO DPS have yet to implement an update - expecting a new update DTO without a caseId
+        dpsApiService.updateCourtCharge(
+          chargeId = mapping.dpsCourtChargeId,
+          nomisCourtCase.toDpsCharge(chargeId = mapping.dpsCourtChargeId),
+        )
+        telemetryClient.trackEvent(
+          "court-charge-synchronisation-updated-success",
+          telemetry + ("dpsChargeId" to mapping.dpsCourtChargeId),
+        )
+      }
+    }
+  }
+
   private fun logFailureAndThrowError(telemetry: MutableMap<String, String>, eventName: String, errorMessage: String) {
     telemetryClient.trackEvent(
       eventName,
