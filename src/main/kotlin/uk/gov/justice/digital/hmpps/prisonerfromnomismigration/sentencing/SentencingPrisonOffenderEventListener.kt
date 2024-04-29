@@ -91,9 +91,6 @@ data class KeyDateAdjustmentOffenderEvent(
   val auditModuleName: String?,
 )
 
-data class PrisonerMergeEvent(
-  val bookingId: Long,
-)
 private fun asCompletableFuture(
   process: suspend () -> Unit,
 ): CompletableFuture<Void> {
