@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-04-23.7395.570b9dd"
+    "version": "2024-04-29.7455.3a268f9"
   },
   "servers": [
     {
@@ -7476,6 +7476,161 @@
         }
       }
     },
+    "/documents/{id}": {
+      "get": {
+        "tags": [
+          "document-resource"
+        ],
+        "summary": "Retrieve a document",
+        "description": "Retrieve a document by its id. Requires role NOMIS_DOCUMENTS",
+        "operationId": "getDocument",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The document id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The document id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires role NOMIS_DOCUMENTS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Document not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documents/booking/{bookingId}": {
+      "get": {
+        "tags": [
+          "document-resource"
+        ],
+        "summary": "Retrieve a list of document ids",
+        "description": "Retrieve a list of document ids searching by booking id and template name. Requires role NOMIS_DOCUMENTS",
+        "operationId": "getDocumentIds",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "description": "The booking id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The booking id"
+            }
+          },
+          {
+            "name": "templateName",
+            "in": "query",
+            "description": "The unique name of the template used for a document - this is a repeatable request parameter",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "example": "CSIP_FAC"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DocumentIdResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires role NOMIS_DOCUMENTS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/csip/{id}": {
       "get": {
         "tags": [
@@ -13343,10 +13498,10 @@
             "type": "integer",
             "format": "int32"
           },
-          "paged": {
+          "unpaged": {
             "type": "boolean"
           },
-          "unpaged": {
+          "paged": {
             "type": "boolean"
           }
         }
@@ -15797,6 +15952,20 @@
         },
         "description": "Incentive information"
       },
+      "DocumentIdResponse": {
+        "required": [
+          "documentId"
+        ],
+        "type": "object",
+        "properties": {
+          "documentId": {
+            "type": "integer",
+            "description": "The document id",
+            "format": "int64"
+          }
+        },
+        "description": "Document id"
+      },
       "Actions": {
         "required": [
           "csraOrRsraReview",
@@ -15864,6 +16033,7 @@
       "CSIPResponse": {
         "required": [
           "areaOfWork",
+          "bookingId",
           "decision",
           "documents",
           "id",
@@ -15946,7 +16116,7 @@
             "$ref": "#/components/schemas/SaferCustodyScreening"
           },
           "investigation": {
-            "$ref": "#/components/schemas/Investigation"
+            "$ref": "#/components/schemas/InvestigationDetails"
           },
           "decision": {
             "$ref": "#/components/schemas/Decision"
@@ -15980,9 +16150,9 @@
           },
           "documents": {
             "type": "array",
-            "description": "CSIP Documents",
+            "description": "Associated CSIP document Ids",
             "items": {
-              "$ref": "#/components/schemas/Document"
+              "$ref": "#/components/schemas/DocumentIdResponse"
             }
           }
         },
@@ -16027,29 +16197,6 @@
         },
         "description": "DecisionAndActions"
       },
-      "Document": {
-        "required": [
-          "fileName",
-          "id",
-          "status"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "description": "Document Id",
-            "format": "int64"
-          },
-          "fileName": {
-            "type": "string",
-            "description": "Name of the document"
-          },
-          "status": {
-            "$ref": "#/components/schemas/CodeDescription"
-          }
-        },
-        "description": "CSIP Documents"
-      },
       "FactorResponse": {
         "required": [
           "id",
@@ -16071,6 +16218,70 @@
           }
         },
         "description": "Contributory factors"
+      },
+      "InterviewDetails": {
+        "required": [
+          "date",
+          "interviewee",
+          "role"
+        ],
+        "type": "object",
+        "properties": {
+          "interviewee": {
+            "type": "string",
+            "description": "Person being interviewed"
+          },
+          "date": {
+            "type": "string",
+            "description": "date of interview",
+            "format": "date"
+          },
+          "role": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "comments": {
+            "type": "string",
+            "description": "Additional data regarding the interview"
+          }
+        },
+        "description": "Interview"
+      },
+      "InvestigationDetails": {
+        "type": "object",
+        "properties": {
+          "staffInvolved": {
+            "type": "string",
+            "description": "Staff involved in the incident"
+          },
+          "evidenceSecured": {
+            "type": "string",
+            "description": "Whether any evidence was secured"
+          },
+          "reasonOccurred": {
+            "type": "string",
+            "description": "Why the incident occurred"
+          },
+          "usualBehaviour": {
+            "type": "string",
+            "description": "Normal behaviour of the offender"
+          },
+          "trigger": {
+            "type": "string",
+            "description": "Offender's trigger"
+          },
+          "protectiveFactors": {
+            "type": "string",
+            "description": "Protective factors"
+          },
+          "interviews": {
+            "type": "array",
+            "description": "Interview",
+            "items": {
+              "$ref": "#/components/schemas/InterviewDetails"
+            }
+          }
+        },
+        "description": "Investigation details of the incident"
       },
       "Plan": {
         "required": [

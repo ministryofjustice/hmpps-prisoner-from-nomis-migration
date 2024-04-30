@@ -63,6 +63,11 @@ spring:
             client-id: ${incidents.client.id}
             client-secret: ${incidents.client.secret}
             authorization-grant-type: client_credentials
+          csip-api:
+            provider: hmpps-auth
+            client-id: ${csip.client.id}
+            client-secret: ${csip.client.secret}
+            authorization-grant-type: client_credentials
           locations-api:
             provider: hmpps-auth
             client-id: ${locations.client.id}
