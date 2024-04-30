@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-04-23.4151.cdb1e57"
+    "version": "2024-04-24.4175.5d93eb3"
   },
   "servers": [
     {
@@ -452,7 +452,7 @@
         ],
         "summary": "Creates a new activity mapping",
         "description": "Creates a mapping between nomis id and Activity service id. Requires NOMIS_ACTIVITIES",
-        "operationId": "createMapping_13",
+        "operationId": "createMapping_14",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1239,6 +1239,94 @@
         }
       }
     },
+    "/mapping/csip": {
+      "post": {
+        "tags": [
+          "csip-mapping-resource"
+        ],
+        "summary": "Creates a new CSIP Report mapping",
+        "description": "Creates a mapping between a Nomis CSIP report id and DPS CSIP report id. Requires role NOMIS_CSIP",
+        "operationId": "createMapping_7",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CSIPMappingDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Mapping entry created"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Indicates a duplicate csip has been rejected. If Error code = 409 the body will return a DuplicateErrorResponse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateMappingErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "csip-mapping-resource"
+        ],
+        "summary": "Deletes CSIP mappings.",
+        "description": "Deletes all rows from the csip mapping table. Requires role NOMIS_CSIP",
+        "operationId": "deleteAllMappings",
+        "parameters": [
+          {
+            "name": "onlyMigrated",
+            "in": "query",
+            "description": "if true delete mapping entries created by the migration process only (synchronisation records are unaffected)",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "example": true
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "CSIP mappings deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/court-sentencing/court-cases": {
       "post": {
         "tags": [
@@ -1246,7 +1334,7 @@
         ],
         "summary": "Creates a new court case hierarchical mapping",
         "description": "Creates a mapping between nomis Court Case ID and DPS Court Case ID. Also maps child entities: Court appearances and charges. Requires ROLE_NOMIS_COURT_SENTENCING",
-        "operationId": "createMapping_7",
+        "operationId": "createMapping_8",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1403,7 +1491,7 @@
         ],
         "summary": "Creates a new appointment mapping",
         "description": "Creates a mapping between nomis id and Appointment instance id. Requires NOMIS_APPOINTMENTS",
-        "operationId": "createMapping_8",
+        "operationId": "createMapping_9",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1458,7 +1546,7 @@
         ],
         "summary": "Creates a new allocation migration mapping",
         "description": "Creates a mapping between nomis allocation id and Actvities allocation id. Requires NOMIS_ACTIVITIES",
-        "operationId": "createMapping_9",
+        "operationId": "createMapping_10",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1572,7 +1660,7 @@
         ],
         "summary": "Creates a new alert mapping",
         "description": "Creates a mapping between nomis alert ids and dps alert id. Requires ROLE_NOMIS_ALERTS",
-        "operationId": "createMapping_10",
+        "operationId": "createMapping_11",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1625,7 +1713,7 @@
         ],
         "summary": "Deletes all alert mappings",
         "description": "Deletes all alert mappings regardless of source. This is expected to only ever been used in a non-production environment. Requires ROLE_NOMIS_ALERTS",
-        "operationId": "deleteAllMappings",
+        "operationId": "deleteAllMappings_1",
         "responses": {
           "204": {
             "description": "Mappings deleted"
@@ -1703,7 +1791,7 @@
         ],
         "summary": "Delete all adjudication related mapping entries",
         "description": "Delete mapping entries created during any migration or synchronisation for adjudications and associated hearings and punishments",
-        "operationId": "deleteAllMappings_1",
+        "operationId": "deleteAllMappings_2",
         "parameters": [
           {
             "name": "migrationOnly",
@@ -1785,7 +1873,7 @@
         ],
         "summary": "Creates a new adjudication mapping",
         "description": "Creates a record of a adjudication number. Requires NOMIS_ADJUDICATIONS",
-        "operationId": "createMapping_11",
+        "operationId": "createMapping_12",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1830,7 +1918,7 @@
         ],
         "summary": "Creates a new activity migration mapping",
         "description": "Creates a mapping between nomis id and up to 2 Activity service ids. Requires NOMIS_ACTIVITIES",
-        "operationId": "createMapping_12",
+        "operationId": "createMapping_13",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3681,6 +3769,212 @@
         }
       }
     },
+    "/mapping/csip/nomis-csip-id/{nomisCSIPId}": {
+      "get": {
+        "tags": [
+          "csip-mapping-resource"
+        ],
+        "summary": "get mapping",
+        "description": "Retrieves a mapping by nomisCSIPId. Requires role NOMIS_CSIP",
+        "operationId": "getMappingNomisId",
+        "parameters": [
+          {
+            "name": "nomisCSIPId",
+            "in": "path",
+            "description": "Nomis CSIP Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Nomis CSIP Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CSIPMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nomis csip id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/csip/migration-id/{migrationId}": {
+      "get": {
+        "tags": [
+          "csip-mapping-resource"
+        ],
+        "summary": "get paged mappings by migration id",
+        "description": "Retrieve all mappings of type 'MIGRATED' for the given migration id (identifies a single migration run). Results are paged.",
+        "operationId": "getMigratedMappingsByMigrationId",
+        "parameters": [
+          {
+            "name": "pageRequest",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          },
+          {
+            "name": "migrationId",
+            "in": "path",
+            "description": "Migration Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Migration Id",
+              "example": "2020-03-24T12:00:00"
+            },
+            "example": "2020-03-24T12:00:00"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping page returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CSIPMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/csip/migrated/latest": {
+      "get": {
+        "tags": [
+          "csip-mapping-resource"
+        ],
+        "summary": "get the latest mapping for a migration",
+        "description": "Requires role NOMIS_CSIP",
+        "operationId": "getLatestMigratedCSIPMapping",
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CSIPMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No mappings found at all for any migration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/csip/dps-csip-id/{csipId}": {
+      "get": {
+        "tags": [
+          "csip-mapping-resource"
+        ],
+        "summary": "get mapping",
+        "description": "Retrieves a mapping by DPS CSIP Id. Requires role NOMIS_CSIP",
+        "operationId": "getMappingByDPSId",
+        "parameters": [
+          {
+            "name": "csipId",
+            "in": "path",
+            "description": "DPS CSIP Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "DPS CSIP Id",
+              "example": 12345
+            },
+            "example": 12345
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CSIPMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CSIP id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/court-sentencing/court-charges/nomis-court-charge-id/{courtChargeId}": {
       "get": {
         "tags": [
@@ -4756,7 +5050,7 @@
         ],
         "summary": "Deletes a specific mapping by DPS charge number",
         "description": "Deletes the mapping table row. Requires role NOMIS_ADJUDICATIONS",
-        "operationId": "deleteMapping_2",
+        "operationId": "deleteMapping_3",
         "parameters": [
           {
             "name": "chargeNumber",
@@ -5270,6 +5564,94 @@
         }
       }
     },
+    "/mapping/csip/dps-csip-id/{dpsCSIPId}": {
+      "delete": {
+        "tags": [
+          "csip-mapping-resource"
+        ],
+        "summary": "Deletes a specific CSIP mapping by DPS CSIP id",
+        "description": "Deletes a mapping by DPS id. Requires role NOMIS_CSIP",
+        "operationId": "deleteMapping_1",
+        "parameters": [
+          {
+            "name": "dpsCSIPId",
+            "in": "path",
+            "description": "DPS CSIP Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "DPS CSIP Id",
+              "example": 4321
+            },
+            "example": 4321
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "CSIP mapping deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/court-sentencing/court-charges/nomis-court-charge-id/{nomisCourtChargeId}": {
+      "delete": {
+        "tags": [
+          "court-sentencing-mapping-resource"
+        ],
+        "summary": "Deletes court charge mapping",
+        "description": "Deletes a court charge mapping by NOMIS id. Requires role NOMIS_COURT_SENTENCING",
+        "operationId": "deleteCourtChargeMappingByNomisId",
+        "parameters": [
+          {
+            "name": "nomisCourtChargeId",
+            "in": "path",
+            "description": "NOMIS court charge id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "NOMIS court charge id",
+              "example": 33
+            },
+            "example": 33
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Mapping Deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/court-sentencing/court-cases/nomis-court-case-id/{nomisCourtCaseId}": {
       "delete": {
         "tags": [
@@ -5473,7 +5855,7 @@
         ],
         "summary": "Deletes a specific mapping by appointment instance id",
         "description": "Deletes the mapping table row. Requires role NOMIS_APPOINTMENTS",
-        "operationId": "deleteMapping_1",
+        "operationId": "deleteMapping_2",
         "parameters": [
           {
             "name": "id",
@@ -5551,7 +5933,7 @@
         ],
         "summary": "Deletes a specific mapping by activity schedule id",
         "description": "Deletes the mapping table row. Requires role NOMIS_ACTIVITIES",
-        "operationId": "deleteMapping_3",
+        "operationId": "deleteMapping_4",
         "parameters": [
           {
             "name": "id",
@@ -6430,6 +6812,49 @@
         },
         "description": "Adjudication mapping (same value for NOMIS and DPS)"
       },
+      "CSIPMappingDto": {
+        "required": [
+          "dpsCSIPId",
+          "mappingType",
+          "nomisCSIPId"
+        ],
+        "type": "object",
+        "properties": {
+          "nomisCSIPId": {
+            "type": "integer",
+            "description": "NOMIS CSIP id",
+            "format": "int64"
+          },
+          "dpsCSIPId": {
+            "type": "string",
+            "description": "CSIP id from DPS csip service"
+          },
+          "label": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": "string",
+            "description": "Label (a timestamp for migrated ids)"
+          },
+          "mappingType": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": "string",
+            "description": "Mapping type",
+            "enum": [
+              "MIGRATED",
+              "NOMIS_CREATED",
+              "DPS_CREATED"
+            ]
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "Date-time the mapping was created",
+            "example": "2021-07-05T10:35:17"
+          }
+        },
+        "description": "CSIP mapping"
+      },
       "CourtChargeMapping": {
         "required": [
           "dpsCourtChargeId",
@@ -7108,6 +7533,12 @@
             "type": "integer",
             "format": "int64"
           },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
           "size": {
             "type": "integer",
             "format": "int32"
@@ -7127,12 +7558,6 @@
             "items": {
               "$ref": "#/components/schemas/SortObject"
             }
-          },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
           },
           "numberOfElements": {
             "type": "integer",
@@ -7231,6 +7656,12 @@
             "type": "integer",
             "format": "int64"
           },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
           "size": {
             "type": "integer",
             "format": "int32"
@@ -7250,12 +7681,6 @@
             "items": {
               "$ref": "#/components/schemas/SortObject"
             }
-          },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
           },
           "numberOfElements": {
             "type": "integer",

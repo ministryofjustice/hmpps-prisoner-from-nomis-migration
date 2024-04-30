@@ -8,6 +8,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.Adj
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsByPrisonerMigrationMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.AppointmentsMappingService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.LocationsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustmentsMappingService
@@ -22,6 +23,7 @@ class GeneralMappingService(
   private val activityMappingService: ActivitiesMappingService,
   private val allocationsMappingService: AllocationsMappingService,
   private val incidentsMappingService: IncidentsMappingService,
+  private val csipMappingService: CSIPMappingService,
   private val locationsMappingService: LocationsMappingService,
   private val alertsMappingService: AlertsMappingApiService,
   private val alertsByPrisonerMappingService: AlertsByPrisonerMigrationMappingApiService,
@@ -36,6 +38,7 @@ class GeneralMappingService(
       MigrationType.ACTIVITIES -> activityMappingService.getMigrationCount(migrationId)
       MigrationType.ALLOCATIONS -> allocationsMappingService.getMigrationCount(migrationId)
       MigrationType.INCIDENTS -> incidentsMappingService.getMigrationCount(migrationId)
+      MigrationType.CSIP -> csipMappingService.getMigrationCount(migrationId)
       MigrationType.LOCATIONS -> locationsMappingService.getMigrationCount(migrationId)
       MigrationType.ALERTS -> if (alertsMigrationType == "by-prisoner") {
         alertsByPrisonerMappingService.getMigrationCount(migrationId)

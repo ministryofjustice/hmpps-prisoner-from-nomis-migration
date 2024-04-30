@@ -44,6 +44,8 @@ class MappingApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallb
     const val ADJUSTMENTS_CREATE_MAPPING_URL = "/mapping/sentencing/adjustments"
     const val INCIDENTS_CREATE_MAPPING_URL = "/mapping/incidents"
     const val INCIDENTS_GET_MAPPING_URL = "/mapping/incidents/nomis-incident-id"
+    const val CSIP_CREATE_MAPPING_URL = "/mapping/csip"
+    const val CSIP_GET_MAPPING_URL = "/mapping/csip/nomis"
     const val LOCATIONS_CREATE_MAPPING_URL = "/mapping/locations"
     const val LOCATIONS_GET_MAPPING_URL = "/mapping/locations/nomis"
   }
@@ -919,6 +921,99 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       get(urlPathMatching("/mapping/incidents/migration-id/.*")).willReturn(
         okJson(pageContent(content, count)),
       ),
+    )
+  }
+
+  // ///////////////////////////////////////////// CSIP ////////////////////////////////////////////////
+  fun stubCSIPMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 54327) {
+    val content = """{
+      "dpsCSIPId": "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5",
+      "nomisCSIPId": 1234,                                       
+      "label": "2022-02-14T09:58:45",
+      "whenCreated": "$whenCreated",
+      "mappingType": "MIGRATED"
+    }"""
+    stubFor(
+      get(urlPathMatching("/mapping/csip/migration-id/.*")).willReturn(
+        okJson(pageContent(content, count)),
+      ),
+    )
+  }
+
+  fun stubGetAnyCSIPNotFound() {
+    stubFor(
+      get(urlPathMatching("/mapping/csip/nomis-csip-id/\\d"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NOT_FOUND.value()),
+        ),
+    )
+  }
+  fun stubCSIPLatestMigration(migrationId: String) {
+    stubFor(
+      get(urlEqualTo("/mapping/csip/migrated/latest")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(
+            """
+            {
+              "dpsCSIPId": "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5",
+              "nomisCSIPId": 1234,                                       
+              "label": "$migrationId",
+              "whenCreated": "2020-01-01T11:10:00",
+              "mappingType": "MIGRATED"
+            }              
+            """,
+          ),
+      ),
+    )
+  }
+
+  fun verifyCreateMappingCSIPId(dpsCSIPId: String, times: Int = 1) =
+    verify(
+      times,
+      postRequestedFor(urlPathEqualTo("/mapping/csip")).withRequestBody(
+        matchingJsonPath(
+          "dpsCSIPId",
+          equalTo("$dpsCSIPId"),
+        ),
+      ),
+    )
+
+  fun stubCSIPMappingCreateConflict(
+    nomisCSIPId: Long = 1234,
+    existingDPSCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5",
+    duplicateDPSCSIPId: String = "ddd596da-8eab-4d2a-a026-bc5afb8acda0",
+  ) {
+    stubFor(
+      post(urlPathEqualTo("/mapping/csip"))
+        .willReturn(
+          aResponse()
+            .withStatus(409)
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
+              "moreInfo": 
+              {
+                "existing" :  {
+                  "nomisCSIPId": $nomisCSIPId,
+                  "dpsCSIPId": "$existingDPSCSIPId",
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "NOMIS_CREATED"
+                 },
+                 "duplicate" : {
+                  "nomisCSIPId": $nomisCSIPId,
+                  "dpsCSIPId": "$duplicateDPSCSIPId",
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "NOMIS_CREATED"
+                }
+              }
+              }""",
+            ),
+        ),
     )
   }
 
