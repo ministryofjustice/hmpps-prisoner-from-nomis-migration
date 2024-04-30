@@ -156,6 +156,57 @@ class AlertsNomisApiServiceTest {
   }
 
   @Nested
+  inner class GetAlertsByBookingId {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      alertsNomisApiMockServer.stubGetAlertsByBookingId(bookingId = 1234567)
+
+      apiService.getAlertsByBookingId(1234567)
+
+      alertsNomisApiMockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass NOMIS ids to service`() = runTest {
+      alertsNomisApiMockServer.stubGetAlertsByBookingId(bookingId = 1234567)
+
+      apiService.getAlertsByBookingId(1234567)
+
+      alertsNomisApiMockServer.verify(
+        getRequestedFor(urlPathEqualTo("/prisoners/booking-id/1234567/alerts")),
+      )
+    }
+
+    @Test
+    fun `will return alerts`() = runTest {
+      alertsNomisApiMockServer.stubGetAlertsByBookingId(
+        bookingId = 1234567,
+        alertCount = 2,
+        alert = AlertResponse(
+          bookingId = 1,
+          alertSequence = 1,
+          bookingSequence = 10,
+          alertCode = CodeDescription("CPC", "PPRC"),
+          type = CodeDescription("C", "Child Communication Measures"),
+          date = LocalDate.parse("2022-07-19"),
+          isActive = true,
+          isVerified = false,
+          audit = NomisAudit(
+            createDatetime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+            createUsername = "Q1251T",
+          ),
+        ),
+      )
+
+      val response = apiService.getAlertsByBookingId(1234567)
+
+      assertThat(response.alerts).hasSize(2)
+    }
+  }
+
+  @Nested
   inner class GetBookingPreviousTo {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {

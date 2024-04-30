@@ -13,7 +13,7 @@ fun validVisitCancellationMessage() = """{
 }
 """.trimIndent()
 
-fun mergeEvent(
+fun mergeNomisEvent(
   eventType: String = "BOOKING_NUMBER-CHANGED",
   bookingId: Long = 1234567,
 ) =
@@ -21,6 +21,26 @@ fun mergeEvent(
   """{
     "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
     "Message": "{\"eventId\":\"5958295\",\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"bookingId\": \"$bookingId\",\"nomisEventType\":\"BOOK_UPD_OASYS\",\"offenderId\":\"1234\",\"previousBookingNumber\":\"43719F\" }",
+    "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
+    "MessageAttributes": {
+      "eventType": {"Type": "String", "Value": "$eventType"}, 
+      "id": {"Type": "String", "Value": "8b07cbd9-0820-0a0f-c32f-a9429b618e0b"}, 
+      "contentType": {"Type": "String", "Value": "text/plain;charset=UTF-8"}, 
+      "timestamp": {"Type": "Number.java.lang.Long", "Value": "1571666478344"}
+    }
+}
+  """.trimIndent()
+
+fun mergeDomainEvent(
+  eventType: String = "prison-offender-events.prisoner.merged",
+  bookingId: Long = 1234567,
+  offenderNo: String = "A1234KT",
+  removedOffenderNo: String = "A1000KT",
+) =
+  //language=JSON
+  """{
+    "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
+    "Message": "{\"eventType\":\"$eventType\", \"description\": \"some desc\", \"additionalInformation\": {\"nomsNumber\":\"$offenderNo\", \"removedNomsNumber\":\"$removedOffenderNo\", \"bookingId\":\"$bookingId\"}}",
     "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
     "MessageAttributes": {
       "eventType": {"Type": "String", "Value": "$eventType"}, 
