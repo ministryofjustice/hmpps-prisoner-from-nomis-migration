@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-04-29.7455.3a268f9"
+    "version": "2024-04-30.7469.b222cf9"
   },
   "servers": [
     {
@@ -6626,6 +6626,72 @@
           },
           "403": {
             "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_ADJUDICATIONS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Booking does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisoners/booking-id/{bookingId}/alerts": {
+      "get": {
+        "tags": [
+          "alerts-resource"
+        ],
+        "summary": "Gets alert for booking",
+        "description": "Retrieves alerts for a specific booking. Requires ROLE_NOMIS_ALERTS",
+        "operationId": "getAlertsByBookingId",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "description": "Booking id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Booking id",
+              "example": 12345
+            },
+            "example": 12345
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Alerts Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingAlertsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_ALERTS",
             "content": {
               "application/json": {
                 "schema": {
@@ -14944,6 +15010,21 @@
           }
         },
         "description": "Summary of adjudication for a booking"
+      },
+      "BookingAlertsResponse": {
+        "required": [
+          "alerts"
+        ],
+        "type": "object",
+        "properties": {
+          "alerts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AlertResponse"
+            }
+          }
+        },
+        "description": "The list of alerts held against a booking"
       },
       "NonAssociationResponse": {
         "required": [

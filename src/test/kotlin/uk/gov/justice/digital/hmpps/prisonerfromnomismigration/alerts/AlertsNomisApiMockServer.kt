@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.BookingAlertsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerAlertsResponse
@@ -116,6 +117,37 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
     nomisApi.stubFor(
       get(urlEqualTo("/prisoners/$offenderNo/alerts/to-migrate")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(objectMapper.writeValueAsString(response)),
+      ),
+    )
+  }
+
+  fun stubGetAlertsByBookingId(
+    bookingId: Long,
+    alertCount: Long = 1,
+    alert: AlertResponse = AlertResponse(
+      bookingId = 1,
+      alertSequence = 1,
+      bookingSequence = 10,
+      alertCode = CodeDescription("XA", "TACT"),
+      type = CodeDescription("X", "Security"),
+      date = LocalDate.now(),
+      isActive = true,
+      isVerified = false,
+      audit = NomisAudit(
+        createDatetime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+        createUsername = "Q1251T",
+      ),
+    ),
+  ) {
+    val response = BookingAlertsResponse(
+      alerts = (1..alertCount).map { alert.copy(bookingId = bookingId, alertSequence = it) },
+    )
+    nomisApi.stubFor(
+      get(urlEqualTo("/prisoners/booking-id/$bookingId/alerts")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())

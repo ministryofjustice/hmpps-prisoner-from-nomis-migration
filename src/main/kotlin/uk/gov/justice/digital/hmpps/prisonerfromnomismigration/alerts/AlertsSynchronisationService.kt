@@ -9,7 +9,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.MappingRes
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.MappingResponse.MAPPING_FAILED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.Alert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.NomisPrisonerMergeEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerMergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
@@ -185,11 +185,13 @@ class AlertsSynchronisationService(
     log.warn("Unable to delete mapping for alert $dpsAlertId. Please delete manually", e)
   }
 
-  suspend fun synchronisePrisonerMerge(prisonerMergeEvent: NomisPrisonerMergeEvent) {
+  suspend fun synchronisePrisonerMerge(prisonerMergeEvent: PrisonerMergeDomainEvent) {
     telemetryClient.trackEvent(
       "from-nomis-synch-alerts-merge",
       mapOf(
-        "bookingId" to prisonerMergeEvent.bookingId.toString(),
+        "bookingId" to (prisonerMergeEvent.additionalInformation.bookingId?.toString() ?: "NOT IN MESSAGE YET"),
+        "offenderNo" to prisonerMergeEvent.additionalInformation.nomsNumber,
+        "removedOffenderNo" to prisonerMergeEvent.additionalInformation.removedNomsNumber,
       ),
     )
   }

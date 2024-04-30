@@ -29,7 +29,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.NOT_FOUND
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeNomisEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.KeyDateAdjustmentResponse
@@ -1558,7 +1558,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         awsSqsSentencingOffenderEventsClient.sendMessage(
           sentencingQueueOffenderEventsUrl,
-          mergeEvent(
+          mergeNomisEvent(
             bookingId = bookingId,
           ),
         )
@@ -1609,7 +1609,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
         awsSqsSentencingOffenderEventsClient.sendMessage(
           sentencingQueueOffenderEventsUrl,
-          mergeEvent(
+          mergeNomisEvent(
             bookingId = bookingId,
           ),
         )
@@ -1689,7 +1689,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
         awsSqsSentencingOffenderEventsClient.sendMessage(
           sentencingQueueOffenderEventsUrl,
-          mergeEvent(
+          mergeNomisEvent(
             bookingId = bookingId,
           ),
         )

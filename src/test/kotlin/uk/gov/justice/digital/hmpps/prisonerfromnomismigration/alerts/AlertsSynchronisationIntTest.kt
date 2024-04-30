@@ -31,7 +31,7 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension.Companion.dpsAlertsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.dpsAlert
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
@@ -930,7 +930,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
   }
 
   @Nested
-  @DisplayName("BOOKING_NUMBER-CHANGED")
+  @DisplayName("prison-offender-events.prisoner.merged")
   inner class PrisonerMerge {
     val bookingId = BOOKING_ID
 
@@ -938,7 +938,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
     fun setUp() {
       awsSqsSentencingOffenderEventsClient.sendMessage(
         alertsQueueOffenderEventsUrl,
-        mergeEvent(
+        mergeDomainEvent(
           bookingId = bookingId,
         ),
       )
