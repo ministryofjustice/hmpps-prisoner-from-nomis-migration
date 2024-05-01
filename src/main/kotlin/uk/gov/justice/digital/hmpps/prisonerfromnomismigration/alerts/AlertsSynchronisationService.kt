@@ -186,12 +186,23 @@ class AlertsSynchronisationService(
   }
 
   suspend fun synchronisePrisonerMerge(prisonerMergeEvent: PrisonerMergeDomainEvent) {
+    val bookingId = prisonerMergeEvent.additionalInformation.bookingId
+    val offenderNo = prisonerMergeEvent.additionalInformation.nomsNumber
+    val removedOffenderNo = prisonerMergeEvent.additionalInformation.removedNomsNumber
+    val alerts = nomisApiService.getAlertsByBookingId(bookingId).alerts
+    val newAlerts = alerts.filter { mappingApiService.getOrNullByNomisId(bookingId = it.bookingId, alertSequence = it.alertSequence) == null }
+
+    // TODO - call DPS endpoint
+    // TODO - call mapping service
+
     telemetryClient.trackEvent(
       "from-nomis-synch-alerts-merge",
       mapOf(
-        "bookingId" to (prisonerMergeEvent.additionalInformation.bookingId?.toString() ?: "NOT IN MESSAGE YET"),
-        "offenderNo" to prisonerMergeEvent.additionalInformation.nomsNumber,
-        "removedOffenderNo" to prisonerMergeEvent.additionalInformation.removedNomsNumber,
+        "bookingId" to bookingId,
+        "offenderNo" to offenderNo,
+        "removedOffenderNo" to removedOffenderNo,
+        "newAlertsCount" to newAlerts.size,
+        "newAlerts" to newAlerts.map { it.alertSequence }.joinToString(),
       ),
     )
   }

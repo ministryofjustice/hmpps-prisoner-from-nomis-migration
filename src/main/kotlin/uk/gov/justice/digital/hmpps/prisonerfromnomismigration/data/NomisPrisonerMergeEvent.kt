@@ -11,6 +11,5 @@ data class PrisonerMergeDomainEvent(
 data class MergeAdditionalInformationEvent(
   val nomsNumber: String,
   val removedNomsNumber: String,
-  val bookingId: Long?,
-  val previousBookingId: Long?,
+  val bookingId: Long,
 )

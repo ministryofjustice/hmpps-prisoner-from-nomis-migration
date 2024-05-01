@@ -54,6 +54,22 @@ class AlertsMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
+  fun stubGetByNomisId(
+    bookingId: Long = 123456,
+    alertSequence: Long = 1,
+    status: HttpStatus,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    mappingApi.stubFor(
+      get(urlEqualTo("/mapping/alerts/nomis-booking-id/$bookingId/nomis-alert-sequence/$alertSequence")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
   fun stubPostMapping() {
     mappingApi.stubFor(
       post("/mapping/alerts").willReturn(
