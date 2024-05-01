@@ -345,6 +345,16 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
     )
   }
 
+  fun stubDeleteCourtChargeMapping(nomisChargeId: Long) {
+    mappingApi.stubFor(
+      delete("/mapping/court-sentencing/court-charges/nomis-court-charge-id/$nomisChargeId").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
   fun createMappingCount(url: String) =
     mappingApi.findAll(WireMock.postRequestedFor(WireMock.urlPathEqualTo(url))).count()
 

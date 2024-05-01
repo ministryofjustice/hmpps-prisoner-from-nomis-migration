@@ -462,7 +462,15 @@ class CourtSentencingSynchronisationService(
           dpsApiService.removeCourtCharge(
             courtAppearanceId = courtAppearanceMapping.dpsCourtAppearanceId,
             chargeId = chargeMapping.dpsCourtChargeId,
-          )
+          ).also {
+            // check with nomis to see if offender_charge has been deleted
+            nomisApiService.getOffenderChargeOrNull(
+              offenderNo = event.offenderIdDisplay,
+              offenderChargeId = event.chargeId,
+            ) ?: let {
+              tryToDeleteCourtChargeMapping(chargeMapping)
+            }
+          }
           telemetryClient.trackEvent(
             "court-charge-synchronisation-deleted-success",
             telemetry,
@@ -542,6 +550,20 @@ class CourtSentencingSynchronisationService(
       mapOf("dpsCourtAppearanceId" to dpsCourtAppearanceId),
     )
     log.warn("Unable to delete mapping for court appearance $dpsCourtAppearanceId. Please delete manually", e)
+  }
+
+  private suspend fun tryToDeleteCourtChargeMapping(mapping: CourtChargeMappingDto) = runCatching {
+    mappingApiService.deleteCourtChargeMappingByNomisId(mapping.nomisCourtChargeId)
+    telemetryClient.trackEvent(
+      "court-charge-mapping-deleted-success",
+      mapOf("nomisOffenderCharge" to mapping.nomisCourtChargeId, "dpsCourtChargeId" to mapping.dpsCourtChargeId),
+    )
+  }.onFailure { e ->
+    telemetryClient.trackEvent(
+      "court-charge-mapping-deleted-failed",
+      mapOf("nomisOffenderCharge" to mapping.nomisCourtChargeId, "dpsCourtChargeId" to mapping.dpsCourtChargeId),
+    )
+    log.warn("Unable to delete mapping for court charge with nomis id: $mapping.nomisCourtChargeId. Please delete manually", e)
   }
 
   suspend fun retryCreateCourtCaseMapping(retryMessage: InternalMessage<CourtCaseAllMappingDto>) {
