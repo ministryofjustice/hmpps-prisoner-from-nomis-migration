@@ -936,13 +936,33 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
 
     @BeforeEach
     fun setUp() {
+      alertsNomisApiMockServer.stubGetAlertsByBookingId(bookingId, alertCount = 4)
+      alertsMappingApiMockServer.stubGetByNomisId(bookingId, 1)
+      alertsMappingApiMockServer.stubGetByNomisId(bookingId, 2)
+      alertsMappingApiMockServer.stubGetByNomisId(bookingId, 3, status = NOT_FOUND)
+      alertsMappingApiMockServer.stubGetByNomisId(bookingId, 4, status = NOT_FOUND)
       awsSqsSentencingOffenderEventsClient.sendMessage(
         alertsQueueOffenderEventsUrl,
         mergeDomainEvent(
           bookingId = bookingId,
+          offenderNo = "A1234KT",
+          removedOffenderNo = "A1000KT",
         ),
       )
       waitForAnyProcessingToComplete()
+    }
+
+    @Test
+    fun `will retrieve alerts for the bookings that has changed`() {
+      alertsNomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/prisoners/booking-id/$bookingId/alerts")))
+    }
+
+    @Test
+    fun `will attempt to  get mappings for all alerts`() {
+      alertsMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/alerts/nomis-booking-id/$bookingId/nomis-alert-sequence/1")))
+      alertsMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/alerts/nomis-booking-id/$bookingId/nomis-alert-sequence/2")))
+      alertsMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/alerts/nomis-booking-id/$bookingId/nomis-alert-sequence/3")))
+      alertsMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/alerts/nomis-booking-id/$bookingId/nomis-alert-sequence/4")))
     }
 
     @Test
@@ -951,6 +971,10 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
         eq("from-nomis-synch-alerts-merge"),
         check {
           assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+          assertThat(it["offenderNo"]).isEqualTo("A1234KT")
+          assertThat(it["removedOffenderNo"]).isEqualTo("A1000KT")
+          assertThat(it["newAlertsCount"]).isEqualTo("2")
+          assertThat(it["newAlerts"]).isEqualTo("3, 4")
         },
         isNull(),
       )
