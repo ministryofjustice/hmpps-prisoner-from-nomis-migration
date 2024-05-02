@@ -838,7 +838,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
       val adjustmentDate = LocalDate.parse("2020-01-01")
       val adjustmentFromDate = LocalDate.parse("2020-02-01")
       whenever(nomisApiService.getSentenceAdjustment(any())).thenReturn(
-        aNomisSentenceAdjustment(),
+        aNomisSentenceAdjustment(prisonId = "WWI"),
       )
 
       service.migrateNomisEntity(
@@ -863,6 +863,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
             adjustmentType = ADA,
             offenderNo = "G4803UT",
             bookingReleased = true,
+            agencyId = "WWI",
           ),
         ),
       )
@@ -1005,6 +1006,7 @@ fun aNomisSentenceAdjustment(
   adjustmentDays: Long = 8,
   comment: String? = "a comment",
   active: Boolean = true,
+  prisonId: String = "MDI",
 ) = NomisAdjustment(
   id = id,
   bookingId = bookingId,
@@ -1019,6 +1021,7 @@ fun aNomisSentenceAdjustment(
   active = active,
   hiddenFromUsers = false,
   hasBeenReleased = true,
+  prisonId = prisonId,
 )
 
 fun pages(total: Long, startId: Long = 1): PageImpl<NomisAdjustmentId> = PageImpl<NomisAdjustmentId>(

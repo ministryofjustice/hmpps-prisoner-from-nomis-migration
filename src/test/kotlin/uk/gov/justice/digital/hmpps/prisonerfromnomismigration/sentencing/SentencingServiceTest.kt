@@ -47,6 +47,7 @@ internal class SentencingServiceTest {
             active = true,
             offenderNo = "G4803UT",
             bookingReleased = false,
+            agencyId = "MDI",
           ),
         )
       }
@@ -97,6 +98,7 @@ internal class SentencingServiceTest {
             active = true,
             offenderNo = "G4803UT",
             bookingReleased = false,
+            agencyId = "MDI",
           ),
         )
       }
@@ -147,6 +149,7 @@ internal class SentencingServiceTest {
             active = true,
             offenderNo = "G4803UT",
             bookingReleased = false,
+            agencyId = "MDI",
           ),
         )
       }
