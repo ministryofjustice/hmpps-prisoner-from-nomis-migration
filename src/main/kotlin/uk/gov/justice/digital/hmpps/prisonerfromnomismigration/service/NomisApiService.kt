@@ -422,6 +422,7 @@ data class NomisAdjustment(
   val active: Boolean,
   val hiddenFromUsers: Boolean,
   val hasBeenReleased: Boolean,
+  val prisonId: String,
 ) {
   fun toSentencingAdjustment(): LegacyAdjustment = LegacyAdjustment(
     bookingId = bookingId,
@@ -434,6 +435,7 @@ data class NomisAdjustment(
     active = active,
     offenderNo = offenderNo,
     bookingReleased = hasBeenReleased,
+    agencyId = prisonId,
   )
 
   fun getAdjustmentCategory() = sentenceSequence?.let { "SENTENCE" } ?: "KEY_DATE"

@@ -528,7 +528,14 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }
   }
 
-  fun stubGetSentenceAdjustment(adjustmentId: Long, hiddenForUsers: Boolean = false) {
+  fun stubGetSentenceAdjustment(
+    adjustmentId: Long,
+    hiddenForUsers: Boolean = false,
+    prisonId: String = "MDI",
+    bookingId: Long = 2,
+    sentenceSequence: Long = 1,
+    offenderNo: String = "G4803UT",
+  ) {
     nomisApi.stubFor(
       get(
         urlPathEqualTo("/sentence-adjustments/$adjustmentId"),
@@ -537,13 +544,25 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse().withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
             .withBody(
-              sentenceAdjustmentResponse(sentenceAdjustmentId = adjustmentId, hiddenForUsers = hiddenForUsers),
+              sentenceAdjustmentResponse(
+                sentenceAdjustmentId = adjustmentId,
+                hiddenForUsers = hiddenForUsers,
+                prisonId = prisonId,
+                bookingId = bookingId,
+                sentenceSequence = sentenceSequence,
+                offenderNo = offenderNo,
+              ),
             ),
         ),
     )
   }
 
-  fun stubGetKeyDateAdjustment(adjustmentId: Long) {
+  fun stubGetKeyDateAdjustment(
+    adjustmentId: Long,
+    prisonId: String = "MDI",
+    bookingId: Long = 2,
+    offenderNo: String = "G4803UT",
+  ) {
     nomisApi.stubFor(
       get(
         urlPathEqualTo("/key-date-adjustments/$adjustmentId"),
@@ -551,7 +570,14 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
-            .withBody(keyDateAdjustmentResponse(keyDateAdjustmentId = adjustmentId)),
+            .withBody(
+              keyDateAdjustmentResponse(
+                keyDateAdjustmentId = adjustmentId,
+                prisonId = prisonId,
+                bookingId = bookingId,
+                offenderNo = offenderNo,
+              ),
+            ),
         ),
     )
   }
@@ -977,9 +1003,11 @@ private fun getAdjustmentCategory(it: Long) = if (it % 2L == 0L) "KEY_DATE" else
 
 private fun sentenceAdjustmentResponse(
   bookingId: Long = 2,
+  sentenceSequence: Long = 1,
   offenderNo: String = "G4803UT",
   sentenceAdjustmentId: Long = 3,
   hiddenForUsers: Boolean = false,
+  prisonId: String = "MDI",
 ): String {
   // language=JSON
   return """
@@ -987,7 +1015,7 @@ private fun sentenceAdjustmentResponse(
   "bookingId":$bookingId,
   "id":$sentenceAdjustmentId,
   "offenderNo": "$offenderNo",
-  "sentenceSequence": 0,
+  "sentenceSequence": $sentenceSequence,
   "commentText":"a comment",
   "adjustmentDate":"2021-10-06",
   "adjustmentFromDate":"2021-10-07",
@@ -998,7 +1026,8 @@ private fun sentenceAdjustmentResponse(
     "code": "RST",
     "description": "RST Desc"
   },
-  "hasBeenReleased": false
+  "hasBeenReleased": false,
+  "prisonId": "$prisonId"
   }
    
   """.trimIndent()
@@ -1008,6 +1037,7 @@ private fun keyDateAdjustmentResponse(
   bookingId: Long = 2,
   keyDateAdjustmentId: Long = 3,
   offenderNo: String = "G4803UT",
+  prisonId: String = "MDI",
 ): String {
   // language=JSON
   return """
@@ -1024,8 +1054,9 @@ private fun keyDateAdjustmentResponse(
     "code": "ADA",
     "description": "Additional days"
   },
-  "hasBeenReleased": false
-  }
+  "hasBeenReleased": false,
+  "prisonId": "$prisonId"
+}
    
   """.trimIndent()
 }

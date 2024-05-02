@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing
 
+import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
@@ -113,7 +114,13 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class WhenCreateByNomis {
         @BeforeEach
         fun setUp() {
-          nomisApi.stubGetSentenceAdjustment(adjustmentId = NOMIS_ADJUSTMENT_ID)
+          nomisApi.stubGetSentenceAdjustment(
+            adjustmentId = NOMIS_ADJUSTMENT_ID,
+            prisonId = "WWI",
+            bookingId = BOOKING_ID,
+            offenderNo = OFFENDER_NUMBER,
+            sentenceSequence = SENTENCE_SEQUENCE,
+          )
           sentencingApi.stubCreateSentencingAdjustmentForSynchronisation(sentenceAdjustmentId = ADJUSTMENT_ID)
           mappingApi.stubMappingCreate(ADJUSTMENTS_CREATE_MAPPING_URL)
 
@@ -147,7 +154,13 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will create the adjustment in the sentencing service`() {
           await untilAsserted {
-            sentencingApi.verify(postRequestedFor(urlPathEqualTo("/legacy/adjustments")))
+            sentencingApi.verify(
+              postRequestedFor(urlPathEqualTo("/legacy/adjustments"))
+                .withRequestBody(matchingJsonPath("bookingId", equalTo(BOOKING_ID.toString())))
+                .withRequestBody(matchingJsonPath("offenderNo", equalTo(OFFENDER_NUMBER)))
+                .withRequestBody(matchingJsonPath("sentenceSequence", equalTo(SENTENCE_SEQUENCE.toString())))
+                .withRequestBody(matchingJsonPath("agencyId", equalTo("WWI"))),
+            )
           }
         }
 
@@ -443,7 +456,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class WhenUpdatedByNomis {
         @BeforeEach
         fun setUp() {
-          nomisApi.stubGetSentenceAdjustment(adjustmentId = NOMIS_ADJUSTMENT_ID)
+          nomisApi.stubGetSentenceAdjustment(adjustmentId = NOMIS_ADJUSTMENT_ID, prisonId = "WWI")
           sentencingApi.stubUpdateSentencingAdjustmentForSynchronisation(ADJUSTMENT_ID)
 
           awsSqsSentencingOffenderEventsClient.sendMessage(
@@ -476,7 +489,10 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will update the adjustment in the sentencing service`() {
           await untilAsserted {
-            sentencingApi.verify(putRequestedFor(urlPathEqualTo("/legacy/adjustments/$ADJUSTMENT_ID")))
+            sentencingApi.verify(
+              putRequestedFor(urlPathEqualTo("/legacy/adjustments/$ADJUSTMENT_ID"))
+                .withRequestBody(matchingJsonPath("agencyId", equalTo("WWI"))),
+            )
           }
         }
 
@@ -892,7 +908,12 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class WhenCreateByNomis {
         @BeforeEach
         fun setUp() {
-          nomisApi.stubGetKeyDateAdjustment(adjustmentId = NOMIS_ADJUSTMENT_ID)
+          nomisApi.stubGetKeyDateAdjustment(
+            adjustmentId = NOMIS_ADJUSTMENT_ID,
+            prisonId = "WWI",
+            bookingId = BOOKING_ID,
+            offenderNo = OFFENDER_NUMBER,
+          )
           sentencingApi.stubCreateSentencingAdjustmentForSynchronisation(sentenceAdjustmentId = ADJUSTMENT_ID)
           mappingApi.stubMappingCreate(ADJUSTMENTS_CREATE_MAPPING_URL)
 
@@ -925,7 +946,11 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will create the adjustment in the sentencing service`() {
           await untilAsserted {
-            sentencingApi.verify(postRequestedFor(urlPathEqualTo("/legacy/adjustments")))
+            postRequestedFor(urlPathEqualTo("/legacy/adjustments"))
+              .withRequestBody(matchingJsonPath("bookingId", equalTo(BOOKING_ID.toString())))
+              .withRequestBody(matchingJsonPath("offenderNo", equalTo(OFFENDER_NUMBER)))
+              .withRequestBody(matchingJsonPath("sentenceSequence", WireMock.absent()))
+              .withRequestBody(matchingJsonPath("agencyId", equalTo("WWI")))
           }
         }
 
@@ -1161,7 +1186,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class WhenUpdatedByNomis {
         @BeforeEach
         fun setUp() {
-          nomisApi.stubGetKeyDateAdjustment(adjustmentId = NOMIS_ADJUSTMENT_ID)
+          nomisApi.stubGetKeyDateAdjustment(adjustmentId = NOMIS_ADJUSTMENT_ID, prisonId = "WWI")
           sentencingApi.stubUpdateSentencingAdjustmentForSynchronisation(ADJUSTMENT_ID)
 
           awsSqsSentencingOffenderEventsClient.sendMessage(
@@ -1193,7 +1218,10 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will update the adjustment in the sentencing service`() {
           await untilAsserted {
-            sentencingApi.verify(putRequestedFor(urlPathEqualTo("/legacy/adjustments/$ADJUSTMENT_ID")))
+            sentencingApi.verify(
+              putRequestedFor(urlPathEqualTo("/legacy/adjustments/$ADJUSTMENT_ID"))
+                .withRequestBody(matchingJsonPath("agencyId", equalTo("WWI"))),
+            )
           }
         }
 
@@ -1782,6 +1810,7 @@ internal fun sentenceAdjustmentResponse(
   offenderNo: String = "G4803UT",
   sentenceAdjustmentId: Long = 3,
   hiddenForUsers: Boolean = false,
+  prisonId: String = "MDI",
 ): SentenceAdjustmentResponse = SentenceAdjustmentResponse(
   bookingId = bookingId,
   id = sentenceAdjustmentId,
@@ -1798,12 +1827,14 @@ internal fun sentenceAdjustmentResponse(
     description = "RST Desc",
   ),
   hasBeenReleased = false,
+  prisonId = prisonId,
 )
 
 internal fun keyDateAdjustmentResponse(
   bookingId: Long = 2,
   keyDateAdjustmentId: Long = 3,
   offenderNo: String = "G4803UT",
+  prisonId: String = "MDI",
 ): KeyDateAdjustmentResponse = KeyDateAdjustmentResponse(
   bookingId = bookingId,
   id = keyDateAdjustmentId,
@@ -1818,4 +1849,5 @@ internal fun keyDateAdjustmentResponse(
     description = "Additional days",
   ),
   hasBeenReleased = false,
+  prisonId = prisonId,
 )

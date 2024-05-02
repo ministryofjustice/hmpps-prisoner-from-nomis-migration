@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-04-30.7469.b222cf9"
+    "version": "2024-05-01.7485.beb98e1"
   },
   "servers": [
     {
@@ -13636,6 +13636,7 @@
           "hiddenFromUsers",
           "id",
           "offenderNo",
+          "prisonId",
           "sentenceSequence"
         ],
         "type": "object",
@@ -13653,6 +13654,10 @@
           "hasBeenReleased": {
             "type": "boolean",
             "description": "Indicates whether for this booking the prisoner has been released"
+          },
+          "prisonId": {
+            "type": "string",
+            "description": "Current prison or OUT"
           },
           "offenderNo": {
             "type": "string",
@@ -14870,7 +14875,8 @@
           "bookingId",
           "hasBeenReleased",
           "id",
-          "offenderNo"
+          "offenderNo",
+          "prisonId"
         ],
         "type": "object",
         "properties": {
@@ -14887,6 +14893,10 @@
           "hasBeenReleased": {
             "type": "boolean",
             "description": "Indicates whether for this booking the prisoner has been released"
+          },
+          "prisonId": {
+            "type": "string",
+            "description": "Current prison or OUT"
           },
           "offenderNo": {
             "type": "string",
