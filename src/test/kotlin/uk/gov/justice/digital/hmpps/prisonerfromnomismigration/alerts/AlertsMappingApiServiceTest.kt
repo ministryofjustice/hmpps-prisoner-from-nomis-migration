@@ -20,8 +20,8 @@ import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto.MappingType.DPS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto.MappingType.MIGRATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto.MappingType.NOMIS_CREATED
 import java.util.UUID
 
 @SpringAPIServiceTest
@@ -133,7 +133,7 @@ class AlertsMappingApiServiceTest {
           nomisAlertSequence = 1,
           dpsAlertId = UUID.randomUUID().toString(),
           offenderNo = "A1234KT",
-          mappingType = DPS_CREATED,
+          mappingType = NOMIS_CREATED,
         ),
       )
 
@@ -153,7 +153,7 @@ class AlertsMappingApiServiceTest {
           nomisAlertSequence = 1,
           dpsAlertId = dpsAlertId,
           offenderNo = "A1234KT",
-          mappingType = DPS_CREATED,
+          mappingType = NOMIS_CREATED,
         ),
       )
 
@@ -162,7 +162,7 @@ class AlertsMappingApiServiceTest {
           .withRequestBody(matchingJsonPath("nomisBookingId", equalTo("123456")))
           .withRequestBody(matchingJsonPath("nomisAlertSequence", equalTo("1")))
           .withRequestBody(matchingJsonPath("dpsAlertId", equalTo(dpsAlertId)))
-          .withRequestBody(matchingJsonPath("mappingType", equalTo("DPS_CREATED"))),
+          .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
       )
     }
   }
