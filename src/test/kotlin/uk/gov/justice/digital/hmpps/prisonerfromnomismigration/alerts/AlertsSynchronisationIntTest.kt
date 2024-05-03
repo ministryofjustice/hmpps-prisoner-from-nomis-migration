@@ -175,7 +175,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBody(matchingJsonPath("nomisBookingId", equalTo(bookingId.toString())))
                 .withRequestBody(matchingJsonPath("offenderNo", equalTo(offenderNo)))
                 .withRequestBody(matchingJsonPath("nomisAlertSequence", equalTo(alertSequence.toString())))
-                .withRequestBody(matchingJsonPath("mappingType", equalTo("DPS_CREATED"))),
+                .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
             )
           }
         }
@@ -293,7 +293,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
                   .withRequestBody(matchingJsonPath("dpsAlertId", equalTo(dpsAlertId)))
                   .withRequestBody(matchingJsonPath("nomisBookingId", equalTo(bookingId.toString())))
                   .withRequestBody(matchingJsonPath("nomisAlertSequence", equalTo(alertSequence.toString())))
-                  .withRequestBody(matchingJsonPath("mappingType", equalTo("DPS_CREATED"))),
+                  .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
               )
             }
 
