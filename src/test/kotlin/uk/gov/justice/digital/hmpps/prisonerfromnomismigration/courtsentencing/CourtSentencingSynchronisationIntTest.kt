@@ -28,6 +28,7 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.verification.VerificationMode
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.NOT_FOUND
@@ -80,7 +81,9 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             eventType = "OFFENDER_CASES-INSERTED",
             auditModule = "DPS_SYNCHRONISATION",
           ),
-        )
+        ).also {
+          waitForTelemetry()
+        }
       }
 
       @Test
@@ -130,7 +133,9 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             courtCaseEvent(
               eventType = "OFFENDER_CASES-INSERTED",
             ),
-          )
+          ).also {
+            waitForTelemetry()
+          }
         }
 
         @Test
@@ -194,7 +199,9 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               courtCaseId = NOMIS_COURT_CASE_ID,
               offenderNo = OFFENDER_ID_DISPLAY,
             ),
-          )
+          ).also {
+            waitForTelemetry()
+          }
         }
 
         @Test
@@ -236,7 +243,9 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               courtCaseEvent(
                 eventType = "OFFENDER_CASES-INSERTED",
               ),
-            )
+            ).also {
+              waitForTelemetry()
+            }
           }
 
           @Test
@@ -480,7 +489,9 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               courtCaseId = NOMIS_COURT_CASE_ID,
               offenderNo = OFFENDER_ID_DISPLAY,
             ),
-          )
+          ).also {
+            waitForTelemetry()
+          }
         }
 
         @Test
@@ -545,7 +556,9 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               courtCaseId = NOMIS_COURT_CASE_ID,
               offenderNo = OFFENDER_ID_DISPLAY,
             ),
-          )
+          ).also {
+            waitForTelemetry()
+          }
         }
 
         @Test
@@ -670,7 +683,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `telemetry added to track the failure`() {
           await untilAsserted {
-            verify(telemetryClient, Mockito.atLeastOnce()).trackEvent(
+            verify(telemetryClient, times(2)).trackEvent(
               eq("court-case-synchronisation-updated-failed"),
               check {
                 assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
@@ -710,7 +723,9 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             courtCaseEvent(
               eventType = "OFFENDER_CASES-UPDATED",
             ),
-          )
+          ).also {
+            waitForTelemetry()
+          }
         }
 
         @Test
@@ -946,7 +961,9 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               courtAppearanceEvent(
                 eventType = "COURT_EVENTS-INSERTED",
               ),
-            )
+            ).also {
+              waitForTelemetry()
+            }
           }
 
           @Test
@@ -1221,7 +1238,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `telemetry added to track the failure`() {
           await untilAsserted {
-            verify(telemetryClient, Mockito.atLeastOnce()).trackEvent(
+            verify(telemetryClient, times(2)).trackEvent(
               eq("court-appearance-synchronisation-updated-failed"),
               check {
                 assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
@@ -1265,7 +1282,9 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             courtAppearanceEvent(
               eventType = "COURT_EVENTS-UPDATED",
             ),
-          )
+          ).also {
+            waitForTelemetry()
+          }
         }
 
         @Test
@@ -1361,7 +1380,9 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
               offenderNo = OFFENDER_ID_DISPLAY,
             ),
-          )
+          ).also {
+            waitForTelemetry()
+          }
         }
 
         @Test
@@ -1917,6 +1938,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               eventType = "COURT_EVENT_CHARGES-DELETED",
             ),
           )
+          waitForTelemetry(times(2))
         }
 
         @Test
@@ -1950,13 +1972,13 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               eventType = "COURT_EVENT_CHARGES-DELETED",
             ),
           )
+          waitForTelemetry()
         }
 
         @Test
         fun `the failure event is recorded and retried`() {
           await untilAsserted {
-            // TODO - fix this maybe atLeastOnce() should really be the correct number
-            verify(telemetryClient, atLeastOnce()).trackEvent(
+            verify(telemetryClient, times(2)).trackEvent(
               eq("court-charge-synchronisation-deleted-failed"),
               check {
                 assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
@@ -2005,6 +2027,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               eventType = "COURT_EVENT_CHARGES-DELETED",
             ),
           )
+          waitForTelemetry()
         }
 
         @Test
@@ -2030,20 +2053,6 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         }
 
         @Test
-        fun `will leave the charge mapping if nomis charge has not been deleted`() {
-          courtSentencingNomisApiMockServer.stubGetOffenderCharge(
-            offenderNo = OFFENDER_ID_DISPLAY,
-            offenderChargeId = NOMIS_OFFENDER_CHARGE_ID,
-          )
-          await untilAsserted {
-            courtSentencingMappingApiMockServer.verify(
-              0,
-              deleteRequestedFor(urlPathEqualTo("/court-charges/nomis-court-charge-id/$NOMIS_OFFENDER_CHARGE_ID")),
-            )
-          }
-        }
-
-        @Test
         fun `will track a telemetry event for success`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
@@ -2061,6 +2070,64 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           }
         }
       }
+
+      @Nested
+      @DisplayName("When mappings exists, nomis has not deleted the offender charge")
+      inner class MappingExistsNomisHasNotDeletedCharge {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+            dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
+            mapping = CourtAppearanceAllMappingDto(
+              nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+              dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
+              courtCharges = emptyList(),
+            ),
+          )
+
+          courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
+            nomisCourtChargeId = NOMIS_OFFENDER_CHARGE_ID,
+            dpsCourtChargeId = DPS_CHARGE_ID,
+          )
+
+          dpsCourtSentencingServer.stubRemoveCourtCharge(
+            courtAppearanceId = DPS_COURT_APPEARANCE_ID,
+            chargeId = DPS_CHARGE_ID,
+          )
+
+          courtSentencingNomisApiMockServer.stubGetOffenderCharge(
+            offenderNo = OFFENDER_ID_DISPLAY,
+            offenderChargeId = NOMIS_OFFENDER_CHARGE_ID,
+          )
+
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            courtEventChargeEvent(
+              eventType = "COURT_EVENT_CHARGES-DELETED",
+            ),
+          )
+          waitForTelemetry()
+        }
+
+        @Test
+        fun `will not delete the charge mapping if nomis charge has not been deleted`() {
+          courtSentencingMappingApiMockServer.verify(
+            0,
+            deleteRequestedFor(urlPathEqualTo("/court-charges/nomis-court-charge-id/$NOMIS_OFFENDER_CHARGE_ID")),
+          )
+        }
+      }
+    }
+  }
+
+  private fun waitForTelemetry(times: VerificationMode = atLeastOnce()) {
+    await untilAsserted {
+      verify(telemetryClient, times).trackEvent(
+        any(),
+        any(),
+        isNull(),
+      )
     }
   }
 
