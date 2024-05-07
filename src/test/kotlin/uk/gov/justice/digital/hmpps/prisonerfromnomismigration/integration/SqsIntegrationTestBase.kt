@@ -9,6 +9,7 @@ import org.awaitility.kotlin.untilCallTo
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.reset
 import org.mockito.kotlin.verify
@@ -190,6 +191,10 @@ class SqsIntegrationTestBase : TestBase() {
 
   internal fun waitForAnyProcessingToComplete() {
     await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
+  }
+
+  internal fun waitForAnyProcessingToComplete(name: String) {
+    await untilAsserted { verify(telemetryClient).trackEvent(eq(name), any(), isNull()) }
   }
 
   companion object {
