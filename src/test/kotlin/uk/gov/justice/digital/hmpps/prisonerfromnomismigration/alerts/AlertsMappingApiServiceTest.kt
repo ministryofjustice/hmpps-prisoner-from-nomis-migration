@@ -22,6 +22,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto.MappingType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto.MappingType.NOMIS_CREATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import java.util.UUID
 
 @SpringAPIServiceTest
@@ -226,6 +228,70 @@ class AlertsMappingApiServiceTest {
           .withRequestBody(matchingJsonPath("$[1].dpsAlertId", equalTo(dpsAlertId2)))
           .withRequestBody(matchingJsonPath("$[1].mappingType", equalTo("NOMIS_CREATED"))),
       )
+    }
+
+    @Test
+    fun `will return success when no errors`() = runTest {
+      alertsMappingApiMockServer.stubPostBatchMappings()
+
+      val result = apiService.createMappingsBatch(
+        listOf(
+          AlertMappingDto(
+            nomisBookingId = 123456,
+            nomisAlertSequence = 1,
+            dpsAlertId = UUID.randomUUID().toString(),
+            offenderNo = "A1234KT",
+            mappingType = NOMIS_CREATED,
+          ),
+        ),
+      )
+      assertThat(result.isError).isFalse()
+    }
+
+    @Test
+    fun `will return error when 409 conflict`() = runTest {
+      val bookingId = 1234567890L
+      val dpsAlertId = UUID.fromString("956d4326-b0c3-47ac-ab12-f0165109a6c5")
+      val existingAlertId = UUID.fromString("f612a10f-4827-4022-be96-d882193dfabd")
+
+      alertsMappingApiMockServer.stubPostBatchMappings(
+        error = DuplicateMappingErrorResponse(
+          moreInfo = DuplicateErrorContentObject(
+            duplicate = AlertMappingDto(
+              dpsAlertId = dpsAlertId.toString(),
+              nomisBookingId = bookingId,
+              nomisAlertSequence = 1,
+              offenderNo = "A1234KT",
+              mappingType = NOMIS_CREATED,
+            ),
+            existing = AlertMappingDto(
+              dpsAlertId = existingAlertId.toString(),
+              nomisBookingId = bookingId,
+              nomisAlertSequence = 1,
+              offenderNo = "A1234KT",
+              mappingType = NOMIS_CREATED,
+            ),
+          ),
+          errorCode = 1409,
+          status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+          userMessage = "Duplicate mapping",
+        ),
+      )
+
+      val result = apiService.createMappingsBatch(
+        listOf(
+          AlertMappingDto(
+            nomisBookingId = 123456,
+            nomisAlertSequence = 1,
+            dpsAlertId = UUID.randomUUID().toString(),
+            offenderNo = "A1234KT",
+            mappingType = NOMIS_CREATED,
+          ),
+        ),
+      )
+      assertThat(result.isError).isTrue()
+      assertThat(result.errorResponse!!.moreInfo.duplicate.dpsAlertId).isEqualTo(dpsAlertId.toString())
+      assertThat(result.errorResponse!!.moreInfo.existing.dpsAlertId).isEqualTo(existingAlertId.toString())
     }
   }
 
