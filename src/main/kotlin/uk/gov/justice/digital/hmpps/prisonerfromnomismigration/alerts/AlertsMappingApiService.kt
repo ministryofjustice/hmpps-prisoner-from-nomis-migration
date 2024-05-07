@@ -1,10 +1,16 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts
 
+import kotlinx.coroutines.reactive.awaitFirstOrDefault
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
+import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.NomisMappingIdUpdate
@@ -29,13 +35,17 @@ class AlertsMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebCl
       .awaitBodilessEntity()
   }
 
-  suspend fun createMappingsBatch(mappings: List<AlertMappingDto>) {
+  suspend fun createMappingsBatch(mappings: List<AlertMappingDto>): CreateMappingResult<AlertMappingDto> =
     webClient.post()
       .uri("/mapping/alerts/batch")
       .bodyValue(mappings)
       .retrieve()
-      .awaitBodilessEntity()
-  }
+      .bodyToMono(Unit::class.java)
+      .map { CreateMappingResult<AlertMappingDto>() }
+      .onErrorResume(WebClientResponseException.Conflict::class.java) {
+        Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<AlertMappingDto>>() {})))
+      }
+      .awaitFirstOrDefault(CreateMappingResult())
 
   suspend fun deleteMappingByDpsId(dpsAlertId: String) {
     webClient.delete()
