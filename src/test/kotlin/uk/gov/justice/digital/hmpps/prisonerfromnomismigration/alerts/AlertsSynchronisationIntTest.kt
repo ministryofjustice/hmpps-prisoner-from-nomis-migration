@@ -31,6 +31,7 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension.Companion.dpsAlertsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.dpsAlert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.migratedAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
@@ -39,6 +40,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -933,6 +935,8 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
   @DisplayName("prison-offender-events.prisoner.merged")
   inner class PrisonerMerge {
     val bookingId = BOOKING_ID
+    private val dpsAlertId1 = UUID.fromString("956d4326-b0c3-47ac-ab12-f0165109a6c5")
+    private val dpsAlertId2 = UUID.fromString("f612a10f-4827-4022-be96-d882193dfabd")
 
     @BeforeEach
     fun setUp() {
@@ -941,6 +945,14 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
       alertsMappingApiMockServer.stubGetByNomisId(bookingId, 2)
       alertsMappingApiMockServer.stubGetByNomisId(bookingId, 3, status = NOT_FOUND)
       alertsMappingApiMockServer.stubGetByNomisId(bookingId, 4, status = NOT_FOUND)
+      dpsAlertsServer.stubMergePrisonerAlerts(
+        "A1234KT",
+        response = listOf(
+          migratedAlert().copy(offenderBookId = bookingId, alertSeq = 3, alertUuid = dpsAlertId1),
+          migratedAlert().copy(offenderBookId = bookingId, alertSeq = 4, alertUuid = dpsAlertId2),
+        ),
+      )
+      alertsMappingApiMockServer.stubPostBatchMappings()
       awsSqsSentencingOffenderEventsClient.sendMessage(
         alertsQueueOffenderEventsUrl,
         mergeDomainEvent(
@@ -963,6 +975,30 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
       alertsMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/alerts/nomis-booking-id/$bookingId/nomis-alert-sequence/2")))
       alertsMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/alerts/nomis-booking-id/$bookingId/nomis-alert-sequence/3")))
       alertsMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/alerts/nomis-booking-id/$bookingId/nomis-alert-sequence/4")))
+    }
+
+    @Test
+    fun `will send missing alerts to DPS`() {
+      dpsAlertsServer.verify(
+        postRequestedFor(urlPathEqualTo("/merge/A1234KT/alerts"))
+          .withRequestBodyJsonPath("$[0].offenderBookId", "$bookingId")
+          .withRequestBodyJsonPath("$[0].alertSeq", "3")
+          .withRequestBodyJsonPath("$[1].offenderBookId", "$bookingId")
+          .withRequestBodyJsonPath("$[1].alertSeq", "4"),
+      )
+    }
+
+    @Test
+    fun `will create a mapping between the DPS and NOMIS alerts`() {
+      alertsMappingApiMockServer.verify(
+        postRequestedFor(urlPathEqualTo("/mapping/alerts/batch"))
+          .withRequestBodyJsonPath("$[0].nomisBookingId", "$bookingId")
+          .withRequestBodyJsonPath("$[0].nomisAlertSequence", "3")
+          .withRequestBodyJsonPath("$[0].dpsAlertId", "$dpsAlertId1")
+          .withRequestBodyJsonPath("$[1].nomisBookingId", "$bookingId")
+          .withRequestBodyJsonPath("$[1].nomisAlertSequence", "4")
+          .withRequestBodyJsonPath("$[1].dpsAlertId", "$dpsAlertId2"),
+      )
     }
 
     @Test

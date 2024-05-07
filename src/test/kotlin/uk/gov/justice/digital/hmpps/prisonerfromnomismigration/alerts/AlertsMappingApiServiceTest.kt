@@ -168,6 +168,68 @@ class AlertsMappingApiServiceTest {
   }
 
   @Nested
+  inner class PostMappingsBatch {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      alertsMappingApiMockServer.stubPostBatchMappings()
+
+      apiService.createMappingsBatch(
+        listOf(
+          AlertMappingDto(
+            nomisBookingId = 123456,
+            nomisAlertSequence = 1,
+            dpsAlertId = UUID.randomUUID().toString(),
+            offenderNo = "A1234KT",
+            mappingType = NOMIS_CREATED,
+          ),
+        ),
+      )
+
+      alertsMappingApiMockServer.verify(
+        postRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass ids to service`() = runTest {
+      val dpsAlertId1 = "a04f7a8d-61aa-400c-9395-f4dc62f36ab0"
+      val dpsAlertId2 = "cb3bf3b9-c23c-4787-9450-59259ab62b06"
+      alertsMappingApiMockServer.stubPostBatchMappings()
+
+      apiService.createMappingsBatch(
+        listOf(
+          AlertMappingDto(
+            nomisBookingId = 123456,
+            nomisAlertSequence = 1,
+            dpsAlertId = dpsAlertId1,
+            offenderNo = "A1234KT",
+            mappingType = NOMIS_CREATED,
+          ),
+          AlertMappingDto(
+            nomisBookingId = 123456,
+            nomisAlertSequence = 2,
+            dpsAlertId = dpsAlertId2,
+            offenderNo = "A1234KT",
+            mappingType = NOMIS_CREATED,
+          ),
+        ),
+      )
+
+      alertsMappingApiMockServer.verify(
+        postRequestedFor(anyUrl())
+          .withRequestBody(matchingJsonPath("$[0].nomisBookingId", equalTo("123456")))
+          .withRequestBody(matchingJsonPath("$[0].nomisAlertSequence", equalTo("1")))
+          .withRequestBody(matchingJsonPath("$[0].dpsAlertId", equalTo(dpsAlertId1)))
+          .withRequestBody(matchingJsonPath("$[0].mappingType", equalTo("NOMIS_CREATED")))
+          .withRequestBody(matchingJsonPath("$[1].nomisBookingId", equalTo("123456")))
+          .withRequestBody(matchingJsonPath("$[1].nomisAlertSequence", equalTo("2")))
+          .withRequestBody(matchingJsonPath("$[1].dpsAlertId", equalTo(dpsAlertId2)))
+          .withRequestBody(matchingJsonPath("$[1].mappingType", equalTo("NOMIS_CREATED"))),
+      )
+    }
+  }
+
+  @Nested
   inner class UpdateNomisMappingId {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {

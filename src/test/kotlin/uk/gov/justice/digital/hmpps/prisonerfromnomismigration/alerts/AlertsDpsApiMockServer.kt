@@ -170,4 +170,20 @@ class AlertsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       ),
     )
   }
+
+  // TODO use real contract when available
+  fun stubMergePrisonerAlerts(
+    offenderNo: String,
+    response: List<MigratedAlert> = listOf(migratedAlert()),
+  ) {
+    stubFor(
+      post("/merge/$offenderNo/alerts")
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader("Content-Type", "application/json")
+            .withBody(AlertsDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
 }

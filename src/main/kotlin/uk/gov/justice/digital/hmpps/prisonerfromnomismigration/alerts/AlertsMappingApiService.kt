@@ -29,6 +29,14 @@ class AlertsMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebCl
       .awaitBodilessEntity()
   }
 
+  suspend fun createMappingsBatch(mappings: List<AlertMappingDto>) {
+    webClient.post()
+      .uri("/mapping/alerts/batch")
+      .bodyValue(mappings)
+      .retrieve()
+      .awaitBodilessEntity()
+  }
+
   suspend fun deleteMappingByDpsId(dpsAlertId: String) {
     webClient.delete()
       .uri("/mapping/alerts/dps-alert-id/{alertId}", dpsAlertId)
