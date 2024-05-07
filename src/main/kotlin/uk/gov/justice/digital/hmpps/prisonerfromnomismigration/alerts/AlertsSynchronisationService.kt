@@ -191,20 +191,59 @@ class AlertsSynchronisationService(
     val removedOffenderNo = prisonerMergeEvent.additionalInformation.removedNomsNumber
     val alerts = nomisApiService.getAlertsByBookingId(bookingId).alerts
     val newAlerts = alerts.filter { mappingApiService.getOrNullByNomisId(bookingId = it.bookingId, alertSequence = it.alertSequence) == null }
+    val telemetry = mapOf(
+      "bookingId" to bookingId,
+      "offenderNo" to offenderNo,
+      "removedOffenderNo" to removedOffenderNo,
+      "newAlertsCount" to newAlerts.size,
+      "newAlerts" to newAlerts.map { it.alertSequence }.joinToString(),
+    )
+    val dpsAlerts = dpsApiService.mergePrisonerAlerts(offenderNo = offenderNo, removedOffenderNo = removedOffenderNo, alerts = newAlerts.map { it.toDPSMigratedAlert() })
+    val mappings = dpsAlerts.map {
+      AlertMappingDto(
+        dpsAlertId = it.alertUuid.toString(),
+        nomisBookingId = it.offenderBookId,
+        nomisAlertSequence = it.alertSeq.toLong(),
+        offenderNo = offenderNo,
+        mappingType = NOMIS_CREATED,
+      )
+    }
 
-    // TODO - call DPS endpoint
-    // TODO - call mapping service
-
+    val mappingResponse = tryToCreateMappings(mappings, telemetry)
     telemetryClient.trackEvent(
       "from-nomis-synch-alerts-merge",
-      mapOf(
-        "bookingId" to bookingId,
-        "offenderNo" to offenderNo,
-        "removedOffenderNo" to removedOffenderNo,
-        "newAlertsCount" to newAlerts.size,
-        "newAlerts" to newAlerts.map { it.alertSequence }.joinToString(),
-      ),
+      telemetry + ("mappingSuccess" to (mappingResponse == MAPPING_CREATED).toString()),
     )
+  }
+
+  private suspend fun tryToCreateMappings(
+    mappings: List<AlertMappingDto>,
+    telemetry: Map<String, Any>,
+  ): MappingResponse {
+    try {
+      mappingApiService.createMappingsBatch(mappings)
+      return MAPPING_CREATED
+    } catch (e: Exception) {
+      log.error("Failed to create mappings for alert id $mappings", e)
+      queueService.sendMessage(
+        messageType = SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING_BATCH.name,
+        synchronisationType = SynchronisationType.ALERTS,
+        message = mappings,
+        telemetryAttributes = telemetry.valuesAsStrings(),
+      )
+      return MAPPING_FAILED
+    }
+  }
+
+  suspend fun retryCreateMappingsBatch(retryMessage: InternalMessage<List<AlertMappingDto>>) {
+    mappingApiService.createMappingsBatch(
+      retryMessage.body,
+    ).also {
+      telemetryClient.trackEvent(
+        "alert-mapping-created-merge-success",
+        retryMessage.telemetryAttributes,
+      )
+    }
   }
 }
 

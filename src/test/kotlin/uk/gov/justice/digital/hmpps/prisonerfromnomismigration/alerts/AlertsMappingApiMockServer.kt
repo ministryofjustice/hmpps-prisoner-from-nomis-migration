@@ -95,6 +95,16 @@ class AlertsMappingApiMockServer(private val objectMapper: ObjectMapper) {
     mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/alerts")
   }
 
+  fun stubPostBatchMappings() {
+    mappingApi.stubFor(
+      post("/mapping/alerts/batch").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
   fun stubPostMappings(offenderNo: String) {
     mappingApi.stubFor(
       post("/mapping/alerts/$offenderNo/all").willReturn(

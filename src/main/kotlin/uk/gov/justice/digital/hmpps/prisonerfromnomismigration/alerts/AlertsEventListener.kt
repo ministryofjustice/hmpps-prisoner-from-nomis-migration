@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING_BATCH
 import java.util.concurrent.CompletableFuture
 
 @Service
@@ -51,6 +52,10 @@ class AlertsEventListener(
         }
 
         RETRY_SYNCHRONISATION_MAPPING.name -> alertsSynchronisationService.retryCreateMapping(
+          sqsMessage.Message.fromJson(),
+        )
+
+        RETRY_SYNCHRONISATION_MAPPING_BATCH.name -> alertsSynchronisationService.retryCreateMappingsBatch(
           sqsMessage.Message.fromJson(),
         )
       }
