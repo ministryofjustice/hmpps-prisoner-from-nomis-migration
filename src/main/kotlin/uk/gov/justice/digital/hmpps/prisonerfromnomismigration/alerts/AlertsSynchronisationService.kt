@@ -221,8 +221,7 @@ class AlertsSynchronisationService(
     telemetry: Map<String, Any>,
   ): MappingResponse {
     try {
-      mappingApiService.createMappingsBatch(mappings)
-      return MAPPING_CREATED
+      return createMappingsBatch(mappings, telemetry)
     } catch (e: Exception) {
       log.error("Failed to create mappings for alert id $mappings", e)
       queueService.sendMessage(
@@ -235,15 +234,42 @@ class AlertsSynchronisationService(
     }
   }
 
-  suspend fun retryCreateMappingsBatch(retryMessage: InternalMessage<List<AlertMappingDto>>) {
-    mappingApiService.createMappingsBatch(
-      retryMessage.body,
-    ).also {
-      telemetryClient.trackEvent(
-        "alert-mapping-created-merge-success",
-        retryMessage.telemetryAttributes,
-      )
+  private suspend fun createMappingsBatch(
+    mappings: List<AlertMappingDto>,
+    telemetry: Map<String, Any>,
+  ): MappingResponse {
+    mappingApiService.createMappingsBatch(mappings).also {
+      if (it.isError) {
+        val duplicateErrorDetails = (it.errorResponse!!).moreInfo
+        telemetryClient.trackEvent(
+          "from-nomis-sync-alert-duplicate",
+          mapOf<String, String>(
+            "offenderNo" to telemetry["offenderNo"].toString(),
+            "duplicateDpsAlertId" to duplicateErrorDetails.duplicate.dpsAlertId,
+            "duplicateNomisBookingId" to duplicateErrorDetails.duplicate.nomisBookingId.toString(),
+            "duplicateNomisAlertSequence" to duplicateErrorDetails.duplicate.nomisAlertSequence.toString(),
+            "existingDpsAlertId" to duplicateErrorDetails.existing.dpsAlertId,
+            "existingNomisBookingId" to duplicateErrorDetails.existing.nomisBookingId.toString(),
+            "existingNomisAlertSequence" to duplicateErrorDetails.existing.nomisAlertSequence.toString(),
+          ),
+          null,
+        )
+        return MAPPING_FAILED
+      }
     }
+    return MAPPING_CREATED
+  }
+
+  suspend fun retryCreateMappingsBatch(retryMessage: InternalMessage<List<AlertMappingDto>>) {
+    createMappingsBatch(mappings = retryMessage.body, telemetry = retryMessage.telemetryAttributes)
+      .also {
+        if (it == MAPPING_CREATED) {
+          telemetryClient.trackEvent(
+            "alert-mapping-created-merge-success",
+            retryMessage.telemetryAttributes,
+          )
+        }
+      }
   }
 }
 

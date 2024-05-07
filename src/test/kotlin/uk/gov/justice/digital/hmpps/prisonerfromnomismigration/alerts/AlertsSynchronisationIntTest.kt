@@ -37,6 +37,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto.MappingType.MIGRATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto.MappingType.NOMIS_CREATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
@@ -1112,6 +1115,91 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
             assertThat(it["removedOffenderNo"]).isEqualTo("A1000KT")
             assertThat(it["newAlertsCount"]).isEqualTo("2")
             assertThat(it["newAlerts"]).isEqualTo("3, 4")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class DuplicateMappingFailure {
+      val bookingId = BOOKING_ID
+      private val dpsAlertId = UUID.fromString("956d4326-b0c3-47ac-ab12-f0165109a6c5")
+      private val existingAlertId = UUID.fromString("f612a10f-4827-4022-be96-d882193dfabd")
+
+      @BeforeEach
+      fun setUp() {
+        alertsNomisApiMockServer.stubGetAlertsByBookingId(bookingId, alertCount = 1)
+        alertsMappingApiMockServer.stubGetByNomisId(bookingId, 1, status = NOT_FOUND)
+        dpsAlertsServer.stubMergePrisonerAlerts(
+          "A1234KT",
+          response = listOf(
+            migratedAlert().copy(offenderBookId = bookingId, alertSeq = 1, alertUuid = dpsAlertId),
+          ),
+        )
+        alertsMappingApiMockServer.stubPostBatchMappings(
+          error = DuplicateMappingErrorResponse(
+            moreInfo = DuplicateErrorContentObject(
+              duplicate = AlertMappingDto(
+                dpsAlertId = dpsAlertId.toString(),
+                nomisBookingId = bookingId,
+                nomisAlertSequence = 1,
+                offenderNo = "A1234KT",
+                mappingType = NOMIS_CREATED,
+              ),
+              existing = AlertMappingDto(
+                dpsAlertId = existingAlertId.toString(),
+                nomisBookingId = bookingId,
+                nomisAlertSequence = 1,
+                offenderNo = "A1234KT",
+                mappingType = NOMIS_CREATED,
+              ),
+            ),
+            errorCode = 1409,
+            status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+            userMessage = "Duplicate mapping",
+          ),
+        )
+        awsSqsSentencingOffenderEventsClient.sendMessage(
+          alertsQueueOffenderEventsUrl,
+          mergeDomainEvent(
+            bookingId = bookingId,
+            offenderNo = "A1234KT",
+            removedOffenderNo = "A1000KT",
+          ),
+        )
+        waitForAnyProcessingToComplete("from-nomis-sync-alert-duplicate")
+      }
+
+      @Test
+      fun `will send missing alerts to DPS even though they are duplicated`() {
+        dpsAlertsServer.verify(
+          1,
+          postRequestedFor(urlPathEqualTo("/merge/A1234KT/alerts"))
+            .withRequestBodyJsonPath("$[0].offenderBookId", "$bookingId")
+            .withRequestBodyJsonPath("$[0].alertSeq", "1"),
+        )
+      }
+
+      @Test
+      fun `will not put message on DLQ`() {
+        assertThat(
+          awsSqsAlertsOffenderEventDlqClient.countAllMessagesOnQueue(alertsQueueOffenderEventsDlqUrl).get(),
+        ).isEqualTo(0)
+      }
+
+      @Test
+      fun `will track event with duplicate details`() {
+        verify(telemetryClient).trackEvent(
+          eq("from-nomis-sync-alert-duplicate"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234KT")
+            assertThat(it["duplicateDpsAlertId"]).isEqualTo(dpsAlertId.toString())
+            assertThat(it["duplicateNomisBookingId"]).isEqualTo("$bookingId")
+            assertThat(it["duplicateNomisAlertSequence"]).isEqualTo("1")
+            assertThat(it["existingDpsAlertId"]).isEqualTo(existingAlertId.toString())
+            assertThat(it["existingNomisBookingId"]).isEqualTo("$bookingId")
+            assertThat(it["existingNomisAlertSequence"]).isEqualTo("1")
           },
           isNull(),
         )
