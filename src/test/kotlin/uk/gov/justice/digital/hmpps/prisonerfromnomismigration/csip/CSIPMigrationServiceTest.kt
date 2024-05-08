@@ -1012,7 +1012,7 @@ fun aNomisCSIPResponse() =
     id = NOMIS_CSIP_ID,
     offender = Offender("A1234BC", firstName = "Fred", lastName = "Smith"),
     bookingId = 1234L,
-    originalAgencyLocation = "MDI",
+    originalAgencyId = "MDI",
     type = CodeDescription(code = "INT", description = "Intimidation"),
     location = CodeDescription(code = "LIB", description = "Library"),
     areaOfWork = CodeDescription(code = "EDU", description = "Education"),

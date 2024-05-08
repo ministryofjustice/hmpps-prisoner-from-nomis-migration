@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-05-01.7485.beb98e1"
+    "version": "2024-05-07.7523.f7a5cce"
   },
   "servers": [
     {
@@ -16131,7 +16131,6 @@
           "investigation",
           "location",
           "offender",
-          "originalAgencyLocation",
           "plans",
           "proActiveReferral",
           "reportDetails",
@@ -16156,7 +16155,7 @@
             "description": "The booking id associated with the CSIP",
             "format": "int64"
           },
-          "originalAgencyLocation": {
+          "originalAgencyId": {
             "type": "string",
             "description": "The original location when the CSIP was created"
           },

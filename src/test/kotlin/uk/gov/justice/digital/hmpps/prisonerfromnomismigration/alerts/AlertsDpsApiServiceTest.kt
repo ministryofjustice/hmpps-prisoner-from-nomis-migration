@@ -19,8 +19,10 @@ import org.springframework.http.HttpStatus
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension.Companion.dpsAlertsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.dpsAlert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.mergedAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.migratedAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.CreateAlert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MergeAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MigrateAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MigrateAlertRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.UpdateAlert
@@ -447,6 +449,83 @@ class AlertsDpsApiServiceTest {
       )
 
       assertThat(dpsAlerts[0].alertUuid.toString()).isEqualTo("f3f31737-6ee3-4ec5-8a79-0ac110fe50e2")
+    }
+  }
+
+  @Nested
+  inner class MergeAlerts {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      dpsAlertsServer.stubMergePrisonerAlerts()
+
+      apiService.mergePrisonerAlerts(
+        offenderNo = "A1234KL",
+        removedOffenderNo = "A1000KL",
+        alerts = listOf(
+          MergeAlert(
+            offenderBookId = 1234567,
+            alertSeq = 2,
+            activeFrom = LocalDate.now(),
+            alertCode = "XA",
+            authorisedBy = null,
+            description = null,
+          ),
+        ),
+      )
+
+      dpsAlertsServer.verify(
+        postRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass alerts to service`() = runTest {
+      dpsAlertsServer.stubMergePrisonerAlerts()
+
+      apiService.mergePrisonerAlerts(
+        offenderNo = "A1234KL",
+        removedOffenderNo = "A1000KL",
+        alerts = listOf(
+          MergeAlert(
+            offenderBookId = 1234567,
+            alertSeq = 2,
+            activeFrom = LocalDate.now(),
+            alertCode = "XA",
+            authorisedBy = null,
+            description = null,
+          ),
+        ),
+      )
+
+      dpsAlertsServer.verify(
+        postRequestedFor(urlMatching("/merge-alerts"))
+          .withRequestBody(matchingJsonPath("prisonNumberMergeFrom", equalTo("A1000KL")))
+          .withRequestBody(matchingJsonPath("prisonNumberMergeTo", equalTo("A1234KL")))
+          .withRequestBody(matchingJsonPath("newAlerts[0].alertCode", equalTo("XA"))),
+      )
+    }
+
+    @Test
+    fun `will return dpsAlertIds`() = runTest {
+      dpsAlertsServer.stubMergePrisonerAlerts(created = listOf(mergedAlert().copy(alertUuid = UUID.fromString("f3f31737-6ee3-4ec5-8a79-0ac110fe50e2"))))
+
+      val response = apiService.mergePrisonerAlerts(
+        offenderNo = "A1234KL",
+        removedOffenderNo = "A1000KL",
+        alerts = listOf(
+          MergeAlert(
+            offenderBookId = 1234567,
+            alertSeq = 2,
+            activeFrom = LocalDate.now(),
+            alertCode = "XA",
+            authorisedBy = null,
+            description = null,
+          ),
+        ),
+      )
+
+      assertThat(response.alertsCreated[0].alertUuid.toString()).isEqualTo("f3f31737-6ee3-4ec5-8a79-0ac110fe50e2")
     }
   }
 }

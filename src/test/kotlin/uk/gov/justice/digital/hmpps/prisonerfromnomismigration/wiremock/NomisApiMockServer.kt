@@ -1404,7 +1404,7 @@ private fun csipResponse(
       "lastName":"THIRD"
     },
     "bookingId":1214478,
-    "originalAgencyLocation":"LEI",
+    "originalAgencyId":"LEI",
     "logNumber":" LEI 2",
     "incidentDateTime":"2024-04-01T10:00:00",
     "type":{

@@ -115,6 +115,7 @@ class LocationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     pathHierarchy = "MDI-C",
     deactivatedByParent = false,
     permanentlyInactive = false,
+    status = Location.Status.ACTIVE,
   ).toJson()
 }
 
