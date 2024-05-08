@@ -823,6 +823,7 @@ class LocationsMigrationServiceTest {
       pathHierarchy = "MDI-C",
       deactivatedByParent = false,
       permanentlyInactive = false,
+      status = Location.Status.ACTIVE,
     )
 
     @BeforeEach
@@ -1176,6 +1177,7 @@ fun aDpsLocation() = Location(
   parentId = UUID.fromString(DPS_PARENT_ID),
   deactivatedByParent = false,
   permanentlyInactive = false,
+  status = Location.Status.ACTIVE,
 )
 
 fun pages(total: Long, startId: Long = 1): PageImpl<LocationIdResponse> = PageImpl<LocationIdResponse>(
