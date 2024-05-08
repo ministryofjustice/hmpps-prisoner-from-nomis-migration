@@ -7,6 +7,9 @@ import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.Alert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.CreateAlert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MergeAlert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MergeAlerts
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MergedAlerts
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MigrateAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MigrateAlertRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MigratedAlert
@@ -59,11 +62,10 @@ class AlertsDpsApiService(@Qualifier("alertsApiWebClient") private val webClient
     .retrieve()
     .awaitBody()
 
-  // TODO - use real version when it is written
-  suspend fun mergePrisonerAlerts(offenderNo: String, removedOffenderNo: String, alerts: List<MigrateAlert>): List<MigratedAlert> = webClient
+  suspend fun mergePrisonerAlerts(offenderNo: String, removedOffenderNo: String, alerts: List<MergeAlert>): MergedAlerts = webClient
     .post()
-    .uri("/merge/{offenderNo}/alerts", offenderNo)
-    .bodyValue(alerts)
+    .uri("/merge-alerts")
+    .bodyValue(MergeAlerts(prisonNumberMergeTo = offenderNo, prisonNumberMergeFrom = removedOffenderNo, newAlerts = alerts))
     .retrieve()
     .awaitBody()
 }

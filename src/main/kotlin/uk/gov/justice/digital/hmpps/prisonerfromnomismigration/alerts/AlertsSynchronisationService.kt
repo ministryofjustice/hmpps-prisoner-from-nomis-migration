@@ -198,8 +198,8 @@ class AlertsSynchronisationService(
       "newAlertsCount" to newAlerts.size,
       "newAlerts" to newAlerts.map { it.alertSequence }.joinToString(),
     )
-    val dpsAlerts = dpsApiService.mergePrisonerAlerts(offenderNo = offenderNo, removedOffenderNo = removedOffenderNo, alerts = newAlerts.map { it.toDPSMigratedAlert() })
-    val mappings = dpsAlerts.map {
+    val dpsResponse = dpsApiService.mergePrisonerAlerts(offenderNo = offenderNo, removedOffenderNo = removedOffenderNo, alerts = newAlerts.map { it.toDPSMergeAlert() })
+    val mappings = dpsResponse.alertsCreated.map {
       AlertMappingDto(
         dpsAlertId = it.alertUuid.toString(),
         nomisBookingId = it.offenderBookId,

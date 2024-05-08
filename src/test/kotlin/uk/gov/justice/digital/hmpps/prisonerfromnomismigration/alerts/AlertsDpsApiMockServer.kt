@@ -16,6 +16,8 @@ import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.Alert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.AlertCodeSummary
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MergedAlert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MergedAlerts
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MigratedAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import java.time.LocalDate
@@ -72,6 +74,12 @@ class AlertsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     fun migratedAlert() = MigratedAlert(
       alertUuid = UUID.randomUUID(),
       bookingSeq = 1,
+      alertSeq = 1,
+      offenderBookId = 1234567,
+    )
+
+    fun mergedAlert() = MergedAlert(
+      alertUuid = UUID.randomUUID(),
       alertSeq = 1,
       offenderBookId = 1234567,
     )
@@ -171,18 +179,17 @@ class AlertsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  // TODO use real contract when available
   fun stubMergePrisonerAlerts(
-    offenderNo: String,
-    response: List<MigratedAlert> = listOf(migratedAlert()),
+    created: List<MergedAlert> = listOf(mergedAlert()),
+    deleted: List<UUID> = emptyList(),
   ) {
     stubFor(
-      post("/merge/$offenderNo/alerts")
+      post("/merge-alerts")
         .willReturn(
           aResponse()
             .withStatus(201)
             .withHeader("Content-Type", "application/json")
-            .withBody(AlertsDpsApiExtension.objectMapper.writeValueAsString(response)),
+            .withBody(AlertsDpsApiExtension.objectMapper.writeValueAsString(MergedAlerts(alertsCreated = created, alertsDeleted = deleted))),
         ),
     )
   }
