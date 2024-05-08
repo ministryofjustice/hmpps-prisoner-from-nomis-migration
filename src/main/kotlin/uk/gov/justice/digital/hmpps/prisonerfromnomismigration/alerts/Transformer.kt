@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts
 
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.CreateAlert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MergeAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MigrateAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MigrateAlertRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.UpdateAlert
@@ -55,4 +56,14 @@ fun AlertResponse.toDPSMigratedAlert() = MigrateAlert(
   updatedAt = this.audit.modifyDatetime?.let { LocalDateTime.parse(this.audit.modifyDatetime) },
   updatedBy = this.audit.modifyUserId,
   updatedByDisplayName = this.audit.modifyDisplayName ?: this.audit.modifyUserId,
+)
+
+fun AlertResponse.toDPSMergeAlert() = MergeAlert(
+  offenderBookId = this.bookingId,
+  alertSeq = this.alertSequence.toInt(),
+  alertCode = this.alertCode.code,
+  description = this.comment,
+  activeFrom = this.date,
+  activeTo = this.expiryDate,
+  authorisedBy = this.authorisedBy,
 )

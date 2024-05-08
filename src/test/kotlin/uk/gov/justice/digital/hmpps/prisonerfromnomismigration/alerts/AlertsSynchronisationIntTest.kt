@@ -31,7 +31,7 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension.Companion.dpsAlertsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.dpsAlert
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.migratedAlert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.mergedAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
@@ -951,10 +951,9 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
         alertsMappingApiMockServer.stubGetByNomisId(bookingId, 3, status = NOT_FOUND)
         alertsMappingApiMockServer.stubGetByNomisId(bookingId, 4, status = NOT_FOUND)
         dpsAlertsServer.stubMergePrisonerAlerts(
-          "A1234KT",
-          response = listOf(
-            migratedAlert().copy(offenderBookId = bookingId, alertSeq = 3, alertUuid = dpsAlertId1),
-            migratedAlert().copy(offenderBookId = bookingId, alertSeq = 4, alertUuid = dpsAlertId2),
+          created = listOf(
+            mergedAlert().copy(offenderBookId = bookingId, alertSeq = 3, alertUuid = dpsAlertId1),
+            mergedAlert().copy(offenderBookId = bookingId, alertSeq = 4, alertUuid = dpsAlertId2),
           ),
         )
         alertsMappingApiMockServer.stubPostBatchMappings()
@@ -985,11 +984,13 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will send missing alerts to DPS`() {
         dpsAlertsServer.verify(
-          postRequestedFor(urlPathEqualTo("/merge/A1234KT/alerts"))
-            .withRequestBodyJsonPath("$[0].offenderBookId", "$bookingId")
-            .withRequestBodyJsonPath("$[0].alertSeq", "3")
-            .withRequestBodyJsonPath("$[1].offenderBookId", "$bookingId")
-            .withRequestBodyJsonPath("$[1].alertSeq", "4"),
+          postRequestedFor(urlPathEqualTo("/merge-alerts"))
+            .withRequestBodyJsonPath("prisonNumberMergeFrom", "A1000KT")
+            .withRequestBodyJsonPath("prisonNumberMergeTo", "A1234KT")
+            .withRequestBodyJsonPath("newAlerts[0].offenderBookId", "$bookingId")
+            .withRequestBodyJsonPath("newAlerts[0].alertSeq", "3")
+            .withRequestBodyJsonPath("newAlerts[1].offenderBookId", "$bookingId")
+            .withRequestBodyJsonPath("newAlerts[1].alertSeq", "4"),
         )
       }
 
@@ -1036,10 +1037,9 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
         alertsMappingApiMockServer.stubGetByNomisId(bookingId, 3, status = NOT_FOUND)
         alertsMappingApiMockServer.stubGetByNomisId(bookingId, 4, status = NOT_FOUND)
         dpsAlertsServer.stubMergePrisonerAlerts(
-          "A1234KT",
-          response = listOf(
-            migratedAlert().copy(offenderBookId = bookingId, alertSeq = 3, alertUuid = dpsAlertId1),
-            migratedAlert().copy(offenderBookId = bookingId, alertSeq = 4, alertUuid = dpsAlertId2),
+          created = listOf(
+            mergedAlert().copy(offenderBookId = bookingId, alertSeq = 3, alertUuid = dpsAlertId1),
+            mergedAlert().copy(offenderBookId = bookingId, alertSeq = 4, alertUuid = dpsAlertId2),
           ),
         )
         alertsMappingApiMockServer.stubPostBatchMappingsFailureFollowedBySuccess()
@@ -1071,11 +1071,13 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will send missing alerts to DPS once`() {
         dpsAlertsServer.verify(
           1,
-          postRequestedFor(urlPathEqualTo("/merge/A1234KT/alerts"))
-            .withRequestBodyJsonPath("$[0].offenderBookId", "$bookingId")
-            .withRequestBodyJsonPath("$[0].alertSeq", "3")
-            .withRequestBodyJsonPath("$[1].offenderBookId", "$bookingId")
-            .withRequestBodyJsonPath("$[1].alertSeq", "4"),
+          postRequestedFor(urlPathEqualTo("/merge-alerts"))
+            .withRequestBodyJsonPath("prisonNumberMergeFrom", "A1000KT")
+            .withRequestBodyJsonPath("prisonNumberMergeTo", "A1234KT")
+            .withRequestBodyJsonPath("newAlerts[0].offenderBookId", "$bookingId")
+            .withRequestBodyJsonPath("newAlerts[0].alertSeq", "3")
+            .withRequestBodyJsonPath("newAlerts[1].offenderBookId", "$bookingId")
+            .withRequestBodyJsonPath("newAlerts[1].alertSeq", "4"),
         )
       }
 
@@ -1132,9 +1134,8 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
         alertsNomisApiMockServer.stubGetAlertsByBookingId(bookingId, alertCount = 1)
         alertsMappingApiMockServer.stubGetByNomisId(bookingId, 1, status = NOT_FOUND)
         dpsAlertsServer.stubMergePrisonerAlerts(
-          "A1234KT",
-          response = listOf(
-            migratedAlert().copy(offenderBookId = bookingId, alertSeq = 1, alertUuid = dpsAlertId),
+          created = listOf(
+            mergedAlert().copy(offenderBookId = bookingId, alertSeq = 1, alertUuid = dpsAlertId),
           ),
         )
         alertsMappingApiMockServer.stubPostBatchMappings(
@@ -1175,9 +1176,11 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will send missing alerts to DPS even though they are duplicated`() {
         dpsAlertsServer.verify(
           1,
-          postRequestedFor(urlPathEqualTo("/merge/A1234KT/alerts"))
-            .withRequestBodyJsonPath("$[0].offenderBookId", "$bookingId")
-            .withRequestBodyJsonPath("$[0].alertSeq", "1"),
+          postRequestedFor(urlPathEqualTo("/merge-alerts"))
+            .withRequestBodyJsonPath("prisonNumberMergeFrom", "A1000KT")
+            .withRequestBodyJsonPath("prisonNumberMergeTo", "A1234KT")
+            .withRequestBodyJsonPath("newAlerts[0].offenderBookId", "$bookingId")
+            .withRequestBodyJsonPath("newAlerts[0].alertSeq", "1"),
         )
       }
 
