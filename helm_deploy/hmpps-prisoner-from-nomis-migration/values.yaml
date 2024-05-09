@@ -148,6 +148,7 @@ generic-service:
 generic-prometheus-alerts:
   targetApplication: hmpps-prisoner-from-nomis-migration
   alertSeverity: syscon
+  sqsAlertsTotalMessagesThreshold: 1
 
 cron:
   retry_dlqs_schedule: "*/10 * * * *"
