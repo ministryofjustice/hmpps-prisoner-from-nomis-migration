@@ -51,7 +51,7 @@ generic-prometheus-alerts:
   alertSeverity: syscon-nonprod
   rdsAlertsDatabases:
     cloud-platform-62a9415f993d9717: "prisoner nomis migration"
-  sqsAlertsQueueNames:
+  sqsNumberAlertQueueNames:
     - "syscon-devs-preprod-prisoner_from_nomis_visits_queue"
     - "syscon-devs-preprod-prisoner_from_nomis_visits_dl_queue"
     - "syscon-devs-preprod-prisoner_from_nomis_sentencing_queue"
@@ -82,8 +82,6 @@ generic-prometheus-alerts:
     - "syscon-devs-preprod-migration_locations_dlq"
     - "syscon-devs-preprod-migration_alerts_queue"
     - "syscon-devs-preprod-migration_alerts_dlq"
-  sqsAlertsOldestThreshold: 2
-  sqsAlertsTotalMessagesThreshold: 1
 
 cron:
   retry_dlqs_schedule: "*/10 7-20 * * 1-5"
