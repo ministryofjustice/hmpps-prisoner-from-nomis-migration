@@ -50,5 +50,6 @@
       "r2dbc": {
         "enabled": true
       }
+    }
   }
 }
