@@ -31,6 +31,7 @@ import org.mockito.kotlin.verifyNoInteractions
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.LocationsApiExtension.Companion.locationsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.LOCATIONS_CREATE_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.LOCATIONS_GET_MAPPING_URL
@@ -302,7 +303,7 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
         private val duplicationLocationId = "12345678-1234-1234-1234-1234567890ab"
 
         @Test
-        internal fun `it will not retry after a 409 (duplicate location written to Location API)`() {
+        internal fun `it will not retry after a mapping 409 (duplicate location written to Location API)`() {
           nomisApi.stubGetLocationWithMinimalData(NOMIS_LOCATION_ID)
           mappingApi.stubGetAnyLocationNotFound()
           locationsApi.stubUpsertLocationForSynchronisation(locationId = duplicationLocationId)
@@ -335,6 +336,45 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
                 assertThat(it["existingDpsLocationId"]).isEqualTo(DPS_LOCATION_ID)
                 assertThat(it["existingNomisLocationId"]).isEqualTo(NOMIS_LOCATION_ID.toString())
                 assertThat(it["migrationId"]).isNull()
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      inner class WhenCellPermanentlyDeactivated {
+
+        @Test
+        internal fun `it will ignore the event after a locations api 409 occurs (cell cannot be modified)`() {
+          mappingApi.stubGetLocation(DPS_LOCATION_ID, NOMIS_LOCATION_ID)
+          nomisApi.stubGetLocationWithMinimalData(NOMIS_LOCATION_ID)
+          locationsApi.stubUpsertLocationForSynchronisationWithError(
+            ErrorResponse(
+              409,
+              "Deactivated Location Exception: xxx",
+              "Location MDI-A-1-003 cannot be updated as permanently deactivated (or has been converted to non-res cell)",
+              107,
+            ),
+          )
+
+          awsSqsLocationsOffenderEventsClient.sendMessage(
+            locationsQueueOffenderEventsUrl,
+            locationEvent(),
+          )
+
+          // wait for location api to be called before verifying
+          await untilAsserted {
+            assertThat(locationsApi.createLocationSynchronisationCount()).isEqualTo(1)
+          }
+
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("locations-updated-synchronisation-skipped-deactivated"),
+              check {
+                assertThat(it["dpsLocationId"]).isEqualTo(DPS_LOCATION_ID)
+                assertThat(it["nomisLocationId"]).isEqualTo(NOMIS_LOCATION_ID.toString())
               },
               isNull(),
             )
@@ -672,6 +712,31 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
         }
       }
     }
+
+    @Nested
+    @DisplayName("When Usage is deleted in Nomis for location which does not exist")
+    inner class WhenUsageDeletedNoLocation {
+      @BeforeEach
+      fun setUp() {
+        awsSqsLocationsOffenderEventsClient.sendMessage(
+          locationsQueueOffenderEventsUrl,
+          locationEvent(eventType = "INT_LOC_USAGE_LOCATIONS-UPDATED", locationId = 99999),
+        )
+      }
+
+      @Test
+      fun `will create telemetry tracking the update`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            eq("locations-synchronisation-skipped-usage"),
+            check {
+              assertThat(it["nomisLocationId"]).isEqualTo("99999")
+            },
+            isNull(),
+          )
+        }
+      }
+    }
   }
 }
 
@@ -693,7 +758,7 @@ fun locationEvent(
     "Message" : "{\"oldDescription\":\"HMI-D-1-007\",\"nomisEventType\":\"$eventType\",\"recordDeleted\":\"$recordDeleted\",\"eventDatetime\":\"2024-04-22T16:36:47.0000000Z\",\"prisonId\":\"HMI\",\"description\":\"HMI-D-1-007\",\"eventType\":\"$eventType\",\"auditModuleName\":\"$auditModuleName\",\"internalLocationId\":\"$locationId\"}",
     "Timestamp" : "2023-08-17T09:39:44.790Z",
     "SignatureVersion" : "1",
-    "Signature" : "ppyNS9XAEwLaSdtXpVxZ+pYKT7g4uZLGGXUaquKKwtgpkcRCoTwG2Vcjbgh4HpqF0zNXTIQJHAckXBqXMXW6CeJuKcvndqOXO7yw+qzbL4iOkPecUkl4pJFWT0PJ4q6gptDOWf/nKP+Wd/ggozuGa27NJ5eEEGn/YbxnqH98h9C0pUjVPhaukoSp0fP6+2L8eyuFEPGgefT+reKZZ2E9VjUStaNNsNjdjVfkjrkHrVQwpey8PbucOQYLEwyo/WV6ho+gqjQYpM+WjghDWvGn6UNbnJKTQGxy3shInPsY2kfyCJAyUoOU0CJ6ALHKnlN7OMr1lbvmHMARgKNY6ELJoA==",
+    "Signature" : "dummy==",
     "SigningCertURL" : "https://sns.eu-west-2.amazonaws.com/SimpleNotificationService-01d088a6f77103d0fe307c0069e40ed6.pem",
     "UnsubscribeURL" : "https://sns.eu-west-2.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-f221e27fcfcf78f6ab4f4c3cc165eee7:bc997c88-9318-4ec0-b424-3f4579c9be6d",
     "MessageAttributes" : {
