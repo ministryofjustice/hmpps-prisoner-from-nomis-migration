@@ -25,10 +25,10 @@ class IncidentsMappingService(@Qualifier("mappingApiWebClient") webClient: WebCl
       .awaitSingleOrNull()
 
   suspend fun deleteIncidentMapping(
-    incidentId: String,
+    dpsIncidentId: String,
   ): Unit =
     webClient.delete()
-      .uri("/mapping/incidents/incident-id/{incidentId}", incidentId)
+      .uri("/mapping/incidents/dps-incident-id/{dpsIncidentId}", dpsIncidentId)
       .retrieve()
       .awaitBody()
 }

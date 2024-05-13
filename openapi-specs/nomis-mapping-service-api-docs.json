@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-04-24.4175.5d93eb3"
+    "version": "2024-05-10.4256.cce4fb0"
   },
   "servers": [
     {
@@ -215,7 +215,7 @@
         ],
         "summary": "get mapping",
         "description": "Retrieves a mapping by NOMIS id. Requires role NOMIS_ALERTS",
-        "operationId": "getMappingByNomisId_1",
+        "operationId": "getMappingByNomisId_2",
         "parameters": [
           {
             "name": "bookingId",
@@ -1058,7 +1058,7 @@
         ],
         "summary": "Deletes incident mappings.",
         "description": "Deletes all rows from the incidents mapping table. Requires role NOMIS_INCIDENTS",
-        "operationId": "deleteIncidentMappings",
+        "operationId": "deleteMappings_1",
         "parameters": [
           {
             "name": "onlyMigrated",
@@ -1585,6 +1585,60 @@
       }
     },
     "/mapping/alerts/{offenderNo}/all": {
+      "get": {
+        "tags": [
+          "alerts-mapping-resource"
+        ],
+        "summary": "Gets all alert mappings for a prisoner",
+        "description": "Gets all the mapping between nomis alert ids and dps alert id related to specific prisoner created either via migration or synchronisation. Requires ROLE_NOMIS_ALERTS",
+        "operationId": "getMappingsForPrisoner",
+        "parameters": [
+          {
+            "name": "offenderNo",
+            "in": "path",
+            "description": "NOMIS offender no",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "NOMIS offender no",
+              "example": "A1234KT"
+            },
+            "example": "A1234KT"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mappings for prisoner",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllPrisonerAlertMappingsDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access forbidden for this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
           "alerts-mapping-resource"
@@ -1653,7 +1707,115 @@
         }
       }
     },
+    "/mapping/alerts/batch": {
+      "post": {
+        "tags": [
+          "alerts-mapping-resource"
+        ],
+        "summary": "Creates a batch of new alert mappings",
+        "description": "Creates a mapping between a batch of nomis alert ids and dps alert id. Requires ROLE_NOMIS_ALERTS",
+        "operationId": "createMappings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AlertMappingDto"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Mappings created"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access forbidden for this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Indicates a duplicate mapping has been rejected. If Error code = 1409 the body will return a DuplicateErrorResponse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateMappingErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/alerts": {
+      "get": {
+        "tags": [
+          "alerts-mapping-resource"
+        ],
+        "summary": "Get all paged mappings",
+        "description": "Retrieve all mappings. Results are paged.",
+        "operationId": "getMappings",
+        "parameters": [
+          {
+            "name": "pageRequest",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping page returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageAlertMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
           "alerts-mapping-resource"
@@ -3127,7 +3289,7 @@
         ],
         "summary": "get mapping",
         "description": "Retrieves a mapping by nomisIncidentId. Requires role NOMIS_INCIDENTS",
-        "operationId": "getIncidentMappingGivenNomisId",
+        "operationId": "getMappingByNomisId",
         "parameters": [
           {
             "name": "nomisIncidentId",
@@ -3181,7 +3343,7 @@
         ],
         "summary": "get paged mappings by migration id",
         "description": "Retrieve all mappings of type 'MIGRATED' for the given migration id (identifies a single migration run). Results are paged.",
-        "operationId": "getMigratedIncidentMappingsByMigrationId",
+        "operationId": "getMigratedMappingsByMigrationId",
         "parameters": [
           {
             "name": "pageRequest",
@@ -3235,7 +3397,7 @@
         ],
         "summary": "get the latest mapping for a migration",
         "description": "Requires role NOMIS_INCIDENTS",
-        "operationId": "getLatestMigratedIncidentMapping",
+        "operationId": "getMappingForLatestMigrated",
         "responses": {
           "200": {
             "description": "Mapping Information Returned",
@@ -3270,23 +3432,23 @@
         }
       }
     },
-    "/mapping/incidents/incident-id/{incidentId}": {
+    "/mapping/incidents/dps-incident-id/{dpsIncidentId}": {
       "get": {
         "tags": [
           "incident-mapping-resource"
         ],
         "summary": "get mapping",
         "description": "Retrieves a mapping by DPS Incident Id. Requires role NOMIS_INCIDENTS",
-        "operationId": "getIncidentMappingGivenIncidentId",
+        "operationId": "getMappingByDPSId",
         "parameters": [
           {
-            "name": "incidentId",
+            "name": "dpsIncidentId",
             "in": "path",
-            "description": "Incident id",
+            "description": "DPS Incident id",
             "required": true,
             "schema": {
               "type": "string",
-              "description": "Incident id",
+              "description": "DPS Incident id",
               "example": 12345
             },
             "example": 12345
@@ -3314,7 +3476,7 @@
             }
           },
           "404": {
-            "description": "Incident id does not exist in mapping table",
+            "description": "DPS Incident id does not exist in mapping table",
             "content": {
               "application/json": {
                 "schema": {
@@ -3329,18 +3491,18 @@
         "tags": [
           "incident-mapping-resource"
         ],
-        "summary": "Deletes a specific incident mapping by incident id",
+        "summary": "Deletes a specific incident mapping by DPS incident id",
         "description": "Deletes the incident from the mapping table. Requires role NOMIS_INCIDENTS",
-        "operationId": "deleteIncidentMapping",
+        "operationId": "deleteMapping",
         "parameters": [
           {
-            "name": "incidentId",
+            "name": "dpsIncidentId",
             "in": "path",
-            "description": "Incident Id",
+            "description": "DPS Incident Id",
             "required": true,
             "schema": {
               "type": "string",
-              "description": "Incident Id",
+              "description": "DPS Incident Id",
               "example": 4321
             },
             "example": 4321
@@ -3737,7 +3899,7 @@
         ],
         "summary": "Deletes a specific mapping by DPS hearing id",
         "description": "Deletes the mapping table row. Requires role NOMIS_ADJUDICATIONS",
-        "operationId": "deleteMapping",
+        "operationId": "deleteMapping_1",
         "parameters": [
           {
             "name": "id",
@@ -3830,7 +3992,7 @@
         ],
         "summary": "get paged mappings by migration id",
         "description": "Retrieve all mappings of type 'MIGRATED' for the given migration id (identifies a single migration run). Results are paged.",
-        "operationId": "getMigratedMappingsByMigrationId",
+        "operationId": "getMigratedMappingsByMigrationId_1",
         "parameters": [
           {
             "name": "pageRequest",
@@ -3926,7 +4088,7 @@
         ],
         "summary": "get mapping",
         "description": "Retrieves a mapping by DPS CSIP Id. Requires role NOMIS_CSIP",
-        "operationId": "getMappingByDPSId",
+        "operationId": "getMappingByDPSId_1",
         "parameters": [
           {
             "name": "csipId",
@@ -4094,7 +4256,7 @@
         ],
         "summary": "get court case mapping",
         "description": "Retrieves a mapping by DPS id. Requires role NOMIS_COURT_SENTENCING",
-        "operationId": "getMappingByNomisId",
+        "operationId": "getMappingByNomisId_1",
         "parameters": [
           {
             "name": "courtCaseId",
@@ -5050,7 +5212,7 @@
         ],
         "summary": "Deletes a specific mapping by DPS charge number",
         "description": "Deletes the mapping table row. Requires role NOMIS_ADJUDICATIONS",
-        "operationId": "deleteMapping_3",
+        "operationId": "deleteMapping_4",
         "parameters": [
           {
             "name": "chargeNumber",
@@ -5571,7 +5733,7 @@
         ],
         "summary": "Deletes a specific CSIP mapping by DPS CSIP id",
         "description": "Deletes a mapping by DPS id. Requires role NOMIS_CSIP",
-        "operationId": "deleteMapping_1",
+        "operationId": "deleteMapping_2",
         "parameters": [
           {
             "name": "dpsCSIPId",
@@ -5855,7 +6017,7 @@
         ],
         "summary": "Deletes a specific mapping by appointment instance id",
         "description": "Deletes the mapping table row. Requires role NOMIS_APPOINTMENTS",
-        "operationId": "deleteMapping_2",
+        "operationId": "deleteMapping_3",
         "parameters": [
           {
             "name": "id",
@@ -5933,7 +6095,7 @@
         ],
         "summary": "Deletes a specific mapping by activity schedule id",
         "description": "Deletes the mapping table row. Requires role NOMIS_ACTIVITIES",
-        "operationId": "deleteMapping_4",
+        "operationId": "deleteMapping_5",
         "parameters": [
           {
             "name": "id",
@@ -6670,7 +6832,7 @@
       },
       "IncidentMappingDto": {
         "required": [
-          "incidentId",
+          "dpsIncidentId",
           "mappingType",
           "nomisIncidentId"
         ],
@@ -6681,9 +6843,9 @@
             "description": "NOMIS Incident id",
             "format": "int64"
           },
-          "incidentId": {
+          "dpsIncidentId": {
             "type": "string",
-            "description": "Incident id from incidents service"
+            "description": "DPS Incident id from incident reporting service"
           },
           "label": {
             "maxLength": 20,
@@ -6699,7 +6861,7 @@
             "enum": [
               "MIGRATED",
               "NOMIS_CREATED",
-              "INCIDENT_CREATED"
+              "DPS_CREATED"
             ]
           },
           "whenCreated": {
@@ -7521,6 +7683,22 @@
           }
         },
         "description": "Court case mapping"
+      },
+      "AllPrisonerAlertMappingsDto": {
+        "required": [
+          "mappings"
+        ],
+        "type": "object",
+        "properties": {
+          "mappings": {
+            "type": "array",
+            "description": "Mappings",
+            "items": {
+              "$ref": "#/components/schemas/AlertMappingDto"
+            }
+          }
+        },
+        "description": "All mappings for a prisoner created either via migration or synchronisation"
       },
       "PagePrisonerAlertMappingsSummaryDto": {
         "type": "object",

@@ -26,7 +26,7 @@ import java.time.LocalDateTime
 
 @RestController
 @RequestMapping("/migrate/incidents", produces = [MediaType.APPLICATION_JSON_VALUE])
-@PreAuthorize("hasRole('ROLE_MIGRATE_INCIDENTS')")
+@PreAuthorize("hasRole('ROLE_MIGRATE_INCIDENT_REPORTS')")
 class IncidentsMigrationResource(
   private val incidentsMigrationService: IncidentsMigrationService,
   private val migrationHistoryService: MigrationHistoryService,
@@ -35,7 +35,7 @@ class IncidentsMigrationResource(
   @ResponseStatus(value = ACCEPTED)
   @Operation(
     summary = "Starts an incidents migration",
-    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>MIGRATE_INCIDENTS</b>",
+    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>MIGRATE_INCIDENT_REPORTS</b>",
     requestBody = io.swagger.v3.oas.annotations.parameters.RequestBody(
       content = [
         Content(
@@ -69,7 +69,7 @@ class IncidentsMigrationResource(
   @GetMapping("/history")
   @Operation(
     summary = "Lists all filtered migration history records un-paged for incidents",
-    description = "The records are un-paged and requires role <b>MIGRATE_INCIDENTS</b>",
+    description = "The records are un-paged and requires role <b>MIGRATE_INCIDENT_REPORTS</b>",
     responses = [
       ApiResponse(
         responseCode = "200",
@@ -118,7 +118,7 @@ class IncidentsMigrationResource(
   @GetMapping("/history/{migrationId}")
   @Operation(
     summary = "Gets a specific migration history record",
-    description = "Requires role <b>MIGRATE_INCIDENTS</b>",
+    description = "Requires role <b>MIGRATE_INCIDENT_REPORTS</b>",
     responses = [
       ApiResponse(
         responseCode = "200",
@@ -151,7 +151,7 @@ class IncidentsMigrationResource(
   @ResponseStatus(value = ACCEPTED)
   @Operation(
     summary = "Cancels a running migration. The actual cancellation might take several minutes to complete",
-    description = "Requires role <b>MIGRATE_INCIDENTS</b>",
+    description = "Requires role <b>MIGRATE_INCIDENT_REPORTS</b>",
     responses = [
       ApiResponse(
         responseCode = "202",
@@ -183,7 +183,7 @@ class IncidentsMigrationResource(
   @GetMapping("/active-migration")
   @Operation(
     summary = "Gets active/currently running migration data, using migration record and migration queues",
-    description = "Requires role <b>MIGRATE_INCIDENTS</b>",
+    description = "Requires role <b>MIGRATE_INCIDENT_REPORTS</b>",
     responses = [
       ApiResponse(
         responseCode = "200",

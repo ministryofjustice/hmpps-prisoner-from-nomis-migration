@@ -10,7 +10,7 @@
     "license": {
       "name": "MIT"
     },
-    "version": "2024-04-02.817.771d069"
+    "version": "2024-05-10.1292.c424db6"
   },
   "servers": [
     {
@@ -31,12 +31,16 @@
   ],
   "tags": [
     {
-      "name": "Incident Reports",
-      "description": "Returns incident report information"
+      "name": "Constants",
+      "description": "Constants and enumerations used in incident reports"
     },
     {
       "name": "Migrate/Upsert NOMIS Incident Report",
       "description": "Migrate or upsert NOMIS incident Report to IncidentReport Service."
+    },
+    {
+      "name": "Incident reports",
+      "description": "Retrieve and create incident reports"
     }
   ],
   "paths": {
@@ -135,7 +139,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpsertNomisIncident"
+                "$ref": "#/components/schemas/NomisSyncRequest"
               }
             }
           },
@@ -147,7 +151,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IncidentReport"
+                  "$ref": "#/components/schemas/Report"
                 }
               }
             }
@@ -198,16 +202,16 @@
     "/incident-reports": {
       "post": {
         "tags": [
-          "Incident Reports"
+          "Incident reports"
         ],
         "summary": "Creates an incident report",
         "description": "Requires role MAINTAIN_INCIDENT_REPORTS and write scope",
-        "operationId": "createIncidentReport",
+        "operationId": "createReport",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateIncidentReportRequest"
+                "$ref": "#/components/schemas/CreateReportRequest"
               }
             }
           },
@@ -219,7 +223,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IncidentReport"
+                  "$ref": "#/components/schemas/Report"
                 }
               }
             }
@@ -336,26 +340,6 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "209": {
-            "description": "Subject Identifier is not recognised by this service",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
           "401": {
             "description": "The client does not have authorisation to make this request",
             "content": {
@@ -376,12 +360,32 @@
               }
             }
           },
+          "209": {
+            "description": "Subject Identifier is not recognised by this service",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
           "200": {
             "description": "Request successfully processed - content found",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HmppsSubjectAccessRequestContent"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -432,11 +436,11 @@
     "/incident-reports/{id}": {
       "get": {
         "tags": [
-          "Incident Reports"
+          "Incident reports"
         ],
         "summary": "Returns the incident report information for this ID",
         "description": "Requires role VIEW_INCIDENT_REPORTS",
-        "operationId": "getIncidentReport",
+        "operationId": "getReport",
         "parameters": [
           {
             "name": "id",
@@ -457,7 +461,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IncidentReport"
+                  "$ref": "#/components/schemas/Report"
                 }
               }
             }
@@ -498,11 +502,11 @@
     "/incident-reports/incident-number/{incidentNumber}": {
       "get": {
         "tags": [
-          "Incident Reports"
+          "Incident reports"
         ],
         "summary": "Returns the incident report information for this incident number",
         "description": "Requires role VIEW_INCIDENT_REPORTS",
-        "operationId": "getIncidentReportByNumber",
+        "operationId": "getReportByNumber",
         "parameters": [
           {
             "name": "incidentNumber",
@@ -523,7 +527,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IncidentReport"
+                  "$ref": "#/components/schemas/Report"
                 }
               }
             }
@@ -554,6 +558,126 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/constants/types": {
+      "get": {
+        "tags": [
+          "Constants"
+        ],
+        "summary": "List codes and descriptions of incident types",
+        "operationId": "types",
+        "responses": {
+          "200": {
+            "description": "Returns codes and descriptions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DeactivatableConstantDescription"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/constants/statuses": {
+      "get": {
+        "tags": [
+          "Constants"
+        ],
+        "summary": "List codes and descriptions of incident statuses",
+        "operationId": "statuses",
+        "responses": {
+          "200": {
+            "description": "Returns codes and descriptions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConstantDescription"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/constants/staff-roles": {
+      "get": {
+        "tags": [
+          "Constants"
+        ],
+        "summary": "List codes and descriptions of roles of staff involvement in an incident",
+        "operationId": "staffRoles",
+        "responses": {
+          "200": {
+            "description": "Returns codes and descriptions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConstantDescription"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/constants/prisoner-roles": {
+      "get": {
+        "tags": [
+          "Constants"
+        ],
+        "summary": "List codes and descriptions of roles of a prisoner’s involvement in an incident",
+        "operationId": "prisonerRoles",
+        "responses": {
+          "200": {
+            "description": "Returns codes and descriptions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConstantDescription"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/constants/prisoner-outcomes": {
+      "get": {
+        "tags": [
+          "Constants"
+        ],
+        "summary": "List codes and descriptions of outcomes from a prisoner’s involvement in an incident",
+        "operationId": "prisonerOutcomes",
+        "responses": {
+          "200": {
+            "description": "Returns codes and descriptions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConstantDescription"
+                  }
                 }
               }
             }
@@ -651,7 +775,7 @@
         },
         "description": "Error response"
       },
-      "CodeDescription": {
+      "NomisCode": {
         "required": [
           "code",
           "description"
@@ -669,7 +793,7 @@
         },
         "description": "The outcome of the incident"
       },
-      "History": {
+      "NomisHistory": {
         "required": [
           "incidentChangeDate",
           "incidentChangeStaff",
@@ -696,7 +820,7 @@
             "type": "array",
             "description": "Questions asked for the questionnaire",
             "items": {
-              "$ref": "#/components/schemas/HistoryQuestion"
+              "$ref": "#/components/schemas/NomisHistoryQuestion"
             }
           },
           "incidentChangeDate": {
@@ -705,12 +829,12 @@
             "format": "date"
           },
           "incidentChangeStaff": {
-            "$ref": "#/components/schemas/Staff"
+            "$ref": "#/components/schemas/NomisStaff"
           }
         },
         "description": "Historical questionnaire details for the incident"
       },
-      "HistoryQuestion": {
+      "NomisHistoryQuestion": {
         "required": [
           "answers",
           "question",
@@ -737,13 +861,13 @@
             "type": "array",
             "description": "Historical list of Responses to this question",
             "items": {
-              "$ref": "#/components/schemas/HistoryResponse"
+              "$ref": "#/components/schemas/NomisHistoryResponse"
             }
           }
         },
         "description": "Questions asked for the questionnaire"
       },
-      "HistoryResponse": {
+      "NomisHistoryResponse": {
         "required": [
           "recordingStaff",
           "responseSequence"
@@ -769,12 +893,90 @@
             "description": "Comment added to the response by recording staff"
           },
           "recordingStaff": {
-            "$ref": "#/components/schemas/Staff"
+            "$ref": "#/components/schemas/NomisStaff"
           }
         },
         "description": "Historical list of Responses to this question"
       },
-      "NomisIncidentReport": {
+      "NomisOffender": {
+        "required": [
+          "lastName",
+          "offenderNo"
+        ],
+        "type": "object",
+        "properties": {
+          "offenderNo": {
+            "type": "string",
+            "description": "NOMIS id"
+          },
+          "firstName": {
+            "type": "string",
+            "description": "First name of staff member"
+          },
+          "lastName": {
+            "type": "string",
+            "description": "Last name of staff member"
+          }
+        },
+        "description": "Offender involved in the incident"
+      },
+      "NomisOffenderParty": {
+        "required": [
+          "offender",
+          "role"
+        ],
+        "type": "object",
+        "properties": {
+          "offender": {
+            "$ref": "#/components/schemas/NomisOffender"
+          },
+          "role": {
+            "$ref": "#/components/schemas/NomisCode"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/NomisCode"
+          },
+          "comment": {
+            "type": "string",
+            "description": "General information about the incident"
+          }
+        },
+        "description": "Offenders involved in the incident"
+      },
+      "NomisQuestion": {
+        "required": [
+          "answers",
+          "question",
+          "questionId",
+          "sequence"
+        ],
+        "type": "object",
+        "properties": {
+          "questionId": {
+            "type": "integer",
+            "description": "The questionnaire question id",
+            "format": "int64"
+          },
+          "sequence": {
+            "type": "integer",
+            "description": "The sequence number of the question for this incident",
+            "format": "int32"
+          },
+          "question": {
+            "type": "string",
+            "description": "The Question being asked"
+          },
+          "answers": {
+            "type": "array",
+            "description": "List of Responses to this question",
+            "items": {
+              "$ref": "#/components/schemas/NomisResponse"
+            }
+          }
+        },
+        "description": "Questions asked for the incident"
+      },
+      "NomisReport": {
         "required": [
           "history",
           "incidentDateTime",
@@ -812,10 +1014,10 @@
             "description": "The incident details"
           },
           "prison": {
-            "$ref": "#/components/schemas/CodeDescription"
+            "$ref": "#/components/schemas/NomisCode"
           },
           "status": {
-            "$ref": "#/components/schemas/NomisIncidentStatus"
+            "$ref": "#/components/schemas/NomisStatus"
           },
           "type": {
             "type": "string",
@@ -832,7 +1034,7 @@
             "example": "2021-07-05T10:35:17"
           },
           "reportingStaff": {
-            "$ref": "#/components/schemas/Staff"
+            "$ref": "#/components/schemas/NomisStaff"
           },
           "reportedDateTime": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
@@ -844,137 +1046,41 @@
             "type": "array",
             "description": "Staff involved in the incident",
             "items": {
-              "$ref": "#/components/schemas/StaffParty"
+              "$ref": "#/components/schemas/NomisStaffParty"
             }
           },
           "offenderParties": {
             "type": "array",
             "description": "Offenders involved in the incident",
             "items": {
-              "$ref": "#/components/schemas/OffenderParty"
+              "$ref": "#/components/schemas/NomisOffenderParty"
             }
           },
           "requirements": {
             "type": "array",
             "description": "Requirements for completing the incident report",
             "items": {
-              "$ref": "#/components/schemas/Requirement"
+              "$ref": "#/components/schemas/NomisRequirement"
             }
           },
           "questions": {
             "type": "array",
             "description": "Questions asked for the incident",
             "items": {
-              "$ref": "#/components/schemas/Question"
+              "$ref": "#/components/schemas/NomisQuestion"
             }
           },
           "history": {
             "type": "array",
             "description": "Historical questionnaire details for the incident",
             "items": {
-              "$ref": "#/components/schemas/History"
+              "$ref": "#/components/schemas/NomisHistory"
             }
           }
         },
         "description": "NOMIS Incident Report Details"
       },
-      "NomisIncidentStatus": {
-        "required": [
-          "code",
-          "description"
-        ],
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "string",
-            "description": "Status Code"
-          },
-          "description": {
-            "type": "string",
-            "description": "Status Description"
-          }
-        },
-        "description": "Status details"
-      },
-      "Offender": {
-        "required": [
-          "lastName",
-          "offenderNo"
-        ],
-        "type": "object",
-        "properties": {
-          "offenderNo": {
-            "type": "string",
-            "description": "NOMIS id"
-          },
-          "firstName": {
-            "type": "string",
-            "description": "First name of staff member"
-          },
-          "lastName": {
-            "type": "string",
-            "description": "Last name of staff member"
-          }
-        },
-        "description": "Offender involved in the incident"
-      },
-      "OffenderParty": {
-        "required": [
-          "offender",
-          "role"
-        ],
-        "type": "object",
-        "properties": {
-          "offender": {
-            "$ref": "#/components/schemas/Offender"
-          },
-          "role": {
-            "$ref": "#/components/schemas/CodeDescription"
-          },
-          "outcome": {
-            "$ref": "#/components/schemas/CodeDescription"
-          },
-          "comment": {
-            "type": "string",
-            "description": "General information about the incident"
-          }
-        },
-        "description": "Offenders involved in the incident"
-      },
-      "Question": {
-        "required": [
-          "answers",
-          "question",
-          "questionId",
-          "sequence"
-        ],
-        "type": "object",
-        "properties": {
-          "questionId": {
-            "type": "integer",
-            "description": "The questionnaire question id",
-            "format": "int64"
-          },
-          "sequence": {
-            "type": "integer",
-            "description": "The sequence number of the question for this incident",
-            "format": "int32"
-          },
-          "question": {
-            "type": "string",
-            "description": "The Question being asked"
-          },
-          "answers": {
-            "type": "array",
-            "description": "List of Responses to this question",
-            "items": {
-              "$ref": "#/components/schemas/Response"
-            }
-          }
-        },
-        "description": "Questions asked for the incident"
-      },
-      "Requirement": {
+      "NomisRequirement": {
         "required": [
           "date",
           "prisonId",
@@ -992,7 +1098,7 @@
             "format": "date"
           },
           "staff": {
-            "$ref": "#/components/schemas/Staff"
+            "$ref": "#/components/schemas/NomisStaff"
           },
           "prisonId": {
             "type": "string",
@@ -1001,7 +1107,7 @@
         },
         "description": "Requirements for completing the incident report"
       },
-      "Response": {
+      "NomisResponse": {
         "required": [
           "recordingStaff",
           "sequence"
@@ -1027,12 +1133,12 @@
             "description": "Comment added to the response by recording staff"
           },
           "recordingStaff": {
-            "$ref": "#/components/schemas/Staff"
+            "$ref": "#/components/schemas/NomisStaff"
           }
         },
         "description": "List of Responses to this question"
       },
-      "Staff": {
+      "NomisStaff": {
         "required": [
           "firstName",
           "lastName",
@@ -1061,7 +1167,7 @@
         },
         "description": "Who changed the questionnaire"
       },
-      "StaffParty": {
+      "NomisStaffParty": {
         "required": [
           "role",
           "staff"
@@ -1069,10 +1175,10 @@
         "type": "object",
         "properties": {
           "staff": {
-            "$ref": "#/components/schemas/Staff"
+            "$ref": "#/components/schemas/NomisStaff"
           },
           "role": {
-            "$ref": "#/components/schemas/CodeDescription"
+            "$ref": "#/components/schemas/NomisCode"
           },
           "comment": {
             "type": "string",
@@ -1081,7 +1187,25 @@
         },
         "description": "Staff involved in the incident"
       },
-      "UpsertNomisIncident": {
+      "NomisStatus": {
+        "required": [
+          "code",
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Status Code"
+          },
+          "description": {
+            "type": "string",
+            "description": "Status Description"
+          }
+        },
+        "description": "Status details"
+      },
+      "NomisSyncRequest": {
         "required": [
           "incidentReport"
         ],
@@ -1099,122 +1223,508 @@
             "default": false
           },
           "incidentReport": {
-            "$ref": "#/components/schemas/NomisIncidentReport"
+            "$ref": "#/components/schemas/NomisReport"
           }
         },
-        "description": "IncidentReport Details raised/updated in NOMIS"
+        "description": "Incident report created/updated in NOMIS"
       },
-      "EventDetail": {
+      "CorrectionRequest": {
         "required": [
+          "correctionRequestedAt",
+          "correctionRequestedBy",
+          "descriptionOfChange",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Why the correction is needed",
+            "enum": [
+              "MISTAKE",
+              "INCORRECT_INFORMATION",
+              "MISSING_INFORMATION",
+              "OTHER",
+              "NOT_SPECIFIED"
+            ]
+          },
+          "descriptionOfChange": {
+            "type": "string",
+            "description": "The changes being requested"
+          },
+          "correctionRequestedBy": {
+            "type": "string",
+            "description": "Member of staff requesting changed"
+          },
+          "correctionRequestedAt": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "When the changes were requested",
+            "example": "2021-07-05T10:35:17"
+          }
+        },
+        "description": "Request to make a correction to incident report"
+      },
+      "Event": {
+        "required": [
+          "createdDate",
+          "description",
           "eventDateAndTime",
-          "eventDetails",
           "eventId",
+          "lastModifiedBy",
+          "lastModifiedDate",
           "prisonId",
-          "summary"
+          "title"
         ],
         "type": "object",
         "properties": {
           "eventId": {
-            "type": "string"
+            "type": "string",
+            "description": "The human-readable identifier of this report"
           },
           "eventDateAndTime": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
+            "description": "When the incident took place",
             "example": "2021-07-05T10:35:17"
           },
           "prisonId": {
-            "type": "string"
+            "type": "string",
+            "description": "The NOMIS id of the prison where incident took place",
+            "example": "MDI"
           },
-          "summary": {
-            "type": "string"
+          "title": {
+            "type": "string",
+            "description": "Brief title describing the event"
           },
-          "eventDetails": {
-            "type": "string"
+          "description": {
+            "type": "string",
+            "description": "Longer summary of the event"
+          },
+          "createdDate": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "When the report was first created",
+            "example": "2021-07-05T10:35:17"
+          },
+          "lastModifiedDate": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "When the report was last changed",
+            "example": "2021-07-05T10:35:17"
+          },
+          "lastModifiedBy": {
+            "type": "string",
+            "description": "Username of the person who last changed this report"
           }
         },
-        "description": "Event Details linked to Incident Report"
+        "description": "Event linking multiple incident reports"
       },
-      "IncidentReport": {
+      "Evidence": {
         "required": [
+          "description",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Type of evidence"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of evidence"
+          }
+        },
+        "description": "Evidence supporting an incident report"
+      },
+      "HistoricalQuestion": {
+        "required": [
+          "code",
+          "question",
+          "responses"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The question code"
+          },
+          "question": {
+            "type": "string",
+            "description": "The question"
+          },
+          "responses": {
+            "type": "array",
+            "description": "The responses to this question",
+            "items": {
+              "$ref": "#/components/schemas/HistoricalResponse"
+            }
+          },
+          "additionalInformation": {
+            "type": "string",
+            "description": "Optional additional information",
+            "default": "null"
+          }
+        },
+        "description": "Previous question with responses making up a previous version of an incident report"
+      },
+      "HistoricalResponse": {
+        "required": [
+          "recordedBy",
+          "recordedOn",
+          "response"
+        ],
+        "type": "object",
+        "properties": {
+          "response": {
+            "type": "string",
+            "description": "The response"
+          },
+          "recordedBy": {
+            "type": "string",
+            "description": "Username of person who responded to the question"
+          },
+          "recordedOn": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "When the response was made",
+            "example": "2021-07-05T10:35:17"
+          },
+          "additionalInformation": {
+            "type": "string",
+            "description": "Optional additional information",
+            "default": "null"
+          }
+        },
+        "description": "Previous response to a question making up a previous version of an incident report"
+      },
+      "History": {
+        "required": [
+          "changeDate",
+          "changeStaffUsername",
+          "questions",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Previous incident report type",
+            "enum": [
+              "ABSCONDER",
+              "ASSAULT",
+              "ATTEMPTED_ESCAPE_FROM_CUSTODY",
+              "ATTEMPTED_ESCAPE_FROM_ESCORT",
+              "BOMB_THREAT",
+              "BREACH_OF_SECURITY",
+              "DAMAGE",
+              "DEATH_IN_CUSTODY",
+              "DEATH_OTHER",
+              "DISORDER",
+              "DRONE_SIGHTING",
+              "ESCAPE_FROM_CUSTODY",
+              "ESCAPE_FROM_ESCORT",
+              "FINDS",
+              "FIRE",
+              "FOOD_REFUSAL",
+              "FULL_CLOSE_DOWN_SEARCH",
+              "KEY_LOCK_INCIDENT",
+              "MISCELLANEOUS",
+              "RADIO_COMPROMISE",
+              "RELEASED_IN_ERROR",
+              "SELF_HARM",
+              "TEMPORARY_RELEASE_FAILURE",
+              "TOOL_LOSS",
+              "OLD_ASSAULT",
+              "OLD_ASSAULT1",
+              "OLD_ASSAULT2",
+              "OLD_ASSAULT3",
+              "OLD_BARRICADE",
+              "OLD_CONCERTED_INDISCIPLINE",
+              "OLD_DISORDER",
+              "OLD_DRONE_SIGHTING",
+              "OLD_DRUGS",
+              "OLD_FINDS",
+              "OLD_FINDS1",
+              "OLD_FINDS2",
+              "OLD_FINDS3",
+              "OLD_FINDS4",
+              "OLD_FIREARM_ETC",
+              "OLD_HOSTAGE",
+              "OLD_KEY_LOCK_INCIDENT",
+              "OLD_MOBILES",
+              "OLD_ROOF_CLIMB",
+              "OLD_TEMPORARY_RELEASE_FAILURE",
+              "OLD_TEMPORARY_RELEASE_FAILURE1",
+              "OLD_TEMPORARY_RELEASE_FAILURE2"
+            ]
+          },
+          "changeDate": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "When the report type was changed",
+            "example": "2021-07-05T10:35:17"
+          },
+          "changeStaffUsername": {
+            "type": "string",
+            "description": "The member of staff who changed the report type"
+          },
+          "questions": {
+            "type": "array",
+            "description": "Previous set of question-response pairs",
+            "items": {
+              "$ref": "#/components/schemas/HistoricalQuestion"
+            }
+          }
+        },
+        "description": "Prior version of an incident report"
+      },
+      "Location": {
+        "required": [
+          "description",
+          "locationId",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "locationId": {
+            "type": "string",
+            "description": "NOMIS id of location"
+          },
+          "type": {
+            "type": "string",
+            "description": "Type of location"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of location"
+          }
+        },
+        "description": "Where an incident took place"
+      },
+      "PrisonerInvolvement": {
+        "required": [
+          "prisonerNumber",
+          "prisonerRole"
+        ],
+        "type": "object",
+        "properties": {
+          "prisonerNumber": {
+            "type": "string",
+            "description": "Prisoner’s NOMIS number"
+          },
+          "prisonerRole": {
+            "type": "string",
+            "description": "Their role",
+            "enum": [
+              "ABSCONDER",
+              "ACTIVE_INVOLVEMENT",
+              "ASSAILANT",
+              "ASSISTED_STAFF",
+              "DECEASED",
+              "ESCAPE",
+              "FIGHTER",
+              "HOSTAGE",
+              "IMPEDED_STAFF",
+              "IN_POSSESSION",
+              "INTENDED_RECIPIENT",
+              "LICENSE_FAILURE",
+              "PERPETRATOR",
+              "PRESENT_AT_SCENE",
+              "SUSPECTED_ASSAILANT",
+              "SUSPECTED_INVOLVED",
+              "TEMPORARY_RELEASE_FAILURE",
+              "VICTIM"
+            ]
+          },
+          "outcome": {
+            "type": "string",
+            "description": "Optional outcome of prisoner’s involvement",
+            "default": "null",
+            "enum": [
+              "ACCT",
+              "CHARGED_BY_POLICE",
+              "CONVICTED",
+              "CORONER_INFORMED",
+              "DEATH",
+              "FURTHER_CHARGES",
+              "LOCAL_INVESTIGATION",
+              "NEXT_OF_KIN_INFORMED",
+              "PLACED_ON_REPORT",
+              "POLICE_INVESTIGATION",
+              "REMAND",
+              "SEEN_DUTY_GOV",
+              "SEEN_HEALTHCARE",
+              "SEEN_IMB",
+              "SEEN_OUTSIDE_HOSP",
+              "TRANSFER",
+              "TRIAL"
+            ]
+          },
+          "comment": {
+            "type": "string",
+            "description": "Optional comment on prisoner’s involvement",
+            "default": "null"
+          }
+        },
+        "description": "Prisoner involved in an incident"
+      },
+      "Question": {
+        "required": [
+          "code",
+          "question",
+          "responses"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The question code"
+          },
+          "question": {
+            "type": "string",
+            "description": "The question"
+          },
+          "responses": {
+            "type": "array",
+            "description": "The responses to this question",
+            "items": {
+              "$ref": "#/components/schemas/Response"
+            }
+          },
+          "additionalInformation": {
+            "type": "string",
+            "description": "Optional additional information",
+            "default": "null"
+          }
+        },
+        "description": "Question with responses making up an incident report"
+      },
+      "Report": {
+        "required": [
+          "correctionRequests",
           "createdDate",
           "createdInNomis",
+          "description",
+          "event",
+          "evidence",
+          "history",
+          "historyOfStatuses",
           "id",
           "incidentDateAndTime",
-          "incidentDetails",
           "incidentNumber",
-          "incidentType",
           "lastModifiedBy",
           "lastModifiedDate",
+          "locations",
           "prisonId",
+          "prisonersInvolved",
+          "questions",
           "reportedBy",
           "reportedDate",
-          "status"
+          "staffInvolved",
+          "title",
+          "type"
         ],
         "type": "object",
         "properties": {
           "id": {
             "type": "string",
+            "description": "The internal ID of this report",
             "format": "uuid"
           },
           "incidentNumber": {
-            "type": "string"
-          },
-          "incidentType": {
             "type": "string",
+            "description": "The human-readable identifier of this report"
+          },
+          "type": {
+            "type": "string",
+            "description": "Incident report type",
             "enum": [
-              "SELF_HARM",
+              "ABSCONDER",
               "ASSAULT",
+              "ATTEMPTED_ESCAPE_FROM_CUSTODY",
+              "ATTEMPTED_ESCAPE_FROM_ESCORT",
+              "BOMB_THREAT",
+              "BREACH_OF_SECURITY",
               "DAMAGE",
-              "FINDS",
-              "KEY_LOCK_INCIDENT",
+              "DEATH_IN_CUSTODY",
+              "DEATH_OTHER",
               "DISORDER",
               "DRONE_SIGHTING",
-              "FIRE",
-              "TOOL_LOSS",
-              "FOOD_REFUSAL",
-              "DEATH_IN_CUSTODY",
-              "TEMPORARY_RELEASE_FAILURE",
-              "RADIO_COMPROMISE",
-              "ABSCONDER",
-              "RELEASED_IN_ERROR",
-              "BOMB_THREAT",
-              "FULL_CLOSE_DOWN_SEARCH",
-              "BREACH_OF_SECURITY",
-              "DEATH_OTHER",
-              "ATTEMPTED_ESCAPE_FROM_CUSTODY",
               "ESCAPE_FROM_CUSTODY",
-              "ATTEMPTED_ESCAPE_FROM_ESCORT",
               "ESCAPE_FROM_ESCORT",
-              "MISCELLANEOUS"
+              "FINDS",
+              "FIRE",
+              "FOOD_REFUSAL",
+              "FULL_CLOSE_DOWN_SEARCH",
+              "KEY_LOCK_INCIDENT",
+              "MISCELLANEOUS",
+              "RADIO_COMPROMISE",
+              "RELEASED_IN_ERROR",
+              "SELF_HARM",
+              "TEMPORARY_RELEASE_FAILURE",
+              "TOOL_LOSS",
+              "OLD_ASSAULT",
+              "OLD_ASSAULT1",
+              "OLD_ASSAULT2",
+              "OLD_ASSAULT3",
+              "OLD_BARRICADE",
+              "OLD_CONCERTED_INDISCIPLINE",
+              "OLD_DISORDER",
+              "OLD_DRONE_SIGHTING",
+              "OLD_DRUGS",
+              "OLD_FINDS",
+              "OLD_FINDS1",
+              "OLD_FINDS2",
+              "OLD_FINDS3",
+              "OLD_FINDS4",
+              "OLD_FIREARM_ETC",
+              "OLD_HOSTAGE",
+              "OLD_KEY_LOCK_INCIDENT",
+              "OLD_MOBILES",
+              "OLD_ROOF_CLIMB",
+              "OLD_TEMPORARY_RELEASE_FAILURE",
+              "OLD_TEMPORARY_RELEASE_FAILURE1",
+              "OLD_TEMPORARY_RELEASE_FAILURE2"
             ]
           },
           "incidentDateAndTime": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
+            "description": "When the incident took place",
             "example": "2021-07-05T10:35:17"
           },
           "prisonId": {
-            "type": "string"
+            "type": "string",
+            "description": "The NOMIS id of the prison where incident took place",
+            "example": "MDI"
           },
-          "summary": {
-            "type": "string"
+          "title": {
+            "type": "string",
+            "description": "Brief title describing the incident"
           },
-          "incidentDetails": {
-            "type": "string"
+          "description": {
+            "type": "string",
+            "description": "Longer summary of the incident"
           },
           "event": {
-            "$ref": "#/components/schemas/EventDetail"
+            "$ref": "#/components/schemas/Event"
           },
           "reportedBy": {
-            "type": "string"
+            "type": "string",
+            "description": "Username of person who created the incident report"
           },
           "reportedDate": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
+            "description": "When the incident report was created",
             "example": "2021-07-05T10:35:17"
           },
           "status": {
             "type": "string",
+            "description": "The current status of this report",
+            "default": "DRAFT",
             "enum": [
               "DRAFT",
               "AWAITING_ANALYSIS",
@@ -1228,97 +1738,301 @@
             ]
           },
           "assignedTo": {
-            "type": "string"
+            "type": "string",
+            "description": "Optional user who this report is currently assigned to",
+            "default": "null"
+          },
+          "questions": {
+            "type": "array",
+            "description": "The question-response pairs that make up this report",
+            "items": {
+              "$ref": "#/components/schemas/Question"
+            }
+          },
+          "history": {
+            "type": "array",
+            "description": "Prior versions of this report, created when the report type changes",
+            "items": {
+              "$ref": "#/components/schemas/History"
+            }
+          },
+          "historyOfStatuses": {
+            "type": "array",
+            "description": "Previous statuses the incident report transitioned to",
+            "items": {
+              "$ref": "#/components/schemas/StatusHistory"
+            }
+          },
+          "staffInvolved": {
+            "type": "array",
+            "description": "Which members of staff were involved?",
+            "items": {
+              "$ref": "#/components/schemas/StaffInvolvement"
+            }
+          },
+          "prisonersInvolved": {
+            "type": "array",
+            "description": "Which prisoners were involved?",
+            "items": {
+              "$ref": "#/components/schemas/PrisonerInvolvement"
+            }
+          },
+          "locations": {
+            "type": "array",
+            "description": "Where the incident happened",
+            "items": {
+              "$ref": "#/components/schemas/Location"
+            }
+          },
+          "evidence": {
+            "type": "array",
+            "description": "What evidence has been recorded",
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            }
+          },
+          "correctionRequests": {
+            "type": "array",
+            "description": "The corrections that were requested of this report",
+            "items": {
+              "$ref": "#/components/schemas/CorrectionRequest"
+            }
           },
           "createdDate": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
+            "description": "When the report was first created",
             "example": "2021-07-05T10:35:17"
           },
           "lastModifiedDate": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
+            "description": "When the report was last changed",
             "example": "2021-07-05T10:35:17"
           },
           "lastModifiedBy": {
-            "type": "string"
+            "type": "string",
+            "description": "Username of the person who last changed this report"
           },
           "createdInNomis": {
             "type": "boolean"
           }
         },
-        "description": "Incident Report Details"
+        "description": "Incident report"
       },
-      "CreateIncidentReportRequest": {
+      "Response": {
         "required": [
-          "createNewEvent",
-          "incidentDateAndTime",
-          "incidentDetails",
-          "incidentType",
-          "prisonId",
-          "reportedBy",
-          "reportedDate"
+          "recordedBy",
+          "recordedOn",
+          "response"
         ],
         "type": "object",
         "properties": {
-          "incidentType": {
+          "response": {
             "type": "string",
+            "description": "The response"
+          },
+          "recordedBy": {
+            "type": "string",
+            "description": "Username of person who responded to the question"
+          },
+          "recordedOn": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "When the response was made",
+            "example": "2021-07-05T10:35:17"
+          },
+          "additionalInformation": {
+            "type": "string",
+            "description": "Optional additional information",
+            "default": "null"
+          }
+        },
+        "description": "Response to a question making up an incident report"
+      },
+      "StaffInvolvement": {
+        "required": [
+          "staffRole",
+          "staffUsername"
+        ],
+        "type": "object",
+        "properties": {
+          "staffUsername": {
+            "type": "string",
+            "description": "Username"
+          },
+          "staffRole": {
+            "type": "string",
+            "description": "Their role",
             "enum": [
-              "SELF_HARM",
+              "ACTIVELY_INVOLVED",
+              "AUTHORISING_OFFICER",
+              "CR_HEAD",
+              "CR_LEFT_ARM",
+              "CR_LEGS",
+              "CR_RIGHT_ARM",
+              "CR_SUPERVISOR",
+              "DECEASED",
+              "FIRST_ON_SCENE",
+              "HEALTHCARE",
+              "HOSTAGE",
+              "IN_POSSESSION",
+              "NEGOTIATOR",
+              "PRESENT_AT_SCENE",
+              "SUSPECTED_INVOLVEMENT",
+              "VICTIM",
+              "WITNESS"
+            ]
+          },
+          "comment": {
+            "type": "string",
+            "description": "Optional comment on staff member involvement",
+            "default": "null"
+          }
+        },
+        "description": "Member of staff involved in an incident"
+      },
+      "StatusHistory": {
+        "required": [
+          "setBy",
+          "setOn",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Previous current status of an incident report",
+            "enum": [
+              "DRAFT",
+              "AWAITING_ANALYSIS",
+              "IN_ANALYSIS",
+              "INFORMATION_REQUIRED",
+              "INFORMATION_AMENDED",
+              "CLOSED",
+              "POST_INCIDENT_UPDATE",
+              "INCIDENT_UPDATED",
+              "DUPLICATE"
+            ]
+          },
+          "setOn": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "When the report status was changed",
+            "example": "2021-07-05T10:35:17"
+          },
+          "setBy": {
+            "type": "string",
+            "description": "The member of staff who changed the report status"
+          }
+        },
+        "description": "Previous statuses an incident report transitioned to"
+      },
+      "CreateReportRequest": {
+        "required": [
+          "description",
+          "incidentDateAndTime",
+          "prisonId",
+          "reportedBy",
+          "reportedDate",
+          "title",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Incident report type",
+            "enum": [
+              "ABSCONDER",
               "ASSAULT",
+              "ATTEMPTED_ESCAPE_FROM_CUSTODY",
+              "ATTEMPTED_ESCAPE_FROM_ESCORT",
+              "BOMB_THREAT",
+              "BREACH_OF_SECURITY",
               "DAMAGE",
-              "FINDS",
-              "KEY_LOCK_INCIDENT",
+              "DEATH_IN_CUSTODY",
+              "DEATH_OTHER",
               "DISORDER",
               "DRONE_SIGHTING",
-              "FIRE",
-              "TOOL_LOSS",
-              "FOOD_REFUSAL",
-              "DEATH_IN_CUSTODY",
-              "TEMPORARY_RELEASE_FAILURE",
-              "RADIO_COMPROMISE",
-              "ABSCONDER",
-              "RELEASED_IN_ERROR",
-              "BOMB_THREAT",
-              "FULL_CLOSE_DOWN_SEARCH",
-              "BREACH_OF_SECURITY",
-              "DEATH_OTHER",
-              "ATTEMPTED_ESCAPE_FROM_CUSTODY",
               "ESCAPE_FROM_CUSTODY",
-              "ATTEMPTED_ESCAPE_FROM_ESCORT",
               "ESCAPE_FROM_ESCORT",
-              "MISCELLANEOUS"
+              "FINDS",
+              "FIRE",
+              "FOOD_REFUSAL",
+              "FULL_CLOSE_DOWN_SEARCH",
+              "KEY_LOCK_INCIDENT",
+              "MISCELLANEOUS",
+              "RADIO_COMPROMISE",
+              "RELEASED_IN_ERROR",
+              "SELF_HARM",
+              "TEMPORARY_RELEASE_FAILURE",
+              "TOOL_LOSS",
+              "OLD_ASSAULT",
+              "OLD_ASSAULT1",
+              "OLD_ASSAULT2",
+              "OLD_ASSAULT3",
+              "OLD_BARRICADE",
+              "OLD_CONCERTED_INDISCIPLINE",
+              "OLD_DISORDER",
+              "OLD_DRONE_SIGHTING",
+              "OLD_DRUGS",
+              "OLD_FINDS",
+              "OLD_FINDS1",
+              "OLD_FINDS2",
+              "OLD_FINDS3",
+              "OLD_FINDS4",
+              "OLD_FIREARM_ETC",
+              "OLD_HOSTAGE",
+              "OLD_KEY_LOCK_INCIDENT",
+              "OLD_MOBILES",
+              "OLD_ROOF_CLIMB",
+              "OLD_TEMPORARY_RELEASE_FAILURE",
+              "OLD_TEMPORARY_RELEASE_FAILURE1",
+              "OLD_TEMPORARY_RELEASE_FAILURE2"
             ]
           },
           "incidentDateAndTime": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
+            "description": "When the incident took place",
             "example": "2021-07-05T10:35:17"
           },
           "prisonId": {
-            "type": "string"
+            "type": "string",
+            "description": "The NOMIS id of the prison where incident took place",
+            "example": "MDI"
           },
-          "summary": {
-            "type": "string"
+          "title": {
+            "type": "string",
+            "description": "Brief title describing the incident"
+          },
+          "description": {
+            "type": "string",
+            "description": "Longer summary of the incident"
           },
           "createNewEvent": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether to link to a new event",
+            "default": false
           },
           "linkedEventId": {
-            "type": "string"
-          },
-          "incidentDetails": {
-            "type": "string"
+            "type": "string",
+            "description": "Which existing event to link to",
+            "default": "null"
           },
           "reportedBy": {
-            "type": "string"
+            "type": "string",
+            "description": "Username of person who created the incident report"
           },
           "reportedDate": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
+            "description": "When the incident report was created",
             "example": "2021-07-05T10:35:17"
           }
-        }
+        },
+        "description": "Payload to create a new incident report"
       },
       "HmppsSubjectAccessRequestContent": {
         "required": [
@@ -1355,6 +2069,57 @@
             }
           }
         }
+      },
+      "DeactivatableConstantDescription": {
+        "required": [
+          "code",
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Machine-readable identifier of this value",
+            "readOnly": true,
+            "example": "DAMAGE"
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description of this value",
+            "readOnly": true,
+            "example": "Damage"
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Whether this value is currently active and usable",
+            "readOnly": true,
+            "example": true,
+            "default": true
+          }
+        },
+        "description": "Code and description of a constant or enumeration member which may be active or inactive"
+      },
+      "ConstantDescription": {
+        "required": [
+          "code",
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Machine-readable identifier of this value",
+            "readOnly": true,
+            "example": "VICTIM"
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description of this value",
+            "readOnly": true,
+            "example": "Victim"
+          }
+        },
+        "description": "Code and description of a constant or enumeration member"
       }
     },
     "securitySchemes": {

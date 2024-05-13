@@ -22,13 +22,13 @@ import org.springframework.test.web.reactive.server.returnResult
 import org.springframework.web.reactive.function.BodyInserters
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension.Companion.incidentsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.COMPLETED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.INCIDENTS
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.IncidentsApiExtension.Companion.incidentsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.INCIDENTS_CREATE_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
@@ -37,7 +37,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.incident
 import java.time.Duration
 import java.time.LocalDateTime
 
-private const val INCIDENT_ID = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42"
+private const val DPS_INCIDENT_ID = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42"
 private const val NOMIS_INCIDENT_ID = 1234L
 
 class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
@@ -59,7 +59,7 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
 
     private fun WebTestClient.performMigration(body: String = "{ }") =
       post().uri("/migrate/incidents")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENTS")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
         .header("Content-Type", "application/json")
         .body(BodyInserters.fromValue(body))
         .exchange()
@@ -151,7 +151,7 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
 
       await untilAsserted {
         webTestClient.get().uri("/migrate/incidents/history")
-          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENTS")))
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
           .header("Content-Type", "application/json")
           .exchange()
           .expectStatus().isOk
@@ -184,19 +184,19 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
       assertThat(incidentsApi.createIncidentUpsertCount()).isEqualTo(1)
 
       // should retry to create mapping twice
-      mappingApi.verifyCreateMappingIncidentId(INCIDENT_ID, times = 2)
+      mappingApi.verifyCreateMappingIncidentId(DPS_INCIDENT_ID, times = 2)
     }
 
     @Test
     internal fun `it will not retry after a 409 (duplicate incident written to Incidents API)`() {
-      val duplicateIncidentId = "ddd596da-8eab-4d2a-a026-bc5afb8acda0"
+      val duplicateDPSIncidentId = "ddd596da-8eab-4d2a-a026-bc5afb8acda0"
 
       nomisApi.stubGetInitialCount(NomisApiExtension.INCIDENTS_ID_URL, 1) { incidentIdsPagedResponse(it) }
       nomisApi.stubMultipleGetIncidentIdCounts(totalElements = 1, pageSize = 10)
       nomisApi.stubMultipleGetIncidents(1..1)
       mappingApi.stubGetAnyIncidentNotFound()
       mappingApi.stubIncidentsMappingByMigrationId()
-      incidentsApi.stubIncidentUpsert(duplicateIncidentId)
+      incidentsApi.stubIncidentUpsert(duplicateDPSIncidentId)
       mappingApi.stubIncidentMappingCreateConflict()
       webTestClient.performMigration()
 
@@ -204,15 +204,15 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
       assertThat(incidentsApi.createIncidentUpsertCount()).isEqualTo(1)
 
       // doesn't retry
-      mappingApi.verifyCreateMappingIncidentId(duplicateIncidentId)
+      mappingApi.verifyCreateMappingIncidentId(duplicateDPSIncidentId)
 
       verify(telemetryClient).trackEvent(
         eq("nomis-migration-incident-duplicate"),
         check {
           assertThat(it["existingNomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
           assertThat(it["duplicateNomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
-          assertThat(it["existingIncidentId"]).isEqualTo(INCIDENT_ID)
-          assertThat(it["duplicateIncidentId"]).isEqualTo(duplicateIncidentId)
+          assertThat(it["existingDPSIncidentId"]).isEqualTo(DPS_INCIDENT_ID)
+          assertThat(it["duplicateDPSIncidentId"]).isEqualTo(duplicateDPSIncidentId)
           assertThat(it["migrationId"]).isNotNull()
         },
         isNull(),
@@ -309,7 +309,7 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     internal fun `can read all records with no filter`() {
       webTestClient.get().uri("/migrate/incidents/history")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENTS")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -328,7 +328,7 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
           .queryParam("fromDateTime", "2020-01-02T02:00:00")
           .build()
       }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENTS")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -345,7 +345,7 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
           .queryParam("toDateTime", "2020-01-02T00:00:00")
           .build()
       }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENTS")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -363,7 +363,7 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
           .queryParam("toDateTime", "2020-01-03T02:00:01")
           .build()
       }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENTS")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -379,7 +379,7 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
           .queryParam("includeOnlyFailures", "true")
           .build()
       }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENTS")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -440,7 +440,7 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     internal fun `can read record`() {
       webTestClient.get().uri("/migrate/incidents/history/2020-01-01T00:00:00")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENTS")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -514,7 +514,7 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
     internal fun `will return dto with null contents if no migrations are found`() {
       deleteHistoryRecords()
       webTestClient.get().uri("/migrate/incidents/active-migration")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENTS")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -531,7 +531,7 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
     internal fun `can read active migration data`() {
       mappingApi.stubIncidentsMappingByMigrationId(count = 123456)
       webTestClient.get().uri("/migrate/incidents/active-migration")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENTS")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -580,7 +580,7 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     internal fun `will return a not found if no running migration found`() {
       webTestClient.post().uri("/migrate/incidents/{migrationId}/cancel", "some id")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENTS")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isNotFound
@@ -594,7 +594,7 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
       mappingApi.stubIncidentsMappingByMigrationId(count = count.toInt())
 
       val migrationId = webTestClient.post().uri("/migrate/incidents")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENTS")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
         .header("Content-Type", "application/json")
         .body(
           BodyInserters.fromValue(
@@ -612,13 +612,13 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
         .responseBody.blockFirst()!!.migrationId
 
       webTestClient.post().uri("/migrate/incidents/{migrationId}/cancel", migrationId)
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENTS")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isAccepted
 
       webTestClient.get().uri("/migrate/incidents/history/{migrationId}", migrationId)
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENTS")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -628,7 +628,7 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
 
       await atMost Duration.ofSeconds(60) untilAsserted {
         webTestClient.get().uri("/migrate/incidents/history/{migrationId}", migrationId)
-          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENTS")))
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
           .header("Content-Type", "application/json")
           .exchange()
           .expectStatus().isOk

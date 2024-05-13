@@ -29,7 +29,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.INCIDENTS_CREATE_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 
-private const val INCIDENT_ID = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42"
+private const val DPS_INCIDENT_ID = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42"
 private const val NOMIS_INCIDENT_ID = 1234L
 
 @SpringAPIServiceTest
@@ -72,7 +72,7 @@ internal class IncidentsMappingServiceTest {
             .withBody(
               """
               {
-                  "incidentId": "$INCIDENT_ID",
+                  "dpsIncidentId": "$DPS_INCIDENT_ID",
                   "nomisIncidentId": $NOMIS_INCIDENT_ID,                                       
                   "label": "5678",
                   "mappingType": "MIGRATED",
@@ -87,7 +87,7 @@ internal class IncidentsMappingServiceTest {
         nomisIncidentId = NOMIS_INCIDENT_ID,
       )
       assertThat(mapping).isNotNull
-      assertThat(mapping!!.incidentId).isEqualTo(INCIDENT_ID)
+      assertThat(mapping!!.dpsIncidentId).isEqualTo(DPS_INCIDENT_ID)
       assertThat(mapping.nomisIncidentId).isEqualTo(NOMIS_INCIDENT_ID)
       assertThat(mapping.label).isEqualTo("5678")
       assertThat(mapping.mappingType).isEqualTo(MIGRATED)
@@ -136,7 +136,7 @@ internal class IncidentsMappingServiceTest {
       runBlocking {
         incidentsMappingService.createMapping(
           IncidentMappingDto(
-            incidentId = INCIDENT_ID,
+            dpsIncidentId = DPS_INCIDENT_ID,
             nomisIncidentId = NOMIS_INCIDENT_ID,
             label = "some-migration-id",
             mappingType = MIGRATED,
@@ -157,7 +157,7 @@ internal class IncidentsMappingServiceTest {
       runBlocking {
         incidentsMappingService.createMapping(
           IncidentMappingDto(
-            incidentId = INCIDENT_ID,
+            dpsIncidentId = DPS_INCIDENT_ID,
             nomisIncidentId = NOMIS_INCIDENT_ID,
             mappingType = MIGRATED,
             label = "5678",
@@ -172,7 +172,7 @@ internal class IncidentsMappingServiceTest {
               equalToJson(
                 """
                   {
-                  "incidentId": "$INCIDENT_ID",
+                  "dpsIncidentId": "$DPS_INCIDENT_ID",
                   "nomisIncidentId": $NOMIS_INCIDENT_ID,                                       
                   "label": "5678",
                   "mappingType": "MIGRATED",
@@ -199,7 +199,7 @@ internal class IncidentsMappingServiceTest {
         runBlocking {
           incidentsMappingService.createMapping(
             IncidentMappingDto(
-              incidentId = INCIDENT_ID,
+              dpsIncidentId = DPS_INCIDENT_ID,
               nomisIncidentId = NOMIS_INCIDENT_ID,
               mappingType = MIGRATED,
               label = "5678",
@@ -216,17 +216,17 @@ internal class IncidentsMappingServiceTest {
   inner class DeleteIncidentMapping {
     @Test
     internal fun `will pass oath2 token to service`() {
-      mappingApi.stubIncidentMappingDelete(INCIDENT_ID)
+      mappingApi.stubIncidentMappingDelete(DPS_INCIDENT_ID)
 
       runBlocking {
         incidentsMappingService.deleteIncidentMapping(
-          incidentId = INCIDENT_ID,
+          dpsIncidentId = DPS_INCIDENT_ID,
         )
       }
 
       mappingApi.verify(
         WireMock.deleteRequestedFor(
-          urlPathEqualTo("/mapping/incidents/incident-id/$INCIDENT_ID"),
+          urlPathEqualTo("/mapping/incidents/dps-incident-id/$DPS_INCIDENT_ID"),
         ).withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
       )
     }
@@ -275,7 +275,7 @@ internal class IncidentsMappingServiceTest {
             .withBody(
               """
                 {
-                  "incidentId": "$INCIDENT_ID",
+                  "dpsIncidentId": "$DPS_INCIDENT_ID",
                   "nomisIncidentId": $NOMIS_INCIDENT_ID,                                                         
                   "label": "2022-02-16T14:20:15",
                   "mappingType": "MIGRATED",
