@@ -70,14 +70,14 @@ class IncidentsMigrationService(
 
     incidentsMappingService.findNomisIncidentMapping(nomisIncidentId)
       ?.run {
-        log.info("Will not migrate the incident=$nomisIncidentId since it was already mapped to DPS incident ${this.incidentId} during migration ${this.label}")
+        log.info("Will not migrate the nomis incident=$nomisIncidentId since it was already mapped to DPS incident ${this.dpsIncidentId} during migration ${this.label}")
       }
       ?: run {
         val nomisIncidentResponse = nomisApiService.getIncident(nomisIncidentId)
         val migratedIncident = incidentsService.upsertIncident(nomisIncidentResponse.toMigrateUpsertNomisIncident())
           .also {
             createIncidentMapping(
-              incidentId = it.id.toString(),
+              dpsIncidentId = it.id.toString(),
               nomisIncidentId = nomisIncidentId,
               context = context,
             )
@@ -86,7 +86,7 @@ class IncidentsMigrationService(
           "${MigrationType.INCIDENTS.telemetryName}-migration-entity-migrated",
           mapOf(
             "nomisIncidentId" to nomisIncidentId.toString(),
-            "incidentId" to migratedIncident.id.toString(),
+            "dpsIncidentId" to migratedIncident.id.toString(),
             "migrationId" to migrationId,
           ),
           null,
@@ -96,13 +96,13 @@ class IncidentsMigrationService(
 
   private suspend fun createIncidentMapping(
     nomisIncidentId: Long,
-    incidentId: String,
+    dpsIncidentId: String,
     context: MigrationContext<*>,
   ) = try {
     incidentsMappingService.createMapping(
       IncidentMappingDto(
         nomisIncidentId = nomisIncidentId,
-        incidentId = incidentId,
+        dpsIncidentId = dpsIncidentId,
         label = context.migrationId,
         mappingType = IncidentMappingDto.MappingType.MIGRATED,
       ),
@@ -116,8 +116,8 @@ class IncidentsMigrationService(
             "migrationId" to context.migrationId,
             "existingNomisIncidentId" to duplicateErrorDetails.existing.nomisIncidentId.toString(),
             "duplicateNomisIncidentId" to duplicateErrorDetails.duplicate.nomisIncidentId.toString(),
-            "existingIncidentId" to duplicateErrorDetails.existing.incidentId,
-            "duplicateIncidentId" to duplicateErrorDetails.duplicate.incidentId,
+            "existingDPSIncidentId" to duplicateErrorDetails.existing.dpsIncidentId,
+            "duplicateDPSIncidentId" to duplicateErrorDetails.duplicate.dpsIncidentId,
             "durationMinutes" to context.durationMinutes().toString(),
           ),
           null,
@@ -126,7 +126,7 @@ class IncidentsMigrationService(
     }
   } catch (e: Exception) {
     log.error(
-      "Failed to create mapping for nomisIncidentId: $nomisIncidentId, incidentId $incidentId",
+      "Failed to create mapping for nomisIncidentId: $nomisIncidentId, DPS incidentId $dpsIncidentId",
       e,
     )
     queueService.sendMessage(
@@ -135,7 +135,7 @@ class IncidentsMigrationService(
         context = context,
         body = IncidentMappingDto(
           nomisIncidentId = nomisIncidentId,
-          incidentId = incidentId,
+          dpsIncidentId = dpsIncidentId,
           mappingType = IncidentMappingDto.MappingType.MIGRATED,
         ),
       ),

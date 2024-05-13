@@ -32,11 +32,11 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.EventDetail
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.IncidentReport
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisIncidentReport
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisIncidentStatus
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.UpsertNomisIncident
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisCode
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisReport
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisStaff
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisStatus
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.CANCEL_MIGRATION
@@ -63,12 +63,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.UUID
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.CodeDescription as IncidentsApiCodeDescription
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.Staff as IncidentsApiStaff
 
 private const val NOMIS_INCIDENT_ID = 1234L
-private const val INCIDENT_ID = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42"
+private const val DPS_INCIDENT_ID = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42"
 
 @ExtendWith(MockitoExtension::class)
 internal class IncidentsMigrationServiceTest {
@@ -827,7 +824,7 @@ internal class IncidentsMigrationServiceTest {
     internal fun setUp(): Unit = runTest {
       whenever(incidentsMappingService.findNomisIncidentMapping(any())).thenReturn(null)
       whenever(nomisApiService.getIncident(any())).thenReturn(aNomisIncidentResponse())
-      whenever(incidentsService.upsertIncident(any())).thenReturn(aDPSIncidentMigrateResponse())
+      whenever(incidentsService.upsertIncident(any())).thenReturn(IncidentsApiMockServer.dpsIncidentReport())
       whenever(incidentsMappingService.createMapping(any(), any())).thenReturn(CreateMappingResult())
     }
 
@@ -879,8 +876,8 @@ internal class IncidentsMigrationServiceTest {
       verify(telemetryClient, times(1)).trackEvent(
         eq("incidents-migration-entity-migrated"),
         check {
-          assertThat(it["migrationId"]).isNotNull
-          assertThat(it["incidentId"]).isNotNull
+          assertThat(it["nomisIncidentId"]).isNotNull
+          assertThat(it["dpsIncidentId"]).isNotNull
         },
         isNull(),
       )
@@ -890,7 +887,7 @@ internal class IncidentsMigrationServiceTest {
     internal fun `will create a mapping between a new incident and a NOMIS incident`(): Unit =
       runTest {
         whenever(nomisApiService.getIncident(any())).thenReturn(aNomisIncidentResponse())
-        whenever(incidentsService.upsertIncident(any())).thenReturn(aDPSIncidentMigrateResponse())
+        whenever(incidentsService.upsertIncident(any())).thenReturn(IncidentsApiMockServer.dpsIncidentReport())
 
         service.migrateNomisEntity(
           MigrationContext(
@@ -903,7 +900,7 @@ internal class IncidentsMigrationServiceTest {
 
         verify(incidentsMappingService).createMapping(
           IncidentMappingDto(
-            incidentId = INCIDENT_ID,
+            dpsIncidentId = DPS_INCIDENT_ID,
             nomisIncidentId = NOMIS_INCIDENT_ID,
             label = "2020-05-23T11:30:00",
             mappingType = MappingType.MIGRATED,
@@ -916,7 +913,7 @@ internal class IncidentsMigrationServiceTest {
     internal fun `will not throw an exception (and place message back on queue) but create a new retry message`(): Unit =
       runTest {
         whenever(nomisApiService.getIncident(any())).thenReturn(aNomisIncidentResponse())
-        whenever(incidentsService.upsertIncident(any())).thenReturn(aDPSIncidentMigrateResponse())
+        whenever(incidentsService.upsertIncident(any())).thenReturn(IncidentsApiMockServer.dpsIncidentReport())
 
         whenever(
           incidentsMappingService.createMapping(
@@ -941,7 +938,7 @@ internal class IncidentsMigrationServiceTest {
           context = check<MigrationContext<IncidentMappingDto>> {
             assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
             assertThat(it.body.nomisIncidentId).isEqualTo(NOMIS_INCIDENT_ID)
-            assertThat(it.body.incidentId).isEqualTo(INCIDENT_ID)
+            assertThat(it.body.dpsIncidentId).isEqualTo(DPS_INCIDENT_ID)
           },
           delaySeconds = eq(0),
         )
@@ -953,7 +950,7 @@ internal class IncidentsMigrationServiceTest {
       internal fun setUp(): Unit = runTest {
         whenever(incidentsMappingService.findNomisIncidentMapping(any())).thenReturn(
           IncidentMappingDto(
-            incidentId = INCIDENT_ID,
+            dpsIncidentId = DPS_INCIDENT_ID,
             nomisIncidentId = NOMIS_INCIDENT_ID,
             mappingType = MappingType.NOMIS_CREATED,
           ),
@@ -1005,20 +1002,20 @@ internal class IncidentsMigrationServiceTest {
 }
 
 fun aMigrationRequest() =
-  UpsertNomisIncident(
+  NomisSyncRequest(
     initialMigration = true,
-    incidentReport = NomisIncidentReport(
+    incidentReport = NomisReport(
       incidentId = NOMIS_INCIDENT_ID,
       questionnaireId = 543,
       title = "There was a fight",
       description = "On 12/04/2023 approx 16:45 John Smith punched Fred Jones",
-      status = NomisIncidentStatus(code = "AWAN", description = "Awaiting Analysis"),
+      status = NomisStatus(code = "AWAN", description = "Awaiting Analysis"),
       type = "ASSAULT",
-      prison = IncidentsApiCodeDescription(code = "BXI", description = "Brixton"),
+      prison = NomisCode(code = "BXI", description = "Brixton"),
       lockedResponse = false,
       incidentDateTime = "2023-04-12T16:45:00",
       reportedDateTime = "2023-04-14T17:55:00",
-      reportingStaff = IncidentsApiStaff(username = "BQL16C", staffId = 16288, firstName = "JANE", lastName = "BAKER"),
+      reportingStaff = NomisStaff(username = "BQL16C", staffId = 16288, firstName = "JANE", lastName = "BAKER"),
       history = listOf(),
       offenderParties = listOf(),
       staffParties = listOf(),
@@ -1045,32 +1042,6 @@ fun aNomisIncidentResponse() =
     staffParties = listOf(),
     questions = listOf(),
     requirements = listOf(),
-  )
-
-fun aDPSIncidentMigrateResponse() =
-  IncidentReport(
-    id = UUID.fromString(INCIDENT_ID),
-    incidentNumber = "string",
-    incidentType = IncidentReport.IncidentType.SELF_HARM,
-    incidentDateAndTime = "2021-07-05T10:35:17",
-    prisonId = "string",
-    summary = "string",
-    incidentDetails = "string",
-    event = EventDetail(
-      eventId = "123",
-      eventDateAndTime = "2021-07-05T10:35:17",
-      prisonId = "LEI",
-      summary = "There was a problem",
-      eventDetails = "Fighting was happening",
-    ),
-    reportedBy = "Jim Smith",
-    reportedDate = "2021-07-05T10:35:17",
-    status = IncidentReport.Status.DRAFT,
-    assignedTo = "string",
-    createdDate = "2021-07-05T10:35:17",
-    lastModifiedDate = "2021-07-05T10:35:17",
-    lastModifiedBy = "string",
-    createdInNomis = true,
   )
 
 fun pages(total: Long, startId: Long = 1): PageImpl<IncidentIdResponse> = PageImpl<IncidentIdResponse>(

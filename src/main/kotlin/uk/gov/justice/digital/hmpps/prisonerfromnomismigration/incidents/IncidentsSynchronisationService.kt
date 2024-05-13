@@ -7,7 +7,7 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsSynchronisationService.MappingResponse.MAPPING_FAILED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.UpsertNomisIncident
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.IncidentMappingDto
@@ -44,32 +44,27 @@ class IncidentsSynchronisationService(
     incidentsMappingService.findNomisIncidentMapping(
       nomisIncidentId = event.incidentCaseId,
     )?.let {
-      log.debug("Found incident mapping: {}", it)
-      log.debug("Sending incident upsert sync {}", nomisIncident)
-
       incidentsService.upsertIncident(
-        UpsertNomisIncident(
-          id = UUID.fromString(it.incidentId),
+        NomisSyncRequest(
+          id = UUID.fromString(it.dpsIncidentId),
           initialMigration = false,
           incidentReport = nomisIncident.toNomisIncidentReport(),
         ),
       )
       telemetryClient.trackEvent(
-        "incident-upsert-synchronisation-success",
-        event.toTelemetryProperties(it.incidentId),
+        "incident-updated-synchronisation-success",
+        event.toTelemetryProperties(it.dpsIncidentId),
       )
     } ?: let {
-      log.debug("No incident mapping - sending incident sync {} ", nomisIncident)
-
       incidentsService.upsertIncident(
-        UpsertNomisIncident(
+        NomisSyncRequest(
           initialMigration = false,
           incidentReport = nomisIncident.toNomisIncidentReport(),
         ),
       ).also { incident ->
         tryToCreateIncidentMapping(event, incident.id.toString()).also { result ->
           telemetryClient.trackEvent(
-            "incident-upsert-synchronisation-success",
+            "incident-created-synchronisation-success",
             event.toTelemetryProperties(
               incident.id.toString(),
               result == MAPPING_FAILED,
@@ -93,13 +88,11 @@ class IncidentsSynchronisationService(
     incidentsMappingService.findNomisIncidentMapping(
       nomisIncidentId = event.incidentCaseId,
     )?.let {
-      log.debug("Found incident mapping: {}", it)
-
-      incidentsService.deleteIncident(it.incidentId)
-      incidentsMappingService.deleteIncidentMapping(it.incidentId)
+      incidentsService.deleteIncident(it.dpsIncidentId)
+      incidentsMappingService.deleteIncidentMapping(it.dpsIncidentId)
       telemetryClient.trackEvent(
         "incident-delete-synchronisation-success",
-        event.toTelemetryProperties(incidentId = it.incidentId),
+        event.toTelemetryProperties(dpsIncidentId = it.dpsIncidentId),
       )
     } ?: let {
       telemetryClient.trackEvent(
@@ -116,11 +109,11 @@ class IncidentsSynchronisationService(
 
   suspend fun tryToCreateIncidentMapping(
     event: IncidentsOffenderEvent,
-    incidentId: String,
+    dpsIncidentId: String,
   ): MappingResponse {
     val mapping = IncidentMappingDto(
       nomisIncidentId = event.incidentCaseId,
-      incidentId = incidentId,
+      dpsIncidentId = dpsIncidentId,
       mappingType = IncidentMappingDto.MappingType.NOMIS_CREATED,
     )
     try {
@@ -131,12 +124,12 @@ class IncidentsSynchronisationService(
         if (it.isError) {
           val duplicateErrorDetails = (it.errorResponse!!).moreInfo
           telemetryClient.trackEvent(
-            "from-nomis-synch-incident-duplicate",
+            "from-nomis-sync-incident-duplicate",
             mapOf<String, String>(
               "existingNomisIncidentId" to duplicateErrorDetails.existing.nomisIncidentId.toString(),
               "duplicateNomisIncidentId" to duplicateErrorDetails.duplicate.nomisIncidentId.toString(),
-              "existingIncidentId" to duplicateErrorDetails.existing.incidentId,
-              "duplicateIncidentId" to duplicateErrorDetails.duplicate.incidentId,
+              "existingDPSIncidentId" to duplicateErrorDetails.existing.dpsIncidentId,
+              "duplicateDPSIncidentId" to duplicateErrorDetails.duplicate.dpsIncidentId,
             ),
             null,
           )
@@ -145,14 +138,14 @@ class IncidentsSynchronisationService(
       return MappingResponse.MAPPING_CREATED
     } catch (e: Exception) {
       log.error(
-        "Failed to create mapping for incident id $incidentId, nomisIncidentId ${event.incidentCaseId}",
+        "Failed to create mapping for dpsIncidentId $dpsIncidentId, nomisIncidentId ${event.incidentCaseId}",
         e,
       )
       queueService.sendMessage(
         messageType = RETRY_SYNCHRONISATION_MAPPING.name,
         synchronisationType = INCIDENTS,
         message = mapping,
-        telemetryAttributes = event.toTelemetryProperties(incidentId),
+        telemetryAttributes = event.toTelemetryProperties(dpsIncidentId),
       )
       return MAPPING_FAILED
     }
@@ -172,11 +165,11 @@ class IncidentsSynchronisationService(
 }
 
 private fun IncidentsOffenderEvent.toTelemetryProperties(
-  incidentId: String? = null,
+  dpsIncidentId: String? = null,
   mappingFailed: Boolean? = null,
 ) = mapOf(
   "nomisIncidentId" to "$incidentCaseId",
-) + (incidentId?.let { mapOf("incidentId" to it) } ?: emptyMap()) + (
+) + (dpsIncidentId?.let { mapOf("dpsIncidentId" to it) } ?: emptyMap()) + (
   mappingFailed?.takeIf { it }
     ?.let { mapOf("mapping" to "initial-failure") } ?: emptyMap()
   )

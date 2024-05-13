@@ -26,16 +26,16 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension.Companion.incidentsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.IncidentsApiExtension.Companion.incidentsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.INCIDENTS_CREATE_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.INCIDENTS_GET_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 
-private const val INCIDENT_ID = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42"
+private const val DPS_INCIDENT_ID = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42"
 private const val NOMIS_INCIDENT_ID = 1234L
 private const val NOMIS_API_URL = "/incidents/$NOMIS_INCIDENT_ID"
 private const val NOMIS_MAPPING_API_URL = "$INCIDENTS_GET_MAPPING_URL/$NOMIS_INCIDENT_ID"
@@ -62,7 +62,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
             eq("incident-synchronisation-skipped"),
             check {
               assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
-              assertThat(it["incidentId"]).isNull()
+              assertThat(it["dpsIncidentId"]).isNull()
             },
             isNull(),
           )
@@ -118,7 +118,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             mappingApi.verify(
               postRequestedFor(urlPathEqualTo("/mapping/incidents"))
-                .withRequestBody(matchingJsonPath("incidentId", equalTo(INCIDENT_ID)))
+                .withRequestBody(matchingJsonPath("dpsIncidentId", equalTo(DPS_INCIDENT_ID)))
                 .withRequestBody(matchingJsonPath("nomisIncidentId", equalTo("$NOMIS_INCIDENT_ID"))),
             )
           }
@@ -128,9 +128,9 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create telemetry tracking the create`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("incident-upsert-synchronisation-success"),
+              eq("incident-created-synchronisation-success"),
               check {
-                assertThat(it["incidentId"]).isEqualTo(INCIDENT_ID)
+                assertThat(it["dpsIncidentId"]).isEqualTo(DPS_INCIDENT_ID)
                 assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
               },
               isNull(),
@@ -215,9 +215,9 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create telemetry tracking the create`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("incident-upsert-synchronisation-success"),
+              eq("incident-updated-synchronisation-success"),
               check {
-                assertThat(it["incidentId"]).isEqualTo(INCIDENT_ID)
+                assertThat(it["dpsIncidentId"]).isEqualTo(DPS_INCIDENT_ID)
                 assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
               },
               isNull(),
@@ -228,13 +228,13 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @Nested
       inner class WhenDuplicateMapping {
-        private val duplicateIncidentId = "ddd596da-8eab-4d2a-a026-bc5afb8acda0"
+        private val duplicateDPSIncidentId = "ddd596da-8eab-4d2a-a026-bc5afb8acda0"
 
         @Test
         internal fun `it will not retry after a 409 (duplicate incident written to Incident API)`() {
           nomisApi.stubGetIncident()
           mappingApi.stubGetAnyIncidentNotFound()
-          incidentsApi.stubIncidentUpsert(duplicateIncidentId)
+          incidentsApi.stubIncidentUpsert(duplicateDPSIncidentId)
           mappingApi.stubIncidentMappingCreateConflict()
 
           awsSqsIncidentsOffenderEventsClient.sendMessage(
@@ -249,16 +249,16 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(incidentsApi.createIncidentUpsertCount()).isEqualTo(1)
 
           // doesn't retry
-          mappingApi.verifyCreateMappingIncidentId(incidentId = duplicateIncidentId)
+          mappingApi.verifyCreateMappingIncidentId(dpsIncidentId = duplicateDPSIncidentId)
 
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("from-nomis-synch-incident-duplicate"),
+              eq("from-nomis-sync-incident-duplicate"),
               check {
                 assertThat(it["existingNomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
                 assertThat(it["duplicateNomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
-                assertThat(it["existingIncidentId"]).isEqualTo(INCIDENT_ID)
-                assertThat(it["duplicateIncidentId"]).isEqualTo(duplicateIncidentId)
+                assertThat(it["existingDPSIncidentId"]).isEqualTo(DPS_INCIDENT_ID)
+                assertThat(it["duplicateDPSIncidentId"]).isEqualTo(duplicateDPSIncidentId)
                 assertThat(it["migrationId"]).isNull()
               },
               isNull(),
@@ -289,7 +289,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
             eq("incident-synchronisation-skipped"),
             check {
               assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
-              assertThat(it["incidentId"]).isNull()
+              assertThat(it["dpsIncidentId"]).isNull()
             },
             isNull(),
           )
@@ -345,7 +345,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             mappingApi.verify(
               postRequestedFor(urlPathEqualTo("/mapping/incidents"))
-                .withRequestBody(matchingJsonPath("incidentId", equalTo(INCIDENT_ID)))
+                .withRequestBody(matchingJsonPath("dpsIncidentId", equalTo(DPS_INCIDENT_ID)))
                 .withRequestBody(matchingJsonPath("nomisIncidentId", equalTo("$NOMIS_INCIDENT_ID"))),
             )
           }
@@ -355,9 +355,9 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create telemetry tracking the create`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("incident-upsert-synchronisation-success"),
+              eq("incident-created-synchronisation-success"),
               check {
-                assertThat(it["incidentId"]).isEqualTo(INCIDENT_ID)
+                assertThat(it["dpsIncidentId"]).isEqualTo(DPS_INCIDENT_ID)
                 assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
               },
               isNull(),
@@ -442,9 +442,9 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create telemetry tracking the create`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("incident-upsert-synchronisation-success"),
+              eq("incident-updated-synchronisation-success"),
               check {
-                assertThat(it["incidentId"]).isEqualTo(INCIDENT_ID)
+                assertThat(it["dpsIncidentId"]).isEqualTo(DPS_INCIDENT_ID)
                 assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
               },
               isNull(),
@@ -455,13 +455,13 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @Nested
       inner class WhenDuplicateMapping {
-        private val duplicateIncidentId = "ddd596da-8eab-4d2a-a026-bc5afb8acda0"
+        private val duplicateDPSIncidentId = "ddd596da-8eab-4d2a-a026-bc5afb8acda0"
 
         @Test
         internal fun `it will not retry after a 409 (duplicate incident written to Incident API)`() {
           nomisApi.stubGetIncident()
           mappingApi.stubGetAnyIncidentNotFound()
-          incidentsApi.stubIncidentUpsert(duplicateIncidentId)
+          incidentsApi.stubIncidentUpsert(duplicateDPSIncidentId)
           mappingApi.stubIncidentMappingCreateConflict()
 
           awsSqsIncidentsOffenderEventsClient.sendMessage(
@@ -476,16 +476,16 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(incidentsApi.createIncidentUpsertCount()).isEqualTo(1)
 
           // doesn't retry
-          mappingApi.verifyCreateMappingIncidentId(duplicateIncidentId)
+          mappingApi.verifyCreateMappingIncidentId(duplicateDPSIncidentId)
 
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("from-nomis-synch-incident-duplicate"),
+              eq("from-nomis-sync-incident-duplicate"),
               check {
                 assertThat(it["existingNomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
                 assertThat(it["duplicateNomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
-                assertThat(it["existingIncidentId"]).isEqualTo(INCIDENT_ID)
-                assertThat(it["duplicateIncidentId"]).isEqualTo(duplicateIncidentId)
+                assertThat(it["existingDPSIncidentId"]).isEqualTo(DPS_INCIDENT_ID)
+                assertThat(it["duplicateDPSIncidentId"]).isEqualTo(duplicateDPSIncidentId)
                 assertThat(it["migrationId"]).isNull()
               },
               isNull(),
@@ -584,7 +584,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           mappingApi.stubGetIncident()
-          incidentsApi.stubIncidentDelete(INCIDENT_ID)
+          incidentsApi.stubIncidentDelete(DPS_INCIDENT_ID)
           mappingApi.stubIncidentMappingDelete()
 
           awsSqsIncidentsOffenderEventsClient.sendMessage(
@@ -606,14 +606,14 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will delete the incident in the incidents service`() {
           await untilAsserted {
-            incidentsApi.verify(deleteRequestedFor(urlPathEqualTo("/sync/upsert/$INCIDENT_ID")))
+            incidentsApi.verify(deleteRequestedFor(urlPathEqualTo("/sync/upsert/$DPS_INCIDENT_ID")))
           }
         }
 
         @Test
         fun `will delete mapping`() {
           await untilAsserted {
-            mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/incidents/incident-id/$INCIDENT_ID")))
+            mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/incidents/dps-incident-id/$DPS_INCIDENT_ID")))
           }
         }
 
@@ -624,7 +624,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
               eq("incident-delete-synchronisation-success"),
               check {
                 assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
-                assertThat(it["incidentId"]).isEqualTo(INCIDENT_ID)
+                assertThat(it["dpsIncidentId"]).isEqualTo(DPS_INCIDENT_ID)
               },
               isNull(),
             )

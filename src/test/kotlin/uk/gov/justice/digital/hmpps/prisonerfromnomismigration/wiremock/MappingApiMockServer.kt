@@ -806,21 +806,21 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun verifyCreateMappingIncidentId(incidentId: String, times: Int = 1) =
+  fun verifyCreateMappingIncidentId(dpsIncidentId: String, times: Int = 1) =
     verify(
       times,
       postRequestedFor(urlPathEqualTo("/mapping/incidents")).withRequestBody(
         matchingJsonPath(
-          "incidentId",
-          equalTo("$incidentId"),
+          "dpsIncidentId",
+          equalTo("$dpsIncidentId"),
         ),
       ),
     )
 
   fun stubIncidentMappingCreateConflict(
     nomisIncidentId: Long = 1234,
-    existingIncidentId: String = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42",
-    duplicateIncidentId: String = "ddd596da-8eab-4d2a-a026-bc5afb8acda0",
+    existingDPSIncidentId: String = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42",
+    duplicateDPSIncidentId: String = "ddd596da-8eab-4d2a-a026-bc5afb8acda0",
   ) {
     stubFor(
       post(urlPathEqualTo("/mapping/incidents"))
@@ -834,14 +834,14 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
               {
                 "existing" :  {
                   "nomisIncidentId": $nomisIncidentId,
-                  "incidentId": "$existingIncidentId",
+                  "dpsIncidentId": "$existingDPSIncidentId",
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",
                   "mappingType": "NOMIS_CREATED"
                  },
                  "duplicate" : {
                   "nomisIncidentId": $nomisIncidentId,
-                  "incidentId": "$duplicateIncidentId",
+                  "dpsIncidentId": "$duplicateDPSIncidentId",
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",
                   "mappingType": "NOMIS_CREATED"
@@ -855,7 +855,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubGetIncident(nomisIncidentId: Long = 1234) {
     val content = """{
-      "incidentId": "fb4b2e91-91e7-457b-aa17-797f8c5c2f42",
+      "dpsIncidentId": "fb4b2e91-91e7-457b-aa17-797f8c5c2f42",
       "nomisIncidentId": $nomisIncidentId,   
       "label": "2022-02-14T09:58:45",
       "whenCreated": "2020-01-01T11:10:00",
@@ -886,7 +886,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withBody(
             """
             {
-              "incidentId": "fb4b2e91-91e7-457b-aa17-797f8c5c2f42",
+              "dpsIncidentId": "fb4b2e91-91e7-457b-aa17-797f8c5c2f42",
               "nomisIncidentId": 1234,                                       
               "label": "$migrationId",
               "whenCreated": "2020-01-01T11:10:00",
@@ -898,9 +898,9 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubIncidentMappingDelete(incidentId: String = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42") {
+  fun stubIncidentMappingDelete(dpsIncidentId: String = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42") {
     stubFor(
-      delete(urlEqualTo("/mapping/incidents/incident-id/$incidentId"))
+      delete(urlEqualTo("/mapping/incidents/dps-incident-id/$dpsIncidentId"))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -911,7 +911,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubIncidentsMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 54327) {
     val content = """{
-      "incidentId": "fb4b2e91-91e7-457b-aa17-797f8c5c2f42",
+      "dpsIncidentId": "fb4b2e91-91e7-457b-aa17-797f8c5c2f42",
       "nomisIncidentId": 1234,                                       
       "label": "2022-02-14T09:58:45",
       "whenCreated": "$whenCreated",
