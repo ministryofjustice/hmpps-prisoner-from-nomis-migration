@@ -5,12 +5,14 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
+import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.LocationsSynchronisationService.MappingResponse.MAPPING_FAILED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Capacity
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Certification
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.NomisSyncLocationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.NonResidentialUsageDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.LocationMappingDto
@@ -21,7 +23,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.LOCATIONS
-import java.util.*
+import java.util.UUID
 
 @Service
 class LocationsSynchronisationService(
@@ -41,7 +43,13 @@ class LocationsSynchronisationService(
       return
     }
     val mapping = locationsMappingService.getMappingGivenNomisId(event.internalLocationId)
-    synchroniseUpdateOrCreate(event, mapping)
+    if (mapping == null) {
+      // There are some usage records in nomis with non-existent location ids !
+      // (but no profile records)
+      telemetryClient.trackEvent("locations-synchronisation-skipped-usage", event.toTelemetryProperties())
+    } else {
+      synchroniseUpdateOrCreate(event, mapping)
+    }
   }
 
   suspend fun synchroniseAttribute(event: LocationsOffenderEvent) {
@@ -90,11 +98,30 @@ class LocationsSynchronisationService(
         toUpsertSyncRequest(UUID.fromString(it.dpsLocationId), nomisLocation, parent?.dpsLocationId)
       log.debug("Found location mapping: {}, sending location upsert sync {}", it, upsertSyncRequest)
 
-      locationsService.upsertLocation(upsertSyncRequest)
-      telemetryClient.trackEvent(
-        "locations-updated-synchronisation-success",
-        event.toTelemetryProperties(it.dpsLocationId),
-      )
+      try {
+        locationsService.upsertLocation(upsertSyncRequest)
+
+        telemetryClient.trackEvent(
+          "locations-updated-synchronisation-success",
+          event.toTelemetryProperties(it.dpsLocationId),
+        )
+      } catch (e: Exception) {
+        if (e is WebClientResponseException.Conflict &&
+          (e.getResponseBodyAs(ErrorResponse::class.java) as ErrorResponse).errorCode == 107
+        ) {
+          log.error("Detected a permanent deactivation or cell converted to non-res: ignoring update", e)
+          telemetryClient.trackEvent(
+            "locations-updated-synchronisation-skipped-deactivated",
+            event.toTelemetryProperties(mapping.dpsLocationId),
+          )
+        } else {
+          telemetryClient.trackEvent(
+            "locations-updated-synchronisation-failed",
+            event.toTelemetryProperties(mapping.dpsLocationId) + mapOf("exception" to (e.message ?: "")),
+          )
+          throw e
+        }
+      }
     } ?: let {
       val upsertSyncRequest = toUpsertSyncRequest(nomisLocation, parent?.dpsLocationId)
       log.debug("No location mapping - sending location upsert sync {} ", upsertSyncRequest)

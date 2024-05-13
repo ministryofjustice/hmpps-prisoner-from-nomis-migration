@@ -56,7 +56,7 @@ class LocationsMigrationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  private val invalidPrisons = listOf("ZZGHI", "UNKNWN", "TRN", "LT4")
+  private val invalidPrisons = listOf("ZZGHI", "UNKNWN", "TRN", "LT3", "LT4")
 
   override suspend fun getIds(
     migrationFilter: LocationsMigrationFilter,

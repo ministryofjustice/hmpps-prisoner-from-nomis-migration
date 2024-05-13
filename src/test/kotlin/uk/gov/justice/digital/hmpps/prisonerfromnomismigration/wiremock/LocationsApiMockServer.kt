@@ -15,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus.CREATED
 import org.springframework.http.HttpStatus.NO_CONTENT
 import org.springframework.http.HttpStatus.OK
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Location
 import java.util.UUID
 
@@ -71,6 +72,17 @@ class LocationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withHeader("Content-Type", "application/json")
           .withStatus(OK.value())
           .withBody(aLocation(locationId)),
+      ),
+    )
+  }
+
+  fun stubUpsertLocationForSynchronisationWithError(error: ErrorResponse) {
+    stubFor(
+      post("/sync/upsert").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(error.status)
+          .withBody(error.toJson()),
       ),
     )
   }
