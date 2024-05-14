@@ -397,6 +397,112 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
     }
 
     @Nested
+    @DisplayName("When alert was created in NOMIS but on previous booking")
+    inner class NomisCreatedOnPreviousBooking {
+      private val bookingId = 12345L
+      private val alertSequence = 3L
+      private val offenderNo = "A3864DZ"
+
+      @BeforeEach
+      fun setUp() {
+        alertsMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
+      }
+
+      @Nested
+      inner class WhenRelevantAlert {
+        private val dpsAlertId = "a04f7a8d-61aa-400c-9395-f4dc62f36ab0"
+
+        @BeforeEach
+        fun setUp() {
+          alertsNomisApiMockServer.stubGetAlert(
+            bookingId = bookingId,
+            alertSequence = alertSequence,
+            alert = alert(bookingId = bookingId, alertSequence = alertSequence).copy(
+              bookingSequence = 2,
+              isAlertFromPreviousBookingRelevant = true,
+              alertCode = CodeDescription("XNR", "Not For Release"),
+              type = CodeDescription("X", "Security"),
+              audit = alert().audit.copy(
+                auditModuleName = "OCDALERT",
+              ),
+            ),
+          )
+          dpsAlertsServer.stubPostAlert(dpsAlert().copy(alertUuid = UUID.fromString(dpsAlertId)))
+          alertsMappingApiMockServer.stubPostMapping()
+          awsSqsAlertOffenderEventsClient.sendMessage(
+            alertsQueueOffenderEventsUrl,
+            alertEvent(
+              eventType = "ALERT-INSERTED",
+              bookingId = bookingId,
+              alertSequence = alertSequence,
+              offenderNo = offenderNo,
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Test
+        fun `will create alert in DPS`() {
+          dpsAlertsServer.verify(
+            postRequestedFor(urlPathEqualTo("/alerts"))
+              .withRequestBody(matchingJsonPath("alertCode", equalTo("XNR"))),
+          )
+        }
+      }
+
+      @Nested
+      inner class WhenIrrelevantAlert {
+        @BeforeEach
+        fun setUp() {
+          alertsNomisApiMockServer.stubGetAlert(
+            bookingId = bookingId,
+            alertSequence = alertSequence,
+            alert = alert(bookingId = bookingId, alertSequence = alertSequence).copy(
+              bookingSequence = 2,
+              isAlertFromPreviousBookingRelevant = false,
+              alertCode = CodeDescription("XNR", "Not For Release"),
+              type = CodeDescription("X", "Security"),
+              audit = alert().audit.copy(
+                auditModuleName = "OCDALERT",
+              ),
+            ),
+          )
+          awsSqsAlertOffenderEventsClient.sendMessage(
+            alertsQueueOffenderEventsUrl,
+            alertEvent(
+              eventType = "ALERT-INSERTED",
+              bookingId = bookingId,
+              alertSequence = alertSequence,
+              offenderNo = offenderNo,
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Test
+        fun `will not create alert in DPS`() {
+          dpsAlertsServer.verify(
+            0,
+            postRequestedFor(urlPathEqualTo("/alerts")),
+          )
+        }
+
+        @Test
+        fun `will track a telemetry event for ignore`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("alert-synchronisation-created-ignored-previous-booking"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+                assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+                assertThat(it["alertSequence"]).isEqualTo(alertSequence.toString())
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+    }
+
+    @Nested
     @DisplayName("When alert was created in NOMIS due to a new booking")
     inner class NewBookingCreatedInNomis {
       private val bookingId = 12345L
@@ -1232,7 +1338,7 @@ fun alertEvent(
 private fun alert(bookingId: Long = 123456, alertSequence: Long = 3) = AlertResponse(
   bookingId = bookingId,
   alertSequence = alertSequence,
-  bookingSequence = 10,
+  bookingSequence = 1,
   alertCode = CodeDescription("XA", "TACT"),
   type = CodeDescription("X", "Security"),
   date = LocalDate.now(),

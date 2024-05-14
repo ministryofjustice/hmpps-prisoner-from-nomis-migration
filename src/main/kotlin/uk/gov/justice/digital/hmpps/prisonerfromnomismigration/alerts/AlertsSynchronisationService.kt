@@ -52,26 +52,27 @@ class AlertsSynchronisationService(
           )
         } else {
           if (nomisAlert.shouldNotBeCreatedInDPS()) {
-            log.info("TODO - we shouldn't create this alert in DPS since it must be an irrelevant alert on a previous booking")
-          }
-          dpsApiService.createAlert(
-            nomisAlert.toDPSCreateAlert(event.offenderIdDisplay),
-            createdByUsername = nomisAlert.audit.createUsername,
-          ).run {
-            tryToCreateMapping(
-              offenderNo = event.offenderIdDisplay,
-              nomisAlert = nomisAlert,
-              dpsAlert = this,
-              telemetry = telemetry,
-            ).also { mappingCreateResult ->
-              val mappingSuccessTelemetry =
-                (if (mappingCreateResult == MAPPING_CREATED) mapOf() else mapOf("mapping" to "initial-failure"))
-              val additionalTelemetry = mappingSuccessTelemetry + ("dpsAlertId" to this.alertUuid.toString())
+            telemetryClient.trackEvent("alert-synchronisation-created-ignored-previous-booking", telemetry + ("bookingSequence" to nomisAlert.bookingSequence))
+          } else {
+            dpsApiService.createAlert(
+              nomisAlert.toDPSCreateAlert(event.offenderIdDisplay),
+              createdByUsername = nomisAlert.audit.createUsername,
+            ).run {
+              tryToCreateMapping(
+                offenderNo = event.offenderIdDisplay,
+                nomisAlert = nomisAlert,
+                dpsAlert = this,
+                telemetry = telemetry,
+              ).also { mappingCreateResult ->
+                val mappingSuccessTelemetry =
+                  (if (mappingCreateResult == MAPPING_CREATED) mapOf() else mapOf("mapping" to "initial-failure"))
+                val additionalTelemetry = mappingSuccessTelemetry + ("dpsAlertId" to this.alertUuid.toString())
 
-              telemetryClient.trackEvent(
-                "alert-synchronisation-created-success",
-                telemetry + additionalTelemetry,
-              )
+                telemetryClient.trackEvent(
+                  "alert-synchronisation-created-success",
+                  telemetry + additionalTelemetry,
+                )
+              }
             }
           }
         }
