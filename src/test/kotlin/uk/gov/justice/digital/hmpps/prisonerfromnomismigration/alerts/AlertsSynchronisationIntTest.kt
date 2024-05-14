@@ -674,7 +674,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
   inner class AlertUpdated {
     @Nested
     @DisplayName("When alert was updated in DPS")
-    inner class DPSCreated {
+    inner class DPSUpdated {
       private val bookingId = 12345L
       private val alertSequence = 3L
 
@@ -729,7 +729,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
 
     @Nested
     @DisplayName("When alert was update in NOMIS")
-    inner class NomisCreated {
+    inner class NomisUpdated {
       private val bookingId = 12345L
       private val alertSequence = 3L
       private val offenderNo = "A3864DZ"
@@ -789,6 +789,62 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
             assertThat(
               awsSqsAlertsOffenderEventDlqClient.countAllMessagesOnQueue(alertsQueueOffenderEventsDlqUrl).get(),
             ).isEqualTo(1)
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("When mapping doesn't exist and alert is not relevant")
+      inner class MappingDoesNotExistAndShouldNotExist {
+        @BeforeEach
+        fun setUp() {
+          alertsMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
+          alertsNomisApiMockServer.stubGetAlert(
+            bookingId = bookingId,
+            alertSequence = alertSequence,
+            alert = alert(bookingId = bookingId, alertSequence = alertSequence).copy(
+              bookingSequence = 2,
+              alertCode = CodeDescription("XNR", "Not For Release"),
+              type = CodeDescription("X", "Security"),
+              audit = alert().audit.copy(
+                auditModuleName = "OCDALERT",
+              ),
+              expiryDate = LocalDate.parse(alertExpiryDate),
+            ),
+          )
+
+          awsSqsAlertOffenderEventsClient.sendMessage(
+            alertsQueueOffenderEventsUrl,
+            alertEvent(
+              eventType = "ALERT-UPDATED",
+              bookingId = bookingId,
+              alertSequence = alertSequence,
+              offenderNo = offenderNo,
+            ),
+          )
+        }
+
+        @Test
+        fun `telemetry added to track the update being ignored`() {
+          await untilAsserted {
+            verify(telemetryClient, atLeastOnce()).trackEvent(
+              eq("alert-synchronisation-updated-ignored-previous-booking"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+                assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+                assertThat(it["alertSequence"]).isEqualTo(alertSequence.toString())
+              },
+              isNull(),
+            )
+          }
+        }
+
+        @Test
+        fun `the event not is placed on dead letter queue`() {
+          await untilAsserted {
+            assertThat(
+              awsSqsAlertsOffenderEventDlqClient.countAllMessagesOnQueue(alertsQueueOffenderEventsDlqUrl).get(),
+            ).isEqualTo(0)
           }
         }
       }
@@ -858,7 +914,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
   inner class AlertDeleted {
     @Nested
     @DisplayName("When alert was deleted in either NOMIS or DPS")
-    inner class NomisCreated {
+    inner class DeletedInEitherNOMISOrDPS {
       private val bookingId = 12345L
       private val alertSequence = 3L
       private val offenderNo = "A3864DZ"

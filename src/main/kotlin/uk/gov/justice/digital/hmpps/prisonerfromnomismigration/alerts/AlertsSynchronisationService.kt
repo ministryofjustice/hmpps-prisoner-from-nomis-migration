@@ -89,13 +89,18 @@ class AlertsSynchronisationService(
     } else {
       val mapping = mappingApiService.getOrNullByNomisId(event.bookingId, event.alertSeq)
       if (mapping == null) {
-        telemetryClient.trackEvent(
-          "alert-synchronisation-updated-failed",
-          telemetry,
-        )
-        if (hasMigratedAllData) {
-          // after migration has run this should not happen so make sure this message goes in DLQ
-          throw IllegalStateException("Received ALERT-UPDATED for alert that has never been created")
+        if (nomisAlert.shouldNotBeCreatedInDPS()) {
+          // if we have no mapping and should never have been in DPS in the first place silently ignore
+          // if we do have a mapping update anyway even if it shouldn't have been in DPS - since this is edge case that is not
+          // significant enough to try to error on i.e. the scenario would have been it was migrated but since then a new alert
+          // has been created in DPS so we can just keep the old one forever rather than some weird logic of deleting it from DPS
+          telemetryClient.trackEvent("alert-synchronisation-updated-ignored-previous-booking", telemetry + ("bookingSequence" to nomisAlert.bookingSequence))
+        } else {
+          telemetryClient.trackEvent("alert-synchronisation-updated-failed", telemetry)
+          if (hasMigratedAllData) {
+            // after migration has run this should not happen so make sure this message goes in DLQ
+            throw IllegalStateException("Received ALERT-UPDATED for alert that has never been created")
+          }
         }
       } else {
         dpsApiService.updateAlert(
