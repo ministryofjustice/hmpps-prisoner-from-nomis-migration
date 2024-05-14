@@ -116,6 +116,7 @@ class AlertsByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
               modifyUserId = "G.BARNES",
               modifyDisplayName = "GARRY BARNES",
             ),
+            isAlertFromPreviousBookingRelevant = false,
           ),
         )
         alertsNomisApiMockServer.stubGetAlertsToMigrate(offenderNo = "A0002KT", currentAlertCount = 1, previousAlertCount = 0)

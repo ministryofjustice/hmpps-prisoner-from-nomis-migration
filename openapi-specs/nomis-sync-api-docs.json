@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-05-07.7523.f7a5cce"
+    "version": "2024-05-14.7617.6643dbb"
   },
   "servers": [
     {
@@ -3604,6 +3604,92 @@
         }
       }
     },
+    "/prisoners/{offenderNo}/sentencing": {
+      "post": {
+        "tags": [
+          "sentencing-resource"
+        ],
+        "summary": "Creates a new Sentence",
+        "description": "Required role NOMIS_SENTENCING Creates a new Sentence for the offender and latest booking",
+        "operationId": "createSentence",
+        "parameters": [
+          {
+            "name": "offenderNo",
+            "in": "path",
+            "description": "Offender number",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Offender number",
+              "example": "AB1234K"
+            },
+            "example": "AB1234K"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSentenceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created Sentence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateSentenceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Supplied data is invalid, for instance missing required fields or invalid values. See schema for details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint when role NOMIS_SENTENCING not present",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Offender does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/prisoners/{offenderNo}/sentencing/court-cases": {
       "get": {
         "tags": [
@@ -3683,14 +3769,14 @@
           {
             "name": "offenderNo",
             "in": "path",
-            "description": "Booking Id",
+            "description": "Offender No",
             "required": true,
             "schema": {
               "type": "string",
-              "description": "Booking Id",
-              "example": 12345
+              "description": "Offender No",
+              "example": "AK1234B"
             },
-            "example": 12345
+            "example": "AK1234B"
           }
         ],
         "requestBody": {
@@ -6228,6 +6314,72 @@
         }
       }
     },
+    "/prisoners/{offenderNo}/alerts/reconciliation": {
+      "get": {
+        "tags": [
+          "alerts-resource"
+        ],
+        "summary": "Gets active alerts for latest booking plus unique list of alerts from previous bookings for a prisoner",
+        "description": "Retrieves active alerts for a prisoner across all bookings. The latest booking all active alerts will be returned, from the previous bookings the list will contain at most one alert per alert code that is active type ordered by alert date with latest alert taken. Requires ROLE_NOMIS_ALERTS",
+        "operationId": "getActiveAlertsForReconciliation",
+        "parameters": [
+          {
+            "name": "offenderNo",
+            "in": "path",
+            "description": "Offender No AKA prisoner number",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Offender No AKA prisoner number",
+              "example": "A1234AK"
+            },
+            "example": "A1234AK"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active Alerts Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrisonerAlertsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_ALERTS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Prisoner does not exist or has no bookings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/prisoners/ids": {
       "get": {
         "tags": [
@@ -6357,6 +6509,65 @@
           },
           "404": {
             "description": "Offender booking not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "sentencing-resource"
+        ],
+        "summary": "deletes a specific sentence",
+        "description": "Requires role NOMIS_SENTENCING. Deletes a sentence by booking and sentence sequence",
+        "operationId": "deleteSentence",
+        "parameters": [
+          {
+            "name": "sequence",
+            "in": "path",
+            "description": "Sentence sequence",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Sentence sequence",
+              "example": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "bookingId",
+            "in": "path",
+            "description": "Offender Booking Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Offender Booking Id",
+              "example": 12345
+            },
+            "example": 12345
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "the sentence has been deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint when role NOMIS_SENTENCING not present",
             "content": {
               "application/json": {
                 "schema": {
@@ -9961,6 +10172,7 @@
           "bookingSequence",
           "date",
           "isActive",
+          "isAlertFromPreviousBookingRelevant",
           "isVerified",
           "type"
         ],
@@ -10016,6 +10228,10 @@
           },
           "audit": {
             "$ref": "#/components/schemas/NomisAudit"
+          },
+          "isAlertFromPreviousBookingRelevant": {
+            "type": "boolean",
+            "description": "True if this alert is on a previous booking and should have been latest booking and is potentially relevant to prisoner"
           }
         },
         "description": "The data held in NOMIS about an alert associated with a prisoner"
@@ -11648,6 +11864,121 @@
         },
         "description": "Visit creation response"
       },
+      "CreateSentenceRequest": {
+        "required": [
+          "offenderChargeIds",
+          "sentenceCalcType",
+          "sentenceCategory",
+          "sentenceLevel",
+          "sentenceTerm",
+          "startDate",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "status": {
+            "type": "string"
+          },
+          "sentenceCategory": {
+            "type": "string"
+          },
+          "sentenceCalcType": {
+            "type": "string"
+          },
+          "sentenceLevel": {
+            "type": "string"
+          },
+          "fine": {
+            "type": "number"
+          },
+          "sentenceTerm": {
+            "$ref": "#/components/schemas/SentenceTermRequest"
+          },
+          "caseId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "offenderChargeIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        },
+        "description": "Sentence request"
+      },
+      "SentenceTermRequest": {
+        "required": [
+          "lifeSentenceFlag",
+          "sentenceTermType",
+          "startDate"
+        ],
+        "type": "object",
+        "properties": {
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "years": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "months": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "weeks": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "days": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hours": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sentenceTermType": {
+            "type": "string"
+          },
+          "lifeSentenceFlag": {
+            "type": "boolean"
+          }
+        },
+        "description": "Sentence term request"
+      },
+      "CreateSentenceResponse": {
+        "required": [
+          "sentenceSeq",
+          "termSeq"
+        ],
+        "type": "object",
+        "properties": {
+          "sentenceSeq": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "termSeq": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "description": "Create sentence response"
+      },
       "CreateCourtCaseRequest": {
         "required": [
           "courtAppearance",
@@ -11719,7 +12050,7 @@
             }
           }
         },
-        "description": "Create adjustment response"
+        "description": "Create court case response"
       },
       "CreateAlertResponse": {
         "required": [
