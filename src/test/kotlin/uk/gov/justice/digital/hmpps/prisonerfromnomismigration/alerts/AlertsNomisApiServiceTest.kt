@@ -73,6 +73,7 @@ class AlertsNomisApiServiceTest {
             createDatetime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
             createUsername = "Q1251T",
           ),
+          isAlertFromPreviousBookingRelevant = false,
         ),
       )
 
@@ -145,6 +146,7 @@ class AlertsNomisApiServiceTest {
             createDatetime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
             createUsername = "Q1251T",
           ),
+          isAlertFromPreviousBookingRelevant = false,
         ),
       )
 
@@ -197,6 +199,7 @@ class AlertsNomisApiServiceTest {
             createDatetime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
             createUsername = "Q1251T",
           ),
+          isAlertFromPreviousBookingRelevant = false,
         ),
       )
 

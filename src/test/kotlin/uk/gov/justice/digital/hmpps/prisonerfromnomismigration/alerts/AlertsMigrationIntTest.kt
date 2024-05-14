@@ -142,6 +142,7 @@ class AlertsMigrationIntTest : SqsIntegrationTestBase() {
                 createUsername = "SYS",
                 createDisplayName = null,
               ),
+              isAlertFromPreviousBookingRelevant = false,
             ),
           )
           alertsNomisApiMockServer.stubGetAlert(
@@ -167,6 +168,7 @@ class AlertsMigrationIntTest : SqsIntegrationTestBase() {
                 modifyUserId = "P_SNICKET",
                 modifyDisplayName = "PAULA SNICKET",
               ),
+              isAlertFromPreviousBookingRelevant = false,
             ),
           )
           alertsNomisApiMockServer.stubGetAlert(
@@ -189,6 +191,7 @@ class AlertsMigrationIntTest : SqsIntegrationTestBase() {
                 modifyUserId = "SYS",
                 modifyDisplayName = null,
               ),
+              isAlertFromPreviousBookingRelevant = false,
             ),
           )
           dpsAlertsServer.stubMigrateAlert(response = dpsAlert().copy(alertUuid = UUID.fromString("00000000-0000-0000-0000-000000000001")))

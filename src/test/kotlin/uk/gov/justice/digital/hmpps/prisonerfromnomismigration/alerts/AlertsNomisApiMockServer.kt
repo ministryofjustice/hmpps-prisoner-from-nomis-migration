@@ -42,6 +42,7 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
         createDatetime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
         createUsername = "Q1251T",
       ),
+      isAlertFromPreviousBookingRelevant = false,
     ),
   ) {
     nomisApi.stubFor(
@@ -109,6 +110,7 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
         createDatetime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
         createUsername = "Q1251T",
       ),
+      isAlertFromPreviousBookingRelevant = false,
     ),
   ) {
     val response = PrisonerAlertsResponse(
@@ -141,6 +143,7 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
         createDatetime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
         createUsername = "Q1251T",
       ),
+      isAlertFromPreviousBookingRelevant = false,
     ),
   ) {
     val response = BookingAlertsResponse(

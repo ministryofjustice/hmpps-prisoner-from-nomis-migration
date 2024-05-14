@@ -38,23 +38,11 @@ class AlertsSynchronisationService(
     val telemetry =
       mapOf("bookingId" to event.bookingId, "alertSequence" to event.alertSeq, "offenderNo" to event.offenderIdDisplay)
     val nomisAlert = nomisApiService.getAlert(bookingId = event.bookingId, alertSequence = event.alertSeq)
-    if (nomisAlert.audit.auditModuleName == "DPS_SYNCHRONISATION") {
+    if (nomisAlert.isSourcedFromDPS()) {
       telemetryClient.trackEvent("alert-synchronisation-created-skipped", telemetry)
     } else {
-      if (nomisAlert.audit.auditAdditionalInfo == "OMKCOPY.COPY_BOOKING_DATA") {
-        val previousBooking = nomisApiService.getBookingPreviousTo(offenderNo = event.offenderIdDisplay, bookingId = event.bookingId)
-        mappingApiService.updateNomisMappingId(previousBookingId = previousBooking.bookingId, alertSequence = event.alertSeq, newBookingId = event.bookingId)?.also { mapping ->
-          telemetryClient.trackEvent(
-            "alert-synchronisation-booking-transfer-success",
-            telemetry + mapOf("dpsAlertId" to mapping.dpsAlertId, "previousBookingId" to previousBooking.bookingId.toString()),
-          )
-        } ?: run {
-          telemetryClient.trackEvent(
-            "alert-synchronisation-booking-transfer-failed",
-            telemetry + ("previousBookingId" to previousBooking.bookingId.toString()),
-          )
-          throw IllegalStateException("Mapping was not found to update for booking ${previousBooking.bookingId} and alertSequence ${event.alertSeq}")
-        }
+      if (nomisAlert.isCreatedDueToNewBooking()) {
+        moveAlertMappingsToNewBooking(event, telemetry)
       } else {
         val mapping = mappingApiService.getOrNullByNomisId(event.bookingId, event.alertSeq)
         if (mapping != null) {
@@ -63,6 +51,9 @@ class AlertsSynchronisationService(
             telemetry + ("dpsAlertId" to mapping.dpsAlertId),
           )
         } else {
+          if (nomisAlert.shouldNotBeCreatedInDPS()) {
+            log.info("TODO - we shouldn't create this alert in DPS since it must be an irrelevant alert on a previous booking")
+          }
           dpsApiService.createAlert(
             nomisAlert.toDPSCreateAlert(event.offenderIdDisplay),
             createdByUsername = nomisAlert.audit.createUsername,
@@ -92,7 +83,7 @@ class AlertsSynchronisationService(
     val telemetry =
       mapOf("bookingId" to event.bookingId, "alertSequence" to event.alertSeq, "offenderNo" to event.offenderIdDisplay)
     val nomisAlert = nomisApiService.getAlert(bookingId = event.bookingId, alertSequence = event.alertSeq)
-    if (nomisAlert.audit.auditModuleName == "DPS_SYNCHRONISATION") {
+    if (nomisAlert.isSourcedFromDPS()) {
       telemetryClient.trackEvent("alert-synchronisation-updated-skipped", telemetry)
     } else {
       val mapping = mappingApiService.getOrNullByNomisId(event.bookingId, event.alertSeq)
@@ -271,9 +262,31 @@ class AlertsSynchronisationService(
         }
       }
   }
+
+  suspend fun moveAlertMappingsToNewBooking(event: AlertInsertedEvent, telemetry: Map<String, Any>) {
+    val previousBooking = nomisApiService.getBookingPreviousTo(offenderNo = event.offenderIdDisplay, bookingId = event.bookingId)
+    mappingApiService.updateNomisMappingId(previousBookingId = previousBooking.bookingId, alertSequence = event.alertSeq, newBookingId = event.bookingId)?.also { mapping ->
+      telemetryClient.trackEvent(
+        "alert-synchronisation-booking-transfer-success",
+        telemetry + mapOf("dpsAlertId" to mapping.dpsAlertId, "previousBookingId" to previousBooking.bookingId.toString()),
+      )
+    } ?: run {
+      telemetryClient.trackEvent(
+        "alert-synchronisation-booking-transfer-failed",
+        telemetry + ("previousBookingId" to previousBooking.bookingId.toString()),
+      )
+      throw IllegalStateException("Mapping was not found to update for booking ${previousBooking.bookingId} and alertSequence ${event.alertSeq}")
+    }
+  }
 }
 
 private enum class MappingResponse {
   MAPPING_CREATED,
   MAPPING_FAILED,
 }
+
+private fun AlertResponse.isSourcedFromDPS() = audit.auditModuleName == "DPS_SYNCHRONISATION"
+private fun AlertResponse.isCreatedDueToNewBooking() = audit.auditAdditionalInfo == "OMKCOPY.COPY_BOOKING_DATA"
+
+private fun AlertResponse.shouldBeCreatedInDPS() = bookingSequence == 1L || isAlertFromPreviousBookingRelevant
+private fun AlertResponse.shouldNotBeCreatedInDPS() = !shouldBeCreatedInDPS()

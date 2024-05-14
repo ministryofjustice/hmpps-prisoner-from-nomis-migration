@@ -1242,4 +1242,5 @@ private fun alert(bookingId: Long = 123456, alertSequence: Long = 3) = AlertResp
     createDatetime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
     createUsername = "Q1251T",
   ),
+  isAlertFromPreviousBookingRelevant = false,
 )
