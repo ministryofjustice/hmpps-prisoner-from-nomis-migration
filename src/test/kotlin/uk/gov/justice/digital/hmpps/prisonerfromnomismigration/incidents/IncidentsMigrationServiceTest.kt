@@ -62,7 +62,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatusCheck
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.INCIDENTS
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -71,7 +70,7 @@ private const val DPS_INCIDENT_ID = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42"
 
 @ExtendWith(MockitoExtension::class)
 internal class IncidentsMigrationServiceTest {
-  private val nomisApiService: NomisApiService = mock()
+  private val nomisApiService: IncidentsNomisApiService = mock()
   private val queueService: MigrationQueueService = mock()
   private val migrationHistoryService: MigrationHistoryService = mock()
   private val telemetryClient: TelemetryClient = mock()
@@ -94,7 +93,7 @@ internal class IncidentsMigrationServiceTest {
   @Nested
   @DisplayName("migrateIncidents")
   inner class MigrateIncidents {
-    private val nomisApiService = mockk<NomisApiService>()
+    private val nomisApiService = mockk<IncidentsNomisApiService>()
     private val auditService = mockk<AuditService>(relaxed = true)
     private val migrationHistoryService = mockk<MigrationHistoryService>(relaxed = true)
 
