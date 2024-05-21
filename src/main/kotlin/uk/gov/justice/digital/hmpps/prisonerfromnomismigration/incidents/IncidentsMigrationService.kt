@@ -8,6 +8,7 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.IncidentMappingDto
@@ -18,14 +19,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationMinutes
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.toMigrateUpsertNomisIncident
 
 @Service
 class IncidentsMigrationService(
   queueService: MigrationQueueService,
-  private val nomisApiService: NomisApiService,
+  private val nomisApiService: IncidentsNomisApiService,
   migrationHistoryService: MigrationHistoryService,
   telemetryClient: TelemetryClient,
   auditService: AuditService,
@@ -71,27 +70,34 @@ class IncidentsMigrationService(
     incidentsMappingService.findNomisIncidentMapping(nomisIncidentId)
       ?.run {
         log.info("Will not migrate the nomis incident=$nomisIncidentId since it was already mapped to DPS incident ${this.dpsIncidentId} during migration ${this.label}")
-      }
-      ?: run {
-        val nomisIncidentResponse = nomisApiService.getIncident(nomisIncidentId)
-        val migratedIncident = incidentsService.upsertIncident(nomisIncidentResponse.toMigrateUpsertNomisIncident())
-          .also {
-            createIncidentMapping(
-              dpsIncidentId = it.id.toString(),
-              nomisIncidentId = nomisIncidentId,
-              context = context,
-            )
-          }
+      } ?: runCatching {
+      val nomisIncidentResponse = nomisApiService.getIncident(nomisIncidentId)
+      incidentsService.upsertIncident(nomisIncidentResponse.toMigrateUpsertNomisIncident()).also {
+        createIncidentMapping(
+          dpsIncidentId = it.id.toString(),
+          nomisIncidentId = nomisIncidentId,
+          context = context,
+        )
         telemetryClient.trackEvent(
           "${MigrationType.INCIDENTS.telemetryName}-migration-entity-migrated",
           mapOf(
-            "nomisIncidentId" to nomisIncidentId.toString(),
-            "dpsIncidentId" to migratedIncident.id.toString(),
+            "nomisIncidentId" to nomisIncidentId,
+            "dpsIncidentId" to it.id,
             "migrationId" to migrationId,
           ),
-          null,
         )
       }
+    }.onFailure {
+      telemetryClient.trackEvent(
+        "${MigrationType.INCIDENTS.telemetryName}-migration-entity-migration-failed",
+        mapOf(
+          "nomisIncidentId" to nomisIncidentId,
+          "reason" to it.toString(),
+          "migrationId" to migrationId,
+        ),
+      )
+      throw it
+    }
   }
 
   private suspend fun createIncidentMapping(
@@ -111,7 +117,7 @@ class IncidentsMigrationService(
       if (it.isError) {
         val duplicateErrorDetails = (it.errorResponse!!).moreInfo
         telemetryClient.trackEvent(
-          "nomis-migration-incident-duplicate",
+          "${MigrationType.INCIDENTS.telemetryName}-nomis-migration-duplicate",
           mapOf<String, String>(
             "migrationId" to context.migrationId,
             "existingNomisIncidentId" to duplicateErrorDetails.existing.nomisIncidentId.toString(),
@@ -120,7 +126,6 @@ class IncidentsMigrationService(
             "duplicateDPSIncidentId" to duplicateErrorDetails.duplicate.dpsIncidentId,
             "durationMinutes" to context.durationMinutes().toString(),
           ),
-          null,
         )
       }
     }
