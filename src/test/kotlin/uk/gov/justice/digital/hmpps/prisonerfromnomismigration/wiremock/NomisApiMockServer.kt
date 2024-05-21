@@ -1383,6 +1383,9 @@ private fun incidentResponse(
       "firstName": "FRED",
       "lastName": "STAFF"
     },
+    "followUpDate": "2017-04-12",
+    "createDateTime": "2024-02-06T12:36:00",
+    "createdBy": "JIM SMITH",
     "reportedDateTime": "2024-02-06T12:36:00",
     "staffParties": [],
     "offenderParties": [],

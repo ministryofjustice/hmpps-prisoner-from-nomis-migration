@@ -207,7 +207,7 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
       mappingApi.verifyCreateMappingIncidentId(duplicateDPSIncidentId)
 
       verify(telemetryClient).trackEvent(
-        eq("nomis-migration-incident-duplicate"),
+        eq("incidents-nomis-migration-duplicate"),
         check {
           assertThat(it["existingNomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
           assertThat(it["duplicateNomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")

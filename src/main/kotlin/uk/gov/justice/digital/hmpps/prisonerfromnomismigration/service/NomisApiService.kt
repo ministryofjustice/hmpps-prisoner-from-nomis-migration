@@ -523,6 +523,11 @@ fun IncidentResponse.toNomisIncidentReport() =
     history = history.map { it.toUpsertHistory() },
     title = title,
     description = description,
+    followUpDate = followUpDate,
+    createdBy = createdBy,
+    createDateTime = createDateTime,
+    lastModifiedBy = lastModifiedBy,
+    lastModifiedDateTime = lastModifiedDateTime,
   )
 
 fun CodeDescription.toUpsertCodeDescription() =
@@ -544,6 +549,10 @@ fun StaffParty.toUpsertStaffParty() =
     staff = staff.toUpsertStaff(),
     role = role.toUpsertCodeDescription(),
     comment = comment,
+    createdBy = createdBy,
+    createDateTime = createDateTime,
+    lastModifiedBy = lastModifiedBy,
+    lastModifiedDateTime = lastModifiedDateTime,
   )
 
 fun OffenderParty.toUpsertOffenderParty() =
@@ -552,6 +561,10 @@ fun OffenderParty.toUpsertOffenderParty() =
     role = role.toUpsertCodeDescription(),
     outcome = outcome?.toUpsertCodeDescription(),
     comment = comment,
+    createdBy = createdBy,
+    createDateTime = createDateTime,
+    lastModifiedBy = lastModifiedBy,
+    lastModifiedDateTime = lastModifiedDateTime,
   )
 
 fun Offender.toUpsertOffender() =
@@ -567,6 +580,10 @@ fun Requirement.toUpsertRequirement() =
     staff = staff.toUpsertStaff(),
     prisonId = prisonId,
     comment = comment,
+    createdBy = createdBy,
+    createDateTime = createDateTime,
+    lastModifiedBy = lastModifiedBy,
+    lastModifiedDateTime = lastModifiedDateTime,
   )
 
 fun Question.toUpsertQuestion() =
@@ -575,6 +592,8 @@ fun Question.toUpsertQuestion() =
     sequence = sequence,
     question = question,
     answers = answers.map { it.toUpsertResponse() },
+    createdBy = createdBy,
+    createDateTime = createDateTime,
   )
 
 fun Response.toUpsertResponse() =
@@ -584,6 +603,11 @@ fun Response.toUpsertResponse() =
     questionResponseId = questionResponseId,
     answer = answer,
     comment = comment,
+    responseDate = responseDate,
+    createdBy = createdBy,
+    createDateTime = createDateTime,
+    lastModifiedBy = lastModifiedBy,
+    lastModifiedDateTime = lastModifiedDateTime,
   )
 
 fun History.toUpsertHistory() =
@@ -594,6 +618,8 @@ fun History.toUpsertHistory() =
     incidentChangeDate = incidentChangeDate,
     incidentChangeStaff = incidentChangeStaff.toUpsertStaff(),
     description = description,
+    createdBy = createdBy,
+    createDateTime = createDateTime,
   )
 
 fun HistoryQuestion.toUpsertHistoryQuestion() =

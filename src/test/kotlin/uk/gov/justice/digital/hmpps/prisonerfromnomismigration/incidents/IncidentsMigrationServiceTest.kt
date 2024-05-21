@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.KArgumentCaptor
@@ -31,6 +32,7 @@ import org.mockito.kotlin.whenever
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
+import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisCode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisReport
@@ -944,6 +946,64 @@ internal class IncidentsMigrationServiceTest {
         )
       }
 
+    @Test
+    internal fun `will throw after an error from the incidents api service so the message is rejected and retried`(): Unit =
+      runBlocking {
+        whenever(nomisApiService.getIncident(any())).thenReturn(aNomisIncidentResponse())
+        whenever(incidentsService.upsertIncident(any())).thenThrow(WebClientResponseException.BadGateway::class.java)
+
+        assertThrows<WebClientResponseException.BadGateway> {
+          service.migrateNomisEntity(
+            MigrationContext(
+              type = INCIDENTS,
+              migrationId = "2020-05-23T11:30:00",
+              estimatedCount = 7,
+              body = IncidentIdResponse(123),
+            ),
+          )
+        }
+
+        verify(telemetryClient).trackEvent(
+          eq("incidents-migration-entity-migration-failed"),
+          check<Map<String, String>> {
+            assertThat(it["nomisIncidentId"]).isEqualTo("123")
+            assertThat(it["reason"]).contains("BadGateway")
+            assertThat(it["migrationId"]).isEqualTo("2020-05-23T11:30:00")
+          },
+          isNull(),
+        )
+
+        verifyNoInteractions(queueService)
+      }
+
+    @Test
+    internal fun `will throw after an error retrieving the Nomis entity so the message is rejected and retried`(): Unit =
+      runBlocking {
+        whenever(nomisApiService.getIncident(any())).thenThrow(WebClientResponseException.BadGateway::class.java)
+
+        assertThrows<WebClientResponseException.BadGateway> {
+          service.migrateNomisEntity(
+            MigrationContext(
+              type = INCIDENTS,
+              migrationId = "2020-05-23T11:30:00",
+              estimatedCount = 7,
+              body = IncidentIdResponse(123),
+            ),
+          )
+        }
+
+        verifyNoInteractions(queueService)
+        verify(telemetryClient).trackEvent(
+          eq("incidents-migration-entity-migration-failed"),
+          check<Map<String, String>> {
+            assertThat(it["nomisIncidentId"]).isEqualTo("123")
+            assertThat(it["reason"]).contains("BadGateway")
+            assertThat(it["migrationId"]).isEqualTo("2020-05-23T11:30:00")
+          },
+          isNull(),
+        )
+      }
+
     @Nested
     inner class WhenMigratedAlready {
       @BeforeEach
@@ -1021,6 +1081,9 @@ fun aMigrationRequest() =
       staffParties = listOf(),
       questions = listOf(),
       requirements = listOf(),
+      followUpDate = LocalDate.parse("2023-05-16"),
+      createdBy = "J SMITH",
+      createDateTime = "2024-07-15T18:35:00",
     ),
   )
 
@@ -1042,6 +1105,9 @@ fun aNomisIncidentResponse() =
     staffParties = listOf(),
     questions = listOf(),
     requirements = listOf(),
+    followUpDate = LocalDate.parse("2023-05-16"),
+    createdBy = "J SMITH",
+    createDateTime = "2024-07-15T18:35:00",
   )
 
 fun pages(total: Long, startId: Long = 1): PageImpl<IncidentIdResponse> = PageImpl<IncidentIdResponse>(
