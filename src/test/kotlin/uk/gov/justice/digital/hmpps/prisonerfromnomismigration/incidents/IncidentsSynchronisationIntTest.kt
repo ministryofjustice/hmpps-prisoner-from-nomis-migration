@@ -59,7 +59,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `the event is ignored`() {
         await untilAsserted {
           verify(telemetryClient).trackEvent(
-            eq("incident-synchronisation-skipped"),
+            eq("incidents-synchronisation-skipped"),
             check {
               assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
               assertThat(it["dpsIncidentId"]).isNull()
@@ -128,7 +128,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create telemetry tracking the create`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("incident-created-synchronisation-success"),
+              eq("incidents-created-synchronisation-success"),
               check {
                 assertThat(it["dpsIncidentId"]).isEqualTo(DPS_INCIDENT_ID)
                 assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
@@ -215,7 +215,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create telemetry tracking the create`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("incident-updated-synchronisation-success"),
+              eq("incidents-updated-synchronisation-success"),
               check {
                 assertThat(it["dpsIncidentId"]).isEqualTo(DPS_INCIDENT_ID)
                 assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
@@ -253,7 +253,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
 
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("from-nomis-sync-incident-duplicate"),
+              eq("incidents-nomis-sync-duplicate"),
               check {
                 assertThat(it["existingNomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
                 assertThat(it["duplicateNomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
@@ -286,7 +286,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `the event is ignored`() {
         await untilAsserted {
           verify(telemetryClient).trackEvent(
-            eq("incident-synchronisation-skipped"),
+            eq("incidents-synchronisation-skipped"),
             check {
               assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
               assertThat(it["dpsIncidentId"]).isNull()
@@ -355,7 +355,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create telemetry tracking the create`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("incident-created-synchronisation-success"),
+              eq("incidents-created-synchronisation-success"),
               check {
                 assertThat(it["dpsIncidentId"]).isEqualTo(DPS_INCIDENT_ID)
                 assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
@@ -442,7 +442,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create telemetry tracking the create`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("incident-updated-synchronisation-success"),
+              eq("incidents-updated-synchronisation-success"),
               check {
                 assertThat(it["dpsIncidentId"]).isEqualTo(DPS_INCIDENT_ID)
                 assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
@@ -480,7 +480,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
 
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("from-nomis-sync-incident-duplicate"),
+              eq("incidents-nomis-sync-duplicate"),
               check {
                 assertThat(it["existingNomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
                 assertThat(it["duplicateNomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
@@ -517,7 +517,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `the event is ignored`() {
         await untilAsserted {
           verify(telemetryClient).trackEvent(
-            eq("incident-delete-synchronisation-skipped"),
+            eq("incidents-deleted-synchronisation-skipped"),
             check {
               assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
             },
@@ -566,7 +566,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will create telemetry tracking the ignored delete`() {
         verify(telemetryClient).trackEvent(
-          eq("incident-delete-synchronisation-ignored"),
+          eq("incidents-deleted-synchronisation-ignored"),
           check {
             assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
           },
@@ -621,7 +621,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create telemetry tracking the delete`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("incident-delete-synchronisation-success"),
+              eq("incidents-deleted-synchronisation-success"),
               check {
                 assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
                 assertThat(it["dpsIncidentId"]).isEqualTo(DPS_INCIDENT_ID)

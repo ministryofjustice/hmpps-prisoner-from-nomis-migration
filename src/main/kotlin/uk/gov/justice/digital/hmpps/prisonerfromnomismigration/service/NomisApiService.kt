@@ -18,45 +18,18 @@ import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMigrateRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisCode
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisHistory
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisHistoryQuestion
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisHistoryResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisOffender
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisOffenderParty
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisQuestion
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisReport
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisRequirement
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisStaff
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisStaffParty
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisStatus
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.EndActivitiesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveActivityIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveAllocationIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetActivityResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetAllocationResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.History
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.HistoryQuestion
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.HistoryResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentIdResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.LocationIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.LocationResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Offender
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderParty
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Question
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Requirement
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Response
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Staff
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.StaffParty
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.model.LegacyAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.model.LegacyAdjustment.AdjustmentType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomUsageResponse
@@ -285,34 +258,6 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       }
       .awaitSingle()
 
-  // /////////////////////////////////////// Incidents
-
-  suspend fun getIncident(incidentId: Long): IncidentResponse =
-    webClient.get()
-      .uri("/incidents/{incidentId}", incidentId)
-      .retrieve()
-      .bodyToMono(IncidentResponse::class.java)
-      .awaitSingle()
-
-  suspend fun getIncidentIds(
-    fromDate: LocalDate?,
-    toDate: LocalDate?,
-    pageNumber: Long,
-    pageSize: Long,
-  ): PageImpl<IncidentIdResponse> =
-    webClient.get()
-      .uri {
-        it.path("/incidents/ids")
-          .queryParam("fromDate", fromDate)
-          .queryParam("toDate", toDate)
-          .queryParam("page", pageNumber)
-          .queryParam("size", pageSize)
-          .build()
-      }
-      .retrieve()
-      .bodyToMono(typeReference<RestResponsePage<IncidentIdResponse>>())
-      .awaitSingle()
-
   // /////////////////////////////////////// Locations
 
   suspend fun getLocation(locationId: Long): LocationResponse =
@@ -497,118 +442,4 @@ fun CSIPResponse.toMigrateRequest() =
   CSIPMigrateRequest(
     nomisCSIPId = id,
     referralSummary = "test",
-  )
-
-fun IncidentResponse.toMigrateUpsertNomisIncident() =
-  NomisSyncRequest(
-    initialMigration = true,
-    incidentReport = toNomisIncidentReport(),
-  )
-
-fun IncidentResponse.toNomisIncidentReport() =
-  NomisReport(
-    incidentId = incidentId,
-    questionnaireId = questionnaireId,
-    prison = prison.toUpsertCodeDescription(),
-    status = NomisStatus(status.code, status.description),
-    type = type,
-    lockedResponse = lockedResponse,
-    incidentDateTime = incidentDateTime,
-    reportingStaff = reportingStaff.toUpsertStaff(),
-    reportedDateTime = reportedDateTime,
-    staffParties = staffParties.map { it.toUpsertStaffParty() },
-    offenderParties = offenderParties.map { it.toUpsertOffenderParty() },
-    requirements = requirements.map { it.toUpsertRequirement() },
-    questions = questions.map { it.toUpsertQuestion() },
-    history = history.map { it.toUpsertHistory() },
-    title = title,
-    description = description,
-  )
-
-fun CodeDescription.toUpsertCodeDescription() =
-  NomisCode(
-    code = code,
-    description = description,
-  )
-
-fun Staff.toUpsertStaff() =
-  NomisStaff(
-    username = username,
-    staffId = staffId,
-    firstName = firstName,
-    lastName = lastName,
-  )
-
-fun StaffParty.toUpsertStaffParty() =
-  NomisStaffParty(
-    staff = staff.toUpsertStaff(),
-    role = role.toUpsertCodeDescription(),
-    comment = comment,
-  )
-
-fun OffenderParty.toUpsertOffenderParty() =
-  NomisOffenderParty(
-    offender = offender.toUpsertOffender(),
-    role = role.toUpsertCodeDescription(),
-    outcome = outcome?.toUpsertCodeDescription(),
-    comment = comment,
-  )
-
-fun Offender.toUpsertOffender() =
-  NomisOffender(
-    offenderNo = offenderNo,
-    firstName = firstName,
-    lastName = lastName,
-  )
-
-fun Requirement.toUpsertRequirement() =
-  NomisRequirement(
-    date = date,
-    staff = staff.toUpsertStaff(),
-    prisonId = prisonId,
-    comment = comment,
-  )
-
-fun Question.toUpsertQuestion() =
-  NomisQuestion(
-    questionId = questionId,
-    sequence = sequence,
-    question = question,
-    answers = answers.map { it.toUpsertResponse() },
-  )
-
-fun Response.toUpsertResponse() =
-  NomisResponse(
-    sequence = sequence,
-    recordingStaff = recordingStaff.toUpsertStaff(),
-    questionResponseId = questionResponseId,
-    answer = answer,
-    comment = comment,
-  )
-
-fun History.toUpsertHistory() =
-  NomisHistory(
-    questionnaireId = questionnaireId,
-    type = type,
-    questions = questions.map { it.toUpsertHistoryQuestion() },
-    incidentChangeDate = incidentChangeDate,
-    incidentChangeStaff = incidentChangeStaff.toUpsertStaff(),
-    description = description,
-  )
-
-fun HistoryQuestion.toUpsertHistoryQuestion() =
-  NomisHistoryQuestion(
-    questionId = questionId,
-    sequence = sequence,
-    question = question,
-    answers = answers.map { it.toUpsertHistoryResponse() },
-  )
-
-fun HistoryResponse.toUpsertHistoryResponse() =
-  NomisHistoryResponse(
-    responseSequence = responseSequence,
-    recordingStaff = recordingStaff.toUpsertStaff(),
-    questionResponseId = questionResponseId,
-    answer = answer,
-    comment = comment,
   )
