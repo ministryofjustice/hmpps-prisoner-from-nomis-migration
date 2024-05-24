@@ -152,8 +152,15 @@ class AlertsNomisApiServiceTest {
 
       val alerts = apiService.getAlertsToMigrate("A1234TT")
 
-      assertThat(alerts.latestBookingAlerts).hasSize(3)
-      assertThat(alerts.previousBookingsAlerts).hasSize(1)
+      assertThat(alerts?.latestBookingAlerts).hasSize(3)
+      assertThat(alerts?.previousBookingsAlerts).hasSize(1)
+    }
+
+    @Test
+    fun `will return nothing when prisoner not found`() = runTest {
+      alertsNomisApiMockServer.stubGetAlertsToMigrate(status = NOT_FOUND)
+
+      assertThat(apiService.getAlertsToMigrate("A1234TT")).isNull()
     }
   }
 
@@ -350,8 +357,7 @@ class AlertsNomisApiServiceTest {
       )
 
       alertsNomisApiMockServer.verify(
-        getRequestedFor(urlPathEqualTo("/prisoners/ids"))
-          .withQueryParam("active", equalTo("false"))
+        getRequestedFor(urlPathEqualTo("/prisoners/ids/all"))
           .withQueryParam("page", equalTo("5"))
           .withQueryParam("size", equalTo("100")),
       )
@@ -359,7 +365,7 @@ class AlertsNomisApiServiceTest {
 
     @Test
     fun `will return a page of alerts`() = runTest {
-      alertsNomisApiMockServer.stubGetPrisonIds(totalElements = 10, bookingId = 0, offenderNo = "A0001KT")
+      alertsNomisApiMockServer.stubGetPrisonIds(totalElements = 10, offenderNo = "A0001KT")
 
       val prisonerIds = apiService.getPrisonerIds(
         pageNumber = 5,
@@ -367,11 +373,7 @@ class AlertsNomisApiServiceTest {
       )
 
       assertThat(prisonerIds.content).hasSize(10)
-      assertThat(prisonerIds.content[0].status).isEqualTo("ACTIVE IN")
-      assertThat(prisonerIds.content[0].bookingId).isEqualTo(1)
       assertThat(prisonerIds.content[0].offenderNo).isEqualTo("A0001KT")
-      assertThat(prisonerIds.content[1].status).isEqualTo("ACTIVE IN")
-      assertThat(prisonerIds.content[1].bookingId).isEqualTo(2)
       assertThat(prisonerIds.content[1].offenderNo).isEqualTo("A0002KT")
     }
   }

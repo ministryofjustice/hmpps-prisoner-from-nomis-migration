@@ -14,6 +14,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Migrati
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerAlertMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerAlertsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
@@ -62,11 +63,10 @@ class AlertsByPrisonerMigrationService(
 
   override suspend fun migrateNomisEntity(context: MigrationContext<PrisonerId>) {
     log.info("attempting to migrate ${context.body}")
-    val latestNomisBookingId = context.body.bookingId
     val offenderNo = context.body.offenderNo
-    val status = context.body.status
 
-    val nomisAlerts = alertsNomisService.getAlertsToMigrate(offenderNo)
+    // when NOMIS does not find a booking this will be null so just migrate as if there is no alerts
+    val nomisAlerts = alertsNomisService.getAlertsToMigrate(offenderNo) ?: PrisonerAlertsResponse(emptyList(), emptyList())
     val activeAlertsFromPreviousBookings = nomisAlerts.previousBookingsAlerts.filter { it.isActive }
     val allNomisAlerts = (nomisAlerts.latestBookingAlerts + nomisAlerts.previousBookingsAlerts).map { it.toDPSMigratedAlert() }
     alertsDpsService.migrateAlerts(
@@ -91,9 +91,7 @@ class AlertsByPrisonerMigrationService(
       telemetryClient.trackEvent(
         "alerts-migration-entity-migrated",
         mapOf(
-          "latestNomisBookingId" to latestNomisBookingId,
           "offenderNo" to offenderNo,
-          "status" to status,
           "migrationId" to context.migrationId,
           "alertCount" to it.size.toString(),
           "alertsFromCurrentBooking" to nomisAlerts.latestBookingAlerts.size.toString(),
