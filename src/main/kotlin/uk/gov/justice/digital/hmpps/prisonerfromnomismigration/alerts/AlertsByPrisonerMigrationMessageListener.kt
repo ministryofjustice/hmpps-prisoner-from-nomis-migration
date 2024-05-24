@@ -25,7 +25,12 @@ class AlertsByPrisonerMigrationMessageListener(
   alertsMigrationService,
 ) {
 
-  @SqsListener(ALERTS_QUEUE_ID, factory = "hmppsQueueContainerFactoryProxy")
+  @SqsListener(
+    ALERTS_QUEUE_ID,
+    factory = "hmppsQueueContainerFactoryProxy",
+    maxConcurrentMessages = "8",
+    maxMessagesPerPoll = "8",
+  )
   @WithSpan(value = "dps-syscon-migration_alerts_queue", kind = SpanKind.SERVER)
   fun onSentencingMessage(message: String, rawMessage: Message): CompletableFuture<Void>? {
     return onMessage(message, rawMessage)
