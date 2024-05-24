@@ -127,6 +127,17 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
+  fun stubGetAlertsToMigrate(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    nomisApi.stubFor(
+      get(urlPathMatching("/prisoners/.+/alerts/to-migrate")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
   fun stubGetAlertsByBookingId(
     bookingId: Long,
     alertCount: Long = 1,
@@ -159,16 +170,14 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubGetPrisonIds(totalElements: Long = 20, pageSize: Long = 20, bookingId: Long = 123456, offenderNo: String = "A0001KT") {
+  fun stubGetPrisonIds(totalElements: Long = 20, pageSize: Long = 20, offenderNo: String = "A0001KT") {
     val content: List<PrisonerId> = (1..min(pageSize, totalElements)).map {
       PrisonerId(
-        bookingId = bookingId + it,
         offenderNo = offenderNo.replace("0001", "$it".padStart(4, '0')),
-        status = "ACTIVE IN",
       )
     }
     nomisApi.stubFor(
-      get(urlPathEqualTo("/prisoners/ids")).willReturn(
+      get(urlPathEqualTo("/prisoners/ids/all")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())

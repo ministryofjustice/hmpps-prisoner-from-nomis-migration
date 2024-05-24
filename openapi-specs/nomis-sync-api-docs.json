@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-05-21.7725.15427da"
+    "version": "2024-05-24.7783.b64e417"
   },
   "servers": [
     {
@@ -6640,7 +6640,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PagePrisonerId"
+                  "$ref": "#/components/schemas/PagePrisonerIds"
                 }
               }
             }
@@ -6657,6 +6657,58 @@
           },
           "403": {
             "description": "Forbidden to access this endpoint when role SYNCHRONISATION_REPORTING not present",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisoners/ids/all": {
+      "get": {
+        "tags": [
+          "prisoners-resource"
+        ],
+        "summary": "Gets the identifier for all prisoners.",
+        "description": "Requires role SYNCHRONISATION_REPORTING.",
+        "operationId": "getAllPrisoners",
+        "parameters": [
+          {
+            "name": "pageRequest",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "paged list of prisoner ids",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagePrisonerId"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint when role SYNCHRONISATION_REPORTING or ROLE_NOMIS_ALERTS not present",
             "content": {
               "application/json": {
                 "schema": {
@@ -14954,6 +15006,82 @@
         },
         "description": "The list of unique alerts held against a prisoner"
       },
+      "PagePrisonerIds": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PrisonerIds"
+            }
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PrisonerIds": {
+        "required": [
+          "bookingId",
+          "offenderNo",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "integer",
+            "description": "Latest booking id",
+            "format": "int64",
+            "example": 12345
+          },
+          "offenderNo": {
+            "type": "string",
+            "description": "The NOMIS reference AKA prisoner number",
+            "example": "A1234AA"
+          },
+          "status": {
+            "type": "string",
+            "description": "The prisoner's current status",
+            "example": "ACTIVE IN"
+          }
+        },
+        "description": "Prisoner identifiers"
+      },
       "PagePrisonerId": {
         "type": "object",
         "properties": {
@@ -15005,27 +15133,14 @@
       },
       "PrisonerId": {
         "required": [
-          "bookingId",
-          "offenderNo",
-          "status"
+          "offenderNo"
         ],
         "type": "object",
         "properties": {
-          "bookingId": {
-            "type": "integer",
-            "description": "Latest booking id",
-            "format": "int64",
-            "example": 12345
-          },
           "offenderNo": {
             "type": "string",
             "description": "The NOMIS reference AKA prisoner number",
             "example": "A1234AA"
-          },
-          "status": {
-            "type": "string",
-            "description": "The prisoner's current status",
-            "example": "ACTIVE IN"
           }
         },
         "description": "Prisoner identifier"
