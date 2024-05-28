@@ -5,9 +5,9 @@ import org.jlleitschuh.gradle.ktlint.tasks.KtLintFormatTask
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "5.15.6"
-  kotlin("plugin.spring") version "1.9.23"
-  id("org.openapi.generator") version "7.5.0"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "6.0.0"
+  kotlin("plugin.spring") version "2.0.0"
+  id("org.openapi.generator") version "7.6.0"
 }
 
 configurations {
@@ -17,7 +17,7 @@ configurations {
 }
 
 dependencies {
-  implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:0.2.2")
+  implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:0.2.4")
   implementation("org.springframework.boot:spring-boot-starter-webflux")
   implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:3.2-beta")
   implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
@@ -33,21 +33,21 @@ dependencies {
   runtimeOnly("org.postgresql:postgresql:42.7.3")
   implementation("org.flywaydb:flyway-core")
 
-  implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:1.33.1")
+  implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:1.33.3")
 
   testImplementation("io.swagger.parser.v3:swagger-parser:2.1.22") {
     exclude(group = "io.swagger.core.v3")
   }
-  testImplementation("io.swagger.core.v3:swagger-core-jakarta:2.2.21")
+  testImplementation("io.swagger.core.v3:swagger-core-jakarta:2.2.22")
   testImplementation("io.jsonwebtoken:jjwt-impl:0.12.5")
   testImplementation("io.jsonwebtoken:jjwt-jackson:0.12.5")
 
-  testImplementation("org.wiremock:wiremock-standalone:3.5.3")
-  testImplementation("org.testcontainers:localstack:1.19.7")
-  testImplementation("com.amazonaws:aws-java-sdk-core:1.12.704")
+  testImplementation("org.wiremock:wiremock-standalone:3.6.0")
+  testImplementation("org.testcontainers:localstack:1.19.8")
+  testImplementation("com.amazonaws:aws-java-sdk-core:1.12.730")
   testImplementation("org.awaitility:awaitility-kotlin:4.2.1")
-  testImplementation("org.testcontainers:postgresql:1.19.7")
-  testImplementation("io.mockk:mockk:1.13.10")
+  testImplementation("org.testcontainers:postgresql:1.19.8")
+  testImplementation("io.mockk:mockk:1.13.11")
   testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
 }
 
@@ -69,9 +69,7 @@ tasks {
       "buildAlertsApiModel",
       "buildCourtSentencingApiModel",
     )
-    kotlinOptions {
-      jvmTarget = "21"
-    }
+    compilerOptions.jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
   }
   withType<KtLintCheckTask> {
     // Under gradle 8 we must declare the dependency here, even if we're not going to be linting the model
