@@ -1440,7 +1440,9 @@ private fun csipResponse(
             "code":"BUL",
             "description":"Bullying"
           },
-          "comment":"referral - continued screen comment goes here"
+          "comment":"referral - continued screen comment goes here",
+          "createDateTime":"2024-04-01T10:00:00",
+          "createdBy":"JSMITH" 
         }
       ],
       "knownReasons":"known reasons details go in here",
@@ -1491,7 +1493,9 @@ private fun csipResponse(
         "referredBy":"karen",
         "createdDate":"2024-04-16",
         "targetDate":"2024-08-20",
-        "closedDate":"2024-04-17"
+        "closedDate":"2024-04-17",
+        "createDateTime":"2024-04-01T10:00:00",
+        "createdBy":"JSMITH"
       }
     ],
     "reviews":[
@@ -1504,10 +1508,14 @@ private fun csipResponse(
         "caseNote":false,
         "closeCSIP":true,
         "peopleInformed":false,
-        "closeDate":"2024-04-16"
+        "closeDate":"2024-04-16",
+        "createDateTime":"2024-04-01T10:00:00",
+        "createdBy":"JSMITH"
       }
     ],
-    "documents":[]
+    "documents":[],
+    "createDateTime":"2024-04-01T10:00:00",
+    "createdBy":"JSMITH"
   }
   """.trimIndent()
 
