@@ -68,12 +68,12 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           prisonId = "MDI",
           title = "There was a problem",
           description = "Fighting was happening",
-          createdDate = "2021-07-05T10:35:17",
-          lastModifiedDate = "2021-07-05T10:35:17",
-          lastModifiedBy = "string",
+          createdAt = "2021-07-05T10:35:17",
+          modifiedAt = "2021-07-05T10:35:17",
+          modifiedBy = "JSMITH",
         ),
-        reportedBy = "Jim Smith",
-        reportedDate = "2021-07-05T10:35:17",
+        reportedBy = "JSMITH",
+        reportedAt = "2021-07-05T10:35:17",
         status = Report.Status.DRAFT,
         assignedTo = "string",
         questions = listOf(
@@ -82,9 +82,9 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             question = "string",
             responses = listOf(
               Response(
-                response = "string",
-                recordedBy = "string",
-                recordedOn = "2021-07-05T10:35:17",
+                response = "They answered",
+                recordedBy = "JSMITH",
+                recordedAt = "2021-07-05T10:35:17",
                 additionalInformation = null,
               ),
             ),
@@ -94,8 +94,8 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         history = listOf(
           History(
             type = History.Type.ABSCONDER,
-            changeDate = "2021-07-05T10:35:17",
-            changeStaffUsername = "string",
+            changedAt = "2021-07-05T10:35:17",
+            changedBy = "JSMITH",
             questions = listOf(
               HistoricalQuestion(
                 code = "string",
@@ -104,11 +104,11 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
                   HistoricalResponse(
                     response = "string",
                     recordedBy = "string",
-                    recordedOn = "2021-07-05T10:35:17",
-                    // additionalInformation = null,
+                    recordedAt = "2021-07-05T10:35:17",
+                    additionalInformation = "more info",
                   ),
                 ),
-                // additionalInformation = null,
+                additionalInformation = "some info",
               ),
             ),
           ),
@@ -116,8 +116,8 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         historyOfStatuses = listOf(
           StatusHistory(
             status = StatusHistory.Status.DRAFT,
-            setOn = "2021-07-05T10:35:17",
-            setBy = "string",
+            changedAt = "2021-07-05T10:35:17",
+            changedBy = "JSMITH",
           ),
         ),
         staffInvolved = listOf(
@@ -153,9 +153,9 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           ),
         ),
 
-        createdDate = "2021-07-05T10:35:17",
-        lastModifiedDate = "2021-07-05T10:35:17",
-        lastModifiedBy = "string",
+        createdAt = "2021-07-05T10:35:17",
+        modifiedAt = "2021-07-05T10:35:17",
+        modifiedBy = "JSMITH",
         createdInNomis = true,
       )
   }

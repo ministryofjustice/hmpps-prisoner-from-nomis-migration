@@ -1370,7 +1370,7 @@ private fun incidentResponse(
       "standardUser": true,
       "enhancedUser": true
     },
-    "prison": {
+    "agency": {
       "code": "BXI",
       "description": "Brixton"
     },
