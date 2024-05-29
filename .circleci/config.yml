@@ -65,7 +65,7 @@ jobs:
             GRADLE_ARGS=$(cat src/test/kotlin/filenames.txt \
             | sed 's@/@.@g' \
             | sed 's/\.kt//g' \
-            | awk '{print "--tests",$0}')
+            | awk '{for (i=1; i<=NF; i++) print "--tests",$i}')
             
             echo "Prepared arguments for Gradle: $GRADLE_ARGS"
 
