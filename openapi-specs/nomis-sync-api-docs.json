@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-05-24.7783.b64e417"
+    "version": "2024-05-28.7848.31e59e4"
   },
   "servers": [
     {
@@ -6665,7 +6665,8 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/prisoners/ids/all": {
@@ -6709,6 +6710,58 @@
           },
           "403": {
             "description": "Forbidden to access this endpoint when role SYNCHRONISATION_REPORTING or ROLE_NOMIS_ALERTS not present",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisoners/ids/active": {
+      "get": {
+        "tags": [
+          "prisoners-resource"
+        ],
+        "summary": "Gets the identifiers for all active prisoners",
+        "description": "Requires role SYNCHRONISATION_REPORTING.",
+        "operationId": "getActivePrisonerIdentifiers",
+        "parameters": [
+          {
+            "name": "pageRequest",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "paged list of prisoner ids",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagePrisonerIds"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint when role SYNCHRONISATION_REPORTING not present",
             "content": {
               "application/json": {
                 "schema": {
@@ -7601,6 +7654,107 @@
           },
           "404": {
             "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/incidents/reconciliation/agency/{agencyId}": {
+      "get": {
+        "tags": [
+          "incident-resource"
+        ],
+        "summary": "Gets incident counts",
+        "description": "Retrieves open and closed incident counts for a prison.",
+        "operationId": "getIncidentCountsForReconciliation",
+        "parameters": [
+          {
+            "name": "agencyId",
+            "in": "path",
+            "description": "Agency Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Agency Id",
+              "example": "LEI"
+            },
+            "example": "LEI"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reconciliation data returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentsReconciliationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires role NOMIS_INCIDENTS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/incidents/reconciliation/agencies": {
+      "get": {
+        "tags": [
+          "incident-resource"
+        ],
+        "summary": "Retrieve a list of all agencies that have raised incidents)",
+        "description": "Retrieve a list of all agencies that have raised incidents, including prisons and PECS. Requires authorised access",
+        "operationId": "getIncidentAgencies",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/IncidentAgencyId"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
             "content": {
               "application/json": {
                 "schema": {
@@ -14037,10 +14191,10 @@
             "type": "integer",
             "format": "int32"
           },
-          "paged": {
+          "unpaged": {
             "type": "boolean"
           },
-          "unpaged": {
+          "paged": {
             "type": "boolean"
           }
         }
@@ -15058,8 +15212,7 @@
       "PrisonerIds": {
         "required": [
           "bookingId",
-          "offenderNo",
-          "status"
+          "offenderNo"
         ],
         "type": "object",
         "properties": {
@@ -15073,11 +15226,6 @@
             "type": "string",
             "description": "The NOMIS reference AKA prisoner number",
             "example": "A1234AA"
-          },
-          "status": {
-            "type": "string",
-            "description": "The prisoner's current status",
-            "example": "ACTIVE IN"
           }
         },
         "description": "Prisoner identifiers"
@@ -16097,6 +16245,7 @@
       },
       "IncidentResponse": {
         "required": [
+          "agency",
           "createDateTime",
           "createdBy",
           "history",
@@ -16104,7 +16253,6 @@
           "incidentId",
           "lockedResponse",
           "offenderParties",
-          "prison",
           "questionnaireId",
           "questions",
           "reportedDateTime",
@@ -16134,7 +16282,7 @@
             "type": "string",
             "description": "The incident details"
           },
-          "prison": {
+          "agency": {
             "$ref": "#/components/schemas/CodeDescription"
           },
           "status": {
@@ -16368,10 +16516,10 @@
       },
       "Requirement": {
         "required": [
+          "agencyId",
           "createDateTime",
           "createdBy",
           "date",
-          "prisonId",
           "staff"
         ],
         "type": "object",
@@ -16388,9 +16536,9 @@
           "staff": {
             "$ref": "#/components/schemas/Staff"
           },
-          "prisonId": {
+          "agencyId": {
             "type": "string",
-            "description": "The reporting location of the staff"
+            "description": "The reporting agency of the staff"
           },
           "createDateTime": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
@@ -16514,6 +16662,60 @@
           }
         },
         "description": "Staff involved in the incident"
+      },
+      "IncidentsCount": {
+        "required": [
+          "closedIncidents",
+          "openIncidents"
+        ],
+        "type": "object",
+        "properties": {
+          "openIncidents": {
+            "type": "integer",
+            "description": "A count for the number of open incidents i.e. all incidents that are not closed or duplicates",
+            "format": "int64",
+            "example": 4
+          },
+          "closedIncidents": {
+            "type": "integer",
+            "description": "A count for the number of closed or duplicate incidents",
+            "format": "int64",
+            "example": 2
+          }
+        },
+        "description": "A count for incidents at an agency"
+      },
+      "IncidentsReconciliationResponse": {
+        "required": [
+          "agencyId",
+          "incidentCount"
+        ],
+        "type": "object",
+        "properties": {
+          "agencyId": {
+            "type": "string",
+            "description": "The agency we checked the incidents for",
+            "example": "BXI"
+          },
+          "incidentCount": {
+            "$ref": "#/components/schemas/IncidentsCount"
+          }
+        },
+        "description": "Incidents reconciliation count response"
+      },
+      "IncidentAgencyId": {
+        "required": [
+          "agencyId"
+        ],
+        "type": "object",
+        "properties": {
+          "agencyId": {
+            "type": "string",
+            "description": "The agency id",
+            "example": "BXI"
+          }
+        },
+        "description": "Incident Agency Id"
       },
       "IncidentIdResponse": {
         "required": [
@@ -16781,6 +16983,8 @@
       "Attendee": {
         "required": [
           "If attended (otherwise contributor)",
+          "createDateTime",
+          "createdBy",
           "id"
         ],
         "type": "object",
@@ -16802,6 +17006,26 @@
           },
           "Contribution": {
             "type": "string"
+          },
+          "createDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The date and time the attendee was created",
+            "example": "2021-07-05T10:35:17"
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "The username of the person who created the attendee"
+          },
+          "lastModifiedDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The date and time the attendee was last updated",
+            "example": "2021-07-05T10:35:17"
+          },
+          "lastModifiedBy": {
+            "type": "string",
+            "description": "The username of the person who last updated the attendee"
           }
         },
         "description": "Summary details"
@@ -16810,6 +17034,8 @@
         "required": [
           "areaOfWork",
           "bookingId",
+          "createDateTime",
+          "createdBy",
           "decision",
           "documents",
           "id",
@@ -16929,6 +17155,26 @@
             "items": {
               "$ref": "#/components/schemas/DocumentIdResponse"
             }
+          },
+          "createDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The date and time the report was created",
+            "example": "2021-07-05T10:35:17"
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "The username of the person who created the report"
+          },
+          "lastModifiedDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The date and time the report was last updated",
+            "example": "2021-07-05T10:35:17"
+          },
+          "lastModifiedBy": {
+            "type": "string",
+            "description": "The username of the person who last updated the report"
           }
         },
         "description": "CSIP Details"
@@ -16974,6 +17220,8 @@
       },
       "FactorResponse": {
         "required": [
+          "createDateTime",
+          "createdBy",
           "id",
           "type"
         ],
@@ -16990,12 +17238,34 @@
           "comment": {
             "type": "string",
             "description": "Factor comment"
+          },
+          "createDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The date and time the report was created",
+            "example": "2021-07-05T10:35:17"
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "The username of the person who created the report"
+          },
+          "lastModifiedDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The date and time the report was last updated",
+            "example": "2021-07-05T10:35:17"
+          },
+          "lastModifiedBy": {
+            "type": "string",
+            "description": "The username of the person who last updated the report"
           }
         },
         "description": "Contributory factors"
       },
       "InterviewDetails": {
         "required": [
+          "createDateTime",
+          "createdBy",
           "date",
           "interviewee",
           "role"
@@ -17017,6 +17287,26 @@
           "comments": {
             "type": "string",
             "description": "Additional data regarding the interview"
+          },
+          "createDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The date and time the interview was created",
+            "example": "2021-07-05T10:35:17"
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "The username of the person who created the interview"
+          },
+          "lastModifiedDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The date and time the interview was last updated",
+            "example": "2021-07-05T10:35:17"
+          },
+          "lastModifiedBy": {
+            "type": "string",
+            "description": "The username of the person who last updated the interview"
           }
         },
         "description": "Interview"
@@ -17060,6 +17350,8 @@
       },
       "Plan": {
         "required": [
+          "createDateTime",
+          "createdBy",
           "createdDate",
           "id",
           "identifiedNeed",
@@ -17103,6 +17395,26 @@
             "type": "string",
             "description": "Plan closed date",
             "format": "date"
+          },
+          "createDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The date and time the plan was created",
+            "example": "2021-07-05T10:35:17"
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "The username of the person who created the plan"
+          },
+          "lastModifiedDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The date and time the plan was last updated",
+            "example": "2021-07-05T10:35:17"
+          },
+          "lastModifiedBy": {
+            "type": "string",
+            "description": "The username of the person who last updated the plan"
           }
         },
         "description": "CSIP Plans"
@@ -17167,6 +17479,8 @@
           "attendees",
           "caseNote",
           "closeCSIP",
+          "createDateTime",
+          "createdBy",
           "csipUpdated",
           "id",
           "peopleInformed",
@@ -17225,6 +17539,26 @@
             "type": "string",
             "description": "Review closed date",
             "format": "date"
+          },
+          "createDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The date and time the review was created",
+            "example": "2021-07-05T10:35:17"
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "The username of the person who created the review"
+          },
+          "lastModifiedDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The date and time the review was last updated",
+            "example": "2021-07-05T10:35:17"
+          },
+          "lastModifiedBy": {
+            "type": "string",
+            "description": "The username of the person who last updated the review"
           }
         },
         "description": "CSIP Reviews"
