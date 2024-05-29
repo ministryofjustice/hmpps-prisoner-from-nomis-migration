@@ -76,7 +76,7 @@ fun IncidentResponse.toNomisIncidentReport() =
   NomisReport(
     incidentId = incidentId,
     questionnaireId = questionnaireId,
-    prison = prison.toUpsertCodeDescription(),
+    prison = agency.toUpsertCodeDescription(),
     status = NomisStatus(status.code, status.description),
     type = type,
     lockedResponse = lockedResponse,
@@ -145,7 +145,7 @@ fun Requirement.toUpsertRequirement() =
   NomisRequirement(
     date = date,
     staff = staff.toUpsertStaff(),
-    prisonId = prisonId,
+    prisonId = agencyId,
     comment = comment,
     createdBy = createdBy,
     createDateTime = createDateTime,

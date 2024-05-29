@@ -1081,7 +1081,7 @@ fun aMigrationRequest() =
       questions = listOf(),
       requirements = listOf(),
       followUpDate = LocalDate.parse("2023-05-16"),
-      createdBy = "J SMITH",
+      createdBy = "JSMITH",
       createDateTime = "2024-07-15T18:35:00",
     ),
   )
@@ -1094,7 +1094,7 @@ fun aNomisIncidentResponse() =
     description = "On 12/04/2023 approx 16:45 John Smith punched Fred Jones",
     status = IncidentStatus(code = "AWAN", description = "Awaiting Analysis", standardUser = true, enhancedUser = false),
     type = "ASSAULT",
-    prison = CodeDescription(code = "BXI", description = "Brixton"),
+    agency = CodeDescription(code = "BXI", description = "Brixton"),
     lockedResponse = false,
     incidentDateTime = "2023-04-12T16:45:00",
     reportedDateTime = "2023-04-14T17:55:00",
@@ -1105,7 +1105,7 @@ fun aNomisIncidentResponse() =
     questions = listOf(),
     requirements = listOf(),
     followUpDate = LocalDate.parse("2023-05-16"),
-    createdBy = "J SMITH",
+    createdBy = "JSMITH",
     createDateTime = "2024-07-15T18:35:00",
   )
 

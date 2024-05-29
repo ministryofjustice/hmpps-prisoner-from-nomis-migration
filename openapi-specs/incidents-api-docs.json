@@ -10,7 +10,7 @@
     "license": {
       "name": "MIT"
     },
-    "version": "2024-05-21.1490.a58e61a"
+    "version": "2024-05-28.1675.8d45a5d"
   },
   "servers": [
     {
@@ -35,12 +35,12 @@
       "description": "Constants and enumerations used in incident reports"
     },
     {
-      "name": "Migrate/Upsert NOMIS Incident Report",
-      "description": "Migrate or upsert NOMIS incident Report to IncidentReport Service."
+      "name": "Incident reports",
+      "description": "Create, retrieve, update and delete incident reports"
     },
     {
-      "name": "Incident reports",
-      "description": "Retrieve and create incident reports"
+      "name": "Migrate/Upsert NOMIS Incident Report",
+      "description": "Migrate or upsert NOMIS incident Report to IncidentReport Service."
     }
   ],
   "paths": {
@@ -133,7 +133,7 @@
           "Migrate/Upsert NOMIS Incident Report"
         ],
         "summary": "Migrate a location",
-        "description": "Requires role MIGRATE_LOCATIONS and write scope",
+        "description": "Requires role MIGRATE_INCIDENT_REPORTS and write scope",
         "operationId": "upsertIncidentReport",
         "requestBody": {
           "content": {
@@ -240,23 +240,27 @@
           {
             "name": "status",
             "in": "query",
-            "description": "Filter by given status",
+            "description": "Filter by given statuses",
             "required": false,
             "schema": {
-              "type": "string",
-              "enum": [
-                "DRAFT",
-                "AWAITING_ANALYSIS",
-                "IN_ANALYSIS",
-                "INFORMATION_REQUIRED",
-                "INFORMATION_AMENDED",
-                "CLOSED",
-                "POST_INCIDENT_UPDATE",
-                "INCIDENT_UPDATED",
-                "DUPLICATE"
-              ]
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "DRAFT",
+                  "AWAITING_ANALYSIS",
+                  "IN_ANALYSIS",
+                  "INFORMATION_REQUIRED",
+                  "INFORMATION_AMENDED",
+                  "CLOSED",
+                  "POST_INCIDENT_UPDATE",
+                  "INCIDENT_UPDATED",
+                  "DUPLICATE"
+                ]
+              },
+              "default": null
             },
-            "example": "IN_ANALYSIS"
+            "example": "CLOSED,DUPLICATE"
           },
           {
             "name": "type",
@@ -468,7 +472,7 @@
         },
         "responses": {
           "201": {
-            "description": "Returns created Incident Report",
+            "description": "Returns created incident report",
             "content": {
               "application/json": {
                 "schema": {
@@ -518,7 +522,7 @@
             }
           },
           "409": {
-            "description": "Incident Report already exists",
+            "description": "Incident report already exists",
             "content": {
               "application/json": {
                 "schema": {
@@ -599,16 +603,6 @@
               }
             }
           },
-          "401": {
-            "description": "The client does not have authorisation to make this request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "403": {
             "description": "Forbidden, requires an appropriate role",
             "content": {
@@ -635,6 +629,16 @@
               "application/json": {
                 "schema": {
                   "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The client does not have authorisation to make this request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -694,14 +698,14 @@
           {
             "name": "id",
             "in": "path",
-            "description": "The incident report Id",
+            "description": "The incident report id",
             "required": true,
             "schema": {
               "type": "string",
-              "description": "The incident report Id",
-              "example": "de91dfa7-821f-4552-a427-bf2f32eafeb0"
+              "description": "The incident report id",
+              "example": "11111111-2222-3333-4444-555555555555"
             },
-            "example": "de91dfa7-821f-4552-a427-bf2f32eafeb0"
+            "example": "11111111-2222-3333-4444-555555555555"
           }
         ],
         "responses": {
@@ -727,6 +731,93 @@
           },
           "403": {
             "description": "Missing required role. Requires the VIEW_INCIDENT_REPORTS role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Incident reports"
+        ],
+        "summary": "Deletes an incident report",
+        "description": "Requires role MAINTAIN_INCIDENT_REPORTS and write scope",
+        "operationId": "deleteReport",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The incident report id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The incident report id",
+              "example": "11111111-2222-3333-4444-555555555555"
+            },
+            "example": "11111111-2222-3333-4444-555555555555"
+          },
+          {
+            "name": "deleteOrphanedEvents",
+            "in": "query",
+            "description": "Whether orphaned events should also be deleted",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Whether orphaned events should also be deleted",
+              "example": false,
+              "default": "true"
+            },
+            "example": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns deleted incident report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Report"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the MAINTAIN_INCIDENT_REPORTS role with write scope.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1665,12 +1756,12 @@
       },
       "Event": {
         "required": [
-          "createdDate",
+          "createdAt",
           "description",
           "eventDateAndTime",
           "eventId",
-          "lastModifiedBy",
-          "lastModifiedDate",
+          "modifiedAt",
+          "modifiedBy",
           "prisonId",
           "title"
         ],
@@ -1699,19 +1790,19 @@
             "type": "string",
             "description": "Longer summary of the event"
           },
-          "createdDate": {
+          "createdAt": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
             "description": "When the report was first created",
             "example": "2021-07-05T10:35:17"
           },
-          "lastModifiedDate": {
+          "modifiedAt": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
             "description": "When the report was last changed",
             "example": "2021-07-05T10:35:17"
           },
-          "lastModifiedBy": {
+          "modifiedBy": {
             "type": "string",
             "description": "Username of the person who last changed this report"
           }
@@ -1769,8 +1860,8 @@
       },
       "HistoricalResponse": {
         "required": [
+          "recordedAt",
           "recordedBy",
-          "recordedOn",
           "response"
         ],
         "type": "object",
@@ -1783,7 +1874,7 @@
             "type": "string",
             "description": "Username of person who responded to the question"
           },
-          "recordedOn": {
+          "recordedAt": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
             "description": "When the response was made",
@@ -1799,8 +1890,8 @@
       },
       "History": {
         "required": [
-          "changeDate",
-          "changeStaffUsername",
+          "changedAt",
+          "changedBy",
           "questions",
           "type"
         ],
@@ -1858,13 +1949,13 @@
               "OLD_TEMPORARY_RELEASE_FAILURE2"
             ]
           },
-          "changeDate": {
+          "changedAt": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
             "description": "When the report type was changed",
             "example": "2021-07-05T10:35:17"
           },
-          "changeStaffUsername": {
+          "changedBy": {
             "type": "string",
             "description": "The member of staff who changed the report type"
           },
@@ -2002,7 +2093,7 @@
       "Report": {
         "required": [
           "correctionRequests",
-          "createdDate",
+          "createdAt",
           "createdInNomis",
           "description",
           "event",
@@ -2012,14 +2103,14 @@
           "id",
           "incidentDateAndTime",
           "incidentNumber",
-          "lastModifiedBy",
-          "lastModifiedDate",
           "locations",
+          "modifiedAt",
+          "modifiedBy",
           "prisonId",
           "prisonersInvolved",
           "questions",
+          "reportedAt",
           "reportedBy",
-          "reportedDate",
           "staffInvolved",
           "title",
           "type"
@@ -2113,7 +2204,7 @@
             "type": "string",
             "description": "Username of person who created the incident report"
           },
-          "reportedDate": {
+          "reportedAt": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
             "description": "When the incident report was created",
@@ -2196,19 +2287,19 @@
               "$ref": "#/components/schemas/CorrectionRequest"
             }
           },
-          "createdDate": {
+          "createdAt": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
             "description": "When the report was first created",
             "example": "2021-07-05T10:35:17"
           },
-          "lastModifiedDate": {
+          "modifiedAt": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
             "description": "When the report was last changed",
             "example": "2021-07-05T10:35:17"
           },
-          "lastModifiedBy": {
+          "modifiedBy": {
             "type": "string",
             "description": "Username of the person who last changed this report"
           },
@@ -2220,8 +2311,8 @@
       },
       "Response": {
         "required": [
+          "recordedAt",
           "recordedBy",
-          "recordedOn",
           "response"
         ],
         "type": "object",
@@ -2234,7 +2325,7 @@
             "type": "string",
             "description": "Username of person who responded to the question"
           },
-          "recordedOn": {
+          "recordedAt": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
             "description": "When the response was made",
@@ -2292,8 +2383,8 @@
       },
       "StatusHistory": {
         "required": [
-          "setBy",
-          "setOn",
+          "changedAt",
+          "changedBy",
           "status"
         ],
         "type": "object",
@@ -2313,13 +2404,13 @@
               "DUPLICATE"
             ]
           },
-          "setOn": {
+          "changedAt": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
             "description": "When the report status was changed",
             "example": "2021-07-05T10:35:17"
           },
-          "setBy": {
+          "changedBy": {
             "type": "string",
             "description": "The member of staff who changed the report status"
           }

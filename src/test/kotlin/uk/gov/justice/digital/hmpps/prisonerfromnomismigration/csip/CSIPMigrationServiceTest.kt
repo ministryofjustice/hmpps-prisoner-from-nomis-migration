@@ -1040,6 +1040,8 @@ fun aNomisCSIPResponse() =
     plans = listOf(),
     reviews = listOf(),
     documents = listOf(),
+    createdBy = "JSMITH",
+    createDateTime = LocalDateTime.now().toString(),
   )
 
 fun aDPSCSIPMigrateResponse() = CSIPMigrateResponse(dpsCSIPId = DPS_CSIP_ID)

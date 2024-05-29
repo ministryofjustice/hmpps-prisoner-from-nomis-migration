@@ -128,6 +128,8 @@ class LocationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     deactivatedByParent = false,
     permanentlyInactive = false,
     status = Location.Status.ACTIVE,
+    lastModifiedBy = "me",
+    lastModifiedDate = "2024-05-25",
   ).toJson()
 }
 

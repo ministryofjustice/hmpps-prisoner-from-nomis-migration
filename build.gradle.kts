@@ -158,6 +158,7 @@ tasks.register("buildAdjudicationApiModel", GenerateTask::class) {
 
 tasks.register("buildIncidentsApiModel", GenerateTask::class) {
   generatorName.set("kotlin")
+  skipValidateSpec.set(true)
   inputSpec.set("openapi-specs/incidents-api-docs.json")
   outputDir.set("$buildDirectory/generated/incidents")
   modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model")
