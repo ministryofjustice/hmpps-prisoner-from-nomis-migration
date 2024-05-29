@@ -824,6 +824,8 @@ class LocationsMigrationServiceTest {
       deactivatedByParent = false,
       permanentlyInactive = false,
       status = Location.Status.ACTIVE,
+      lastModifiedBy = "me",
+      lastModifiedDate = "2024-05-25",
     )
 
     @BeforeEach
@@ -1178,6 +1180,8 @@ fun aDpsLocation() = Location(
   deactivatedByParent = false,
   permanentlyInactive = false,
   status = Location.Status.ACTIVE,
+  lastModifiedBy = "me",
+  lastModifiedDate = "2024-05-25",
 )
 
 fun pages(total: Long, startId: Long = 1): PageImpl<LocationIdResponse> = PageImpl<LocationIdResponse>(
