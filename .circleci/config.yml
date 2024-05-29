@@ -14,6 +14,28 @@ parameters:
 jobs:
   validate:
     executor:
+      name: hmpps/java
+      tag: "21.0"
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - gradle-{{ checksum "build.gradle.kts" }}
+            - gradle-
+      - run:
+          command: ./gradlew check -x test
+      - save_cache:
+          paths:
+            - ~/.gradle
+          key: gradle-{{ checksum "build.gradle.kts" }}
+      - store_test_results:
+          path: build/test-results
+      - store_artifacts:
+          path: build/reports/tests
+
+  tests:
+    parallelism: 4
+    executor:
       name: hmpps/java_localstack_postgres
       jdk_tag: "21.0"
       localstack_tag: "3"
@@ -28,7 +50,30 @@ jobs:
             - gradle-{{ checksum "build.gradle.kts" }}
             - gradle-
       - run:
-          command: ./gradlew check
+          command: |
+            cd src/test/kotlin
+            
+            # Find all Kotlin files that contain tests, write the filenames to filenames.txt and tell CircleCI to split them by filesize across the parallel executors
+            circleci tests glob "**/*.kt" \
+            | xargs grep -l -E '@Test|@ParameterizedTest' \
+            | cut -c 1- \
+            | circleci tests run --command=">filenames.txt xargs echo" \
+            --verbose \
+            --split-by=filesize
+            
+            # Fail the build if no test files were found
+            [ -s filenames.txt ] || circleci-agent step halt
+      - run:
+          command: |
+            # Convert filenames for this parallel executor into packages/classes for Gradle test arguments
+            GRADLE_ARGS=$(cat src/test/kotlin/filenames.txt \
+            | sed 's@/@.@g' \
+            | sed 's/\.kt//g' \
+            | awk '{for (i=1; i<=NF; i++) print "--tests",$i}')
+            
+            echo "Prepared arguments for Gradle: $GRADLE_ARGS"
+
+            ./gradlew test $GRADLE_ARGS
       - save_cache:
           paths:
             - ~/.gradle
@@ -43,6 +88,10 @@ workflows:
   build-test-and-deploy:
     jobs:
       - validate:
+          filters:
+            tags:
+              ignore: /.*/
+      - tests:
           filters:
             tags:
               ignore: /.*/
@@ -67,6 +116,7 @@ workflows:
                 - main
           requires:
             - validate
+            - tests
             - build_docker
             - helm_lint
       - request-preprod-approval:
