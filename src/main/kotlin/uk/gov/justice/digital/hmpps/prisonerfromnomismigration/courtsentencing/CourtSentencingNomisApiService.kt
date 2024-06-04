@@ -10,6 +10,7 @@ import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SentenceResponse
 
 @Service
 class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
@@ -53,4 +54,13 @@ class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val
         Mono.empty()
       }
       .awaitSingleOrNull()
+
+  suspend fun getOffenderSentence(bookingId: Long, sentenceSequence: Int): SentenceResponse = webClient.get()
+    .uri(
+      "/prisoners/booking-id/{bookingId}/sentencing/sentence-sequence/{sentenceSequence}",
+      bookingId,
+      sentenceSequence,
+    )
+    .retrieve()
+    .awaitBody()
 }

@@ -43,6 +43,7 @@ generic-service:
     FEATURE_EVENT_CSIP-INSERTED: false
     FEATURE_EVENT_CSIP-UPDATED: false
     FEATURE_EVENT_CSIP-DELETED: false
+    FEATURE_EVENT_OFFENDER_SENTENCES-INSERTED: false
 
   scheduledDowntime:
     enabled: true

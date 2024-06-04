@@ -16,6 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMess
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_APPEARANCE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CASE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CHARGE_SYNCHRONISATION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_SENTENCE_SYNCHRONISATION_MAPPING
 import java.util.concurrent.CompletableFuture
 
 @Service
@@ -49,6 +50,7 @@ class CourtSentencingEventListener(
               "COURT_EVENT_CHARGES-INSERTED" -> courtSentencingSynchronisationService.nomisCourtChargeInserted(sqsMessage.Message.fromJson())
               "COURT_EVENT_CHARGES-DELETED" -> courtSentencingSynchronisationService.nomisCourtChargeDeleted(sqsMessage.Message.fromJson())
               "OFFENDER_CHARGES-UPDATED" -> courtSentencingSynchronisationService.nomisOffenderChargeUpdated(sqsMessage.Message.fromJson())
+              "OFFENDER_SENTENCES-INSERTED" -> courtSentencingSynchronisationService.nomisSentenceInserted(sqsMessage.Message.fromJson())
 
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
@@ -69,6 +71,11 @@ class CourtSentencingEventListener(
 
         RETRY_COURT_CHARGE_SYNCHRONISATION_MAPPING ->
           courtSentencingSynchronisationService.retryCreateCourtChargeMapping(
+            sqsMessage.Message.fromJson(),
+          )
+
+        RETRY_SENTENCE_SYNCHRONISATION_MAPPING ->
+          courtSentencingSynchronisationService.retryCreateSentenceMapping(
             sqsMessage.Message.fromJson(),
           )
       }
@@ -103,6 +110,13 @@ data class CourtEventChargeEvent(
 
 data class OffenderChargeEvent(
   val chargeId: Long,
+  val offenderIdDisplay: String,
+  val bookingId: Long,
+  val auditModuleName: String?,
+)
+
+data class OffenderSentenceEvent(
+  val sentenceSequence: Int,
   val offenderIdDisplay: String,
   val bookingId: Long,
   val auditModuleName: String?,

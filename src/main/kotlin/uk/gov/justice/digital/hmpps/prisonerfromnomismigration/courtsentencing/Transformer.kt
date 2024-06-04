@@ -6,6 +6,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SentenceResponse
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -34,4 +35,8 @@ fun OffenderChargeResponse.toDpsCharge(chargeId: String? = null) = CreateCharge(
   outcome = this.resultCode1?.code ?: "PLACEHOLDER",
   offenceEndDate = this.offenceEndDate,
   chargeUuid = chargeId?.let { UUID.fromString(chargeId) },
+)
+
+fun SentenceResponse.toDpsSentence(offenderNo: String) = CreateSentenceRequest(
+  prisonerId = offenderNo,
 )

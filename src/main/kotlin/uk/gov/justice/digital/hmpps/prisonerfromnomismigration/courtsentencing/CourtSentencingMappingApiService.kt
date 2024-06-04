@@ -16,6 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceAllMappingDto
 
 @Service
 class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) :
@@ -36,13 +37,14 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
     .retrieve()
     .awaitBodilessEntity()
 
-  suspend fun getCourtAppearanceOrNullByNomisId(courtAppearanceId: Long): CourtAppearanceAllMappingDto? = webClient.get()
-    .uri(
-      "/mapping/court-sentencing/court-appearances/nomis-court-appearance-id/{courtAppearanceId}",
-      courtAppearanceId,
-    )
-    .retrieve()
-    .awaitBodyOrNullWhenNotFound()
+  suspend fun getCourtAppearanceOrNullByNomisId(courtAppearanceId: Long): CourtAppearanceAllMappingDto? =
+    webClient.get()
+      .uri(
+        "/mapping/court-sentencing/court-appearances/nomis-court-appearance-id/{courtAppearanceId}",
+        courtAppearanceId,
+      )
+      .retrieve()
+      .awaitBodyOrNullWhenNotFound()
 
   suspend fun createCourtAppearanceMapping(
     mapping: CourtAppearanceAllMappingDto,
@@ -56,7 +58,14 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
       .bodyToMono(Unit::class.java)
       .map { CreateMappingResult<CourtAppearanceAllMappingDto>() }
       .onErrorResume(WebClientResponseException.Conflict::class.java) {
-        Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CourtAppearanceAllMappingDto>>() {})))
+        Mono.just(
+          CreateMappingResult(
+            it.getResponseBodyAs(
+              object :
+                ParameterizedTypeReference<DuplicateErrorResponse<CourtAppearanceAllMappingDto>>() {},
+            ),
+          ),
+        )
       }
       .awaitFirstOrDefault(CreateMappingResult<CourtAppearanceAllMappingDto>())
   }
@@ -81,7 +90,14 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
       .bodyToMono(Unit::class.java)
       .map { CreateMappingResult<CourtChargeMappingDto>() }
       .onErrorResume(WebClientResponseException.Conflict::class.java) {
-        Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CourtChargeMappingDto>>() {})))
+        Mono.just(
+          CreateMappingResult(
+            it.getResponseBodyAs(
+              object :
+                ParameterizedTypeReference<DuplicateErrorResponse<CourtChargeMappingDto>>() {},
+            ),
+          ),
+        )
       }
       .awaitFirstOrDefault(CreateMappingResult())
   }
@@ -101,4 +117,38 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
     )
     .retrieve()
     .awaitBodilessEntity()
+
+  suspend fun getSentenceOrNullByNomisId(bookingId: Long, sentenceSequence: Int): SentenceAllMappingDto? =
+    webClient.get()
+      .uri(
+        "/mapping/court-sentencing/sentences/nomis-booking-id/{bookingId}/nomis-sentence-sequence/{sentenceSequence}",
+        bookingId,
+        sentenceSequence,
+      )
+      .retrieve()
+      .awaitBodyOrNullWhenNotFound()
+
+  suspend fun createSentenceMapping(
+    mapping: SentenceAllMappingDto,
+  ): CreateMappingResult<SentenceAllMappingDto> {
+    return webClient.post()
+      .uri("/mapping/court-sentencing/sentences")
+      .bodyValue(
+        mapping,
+      )
+      .retrieve()
+      .bodyToMono(Unit::class.java)
+      .map { CreateMappingResult<SentenceAllMappingDto>() }
+      .onErrorResume(WebClientResponseException.Conflict::class.java) {
+        Mono.just(
+          CreateMappingResult(
+            it.getResponseBodyAs(
+              object :
+                ParameterizedTypeReference<DuplicateErrorResponse<SentenceAllMappingDto>>() {},
+            ),
+          ),
+        )
+      }
+      .awaitFirstOrDefault(CreateMappingResult<SentenceAllMappingDto>())
+  }
 }

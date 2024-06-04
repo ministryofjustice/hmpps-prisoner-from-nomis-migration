@@ -12,8 +12,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtOrderResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SentenceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SentenceTermResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -125,6 +128,58 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
   fun stubGetOffenderCharge(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     nomisApi.stubFor(
       get(WireMock.urlPathMatching("/prisoners/\\S+/sentencing/offender-charges/\\d+")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubGetSentence(
+    bookingId: Long = 123456,
+    offenderNo: String = "A3864DZ",
+    sentenceSequence: Int = 3,
+    caseId: Long = 345,
+    startDate: LocalDate = LocalDate.now(),
+    courtOrder: CourtOrderResponse? = null,
+    sentenceTerms: List<SentenceTermResponse> = listOf(
+      SentenceTermResponse(
+        startDate = LocalDate.now(),
+        sentenceTermType = CodeDescription("S", "Term type"),
+        termSequence = 1,
+        years = 1,
+        months = 3,
+      ),
+    ),
+    response: SentenceResponse = SentenceResponse(
+      bookingId = bookingId,
+      sentenceSeq = sentenceSequence.toLong(),
+      caseId = caseId,
+      courtOrder = courtOrder,
+      category = CodeDescription(code = "2003", "2003 Act"),
+      calculationType = "ADIMP_ORA",
+      offenderCharges = emptyList(),
+      startDate = startDate,
+      status = "I",
+      sentenceTerms = sentenceTerms,
+      createdDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+      createdByUsername = "Q1251T",
+    ),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/prisoners/booking-id/$bookingId/sentencing/sentence-sequence/$sentenceSequence")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(objectMapper.writeValueAsString(response)),
+      ),
+    )
+  }
+
+  fun stubGetSentence(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    nomisApi.stubFor(
+      get(WireMock.urlPathMatching("/prisoners/booking-id/\\S+/sentencing/sentence-sequence/\\d+")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())

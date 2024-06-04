@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-05-28.7848.31e59e4"
+    "version": "2024-05-31.7916.d13a0db"
   },
   "servers": [
     {
@@ -2364,6 +2364,376 @@
           },
           "403": {
             "description": "Forbidden, requires role NOMIS_APPOINTMENTS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alerts/types/{code}": {
+      "put": {
+        "tags": [
+          "alerts-resource"
+        ],
+        "summary": "Update an alert type",
+        "description": "Updates an alert type in the NOMIS reference data, specifically the description. Requires ROLE_NOMIS_ALERTS",
+        "operationId": "updateAlertType",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAlertType"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Alert type updated"
+          },
+          "400": {
+            "description": "One or more fields in the request contains invalid data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_ALERTS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Alert type does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alerts/types/{code}/reactivate": {
+      "put": {
+        "tags": [
+          "alerts-resource"
+        ],
+        "summary": "Update an alert type to be active",
+        "description": "Updates an alert type in the NOMIS reference data to be active, specifically the description. Requires ROLE_NOMIS_ALERTS",
+        "operationId": "reactivateAlertType",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Alert code reactivated"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_ALERTS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Alert code does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alerts/types/{code}/deactivate": {
+      "put": {
+        "tags": [
+          "alerts-resource"
+        ],
+        "summary": "Update an alert type to be inactive",
+        "description": "Updates an alert type in the NOMIS reference data to be inactive, specifically the description. Requires ROLE_NOMIS_ALERTS",
+        "operationId": "deactivateAlertType",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Alert type deactivated"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_ALERTS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Alert type does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alerts/codes/{code}": {
+      "put": {
+        "tags": [
+          "alerts-resource"
+        ],
+        "summary": "Update an alert code",
+        "description": "Updates an alert code in the NOMIS reference data, specifically the description. Requires ROLE_NOMIS_ALERTS",
+        "operationId": "updateAlertCode",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAlertCode"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Alert code updated"
+          },
+          "400": {
+            "description": "One or more fields in the request contains invalid data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_ALERTS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Alert code does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alerts/codes/{code}/reactivate": {
+      "put": {
+        "tags": [
+          "alerts-resource"
+        ],
+        "summary": "Update an alert code to be active",
+        "description": "Updates an alert code in the NOMIS reference data to be active, specifically the description. Requires ROLE_NOMIS_ALERTS",
+        "operationId": "reactivateAlertCode",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Alert code reactivated"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_ALERTS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Alert code does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alerts/codes/{code}/deactivate": {
+      "put": {
+        "tags": [
+          "alerts-resource"
+        ],
+        "summary": "Update an alert code to be inactive",
+        "description": "Updates an alert code in the NOMIS reference data to be inactive, specifically the description. Requires ROLE_NOMIS_ALERTS",
+        "operationId": "deactivateAlertCode",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Alert code deactivated"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_ALERTS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Alert code does not exist",
             "content": {
               "application/json": {
                 "schema": {
@@ -5074,6 +5444,136 @@
         }
       }
     },
+    "/alerts/types": {
+      "post": {
+        "tags": [
+          "alerts-resource"
+        ],
+        "summary": "Creates an alert type",
+        "description": "Creates an alert type in the NOMIS reference data. Requires ROLE_NOMIS_ALERTS",
+        "operationId": "createAlertType",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAlertType"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Alert type Created"
+          },
+          "400": {
+            "description": "One or more fields in the request contains invalid data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_ALERTS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Type already exits",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alerts/codes": {
+      "post": {
+        "tags": [
+          "alerts-resource"
+        ],
+        "summary": "Creates an alert code",
+        "description": "Creates an alert code in the NOMIS reference data. Requires ROLE_NOMIS_ALERTS",
+        "operationId": "createAlertCode",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAlertCode"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Alert code Created"
+          },
+          "400": {
+            "description": "One or more fields in the request contains invalid data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_ALERTS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Code already exits",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/adjudications/adjudication-number/{adjudicationNumber}/hearings": {
       "post": {
         "tags": [
@@ -7665,13 +8165,87 @@
         }
       }
     },
-    "/incidents/reconciliation/agency/{agencyId}": {
+    "/incidents/reconciliation/agency/{agencyId}/ids": {
+      "get": {
+        "tags": [
+          "incident-resource"
+        ],
+        "summary": "Gets ids of open incidents at an agency",
+        "description": "Retrieves paged ids for open incidents for an agency.",
+        "operationId": "getOpenIncidentIdsForReconciliation",
+        "parameters": [
+          {
+            "name": "pageRequest",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          },
+          {
+            "name": "agencyId",
+            "in": "path",
+            "description": "Agency Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Agency Id",
+              "example": "LEI"
+            },
+            "example": "LEI"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pageable list of reconciliation ids are returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageLong"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires role NOMIS_INCIDENTS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/incidents/reconciliation/agency/{agencyId}/counts": {
       "get": {
         "tags": [
           "incident-resource"
         ],
         "summary": "Gets incident counts",
-        "description": "Retrieves open and closed incident counts for a prison.",
+        "description": "Retrieves open and closed incident counts for an agency.",
         "operationId": "getIncidentCountsForReconciliation",
         "parameters": [
           {
@@ -11344,6 +11918,32 @@
         },
         "description": "Offender individual schedule update request"
       },
+      "UpdateAlertType": {
+        "required": [
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "The alert type description"
+          }
+        },
+        "description": "A request to update an alert type reference data in NOMIS"
+      },
+      "UpdateAlertCode": {
+        "required": [
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "The alert description"
+          }
+        },
+        "description": "A request to update an alert code reference data in NOMIS"
+      },
       "Repair": {
         "required": [
           "createdByUsername",
@@ -13706,6 +14306,59 @@
         },
         "description": "Offender individual schedule creation response"
       },
+      "CreateAlertType": {
+        "required": [
+          "code",
+          "description",
+          "listSequence"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The alert type code"
+          },
+          "description": {
+            "type": "string",
+            "description": "The alert type description"
+          },
+          "listSequence": {
+            "type": "integer",
+            "description": "The sequence in a UI list",
+            "format": "int32"
+          }
+        },
+        "description": "A request to create an alert type reference data in NOMIS"
+      },
+      "CreateAlertCode": {
+        "required": [
+          "code",
+          "description",
+          "listSequence",
+          "typeCode"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The alert code"
+          },
+          "typeCode": {
+            "type": "string",
+            "description": "The parent type code"
+          },
+          "description": {
+            "type": "string",
+            "description": "The alert description"
+          },
+          "listSequence": {
+            "type": "integer",
+            "description": "The sequence in a UI list",
+            "format": "int32"
+          }
+        },
+        "description": "A request to create an alert code reference data in NOMIS"
+      },
       "CreateHearingResponse": {
         "required": [
           "hearingId"
@@ -14187,14 +14840,14 @@
             "type": "integer",
             "format": "int32"
           },
+          "paged": {
+            "type": "boolean"
+          },
           "pageNumber": {
             "type": "integer",
             "format": "int32"
           },
           "unpaged": {
-            "type": "boolean"
-          },
-          "paged": {
             "type": "boolean"
           }
         }
@@ -16662,6 +17315,56 @@
           }
         },
         "description": "Staff involved in the incident"
+      },
+      "PageLong": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
       },
       "IncidentsCount": {
         "required": [

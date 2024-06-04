@@ -208,6 +208,23 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubPostSentenceForCreate(
+    sentenceId: String = UUID.randomUUID().toString(),
+    response: CreateSentenceResponse = CreateSentenceResponse(
+      sentenceUuid = sentenceId,
+    ),
+  ) {
+    stubFor(
+      post("/sentence")
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader("Content-Type", "application/json")
+            .withBody(CourtSentencingDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
   fun stubHealthPing(status: Int) {
     stubFor(
       get("/health/ping").willReturn(
