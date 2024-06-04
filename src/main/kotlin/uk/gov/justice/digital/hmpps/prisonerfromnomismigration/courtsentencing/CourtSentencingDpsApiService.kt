@@ -45,10 +45,7 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .retrieve()
       .awaitBody()
 
-  suspend fun updateCourtAppearance(
-    courtAppearanceId: String,
-    courtAppearance: CreateCourtAppearance,
-  ): CreateCourtAppearanceResponse =
+  suspend fun updateCourtAppearance(courtAppearanceId: String, courtAppearance: CreateCourtAppearance): CreateCourtAppearanceResponse =
     webClient
       .put()
       .uri("/court-appearance/{courtAppearanceId}", courtAppearanceId)
@@ -64,10 +61,7 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .awaitBodilessEntity()
 
   // sensible to assume that this endpoint could also update the charge
-  suspend fun associateExistingCourtCharge(
-    courtAppearanceId: String,
-    charge: CreateCharge,
-  ): CreateCourtAppearanceResponse =
+  suspend fun associateExistingCourtCharge(courtAppearanceId: String, charge: CreateCharge): CreateCourtAppearanceResponse =
     webClient
       .put()
       .uri("/court-appearance/{courtAppearanceId}/charge/{chargeId}", courtAppearanceId, charge.chargeUuid.toString())
@@ -113,7 +107,7 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
 
 data class CreateNewChargeResponse(
 
-  @field:JsonProperty("chargeUuid")
+  @field:JsonProperty("appearanceUuid")
   val chargeUuid: java.util.UUID,
 
 )

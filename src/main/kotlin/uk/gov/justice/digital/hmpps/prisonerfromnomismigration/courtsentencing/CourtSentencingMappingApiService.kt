@@ -37,14 +37,13 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
     .retrieve()
     .awaitBodilessEntity()
 
-  suspend fun getCourtAppearanceOrNullByNomisId(courtAppearanceId: Long): CourtAppearanceAllMappingDto? =
-    webClient.get()
-      .uri(
-        "/mapping/court-sentencing/court-appearances/nomis-court-appearance-id/{courtAppearanceId}",
-        courtAppearanceId,
-      )
-      .retrieve()
-      .awaitBodyOrNullWhenNotFound()
+  suspend fun getCourtAppearanceOrNullByNomisId(courtAppearanceId: Long): CourtAppearanceAllMappingDto? = webClient.get()
+    .uri(
+      "/mapping/court-sentencing/court-appearances/nomis-court-appearance-id/{courtAppearanceId}",
+      courtAppearanceId,
+    )
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
 
   suspend fun createCourtAppearanceMapping(
     mapping: CourtAppearanceAllMappingDto,
@@ -58,14 +57,7 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
       .bodyToMono(Unit::class.java)
       .map { CreateMappingResult<CourtAppearanceAllMappingDto>() }
       .onErrorResume(WebClientResponseException.Conflict::class.java) {
-        Mono.just(
-          CreateMappingResult(
-            it.getResponseBodyAs(
-              object :
-                ParameterizedTypeReference<DuplicateErrorResponse<CourtAppearanceAllMappingDto>>() {},
-            ),
-          ),
-        )
+        Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CourtAppearanceAllMappingDto>>() {})))
       }
       .awaitFirstOrDefault(CreateMappingResult<CourtAppearanceAllMappingDto>())
   }
@@ -90,14 +82,7 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
       .bodyToMono(Unit::class.java)
       .map { CreateMappingResult<CourtChargeMappingDto>() }
       .onErrorResume(WebClientResponseException.Conflict::class.java) {
-        Mono.just(
-          CreateMappingResult(
-            it.getResponseBodyAs(
-              object :
-                ParameterizedTypeReference<DuplicateErrorResponse<CourtChargeMappingDto>>() {},
-            ),
-          ),
-        )
+        Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CourtChargeMappingDto>>() {})))
       }
       .awaitFirstOrDefault(CreateMappingResult())
   }
