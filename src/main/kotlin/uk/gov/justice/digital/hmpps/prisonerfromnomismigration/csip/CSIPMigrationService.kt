@@ -18,14 +18,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationMinutes
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.toMigrateRequest
 
 @Service
 class CSIPMigrationService(
   queueService: MigrationQueueService,
-  private val nomisApiService: NomisApiService,
+  private val nomisApiService: CSIPNomisApiService,
   migrationHistoryService: MigrationHistoryService,
   telemetryClient: TelemetryClient,
   auditService: AuditService,
@@ -111,7 +109,7 @@ class CSIPMigrationService(
       if (it.isError) {
         val duplicateErrorDetails = (it.errorResponse!!).moreInfo
         telemetryClient.trackEvent(
-          "nomis-migration-csip-duplicate",
+          "${MigrationType.CSIP.telemetryName}-nomis-migration-duplicate",
           mapOf<String, String>(
             "migrationId" to context.migrationId,
             "existingNomisCSIPId" to duplicateErrorDetails.existing.nomisCSIPId.toString(),

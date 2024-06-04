@@ -44,6 +44,9 @@ generic-service:
     FEATURE_EVENT_COURT_EVENT_CHARGES-DELETED: false
     FEATURE_EVENT_OFFENDER_CHARGES-UPDATED: false
     FEATURE_EVENT_PRISON-OFFENDER-EVENTS_PRISONER_MERGED: false
+    FEATURE_EVENT_CSIP-INSERTED: false
+    FEATURE_EVENT_CSIP-UPDATED: false
+    FEATURE_EVENT_CSIP-DELETED: false
 
 generic-prometheus-alerts:
   rdsAlertsDatabases:
@@ -55,6 +58,8 @@ generic-prometheus-alerts:
     - "syscon-devs-prod-prisoner_from_nomis_sentencing_dl_queue"
     - "syscon-devs-prod-prisoner_from_nomis_incidents_queue"
     - "syscon-devs-prod-prisoner_from_nomis_incidents_dl_queue"
+    - "syscon-devs-prod-prisoner_from_nomis_csip_queue"
+    - "syscon-devs-prod-prisoner_from_nomis_csip_dl_queue"
     - "syscon-devs-prod-prisoner_from_nomis_locations_queue"
     - "syscon-devs-prod-prisoner_from_nomis_locations_dl_queue"
     - "syscon-devs-prod-prisoner_from_nomis_alerts_queue"

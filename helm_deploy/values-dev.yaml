@@ -51,6 +51,8 @@ generic-prometheus-alerts:
     - "syscon-devs-dev-prisoner_from_nomis_alerts_dl_queue"
     - "syscon-devs-dev-prisoner_from_nomis_incidents_queue"
     - "syscon-devs-dev-prisoner_from_nomis_incidents_dl_queue"
+    - "syscon-devs-dev-prisoner_from_nomis_csip_queue"
+    - "syscon-devs-dev-prisoner_from_nomis_csip_dl_queue"
     - "syscon-devs-dev-prisoner_from_nomis_locations_queue"
     - "syscon-devs-dev-prisoner_from_nomis_locations_dl_queue"
     - "syscon-devs-dev-prisoner_from_nomis_court_sentencing_queue"
