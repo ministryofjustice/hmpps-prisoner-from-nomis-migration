@@ -404,8 +404,8 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               assertThat(it["migrationId"]).isNull()
               assertThat(it["existingDpsSentenceId"]).isEqualTo(EXISTING_DPS_SENTENCE_ID)
               assertThat(it["duplicateDpsSentenceId"]).isEqualTo(DPS_SENTENCE_ID)
-              assertThat(it["existingNomisSentenceSequenceId"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
-              assertThat(it["duplicateNomisSentenceSequenceId"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+              assertThat(it["existingNomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+              assertThat(it["duplicateNomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
             },
             isNull(),
           )
