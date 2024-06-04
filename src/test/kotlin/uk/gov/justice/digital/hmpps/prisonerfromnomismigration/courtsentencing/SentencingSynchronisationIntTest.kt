@@ -387,7 +387,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         await untilAsserted {
           courtSentencingMappingApiMockServer.verify(
             1,
-            postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentence")),
+            postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences")),
           )
         }
 
