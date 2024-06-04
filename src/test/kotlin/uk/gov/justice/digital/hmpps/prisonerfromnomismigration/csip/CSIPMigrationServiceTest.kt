@@ -59,7 +59,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatusCheck
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.CSIP
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -68,7 +67,7 @@ private const val DPS_CSIP_ID = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5"
 
 @ExtendWith(MockitoExtension::class)
 internal class CSIPMigrationServiceTest {
-  private val nomisApiService: NomisApiService = mock()
+  private val nomisApiService: CSIPNomisApiService = mock()
   private val queueService: MigrationQueueService = mock()
   private val migrationHistoryService: MigrationHistoryService = mock()
   private val telemetryClient: TelemetryClient = mock()
@@ -91,7 +90,7 @@ internal class CSIPMigrationServiceTest {
   @Nested
   @DisplayName("migrateCSIPs")
   inner class MigrateCSIPs {
-    private val nomisApiService = mockk<NomisApiService>()
+    private val nomisApiService = mockk<CSIPNomisApiService>()
     private val auditService = mockk<AuditService>(relaxed = true)
     private val migrationHistoryService = mockk<MigrationHistoryService>(relaxed = true)
 
@@ -1004,7 +1003,7 @@ internal class CSIPMigrationServiceTest {
 fun aMigrationRequest() =
   CSIPMigrateRequest(
     nomisCSIPId = NOMIS_CSIP_ID,
-    referralSummary = "test",
+    concernDescription = "Issues in the dinner hall",
   )
 
 fun aNomisCSIPResponse() =

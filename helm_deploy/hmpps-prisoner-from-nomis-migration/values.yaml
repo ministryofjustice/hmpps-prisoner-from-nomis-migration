@@ -117,6 +117,10 @@ generic-service:
       HMPPS_SQS_QUEUES_EVENTINCIDENTS_QUEUE_NAME: "sqs_name"
     prisoner-from-nomis-incidents-dl-queue:
       HMPPS_SQS_QUEUES_EVENTINCIDENTS_DLQ_NAME: "sqs_name"
+    prisoner-from-nomis-csip-queue:
+      HMPPS_SQS_QUEUES_EVENTCSIP_QUEUE_NAME: "sqs_name"
+    prisoner-from-nomis-csip-dl-queue:
+      HMPPS_SQS_QUEUES_EVENTCSIP_DLQ_NAME: "sqs_name"
     prisoner-from-nomis-locations-queue:
       HMPPS_SQS_QUEUES_EVENTLOCATIONS_QUEUE_NAME: "sqs_name"
     prisoner-from-nomis-locations-dl-queue:

@@ -13,4 +13,11 @@ class CSIPService(@Qualifier("csipApiWebClient") private val webClient: WebClien
       .bodyValue(migrateRequest)
       .retrieve()
       .awaitBody()
+
+  suspend fun insertCSIP(syncRequest: CSIPSyncRequest): CSIPSyncResponse =
+    webClient.post()
+      .uri("/csip/sync")
+      .bodyValue(syncRequest)
+      .retrieve()
+      .awaitBody()
 }

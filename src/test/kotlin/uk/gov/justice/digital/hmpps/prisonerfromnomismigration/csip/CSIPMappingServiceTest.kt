@@ -22,21 +22,24 @@ import org.springframework.context.annotation.Import
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpStatus
 import org.springframework.web.reactive.function.client.WebClientResponseException
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingApiMockServer.Companion.CSIP_CREATE_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPMappingDto.MappingType.MIGRATED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.CSIP_CREATE_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 
 private const val DPS_CSIP_ID = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5"
 private const val NOMIS_CSIP_ID = 1234L
 
 @SpringAPIServiceTest
-@Import(CSIPMappingService::class, CSIPConfiguration::class)
+@Import(CSIPMappingService::class, CSIPConfiguration::class, CSIPMappingApiMockServer::class)
 internal class CSIPMappingServiceTest {
   @Autowired
   private lateinit var csipMappingService: CSIPMappingService
+
+  @Autowired
+  private lateinit var csipMappingApi: CSIPMappingApiMockServer
 
   @Nested
   @DisplayName("findCSIPMapping")
@@ -217,7 +220,7 @@ internal class CSIPMappingServiceTest {
   inner class FindLatestMigration {
     @BeforeEach
     internal fun setUp() {
-      mappingApi.stubCSIPLatestMigration("2020-01-01T10:00:00")
+      csipMappingApi.stubCSIPLatestMigration("2020-01-01T10:00:00")
     }
 
     @Test
@@ -295,7 +298,7 @@ internal class CSIPMappingServiceTest {
   inner class GetMigrationDetails {
     @BeforeEach
     internal fun setUp() {
-      mappingApi.stubCSIPMappingByMigrationId("2020-01-01T11:10:00")
+      csipMappingApi.stubCSIPMappingByMigrationId("2020-01-01T11:10:00")
     }
 
     @Test
@@ -330,7 +333,7 @@ internal class CSIPMappingServiceTest {
 
     @Test
     internal fun `will return the mapping when found`(): Unit = runBlocking {
-      mappingApi.stubCSIPMappingByMigrationId(
+      csipMappingApi.stubCSIPMappingByMigrationId(
         whenCreated = "2020-01-01T11:10:00",
         count = 56_766,
       )
@@ -365,7 +368,7 @@ internal class CSIPMappingServiceTest {
   inner class GetMigrationCount {
     @BeforeEach
     internal fun setUp() {
-      mappingApi.stubCSIPMappingByMigrationId(count = 56_766)
+      csipMappingApi.stubCSIPMappingByMigrationId(count = 56_766)
     }
 
     @Test
@@ -396,7 +399,7 @@ internal class CSIPMappingServiceTest {
 
     @Test
     internal fun `will return the mapping count when found`(): Unit = runBlocking {
-      mappingApi.stubCSIPMappingByMigrationId(
+      csipMappingApi.stubCSIPMappingByMigrationId(
         whenCreated = "2020-01-01T11:10:00",
         count = 54_766,
       )

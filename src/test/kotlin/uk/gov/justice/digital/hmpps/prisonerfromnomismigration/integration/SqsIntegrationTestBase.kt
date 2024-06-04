@@ -26,6 +26,7 @@ import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.JwtAuthHelper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.LocalStackContainer.setLocalStackProperties
@@ -40,7 +41,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SENTENCIN
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VISITS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.AdjudicationsApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.CSIPApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.HmppsAuthApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.LocationsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
@@ -131,6 +131,12 @@ class SqsIntegrationTestBase : TestBase() {
   internal val awsSqsIncidentsOffenderEventsClient by lazy { incidentsOffenderEventsQueue.sqsClient }
   internal val awsSqsIncidentsOffenderEventDlqClient by lazy { incidentsOffenderEventsQueue.sqsDlqClient as SqsAsyncClient }
 
+  internal val csipOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId("eventcsip") as HmppsQueue }
+  internal val csipQueueOffenderEventsUrl by lazy { csipOffenderEventsQueue.queueUrl }
+  internal val csipQueueOffenderEventsDlqUrl by lazy { csipOffenderEventsQueue.dlqUrl as String }
+  internal val awsSqsCSIPOffenderEventsClient by lazy { csipOffenderEventsQueue.sqsClient }
+  internal val awsSqsCSIPOffenderEventDlqClient by lazy { csipOffenderEventsQueue.sqsDlqClient as SqsAsyncClient }
+
   internal val locationsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId("eventlocations") as HmppsQueue }
   internal val locationsQueueOffenderEventsUrl by lazy { locationsOffenderEventsQueue.queueUrl }
   internal val locationsQueueOffenderEventsDlqUrl by lazy { locationsOffenderEventsQueue.dlqUrl as String }
@@ -152,6 +158,7 @@ class SqsIntegrationTestBase : TestBase() {
   private val allQueues by lazy {
     listOf(
       incidentsOffenderEventsQueue,
+      csipOffenderEventsQueue,
       locationsOffenderEventsQueue,
       sentencingOffenderEventsQueue,
       visitsOffenderEventsQueue,

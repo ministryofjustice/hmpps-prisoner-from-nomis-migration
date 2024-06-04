@@ -17,11 +17,8 @@ import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPIdResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.EndActivitiesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveActivityIdsResponse
@@ -281,34 +278,6 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       .retrieve()
       .bodyToMono(typeReference<RestResponsePage<LocationIdResponse>>())
       .awaitSingle()
-
-  // /////////////////////////////////////// CSIP
-
-  suspend fun getCSIP(csipId: Long): CSIPResponse =
-    webClient.get()
-      .uri("/csip/{csipId}", csipId)
-      .retrieve()
-      .bodyToMono(CSIPResponse::class.java)
-      .awaitSingle()
-
-  suspend fun getCSIPIds(
-    fromDate: LocalDate?,
-    toDate: LocalDate?,
-    pageNumber: Long,
-    pageSize: Long,
-  ): PageImpl<CSIPIdResponse> =
-    webClient.get()
-      .uri {
-        it.path("/csip/ids")
-          .queryParam("fromDate", fromDate)
-          .queryParam("toDate", toDate)
-          .queryParam("page", pageNumber)
-          .queryParam("size", pageSize)
-          .build()
-      }
-      .retrieve()
-      .bodyToMono(typeReference<RestResponsePage<CSIPIdResponse>>())
-      .awaitSingle()
 }
 
 data class VisitId(
@@ -437,9 +406,3 @@ class RestResponsePage<T>(
 ) : PageImpl<T>(content, PageRequest.of(number, size), totalElements)
 
 inline fun <reified T> typeReference() = object : ParameterizedTypeReference<T>() {}
-
-fun CSIPResponse.toMigrateRequest() =
-  CSIPMigrateRequest(
-    nomisCSIPId = id,
-    referralSummary = "test",
-  )

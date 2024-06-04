@@ -21,6 +21,9 @@ import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.returnResult
 import org.springframework.web.reactive.function.BodyInserters
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension.Companion.csipApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingApiMockServer.Companion.CSIP_CREATE_MAPPING_URL
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPNomisApiMockServer.Companion.CSIP_ID_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
@@ -28,19 +31,21 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repos
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.COMPLETED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.CSIP
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.CSIPApiExtension.Companion.csipApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.CSIP_CREATE_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.csipIdsPagedResponse
 import java.time.Duration
 import java.time.LocalDateTime
 
-private const val DPS_CSIP_ID = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5"
-private const val NOMIS_CSIP_ID = 1234L
-
 class CSIPMigrationIntTest : SqsIntegrationTestBase() {
+  companion object {
+    private const val DPS_CSIP_ID = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5"
+    private const val NOMIS_CSIP_ID = 1234L
+  }
+
+  @Autowired
+  private lateinit var csipNomisApi: CSIPNomisApiMockServer
+
+  @Autowired
+  private lateinit var csipMappingApi: CSIPMappingApiMockServer
 
   @Autowired
   private lateinit var migrationHistoryRepository: MigrationHistoryRepository
@@ -98,15 +103,15 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will start processing pages of CSIP`() {
-      nomisApi.stubGetInitialCount(NomisApiExtension.CSIP_ID_URL, 86) { csipIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetCSIPIdCounts(totalElements = 86, pageSize = 10)
-      nomisApi.stubMultipleGetCSIP(1..86)
+      csipNomisApi.stubGetInitialCount(CSIP_ID_URL, 86) { csipIdsPagedResponse(it) }
+      csipNomisApi.stubMultipleGetCSIPIdCounts(totalElements = 86, pageSize = 10)
+      csipNomisApi.stubMultipleGetCSIP(1..86)
 
-      mappingApi.stubGetAnyCSIPNotFound()
+      csipMappingApi.stubGetAnyCSIPNotFound()
       mappingApi.stubMappingCreate(CSIP_CREATE_MAPPING_URL)
 
-      csipApi.stubCSIPMigration()
-      mappingApi.stubCSIPMappingByMigrationId(count = 86)
+      csipApi.stubCSIPMigrate()
+      csipMappingApi.stubCSIPMappingByMigrationId(count = 86)
 
       webTestClient.performMigration(
         """
@@ -118,7 +123,7 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
       )
 
       // check filter matches what is passed in
-      nomisApi.verifyGetIdsCount(
+      csipNomisApi.verifyGetIdsCount(
         url = "/csip/ids",
         fromDate = "2020-01-01",
         toDate = "2020-01-02",
@@ -129,17 +134,18 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
       }
     }
 
+    // / TODO Add test for minimal nomis prisoner api data
     @Test
     internal fun `will add analytical events for starting, ending and each migrated record`() {
-      nomisApi.stubGetInitialCount(NomisApiExtension.CSIP_ID_URL, 26) { csipIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetCSIPIdCounts(totalElements = 26, pageSize = 10)
-      nomisApi.stubMultipleGetCSIP(1..26)
-      csipApi.stubCSIPMigration()
-      mappingApi.stubGetAnyCSIPNotFound()
+      csipNomisApi.stubGetInitialCount(CSIP_ID_URL, 26) { csipIdsPagedResponse(it) }
+      csipNomisApi.stubMultipleGetCSIPIdCounts(totalElements = 26, pageSize = 10)
+      csipNomisApi.stubMultipleGetCSIP(1..26)
+      csipApi.stubCSIPMigrate()
+      csipMappingApi.stubGetAnyCSIPNotFound()
       mappingApi.stubMappingCreate(CSIP_CREATE_MAPPING_URL)
 
       // stub 25 migrated records and 1 fake a failure
-      mappingApi.stubCSIPMappingByMigrationId(count = 25)
+      csipMappingApi.stubCSIPMappingByMigrationId(count = 25)
       awsSqsCSIPMigrationDlqClient!!.sendMessage(
         SendMessageRequest.builder().queueUrl(csipMigrationDlqUrl).messageBody("""{ "message": "some error" }""").build(),
       ).get()
@@ -170,12 +176,12 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will retry to create a mapping, and only the mapping, if it fails first time`() {
-      nomisApi.stubGetInitialCount(NomisApiExtension.CSIP_ID_URL, 1) { csipIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetCSIPIdCounts(totalElements = 1, pageSize = 10)
-      nomisApi.stubMultipleGetCSIP(1..1)
-      mappingApi.stubGetAnyCSIPNotFound()
-      mappingApi.stubCSIPMappingByMigrationId()
-      csipApi.stubCSIPMigration()
+      csipNomisApi.stubGetInitialCount(CSIP_ID_URL, 1) { csipIdsPagedResponse(it) }
+      csipNomisApi.stubMultipleGetCSIPIdCounts(totalElements = 1, pageSize = 10)
+      csipNomisApi.stubMultipleGetCSIP(1..1)
+      csipMappingApi.stubGetAnyCSIPNotFound()
+      csipMappingApi.stubCSIPMappingByMigrationId()
+      csipApi.stubCSIPMigrate()
       mappingApi.stubMappingCreateFailureFollowedBySuccess(CSIP_CREATE_MAPPING_URL)
 
       webTestClient.performMigration()
@@ -184,30 +190,30 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
       assertThat(csipApi.createCSIPMigrationCount()).isEqualTo(1)
 
       // should retry to create mapping twice
-      mappingApi.verifyCreateMappingCSIPId(DPS_CSIP_ID, times = 2)
+      csipMappingApi.verifyCreateMappingCSIPId(DPS_CSIP_ID, times = 2)
     }
 
     @Test
     internal fun `it will not retry after a 409 (duplicate csip written to CSIP API)`() {
       val duplicateDPSCSIPId = "ddd596da-8eab-4d2a-a026-bc5afb8acda0"
 
-      nomisApi.stubGetInitialCount(NomisApiExtension.CSIP_ID_URL, 1) { csipIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetCSIPIdCounts(totalElements = 1, pageSize = 10)
-      nomisApi.stubMultipleGetCSIP(1..1)
-      mappingApi.stubGetAnyCSIPNotFound()
-      mappingApi.stubCSIPMappingByMigrationId()
-      csipApi.stubCSIPMigration(duplicateDPSCSIPId)
-      mappingApi.stubCSIPMappingCreateConflict()
+      csipNomisApi.stubGetInitialCount(CSIP_ID_URL, 1) { csipIdsPagedResponse(it) }
+      csipNomisApi.stubMultipleGetCSIPIdCounts(totalElements = 1, pageSize = 10)
+      csipNomisApi.stubMultipleGetCSIP(1..1)
+      csipMappingApi.stubGetAnyCSIPNotFound()
+      csipMappingApi.stubCSIPMappingByMigrationId()
+      csipApi.stubCSIPMigrate(duplicateDPSCSIPId)
+      csipMappingApi.stubCSIPMappingCreateConflict()
       webTestClient.performMigration()
 
       // check that one csip is created
       assertThat(csipApi.createCSIPMigrationCount()).isEqualTo(1)
 
       // doesn't retry
-      mappingApi.verifyCreateMappingCSIPId(duplicateDPSCSIPId)
+      csipMappingApi.verifyCreateMappingCSIPId(duplicateDPSCSIPId)
 
       verify(telemetryClient).trackEvent(
-        eq("nomis-migration-csip-duplicate"),
+        eq("csip-nomis-migration-duplicate"),
         check {
           assertThat(it["existingNomisCSIPId"]).isEqualTo("$NOMIS_CSIP_ID")
           assertThat(it["duplicateNomisCSIPId"]).isEqualTo("$NOMIS_CSIP_ID")
@@ -529,7 +535,7 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `can read active migration data`() {
-      mappingApi.stubCSIPMappingByMigrationId(count = 123456)
+      csipMappingApi.stubCSIPMappingByMigrationId(count = 123456)
       webTestClient.get().uri("/migrate/csip/active-migration")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CSIP")))
         .header("Content-Type", "application/json")
@@ -589,9 +595,9 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     internal fun `will terminate a running migration`() {
       val count = 30L
-      nomisApi.stubGetInitialCount(NomisApiExtension.CSIP_ID_URL, count) { csipIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetCSIPIdCounts(totalElements = count, pageSize = 10)
-      mappingApi.stubCSIPMappingByMigrationId(count = count.toInt())
+      csipNomisApi.stubGetInitialCount(CSIP_ID_URL, count) { csipIdsPagedResponse(it) }
+      csipNomisApi.stubMultipleGetCSIPIdCounts(totalElements = count, pageSize = 10)
+      csipMappingApi.stubCSIPMappingByMigrationId(count = count.toInt())
 
       val migrationId = webTestClient.post().uri("/migrate/csip")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CSIP")))

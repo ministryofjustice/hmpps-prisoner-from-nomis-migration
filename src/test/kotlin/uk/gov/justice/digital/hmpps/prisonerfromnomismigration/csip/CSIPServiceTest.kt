@@ -11,9 +11,10 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension.Companion.csipApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.CSIPApiExtension.Companion.csipApi
 
+private const val DPS_CSIP_ID = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5"
 private const val NOMIS_CSIP_ID = 1234L
 
 @SpringAPIServiceTest
@@ -28,13 +29,13 @@ internal class CSIPServiceTest {
   inner class CreateCSIPForMigration {
     @BeforeEach
     internal fun setUp() {
-      csipApi.stubCSIPMigration()
+      csipApi.stubCSIPMigrate()
 
       runBlocking {
         csipService.migrateCSIP(
           CSIPMigrateRequest(
             nomisCSIPId = NOMIS_CSIP_ID,
-            referralSummary = "Fighting on Prisoner Cell Block H",
+            concernDescription = "Fighting on Prisoner Cell Block H",
           ),
         )
       }
@@ -53,7 +54,7 @@ internal class CSIPServiceTest {
       csipApi.verify(
         postRequestedFor(urlEqualTo("/csip/migrate"))
           .withRequestBody(matchingJsonPath("nomisCSIPId", equalTo("$NOMIS_CSIP_ID")))
-          .withRequestBody(matchingJsonPath("referralSummary", equalTo("Fighting on Prisoner Cell Block H"))),
+          .withRequestBody(matchingJsonPath("concernDescription", equalTo("Fighting on Prisoner Cell Block H"))),
       )
     }
   }
