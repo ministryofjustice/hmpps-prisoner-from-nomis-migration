@@ -37,6 +37,7 @@ const val VISITS_SYNC_QUEUE_ID = "eventvisits"
 const val SENTENCING_ADJUSTMENTS_SYNC_QUEUE_ID = "eventsentencing"
 const val COURT_SENTENCING_SYNC_QUEUE_ID = "eventcourtsentencing"
 const val INCIDENTS_SYNC_QUEUE_ID = "eventincidents"
+const val CSIP_SYNC_QUEUE_ID = "eventcsip"
 const val LOCATIONS_SYNC_QUEUE_ID = "eventlocations"
 const val ALERTS_SYNC_QUEUE_ID = "eventalerts"
 
@@ -57,6 +58,7 @@ enum class SynchronisationType(val queueId: String) {
   VISITS(VISITS_SYNC_QUEUE_ID),
   SENTENCING_ADJUSTMENTS(SENTENCING_ADJUSTMENTS_SYNC_QUEUE_ID),
   INCIDENTS(INCIDENTS_SYNC_QUEUE_ID),
+  CSIP(CSIP_SYNC_QUEUE_ID),
   ALERTS(ALERTS_SYNC_QUEUE_ID),
   LOCATIONS(LOCATIONS_SYNC_QUEUE_ID),
   COURT_SENTENCING(COURT_SENTENCING_SYNC_QUEUE_ID),
