@@ -39,7 +39,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = ["alerts.migration.type=by-prisoner"])
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class AlertsByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
   @Autowired
   private lateinit var alertsNomisApiMockServer: AlertsNomisApiMockServer
@@ -95,7 +95,6 @@ class AlertsByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
         alertsNomisApiMockServer.stubGetAlertsToMigrate(
           offenderNo = "A0001KT",
           currentAlertCount = 1,
-          previousAlertCount = 0,
           alert = AlertResponse(
             bookingId = 1,
             alertSequence = 1,
@@ -116,10 +115,9 @@ class AlertsByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
               modifyUserId = "G.BARNES",
               modifyDisplayName = "GARRY BARNES",
             ),
-            isAlertFromPreviousBookingRelevant = false,
           ),
         )
-        alertsNomisApiMockServer.stubGetAlertsToMigrate(offenderNo = "A0002KT", currentAlertCount = 1, previousAlertCount = 0)
+        alertsNomisApiMockServer.stubGetAlertsToMigrate(offenderNo = "A0002KT", currentAlertCount = 1)
         dpsAlertsServer.stubMigrateAlerts(offenderNo = "A0001KT", response = listOf(migratedAlert().copy(alertUuid = UUID.fromString("00000000-0000-0000-0000-000000000001"), offenderBookId = 1234567, alertSeq = 1)))
         dpsAlertsServer.stubMigrateAlerts(offenderNo = "A0002KT", response = listOf(migratedAlert().copy(alertUuid = UUID.fromString("00000000-0000-0000-0000-000000000002"), offenderBookId = 1234567, alertSeq = 2)))
         alertsMappingApiMockServer.stubPostMappings("A0001KT")
@@ -203,7 +201,7 @@ class AlertsByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         alertsNomisApiMockServer.stubGetPrisonIds(totalElements = 1, pageSize = 10, offenderNo = "A0001KT")
-        alertsNomisApiMockServer.stubGetAlertsToMigrate(offenderNo = "A0001KT", currentAlertCount = 1, previousAlertCount = 0)
+        alertsNomisApiMockServer.stubGetAlertsToMigrate(offenderNo = "A0001KT", currentAlertCount = 1)
         dpsAlertsServer.stubMigrateAlerts(offenderNo = "A0001KT", response = listOf(migratedAlert().copy(alertUuid = UUID.fromString("00000000-0000-0000-0000-000000000001"), offenderBookId = 1234567, alertSeq = 1)))
         alertsMappingApiMockServer.stubPostMappingsFailureFollowedBySuccess(offenderNo = "A0001KT")
         performMigration()
@@ -564,12 +562,12 @@ class AlertsByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     internal fun `will terminate a running migration`() {
       alertsNomisApiMockServer.stubGetPrisonIds(totalElements = 2, pageSize = 10, offenderNo = "A0001KT")
-      alertsNomisApiMockServer.stubGetAlertsToMigrate(offenderNo = "A0001KT", currentAlertCount = 1, previousAlertCount = 0)
-      alertsNomisApiMockServer.stubGetAlertsToMigrate(offenderNo = "A0002KT", currentAlertCount = 1, previousAlertCount = 0)
+      alertsNomisApiMockServer.stubGetAlertsToMigrate(offenderNo = "A0001KT", currentAlertCount = 1)
+      alertsNomisApiMockServer.stubGetAlertsToMigrate(offenderNo = "A0002KT", currentAlertCount = 1)
 
       val migrationId = performMigration().migrationId
 
-      webTestClient.post().uri("/migrate/alerts/{mi grationId}/cancel", migrationId)
+      webTestClient.post().uri("/migrate/alerts/{migrationId}/cancel", migrationId)
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ALERTS")))
         .header("Content-Type", "application/json")
         .exchange()

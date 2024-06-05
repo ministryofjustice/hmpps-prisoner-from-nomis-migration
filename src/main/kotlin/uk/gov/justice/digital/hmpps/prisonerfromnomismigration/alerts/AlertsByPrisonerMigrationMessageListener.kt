@@ -5,7 +5,6 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import io.awspring.cloud.sqs.annotation.SqsListener
 import io.opentelemetry.api.trace.SpanKind
 import io.opentelemetry.instrumentation.annotations.WithSpan
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.Message
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener
@@ -16,7 +15,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import java.util.concurrent.CompletableFuture
 
 @Service
-@ConditionalOnProperty(name = ["alerts.migration.type"], havingValue = "by-prisoner")
 class AlertsByPrisonerMigrationMessageListener(
   objectMapper: ObjectMapper,
   alertsMigrationService: AlertsByPrisonerMigrationService,
@@ -32,7 +30,7 @@ class AlertsByPrisonerMigrationMessageListener(
     maxMessagesPerPoll = "8",
   )
   @WithSpan(value = "dps-syscon-migration_alerts_queue", kind = SpanKind.SERVER)
-  fun onSentencingMessage(message: String, rawMessage: Message): CompletableFuture<Void>? {
+  fun onAlertsMessage(message: String, rawMessage: Message): CompletableFuture<Void>? {
     return onMessage(message, rawMessage)
   }
 

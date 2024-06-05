@@ -48,8 +48,6 @@ locations:
   page:
     size: 10
 alerts:
-  migration:
-    type: "all"
   complete-check:
     delay-seconds: 1
     count: 1

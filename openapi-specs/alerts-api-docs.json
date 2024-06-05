@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-05-07.1492.349c31b"
+    "version": "2024-06-05.1781.af6f7d7"
   },
   "servers": [
     {
@@ -155,12 +155,12 @@
               }
             }
           },
-          "200": {
-            "description": "Alert updated successfully",
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Alert"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -175,12 +175,12 @@
               }
             }
           },
-          "401": {
-            "description": "Unauthorised, requires a valid Oauth2 token",
+          "200": {
+            "description": "Alert updated successfully",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "$ref": "#/components/schemas/Alert"
                 }
               }
             }
@@ -235,6 +235,9 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "Alert deleted"
+          },
           "403": {
             "description": "Forbidden, requires an appropriate role",
             "content": {
@@ -244,9 +247,6 @@
                 }
               }
             }
-          },
-          "204": {
-            "description": "Alert deleted"
           },
           "404": {
             "description": "Alert was not found or already deleted",
@@ -316,16 +316,6 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "201": {
             "description": "Alerts migrated successfully",
             "content": {
@@ -341,6 +331,16 @@
           },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
             "content": {
               "application/json": {
                 "schema": {
@@ -371,26 +371,6 @@
           "required": true
         },
         "responses": {
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "201": {
             "description": "Alert migrated successfully",
             "content": {
@@ -401,8 +381,28 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
             "content": {
               "application/json": {
                 "schema": {
@@ -432,7 +432,7 @@
         ],
         "summary": "Merge alerts associated with two prison numbers",
         "description": "\n\nRequires one of the following roles:\n* ROLE_ALERTS_ADMIN\n* ROLE_NOMIS_ALERTS",
-        "operationId": "createAlert_1",
+        "operationId": "mergeAlerts",
         "requestBody": {
           "content": {
             "application/json": {
@@ -464,8 +464,8 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request",
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
               "application/json": {
                 "schema": {
@@ -474,8 +474,8 @@
               }
             }
           },
-          "401": {
-            "description": "Unauthorised, requires a valid Oauth2 token",
+          "400": {
+            "description": "Bad request",
             "content": {
               "application/json": {
                 "schema": {
@@ -536,18 +536,18 @@
           "required": true
         },
         "responses": {
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
+          "201": {
+            "description": "Alerts created successfully",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "$ref": "#/components/schemas/BulkAlert"
                 }
               }
             }
           },
-          "400": {
-            "description": "Bad request",
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
             "content": {
               "application/json": {
                 "schema": {
@@ -566,12 +566,12 @@
               }
             }
           },
-          "201": {
-            "description": "Alerts created successfully",
+          "400": {
+            "description": "Bad request",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BulkAlert"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -586,7 +586,7 @@
         ],
         "summary": "Create an alert",
         "description": "\n\nRequires one of the following roles:\n* ROLE_ALERTS_WRITER\n* ROLE_ALERTS_ADMIN\n* UPDATE_ALERT\n* ROLE_NOMIS_ALERTS",
-        "operationId": "createAlert_2",
+        "operationId": "createAlert_1",
         "parameters": [
           {
             "name": "Username",
@@ -638,16 +638,6 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "201": {
             "description": "Alert created successfully",
             "content": {
@@ -660,6 +650,16 @@
           },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
             "content": {
               "application/json": {
                 "schema": {
@@ -768,8 +768,28 @@
           "required": true
         },
         "responses": {
+          "409": {
+            "description": "Conflict, the alert type code already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
               "application/json": {
                 "schema": {
@@ -787,26 +807,6 @@
                   "items": {
                     "$ref": "#/components/schemas/AlertType"
                   }
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict, the alert type code already exists",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorised, requires a valid Oauth2 token",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -844,6 +844,16 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "200": {
             "description": "Alert code retrieved",
             "content": {
@@ -853,16 +863,6 @@
                   "items": {
                     "$ref": "#/components/schemas/AlertCode"
                   }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorised, requires a valid Oauth2 token",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -901,6 +901,16 @@
           "required": true
         },
         "responses": {
+          "409": {
+            "description": "Conflict, the alert code already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Forbidden, requires an appropriate role",
             "content": {
@@ -921,32 +931,22 @@
               }
             }
           },
-          "201": {
-            "description": "Alert code created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AlertCode"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict, the alert code already exists",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Alert code created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertCode"
                 }
               }
             }
@@ -995,8 +995,8 @@
           "required": true
         },
         "responses": {
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
+          "404": {
+            "description": "Not found, the alert type was is not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -1005,8 +1005,8 @@
               }
             }
           },
-          "404": {
-            "description": "Not found, the alert type was is not found",
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
             "content": {
               "application/json": {
                 "schema": {
@@ -1069,6 +1069,16 @@
           }
         ],
         "responses": {
+          "404": {
+            "description": "Not found, the alert type was is not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Forbidden, requires an appropriate role",
             "content": {
@@ -1085,16 +1095,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AlertType"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found, the alert type was is not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1143,8 +1143,8 @@
           }
         ],
         "responses": {
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
+          "404": {
+            "description": "Not found, the alert type was is not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -1153,8 +1153,8 @@
               }
             }
           },
-          "404": {
-            "description": "Not found, the alert type was is not found",
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
             "content": {
               "application/json": {
                 "schema": {
@@ -1225,22 +1225,22 @@
               }
             }
           },
-          "200": {
-            "description": "Alert code retrieved",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AlertCode"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Alert code retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertCode"
                 }
               }
             }
@@ -1361,6 +1361,16 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "Alert code reactivated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertCode"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Forbidden, requires an appropriate role",
             "content": {
@@ -1377,16 +1387,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "Alert code reactivated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AlertCode"
                 }
               }
             }
@@ -1455,22 +1455,22 @@
               }
             }
           },
-          "200": {
-            "description": "Alert code deactivated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AlertCode"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Alert code deactivated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertCode"
                 }
               }
             }
@@ -1750,6 +1750,16 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "200": {
             "description": "Audit events retrieved for a given alert",
             "content": {
@@ -1759,16 +1769,6 @@
                   "items": {
                     "$ref": "#/components/schemas/AuditEvent"
                   }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorised, requires a valid Oauth2 token",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1795,8 +1795,8 @@
           }
         ],
         "responses": {
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
+          "404": {
+            "description": "Not found, the alert type was is not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -1818,8 +1818,8 @@
               }
             }
           },
-          "404": {
-            "description": "Not found, the alert type was is not found",
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
             "content": {
               "application/json": {
                 "schema": {
@@ -1997,6 +1997,21 @@
           "lastModifiedByDisplayName": {
             "type": "string",
             "description": "The displayable name of the user who last modified the alert",
+            "example": "Firstname Lastname"
+          },
+          "activeToLastSetAt": {
+            "type": "string",
+            "description": "The date and time the alert was last set to expire.",
+            "format": "date-time"
+          },
+          "activeToLastSetBy": {
+            "type": "string",
+            "description": "The username of the user who last set the alert to expire.",
+            "example": "USER1234"
+          },
+          "activeToLastSetByDisplayName": {
+            "type": "string",
+            "description": "The displayable name of the user who last set the alert to expire.",
             "example": "Firstname Lastname"
           }
         },
@@ -2983,14 +2998,14 @@
             "type": "integer",
             "format": "int32"
           },
+          "paged": {
+            "type": "boolean"
+          },
           "pageNumber": {
             "type": "integer",
             "format": "int32"
           },
           "unpaged": {
-            "type": "boolean"
-          },
-          "paged": {
             "type": "boolean"
           }
         }

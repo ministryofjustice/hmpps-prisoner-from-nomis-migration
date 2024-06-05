@@ -5,14 +5,12 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.BookingAlertsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PreviousBookingId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerAlertsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RestResponsePage
-import java.time.LocalDate
 
 @Service
 class AlertsNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
@@ -22,18 +20,6 @@ class AlertsNomisApiService(@Qualifier("nomisApiWebClient") private val webClien
       bookingId,
       alertSequence,
     )
-    .retrieve()
-    .awaitBody()
-
-  suspend fun getAlertIds(fromDate: LocalDate?, toDate: LocalDate?, pageNumber: Long, pageSize: Long): RestResponsePage<AlertIdResponse> = webClient.get()
-    .uri {
-      it.path("/alerts/ids")
-        .queryParam("page", pageNumber)
-        .queryParam("size", pageSize)
-        .queryParam("fromDate", fromDate)
-        .queryParam("toDate", toDate)
-        .build()
-    }
     .retrieve()
     .awaitBody()
 
