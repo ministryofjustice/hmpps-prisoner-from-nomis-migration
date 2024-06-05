@@ -103,6 +103,13 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .bodyValue(courtCase)
       .retrieve()
       .awaitBody()
+
+  suspend fun deleteSentence(sentenceId: String) =
+    webClient
+      .delete()
+      .uri("/sentence/{sentenceId}", sentenceId)
+      .retrieve()
+      .awaitBodilessEntity()
 }
 
 data class CreateNewChargeResponse(

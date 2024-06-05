@@ -136,4 +136,12 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
       }
       .awaitFirstOrDefault(CreateMappingResult<SentenceAllMappingDto>())
   }
+
+  suspend fun deleteSentenceMappingByDpsId(sentenceId: String) = webClient.delete()
+    .uri(
+      "/mapping/court-sentencing/sentences/dps-sentence-id/{sentenceId}",
+      sentenceId,
+    )
+    .retrieve()
+    .awaitBodilessEntity()
 }
