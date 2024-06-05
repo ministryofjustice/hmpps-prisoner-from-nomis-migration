@@ -5,8 +5,9 @@ import jakarta.validation.Valid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 
@@ -21,9 +22,9 @@ class MockCSIPResource {
   }
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_CSIP')")
-  @PostMapping("/csip/migrate")
+  @PostMapping("/migrate/csip-report")
   @Operation(hidden = true)
-  suspend fun createCSIPForMigration(
+  suspend fun migrateCSIP(
     @RequestBody @Valid
     csipRequest: CSIPMigrateRequest,
   ): CSIPMigrateResponse {
@@ -32,14 +33,22 @@ class MockCSIPResource {
   }
 
   @PreAuthorize("hasRole('ROLE_SYNC_CSIP')")
-  @PutMapping("/csip/sync")
+  @PostMapping("/csip")
   @Operation(hidden = true)
-  suspend fun createCSIPForSynchronisation(
-    @RequestBody @Valid
-    csipRequest: CSIPSyncRequest,
-  ): CSIPSyncResponse {
+  suspend fun createCSIP(csipRequest: CSIPSyncRequest): CSIPSyncResponse {
     log.info("Created csip for sync with id ${csipRequest.nomisCSIPId} ")
     return CSIPSyncResponse("DPS-${csipRequest.nomisCSIPId}")
+  }
+
+  @PreAuthorize("hasRole('ROLE_SYNC_CSIP')")
+  @DeleteMapping("/csip/{dpsCSIPId}")
+  @Operation(hidden = true)
+  suspend fun deleteCSIP(
+    @PathVariable
+    dpsCSIPId: String,
+  ): CSIPSyncResponse {
+    log.info("Deleted csip for sync with id $dpsCSIPId ")
+    return CSIPSyncResponse("DPS-$dpsCSIPId")
   }
 }
 

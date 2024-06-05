@@ -58,7 +58,7 @@ internal class CSIPMappingServiceTest {
 
       assertThat(
         runBlocking {
-          csipMappingService.findNomisCSIPMapping(
+          csipMappingService.findByNomisId(
             nomisCSIPId = NOMIS_CSIP_ID,
           )
         },
@@ -86,7 +86,7 @@ internal class CSIPMappingServiceTest {
         ),
       )
 
-      val mapping = csipMappingService.findNomisCSIPMapping(
+      val mapping = csipMappingService.findByNomisId(
         nomisCSIPId = NOMIS_CSIP_ID,
       )
       assertThat(mapping).isNotNull
@@ -110,7 +110,7 @@ internal class CSIPMappingServiceTest {
 
       assertThatThrownBy {
         runBlocking {
-          csipMappingService.findNomisCSIPMapping(
+          csipMappingService.findByNomisId(
             nomisCSIPId = NOMIS_CSIP_ID,
           )
         }

@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
@@ -8,12 +9,24 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Actions
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Decision
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FactorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.InvestigationDetails
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Offender
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Plan
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ReportDetails
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Review
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SaferCustodyScreening
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.lang.Long.min
+import java.time.LocalDate
 
 @Component
-class CSIPNomisApiMockServer {
+class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
   companion object {
     const val CSIP_ID_URL = "/csip/ids"
   }
@@ -61,7 +74,9 @@ class CSIPNomisApiMockServer {
         )
           .willReturn(
             aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-              .withBody(csipResponse(it.toLong())),
+              .withBody(
+                objectMapper.writeValueAsString(aNomisCSIPResponse(it.toLong())),
+              ),
           ),
       )
     }
@@ -74,7 +89,9 @@ class CSIPNomisApiMockServer {
       )
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(csipResponse(nomisCSIPId)),
+            .withBody(
+              objectMapper.writeValueAsString(aNomisCSIPResponse(nomisCSIPId)),
+            ),
         ),
     )
   }
@@ -107,126 +124,101 @@ fun csipIdsPagedResponse(
   return pageContent(content, pageSize, pageNumber, totalElements, ids.size)
 }
 
-private fun csipResponse(
+internal fun aNomisCSIPResponse(
   nomisCSIPId: Long = 1234,
-): String =
-  """
-  {
-    "id":"$nomisCSIPId",
-    "offender":{
-      "offenderNo":"A1247EA",
-      "firstName":"TOMMY",
-      "lastName":"THIRD"
-    },
-    "bookingId":1214478,
-    "originalAgencyId":"LEI",
-    "logNumber":" LEI 2",
-    "incidentDateTime":"2024-04-01T10:00:00",
-    "type":{
-      "code":"ATO",
-      "description":"Abuse/Threats Other"
-    },
-    "location":{
-      "code":"EXY",
-      "description":"Exercise Yard"
-    },
-    "areaOfWork":{
-      "code":"ACT",
-      "description":"Activities"
-    },
-    "reportedBy":"jim_adm",
-    "reportedDate":"2024-04-04",
-    "proActiveReferral":false,
-    "staffAssaulted":true,
-    "staffAssaultedName":"somebody was hurt",
-    "reportDetails":{
-      "involvement":{
-        "code":"PER",
-        "description":"Perpertrator"
-      },
-      "concern":"description of concern goes in here",
-      "factors":[
-        {
-          "id":43,
-          "type":{
-            "code":"BUL",
-            "description":"Bullying"
-          },
-          "comment":"referral - continued screen comment goes here",
-          "createDateTime":"2024-04-01T10:00:00",
-          "createdBy":"JSMITH" 
-        }
-      ],
-      "knownReasons":"known reasons details go in here",
-      "otherInformation":"other information goes in here",
-      "saferCustodyTeamInformed":false,
-      "referralComplete":true,
-      "referralCompletedBy":"JIM_ADM",
-      "referralCompletedDate":"2024-04-04"
-    },
-    "saferCustodyScreening":{
-      "outcome":{
-        "code":"CUR",
-        "description":"Progress to CSIP"
-      },
-      "recordedBy":"FRED_ADM",
-      "recordedDate":"2024-04-08",
-      "reasonForDecision":"There is a reason for the decision - it goes here"
-    },
-    "investigation":{
-      "interviews":[]
-    },
-    "decision":{
-      "decisionOutcome":{
-        "code":"CUR",
-        "description":"Progress to CSIP"
-      },
-      "recordedBy":"FRED_ADM",
-      "recordedDate":"2024-04-08",
-      "actions":{
-        "openCSIPAlert":false,
-        "nonAssociationsUpdated":false,
-        "observationBook":false,
-        "unitOrCellMove":false,
-        "csraOrRsraReview":false,
-        "serviceReferral":false,
-        "simReferral":false
-      }
-    },
-    "caseManager":"Jim Smith",
-    "planReason":"helper",
-    "firstCaseReviewDate":"2024-04-15",
-    "plans":[
-      {
-        "id":65,
-        "identifiedNeed":"they need help",
-        "intervention":"dd",
-        "progression":"d",
-        "referredBy":"karen",
-        "createdDate":"2024-04-16",
-        "targetDate":"2024-08-20",
-        "closedDate":"2024-04-17",
-        "createDateTime":"2024-04-01T10:00:00",
-        "createdBy":"JSMITH"
-      }
-    ],
-    "reviews":[
-      {
-        "id":65,
-        "reviewSequence":1,
-        "attendees":[],
-        "remainOnCSIP":true,
-        "csipUpdated":false,
-        "caseNote":false,
-        "closeCSIP":true,
-        "peopleInformed":false,
-        "closeDate":"2024-04-16",
-        "createDateTime":"2024-04-01T10:00:00",
-        "createdBy":"JSMITH"
-      }
-    ],
-    "documents":[],
-    "createDateTime":"2024-04-01T10:00:00",
-    "createdBy":"JSMITH"
-  }
-  """.trimIndent()
+) =
+  CSIPResponse(
+    id = nomisCSIPId,
+    offender = Offender("A1234BC", firstName = "Fred", lastName = "Smith"),
+    bookingId = 1214478L,
+    type = CodeDescription(code = "INT", description = "Intimidation"),
+    location = CodeDescription(code = "LIB", description = "Library"),
+    areaOfWork = CodeDescription(code = "EDU", description = "Education"),
+    reportedDate = LocalDate.parse("2024-04-04"),
+    reportedBy = "JIM_ADM",
+    proActiveReferral = true,
+    staffAssaulted = true,
+    staffAssaultedName = "somebody was hurt",
+    reportDetails = ReportDetails(
+      factors = listOf(
+        FactorResponse(
+          id = 43,
+          type = CodeDescription(code = "BUL", description = "Bullying"),
+          comment = "Offender causes trouble",
+          createDateTime = "2024-04-01T10:00:00",
+          createdBy = "JSMITH",
+        ),
+      ),
+      saferCustodyTeamInformed = false,
+      referralComplete = true,
+      referralCompletedBy = "JIM_ADM",
+      referralCompletedDate = LocalDate.parse("2024-04-04"),
+      involvement = CodeDescription(code = "PER", description = "Perpetrator"),
+      concern = "There was a worry about the offender",
+      knownReasons = "known reasons details go in here",
+      otherInformation = "other information goes in here",
+    ),
+    saferCustodyScreening = SaferCustodyScreening(
+      outcome = CodeDescription(
+        code = "CUR",
+        description = "Progress to CSIP",
+      ),
+      recordedBy = "FRED_ADM",
+      recordedDate = LocalDate.parse("2024-04-08"),
+      reasonForDecision = "There is a reason for the decision - it goes here",
+    ),
+    investigation = InvestigationDetails(),
+    decision = Decision(
+      actions = Actions(
+        openCSIPAlert = false,
+        nonAssociationsUpdated = true,
+        observationBook = true,
+        unitOrCellMove = false,
+        csraOrRsraReview = false,
+        serviceReferral = true,
+        simReferral = false,
+      ),
+      decisionOutcome = CodeDescription(code = "CUR", description = "Progress to CSIP"),
+      recordedBy = "FRED_ADM",
+      recordedDate = LocalDate.parse("2024-04-08"),
+    ),
+    plans = listOf(
+      Plan(
+        id = 65,
+        identifiedNeed = "they need help",
+        intervention = "dd",
+        createdDate = LocalDate.parse("2024-04-16"),
+        targetDate = LocalDate.parse("2024-08-20"),
+        closedDate = LocalDate.parse("2024-04-17"),
+        progression = "there was some improvement",
+        referredBy = "Jason",
+        createDateTime = "2024-04-01T10:00:00",
+        createdBy = "JSMITH",
+      ),
+    ),
+    reviews = listOf(
+      Review(
+        id = 65,
+        reviewSequence = 1,
+        attendees = listOf(),
+        remainOnCSIP = true,
+        csipUpdated = false,
+        caseNote = false,
+        closeCSIP = true,
+        peopleInformed = false,
+        closeDate = LocalDate.parse("2024-04-16"),
+        createDateTime = "2024-04-01T10:00:00",
+        createdBy = "JSMITH",
+
+      ),
+    ),
+    documents = listOf(),
+    createDateTime = "2024-04-01T10:00:00",
+    createdBy = "JSMITH",
+    originalAgencyId = "MDI",
+    logNumber = "LEI 2",
+    incidentDateTime = "2024-04-01T10:00:00",
+    caseManager = "Jim Smith",
+    planReason = "helper",
+    firstCaseReviewDate = LocalDate.parse("2024-04-15"),
+  )

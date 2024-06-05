@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
+import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPMappingDto
@@ -13,7 +14,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 class CSIPMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) :
   MigrationMapping<CSIPMappingDto>(domainUrl = "/mapping/csip", webClient) {
 
-  suspend fun findNomisCSIPMapping(nomisCSIPId: Long): CSIPMappingDto? =
+  suspend fun findByNomisId(nomisCSIPId: Long): CSIPMappingDto? =
     webClient.get()
       .uri("/mapping/csip/nomis-csip-id/{nomisCSIPId}", nomisCSIPId)
       .retrieve()
@@ -22,4 +23,11 @@ class CSIPMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient)
         Mono.empty()
       }
       .awaitSingleOrNull()
+
+  suspend fun deleteMappingByDPSId(dpsCSIPId: String) {
+    webClient.delete()
+      .uri("/mapping/csip/dps-csip-id/{dpsCSIPId}", dpsCSIPId)
+      .retrieve()
+      .awaitBodilessEntity()
+  }
 }
