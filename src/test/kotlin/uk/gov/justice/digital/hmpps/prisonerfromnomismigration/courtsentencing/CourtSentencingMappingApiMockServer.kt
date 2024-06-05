@@ -457,6 +457,27 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
     )
   }
 
+  fun stubDeleteSentenceMapping(dpsSentenceId: String) {
+    mappingApi.stubFor(
+      delete("/mapping/court-sentencing/sentences/dps-sentence-id/$dpsSentenceId").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
+  fun stubDeleteSentenceMappingByDpsId(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      delete(urlPathMatching("/mapping/court-sentencing/sentences/dps-sentence-id/.*")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
   fun createMappingCount(url: String) =
     mappingApi.findAll(WireMock.postRequestedFor(WireMock.urlPathEqualTo(url))).count()
 

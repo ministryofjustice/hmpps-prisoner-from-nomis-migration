@@ -676,6 +676,36 @@ class CourtSentencingSynchronisationService(
     }
   }
 
+  suspend fun nomisSentenceDeleted(event: OffenderSentenceEvent) {
+    val telemetry =
+      mapOf(
+        "nomisSentenceSequence" to event.sentenceSequence,
+        "offenderNo" to event.offenderIdDisplay,
+        "nomisBookingId" to event.bookingId,
+      )
+    val mapping = mappingApiService.getSentenceOrNullByNomisId(sentenceSequence = event.sentenceSequence, bookingId = event.bookingId)
+    if (mapping == null) {
+      telemetryClient.trackEvent(
+        "sentence-synchronisation-deleted-ignored",
+        telemetry,
+      )
+    } else {
+      dpsApiService.deleteSentence(sentenceId = mapping.dpsSentenceId)
+      tryToDeleteSentenceMapping(mapping.dpsSentenceId)
+      telemetryClient.trackEvent(
+        "sentence-synchronisation-deleted-success",
+        telemetry + ("dpsSentenceId" to mapping.dpsSentenceId),
+      )
+    }
+  }
+
+  private suspend fun tryToDeleteSentenceMapping(dpsSentenceId: String) = runCatching {
+    mappingApiService.deleteSentenceMappingByDpsId(dpsSentenceId)
+  }.onFailure { e ->
+    telemetryClient.trackEvent("sentence-mapping-deleted-failed", mapOf("dpsSentenceId" to dpsSentenceId))
+    log.warn("Unable to delete mapping for sentence with dps Id $dpsSentenceId. Please delete manually", e)
+  }
+
   suspend fun retryCreateCourtChargeMapping(retryMessage: InternalMessage<CourtChargeMappingDto>) {
     mappingApiService.createCourtChargeMapping(
       retryMessage.body,

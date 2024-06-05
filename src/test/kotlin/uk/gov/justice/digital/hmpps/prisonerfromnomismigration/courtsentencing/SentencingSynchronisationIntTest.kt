@@ -414,6 +414,187 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     }
   }
 
+  @Nested
+  @DisplayName("OFFENDER_SENTENCES-DELETED")
+  inner class SentenceDeleted {
+
+    @Nested
+    @DisplayName("When sentence was deleted in NOMIS")
+    inner class NomisDeleted {
+
+      @Nested
+      @DisplayName("When mapping does not exist")
+      inner class NoMapping {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(status = NOT_FOUND)
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            sentenceEvent(
+              eventType = "OFFENDER_SENTENCES-DELETED",
+            ),
+          )
+        }
+
+        @Test
+        fun `the event is ignored`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("sentence-synchronisation-deleted-ignored"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+              },
+              isNull(),
+            )
+          }
+          // will not create a sentence in DPS
+          dpsCourtSentencingServer.verify(0, postRequestedFor(anyUrl()))
+        }
+      }
+
+      @Nested
+      @DisplayName("When mapping exists")
+      inner class MappingExists {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(
+            nomisBookingId = NOMIS_BOOKING_ID,
+            nomisSentenceSequence = NOMIS_SENTENCE_SEQUENCE,
+            dpsSentenceId = DPS_SENTENCE_ID,
+            mapping = SentenceAllMappingDto(
+              nomisSentenceSequence = NOMIS_SENTENCE_SEQUENCE,
+              nomisBookingId = NOMIS_BOOKING_ID,
+              sentenceCharges = emptyList(),
+              dpsSentenceId = DPS_SENTENCE_ID,
+            ),
+          )
+          courtSentencingMappingApiMockServer.stubDeleteSentenceMapping(dpsSentenceId = DPS_SENTENCE_ID)
+          dpsCourtSentencingServer.stubDeleteSentence(DPS_SENTENCE_ID)
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            sentenceEvent(
+              eventType = "OFFENDER_SENTENCES-DELETED",
+            ),
+          ).also {
+            waitForTelemetry()
+          }
+        }
+
+        @Test
+        fun `will delete a sentence in DPS`() {
+          await untilAsserted {
+            dpsCourtSentencingServer.verify(
+              1,
+              WireMock.deleteRequestedFor(urlPathEqualTo("/sentence/$DPS_SENTENCE_ID")),
+              // TODO DPS to implement this endpoint
+            )
+          }
+        }
+
+        @Test
+        fun `will delete mapping between DPS and NOMIS ids`() {
+          await untilAsserted {
+            courtSentencingMappingApiMockServer.verify(
+              1,
+              WireMock.deleteRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences/dps-sentence-id/$DPS_SENTENCE_ID")),
+            )
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("sentence-synchronisation-deleted-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+                assertThat(it["dpsSentenceId"]).isEqualTo(DPS_SENTENCE_ID)
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("When mapping fails to be deleted")
+      inner class MappingSentenceDeleteFails {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(
+            nomisBookingId = NOMIS_BOOKING_ID,
+            nomisSentenceSequence = NOMIS_SENTENCE_SEQUENCE,
+            dpsSentenceId = DPS_SENTENCE_ID,
+            mapping = SentenceAllMappingDto(
+              nomisSentenceSequence = NOMIS_SENTENCE_SEQUENCE,
+              nomisBookingId = NOMIS_BOOKING_ID,
+              sentenceCharges = emptyList(),
+              dpsSentenceId = DPS_SENTENCE_ID,
+            ),
+          )
+
+          courtSentencingMappingApiMockServer.stubDeleteSentenceMappingByDpsId(status = HttpStatus.INTERNAL_SERVER_ERROR)
+          dpsCourtSentencingServer.stubDeleteSentence(DPS_SENTENCE_ID)
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            sentenceEvent(
+              eventType = "OFFENDER_SENTENCES-DELETED",
+            ),
+          ).also {
+            waitForTelemetry()
+          }
+        }
+
+        @Test
+        fun `will delete a sentence in DPS`() {
+          await untilAsserted {
+            dpsCourtSentencingServer.verify(
+              1,
+              WireMock.deleteRequestedFor(urlPathEqualTo("/sentence/$DPS_SENTENCE_ID")),
+              // TODO DPS to implement this endpoint
+            )
+          }
+        }
+
+        @Test
+        fun `will try to delete sentence mapping once and record failure`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("sentence-mapping-deleted-failed"),
+              any(),
+              isNull(),
+            )
+
+            courtSentencingMappingApiMockServer.verify(
+              1,
+              WireMock.deleteRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences/dps-sentence-id/$DPS_SENTENCE_ID")),
+            )
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("sentence-synchronisation-deleted-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+                assertThat(it["dpsSentenceId"]).isEqualTo(DPS_SENTENCE_ID)
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+    }
+  }
+
   private fun waitForTelemetry(times: VerificationMode = atLeastOnce()) {
     await untilAsserted {
       verify(telemetryClient, times).trackEvent(
