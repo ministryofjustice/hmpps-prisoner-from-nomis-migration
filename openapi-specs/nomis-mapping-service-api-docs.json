@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-05-10.4256.cce4fb0"
+    "version": "2024-05-31.4376.dd747ee"
   },
   "servers": [
     {
@@ -1320,6 +1320,68 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/court-sentencing/sentences": {
+      "post": {
+        "tags": [
+          "court-sentencing-mapping-resource"
+        ],
+        "summary": "Creates a new sentence hierarchical mapping",
+        "description": "Creates a mapping between nomis sentence ID (booking id and sentence seq) and DPS Sentence ID. Also maps child charge entities. Requires ROLE_NOMIS_COURT_SENTENCING",
+        "operationId": "createSentenceMapping",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SentenceAllMappingDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Mapping created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SentenceMapping"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access forbidden for this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Indicates a duplicate mapping has been rejected. If Error code = 1409 the body will return a DuplicateErrorResponse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateMappingErrorResponse"
                 }
               }
             }
@@ -2805,6 +2867,74 @@
         }
       }
     },
+    "/mapping/punishments/nomis-booking-id/{nomisBookingId}/nomis-sanction-sequence/{nomisSanctionSequence}": {
+      "get": {
+        "tags": [
+          "punishments-mapping-resource"
+        ],
+        "summary": "get mapping",
+        "description": "Retrieves a mapping by NOMIS booking id and sanction sequence. Requires role NOMIS_ADJUDICATIONS",
+        "operationId": "getMappingGivenNomisId",
+        "parameters": [
+          {
+            "name": "nomisBookingId",
+            "in": "path",
+            "description": "NOMIS Booking Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "NOMIS Booking Id",
+              "example": 12345
+            },
+            "example": 12345
+          },
+          {
+            "name": "nomisSanctionSequence",
+            "in": "path",
+            "description": "NOMIS sanction sequence",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "NOMIS sanction sequence",
+              "example": 12
+            },
+            "example": 12
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdjudicationPunishmentMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/non-associations/non-association-id/{nonAssociationId}": {
       "get": {
         "tags": [
@@ -3081,7 +3211,7 @@
         ],
         "summary": "get mapping",
         "description": "Retrieves a mapping by Nomis location id. Requires role NOMIS_LOCATIONS",
-        "operationId": "getMappingGivenNomisId",
+        "operationId": "getMappingGivenNomisId_1",
         "parameters": [
           {
             "name": "nomisLocationId",
@@ -3789,7 +3919,7 @@
         ],
         "summary": "get mapping",
         "description": "Retrieves a mapping by NOMIS hearing Id. Requires role NOMIS_ADJUDICATIONS",
-        "operationId": "getMappingGivenNomisId_1",
+        "operationId": "getMappingGivenNomisId_2",
         "parameters": [
           {
             "name": "id",
@@ -4126,6 +4256,189 @@
           },
           "404": {
             "description": "CSIP id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/court-sentencing/sentences/nomis-booking-id/{bookingId}/nomis-sentence-sequence/{sentenceSequence}": {
+      "get": {
+        "tags": [
+          "court-sentencing-mapping-resource"
+        ],
+        "summary": "get sentence mapping",
+        "description": "Retrieves a mapping by DPS id. Requires role NOMIS_COURT_SENTENCING",
+        "operationId": "getSentenceMappingByNomisId",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "description": "NOMIS booking id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "NOMIS booking id",
+              "example": 123432
+            },
+            "example": 123432
+          },
+          {
+            "name": "sentenceSequence",
+            "in": "path",
+            "description": "NOMIS sentence sequence",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "NOMIS sentence sequence",
+              "example": 1
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SentenceAllMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "court-sentencing-mapping-resource"
+        ],
+        "summary": "Deletes a sentence mapping",
+        "description": "Deletes a sentence mapping by NOMIS id. Requires role NOMIS_COURT_SENTENCING",
+        "operationId": "deleteSentenceMappingByNomisId",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "description": "NOMIS booking id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "NOMIS booking id",
+              "example": 123432
+            },
+            "example": 123432
+          },
+          {
+            "name": "sentenceSequence",
+            "in": "path",
+            "description": "NOMIS sentence sequence",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "NOMIS sentence sequence",
+              "example": 1
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Mapping Deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/court-sentencing/sentences/dps-sentence-id/{sentenceId}": {
+      "get": {
+        "tags": [
+          "court-sentencing-mapping-resource"
+        ],
+        "summary": "get sentence mapping",
+        "description": "Retrieves a mapping by DPS id. Requires role NOMIS_COURT_SENTENCING",
+        "operationId": "getSentenceMappingByDpsId",
+        "parameters": [
+          {
+            "name": "sentenceId",
+            "in": "path",
+            "description": "DPS sentence id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "DPS sentence id",
+              "example": "D123"
+            },
+            "example": "D123"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SentenceAllMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Id does not exist in mapping table",
             "content": {
               "application/json": {
                 "schema": {
@@ -5158,7 +5471,7 @@
         ],
         "summary": "get mapping",
         "description": "Retrieves a mapping by DPS charge number. Requires role NOMIS_ADJUDICATIONS",
-        "operationId": "getMappingGivenNomisId_2",
+        "operationId": "getMappingGivenNomisId_3",
         "parameters": [
           {
             "name": "chargeNumber",
@@ -5765,6 +6078,55 @@
         }
       }
     },
+    "/mapping/court-sentencing/sentences/dps-sentence-id/{dpsSentenceId}": {
+      "delete": {
+        "tags": [
+          "court-sentencing-mapping-resource"
+        ],
+        "summary": "Deletes a sentence mapping",
+        "description": "Deletes a sentence mapping by DPS id. Requires role NOMIS_COURT_SENTENCING",
+        "operationId": "deleteSentenceMappingByDpsId",
+        "parameters": [
+          {
+            "name": "dpsSentenceId",
+            "in": "path",
+            "description": "DPS sentence id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "DPS sentence id",
+              "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+            },
+            "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Mapping Deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/court-sentencing/court-charges/nomis-court-charge-id/{nomisCourtChargeId}": {
       "delete": {
         "tags": [
@@ -6283,13 +6645,13 @@
         "properties": {
           "nomisCourtChargeId": {
             "type": "integer",
-            "description": "NOMIS court charge id",
+            "description": "NOMIS offender charge id",
             "format": "int64",
             "example": 123456
           },
           "dpsCourtChargeId": {
             "type": "string",
-            "description": "DPS court charge id",
+            "description": "DPS offender charge id",
             "example": "123456"
           },
           "label": {
@@ -6315,7 +6677,7 @@
             "example": "2021-07-05T10:35:17"
           }
         },
-        "description": "Court Charge mapping"
+        "description": "Offender Charge mapping"
       },
       "CourtChargeNomisIdDto": {
         "required": [
@@ -7016,6 +7378,114 @@
           }
         },
         "description": "CSIP mapping"
+      },
+      "SentenceAllMappingDto": {
+        "required": [
+          "dpsSentenceId",
+          "nomisBookingId",
+          "nomisSentenceSequence",
+          "sentenceCharges"
+        ],
+        "type": "object",
+        "properties": {
+          "nomisBookingId": {
+            "type": "integer",
+            "description": "NOMIS booking id",
+            "format": "int64",
+            "example": 123456
+          },
+          "nomisSentenceSequence": {
+            "type": "integer",
+            "description": "NOMIS sentence sequence",
+            "format": "int32",
+            "example": 4
+          },
+          "dpsSentenceId": {
+            "type": "string",
+            "description": "DPS sentence id",
+            "example": "123456"
+          },
+          "sentenceCharges": {
+            "type": "array",
+            "description": "Offender Charges related to a sentence",
+            "items": {
+              "$ref": "#/components/schemas/CourtChargeMappingDto"
+            }
+          },
+          "label": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": "string",
+            "description": "Label (a timestamp for migrated ids)"
+          },
+          "mappingType": {
+            "type": "string",
+            "description": "Mapping type",
+            "default": "DPS_CREATED",
+            "enum": [
+              "MIGRATED",
+              "DPS_CREATED",
+              "NOMIS_CREATED"
+            ]
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "Date-time the mapping was created",
+            "example": "2021-07-05T10:35:17"
+          }
+        },
+        "description": "Sentence mapping including child entity mapping"
+      },
+      "SentenceMapping": {
+        "required": [
+          "dpsSentenceId",
+          "id",
+          "isNew",
+          "mappingType",
+          "new",
+          "nomisBookingId",
+          "nomisSentenceSequence"
+        ],
+        "type": "object",
+        "properties": {
+          "dpsSentenceId": {
+            "type": "string"
+          },
+          "nomisBookingId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "nomisSentenceSequence": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "label": {
+            "type": "string"
+          },
+          "mappingType": {
+            "type": "string",
+            "enum": [
+              "MIGRATED",
+              "DPS_CREATED",
+              "NOMIS_CREATED"
+            ]
+          },
+          "new": {
+            "type": "boolean"
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "example": "2021-07-05T10:35:17"
+          },
+          "id": {
+            "type": "string"
+          },
+          "isNew": {
+            "type": "boolean"
+          }
+        }
       },
       "CourtChargeMapping": {
         "required": [
@@ -7766,15 +8236,15 @@
             "type": "integer",
             "format": "int32"
           },
-          "pageNumber": {
-            "type": "integer",
-            "format": "int32"
+          "unpaged": {
+            "type": "boolean"
           },
           "paged": {
             "type": "boolean"
           },
-          "unpaged": {
-            "type": "boolean"
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },

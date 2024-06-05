@@ -15,13 +15,16 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SentenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_APPEARANCE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CASE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CHARGE_SYNCHRONISATION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_SENTENCE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 
@@ -317,6 +320,52 @@ class CourtSentencingSynchronisationService(
     }
   }
 
+  private suspend fun tryToCreateSentenceMapping(
+    nomisSentence: SentenceResponse,
+    dpsSentenceResponse: CreateSentenceResponse,
+    telemetry: Map<String, Any>,
+  ): MappingResponse {
+    val mapping = SentenceAllMappingDto(
+      dpsSentenceId = dpsSentenceResponse.sentenceUuid,
+      nomisSentenceSequence = nomisSentence.sentenceSeq.toInt(),
+      nomisBookingId = nomisSentence.bookingId,
+      mappingType = SentenceAllMappingDto.MappingType.NOMIS_CREATED,
+      // TODO charges
+      sentenceCharges = emptyList(),
+    )
+    try {
+      mappingApiService.createSentenceMapping(
+        mapping,
+      ).also {
+        if (it.isError) {
+          val duplicateErrorDetails = (it.errorResponse!!).moreInfo
+          telemetryClient.trackEvent(
+            "from-nomis-sync-sentence-duplicate",
+            mapOf<String, String>(
+              "duplicateDpsSentenceId" to duplicateErrorDetails.duplicate.dpsSentenceId,
+              "duplicateNomisSentenceSequence" to duplicateErrorDetails.duplicate.nomisSentenceSequence.toString(),
+              "duplicateNomisBookingId" to duplicateErrorDetails.duplicate.nomisBookingId.toString(),
+              "existingDpsSentenceId" to duplicateErrorDetails.existing.dpsSentenceId,
+              "existingNomisSentenceSequence" to duplicateErrorDetails.existing.nomisSentenceSequence.toString(),
+              "existingNomisBookingId" to duplicateErrorDetails.existing.nomisBookingId.toString(),
+            ),
+            null,
+          )
+        }
+      }
+      return MappingResponse.MAPPING_CREATED
+    } catch (e: Exception) {
+      log.error("Failed to create mapping for sentence ids $mapping", e)
+      queueService.sendMessage(
+        messageType = RETRY_SENTENCE_SYNCHRONISATION_MAPPING,
+        synchronisationType = SynchronisationType.COURT_SENTENCING,
+        message = mapping,
+        telemetryAttributes = telemetry.valuesAsStrings(),
+      )
+      return MappingResponse.MAPPING_FAILED
+    }
+  }
+
   suspend fun nomisCourtAppearanceUpdated(event: CourtAppearanceEvent) {
     val telemetry =
       mapOf(
@@ -542,6 +591,44 @@ class CourtSentencingSynchronisationService(
     }
   }
 
+  suspend fun nomisSentenceInserted(event: OffenderSentenceEvent) {
+    val telemetry =
+      mapOf(
+        "nomisSentenceSequence" to event.sentenceSequence.toString(),
+        "offenderNo" to event.offenderIdDisplay,
+        "nomisBookingId" to event.bookingId.toString(),
+      )
+    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      telemetryClient.trackEvent("sentence-synchronisation-created-skipped", telemetry)
+    } else {
+      val nomisSentence =
+        nomisApiService.getOffenderSentence(bookingId = event.bookingId, sentenceSequence = event.sentenceSequence)
+      mappingApiService.getSentenceOrNullByNomisId(event.bookingId, sentenceSequence = event.sentenceSequence)?.let { mapping ->
+        telemetryClient.trackEvent(
+          "sentence-synchronisation-created-ignored",
+          telemetry,
+        )
+      } ?: let {
+        dpsApiService.createSentence(nomisSentence.toDpsSentence(event.offenderIdDisplay)).run {
+          tryToCreateSentenceMapping(
+            nomisSentence = nomisSentence,
+            dpsSentenceResponse = this,
+            telemetry = telemetry + ("dpsSentenceId" to this.sentenceUuid),
+          ).also { mappingCreateResult ->
+            val mappingSuccessTelemetry =
+              (if (mappingCreateResult == MappingResponse.MAPPING_CREATED) mapOf() else mapOf("mapping" to "initial-failure"))
+            val additionalTelemetry = mappingSuccessTelemetry + ("dpsSentenceId" to this.sentenceUuid)
+
+            telemetryClient.trackEvent(
+              "sentence-synchronisation-created-success",
+              telemetry + additionalTelemetry,
+            )
+          }
+        }
+      }
+    }
+  }
+
   private suspend fun tryToDeleteCourtAppearanceMapping(dpsCourtAppearanceId: String) = runCatching {
     mappingApiService.deleteCourtAppearanceMappingByDpsId(dpsCourtAppearanceId)
   }.onFailure { e ->
@@ -595,6 +682,17 @@ class CourtSentencingSynchronisationService(
     ).also {
       telemetryClient.trackEvent(
         "court-charge-mapping-created-synchronisation-success",
+        retryMessage.telemetryAttributes,
+      )
+    }
+  }
+
+  suspend fun retryCreateSentenceMapping(retryMessage: InternalMessage<SentenceAllMappingDto>) {
+    mappingApiService.createSentenceMapping(
+      retryMessage.body,
+    ).also {
+      telemetryClient.trackEvent(
+        "sentence-mapping-created-synchronisation-success",
         retryMessage.telemetryAttributes,
       )
     }

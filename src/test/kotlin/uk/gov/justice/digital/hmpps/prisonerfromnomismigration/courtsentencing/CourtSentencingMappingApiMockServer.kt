@@ -16,6 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import java.util.UUID
 
@@ -352,6 +353,107 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
           .withHeader("Content-Type", "application/json")
           .withStatus(201),
       ),
+    )
+  }
+
+  fun stubGetSentenceByNomisId(
+    nomisSentenceSequence: Int = 1,
+    nomisBookingId: Long = 12345,
+    dpsSentenceId: String = UUID.randomUUID().toString(),
+    sentenceCharges: List<CourtChargeMappingDto> = emptyList(),
+    mapping: SentenceAllMappingDto = SentenceAllMappingDto(
+      nomisSentenceSequence = nomisSentenceSequence,
+      nomisBookingId = nomisBookingId,
+      dpsSentenceId = dpsSentenceId,
+      sentenceCharges = sentenceCharges,
+      mappingType = SentenceAllMappingDto.MappingType.MIGRATED,
+    ),
+  ) {
+    mappingApi.stubFor(
+      get(urlEqualTo("/mapping/court-sentencing/sentences/nomis-booking-id/$nomisBookingId/nomis-sentence-sequence/$nomisSentenceSequence")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(objectMapper.writeValueAsString(mapping)),
+      ),
+    )
+  }
+
+  fun stubGetSentenceByNomisId(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      get(urlPathMatching("/mapping/court-sentencing/sentences/nomis-booking-id/\\d+/nomis-sentence-sequence/\\d+")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubPostSentenceMapping() {
+    mappingApi.stubFor(
+      post("/mapping/court-sentencing/sentences").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
+  fun stubPostSentenceMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      post("/mapping/court-sentencing/sentences").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubPostSentenceMappingFailureFollowedBySuccess() {
+    mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/court-sentencing/sentences")
+  }
+
+  // TODO add charges
+  fun stubSentenceMappingCreateConflict(
+    existingDpsSentenceId: String = "10",
+    duplicateDpsSentenceId: String = "11",
+    nomisSentenceSequence: Int = 1,
+    nomisBookingId: Long = 12345,
+  ) {
+    mappingApi.stubFor(
+      post(WireMock.urlPathEqualTo("/mapping/court-sentencing/sentences"))
+        .willReturn(
+          aResponse()
+            .withStatus(409)
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
+              "moreInfo": 
+              {
+                "existing" :  {
+                  "dpsSentenceId": "$existingDpsSentenceId",
+                  "nomisSentenceSequence": $nomisSentenceSequence,
+                  "nomisBookingId": $nomisBookingId,
+                  "sentenceCharges": [],
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "MIGRATED"
+                 },
+                 "duplicate" : {
+                  "dpsSentenceId": "$duplicateDpsSentenceId",
+                  "nomisSentenceSequence": $nomisSentenceSequence,
+                  "nomisBookingId": $nomisBookingId,
+                  "sentenceCharges": [],
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "MIGRATED"
+                  }
+              }
+              }""",
+            ),
+        ),
     )
   }
 

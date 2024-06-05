@@ -10,6 +10,7 @@ import uk.gov.justice.hmpps.sqs.HmppsQueueService
 const val RETRY_COURT_CASE_SYNCHRONISATION_MAPPING = "court_case_synchronisation_retry"
 const val RETRY_COURT_APPEARANCE_SYNCHRONISATION_MAPPING = "court_appearance_synchronisation_retry"
 const val RETRY_COURT_CHARGE_SYNCHRONISATION_MAPPING = "court_charge_synchronisation_retry"
+const val RETRY_SENTENCE_SYNCHRONISATION_MAPPING = "sentence_synchronisation_retry"
 
 @Service
 class SynchronisationQueueService(

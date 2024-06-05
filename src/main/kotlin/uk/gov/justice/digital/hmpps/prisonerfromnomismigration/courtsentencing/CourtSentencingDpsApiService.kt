@@ -94,11 +94,34 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .bodyValue(charge)
       .retrieve()
       .awaitBodilessEntity()
+
+  // TODO not currently implement in DPS
+  suspend fun createSentence(courtCase: CreateSentenceRequest): CreateSentenceResponse =
+    webClient
+      .post()
+      .uri("/sentence")
+      .bodyValue(courtCase)
+      .retrieve()
+      .awaitBody()
 }
 
 data class CreateNewChargeResponse(
 
   @field:JsonProperty("appearanceUuid")
   val chargeUuid: java.util.UUID,
+
+)
+
+data class CreateSentenceRequest(
+
+  @field:JsonProperty("prisonerId")
+  val prisonerId: kotlin.String,
+
+)
+
+data class CreateSentenceResponse(
+
+  @field:JsonProperty("sentenceUuid")
+  val sentenceUuid: String,
 
 )
