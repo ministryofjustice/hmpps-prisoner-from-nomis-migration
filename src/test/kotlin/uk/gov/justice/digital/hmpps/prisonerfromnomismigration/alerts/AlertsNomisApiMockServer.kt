@@ -10,7 +10,6 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.BookingAlertsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
@@ -42,7 +41,6 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
         createDatetime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
         createUsername = "Q1251T",
       ),
-      isAlertFromPreviousBookingRelevant = false,
     ),
   ) {
     nomisApi.stubFor(
@@ -66,37 +64,9 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubGetAlertIds(totalElements: Long = 20, pageSize: Long = 20, bookingId: Long = 123456, offenderNo: String = "A1234KT") {
-    val content: List<AlertIdResponse> = (1..min(pageSize, totalElements)).map {
-      AlertIdResponse(
-        bookingId = bookingId,
-        alertSequence = it,
-        offenderNo = offenderNo,
-      )
-    }
-    nomisApi.stubFor(
-      get(urlPathEqualTo("/alerts/ids")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-          .withBody(
-            pageContent(
-              objectMapper = objectMapper,
-              content = content,
-              pageSize = pageSize,
-              pageNumber = 0,
-              totalElements = totalElements,
-              size = pageSize.toInt(),
-            ),
-          ),
-      ),
-    )
-  }
-
   fun stubGetAlertsToMigrate(
     offenderNo: String,
     currentAlertCount: Long = 1,
-    previousAlertCount: Long = 0,
     alert: AlertResponse = AlertResponse(
       bookingId = 1,
       alertSequence = 1,
@@ -110,12 +80,10 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
         createDatetime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
         createUsername = "Q1251T",
       ),
-      isAlertFromPreviousBookingRelevant = false,
     ),
   ) {
     val response = PrisonerAlertsResponse(
       latestBookingAlerts = (1..currentAlertCount).map { alert.copy(bookingId = it, alertSequence = 1) },
-      previousBookingsAlerts = (1..previousAlertCount).map { alert.copy(bookingId = it + 1, alertSequence = 1) },
     )
     nomisApi.stubFor(
       get(urlEqualTo("/prisoners/$offenderNo/alerts/to-migrate")).willReturn(
@@ -154,7 +122,6 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
         createDatetime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
         createUsername = "Q1251T",
       ),
-      isAlertFromPreviousBookingRelevant = false,
     ),
   ) {
     val response = BookingAlertsResponse(
