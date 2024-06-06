@@ -41,7 +41,7 @@ class CSIPPrisonOffenderEventListener(
             when (eventType) {
               "CSIP-INSERTED" -> csipSynchronisationService.synchroniseCSIPInsert(sqsMessage.Message.fromJson())
               "CSIP-UPDATED" -> log.debug("Update CSIP")
-              "CSIP-DELETED" -> log.debug("Delete CSIP")
+              "CSIP-DELETED" -> csipSynchronisationService.synchroniseCSIPDelete(sqsMessage.Message.fromJson())
               // TODO check if needed
               // "prison-offender-events.prisoner.merged"
 

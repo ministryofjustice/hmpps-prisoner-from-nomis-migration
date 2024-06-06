@@ -2,7 +2,9 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
@@ -11,6 +13,7 @@ import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
+import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.CREATED
 
 class CSIPApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
@@ -50,7 +53,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubCSIPMigrate(dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
     stubFor(
-      post("/csip/migrate").willReturn(
+      post("/migrate/csip-report").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(CREATED.value())
@@ -65,7 +68,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubCSIPInsert(dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
     stubFor(
-      post("/csip/sync").willReturn(
+      post("/csip").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(CREATED.value())
@@ -78,11 +81,31 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubCSIPDelete(dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
+    stubFor(
+      delete("/csip/$dpsCSIPId").willReturn(
+        aResponse()
+          .withStatus(HttpStatus.NO_CONTENT.value()),
+      ),
+    )
+  }
+
+  fun stubCSIPDeleteNotFound(status: HttpStatus = HttpStatus.NOT_FOUND) {
+    stubFor(
+      delete(WireMock.urlPathMatching("/csip/.*"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value()),
+        ),
+    )
+  }
+
   fun createCSIPMigrationCount() =
-    findAll(postRequestedFor(urlMatching("/csip/migrate"))).count()
+    findAll(postRequestedFor(urlMatching("/migrate/csip-report"))).count()
 
   fun createCSIPSyncCount() =
-    findAll(postRequestedFor(urlMatching("/csip/sync"))).count()
+    findAll(postRequestedFor(urlMatching("/csip"))).count()
 }
 
 private fun Any.toJson(): String = ObjectMapper().writeValueAsString(this)

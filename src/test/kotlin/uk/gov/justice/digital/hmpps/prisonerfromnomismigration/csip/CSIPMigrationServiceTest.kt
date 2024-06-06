@@ -42,15 +42,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Migrati
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.RETRY_MIGRATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPMappingDto.MappingType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Actions
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPIdResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Decision
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.InvestigationDetails
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Offender
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ReportDetails
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SaferCustodyScreening
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
@@ -820,7 +812,7 @@ internal class CSIPMigrationServiceTest {
 
     @BeforeEach
     internal fun setUp(): Unit = runTest {
-      whenever(csipMappingService.findNomisCSIPMapping(any())).thenReturn(null)
+      whenever(csipMappingService.findByNomisId(any())).thenReturn(null)
       whenever(nomisApiService.getCSIP(any())).thenReturn(aNomisCSIPResponse())
       whenever(csipService.migrateCSIP(any())).thenReturn(aDPSCSIPMigrateResponse())
       whenever(csipMappingService.createMapping(any(), any())).thenReturn(CreateMappingResult())
@@ -947,7 +939,7 @@ internal class CSIPMigrationServiceTest {
     inner class WhenMigratedAlready {
       @BeforeEach
       internal fun setUp(): Unit = runTest {
-        whenever(csipMappingService.findNomisCSIPMapping(any())).thenReturn(
+        whenever(csipMappingService.findByNomisId(any())).thenReturn(
           CSIPMappingDto(
             dpsCSIPId = DPS_CSIP_ID,
             nomisCSIPId = NOMIS_CSIP_ID,
@@ -1005,45 +997,6 @@ fun aMigrationRequest() =
     nomisCSIPId = NOMIS_CSIP_ID,
     concernDescription = "Issues in the dinner hall",
   )
-
-fun aNomisCSIPResponse() =
-  CSIPResponse(
-    id = NOMIS_CSIP_ID,
-    offender = Offender("A1234BC", firstName = "Fred", lastName = "Smith"),
-    bookingId = 1234L,
-    originalAgencyId = "MDI",
-    type = CodeDescription(code = "INT", description = "Intimidation"),
-    location = CodeDescription(code = "LIB", description = "Library"),
-    areaOfWork = CodeDescription(code = "EDU", description = "Education"),
-    reportedDate = LocalDate.now(),
-    proActiveReferral = true,
-    staffAssaulted = true,
-    reportDetails = ReportDetails(
-      factors = listOf(),
-      saferCustodyTeamInformed = false,
-      referralComplete = true,
-    ),
-    saferCustodyScreening = SaferCustodyScreening(),
-    investigation = InvestigationDetails(),
-    decision = Decision(
-      actions = Actions(
-        openCSIPAlert = false,
-        nonAssociationsUpdated = true,
-        observationBook = true,
-        unitOrCellMove = false,
-        csraOrRsraReview = false,
-        serviceReferral = true,
-        simReferral = false,
-      ),
-    ),
-    plans = listOf(),
-    reviews = listOf(),
-    documents = listOf(),
-    createdBy = "JSMITH",
-    createDateTime = LocalDateTime.now().toString(),
-  )
-
-fun aDPSCSIPMigrateResponse() = CSIPMigrateResponse(dpsCSIPId = DPS_CSIP_ID)
 
 fun pages(total: Long, startId: Long = 1): PageImpl<CSIPIdResponse> = PageImpl<CSIPIdResponse>(
   (startId..total - 1 + startId).map { CSIPIdResponse(it) },
