@@ -25,12 +25,13 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
+import org.springframework.beans.factory.annotation.Autowired
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension.Companion.incidentsApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsMappingApiMockServer.Companion.INCIDENTS_CREATE_MAPPING_URL
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsMappingApiMockServer.Companion.INCIDENTS_GET_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.INCIDENTS_CREATE_MAPPING_URL
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.INCIDENTS_GET_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
@@ -41,6 +42,11 @@ private const val NOMIS_API_URL = "/incidents/$NOMIS_INCIDENT_ID"
 private const val NOMIS_MAPPING_API_URL = "$INCIDENTS_GET_MAPPING_URL/$NOMIS_INCIDENT_ID"
 
 class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
+  @Autowired
+  private lateinit var incidentsNomisApi: IncidentsNomisApiMockServer
+
+  @Autowired
+  private lateinit var incidentsMappingApi: IncidentsMappingApiMockServer
 
   @Nested
   inner class IncidentCreated {
@@ -81,8 +87,8 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class WhenCreateByNomisSuccess {
         @BeforeEach
         fun setUp() {
-          nomisApi.stubGetIncident()
-          mappingApi.stubGetAnyIncidentNotFound()
+          incidentsNomisApi.stubGetIncident()
+          incidentsMappingApi.stubGetAnyIncidentNotFound()
           incidentsApi.stubIncidentUpsert()
           mappingApi.stubMappingCreate(INCIDENTS_CREATE_MAPPING_URL)
 
@@ -128,7 +134,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create telemetry tracking the create`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("incidents-created-synchronisation-success"),
+              eq("incidents-synchronisation-created-success"),
               check {
                 assertThat(it["dpsIncidentId"]).isEqualTo(DPS_INCIDENT_ID)
                 assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
@@ -143,7 +149,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class WhenNomisHasNoIncident {
         @BeforeEach
         fun setUp() {
-          nomisApi.stubGetIncidentNotFound()
+          incidentsNomisApi.stubGetIncidentNotFound()
 
           awsSqsIncidentsOffenderEventsClient.sendMessage(
             incidentsQueueOffenderEventsUrl,
@@ -172,8 +178,8 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class WhenUpdateByNomisSuccess {
         @BeforeEach
         fun setUp() {
-          nomisApi.stubGetIncident()
-          mappingApi.stubGetIncident()
+          incidentsNomisApi.stubGetIncident()
+          incidentsMappingApi.stubGetIncident()
           incidentsApi.stubIncidentUpsert()
 
           awsSqsIncidentsOffenderEventsClient.sendMessage(
@@ -215,7 +221,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create telemetry tracking the create`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("incidents-updated-synchronisation-success"),
+              eq("incidents-synchronisation-updated-success"),
               check {
                 assertThat(it["dpsIncidentId"]).isEqualTo(DPS_INCIDENT_ID)
                 assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
@@ -232,10 +238,10 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         internal fun `it will not retry after a 409 (duplicate incident written to Incident API)`() {
-          nomisApi.stubGetIncident()
-          mappingApi.stubGetAnyIncidentNotFound()
+          incidentsNomisApi.stubGetIncident()
+          incidentsMappingApi.stubGetAnyIncidentNotFound()
           incidentsApi.stubIncidentUpsert(duplicateDPSIncidentId)
-          mappingApi.stubIncidentMappingCreateConflict()
+          incidentsMappingApi.stubIncidentMappingCreateConflict()
 
           awsSqsIncidentsOffenderEventsClient.sendMessage(
             incidentsQueueOffenderEventsUrl,
@@ -249,11 +255,11 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(incidentsApi.createIncidentUpsertCount()).isEqualTo(1)
 
           // doesn't retry
-          mappingApi.verifyCreateMappingIncidentId(dpsIncidentId = duplicateDPSIncidentId)
+          incidentsMappingApi.verifyCreateMappingIncidentId(dpsIncidentId = duplicateDPSIncidentId)
 
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("incidents-nomis-sync-duplicate"),
+              eq("incidents-synchronisation-nomis-duplicate"),
               check {
                 assertThat(it["existingNomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
                 assertThat(it["duplicateNomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
@@ -308,8 +314,8 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class WhenCreateByNomisSuccess {
         @BeforeEach
         fun setUp() {
-          nomisApi.stubGetIncident()
-          mappingApi.stubGetAnyIncidentNotFound()
+          incidentsNomisApi.stubGetIncident()
+          incidentsMappingApi.stubGetAnyIncidentNotFound()
           incidentsApi.stubIncidentUpsert()
           mappingApi.stubMappingCreate(INCIDENTS_CREATE_MAPPING_URL)
 
@@ -355,7 +361,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create telemetry tracking the create`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("incidents-created-synchronisation-success"),
+              eq("incidents-synchronisation-created-success"),
               check {
                 assertThat(it["dpsIncidentId"]).isEqualTo(DPS_INCIDENT_ID)
                 assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
@@ -370,7 +376,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class WhenNomisHasNoIncident {
         @BeforeEach
         fun setUp() {
-          nomisApi.stubGetIncidentNotFound()
+          incidentsNomisApi.stubGetIncidentNotFound()
 
           awsSqsIncidentsOffenderEventsClient.sendMessage(
             incidentsQueueOffenderEventsUrl,
@@ -399,8 +405,8 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class WhenUpdateByNomisSuccess {
         @BeforeEach
         fun setUp() {
-          nomisApi.stubGetIncident()
-          mappingApi.stubGetIncident()
+          incidentsNomisApi.stubGetIncident()
+          incidentsMappingApi.stubGetIncident()
           incidentsApi.stubIncidentUpsert()
 
           awsSqsIncidentsOffenderEventsClient.sendMessage(
@@ -442,7 +448,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create telemetry tracking the create`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("incidents-updated-synchronisation-success"),
+              eq("incidents-synchronisation-updated-success"),
               check {
                 assertThat(it["dpsIncidentId"]).isEqualTo(DPS_INCIDENT_ID)
                 assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
@@ -459,10 +465,10 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         internal fun `it will not retry after a 409 (duplicate incident written to Incident API)`() {
-          nomisApi.stubGetIncident()
-          mappingApi.stubGetAnyIncidentNotFound()
+          incidentsNomisApi.stubGetIncident()
+          incidentsMappingApi.stubGetAnyIncidentNotFound()
           incidentsApi.stubIncidentUpsert(duplicateDPSIncidentId)
-          mappingApi.stubIncidentMappingCreateConflict()
+          incidentsMappingApi.stubIncidentMappingCreateConflict()
 
           awsSqsIncidentsOffenderEventsClient.sendMessage(
             incidentsQueueOffenderEventsUrl,
@@ -476,11 +482,11 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(incidentsApi.createIncidentUpsertCount()).isEqualTo(1)
 
           // doesn't retry
-          mappingApi.verifyCreateMappingIncidentId(duplicateDPSIncidentId)
+          incidentsMappingApi.verifyCreateMappingIncidentId(duplicateDPSIncidentId)
 
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("incidents-nomis-sync-duplicate"),
+              eq("incidents-synchronisation-nomis-duplicate"),
               check {
                 assertThat(it["existingNomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
                 assertThat(it["duplicateNomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
@@ -517,7 +523,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `the event is ignored`() {
         await untilAsserted {
           verify(telemetryClient).trackEvent(
-            eq("incidents-deleted-synchronisation-skipped"),
+            eq("incidents-synchronisation-deleted-skipped"),
             check {
               assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
             },
@@ -534,7 +540,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenDeleteByNomisWithNoMapping {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetAnyIncidentNotFound()
+        incidentsMappingApi.stubGetAnyIncidentNotFound()
 
         awsSqsIncidentsOffenderEventsClient.sendMessage(
           incidentsQueueOffenderEventsUrl,
@@ -566,7 +572,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will create telemetry tracking the ignored delete`() {
         verify(telemetryClient).trackEvent(
-          eq("incidents-deleted-synchronisation-ignored"),
+          eq("incidents-synchronisation-deleted-ignored"),
           check {
             assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
           },
@@ -583,9 +589,9 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class WhenDeleteByNomisSuccess {
         @BeforeEach
         fun setUp() {
-          mappingApi.stubGetIncident()
+          incidentsMappingApi.stubGetIncident()
           incidentsApi.stubIncidentDelete(DPS_INCIDENT_ID)
-          mappingApi.stubIncidentMappingDelete()
+          incidentsMappingApi.stubIncidentMappingDelete()
 
           awsSqsIncidentsOffenderEventsClient.sendMessage(
             incidentsQueueOffenderEventsUrl,
@@ -621,7 +627,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create telemetry tracking the delete`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("incidents-deleted-synchronisation-success"),
+              eq("incidents-synchronisation-deleted-success"),
               check {
                 assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
                 assertThat(it["dpsIncidentId"]).isEqualTo(DPS_INCIDENT_ID)

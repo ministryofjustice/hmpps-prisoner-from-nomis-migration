@@ -823,7 +823,7 @@ internal class IncidentsMigrationServiceTest {
 
     @BeforeEach
     internal fun setUp(): Unit = runTest {
-      whenever(incidentsMappingService.findNomisIncidentMapping(any())).thenReturn(null)
+      whenever(incidentsMappingService.findByNomisId(any())).thenReturn(null)
       whenever(nomisApiService.getIncident(any())).thenReturn(aNomisIncidentResponse())
       whenever(incidentsService.upsertIncident(any())).thenReturn(IncidentsApiMockServer.dpsIncidentReport())
       whenever(incidentsMappingService.createMapping(any(), any())).thenReturn(CreateMappingResult())
@@ -1007,7 +1007,7 @@ internal class IncidentsMigrationServiceTest {
     inner class WhenMigratedAlready {
       @BeforeEach
       internal fun setUp(): Unit = runTest {
-        whenever(incidentsMappingService.findNomisIncidentMapping(any())).thenReturn(
+        whenever(incidentsMappingService.findByNomisId(any())).thenReturn(
           IncidentMappingDto(
             dpsIncidentId = DPS_INCIDENT_ID,
             nomisIncidentId = NOMIS_INCIDENT_ID,

@@ -42,8 +42,6 @@ class MappingApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallb
     const val KEYDATE_ADJUSTMENTS_GET_MAPPING_URL =
       "/mapping/sentencing/adjustments/nomis-adjustment-category/KEY_DATE/nomis-adjustment-id"
     const val ADJUSTMENTS_CREATE_MAPPING_URL = "/mapping/sentencing/adjustments"
-    const val INCIDENTS_CREATE_MAPPING_URL = "/mapping/incidents"
-    const val INCIDENTS_GET_MAPPING_URL = "/mapping/incidents/nomis-incident-id"
     const val LOCATIONS_CREATE_MAPPING_URL = "/mapping/locations"
     const val LOCATIONS_GET_MAPPING_URL = "/mapping/locations/nomis"
   }
@@ -801,124 +799,6 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
               }""",
             ),
         ),
-    )
-  }
-
-  fun verifyCreateMappingIncidentId(dpsIncidentId: String, times: Int = 1) =
-    verify(
-      times,
-      postRequestedFor(urlPathEqualTo("/mapping/incidents")).withRequestBody(
-        matchingJsonPath(
-          "dpsIncidentId",
-          equalTo("$dpsIncidentId"),
-        ),
-      ),
-    )
-
-  fun stubIncidentMappingCreateConflict(
-    nomisIncidentId: Long = 1234,
-    existingDPSIncidentId: String = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42",
-    duplicateDPSIncidentId: String = "ddd596da-8eab-4d2a-a026-bc5afb8acda0",
-  ) {
-    stubFor(
-      post(urlPathEqualTo("/mapping/incidents"))
-        .willReturn(
-          aResponse()
-            .withStatus(409)
-            .withHeader("Content-Type", "application/json")
-            .withBody(
-              """{
-              "moreInfo": 
-              {
-                "existing" :  {
-                  "nomisIncidentId": $nomisIncidentId,
-                  "dpsIncidentId": "$existingDPSIncidentId",
-                  "label": "2022-02-14T09:58:45",
-                  "whenCreated": "2022-02-14T09:58:45",
-                  "mappingType": "NOMIS_CREATED"
-                 },
-                 "duplicate" : {
-                  "nomisIncidentId": $nomisIncidentId,
-                  "dpsIncidentId": "$duplicateDPSIncidentId",
-                  "label": "2022-02-14T09:58:45",
-                  "whenCreated": "2022-02-14T09:58:45",
-                  "mappingType": "NOMIS_CREATED"
-                }
-              }
-              }""",
-            ),
-        ),
-    )
-  }
-
-  fun stubGetIncident(nomisIncidentId: Long = 1234) {
-    val content = """{
-      "dpsIncidentId": "fb4b2e91-91e7-457b-aa17-797f8c5c2f42",
-      "nomisIncidentId": $nomisIncidentId,   
-      "label": "2022-02-14T09:58:45",
-      "whenCreated": "2020-01-01T11:10:00",
-      "mappingType": "NOMIS_CREATED"
-    }"""
-    stubFor(
-      get(urlPathMatching("/mapping/incidents/nomis-incident-id/$nomisIncidentId"))
-        .willReturn(okJson(content)),
-    )
-  }
-
-  fun stubGetAnyIncidentNotFound() {
-    stubFor(
-      get(urlPathMatching("/mapping/incidents/nomis-incident-id/\\d"))
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.NOT_FOUND.value()),
-        ),
-    )
-  }
-
-  fun stubIncidentsLatestMigration(migrationId: String) {
-    stubFor(
-      get(urlEqualTo("/mapping/incidents/migrated/latest")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withBody(
-            """
-            {
-              "dpsIncidentId": "fb4b2e91-91e7-457b-aa17-797f8c5c2f42",
-              "nomisIncidentId": 1234,                                       
-              "label": "$migrationId",
-              "whenCreated": "2020-01-01T11:10:00",
-              "mappingType": "MIGRATED"
-            }              
-            """,
-          ),
-      ),
-    )
-  }
-
-  fun stubIncidentMappingDelete(dpsIncidentId: String = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42") {
-    stubFor(
-      delete(urlEqualTo("/mapping/incidents/dps-incident-id/$dpsIncidentId"))
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.NO_CONTENT.value()),
-        ),
-    )
-  }
-
-  fun stubIncidentsMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 54327) {
-    val content = """{
-      "dpsIncidentId": "fb4b2e91-91e7-457b-aa17-797f8c5c2f42",
-      "nomisIncidentId": 1234,                                       
-      "label": "2022-02-14T09:58:45",
-      "whenCreated": "$whenCreated",
-      "mappingType": "MIGRATED"
-    }"""
-    stubFor(
-      get(urlPathMatching("/mapping/incidents/migration-id/.*")).willReturn(
-        okJson(pageContent(content, count)),
-      ),
     )
   }
 

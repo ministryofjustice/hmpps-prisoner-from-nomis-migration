@@ -39,7 +39,7 @@ class IncidentsSynchronisationService(
     }
 
     val nomisIncident = nomisApiService.getIncident(event.incidentCaseId)
-    incidentsMappingService.findNomisIncidentMapping(
+    incidentsMappingService.findByNomisId(
       nomisIncidentId = event.incidentCaseId,
     )?.let {
       incidentsService.upsertIncident(
@@ -50,7 +50,7 @@ class IncidentsSynchronisationService(
         ),
       )
       telemetryClient.trackEvent(
-        "incidents-updated-synchronisation-success",
+        "incidents-synchronisation-updated-success",
         event.toTelemetryProperties(it.dpsIncidentId),
       )
     } ?: let {
@@ -62,7 +62,7 @@ class IncidentsSynchronisationService(
       ).also { dpsIncident ->
         tryToCreateIncidentMapping(event, dpsIncident.id.toString()).also { result ->
           telemetryClient.trackEvent(
-            "incidents-created-synchronisation-success",
+            "incidents-synchronisation-created-success",
             event.toTelemetryProperties(
               dpsIncident.id.toString(),
               result == MAPPING_FAILED,
@@ -77,24 +77,24 @@ class IncidentsSynchronisationService(
     // Should never happen
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent(
-        "incidents-deleted-synchronisation-skipped",
+        "incidents-synchronisation-deleted-skipped",
         event.toTelemetryProperties(),
       )
       return
     }
 
-    incidentsMappingService.findNomisIncidentMapping(
+    incidentsMappingService.findByNomisId(
       nomisIncidentId = event.incidentCaseId,
     )?.let {
       incidentsService.deleteIncident(it.dpsIncidentId)
       incidentsMappingService.deleteIncidentMapping(it.dpsIncidentId)
       telemetryClient.trackEvent(
-        "incidents-deleted-synchronisation-success",
+        "incidents-synchronisation-deleted-success",
         event.toTelemetryProperties(dpsIncidentId = it.dpsIncidentId),
       )
     } ?: let {
       telemetryClient.trackEvent(
-        "incidents-deleted-synchronisation-ignored",
+        "incidents-synchronisation-deleted-ignored",
         event.toTelemetryProperties(),
       )
     }
@@ -122,7 +122,7 @@ class IncidentsSynchronisationService(
         if (it.isError) {
           val duplicateErrorDetails = (it.errorResponse!!).moreInfo
           telemetryClient.trackEvent(
-            "incidents-nomis-sync-duplicate",
+            "incidents-synchronisation-nomis-duplicate",
             mapOf<String, String>(
               "existingNomisIncidentId" to duplicateErrorDetails.existing.nomisIncidentId.toString(),
               "duplicateNomisIncidentId" to duplicateErrorDetails.duplicate.nomisIncidentId.toString(),
@@ -154,7 +154,7 @@ class IncidentsSynchronisationService(
       object : ParameterizedTypeReference<DuplicateErrorResponse<IncidentMappingDto>>() {},
     ).also {
       telemetryClient.trackEvent(
-        "incidents-mapping-created-synchronisation-success",
+        "incidents-synchronisation-mapping-created-success",
         retryMessage.telemetryAttributes,
       )
     }

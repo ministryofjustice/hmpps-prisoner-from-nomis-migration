@@ -67,7 +67,7 @@ class IncidentsMigrationService(
     val nomisIncidentId = context.body.incidentId
     val migrationId = context.migrationId
 
-    incidentsMappingService.findNomisIncidentMapping(nomisIncidentId)
+    incidentsMappingService.findByNomisId(nomisIncidentId)
       ?.run {
         log.info("Will not migrate the nomis incident=$nomisIncidentId since it was already mapped to DPS incident ${this.dpsIncidentId} during migration ${this.label}")
       } ?: runCatching {
@@ -117,14 +117,14 @@ class IncidentsMigrationService(
       if (it.isError) {
         val duplicateErrorDetails = (it.errorResponse!!).moreInfo
         telemetryClient.trackEvent(
-          "${MigrationType.INCIDENTS.telemetryName}-nomis-migration-duplicate",
-          mapOf<String, String>(
+          "${MigrationType.INCIDENTS.telemetryName}-migration-nomis-duplicate",
+          mapOf(
             "migrationId" to context.migrationId,
-            "existingNomisIncidentId" to duplicateErrorDetails.existing.nomisIncidentId.toString(),
-            "duplicateNomisIncidentId" to duplicateErrorDetails.duplicate.nomisIncidentId.toString(),
+            "existingNomisIncidentId" to duplicateErrorDetails.existing.nomisIncidentId,
+            "duplicateNomisIncidentId" to duplicateErrorDetails.duplicate.nomisIncidentId,
             "existingDPSIncidentId" to duplicateErrorDetails.existing.dpsIncidentId,
             "duplicateDPSIncidentId" to duplicateErrorDetails.duplicate.dpsIncidentId,
-            "durationMinutes" to context.durationMinutes().toString(),
+            "durationMinutes" to context.durationMinutes(),
           ),
         )
       }
