@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip
 
+import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito
 import org.mockito.Mockito.eq
 import org.mockito.internal.verification.Times
 import org.mockito.kotlin.any
@@ -25,6 +27,7 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension.Companion.csipApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingApiMockServer.Companion.CSIP_CREATE_MAPPING_URL
@@ -86,7 +89,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           csipNomisApi.stubGetCSIP()
-          csipMappingApi.stubGetAnyCSIPNotFound()
+          csipMappingApi.stubGetByNomisIdWithError()
           csipApi.stubCSIPInsert()
           mappingApi.stubMappingCreate(CSIP_CREATE_MAPPING_URL)
 
@@ -113,7 +116,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will create the csip in the csip service`() {
           await untilAsserted {
-            csipApi.verify(postRequestedFor(urlPathEqualTo("/csip/sync")))
+            csipApi.verify(postRequestedFor(urlPathEqualTo("/csip")))
           }
         }
 
@@ -179,7 +182,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         internal fun `it will not retry after a 409 (duplicate csip written to CSIP API)`() {
           csipNomisApi.stubGetCSIP()
-          csipMappingApi.stubGetAnyCSIPNotFound()
+          csipMappingApi.stubGetByNomisIdWithError()
           csipApi.stubCSIPInsert(duplicateDPSCSIPId)
           csipMappingApi.stubCSIPMappingCreateConflict()
 
@@ -219,14 +222,12 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         internal fun `it will not retry after a 409 (duplicate csip written to CSIP API)`() {
           csipNomisApi.stubGetCSIP()
-          csipMappingApi.stubGetCSIP()
+          csipMappingApi.stubGetByNomisId()
 
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
             csipEvent(eventType = "CSIP-INSERTED"),
           )
-          // wait for all mappings to be created before verifying
-          // await untilCallTo { mappingApi.createMappingCount(CSIP_CREATE_MAPPING_URL) } matches { it == 1 }
 
           // check that no CSIPs are created
           assertThat(csipApi.createCSIPSyncCount()).isEqualTo(0)
@@ -242,6 +243,151 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
                 assertThat(it["dpsCSIPId"]).isEqualTo(DPS_CSIP_ID)
                 assertThat(it["nomisCSIPId"]).isEqualTo("$NOMIS_CSIP_ID")
                 assertThat(it["migrationId"]).isNull()
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+    }
+  }
+
+  @Nested
+  inner class CSIPDeleted {
+    @Nested
+    @DisplayName("When csip was deleted in either NOMIS or DPS")
+    inner class DeletedInEitherNOMISOrDPS {
+
+      @Nested
+      @DisplayName("When mapping doesn't exist")
+      inner class MappingDoesNotExist {
+        @BeforeEach
+        fun setUp() {
+          csipMappingApi.stubGetByNomisIdWithError()
+          awsSqsCSIPOffenderEventsClient.sendMessage(
+            csipQueueOffenderEventsUrl,
+            csipEvent(
+              eventType = "CSIP-DELETED",
+            ),
+          )
+        }
+
+        @Test
+        fun `telemetry added to track that the delete was ignored`() {
+          await untilAsserted {
+            verify(telemetryClient, Mockito.atLeastOnce()).trackEvent(
+              eq("csip-synchronisation-deleted-ignored"),
+              check {
+                assertThat(it["nomisCSIPId"]).isEqualTo("1234")
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("When mapping does exist")
+      inner class MappingExists {
+        private val dpsCSIPId = "c4d6fb09-fd27-42bc-a33e-5ca74ac510be"
+
+        @BeforeEach
+        fun setUp() {
+          csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPId)
+
+          csipApi.stubCSIPDelete(dpsCSIPId = dpsCSIPId)
+          csipMappingApi.stubDeleteMapping(dpsCSIPId = dpsCSIPId)
+          awsSqsCSIPOffenderEventsClient.sendMessage(
+            csipQueueOffenderEventsUrl,
+            csipEvent(eventType = "CSIP-DELETED"),
+          )
+        }
+
+        @Test
+        fun `will delete CSIP in DPS`() {
+          await untilAsserted {
+            csipApi.verify(
+              1,
+              WireMock.deleteRequestedFor(urlPathEqualTo("/csip/$dpsCSIPId")),
+            )
+          }
+        }
+
+        @Test
+        fun `will delete CSIP mapping`() {
+          await untilAsserted {
+            csipMappingApi.verify(
+              1,
+              WireMock.deleteRequestedFor(urlPathEqualTo("/mapping/csip/dps-csip-id/$dpsCSIPId")),
+            )
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("csip-synchronisation-deleted-success"),
+              check {
+                assertThat(it["nomisCSIPId"]).isEqualTo(NOMIS_CSIP_ID.toString())
+                assertThat(it["dpsCSIPId"]).isEqualTo(dpsCSIPId)
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("When mapping fails to be deleted")
+      inner class MappingDeleteFails {
+        private val dpsCSIPId = "a4725216-892d-4325-bc18-f74d95f3bca2"
+
+        @BeforeEach
+        fun setUp() {
+          csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPId)
+          csipApi.stubCSIPDelete(dpsCSIPId = dpsCSIPId)
+          csipMappingApi.stubDeleteMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
+          awsSqsCSIPOffenderEventsClient.sendMessage(
+            csipQueueOffenderEventsUrl,
+            csipEvent(eventType = "CSIP-DELETED"),
+          )
+        }
+
+        @Test
+        fun `will delete csip in DPS`() {
+          await untilAsserted {
+            csipApi.verify(
+              1,
+              WireMock.deleteRequestedFor(urlPathEqualTo("/csip/$dpsCSIPId")),
+            )
+          }
+        }
+
+        @Test
+        fun `will try to delete CSIP mapping once and record failure`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("csip-mapping-deleted-failed"),
+              any(),
+              isNull(),
+            )
+
+            csipMappingApi.verify(
+              1,
+              WireMock.deleteRequestedFor(urlPathEqualTo("/mapping/csip/dps-csip-id/$dpsCSIPId")),
+            )
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("csip-synchronisation-deleted-success"),
+              check {
+                assertThat(it["nomisCSIPId"]).isEqualTo(NOMIS_CSIP_ID.toString())
+                assertThat(it["dpsCSIPId"]).isEqualTo(dpsCSIPId)
               },
               isNull(),
             )

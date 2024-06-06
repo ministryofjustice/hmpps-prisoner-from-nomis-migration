@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
@@ -12,6 +13,7 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 
@@ -24,8 +26,6 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubCSIPMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 54327) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/csip/migration-id/.*")).willReturn(
-        // WireMock.okJson(mappingApi.pageContent(content, count)),
-        // WireMock.okJson(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody(
@@ -50,9 +50,9 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubGetCSIP(nomisCSIPId: Long = 1234) {
+  fun stubGetByNomisId(nomisCSIPId: Long = 1234, dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
     val content = """{
-      "dpsCSIPId": "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5",
+      "dpsCSIPId": "$dpsCSIPId",
       "nomisCSIPId": $nomisCSIPId,
       "label": "2022-02-14T09:58:45",
       "whenCreated": "2020-01-01T11:10:00",
@@ -64,16 +64,17 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubGetAnyCSIPNotFound() {
+  fun stubGetByNomisIdWithError(status: HttpStatus = HttpStatus.NOT_FOUND) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/csip/nomis-csip-id/\\d"))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.NOT_FOUND.value()),
+            .withStatus(status.value()),
         ),
     )
   }
+
   fun stubCSIPLatestMigration(migrationId: String) {
     mappingApi.stubFor(
       get(urlEqualTo("/mapping/csip/migrated/latest")).willReturn(
@@ -104,6 +105,28 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
         ),
       ),
     )
+
+  fun stubDeleteMapping(dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
+    mappingApi.stubFor(
+      delete(urlEqualTo("/mapping/csip/dps-csip-id/$dpsCSIPId"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NO_CONTENT.value()),
+        ),
+    )
+  }
+
+  fun stubDeleteMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      delete(urlPathMatching("/mapping/csip/dps-csip-id/.*")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
 
   fun stubCSIPMappingCreateConflict(
     nomisCSIPId: Long = 1234,
@@ -145,3 +168,5 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
   fun verify(count: Int, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
   fun verify(count: CountMatchingStrategy, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
 }
+
+fun aDPSCSIPMigrateResponse() = CSIPMigrateResponse(dpsCSIPId = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5")
