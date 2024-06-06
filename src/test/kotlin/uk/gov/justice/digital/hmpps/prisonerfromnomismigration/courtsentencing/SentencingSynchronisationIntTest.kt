@@ -631,7 +631,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         // will not bother getting the sentence or the mapping
         courtSentencingNomisApiMockServer.verify(
           0,
-          getRequestedFor(urlPathMatching("/prisoners/\\d+/sentencing/sentences/\\d+")),
+          getRequestedFor(urlPathMatching("/prisoners/booking-id/\\d+/sentencing/sentence-sequence/\\d+")),
         )
 
         courtSentencingMappingApiMockServer.verify(
