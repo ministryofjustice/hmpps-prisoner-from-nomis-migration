@@ -23,20 +23,23 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpStatus
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsMappingApiMockServer.Companion.INCIDENTS_CREATE_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.IncidentMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.IncidentMappingDto.MappingType.MIGRATED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.INCIDENTS_CREATE_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 
 private const val DPS_INCIDENT_ID = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42"
 private const val NOMIS_INCIDENT_ID = 1234L
 
 @SpringAPIServiceTest
-@Import(IncidentsMappingService::class, IncidentsConfiguration::class)
+@Import(IncidentsMappingService::class, IncidentsConfiguration::class, IncidentsMappingApiMockServer::class)
 internal class IncidentsMappingServiceTest {
   @Autowired
   private lateinit var incidentsMappingService: IncidentsMappingService
+
+  @Autowired
+  private lateinit var incidentsMappingApi: IncidentsMappingApiMockServer
 
   @Nested
   @DisplayName("findIncidentMapping")
@@ -55,7 +58,7 @@ internal class IncidentsMappingServiceTest {
 
       assertThat(
         runBlocking {
-          incidentsMappingService.findNomisIncidentMapping(
+          incidentsMappingService.findByNomisId(
             nomisIncidentId = NOMIS_INCIDENT_ID,
           )
         },
@@ -83,7 +86,7 @@ internal class IncidentsMappingServiceTest {
         ),
       )
 
-      val mapping = incidentsMappingService.findNomisIncidentMapping(
+      val mapping = incidentsMappingService.findByNomisId(
         nomisIncidentId = NOMIS_INCIDENT_ID,
       )
       assertThat(mapping).isNotNull
@@ -107,7 +110,7 @@ internal class IncidentsMappingServiceTest {
 
       assertThatThrownBy {
         runBlocking {
-          incidentsMappingService.findNomisIncidentMapping(
+          incidentsMappingService.findByNomisId(
             nomisIncidentId = NOMIS_INCIDENT_ID,
           )
         }
@@ -216,7 +219,7 @@ internal class IncidentsMappingServiceTest {
   inner class DeleteIncidentMapping {
     @Test
     internal fun `will pass oath2 token to service`() {
-      mappingApi.stubIncidentMappingDelete(DPS_INCIDENT_ID)
+      incidentsMappingApi.stubIncidentMappingDelete(DPS_INCIDENT_ID)
 
       runBlocking {
         incidentsMappingService.deleteIncidentMapping(
@@ -237,7 +240,7 @@ internal class IncidentsMappingServiceTest {
   inner class FindLatestMigration {
     @BeforeEach
     internal fun setUp() {
-      mappingApi.stubIncidentsLatestMigration("2020-01-01T10:00:00")
+      incidentsMappingApi.stubIncidentsLatestMigration("2020-01-01T10:00:00")
     }
 
     @Test
@@ -315,7 +318,7 @@ internal class IncidentsMappingServiceTest {
   inner class GetMigrationDetails {
     @BeforeEach
     internal fun setUp() {
-      mappingApi.stubIncidentsMappingByMigrationId("2020-01-01T11:10:00")
+      incidentsMappingApi.stubIncidentsMappingByMigrationId("2020-01-01T11:10:00")
     }
 
     @Test
@@ -350,7 +353,7 @@ internal class IncidentsMappingServiceTest {
 
     @Test
     internal fun `will return the mapping when found`(): Unit = runBlocking {
-      mappingApi.stubIncidentsMappingByMigrationId(
+      incidentsMappingApi.stubIncidentsMappingByMigrationId(
         whenCreated = "2020-01-01T11:10:00",
         count = 56_766,
       )
@@ -385,7 +388,7 @@ internal class IncidentsMappingServiceTest {
   inner class GetMigrationCount {
     @BeforeEach
     internal fun setUp() {
-      mappingApi.stubIncidentsMappingByMigrationId(count = 56_766)
+      incidentsMappingApi.stubIncidentsMappingByMigrationId(count = 56_766)
     }
 
     @Test
@@ -416,7 +419,7 @@ internal class IncidentsMappingServiceTest {
 
     @Test
     internal fun `will return the mapping count when found`(): Unit = runBlocking {
-      mappingApi.stubIncidentsMappingByMigrationId(
+      incidentsMappingApi.stubIncidentsMappingByMigrationId(
         whenCreated = "2020-01-01T11:10:00",
         count = 54_766,
       )

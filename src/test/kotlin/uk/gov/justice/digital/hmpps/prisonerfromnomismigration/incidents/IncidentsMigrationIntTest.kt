@@ -23,17 +23,16 @@ import org.springframework.web.reactive.function.BodyInserters
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension.Companion.incidentsApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsMappingApiMockServer.Companion.INCIDENTS_CREATE_MAPPING_URL
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsNomisApiMockServer.Companion.INCIDENTS_ID_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.COMPLETED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.INCIDENTS
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.INCIDENTS_CREATE_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.incidentIdsPagedResponse
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -41,6 +40,12 @@ private const val DPS_INCIDENT_ID = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42"
 private const val NOMIS_INCIDENT_ID = 1234L
 
 class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
+
+  @Autowired
+  private lateinit var incidentsNomisApi: IncidentsNomisApiMockServer
+
+  @Autowired
+  private lateinit var incidentsMappingApi: IncidentsMappingApiMockServer
 
   @Autowired
   private lateinit var migrationHistoryRepository: MigrationHistoryRepository
@@ -98,15 +103,15 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will start processing pages of Incidents`() {
-      nomisApi.stubGetInitialCount(NomisApiExtension.INCIDENTS_ID_URL, 86) { incidentIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetIncidentIdCounts(totalElements = 86, pageSize = 10)
-      nomisApi.stubMultipleGetIncidents(1..86)
+      nomisApi.stubGetInitialCount(INCIDENTS_ID_URL, 86) { incidentIdsPagedResponse(it) }
+      incidentsNomisApi.stubMultipleGetIncidentIdCounts(totalElements = 86, pageSize = 10)
+      incidentsNomisApi.stubMultipleGetIncidents(1..86)
 
-      mappingApi.stubGetAnyIncidentNotFound()
+      incidentsMappingApi.stubGetAnyIncidentNotFound()
       mappingApi.stubMappingCreate(INCIDENTS_CREATE_MAPPING_URL)
 
       incidentsApi.stubIncidentUpsert()
-      mappingApi.stubIncidentsMappingByMigrationId(count = 86)
+      incidentsMappingApi.stubIncidentsMappingByMigrationId(count = 86)
 
       webTestClient.performMigration(
         """
@@ -131,15 +136,15 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will add analytical events for starting, ending and each migrated record`() {
-      nomisApi.stubGetInitialCount(NomisApiExtension.INCIDENTS_ID_URL, 26) { incidentIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetIncidentIdCounts(totalElements = 26, pageSize = 10)
-      nomisApi.stubMultipleGetIncidents(1..26)
+      nomisApi.stubGetInitialCount(INCIDENTS_ID_URL, 26) { incidentIdsPagedResponse(it) }
+      incidentsNomisApi.stubMultipleGetIncidentIdCounts(totalElements = 26, pageSize = 10)
+      incidentsNomisApi.stubMultipleGetIncidents(1..26)
       incidentsApi.stubIncidentUpsert()
-      mappingApi.stubGetAnyIncidentNotFound()
+      incidentsMappingApi.stubGetAnyIncidentNotFound()
       mappingApi.stubMappingCreate(INCIDENTS_CREATE_MAPPING_URL)
 
       // stub 25 migrated records and 1 fake a failure
-      mappingApi.stubIncidentsMappingByMigrationId(count = 25)
+      incidentsMappingApi.stubIncidentsMappingByMigrationId(count = 25)
       awsSqsIncidentsMigrationDlqClient!!.sendMessage(
         SendMessageRequest.builder().queueUrl(incidentsMigrationDlqUrl).messageBody("""{ "message": "some error" }""").build(),
       ).get()
@@ -170,11 +175,11 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will retry to create a mapping, and only the mapping, if it fails first time`() {
-      nomisApi.stubGetInitialCount(NomisApiExtension.INCIDENTS_ID_URL, 1) { incidentIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetIncidentIdCounts(totalElements = 1, pageSize = 10)
-      nomisApi.stubMultipleGetIncidents(1..1)
-      mappingApi.stubGetAnyIncidentNotFound()
-      mappingApi.stubIncidentsMappingByMigrationId()
+      nomisApi.stubGetInitialCount(INCIDENTS_ID_URL, 1) { incidentIdsPagedResponse(it) }
+      incidentsNomisApi.stubMultipleGetIncidentIdCounts(totalElements = 1, pageSize = 10)
+      incidentsNomisApi.stubMultipleGetIncidents(1..1)
+      incidentsMappingApi.stubGetAnyIncidentNotFound()
+      incidentsMappingApi.stubIncidentsMappingByMigrationId()
       incidentsApi.stubIncidentUpsert()
       mappingApi.stubMappingCreateFailureFollowedBySuccess(INCIDENTS_CREATE_MAPPING_URL)
 
@@ -184,30 +189,30 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
       assertThat(incidentsApi.createIncidentUpsertCount()).isEqualTo(1)
 
       // should retry to create mapping twice
-      mappingApi.verifyCreateMappingIncidentId(DPS_INCIDENT_ID, times = 2)
+      incidentsMappingApi.verifyCreateMappingIncidentId(DPS_INCIDENT_ID, times = 2)
     }
 
     @Test
     internal fun `it will not retry after a 409 (duplicate incident written to Incidents API)`() {
       val duplicateDPSIncidentId = "ddd596da-8eab-4d2a-a026-bc5afb8acda0"
 
-      nomisApi.stubGetInitialCount(NomisApiExtension.INCIDENTS_ID_URL, 1) { incidentIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetIncidentIdCounts(totalElements = 1, pageSize = 10)
-      nomisApi.stubMultipleGetIncidents(1..1)
-      mappingApi.stubGetAnyIncidentNotFound()
-      mappingApi.stubIncidentsMappingByMigrationId()
+      nomisApi.stubGetInitialCount(INCIDENTS_ID_URL, 1) { incidentIdsPagedResponse(it) }
+      incidentsNomisApi.stubMultipleGetIncidentIdCounts(totalElements = 1, pageSize = 10)
+      incidentsNomisApi.stubMultipleGetIncidents(1..1)
+      incidentsMappingApi.stubGetAnyIncidentNotFound()
+      incidentsMappingApi.stubIncidentsMappingByMigrationId()
       incidentsApi.stubIncidentUpsert(duplicateDPSIncidentId)
-      mappingApi.stubIncidentMappingCreateConflict()
+      incidentsMappingApi.stubIncidentMappingCreateConflict()
       webTestClient.performMigration()
 
       // check that one incident is created
       assertThat(incidentsApi.createIncidentUpsertCount()).isEqualTo(1)
 
       // doesn't retry
-      mappingApi.verifyCreateMappingIncidentId(duplicateDPSIncidentId)
+      incidentsMappingApi.verifyCreateMappingIncidentId(duplicateDPSIncidentId)
 
       verify(telemetryClient).trackEvent(
-        eq("incidents-nomis-migration-duplicate"),
+        eq("incidents-migration-nomis-duplicate"),
         check {
           assertThat(it["existingNomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
           assertThat(it["duplicateNomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
@@ -529,7 +534,7 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `can read active migration data`() {
-      mappingApi.stubIncidentsMappingByMigrationId(count = 123456)
+      incidentsMappingApi.stubIncidentsMappingByMigrationId(count = 123456)
       webTestClient.get().uri("/migrate/incidents/active-migration")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
         .header("Content-Type", "application/json")
@@ -589,9 +594,9 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     internal fun `will terminate a running migration`() {
       val count = 30L
-      nomisApi.stubGetInitialCount(NomisApiExtension.INCIDENTS_ID_URL, count) { incidentIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetIncidentIdCounts(totalElements = count, pageSize = 10)
-      mappingApi.stubIncidentsMappingByMigrationId(count = count.toInt())
+      nomisApi.stubGetInitialCount(INCIDENTS_ID_URL, count) { incidentIdsPagedResponse(it) }
+      incidentsNomisApi.stubMultipleGetIncidentIdCounts(totalElements = count, pageSize = 10)
+      incidentsMappingApi.stubIncidentsMappingByMigrationId(count = count.toInt())
 
       val migrationId = webTestClient.post().uri("/migrate/incidents")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))

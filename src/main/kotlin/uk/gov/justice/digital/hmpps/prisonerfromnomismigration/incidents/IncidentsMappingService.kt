@@ -14,7 +14,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 class IncidentsMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) :
   MigrationMapping<IncidentMappingDto>(domainUrl = "/mapping/incidents", webClient) {
 
-  suspend fun findNomisIncidentMapping(nomisIncidentId: Long): IncidentMappingDto? =
+  suspend fun findByNomisId(nomisIncidentId: Long): IncidentMappingDto? =
     webClient.get()
       .uri("/mapping/incidents/nomis-incident-id/{nomisIncidentId}", nomisIncidentId)
       .retrieve()
