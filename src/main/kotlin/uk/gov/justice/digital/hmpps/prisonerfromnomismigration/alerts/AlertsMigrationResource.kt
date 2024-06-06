@@ -5,7 +5,6 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import jakarta.validation.Valid
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.security.access.prepost.PreAuthorize
@@ -25,10 +24,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 @RestController
 @RequestMapping("/migrate", produces = [MediaType.APPLICATION_JSON_VALUE])
 class AlertsMigrationResource(
-  private val alertsMigrationService: AlertsMigrationService,
   private val alertsByPrisonerMigrationService: AlertsByPrisonerMigrationService,
   private val migrationHistoryService: MigrationHistoryService,
-  @Value("\${alerts.migration.type}") private val migrationType: String,
 ) {
   @PreAuthorize("hasRole('ROLE_MIGRATE_ALERTS')")
   @PostMapping("/alerts")
@@ -65,7 +62,7 @@ class AlertsMigrationResource(
   suspend fun migrateAlerts(
     @RequestBody @Valid
     migrationFilter: AlertsMigrationFilter,
-  ) = if (migrationType == "by-prisoner") alertsByPrisonerMigrationService.startMigration(migrationFilter) else alertsMigrationService.startMigration(migrationFilter)
+  ) = alertsByPrisonerMigrationService.startMigration(migrationFilter)
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_ALERTS')")
   @GetMapping("/alerts/history")
@@ -156,7 +153,7 @@ class AlertsMigrationResource(
     @PathVariable
     @Schema(description = "Migration Id", example = "2020-03-24T12:00:00")
     migrationId: String,
-  ) = alertsMigrationService.cancel(migrationId)
+  ) = alertsByPrisonerMigrationService.cancel(migrationId)
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_ALERTS')")
   @GetMapping("/alerts/active-migration")

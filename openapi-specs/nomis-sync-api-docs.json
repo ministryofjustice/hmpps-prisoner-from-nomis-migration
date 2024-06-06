@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-05-31.7916.d13a0db"
+    "version": "2024-06-05.7951.c21da4a"
   },
   "servers": [
     {
@@ -6366,6 +6366,59 @@
         }
       }
     },
+    "/schedules/max-id": {
+      "get": {
+        "tags": [
+          "activities-resource"
+        ],
+        "summary": "Get the highest value of CRS_SCH_ID in NOMIS",
+        "description": "Retrieves the last course schedule ID so we can identify mappings records in preprod that have been copied from prod but don't have any NOMIS data.",
+        "operationId": "getMaxCourseScheduleId",
+        "responses": {
+          "200": {
+            "description": "Max CRS_SCH_ID returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int64"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires role NOMIS_ACTIVITIES",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/questionnaires/{questionnaireId}": {
       "get": {
         "tags": [
@@ -6979,8 +7032,8 @@
         "tags": [
           "alerts-resource"
         ],
-        "summary": "Gets alert for latest booking plus unique list of alerts from previous bookings for a prisoner",
-        "description": "Retrieves alerts for a prisoner across all bookings. The latest booking all alerts will be returned, from the previous bookings the list will contain at most one alert per alert code type ordered by alert date with latest alert taken. Requires ROLE_NOMIS_ALERTS",
+        "summary": "Gets alert for latest booking",
+        "description": "Retrieves alerts for a prisoner from latest all bookings. Requires ROLE_NOMIS_ALERTS",
         "operationId": "getAlertsToMigrate",
         "parameters": [
           {
@@ -7045,8 +7098,8 @@
         "tags": [
           "alerts-resource"
         ],
-        "summary": "Gets active alerts for latest booking plus unique list of alerts from previous bookings for a prisoner",
-        "description": "Retrieves active alerts for a prisoner across all bookings. The latest booking all active alerts will be returned, from the previous bookings the list will contain at most one alert per alert code that is active type ordered by alert date with latest alert taken. Requires ROLE_NOMIS_ALERTS",
+        "summary": "Gets active alerts for latest booking",
+        "description": "Retrieves active alerts for latest booking. Requires ROLE_NOMIS_ALERTS",
         "operationId": "getActiveAlertsForReconciliation",
         "parameters": [
           {
@@ -11138,7 +11191,6 @@
           "bookingSequence",
           "date",
           "isActive",
-          "isAlertFromPreviousBookingRelevant",
           "isVerified",
           "type"
         ],
@@ -11194,10 +11246,6 @@
           },
           "audit": {
             "$ref": "#/components/schemas/NomisAudit"
-          },
-          "isAlertFromPreviousBookingRelevant": {
-            "type": "boolean",
-            "description": "True if this alert is on a previous booking and should have been latest booking and is potentially relevant to prisoner"
           }
         },
         "description": "The data held in NOMIS about an alert associated with a prisoner"
@@ -14840,12 +14888,12 @@
             "type": "integer",
             "format": "int32"
           },
-          "paged": {
-            "type": "boolean"
-          },
           "pageNumber": {
             "type": "integer",
             "format": "int32"
+          },
+          "paged": {
+            "type": "boolean"
           },
           "unpaged": {
             "type": "boolean"
@@ -15793,18 +15841,11 @@
       },
       "PrisonerAlertsResponse": {
         "required": [
-          "latestBookingAlerts",
-          "previousBookingsAlerts"
+          "latestBookingAlerts"
         ],
         "type": "object",
         "properties": {
           "latestBookingAlerts": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AlertResponse"
-            }
-          },
-          "previousBookingsAlerts": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AlertResponse"

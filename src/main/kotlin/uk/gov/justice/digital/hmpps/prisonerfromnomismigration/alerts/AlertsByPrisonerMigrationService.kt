@@ -66,12 +66,11 @@ class AlertsByPrisonerMigrationService(
     val offenderNo = context.body.offenderNo
 
     // when NOMIS does not find a booking this will be null so just migrate as if there is no alerts
-    val nomisAlerts = alertsNomisService.getAlertsToMigrate(offenderNo) ?: PrisonerAlertsResponse(emptyList(), emptyList())
-    val activeAlertsFromPreviousBookings = nomisAlerts.previousBookingsAlerts.filter { it.isActive }
-    val allNomisAlerts = (nomisAlerts.latestBookingAlerts + nomisAlerts.previousBookingsAlerts).map { it.toDPSMigratedAlert() }
+    val nomisAlerts = alertsNomisService.getAlertsToMigrate(offenderNo) ?: PrisonerAlertsResponse(emptyList())
+    val alertsToMigrate = nomisAlerts.latestBookingAlerts.map { it.toDPSMigratedAlert() }
     alertsDpsService.migrateAlerts(
       offenderNo = offenderNo,
-      alerts = allNomisAlerts,
+      alerts = alertsToMigrate,
     ).also {
       createMapping(
         offenderNo = offenderNo,
@@ -94,15 +93,8 @@ class AlertsByPrisonerMigrationService(
           "offenderNo" to offenderNo,
           "migrationId" to context.migrationId,
           "alertCount" to it.size.toString(),
-          "alertsFromCurrentBooking" to nomisAlerts.latestBookingAlerts.size.toString(),
-          "totalAlertsFromPreviousBookings" to nomisAlerts.previousBookingsAlerts.size.toString(),
-          "totalActiveAlertsFromPreviousBookings" to activeAlertsFromPreviousBookings.size.toString(),
         ),
       )
-
-      if (activeAlertsFromPreviousBookings.isNotEmpty()) {
-        log.debug("active previous alert codes are: ${activeAlertsFromPreviousBookings.joinToString { alert -> alert.alertCode.code }}")
-      }
     }
   }
 

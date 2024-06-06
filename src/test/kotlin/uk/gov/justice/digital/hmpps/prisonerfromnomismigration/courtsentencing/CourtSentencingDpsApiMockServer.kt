@@ -225,6 +225,19 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubDeleteSentence(
+    sentenceId: String = UUID.randomUUID().toString(),
+  ) {
+    stubFor(
+      delete("/sentence/$sentenceId")
+        .willReturn(
+          aResponse()
+            .withStatus(204)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
   fun stubHealthPing(status: Int) {
     stubFor(
       get("/health/ping").willReturn(

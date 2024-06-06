@@ -294,5 +294,5 @@ private enum class MappingResponse {
 private fun AlertResponse.isSourcedFromDPS() = audit.auditModuleName == "DPS_SYNCHRONISATION"
 private fun AlertResponse.isCreatedDueToNewBooking() = audit.auditAdditionalInfo == "OMKCOPY.COPY_BOOKING_DATA"
 
-private fun AlertResponse.shouldBeCreatedInDPS() = bookingSequence == 1L || isAlertFromPreviousBookingRelevant
+private fun AlertResponse.shouldBeCreatedInDPS() = bookingSequence == 1L
 private fun AlertResponse.shouldNotBeCreatedInDPS() = !shouldBeCreatedInDPS()
