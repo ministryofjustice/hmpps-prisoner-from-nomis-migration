@@ -110,6 +110,14 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .uri("/sentence/{sentenceId}", sentenceId)
       .retrieve()
       .awaitBodilessEntity()
+
+  suspend fun updateSentence(sentenceId: String, sentence: CreateSentenceRequest): CreateSentenceResponse =
+    webClient
+      .put()
+      .uri("sentence/{sentenceId}", sentenceId)
+      .bodyValue(sentence)
+      .retrieve()
+      .awaitBody()
 }
 
 data class CreateNewChargeResponse(

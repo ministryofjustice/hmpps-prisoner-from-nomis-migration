@@ -461,8 +461,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               isNull(),
             )
           }
-          // will not create a court case in DPS
-          dpsCourtSentencingServer.verify(0, postRequestedFor(anyUrl()))
+          // will not delete a court case in DPS
+          dpsCourtSentencingServer.verify(0, deleteRequestedFor(anyUrl()))
         }
       }
 
@@ -1351,8 +1351,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               isNull(),
             )
           }
-          // will not create a court appearance in DPS
-          dpsCourtSentencingServer.verify(0, postRequestedFor(anyUrl()))
+          // will not delete a court appearance in DPS
+          dpsCourtSentencingServer.verify(0, deleteRequestedFor(anyUrl()))
         }
       }
 
@@ -1990,7 +1990,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             )
           }
           // will not delete a court charge in DPS
-          dpsCourtSentencingServer.verify(0, postRequestedFor(anyUrl()))
+          dpsCourtSentencingServer.verify(0, deleteRequestedFor(anyUrl()))
         }
       }
 

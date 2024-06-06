@@ -603,12 +603,13 @@ class CourtSentencingSynchronisationService(
     } else {
       val nomisSentence =
         nomisApiService.getOffenderSentence(bookingId = event.bookingId, sentenceSequence = event.sentenceSequence)
-      mappingApiService.getSentenceOrNullByNomisId(event.bookingId, sentenceSequence = event.sentenceSequence)?.let { mapping ->
-        telemetryClient.trackEvent(
-          "sentence-synchronisation-created-ignored",
-          telemetry,
-        )
-      } ?: let {
+      mappingApiService.getSentenceOrNullByNomisId(event.bookingId, sentenceSequence = event.sentenceSequence)
+        ?.let { mapping ->
+          telemetryClient.trackEvent(
+            "sentence-synchronisation-created-ignored",
+            telemetry,
+          )
+        } ?: let {
         dpsApiService.createSentence(nomisSentence.toDpsSentence(event.offenderIdDisplay)).run {
           tryToCreateSentenceMapping(
             nomisSentence = nomisSentence,
@@ -650,7 +651,10 @@ class CourtSentencingSynchronisationService(
       "court-charge-mapping-deleted-failed",
       mapOf("nomisOffenderCharge" to mapping.nomisCourtChargeId, "dpsCourtChargeId" to mapping.dpsCourtChargeId),
     )
-    log.warn("Unable to delete mapping for court charge with nomis id: $mapping.nomisCourtChargeId. Please delete manually", e)
+    log.warn(
+      "Unable to delete mapping for court charge with nomis id: $mapping.nomisCourtChargeId. Please delete manually",
+      e,
+    )
   }
 
   suspend fun retryCreateCourtCaseMapping(retryMessage: InternalMessage<CourtCaseAllMappingDto>) {
@@ -683,7 +687,10 @@ class CourtSentencingSynchronisationService(
         "offenderNo" to event.offenderIdDisplay,
         "nomisBookingId" to event.bookingId,
       )
-    val mapping = mappingApiService.getSentenceOrNullByNomisId(sentenceSequence = event.sentenceSequence, bookingId = event.bookingId)
+    val mapping = mappingApiService.getSentenceOrNullByNomisId(
+      sentenceSequence = event.sentenceSequence,
+      bookingId = event.bookingId,
+    )
     if (mapping == null) {
       telemetryClient.trackEvent(
         "sentence-synchronisation-deleted-ignored",
@@ -704,6 +711,44 @@ class CourtSentencingSynchronisationService(
   }.onFailure { e ->
     telemetryClient.trackEvent("sentence-mapping-deleted-failed", mapOf("dpsSentenceId" to dpsSentenceId))
     log.warn("Unable to delete mapping for sentence with dps Id $dpsSentenceId. Please delete manually", e)
+  }
+
+  suspend fun nomisSentenceUpdated(event: OffenderSentenceEvent) {
+    val telemetry =
+      mapOf(
+        "nomisBookingId" to event.bookingId.toString(),
+        "nomisSentenceSequence" to event.sentenceSequence.toString(),
+        "offenderNo" to event.offenderIdDisplay,
+      )
+    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      telemetryClient.trackEvent("sentence-synchronisation-updated-skipped", telemetry)
+    } else {
+      val mapping = mappingApiService.getSentenceOrNullByNomisId(
+        bookingId = event.bookingId,
+        sentenceSequence = event.sentenceSequence,
+      )
+      if (mapping == null) {
+        telemetryClient.trackEvent(
+          "sentence-synchronisation-updated-failed",
+          telemetry,
+        )
+        if (hasMigratedAllData) {
+          // after migration has run this should not happen so make sure this message goes in DLQ
+          throw IllegalStateException("Received OFFENDER_SENTENCES-UPDATED for sentence that has never been created")
+        }
+      } else {
+        val nomisSentence =
+          nomisApiService.getOffenderSentence(bookingId = event.bookingId, sentenceSequence = event.sentenceSequence)
+        dpsApiService.updateSentence(
+          sentenceId = mapping.dpsSentenceId,
+          nomisSentence.toDpsSentence(offenderNo = event.offenderIdDisplay),
+        )
+        telemetryClient.trackEvent(
+          "sentence-synchronisation-updated-success",
+          telemetry + ("dpsSentenceId" to mapping.dpsSentenceId),
+        )
+      }
+    }
   }
 
   suspend fun retryCreateCourtChargeMapping(retryMessage: InternalMessage<CourtChargeMappingDto>) {
