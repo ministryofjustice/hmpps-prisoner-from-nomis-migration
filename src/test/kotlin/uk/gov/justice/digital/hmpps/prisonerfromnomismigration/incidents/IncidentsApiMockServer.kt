@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
@@ -177,16 +176,14 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(CREATED.value())
-          .withBody(
-            dpsIncidentReport(dpsIncidentId).toJson(),
-          ),
+          .withBody(dpsIncidentId),
       ),
     )
   }
 
   fun stubIncidentDelete(incidentId: String = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42") {
     stubFor(
-      delete("/sync/upsert/$incidentId").willReturn(
+      delete("/incident-reports/$incidentId").willReturn(
         aResponse()
           .withStatus(HttpStatus.NO_CONTENT.value()),
       ),
@@ -195,7 +192,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubIncidentDeleteNotFound(incidentId: String = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42") {
     stubFor(
-      delete("/sync/upsert/$incidentId").willReturn(
+      delete("/incident-reports/$incidentId").willReturn(
         aResponse()
           .withStatus(HttpStatus.NOT_FOUND.value()),
       ),
@@ -205,5 +202,3 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun createIncidentUpsertCount() =
     findAll(postRequestedFor(urlMatching("/sync/upsert"))).count()
 }
-
-private fun Any.toJson(): String = ObjectMapper().writeValueAsString(this)

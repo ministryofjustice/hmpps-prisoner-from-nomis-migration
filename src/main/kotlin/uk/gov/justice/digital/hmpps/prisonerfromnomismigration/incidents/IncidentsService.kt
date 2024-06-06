@@ -6,11 +6,10 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisSyncRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.Report
 
 @Service
 class IncidentsService(@Qualifier("incidentsApiWebClient") private val webClient: WebClient) {
-  suspend fun upsertIncident(migrateRequest: NomisSyncRequest): Report =
+  suspend fun upsertIncident(migrateRequest: NomisSyncRequest): String =
     webClient.post()
       .uri("/sync/upsert")
       .bodyValue(migrateRequest)
@@ -19,7 +18,7 @@ class IncidentsService(@Qualifier("incidentsApiWebClient") private val webClient
 
   suspend fun deleteIncident(incidentId: String) =
     webClient.delete()
-      .uri("/sync/upsert/{incidentId}", incidentId)
+      .uri("/incident-reports/{incidentId}", incidentId)
       .retrieve()
       .awaitBodyOrNullWhenNotFound<Unit>()
 }

@@ -9,9 +9,14 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentStatus
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Staff
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.lang.Long.min
+import java.time.LocalDate
 
 @Component
 class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
@@ -61,7 +66,7 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
       )
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(incidentResponse(nomisIncidentId)),
+            .withBody(objectMapper.writeValueAsString(incidentResponse(nomisIncidentId))),
         ),
     )
   }
@@ -86,7 +91,7 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
         )
           .willReturn(
             aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-              .withBody(incidentResponse(nomisIncidentId = it.toLong())),
+              .withBody(objectMapper.writeValueAsString(incidentResponse(nomisIncidentId = it.toLong()))),
           ),
       )
     }
@@ -109,41 +114,39 @@ fun incidentIdsPagedResponse(
 
 private fun incidentResponse(
   nomisIncidentId: Long = 1234,
-): String =
-  """
-  {
-    "incidentId": $nomisIncidentId,
-    "questionnaireId": 45456,
-    "title": "This is a test incident",
-    "description": "On 12/04/2023 approx 16:45 Mr Smith tried to escape.",
-    "status":{
-      "code": "AWAN",
-      "description": "Awaiting Analysis",
-      "listSequence": 1,
-      "standardUser": true,
-      "enhancedUser": true
-    },
-    "agency": {
-      "code": "BXI",
-      "description": "Brixton"
-    },
-    "type": "ATT_ESC_E",
-    "lockedResponse": false,
-    "incidentDateTime": "2017-04-12T16:45:00",
-    "reportingStaff": {
-      "username": "FSTAFF_GEN",
-      "staffId": 485572,
-      "firstName": "FRED",
-      "lastName": "STAFF"
-    },
-    "followUpDate": "2017-04-12",
-    "createDateTime": "2024-02-06T12:36:00",
-    "createdBy": "JIM SMITH",
-    "reportedDateTime": "2024-02-06T12:36:00",
-    "staffParties": [],
-    "offenderParties": [],
-    "requirements": [],
-    "questions": [],
-    "history": []
-  }
-  """.trimIndent()
+): IncidentResponse =
+  IncidentResponse(
+    incidentId = nomisIncidentId,
+    questionnaireId = 45456,
+    title = "This is a test incident",
+    description = "On 12/04/2023 approx 16:45 Mr Smith tried to escape.",
+    status = IncidentStatus(
+      code = "AWAN",
+      description = "Awaiting Analysis",
+      listSequence = 1,
+      standardUser = true,
+      enhancedUser = true,
+    ),
+    agency = CodeDescription(
+      code = "BXI",
+      description = "Brixton",
+    ),
+    type = "ATT_ESC_E",
+    lockedResponse = false,
+    incidentDateTime = "2017-04-12T16:45:00",
+    reportingStaff = Staff(
+      username = "FSTAFF_GEN",
+      staffId = 485572,
+      firstName = "FRED",
+      lastName = "STAFF",
+    ),
+    followUpDate = LocalDate.parse("2017-04-12"),
+    createDateTime = "2024-02-06T12:36:00",
+    createdBy = "JIM SMITH",
+    reportedDateTime = "2024-02-06T12:36:00",
+    staffParties = listOf(),
+    offenderParties = listOf(),
+    requirements = listOf(),
+    questions = listOf(),
+    history = listOf(),
+  )
