@@ -825,7 +825,7 @@ internal class IncidentsMigrationServiceTest {
     internal fun setUp(): Unit = runTest {
       whenever(incidentsMappingService.findByNomisId(any())).thenReturn(null)
       whenever(nomisApiService.getIncident(any())).thenReturn(aNomisIncidentResponse())
-      whenever(incidentsService.upsertIncident(any())).thenReturn(IncidentsApiMockServer.dpsIncidentReport())
+      whenever(incidentsService.upsertIncident(any())).thenReturn(DPS_INCIDENT_ID)
       whenever(incidentsMappingService.createMapping(any(), any())).thenReturn(CreateMappingResult())
     }
 
@@ -888,7 +888,7 @@ internal class IncidentsMigrationServiceTest {
     internal fun `will create a mapping between a new incident and a NOMIS incident`(): Unit =
       runTest {
         whenever(nomisApiService.getIncident(any())).thenReturn(aNomisIncidentResponse())
-        whenever(incidentsService.upsertIncident(any())).thenReturn(IncidentsApiMockServer.dpsIncidentReport())
+        whenever(incidentsService.upsertIncident(any())).thenReturn(DPS_INCIDENT_ID)
 
         service.migrateNomisEntity(
           MigrationContext(
@@ -914,7 +914,7 @@ internal class IncidentsMigrationServiceTest {
     internal fun `will not throw an exception (and place message back on queue) but create a new retry message`(): Unit =
       runTest {
         whenever(nomisApiService.getIncident(any())).thenReturn(aNomisIncidentResponse())
-        whenever(incidentsService.upsertIncident(any())).thenReturn(IncidentsApiMockServer.dpsIncidentReport())
+        whenever(incidentsService.upsertIncident(any())).thenReturn(DPS_INCIDENT_ID)
 
         whenever(
           incidentsMappingService.createMapping(

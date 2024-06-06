@@ -57,7 +57,7 @@ internal class IncidentsServiceTest {
   }
 
   @Nested
-  @DisplayName("DELETE /sync/upsert")
+  @DisplayName("DELETE /incident-reports")
   inner class DeleteIncidentForSynchronisation {
     @Nested
     inner class IncidentExists {
@@ -72,7 +72,7 @@ internal class IncidentsServiceTest {
       @Test
       fun `should call api with OAuth2 token`() {
         incidentsApi.verify(
-          deleteRequestedFor(urlEqualTo("/sync/upsert/$INCIDENT_ID"))
+          deleteRequestedFor(urlEqualTo("/incident-reports/$INCIDENT_ID"))
             .withHeader("Authorization", equalTo("Bearer ABCDE")),
         )
       }

@@ -38,18 +38,23 @@ class IncidentsPrisonOffenderEventListener(
         "Notification" -> {
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
           if (eventFeatureSwitch.isEnabled(eventType)) {
-            when {
-              eventType == "INCIDENT-INSERTED" ->
-                incidentsSynchronisationService.synchroniseIncidentUpsert(sqsMessage.Message.fromJson())
+            when (eventType) {
+              "INCIDENT-INSERTED" -> incidentsSynchronisationService.synchroniseIncidentUpsert(sqsMessage.Message.fromJson())
 
-              eventType.startsWith("INCIDENT-CHANGED") ->
-                // INCIDENT-CHANGED-CASES, INCIDENT-CHANGED-PARTIES, INCIDENT-CHANGED-RESPONSES, INCIDENT-CHANGED-REQUIREMENTS,
-                incidentsSynchronisationService.synchroniseIncidentUpsert(sqsMessage.Message.fromJson())
+              "INCIDENT-DELETED-CASES" -> incidentsSynchronisationService.synchroniseIncidentDelete(sqsMessage.Message.fromJson())
 
-              eventType.startsWith("INCIDENT-DELETED") ->
-                // INCIDENT-DELETED-CASES, INCIDENT-DELETED-PARTIES, INCIDENT-DELETED-RESPONSES, INCIDENT-DELETED-REQUIREMENTS,
-                incidentsSynchronisationService.synchroniseIncidentDelete(sqsMessage.Message.fromJson())
+              "INCIDENT-CHANGED-CASES",
+              "INCIDENT-CHANGED-PARTIES",
+              "INCIDENT-CHANGED-RESPONSES",
+              "INCIDENT-CHANGED-REQUIREMENTS",
+              // Deleting from a child table is just an update on the top level incident
+              "INCIDENT-DELETED-PARTIES",
+              "INCIDENT-DELETED-RESPONSES",
+              "INCIDENT-DELETED-REQUIREMENTS",
+              -> incidentsSynchronisationService.synchroniseIncidentUpsert(sqsMessage.Message.fromJson())
 
+              // TODO do we need to check for this event
+              // "prison-offender-events.prisoner.merged" -> incidentsSynchronisationService.synchronisePrisonerMerge(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {

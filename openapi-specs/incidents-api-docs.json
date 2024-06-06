@@ -10,7 +10,7 @@
     "license": {
       "name": "MIT"
     },
-    "version": "2024-05-28.1675.8d45a5d"
+    "version": "2024-06-06.1848.edc03d2"
   },
   "servers": [
     {
@@ -147,11 +147,23 @@
         },
         "responses": {
           "201": {
-            "description": "Updated NOMIS Incident Report",
+            "description": "Migrated NOMIS Incident Report Id",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Report"
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Updated NOMIS Incident Report Id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -593,16 +605,6 @@
               }
             }
           },
-          "200": {
-            "description": "Request successfully processed - content found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HmppsSubjectAccessRequestContent"
-                }
-              }
-            }
-          },
           "403": {
             "description": "Forbidden, requires an appropriate role",
             "content": {
@@ -613,12 +615,12 @@
               }
             }
           },
-          "500": {
-            "description": "Unexpected error occurred",
+          "200": {
+            "description": "Request successfully processed - content found",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "$ref": "#/components/schemas/HmppsSubjectAccessRequestContent"
                 }
               }
             }
@@ -635,6 +637,16 @@
           },
           "401": {
             "description": "The client does not have authorisation to make this request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error occurred",
             "content": {
               "application/json": {
                 "schema": {
@@ -1028,27 +1040,8 @@
   },
   "components": {
     "schemas": {
-      "DlqMessage": {
-        "required": [
-          "body",
-          "messageId"
-        ],
-        "type": "object",
-        "properties": {
-          "body": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "object"
-            }
-          },
-          "messageId": {
-            "type": "string"
-          }
-        }
-      },
       "RetryDlqResult": {
         "required": [
-          "messages",
           "messagesFoundCount"
         ],
         "type": "object",
@@ -1056,12 +1049,6 @@
           "messagesFoundCount": {
             "type": "integer",
             "format": "int32"
-          },
-          "messages": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DlqMessage"
-            }
           }
         }
       },
@@ -1716,6 +1703,112 @@
           }
         },
         "description": "Incident report created/updated in NOMIS"
+      },
+      "CreateReportRequest": {
+        "required": [
+          "description",
+          "incidentDateAndTime",
+          "prisonId",
+          "reportedBy",
+          "reportedDate",
+          "title",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Incident report type",
+            "enum": [
+              "ABSCONDER",
+              "ASSAULT",
+              "ATTEMPTED_ESCAPE_FROM_CUSTODY",
+              "ATTEMPTED_ESCAPE_FROM_ESCORT",
+              "BOMB_THREAT",
+              "BREACH_OF_SECURITY",
+              "DAMAGE",
+              "DEATH_IN_CUSTODY",
+              "DEATH_OTHER",
+              "DISORDER",
+              "DRONE_SIGHTING",
+              "ESCAPE_FROM_CUSTODY",
+              "ESCAPE_FROM_ESCORT",
+              "FINDS",
+              "FIRE",
+              "FOOD_REFUSAL",
+              "FULL_CLOSE_DOWN_SEARCH",
+              "KEY_LOCK_INCIDENT",
+              "MISCELLANEOUS",
+              "RADIO_COMPROMISE",
+              "RELEASED_IN_ERROR",
+              "SELF_HARM",
+              "TEMPORARY_RELEASE_FAILURE",
+              "TOOL_LOSS",
+              "OLD_ASSAULT",
+              "OLD_ASSAULT1",
+              "OLD_ASSAULT2",
+              "OLD_ASSAULT3",
+              "OLD_BARRICADE",
+              "OLD_CONCERTED_INDISCIPLINE",
+              "OLD_DISORDER",
+              "OLD_DRONE_SIGHTING",
+              "OLD_DRUGS",
+              "OLD_FINDS",
+              "OLD_FINDS1",
+              "OLD_FINDS2",
+              "OLD_FINDS3",
+              "OLD_FINDS4",
+              "OLD_FIREARM_ETC",
+              "OLD_HOSTAGE",
+              "OLD_KEY_LOCK_INCIDENT",
+              "OLD_MOBILES",
+              "OLD_ROOF_CLIMB",
+              "OLD_TEMPORARY_RELEASE_FAILURE",
+              "OLD_TEMPORARY_RELEASE_FAILURE1",
+              "OLD_TEMPORARY_RELEASE_FAILURE2"
+            ]
+          },
+          "incidentDateAndTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "When the incident took place",
+            "example": "2021-07-05T10:35:17"
+          },
+          "prisonId": {
+            "type": "string",
+            "description": "The NOMIS id of the prison where incident took place",
+            "example": "MDI"
+          },
+          "title": {
+            "type": "string",
+            "description": "Brief title describing the incident"
+          },
+          "description": {
+            "type": "string",
+            "description": "Longer summary of the incident"
+          },
+          "createNewEvent": {
+            "type": "boolean",
+            "description": "Whether to link to a new event",
+            "default": false
+          },
+          "linkedEventId": {
+            "type": "string",
+            "description": "Which existing event to link to",
+            "default": "null"
+          },
+          "reportedBy": {
+            "type": "string",
+            "description": "Username of person who created the incident report"
+          },
+          "reportedDate": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "When the incident report was created",
+            "example": "2021-07-05T10:35:17"
+          }
+        },
+        "description": "Payload to create a new incident report"
       },
       "CorrectionRequest": {
         "required": [
@@ -2417,112 +2510,6 @@
         },
         "description": "Previous statuses an incident report transitioned to"
       },
-      "CreateReportRequest": {
-        "required": [
-          "description",
-          "incidentDateAndTime",
-          "prisonId",
-          "reportedBy",
-          "reportedDate",
-          "title",
-          "type"
-        ],
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string",
-            "description": "Incident report type",
-            "enum": [
-              "ABSCONDER",
-              "ASSAULT",
-              "ATTEMPTED_ESCAPE_FROM_CUSTODY",
-              "ATTEMPTED_ESCAPE_FROM_ESCORT",
-              "BOMB_THREAT",
-              "BREACH_OF_SECURITY",
-              "DAMAGE",
-              "DEATH_IN_CUSTODY",
-              "DEATH_OTHER",
-              "DISORDER",
-              "DRONE_SIGHTING",
-              "ESCAPE_FROM_CUSTODY",
-              "ESCAPE_FROM_ESCORT",
-              "FINDS",
-              "FIRE",
-              "FOOD_REFUSAL",
-              "FULL_CLOSE_DOWN_SEARCH",
-              "KEY_LOCK_INCIDENT",
-              "MISCELLANEOUS",
-              "RADIO_COMPROMISE",
-              "RELEASED_IN_ERROR",
-              "SELF_HARM",
-              "TEMPORARY_RELEASE_FAILURE",
-              "TOOL_LOSS",
-              "OLD_ASSAULT",
-              "OLD_ASSAULT1",
-              "OLD_ASSAULT2",
-              "OLD_ASSAULT3",
-              "OLD_BARRICADE",
-              "OLD_CONCERTED_INDISCIPLINE",
-              "OLD_DISORDER",
-              "OLD_DRONE_SIGHTING",
-              "OLD_DRUGS",
-              "OLD_FINDS",
-              "OLD_FINDS1",
-              "OLD_FINDS2",
-              "OLD_FINDS3",
-              "OLD_FINDS4",
-              "OLD_FIREARM_ETC",
-              "OLD_HOSTAGE",
-              "OLD_KEY_LOCK_INCIDENT",
-              "OLD_MOBILES",
-              "OLD_ROOF_CLIMB",
-              "OLD_TEMPORARY_RELEASE_FAILURE",
-              "OLD_TEMPORARY_RELEASE_FAILURE1",
-              "OLD_TEMPORARY_RELEASE_FAILURE2"
-            ]
-          },
-          "incidentDateAndTime": {
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
-            "type": "string",
-            "description": "When the incident took place",
-            "example": "2021-07-05T10:35:17"
-          },
-          "prisonId": {
-            "type": "string",
-            "description": "The NOMIS id of the prison where incident took place",
-            "example": "MDI"
-          },
-          "title": {
-            "type": "string",
-            "description": "Brief title describing the incident"
-          },
-          "description": {
-            "type": "string",
-            "description": "Longer summary of the incident"
-          },
-          "createNewEvent": {
-            "type": "boolean",
-            "description": "Whether to link to a new event",
-            "default": false
-          },
-          "linkedEventId": {
-            "type": "string",
-            "description": "Which existing event to link to",
-            "default": "null"
-          },
-          "reportedBy": {
-            "type": "string",
-            "description": "Username of person who created the incident report"
-          },
-          "reportedDate": {
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
-            "type": "string",
-            "description": "When the incident report was created",
-            "example": "2021-07-05T10:35:17"
-          }
-        },
-        "description": "Payload to create a new incident report"
-      },
       "HmppsSubjectAccessRequestContent": {
         "required": [
           "content"
@@ -2532,6 +2519,24 @@
           "content": {
             "type": "object",
             "description": "The content of the subject access request response"
+          }
+        }
+      },
+      "DlqMessage": {
+        "required": [
+          "body",
+          "messageId"
+        ],
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "messageId": {
+            "type": "string"
           }
         }
       },
@@ -2561,27 +2566,41 @@
       },
       "SimplePageReport": {
         "required": [
-          "sort"
+          "content",
+          "number",
+          "numberOfElements",
+          "size",
+          "sort",
+          "totalElements",
+          "totalPages"
         ],
         "type": "object",
         "properties": {
           "content": {
             "type": "array",
+            "description": "Elements in this pages",
+            "example": "[…]",
             "items": {
               "$ref": "#/components/schemas/Report"
             }
           },
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "number": {
             "type": "integer",
-            "format": "int32"
+            "description": "Page number (0-based)",
+            "format": "int32",
+            "example": 0
           },
           "size": {
             "type": "integer",
-            "format": "int32"
+            "description": "Page size",
+            "format": "int32",
+            "example": 20
+          },
+          "totalElements": {
+            "type": "integer",
+            "description": "Total number of elements in all pages",
+            "format": "int64",
+            "example": 55
           },
           "sort": {
             "type": "array",
@@ -2595,13 +2614,17 @@
               "example": "[\"property,ASC\"]"
             }
           },
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "numberOfElements": {
             "type": "integer",
-            "format": "int32"
+            "description": "Number of elements in this page",
+            "format": "int32",
+            "example": 20
+          },
+          "totalPages": {
+            "type": "integer",
+            "description": "Total number of pages",
+            "format": "int32",
+            "example": 3
           }
         }
       },

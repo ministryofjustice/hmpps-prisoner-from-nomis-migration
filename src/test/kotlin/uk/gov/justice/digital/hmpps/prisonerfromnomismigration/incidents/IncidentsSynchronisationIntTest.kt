@@ -49,6 +49,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
   private lateinit var incidentsMappingApi: IncidentsMappingApiMockServer
 
   @Nested
+  @DisplayName("INCIDENT-CREATED")
   inner class IncidentCreated {
 
     @Nested
@@ -503,7 +504,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
   }
 
   @Nested
-  @DisplayName("INCIDENT-DELETED-*")
+  @DisplayName("INCIDENT-DELETED")
   inner class IncidentDeleted {
 
     @Nested
@@ -513,7 +514,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         awsSqsIncidentsOffenderEventsClient.sendMessage(
           incidentsQueueOffenderEventsUrl,
           incidentEvent(
-            eventType = "INCIDENT-DELETED-PARTIES",
+            eventType = "INCIDENT-DELETED-CASES",
             auditModuleName = "DPS_SYNCHRONISATION",
           ),
         )
@@ -545,7 +546,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         awsSqsIncidentsOffenderEventsClient.sendMessage(
           incidentsQueueOffenderEventsUrl,
           incidentEvent(
-            eventType = "INCIDENT-DELETED-PARTIES",
+            eventType = "INCIDENT-DELETED-CASES",
             auditModuleName = "OIUDINCRS",
           ),
         )
@@ -596,7 +597,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
           awsSqsIncidentsOffenderEventsClient.sendMessage(
             incidentsQueueOffenderEventsUrl,
             incidentEvent(
-              eventType = "INCIDENT-DELETED-PARTIES",
+              eventType = "INCIDENT-DELETED-CASES",
               auditModuleName = "OIUDINCRS",
             ),
           )
@@ -612,7 +613,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will delete the incident in the incidents service`() {
           await untilAsserted {
-            incidentsApi.verify(deleteRequestedFor(urlPathEqualTo("/sync/upsert/$DPS_INCIDENT_ID")))
+            incidentsApi.verify(deleteRequestedFor(urlPathEqualTo("/incident-reports/$DPS_INCIDENT_ID")))
           }
         }
 
