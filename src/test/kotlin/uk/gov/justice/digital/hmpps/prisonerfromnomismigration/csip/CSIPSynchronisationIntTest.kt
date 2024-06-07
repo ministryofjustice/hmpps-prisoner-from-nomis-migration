@@ -58,7 +58,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         awsSqsCSIPOffenderEventsClient.sendMessage(
           csipQueueOffenderEventsUrl,
-          csipEvent(eventType = "CSIP-INSERTED", auditModuleName = "DPS_SYNCHRONISATION"),
+          csipEvent(eventType = "CSIP_REPORTS-INSERTED", auditModuleName = "DPS_SYNCHRONISATION"),
         )
       }
 
@@ -95,7 +95,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
 
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
-            csipEvent(eventType = "CSIP-INSERTED"),
+            csipEvent(eventType = "CSIP_REPORTS-INSERTED"),
           )
         }
 
@@ -150,11 +150,11 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class WhenNomisHasNoCSIP {
         @BeforeEach
         fun setUp() {
-          csipNomisApi.stubGetCSIPNotFound()
+          csipNomisApi.stubGetCSIP(HttpStatus.NOT_FOUND)
 
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
-            csipEvent(eventType = "CSIP-INSERTED"),
+            csipEvent(eventType = "CSIP_REPORTS-INSERTED"),
           )
           awsSqsCSIPOffenderEventDlqClient.waitForMessageCountOnQueue(csipQueueOffenderEventsDlqUrl, 1)
         }
@@ -188,7 +188,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
 
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
-            csipEvent(eventType = "CSIP-INSERTED"),
+            csipEvent(eventType = "CSIP_REPORTS-INSERTED"),
           )
 
           // wait for all mappings to be created before verifying
@@ -226,7 +226,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
 
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
-            csipEvent(eventType = "CSIP-INSERTED"),
+            csipEvent(eventType = "CSIP_REPORTS-INSERTED"),
           )
 
           // check that no CSIPs are created
@@ -266,9 +266,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
           csipMappingApi.stubGetByNomisIdWithError()
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
-            csipEvent(
-              eventType = "CSIP-DELETED",
-            ),
+            csipEvent(eventType = "CSIP_REPORTS-DELETED"),
           )
         }
 
@@ -299,7 +297,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
           csipMappingApi.stubDeleteMapping(dpsCSIPId = dpsCSIPId)
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
-            csipEvent(eventType = "CSIP-DELETED"),
+            csipEvent(eventType = "CSIP_REPORTS-DELETED"),
           )
         }
 
@@ -350,7 +348,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
           csipMappingApi.stubDeleteMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
-            csipEvent(eventType = "CSIP-DELETED"),
+            csipEvent(eventType = "CSIP_REPORTS-DELETED"),
           )
         }
 
@@ -405,7 +403,7 @@ fun SqsAsyncClient.waitForMessageCountOnQueue(queueUrl: String, messageCount: In
   } matches { it == messageCount }
 
 fun csipEvent(
-  eventType: String = "CSIP-INSERTED",
+  eventType: String = "CSIP_REPORTS-INSERTED",
   nomisCSIPId: String = "$NOMIS_CSIP_ID",
   auditModuleName: String = "OIDIXXXX",
 ) = """
@@ -413,7 +411,7 @@ fun csipEvent(
     "Type" : "Notification",
     "MessageId" : "7bdec840-69e5-5163-8013-967eb63d3d26",
     "TopicArn" : "arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-f221e27fcfcf78f6ab4f4c3cc165eee7",
-    "Message" : "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2024-02-08T13:56:40\",\"nomisEventType\":\"CSIP-INSERTED\",\"nomisCSIPId\":\"$nomisCSIPId\",\"csipPartySeq\":0,\"auditModuleName\":\"$auditModuleName\"}",
+    "Message" : "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2024-02-08T13:56:40\",\"nomisEventType\":\"CSIP_REPORTS-INSERTED\",\"nomisCSIPId\":\"$nomisCSIPId\",\"csipPartySeq\":0,\"auditModuleName\":\"$auditModuleName\"}",
     "Timestamp" : "2024-02-08T13:56:40.981Z",
     "SignatureVersion" : "1",
     "Signature" : "ZUU+9m0kLuVMVE0KCwk5LN1bhQQ6VTOP7djMUaJFYB/+s8kKpAh4Hm5XbIrqbAIoDJmf2MF+GxGRe1sypAn7z61GqqotcXI6r5CjiCvQVsrcwQqO0qoUkb5NoXWyBCG4MOaasFYfjleDnthQS/+rnNWT9Ndl09QtAhjfztHnD279GbrVhywj9O1xcDpnIkx/zGsZUbQsPZDOTOcfeV0M8mbrJhWMWefg9fZ05LeLljD4B8DjMfkmMAn3nBszWlZQcQPDReV7xoMPA+dXJpYXXx6PRLPRtfs7BFGA1hsuYI0mXZb3V3QBvG4Jt5IEYPkfKGZDEmf/hK9V7WkfBiDu2A==",
