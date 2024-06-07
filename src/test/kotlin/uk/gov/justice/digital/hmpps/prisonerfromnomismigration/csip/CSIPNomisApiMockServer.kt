@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
+import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
@@ -9,6 +10,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Actions
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
@@ -39,7 +41,7 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubMultipleGetCSIPIdCounts(totalElements: Long, pageSize: Long) {
+  fun stubGetCSIPIds(totalElements: Long = 20, pageSize: Long = 20) {
     // for each page create a response for each csip id starting from 1 up to `totalElements`
 
     val pages = (totalElements / pageSize) + 1
@@ -84,9 +86,7 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
 
   fun stubGetCSIP(nomisCSIPId: Long = 1234) {
     nomisApi.stubFor(
-      get(
-        urlPathEqualTo("/csip/$nomisCSIPId"),
-      )
+      get(urlPathEqualTo("/csip/$nomisCSIPId"))
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
             .withBody(
@@ -96,17 +96,18 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubGetCSIPNotFound(nomisCSIPId: Long = 1234) {
+  fun stubGetCSIP(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     nomisApi.stubFor(
-      get(
-        urlPathEqualTo("/csip/$nomisCSIPId"),
-      )
+      get(WireMock.urlPathMatching("/csip/[0-9]+"))
         .willReturn(
-          aResponse().withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.NOT_FOUND.value()),
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody(objectMapper.writeValueAsString(error)),
         ),
     )
   }
+
   fun stubGetInitialCount(urlPath: String, totalElements: Long, pagedResponse: (totalElements: Long) -> String) = nomisApi.stubGetInitialCount(urlPath, totalElements, pagedResponse)
   fun verifyGetIdsCount(url: String, fromDate: String, toDate: String, prisonId: String? = null) = nomisApi.verifyGetIdsCount(url, fromDate, toDate, prisonId)
   fun verify(countMatchingStrategy: CountMatchingStrategy, requestPatternBuilder: RequestPatternBuilder) = nomisApi.verify(countMatchingStrategy, requestPatternBuilder)
