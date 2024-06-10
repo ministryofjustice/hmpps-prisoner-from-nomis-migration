@@ -59,12 +59,12 @@ class IncidentsSynchronisationService(
           initialMigration = false,
           incidentReport = nomisIncident.toNomisIncidentReport(),
         ),
-      ).also { dpsIncidentId ->
-        tryToCreateIncidentMapping(event, dpsIncidentId).also { result ->
+      ).also { dpsIncident ->
+        tryToCreateIncidentMapping(event, dpsIncident.id.toString()).also { result ->
           telemetryClient.trackEvent(
             "incidents-synchronisation-created-success",
             event.toTelemetryProperties(
-              dpsIncidentId,
+              dpsIncident.id.toString(),
               result == MAPPING_FAILED,
             ),
           )

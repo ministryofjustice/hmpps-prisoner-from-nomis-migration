@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
@@ -20,6 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.H
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.HistoricalResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.History
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.Location
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisSyncReportId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.PrisonerInvolvement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.Question
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.Report
@@ -51,6 +53,9 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   companion object {
     private const val WIREMOCK_PORT = 8089
     private const val DPS_INCIDENT_ID = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42"
+
+    fun dpsIncidentReportId(dpsIncidentId: String) =
+      NomisSyncReportId(id = UUID.fromString(dpsIncidentId))
 
     fun dpsIncidentReport(dpsIncidentId: String = DPS_INCIDENT_ID) =
       Report(
@@ -176,7 +181,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(CREATED.value())
-          .withBody(dpsIncidentId),
+          .withBody(dpsIncidentReportId(dpsIncidentId).toJson()),
       ),
     )
   }
@@ -202,3 +207,5 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun createIncidentUpsertCount() =
     findAll(postRequestedFor(urlMatching("/sync/upsert"))).count()
 }
+
+private fun Any.toJson(): String = ObjectMapper().writeValueAsString(this)
