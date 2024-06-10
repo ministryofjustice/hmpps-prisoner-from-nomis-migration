@@ -5,11 +5,12 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisSyncReportId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisSyncRequest
 
 @Service
 class IncidentsService(@Qualifier("incidentsApiWebClient") private val webClient: WebClient) {
-  suspend fun upsertIncident(migrateRequest: NomisSyncRequest): String =
+  suspend fun upsertIncident(migrateRequest: NomisSyncRequest): NomisSyncReportId =
     webClient.post()
       .uri("/sync/upsert")
       .bodyValue(migrateRequest)

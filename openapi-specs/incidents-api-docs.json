@@ -10,7 +10,7 @@
     "license": {
       "name": "MIT"
     },
-    "version": "2024-06-06.1848.edc03d2"
+    "version": "2024-06-10.1923.548c0fe"
   },
   "servers": [
     {
@@ -40,7 +40,7 @@
     },
     {
       "name": "Migrate/Upsert NOMIS Incident Report",
-      "description": "Migrate or upsert NOMIS incident Report to IncidentReport Service."
+      "description": "Migrate or synchronise NOMIS incident report to Incident Report Service"
     }
   ],
   "paths": {
@@ -132,7 +132,7 @@
         "tags": [
           "Migrate/Upsert NOMIS Incident Report"
         ],
-        "summary": "Migrate a location",
+        "summary": "Migrate a report",
         "description": "Requires role MIGRATE_INCIDENT_REPORTS and write scope",
         "operationId": "upsertIncidentReport",
         "requestBody": {
@@ -147,23 +147,21 @@
         },
         "responses": {
           "201": {
-            "description": "Migrated NOMIS Incident Report Id",
+            "description": "Migrated NOMIS incident report id",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "string",
-                  "format": "uuid"
+                  "$ref": "#/components/schemas/NomisSyncReportId"
                 }
               }
             }
           },
           "200": {
-            "description": "Updated NOMIS Incident Report Id",
+            "description": "Updated NOMIS incident report id",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "string",
-                  "format": "uuid"
+                  "$ref": "#/components/schemas/NomisSyncReportId"
                 }
               }
             }
@@ -605,22 +603,22 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "200": {
             "description": "Request successfully processed - content found",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HmppsSubjectAccessRequestContent"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1703,6 +1701,20 @@
           }
         },
         "description": "Incident report created/updated in NOMIS"
+      },
+      "NomisSyncReportId": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The internal ID of this report",
+            "format": "uuid"
+          }
+        },
+        "description": "Incident report ID"
       },
       "CreateReportRequest": {
         "required": [
