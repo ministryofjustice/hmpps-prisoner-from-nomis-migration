@@ -33,41 +33,51 @@ generic-prometheus-alerts:
   alertSeverity: syscon-nonprod
   rdsAlertsDatabases:
     cloud-platform-bb7deb71226bc52e: "prisoner nomis migration"
-  sqsNumberAlertQueueNames:
-    - "syscon-devs-dev-prisoner_from_nomis_visits_queue"
-    - "syscon-devs-dev-prisoner_from_nomis_visits_dl_queue"
-    - "syscon-devs-dev-prisoner_from_nomis_sentencing_queue"
-    - "syscon-devs-dev-prisoner_from_nomis_sentencing_dl_queue"
-    - "syscon-devs-dev-prisoner_from_nomis_alerts_queue"
-    - "syscon-devs-dev-prisoner_from_nomis_alerts_dl_queue"
-    - "syscon-devs-dev-prisoner_from_nomis_incidents_queue"
-    - "syscon-devs-dev-prisoner_from_nomis_incidents_dl_queue"
-    - "syscon-devs-dev-prisoner_from_nomis_csip_queue"
-    - "syscon-devs-dev-prisoner_from_nomis_csip_dl_queue"
-    - "syscon-devs-dev-prisoner_from_nomis_locations_queue"
-    - "syscon-devs-dev-prisoner_from_nomis_locations_dl_queue"
-    - "syscon-devs-dev-prisoner_from_nomis_court_sentencing_queue"
-    - "syscon-devs-dev-prisoner_from_nomis_court_sentencing_dl_queue"
-    - "syscon-devs-dev-migration_sentencing_queue"
-    - "syscon-devs-dev-migration_sentencing_dlq"
-    - "syscon-devs-dev-migration_visits_queue"
-    - "syscon-devs-dev-migration_visits_dlq"
-    - "syscon-devs-dev-migration_appointments_queue"
-    - "syscon-devs-dev-migration_appointments_dlq"
-    - "syscon-devs-dev-migration_activities_queue"
-    - "syscon-devs-dev-migration_activities_dlq"
-    - "syscon-devs-dev-migration_allocations_queue"
-    - "syscon-devs-dev-migration_allocations_dlq"
-    - "syscon-devs-dev-migration_adjudications_queue"
-    - "syscon-devs-dev-migration_adjudications_dlq"
-    - "syscon-devs-dev-migration_incidents_queue"
-    - "syscon-devs-dev-migration_incidents_dlq"
-    - "syscon-devs-dev-migration_csip_queue"
-    - "syscon-devs-dev-migration_csip_dlq"
-    - "syscon-devs-dev-migration_locations_queue"
-    - "syscon-devs-dev-migration_locations_dlq"
-    - "syscon-devs-dev-migration_alerts_queue"
-    - "syscon-devs-dev-migration_alerts_dlq"
+  sqsNumberAlertQueueMappings:
+    visits:
+      - "syscon-devs-dev-prisoner_from_nomis_visits_queue"
+      - "syscon-devs-dev-prisoner_from_nomis_visits_dl_queue"
+      - "syscon-devs-dev-migration_visits_queue"
+      - "syscon-devs-dev-migration_visits_dlq"
+    sentencing:
+      - "syscon-devs-dev-prisoner_from_nomis_sentencing_queue"
+      - "syscon-devs-dev-prisoner_from_nomis_sentencing_dl_queue"
+      - "syscon-devs-dev-prisoner_from_nomis_court_sentencing_queue"
+      - "syscon-devs-dev-prisoner_from_nomis_court_sentencing_dl_queue"
+      - "syscon-devs-dev-migration_sentencing_queue"
+      - "syscon-devs-dev-migration_sentencing_dlq"
+    incidents:
+      - "syscon-devs-dev-prisoner_from_nomis_incidents_queue"
+      - "syscon-devs-dev-prisoner_from_nomis_incidents_dl_queue"
+      - "syscon-devs-dev-migration_incidents_queue"
+      - "syscon-devs-dev-migration_incidents_dlq"
+    csip:
+      - "syscon-devs-dev-prisoner_from_nomis_csip_queue"
+      - "syscon-devs-dev-prisoner_from_nomis_csip_dl_queue"
+      - "syscon-devs-dev-migration_csip_queue"
+      - "syscon-devs-dev-migration_csip_dlq"
+    locations:
+      - "syscon-devs-dev-prisoner_from_nomis_locations_queue"
+      - "syscon-devs-dev-prisoner_from_nomis_locations_dl_queue"
+      - "syscon-devs-dev-migration_locations_queue"
+      - "syscon-devs-dev-migration_locations_dlq"
+    alerts:
+      - "syscon-devs-dev-prisoner_from_nomis_alerts_queue"
+      - "syscon-devs-dev-prisoner_from_nomis_alerts_dl_queue"
+      - "syscon-devs-dev-migration_alerts_queue"
+      - "syscon-devs-dev-migration_alerts_dlq"
+    appointments:
+      - "syscon-devs-dev-migration_appointments_queue"
+      - "syscon-devs-dev-migration_appointments_dlq"
+    activities:
+      - "syscon-devs-dev-migration_activities_queue"
+      - "syscon-devs-dev-migration_activities_dlq"
+    allocations:
+      - "syscon-devs-dev-migration_allocations_queue"
+      - "syscon-devs-dev-migration_allocations_dlq"
+    adjudications:
+      - "syscon-devs-dev-migration_adjudications_queue"
+      - "syscon-devs-dev-migration_adjudications_dlq"
 
 cron:
   retry_dlqs_schedule: "*/10 7-20 * * 1-5"
