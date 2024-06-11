@@ -77,8 +77,9 @@ class SentencingAdjustmentsMigrationService(
             nomisApiService.getKeyDateAdjustment(nomisAdjustmentId)
           }
 
+        // this service needs deleting now migration is done
         val migratedSentenceAdjustment =
-          sentencingService.migrateSentencingAdjustment(nomisAdjustment.toSentencingAdjustment())
+          sentencingService.migrateSentencingAdjustment(nomisAdjustment!!.toSentencingAdjustment())
             .also {
               createAdjustmentMapping(
                 nomisAdjustmentId = nomisAdjustmentId,

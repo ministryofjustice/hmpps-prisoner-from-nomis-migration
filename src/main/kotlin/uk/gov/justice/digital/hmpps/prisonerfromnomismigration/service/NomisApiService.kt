@@ -17,6 +17,7 @@ import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.EndActivitiesRequest
@@ -109,21 +110,19 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
 
   suspend fun getSentenceAdjustment(
     nomisSentenceAdjustmentId: Long,
-  ): NomisAdjustment =
+  ): NomisAdjustment? =
     webClient.get()
       .uri("/sentence-adjustments/{nomisSentenceAdjustmentId}", nomisSentenceAdjustmentId)
       .retrieve()
-      .bodyToMono(NomisAdjustment::class.java)
-      .awaitSingle()
+      .awaitBodyOrNullWhenNotFound()
 
   suspend fun getKeyDateAdjustment(
     nomisKeyDateAdjustmentId: Long,
-  ): NomisAdjustment =
+  ): NomisAdjustment? =
     webClient.get()
       .uri("/key-date-adjustments/{nomisKeyDateAdjustmentId}", nomisKeyDateAdjustmentId)
       .retrieve()
-      .bodyToMono(NomisAdjustment::class.java)
-      .awaitSingle()
+      .awaitBodyOrNullWhenNotFound()
 
   suspend fun getAppointment(nomisEventId: Long): AppointmentResponse =
     webClient.get()

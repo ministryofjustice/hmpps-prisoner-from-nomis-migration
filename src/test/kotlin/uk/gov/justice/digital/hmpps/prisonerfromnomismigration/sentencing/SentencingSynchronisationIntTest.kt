@@ -547,7 +547,55 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `the adjustment is not created or updated in the sentencing service but skipped`() {
         await untilAsserted {
           verify(telemetryClient).trackEvent(
-            Mockito.eq("sentence-adjustment-hidden-synchronisation-skipped"),
+            Mockito.eq("sentence-adjustment-hidden-or-deleted-synchronisation-skipped"),
+            check {
+              assertThat(it["adjustmentCategory"]).isEqualTo("SENTENCE")
+              assertThat(it["nomisAdjustmentId"]).isEqualTo(NOMIS_ADJUSTMENT_ID.toString())
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_NUMBER)
+              assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+              assertThat(it["sentenceSequence"]).isEqualTo(SENTENCE_SEQUENCE.toString())
+              assertThat(it["adjustmentId"]).isNull()
+            },
+            isNull(),
+          )
+        }
+
+        sentencingApi.verify(exactly(0), anyRequestedFor(anyUrl()))
+      }
+    }
+
+    @Nested
+    @DisplayName("When adjustment is has already been deleted")
+    inner class WhenSentenceAdjustmentInNOMISDeleted {
+      @BeforeEach
+      fun setUp() {
+        nomisApi.stubGetSentenceAdjustment(adjustmentId = NOMIS_ADJUSTMENT_ID, status = NOT_FOUND)
+
+        awsSqsSentencingOffenderEventsClient.sendMessage(
+          sentencingQueueOffenderEventsUrl,
+          sentencingEvent(
+            eventType = "SENTENCE_ADJUSTMENT_UPSERTED",
+            auditModuleName = "OIDSENAD",
+            adjustmentId = NOMIS_ADJUSTMENT_ID,
+            bookingId = BOOKING_ID,
+            sentenceSeq = SENTENCE_SEQUENCE,
+            offenderIdDisplay = OFFENDER_NUMBER,
+          ),
+        )
+      }
+
+      @Test
+      fun `will retrieve details about the adjustment from NOMIS`() {
+        await untilAsserted {
+          nomisApi.verify(getRequestedFor(urlPathEqualTo("/sentence-adjustments/$NOMIS_ADJUSTMENT_ID")))
+        }
+      }
+
+      @Test
+      fun `the adjustment is not created or updated in the sentencing service but skipped`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            Mockito.eq("sentence-adjustment-hidden-or-deleted-synchronisation-skipped"),
             check {
               assertThat(it["adjustmentCategory"]).isEqualTo("SENTENCE")
               assertThat(it["nomisAdjustmentId"]).isEqualTo(NOMIS_ADJUSTMENT_ID.toString())
@@ -1293,6 +1341,52 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             isNull(),
           )
         }
+      }
+    }
+
+    @Nested
+    @DisplayName("When adjustment is has already been deleted")
+    inner class WheKeyDateAdjustmentInNOMISDeleted {
+      @BeforeEach
+      fun setUp() {
+        nomisApi.stubGetKeyDateAdjustment(adjustmentId = NOMIS_ADJUSTMENT_ID, status = NOT_FOUND)
+
+        awsSqsSentencingOffenderEventsClient.sendMessage(
+          sentencingQueueOffenderEventsUrl,
+          sentencingEvent(
+            eventType = "KEY_DATE_ADJUSTMENT_UPSERTED",
+            auditModuleName = "OIDSENAD",
+            adjustmentId = NOMIS_ADJUSTMENT_ID,
+            bookingId = BOOKING_ID,
+            offenderIdDisplay = OFFENDER_NUMBER,
+          ),
+        )
+      }
+
+      @Test
+      fun `will retrieve details about the adjustment from NOMIS`() {
+        await untilAsserted {
+          nomisApi.verify(getRequestedFor(urlPathEqualTo("/key-date-adjustments/$NOMIS_ADJUSTMENT_ID")))
+        }
+      }
+
+      @Test
+      fun `the adjustment is not created or updated in the sentencing service but skipped`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            Mockito.eq("key-date-adjustment-deleted-synchronisation-skipped"),
+            check {
+              assertThat(it["adjustmentCategory"]).isEqualTo("KEY-DATE")
+              assertThat(it["nomisAdjustmentId"]).isEqualTo(NOMIS_ADJUSTMENT_ID.toString())
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_NUMBER)
+              assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+              assertThat(it["adjustmentId"]).isNull()
+            },
+            isNull(),
+          )
+        }
+
+        sentencingApi.verify(exactly(0), anyRequestedFor(anyUrl()))
       }
     }
   }
