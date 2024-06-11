@@ -39,7 +39,7 @@ class SentencingAdjustmentsSynchronisationService(
       )
       return
     }
-    nomisApiService.getSentenceAdjustment(event.adjustmentId).takeUnless { it.hiddenFromUsers }
+    nomisApiService.getSentenceAdjustment(event.adjustmentId)?.takeUnless { it.hiddenFromUsers }
       ?.also { nomisAdjustment ->
         sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMapping(
           nomisAdjustmentId = event.adjustmentId,
@@ -62,7 +62,7 @@ class SentencingAdjustmentsSynchronisationService(
         }
       } ?: also {
       telemetryClient.trackEvent(
-        "sentence-adjustment-hidden-synchronisation-skipped",
+        "sentence-adjustment-hidden-or-deleted-synchronisation-skipped",
         event.toTelemetryProperties(),
       )
     }
@@ -95,25 +95,31 @@ class SentencingAdjustmentsSynchronisationService(
       )
       return
     }
-    val nomisAdjustment = nomisApiService.getKeyDateAdjustment(event.adjustmentId)
-    sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMapping(
-      nomisAdjustmentId = event.adjustmentId,
-      nomisAdjustmentCategory = "KEY-DATE",
-    )?.let {
-      sentencingService.updateSentencingAdjustment(it.adjustmentId, nomisAdjustment.toSentencingAdjustment())
-      telemetryClient.trackEvent(
-        "key-date-adjustment-updated-synchronisation-success",
-        event.toTelemetryProperties(it.adjustmentId),
-      )
-    } ?: let {
-      sentencingService.createSentencingAdjustment(nomisAdjustment.toSentencingAdjustment()).also { adjustment ->
-        tryToCreateKeyDateMapping(event, adjustment.adjustmentId.toString()).also { result ->
-          telemetryClient.trackEvent(
-            "key-date-adjustment-created-synchronisation-success",
-            event.toTelemetryProperties(adjustment.adjustmentId.toString(), result == MAPPING_FAILED),
-          )
+    nomisApiService.getKeyDateAdjustment(event.adjustmentId)?.also { nomisAdjustment ->
+      sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMapping(
+        nomisAdjustmentId = event.adjustmentId,
+        nomisAdjustmentCategory = "KEY-DATE",
+      )?.let {
+        sentencingService.updateSentencingAdjustment(it.adjustmentId, nomisAdjustment.toSentencingAdjustment())
+        telemetryClient.trackEvent(
+          "key-date-adjustment-updated-synchronisation-success",
+          event.toTelemetryProperties(it.adjustmentId),
+        )
+      } ?: let {
+        sentencingService.createSentencingAdjustment(nomisAdjustment.toSentencingAdjustment()).also { adjustment ->
+          tryToCreateKeyDateMapping(event, adjustment.adjustmentId.toString()).also { result ->
+            telemetryClient.trackEvent(
+              "key-date-adjustment-created-synchronisation-success",
+              event.toTelemetryProperties(adjustment.adjustmentId.toString(), result == MAPPING_FAILED),
+            )
+          }
         }
       }
+    } ?: also {
+      telemetryClient.trackEvent(
+        "key-date-adjustment-deleted-synchronisation-skipped",
+        event.toTelemetryProperties(),
+      )
     }
   }
 

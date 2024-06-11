@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.containing
@@ -14,7 +15,10 @@ import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
+import org.springframework.test.context.junit.jupiter.SpringExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.objectMapper
 import java.lang.Long.min
 
 class NomisApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
@@ -29,10 +33,12 @@ class NomisApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallbac
 
     @JvmField
     val nomisApi = NomisApiMockServer()
+    lateinit var objectMapper: ObjectMapper
   }
 
   override fun beforeAll(context: ExtensionContext) {
     nomisApi.start()
+    objectMapper = (SpringExtension.getApplicationContext(context).getBean("jacksonObjectMapper") as ObjectMapper)
   }
 
   override fun beforeEach(context: ExtensionContext) {
@@ -444,6 +450,23 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
     )
   }
+  fun stubGetSentenceAdjustment(
+    adjustmentId: Long,
+    status: HttpStatus,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    nomisApi.stubFor(
+      get(
+        urlPathEqualTo("/sentence-adjustments/$adjustmentId"),
+      )
+        .willReturn(
+          aResponse()
+            .withStatus(status.value())
+            .withHeader("Content-Type", "application/json")
+            .withBody(objectMapper.writeValueAsString(error)),
+        ),
+    )
+  }
 
   fun stubGetKeyDateAdjustment(
     adjustmentId: Long,
@@ -466,6 +489,23 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
                 offenderNo = offenderNo,
               ),
             ),
+        ),
+    )
+  }
+  fun stubGetKeyDateAdjustment(
+    adjustmentId: Long,
+    status: HttpStatus,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    nomisApi.stubFor(
+      get(
+        urlPathEqualTo("/key-date-adjustments/$adjustmentId"),
+      )
+        .willReturn(
+          aResponse()
+            .withStatus(status.value())
+            .withHeader("Content-Type", "application/json")
+            .withBody(objectMapper.writeValueAsString(error)),
         ),
     )
   }
