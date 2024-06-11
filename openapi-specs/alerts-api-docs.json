@@ -2212,11 +2212,27 @@
         },
         "description": "The request body for merging a new alert for a person"
       },
+      "RetainedAlert": {
+        "required": [
+          "alertUuid"
+        ],
+        "type": "object",
+        "properties": {
+          "alertUuid": {
+            "type": "string",
+            "description": "The unique identifier assigned to the alert",
+            "format": "uuid",
+            "example": "8cdadcf3-b003-4116-9956-c99bd8df6a00"
+          }
+        },
+        "description": "The request body for merging a new alert for a person"
+      },
       "MergeAlerts": {
         "required": [
           "newAlerts",
           "prisonNumberMergeFrom",
-          "prisonNumberMergeTo"
+          "prisonNumberMergeTo",
+          "retainedAlertUuids"
         ],
         "type": "object",
         "properties": {
@@ -2239,6 +2255,13 @@
             "description": "The alerts to add to the prison number being merged into",
             "items": {
               "$ref": "#/components/schemas/MergeAlert"
+            }
+          },
+          "retainedAlertUuids": {
+            "type": "array",
+            "description": "Temp added by Andy Marke",
+            "items": {
+              "$ref": "#/components/schemas/RetainedAlert"
             }
           }
         },

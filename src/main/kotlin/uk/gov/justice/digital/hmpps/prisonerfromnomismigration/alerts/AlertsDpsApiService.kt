@@ -12,7 +12,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.Merg
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MergedAlerts
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MigrateAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MigratedAlert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.RetainedAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.UpdateAlert
+import java.util.*
 
 @Service
 class AlertsDpsApiService(@Qualifier("alertsApiWebClient") private val webClient: WebClient) {
@@ -52,10 +54,21 @@ class AlertsDpsApiService(@Qualifier("alertsApiWebClient") private val webClient
     .retrieve()
     .awaitBody()
 
-  suspend fun mergePrisonerAlerts(offenderNo: String, removedOffenderNo: String, alerts: List<MergeAlert>): MergedAlerts = webClient
+  suspend fun mergePrisonerAlerts(offenderNo: String, removedOffenderNo: String, alerts: List<MergeAlert>, retainedAlertIds: List<String>): MergedAlerts = webClient
     .post()
     .uri("/merge-alerts")
-    .bodyValue(MergeAlerts(prisonNumberMergeTo = offenderNo, prisonNumberMergeFrom = removedOffenderNo, newAlerts = alerts))
+    .bodyValue(
+      MergeAlerts(
+        prisonNumberMergeTo = offenderNo,
+        prisonNumberMergeFrom = removedOffenderNo,
+        newAlerts = alerts,
+        retainedAlertUuids = retainedAlertIds.map {
+          RetainedAlert(
+            UUID.fromString(it),
+          )
+        },
+      ),
+    )
     .retrieve()
     .awaitBody()
 }
