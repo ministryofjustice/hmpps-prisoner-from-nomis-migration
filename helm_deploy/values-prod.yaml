@@ -69,7 +69,7 @@ generic-service:
 generic-prometheus-alerts:
   rdsAlertsDatabases:
     cloud-platform-a482726013f85564: "prisoner nomis migration"
-  sqsNumberAlertQueueNames:
+  sqsNumberAlertQueueMappings:
     visits:
       - "syscon-devs-prod-prisoner_from_nomis_visits_queue"
       - "syscon-devs-prod-prisoner_from_nomis_visits_dl_queue"
