@@ -32,12 +32,14 @@ import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.dpsCourtSentencingServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceAllMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceMappingDto
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.util.AbstractMap.SimpleEntry
 
 private const val NOMIS_SENTENCE_SEQUENCE = 1
 private const val DPS_SENTENCE_ID = "cc1"
+private const val DPS_CHARGE_ID = "f1c1e3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e"
+private const val DPS_CHARGE_2_ID = "d1c1e2e2-2e3e-3e3e-3e3e-3e3e3e3e3e3e"
 private const val EXISTING_DPS_SENTENCE_ID = "cc2"
 private const val OFFENDER_ID_DISPLAY = "A3864DZ"
 private const val NOMIS_BOOKING_ID = 12344321L
@@ -115,6 +117,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(status = NOT_FOUND)
+          mockTwoChargeMappingGets()
           dpsCourtSentencingServer.stubPostSentenceForCreate(sentenceId = DPS_SENTENCE_ID)
           courtSentencingMappingApiMockServer.stubPostSentenceMapping()
           awsSqsCourtSentencingOffenderEventsClient.sendMessage(
@@ -131,8 +134,10 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create a sentence in DPS`() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
-              postRequestedFor(urlPathEqualTo("/sentence")),
-              // TODO assert once DPS team have defined their dto
+              postRequestedFor(urlPathEqualTo("/sentence"))
+                .withRequestBody(matchingJsonPath("chargeUuids[0]", equalTo(DPS_CHARGE_ID)))
+                .withRequestBody(matchingJsonPath("chargeUuids[1]", equalTo(DPS_CHARGE_2_ID)))
+                .withRequestBody(matchingJsonPath("prisonerId", equalTo("A3864DZ"))),
             )
           }
         }
@@ -177,11 +182,10 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             nomisSentenceSequence = NOMIS_SENTENCE_SEQUENCE,
             nomisBookingId = NOMIS_BOOKING_ID,
             dpsSentenceId = DPS_SENTENCE_ID,
-            mapping = SentenceAllMappingDto(
+            mapping = SentenceMappingDto(
               nomisSentenceSequence = NOMIS_SENTENCE_SEQUENCE,
               nomisBookingId = NOMIS_BOOKING_ID,
               dpsSentenceId = DPS_SENTENCE_ID,
-              sentenceCharges = emptyList(),
             ),
           )
           awsSqsCourtSentencingOffenderEventsClient.sendMessage(
@@ -218,6 +222,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(status = NOT_FOUND)
+          mockTwoChargeMappingGets()
           dpsCourtSentencingServer.stubPostSentenceForCreate(sentenceId = DPS_SENTENCE_ID)
         }
 
@@ -253,7 +258,12 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 WireMock.exactly(2),
                 postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences"))
                   .withRequestBody(matchingJsonPath("dpsSentenceId", equalTo(DPS_SENTENCE_ID)))
-                  .withRequestBody(matchingJsonPath("nomisSentenceSequence", equalTo(NOMIS_SENTENCE_SEQUENCE.toString())))
+                  .withRequestBody(
+                    matchingJsonPath(
+                      "nomisSentenceSequence",
+                      equalTo(NOMIS_SENTENCE_SEQUENCE.toString()),
+                    ),
+                  )
                   .withRequestBody(matchingJsonPath("nomisBookingId", equalTo(NOMIS_BOOKING_ID.toString())))
                   .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
               )
@@ -352,6 +362,51 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           }
         }
       }
+
+      @Nested
+      @DisplayName("Sentence includes a charge that is not mapped. Possible causes: unmigrated data, events (extremely) out of order")
+      inner class ReferencesMissingChargeMapping {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(status = NOT_FOUND)
+          courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
+            nomisCourtChargeId = 101,
+            dpsCourtChargeId = DPS_CHARGE_ID,
+          )
+          // one of the two charges is not mapped
+          courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisIdNotFound(nomisCourtChargeId = 102)
+          courtSentencingMappingApiMockServer.stubPostSentenceMapping()
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            sentenceEvent(
+              eventType = "OFFENDER_SENTENCES-INSERTED",
+            ),
+          ).also {
+            waitForTelemetry()
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event to indicate a missing mapping`() {
+          await untilAsserted {
+            verify(telemetryClient, times(2)).trackEvent(
+              eq("charge-mapping-missing"),
+              check {
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+              },
+              isNull(),
+            )
+          }
+        }
+
+        @Test
+        fun `will retry charge mapping retrieval as part of sentence retry`() {
+          await untilAsserted {
+            courtSentencingMappingApiMockServer.verify(4, getRequestedFor(urlPathMatching("/mapping/court-sentencing/court-charges/nomis-court-charge-id/\\d+")))
+          }
+        }
+      }
     }
 
     @Nested
@@ -362,6 +417,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       internal fun `it will not retry after a 409 (duplicate sentence written to Sentencing API)`() {
         // in the case of multiple events received at the same time - mapping doesn't exist
         courtSentencingMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
+        mockTwoChargeMappingGets()
 
         courtSentencingNomisApiMockServer.stubGetSentence(
           bookingId = NOMIS_BOOKING_ID,
@@ -416,6 +472,17 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     }
   }
 
+  private fun mockTwoChargeMappingGets() {
+    courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
+      nomisCourtChargeId = 101,
+      dpsCourtChargeId = DPS_CHARGE_ID,
+    )
+    courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
+      nomisCourtChargeId = 102,
+      dpsCourtChargeId = DPS_CHARGE_2_ID,
+    )
+  }
+
   @Nested
   @DisplayName("OFFENDER_SENTENCES-DELETED")
   inner class SentenceDeleted {
@@ -465,10 +532,9 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             nomisBookingId = NOMIS_BOOKING_ID,
             nomisSentenceSequence = NOMIS_SENTENCE_SEQUENCE,
             dpsSentenceId = DPS_SENTENCE_ID,
-            mapping = SentenceAllMappingDto(
+            mapping = SentenceMappingDto(
               nomisSentenceSequence = NOMIS_SENTENCE_SEQUENCE,
               nomisBookingId = NOMIS_BOOKING_ID,
-              sentenceCharges = emptyList(),
               dpsSentenceId = DPS_SENTENCE_ID,
             ),
           )
@@ -531,10 +597,9 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             nomisBookingId = NOMIS_BOOKING_ID,
             nomisSentenceSequence = NOMIS_SENTENCE_SEQUENCE,
             dpsSentenceId = DPS_SENTENCE_ID,
-            mapping = SentenceAllMappingDto(
+            mapping = SentenceMappingDto(
               nomisSentenceSequence = NOMIS_SENTENCE_SEQUENCE,
               nomisBookingId = NOMIS_BOOKING_ID,
-              sentenceCharges = emptyList(),
               dpsSentenceId = DPS_SENTENCE_ID,
             ),
           )
@@ -707,6 +772,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             nomisBookingId = NOMIS_BOOKING_ID,
             dpsSentenceId = DPS_SENTENCE_ID,
           )
+          mockTwoChargeMappingGets()
 
           dpsCourtSentencingServer.stubPutSentenceForUpdate(sentenceId = DPS_SENTENCE_ID)
           awsSqsCourtSentencingOffenderEventsClient.sendMessage(

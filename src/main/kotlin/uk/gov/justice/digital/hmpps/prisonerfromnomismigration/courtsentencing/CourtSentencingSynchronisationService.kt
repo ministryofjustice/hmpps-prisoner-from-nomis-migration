@@ -15,7 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceAllMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderChargeResponse
@@ -101,6 +101,7 @@ class CourtSentencingSynchronisationService(
           telemetry + ("dpsCourtAppearanceId" to mapping.dpsCourtAppearanceId),
         )
       } ?: let {
+        // TODO needs to fail if mapping for court case not there yet  (see charge behaviour if appearance not created)
         val dpsCaseId =
           nomisCourtAppearance.caseId?.let { mappingApiService.getCourtCaseOrNullByNomisId(it)?.dpsCourtCaseId }
         telemetry.put("nomisCourtCaseId", nomisCourtAppearance.caseId?.toString() ?: "no nomis court case")
@@ -325,13 +326,11 @@ class CourtSentencingSynchronisationService(
     dpsSentenceResponse: CreateSentenceResponse,
     telemetry: Map<String, Any>,
   ): MappingResponse {
-    val mapping = SentenceAllMappingDto(
+    val mapping = SentenceMappingDto(
       dpsSentenceId = dpsSentenceResponse.sentenceUuid,
       nomisSentenceSequence = nomisSentence.sentenceSeq.toInt(),
       nomisBookingId = nomisSentence.bookingId,
-      mappingType = SentenceAllMappingDto.MappingType.NOMIS_CREATED,
-      // TODO charges
-      sentenceCharges = emptyList(),
+      mappingType = SentenceMappingDto.MappingType.NOMIS_CREATED,
     )
     try {
       mappingApiService.createSentenceMapping(
@@ -580,12 +579,17 @@ class CourtSentencingSynchronisationService(
     }
   }
 
-  private fun logFailureAndThrowError(telemetry: MutableMap<String, String>, eventName: String, errorMessage: String) {
+  private fun logFailureAndThrowError(
+    telemetry: MutableMap<String, String>,
+    eventName: String,
+    errorMessage: String,
+    overrideMigrationFlag: Boolean = true,
+  ) {
     telemetryClient.trackEvent(
       eventName,
       telemetry,
     )
-    if (hasMigratedAllData) {
+    if (overrideMigrationFlag || hasMigratedAllData) {
       // after migration has run this should not happen so make sure this message goes in DLQ
       throw IllegalStateException(errorMessage)
     }
@@ -610,7 +614,8 @@ class CourtSentencingSynchronisationService(
             telemetry,
           )
         } ?: let {
-        dpsApiService.createSentence(nomisSentence.toDpsSentence(event.offenderIdDisplay)).run {
+        // retrieve offence mappings (created as part of the court appearance flow)
+        dpsApiService.createSentence(nomisSentence.toDpsSentence(event.offenderIdDisplay, getDpsChargeMappings(nomisSentence))).run {
           tryToCreateSentenceMapping(
             nomisSentence = nomisSentence,
             dpsSentenceResponse = this,
@@ -638,6 +643,24 @@ class CourtSentencingSynchronisationService(
       mapOf("dpsCourtAppearanceId" to dpsCourtAppearanceId),
     )
     log.warn("Unable to delete mapping for court appearance $dpsCourtAppearanceId. Please delete manually", e)
+  }
+
+  private suspend fun getDpsChargeMappings(nomisSentence: SentenceResponse): List<String> {
+    return try {
+      nomisSentence.offenderCharges.map {
+        mappingApiService.getOffenderChargeByNomisId(it.id).dpsCourtChargeId
+      }
+    } catch (e: Exception) {
+      telemetryClient.trackEvent(
+        name = "charge-mapping-missing",
+        properties = mutableMapOf(
+          "nomisBookingId" to nomisSentence.bookingId.toString(),
+          "nomisSentenceSequence" to nomisSentence.sentenceSeq.toString(),
+        ),
+      )
+      log.error("Unable to find mapping for nomis offender charges in the context of sentence: bookingId= ${nomisSentence.bookingId} sentenceSequence= ${nomisSentence.sentenceSeq}}\nPossible causes: events out of order or offender charge has not been migrated")
+      throw e
+    }
   }
 
   private suspend fun tryToDeleteCourtChargeMapping(mapping: CourtChargeMappingDto) = runCatching {
@@ -741,7 +764,7 @@ class CourtSentencingSynchronisationService(
           nomisApiService.getOffenderSentence(bookingId = event.bookingId, sentenceSequence = event.sentenceSequence)
         dpsApiService.updateSentence(
           sentenceId = mapping.dpsSentenceId,
-          nomisSentence.toDpsSentence(offenderNo = event.offenderIdDisplay),
+          nomisSentence.toDpsSentence(offenderNo = event.offenderIdDisplay, getDpsChargeMappings(nomisSentence)),
         )
         telemetryClient.trackEvent(
           "sentence-synchronisation-updated-success",
@@ -762,7 +785,7 @@ class CourtSentencingSynchronisationService(
     }
   }
 
-  suspend fun retryCreateSentenceMapping(retryMessage: InternalMessage<SentenceAllMappingDto>) {
+  suspend fun retryCreateSentenceMapping(retryMessage: InternalMessage<SentenceMappingDto>) {
     mappingApiService.createSentenceMapping(
       retryMessage.body,
     ).also {

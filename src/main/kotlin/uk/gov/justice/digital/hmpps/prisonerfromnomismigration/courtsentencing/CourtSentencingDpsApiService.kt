@@ -61,13 +61,13 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .awaitBodilessEntity()
 
   // sensible to assume that this endpoint could also update the charge
-  suspend fun associateExistingCourtCharge(courtAppearanceId: String, charge: CreateCharge): CreateCourtAppearanceResponse =
+  suspend fun associateExistingCourtCharge(courtAppearanceId: String, charge: CreateCharge) =
     webClient
       .put()
       .uri("/court-appearance/{courtAppearanceId}/charge/{chargeId}", courtAppearanceId, charge.chargeUuid.toString())
       .bodyValue(charge)
       .retrieve()
-      .awaitBody()
+      .awaitBodilessEntity()
 
   // add a court charge and associate it with the given appearance (will create sync mapping)
   suspend fun addNewCourtCharge(courtAppearanceId: String, charge: CreateCharge): CreateNewChargeResponse =
@@ -95,12 +95,12 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .retrieve()
       .awaitBodilessEntity()
 
-  // TODO not currently implement in DPS
-  suspend fun createSentence(courtCase: CreateSentenceRequest): CreateSentenceResponse =
+  // TODO not currently implemented in DPS
+  suspend fun createSentence(sentence: CreateSentenceRequest): CreateSentenceResponse =
     webClient
       .post()
       .uri("/sentence")
-      .bodyValue(courtCase)
+      .bodyValue(sentence)
       .retrieve()
       .awaitBody()
 
@@ -122,7 +122,7 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
 
 data class CreateNewChargeResponse(
 
-  @field:JsonProperty("appearanceUuid")
+  @field:JsonProperty("chargeUuid")
   val chargeUuid: java.util.UUID,
 
 )
@@ -131,6 +131,9 @@ data class CreateSentenceRequest(
 
   @field:JsonProperty("prisonerId")
   val prisonerId: kotlin.String,
+
+  @field:JsonProperty("chargeUuids")
+  val chargeUuids: List<java.util.UUID>,
 
 )
 

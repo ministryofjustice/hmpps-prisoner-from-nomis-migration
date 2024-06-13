@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
+import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
@@ -16,7 +17,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceAllMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceMappingDto
 
 @Service
 class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) :
@@ -95,6 +96,14 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
+  suspend fun getOffenderChargeByNomisId(offenderChargeId: Long): CourtChargeMappingDto = webClient.get()
+    .uri(
+      "/mapping/court-sentencing/court-charges/nomis-court-charge-id/{offenderChargeId}",
+      offenderChargeId,
+    )
+    .retrieve()
+    .awaitBody()
+
   suspend fun deleteCourtChargeMappingByNomisId(nomisCourtChargeId: Long) = webClient.delete()
     .uri(
       "/court-charges/nomis-court-charge-id/{nomisCourtChargeId}",
@@ -103,7 +112,7 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
     .retrieve()
     .awaitBodilessEntity()
 
-  suspend fun getSentenceOrNullByNomisId(bookingId: Long, sentenceSequence: Int): SentenceAllMappingDto? =
+  suspend fun getSentenceOrNullByNomisId(bookingId: Long, sentenceSequence: Int): SentenceMappingDto? =
     webClient.get()
       .uri(
         "/mapping/court-sentencing/sentences/nomis-booking-id/{bookingId}/nomis-sentence-sequence/{sentenceSequence}",
@@ -114,8 +123,8 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
       .awaitBodyOrNullWhenNotFound()
 
   suspend fun createSentenceMapping(
-    mapping: SentenceAllMappingDto,
-  ): CreateMappingResult<SentenceAllMappingDto> {
+    mapping: SentenceMappingDto,
+  ): CreateMappingResult<SentenceMappingDto> {
     return webClient.post()
       .uri("/mapping/court-sentencing/sentences")
       .bodyValue(
@@ -123,18 +132,18 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
       )
       .retrieve()
       .bodyToMono(Unit::class.java)
-      .map { CreateMappingResult<SentenceAllMappingDto>() }
+      .map { CreateMappingResult<SentenceMappingDto>() }
       .onErrorResume(WebClientResponseException.Conflict::class.java) {
         Mono.just(
           CreateMappingResult(
             it.getResponseBodyAs(
               object :
-                ParameterizedTypeReference<DuplicateErrorResponse<SentenceAllMappingDto>>() {},
+                ParameterizedTypeReference<DuplicateErrorResponse<SentenceMappingDto>>() {},
             ),
           ),
         )
       }
-      .awaitFirstOrDefault(CreateMappingResult<SentenceAllMappingDto>())
+      .awaitFirstOrDefault(CreateMappingResult<SentenceMappingDto>())
   }
 
   suspend fun deleteSentenceMappingByDpsId(sentenceId: String) = webClient.delete()

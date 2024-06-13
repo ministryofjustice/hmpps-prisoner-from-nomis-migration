@@ -173,17 +173,13 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubPutCourtChargeForAddExistingChargeToAppearance(
     courtChargeId: String = UUID.randomUUID().toString(),
     courtAppearanceId: String = UUID.randomUUID().toString(),
-    response: CreateNewChargeResponse = CreateNewChargeResponse(
-      chargeUuid = UUID.fromString(courtChargeId),
-    ),
   ) {
     stubFor(
       put("/court-appearance/$courtAppearanceId/charge/$courtChargeId")
         .willReturn(
           aResponse()
             .withStatus(201)
-            .withHeader("Content-Type", "application/json")
-            .withBody(CourtSentencingDpsApiExtension.objectMapper.writeValueAsString(response)),
+            .withHeader("Content-Type", "application/json"),
         ),
     )
   }

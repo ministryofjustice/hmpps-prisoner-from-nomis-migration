@@ -152,6 +152,34 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         months = 3,
       ),
     ),
+    offenderCharges: List<OffenderChargeResponse> = listOf(
+      OffenderChargeResponse(
+        id = 101,
+        chargeStatus = CodeDescription("A", "Active"),
+        offenceDate = LocalDate.of(2024, 1, 1),
+        resultCode1 = CodeDescription("1002", "Imprisonment"),
+        offence = OffenceResponse(
+          offenceCode = "AN16094",
+          statuteCode = "AN16",
+          description = "Act as organiser of flying display without applying for / obtaining permission of CAA",
+        ),
+        resultCode1Indicator = "F",
+        mostSeriousFlag = false,
+      ),
+      OffenderChargeResponse(
+        id = 102,
+        chargeStatus = CodeDescription("A", "Active"),
+        offenceDate = LocalDate.of(2024, 4, 1),
+        resultCode1 = CodeDescription("1002", "Imprisonment"),
+        offence = OffenceResponse(
+          offenceCode = "AN10020",
+          statuteCode = "AN10",
+          description = "Act in a way likely to cause annoyance / nuisance / injury to others within a Controlled Area of AWE Burghfield",
+        ),
+        resultCode1Indicator = "F",
+        mostSeriousFlag = true,
+      ),
+    ),
     response: SentenceResponse = SentenceResponse(
       bookingId = bookingId,
       sentenceSeq = sentenceSequence.toLong(),
@@ -159,7 +187,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       courtOrder = courtOrder,
       category = CodeDescription(code = "2003", "2003 Act"),
       calculationType = "ADIMP_ORA",
-      offenderCharges = emptyList(),
+      offenderCharges = offenderCharges,
       startDate = startDate,
       status = "I",
       sentenceTerms = sentenceTerms,
