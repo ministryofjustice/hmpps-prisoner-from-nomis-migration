@@ -1,0 +1,301 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Prison Person API",
+    "description": "API for access to Prison Person Data (data about a person that is specific to their time in prison)",
+    "contact": {
+      "name": "HMPPS Digital Studio",
+      "email": "feedback@digital.justice.gov.uk"
+    },
+    "version": "2024-06-10.114.d8d2a54"
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Current url"
+    }
+  ],
+  "security": [
+    {
+      "bearer-jwt": [
+        "read",
+        "write"
+      ]
+    },
+    {
+      "hmpps-auth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Physical Attributes",
+      "description": "Provides ability to add or update physical attributes for a prisoner"
+    }
+  ],
+  "paths": {
+    "/prisoners/{prisonerNumber}/physical-attributes": {
+      "put": {
+        "tags": [
+          "Physical Attributes"
+        ],
+        "summary": "Updates the physical attributes (height and weight) for a prisoner",
+        "description": "Requires role ROLE_PRISON_PERSON_API__PHYSICAL_ATTRIBUTES__RW",
+        "operationId": "setPhysicalAttributes",
+        "parameters": [
+          {
+            "name": "prisonerNumber",
+            "in": "path",
+            "description": "The prisoner number",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The prisoner number",
+              "example": "A1234AA"
+            },
+            "example": "A1234AA"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePhysicalAttributesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Returns prisoner's physical attributes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhysicalAttributesDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires ROLE_PRISON_PERSON_API____RW",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhysicalAttributesDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisoners/{prisonerNumber}": {
+      "get": {
+        "tags": [
+          "Prison Person Data"
+        ],
+        "summary": "Returns Prison Person Data (data about a person that is specific to their time in prison)",
+        "description": "Requires role ROLE_PRISON_PERSON_API__PRISON_PERSON_DATA__RO",
+        "operationId": "getPrisonPersonData",
+        "parameters": [
+          {
+            "name": "prisonerNumber",
+            "in": "path",
+            "description": "The prisoner number",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The prisoner number",
+              "example": "A1234AA"
+            },
+            "example": "A1234AA"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns Prison Person Data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrisonPersonDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires ROLE_PRISON_PERSON_API__PRISON_PERSON_DATA__RO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "required": [
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "userMessage": {
+            "type": "string"
+          },
+          "developerMessage": {
+            "type": "string"
+          },
+          "moreInfo": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdatePhysicalAttributesRequest": {
+        "type": "object",
+        "properties": {
+          "height": {
+            "type": "integer",
+            "description": "Height (in centimetres)",
+            "format": "int32",
+            "example": 180
+          },
+          "weight": {
+            "type": "integer",
+            "description": "Weight (in kilograms)",
+            "format": "int32",
+            "example": 70
+          }
+        },
+        "description": "Request object for updating a prisoner's physical attributes"
+      },
+      "PhysicalAttributesDto": {
+        "type": "object",
+        "properties": {
+          "height": {
+            "type": "integer",
+            "description": "Height (in centimetres)",
+            "format": "int32",
+            "example": 180
+          },
+          "weight": {
+            "type": "integer",
+            "description": "Weight (in kilograms)",
+            "format": "int32",
+            "example": 70
+          }
+        },
+        "description": "Physical Attributes"
+      },
+      "PrisonPersonDto": {
+        "required": [
+          "physicalAttributes",
+          "prisonerNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "prisonerNumber": {
+            "type": "string",
+            "description": "Prisoner Number",
+            "example": "A1234AA"
+          },
+          "physicalAttributes": {
+            "$ref": "#/components/schemas/PhysicalAttributesDto"
+          }
+        },
+        "description": "Prison Person"
+      }
+    },
+    "securitySchemes": {
+      "bearer-jwt": {
+        "type": "http",
+        "name": "Authorization",
+        "in": "header",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "hmpps-auth": {
+        "type": "oauth2",
+        "flows": {
+          "clientCredentials": {
+            "tokenUrl": "https://sign-in-dev.hmpps.service.justice.gov.uk/auth/oauth/token",
+            "scopes": {
+              "read": "Allows read of data",
+              "write": "Allows write of data"
+            }
+          },
+          "authorizationCode": {
+            "authorizationUrl": "https://sign-in-dev.hmpps.service.justice.gov.uk/auth/oauth/authorize",
+            "tokenUrl": "https://sign-in-dev.hmpps.service.justice.gov.uk/auth/oauth/token",
+            "scopes": {
+              "read": "Allows read of data",
+              "write": "Allows write of data"
+            }
+          }
+        },
+        "openIdConnectUrl": "https://sign-in-dev.hmpps.service.justice.gov.uk/auth/.well-known/openid-configuration"
+      }
+    }
+  }
+}
