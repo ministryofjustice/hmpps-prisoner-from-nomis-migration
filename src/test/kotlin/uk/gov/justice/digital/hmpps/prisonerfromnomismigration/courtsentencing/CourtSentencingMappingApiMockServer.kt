@@ -16,7 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceAllMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import java.util.UUID
 
@@ -137,7 +137,10 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
     )
   }
 
-  fun stubGetCourtAppearanceByNomisId(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+  fun stubGetCourtAppearanceByNomisId(
+    status: HttpStatus,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/court-sentencing/court-appearances/nomis-court-appearance-id/\\d+")).willReturn(
         aResponse()
@@ -158,7 +161,10 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
     )
   }
 
-  fun stubPostCourtAppearanceMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+  fun stubPostCourtAppearanceMapping(
+    status: HttpStatus,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
     mappingApi.stubFor(
       post("/mapping/court-sentencing/court-appearances").willReturn(
         aResponse()
@@ -221,7 +227,10 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
     )
   }
 
-  fun stubDeleteCourtCaseMappingByDpsId(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+  fun stubDeleteCourtCaseMappingByDpsId(
+    status: HttpStatus,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
     mappingApi.stubFor(
       delete(urlPathMatching("/mapping/court-sentencing/court-cases/dps-court-case-id/.*")).willReturn(
         aResponse()
@@ -242,7 +251,10 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
     )
   }
 
-  fun stubDeleteCourtAppearanceMappingByDpsId(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+  fun stubDeleteCourtAppearanceMappingByDpsId(
+    status: HttpStatus,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
     mappingApi.stubFor(
       delete(urlPathMatching("/mapping/court-sentencing/court-appearances/dps-court-appearance-id/.*")).willReturn(
         aResponse()
@@ -268,6 +280,21 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
           .withBody(objectMapper.writeValueAsString(mapping)),
+      ),
+    )
+  }
+
+  fun stubGetCourtChargeByNomisIdNotFound(
+    nomisCourtChargeId: Long,
+  ) {
+    mappingApi.stubFor(
+      get(urlEqualTo("/mapping/court-sentencing/court-charges/nomis-court-charge-id/$nomisCourtChargeId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.NOT_FOUND.value())
+          .withBody(
+            objectMapper.writeValueAsString(ErrorResponse(HttpStatus.NOT_FOUND.value())),
+          ),
       ),
     )
   }
@@ -360,13 +387,11 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
     nomisSentenceSequence: Int = 1,
     nomisBookingId: Long = 12345,
     dpsSentenceId: String = UUID.randomUUID().toString(),
-    sentenceCharges: List<CourtChargeMappingDto> = emptyList(),
-    mapping: SentenceAllMappingDto = SentenceAllMappingDto(
+    mapping: SentenceMappingDto = SentenceMappingDto(
       nomisSentenceSequence = nomisSentenceSequence,
       nomisBookingId = nomisBookingId,
       dpsSentenceId = dpsSentenceId,
-      sentenceCharges = sentenceCharges,
-      mappingType = SentenceAllMappingDto.MappingType.MIGRATED,
+      mappingType = SentenceMappingDto.MappingType.MIGRATED,
     ),
   ) {
     mappingApi.stubFor(
@@ -415,7 +440,6 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
     mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/court-sentencing/sentences")
   }
 
-  // TODO add charges
   fun stubSentenceMappingCreateConflict(
     existingDpsSentenceId: String = "10",
     duplicateDpsSentenceId: String = "11",
@@ -436,7 +460,6 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
                   "dpsSentenceId": "$existingDpsSentenceId",
                   "nomisSentenceSequence": $nomisSentenceSequence,
                   "nomisBookingId": $nomisBookingId,
-                  "sentenceCharges": [],
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",
                   "mappingType": "MIGRATED"
@@ -445,7 +468,6 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
                   "dpsSentenceId": "$duplicateDpsSentenceId",
                   "nomisSentenceSequence": $nomisSentenceSequence,
                   "nomisBookingId": $nomisBookingId,
-                  "sentenceCharges": [],
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",
                   "mappingType": "MIGRATED"
@@ -467,7 +489,10 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
     )
   }
 
-  fun stubDeleteSentenceMappingByDpsId(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+  fun stubDeleteSentenceMappingByDpsId(
+    status: HttpStatus,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
     mappingApi.stubFor(
       delete(urlPathMatching("/mapping/court-sentencing/sentences/dps-sentence-id/.*")).willReturn(
         aResponse()

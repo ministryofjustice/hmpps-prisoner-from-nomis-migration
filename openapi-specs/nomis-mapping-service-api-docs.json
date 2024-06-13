@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-05-31.4376.dd747ee"
+    "version": "2024-06-11.4430.8a05e27"
   },
   "servers": [
     {
@@ -1339,7 +1339,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SentenceAllMappingDto"
+                "$ref": "#/components/schemas/SentenceMappingDto"
               }
             }
           },
@@ -4307,7 +4307,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SentenceAllMappingDto"
+                  "$ref": "#/components/schemas/SentenceMappingDto"
                 }
               }
             }
@@ -4422,7 +4422,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SentenceAllMappingDto"
+                  "$ref": "#/components/schemas/SentenceMappingDto"
                 }
               }
             }
@@ -5961,6 +5961,48 @@
         }
       }
     },
+    "/mapping/schedules/max-nomis-schedule-id/{maxCourseScheduleId}": {
+      "delete": {
+        "tags": [
+          "activity-mapping-resource"
+        ],
+        "summary": "Delete all mappings with a nomis schedule id greater than the given value",
+        "description": "Used to delete mappings records in preprod that have been copied from prod but don't have any NOMIS data.",
+        "operationId": "deleteCourseSchedulesAfterId",
+        "parameters": [
+          {
+            "name": "maxCourseScheduleId",
+            "in": "path",
+            "description": "Max NOMIS course schedule ID to retain",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Max NOMIS course schedule ID to retain",
+              "example": 12345
+            },
+            "example": 12345
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
     "/mapping/locations/nomis/{locationId}": {
       "delete": {
         "tags": [
@@ -7379,12 +7421,11 @@
         },
         "description": "CSIP mapping"
       },
-      "SentenceAllMappingDto": {
+      "SentenceMappingDto": {
         "required": [
           "dpsSentenceId",
           "nomisBookingId",
-          "nomisSentenceSequence",
-          "sentenceCharges"
+          "nomisSentenceSequence"
         ],
         "type": "object",
         "properties": {
@@ -7404,13 +7445,6 @@
             "type": "string",
             "description": "DPS sentence id",
             "example": "123456"
-          },
-          "sentenceCharges": {
-            "type": "array",
-            "description": "Offender Charges related to a sentence",
-            "items": {
-              "$ref": "#/components/schemas/CourtChargeMappingDto"
-            }
           },
           "label": {
             "maxLength": 20,
@@ -7435,7 +7469,7 @@
             "example": "2021-07-05T10:35:17"
           }
         },
-        "description": "Sentence mapping including child entity mapping"
+        "description": "Sentence mapping"
       },
       "SentenceMapping": {
         "required": [
@@ -8236,15 +8270,15 @@
             "type": "integer",
             "format": "int32"
           },
-          "unpaged": {
-            "type": "boolean"
-          },
           "paged": {
             "type": "boolean"
           },
           "pageNumber": {
             "type": "integer",
             "format": "int32"
+          },
+          "unpaged": {
+            "type": "boolean"
           }
         }
       },

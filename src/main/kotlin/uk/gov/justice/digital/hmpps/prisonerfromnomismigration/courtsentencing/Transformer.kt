@@ -37,6 +37,7 @@ fun OffenderChargeResponse.toDpsCharge(chargeId: String? = null) = CreateCharge(
   chargeUuid = chargeId?.let { UUID.fromString(chargeId) },
 )
 
-fun SentenceResponse.toDpsSentence(offenderNo: String) = CreateSentenceRequest(
+fun SentenceResponse.toDpsSentence(offenderNo: String, sentenceChargeIds: List<String>) = CreateSentenceRequest(
   prisonerId = offenderNo,
+  chargeUuids = sentenceChargeIds.map { UUID.fromString(it) },
 )
