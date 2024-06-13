@@ -61,13 +61,13 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .awaitBodilessEntity()
 
   // sensible to assume that this endpoint could also update the charge
-  suspend fun associateExistingCourtCharge(courtAppearanceId: String, charge: CreateCharge): CreateCourtAppearanceResponse =
+  suspend fun associateExistingCourtCharge(courtAppearanceId: String, charge: CreateCharge) =
     webClient
       .put()
       .uri("/court-appearance/{courtAppearanceId}/charge/{chargeId}", courtAppearanceId, charge.chargeUuid.toString())
       .bodyValue(charge)
       .retrieve()
-      .awaitBody()
+      .awaitBodilessEntity()
 
   // add a court charge and associate it with the given appearance (will create sync mapping)
   suspend fun addNewCourtCharge(courtAppearanceId: String, charge: CreateCharge): CreateNewChargeResponse =
