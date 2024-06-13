@@ -115,6 +115,9 @@ generic-prometheus-alerts:
     adjudications:
       - "syscon-devs-preprod-migration_adjudications_queue"
       - "syscon-devs-preprod-migration_adjudications_dlq"
+    prisonerprofile:
+      - "syscon-devs-preprod-prisoner_from_nomis_prisonerprofile_queue"
+      - "syscon-devs-preprod-prisoner_from_nomis_prisonerprofile_dl_queue"
 
 cron:
   retry_dlqs_schedule: "*/10 7-20 * * 1-5"

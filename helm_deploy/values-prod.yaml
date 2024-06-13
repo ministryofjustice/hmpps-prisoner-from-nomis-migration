@@ -112,3 +112,7 @@ generic-prometheus-alerts:
     adjudications:
       - "syscon-devs-prod-migration_adjudications_queue"
       - "syscon-devs-prod-migration_adjudications_dlq"
+    prisonerprofile:
+        - "syscon-devs-prod-prisoner_from_nomis_prisonerprofile_queue"
+        - "syscon-devs-prod-prisoner_from_nomis_prisonerprofile_dl_queue"
+
