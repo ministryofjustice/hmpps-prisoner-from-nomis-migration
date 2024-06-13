@@ -80,8 +80,7 @@ class CSIPPrisonOffenderEventListener(
 
 // Depending on the type of update/delete there will be additional params - but we don't care
 data class CSIPOffenderEvent(
-  // We don't know what this is called yet
-  val nomisCSIPId: Long,
+  val csipReportId: Long,
   val auditModuleName: String?,
 )
 

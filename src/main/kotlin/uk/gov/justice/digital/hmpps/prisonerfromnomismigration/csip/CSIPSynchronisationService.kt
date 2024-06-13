@@ -36,9 +36,9 @@ class CSIPSynchronisationService(
       return
     }
 
-    val nomisCSIP = nomisApiService.getCSIP(event.nomisCSIPId)
+    val nomisCSIP = nomisApiService.getCSIP(event.csipReportId)
     mappingApiService.findByNomisId(
-      nomisCSIPId = event.nomisCSIPId,
+      nomisCSIPId = event.csipReportId,
     )?.let {
       telemetryClient.trackEvent(
         "csip-synchronisation-created-ignored",
@@ -74,7 +74,7 @@ class CSIPSynchronisationService(
     }
 
     mappingApiService.findByNomisId(
-      nomisCSIPId = event.nomisCSIPId,
+      nomisCSIPId = event.csipReportId,
     )?.let {
       log.debug("Found csip mapping: {}", it)
       csipService.deleteCSIP(it.dpsCSIPId)
@@ -96,7 +96,7 @@ class CSIPSynchronisationService(
     dpsCSIPId: String,
   ): MappingResponse {
     val mapping = CSIPMappingDto(
-      nomisCSIPId = event.nomisCSIPId,
+      nomisCSIPId = event.csipReportId,
       dpsCSIPId = dpsCSIPId,
       mappingType = CSIPMappingDto.MappingType.NOMIS_CREATED,
     )
@@ -122,7 +122,7 @@ class CSIPSynchronisationService(
       return MappingResponse.MAPPING_CREATED
     } catch (e: Exception) {
       log.error(
-        "Failed to create mapping for dpsCSIPId id $dpsCSIPId, nomisCSIPId ${event.nomisCSIPId}",
+        "Failed to create mapping for dpsCSIPId id $dpsCSIPId, nomisCSIPId ${event.csipReportId}",
         e,
       )
       queueService.sendMessage(
@@ -164,7 +164,7 @@ private fun CSIPOffenderEvent.toTelemetryProperties(
   dpsCSIPId: String? = null,
   mappingFailed: Boolean? = null,
 ) = mapOf(
-  "nomisCSIPId" to "$nomisCSIPId",
+  "nomisCSIPId" to "$csipReportId",
 ) + (dpsCSIPId?.let { mapOf("dpsCSIPId" to it) } ?: emptyMap()) + (
   mappingFailed?.takeIf { it }
     ?.let { mapOf("mapping" to "initial-failure") } ?: emptyMap()
