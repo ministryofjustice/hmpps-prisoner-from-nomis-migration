@@ -31,6 +31,103 @@ import java.time.LocalDate
 class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
   companion object {
     const val CSIP_ID_URL = "/csip/ids"
+
+    fun nomisCSIPReport(nomisCSIPId: Long = 1234) =
+      CSIPResponse(
+        id = nomisCSIPId,
+        offender = Offender("A1234BC", firstName = "Fred", lastName = "Smith"),
+        bookingId = 1214478L,
+        type = CodeDescription(code = "INT", description = "Intimidation"),
+        location = CodeDescription(code = "LIB", description = "Library"),
+        areaOfWork = CodeDescription(code = "EDU", description = "Education"),
+        reportedDate = LocalDate.parse("2024-04-04"),
+        reportedBy = "JIM_ADM",
+        proActiveReferral = true,
+        staffAssaulted = true,
+        staffAssaultedName = "Fred Jones",
+        reportDetails = ReportDetails(
+          factors = listOf(
+            FactorResponse(
+              id = 43,
+              type = CodeDescription(code = "BUL", description = "Bullying"),
+              comment = "Offender causes trouble",
+              createDateTime = "2024-04-01T10:00:00",
+              createdBy = "JSMITH",
+            ),
+          ),
+          saferCustodyTeamInformed = false,
+          referralComplete = true,
+          referralCompletedBy = "JIM_ADM",
+          referralCompletedDate = LocalDate.parse("2024-04-04"),
+          involvement = CodeDescription(code = "PER", description = "Perpetrator"),
+          concern = "There was a worry about the offender",
+          knownReasons = "known reasons details go in here",
+          otherInformation = "other information goes in here",
+        ),
+        saferCustodyScreening = SaferCustodyScreening(
+          outcome = CodeDescription(
+            code = "CUR",
+            description = "Progress to CSIP",
+          ),
+          recordedBy = "FRED_ADM",
+          recordedDate = LocalDate.parse("2024-04-08"),
+          reasonForDecision = "There is a reason for the decision - it goes here",
+        ),
+        investigation = InvestigationDetails(),
+        decision = Decision(
+          actions = Actions(
+            openCSIPAlert = false,
+            nonAssociationsUpdated = true,
+            observationBook = true,
+            unitOrCellMove = false,
+            csraOrRsraReview = false,
+            serviceReferral = true,
+            simReferral = false,
+          ),
+          decisionOutcome = CodeDescription(code = "CUR", description = "Progress to CSIP"),
+          recordedBy = "FRED_ADM",
+          recordedDate = LocalDate.parse("2024-04-08"),
+        ),
+        plans = listOf(
+          Plan(
+            id = 65,
+            identifiedNeed = "they need help",
+            intervention = "dd",
+            createdDate = LocalDate.parse("2024-04-16"),
+            targetDate = LocalDate.parse("2024-08-20"),
+            closedDate = LocalDate.parse("2024-04-17"),
+            progression = "there was some improvement",
+            referredBy = "Jason",
+            createDateTime = "2024-04-01T10:00:00",
+            createdBy = "JSMITH",
+          ),
+        ),
+        reviews = listOf(
+          Review(
+            id = 65,
+            reviewSequence = 1,
+            attendees = listOf(),
+            remainOnCSIP = true,
+            csipUpdated = false,
+            caseNote = false,
+            closeCSIP = true,
+            peopleInformed = false,
+            closeDate = LocalDate.parse("2024-04-16"),
+            createDateTime = "2024-04-01T10:00:00",
+            createdBy = "JSMITH",
+
+          ),
+        ),
+        documents = listOf(),
+        createDateTime = "2024-04-01T10:00:00",
+        createdBy = "JSMITH",
+        originalAgencyId = "MDI",
+        logNumber = "ASI-001",
+        incidentDateTime = "2024-06-12T10:00:00",
+        caseManager = "Jim Smith",
+        planReason = "helper",
+        firstCaseReviewDate = LocalDate.parse("2024-04-15"),
+      )
   }
   fun stubHealthPing(status: Int) {
     nomisApi.stubFor(
@@ -77,7 +174,7 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
           .willReturn(
             aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
               .withBody(
-                objectMapper.writeValueAsString(aNomisCSIPResponse(it.toLong())),
+                objectMapper.writeValueAsString(nomisCSIPReport(it.toLong())),
               ),
           ),
       )
@@ -90,7 +187,7 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
             .withBody(
-              objectMapper.writeValueAsString(aNomisCSIPResponse(nomisCSIPId)),
+              objectMapper.writeValueAsString(nomisCSIPReport(nomisCSIPId)),
             ),
         ),
     )
@@ -124,102 +221,3 @@ fun csipIdsPagedResponse(
   val content = ids.map { """{ "id": $it }""" }.joinToString { it }
   return pageContent(content, pageSize, pageNumber, totalElements, ids.size)
 }
-
-internal fun aNomisCSIPResponse(
-  nomisCSIPId: Long = 1234,
-) =
-  CSIPResponse(
-    id = nomisCSIPId,
-    offender = Offender("A1234BC", firstName = "Fred", lastName = "Smith"),
-    bookingId = 1214478L,
-    type = CodeDescription(code = "INT", description = "Intimidation"),
-    location = CodeDescription(code = "LIB", description = "Library"),
-    areaOfWork = CodeDescription(code = "EDU", description = "Education"),
-    reportedDate = LocalDate.parse("2024-04-04"),
-    reportedBy = "JIM_ADM",
-    proActiveReferral = true,
-    staffAssaulted = true,
-    staffAssaultedName = "somebody was hurt",
-    reportDetails = ReportDetails(
-      factors = listOf(
-        FactorResponse(
-          id = 43,
-          type = CodeDescription(code = "BUL", description = "Bullying"),
-          comment = "Offender causes trouble",
-          createDateTime = "2024-04-01T10:00:00",
-          createdBy = "JSMITH",
-        ),
-      ),
-      saferCustodyTeamInformed = false,
-      referralComplete = true,
-      referralCompletedBy = "JIM_ADM",
-      referralCompletedDate = LocalDate.parse("2024-04-04"),
-      involvement = CodeDescription(code = "PER", description = "Perpetrator"),
-      concern = "There was a worry about the offender",
-      knownReasons = "known reasons details go in here",
-      otherInformation = "other information goes in here",
-    ),
-    saferCustodyScreening = SaferCustodyScreening(
-      outcome = CodeDescription(
-        code = "CUR",
-        description = "Progress to CSIP",
-      ),
-      recordedBy = "FRED_ADM",
-      recordedDate = LocalDate.parse("2024-04-08"),
-      reasonForDecision = "There is a reason for the decision - it goes here",
-    ),
-    investigation = InvestigationDetails(),
-    decision = Decision(
-      actions = Actions(
-        openCSIPAlert = false,
-        nonAssociationsUpdated = true,
-        observationBook = true,
-        unitOrCellMove = false,
-        csraOrRsraReview = false,
-        serviceReferral = true,
-        simReferral = false,
-      ),
-      decisionOutcome = CodeDescription(code = "CUR", description = "Progress to CSIP"),
-      recordedBy = "FRED_ADM",
-      recordedDate = LocalDate.parse("2024-04-08"),
-    ),
-    plans = listOf(
-      Plan(
-        id = 65,
-        identifiedNeed = "they need help",
-        intervention = "dd",
-        createdDate = LocalDate.parse("2024-04-16"),
-        targetDate = LocalDate.parse("2024-08-20"),
-        closedDate = LocalDate.parse("2024-04-17"),
-        progression = "there was some improvement",
-        referredBy = "Jason",
-        createDateTime = "2024-04-01T10:00:00",
-        createdBy = "JSMITH",
-      ),
-    ),
-    reviews = listOf(
-      Review(
-        id = 65,
-        reviewSequence = 1,
-        attendees = listOf(),
-        remainOnCSIP = true,
-        csipUpdated = false,
-        caseNote = false,
-        closeCSIP = true,
-        peopleInformed = false,
-        closeDate = LocalDate.parse("2024-04-16"),
-        createDateTime = "2024-04-01T10:00:00",
-        createdBy = "JSMITH",
-
-      ),
-    ),
-    documents = listOf(),
-    createDateTime = "2024-04-01T10:00:00",
-    createdBy = "JSMITH",
-    originalAgencyId = "MDI",
-    logNumber = "LEI 2",
-    incidentDateTime = "2024-04-01T10:00:00",
-    caseManager = "Jim Smith",
-    planReason = "helper",
-    firstCaseReviewDate = LocalDate.parse("2024-04-15"),
-  )

@@ -116,7 +116,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will create the csip in the csip service`() {
           await untilAsserted {
-            csipApi.verify(postRequestedFor(urlPathEqualTo("/csip")))
+            csipApi.verify(postRequestedFor(urlPathEqualTo("/prisoners/A1234BC/csip-records")))
           }
         }
 
@@ -154,7 +154,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
 
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
-            csipEvent(eventType = "CSIP_REPORTS-INSERTED"),
+            csipEvent(),
           )
           awsSqsCSIPOffenderEventDlqClient.waitForMessageCountOnQueue(csipQueueOffenderEventsDlqUrl, 1)
         }
@@ -306,7 +306,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             csipApi.verify(
               1,
-              WireMock.deleteRequestedFor(urlPathEqualTo("/csip/$dpsCSIPId")),
+              WireMock.deleteRequestedFor(urlPathEqualTo("/csip-records/$dpsCSIPId")),
             )
           }
         }
@@ -357,7 +357,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             csipApi.verify(
               1,
-              WireMock.deleteRequestedFor(urlPathEqualTo("/csip/$dpsCSIPId")),
+              WireMock.deleteRequestedFor(urlPathEqualTo("/csip-records/$dpsCSIPId")),
             )
           }
         }

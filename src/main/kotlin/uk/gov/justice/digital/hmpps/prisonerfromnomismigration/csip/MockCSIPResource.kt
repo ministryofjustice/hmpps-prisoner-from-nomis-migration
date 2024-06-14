@@ -1,15 +1,22 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.Operation
-import jakarta.validation.Valid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateCsipRecordRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateReferralRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CsipRecord
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ReferenceData
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Referral
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.util.UUID
 
 /**
  * This represents the possible interface for the CSIP API service.
@@ -19,52 +26,104 @@ import org.springframework.web.bind.annotation.RestController
 class MockCSIPResource {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
+
+    fun dpsCsip() = CsipRecord(
+      recordUuid = UUID.randomUUID(),
+      prisonNumber = "1234",
+      createdAt = LocalDateTime.parse("2024-03-29T11:32:15"),
+      createdBy = "JIM_SMITH",
+      createdByDisplayName = "Jim Smith",
+      referral =
+      Referral(
+        incidentDate = LocalDate.parse("2024-03-27"),
+        incidentType = ReferenceData(
+          code = "incidentTypeCode",
+          createdAt = LocalDateTime.parse("2024-03-29T11:32:16"),
+          createdBy = "JIM_SMITH",
+        ),
+        incidentLocation = ReferenceData(
+          code = "incidentLocationCode",
+          createdAt = LocalDateTime.parse("2024-03-29T11:32:16"),
+          createdBy = "JIM_SMITH",
+        ),
+        referredBy = "Jim Smith",
+        refererArea = ReferenceData(
+          code = "areaCode",
+          createdAt = LocalDateTime.parse("2024-03-29T11:32:16"),
+          createdBy = "JIM_SMITH",
+        ),
+        incidentInvolvement = ReferenceData(
+          code = "involvementCode",
+          createdAt = LocalDateTime.parse("2024-03-29T11:32:16"),
+          createdBy = "JIM_SMITH",
+        ),
+        descriptionOfConcern = "Needs guidance",
+        knownReasons = "Fighting",
+        contributoryFactors = listOf(),
+        incidentTime = null,
+        referralSummary = null,
+        isProactiveReferral = null,
+        isStaffAssaulted = null,
+        assaultedStaffName = null,
+        otherInformation = null,
+        isSaferCustodyTeamInformed = null,
+        isReferralComplete = null,
+        investigation = null,
+        saferCustodyScreeningOutcome = null,
+        decisionAndActions = null,
+      ),
+      prisonCodeWhenRecorded = null,
+      logNumber = null,
+      lastModifiedAt = null,
+      lastModifiedBy = null,
+      lastModifiedByDisplayName = null,
+      plan = null,
+    )
   }
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_CSIP')")
-  @PostMapping("/migrate/csip-report")
+  @PostMapping("/migrate/prisoners/{prisonNumber}/csip-records")
   @Operation(hidden = true)
-  suspend fun migrateCSIP(
-    @RequestBody @Valid
-    csipRequest: CSIPMigrateRequest,
-  ): CSIPMigrateResponse {
-    log.info("Created csip for migration with id ${csipRequest.nomisCSIPId} ")
-    return CSIPMigrateResponse("DPS-${csipRequest.nomisCSIPId}")
+  suspend fun migrateCSIPReports(
+    csipRequest: MigrateCSIP,
+    @PathVariable
+    prisonNumber: String,
+  ): CsipRecord {
+    log.info("Created csip for migrate offender $prisonNumber")
+    return dpsCsip()
   }
 
   @PreAuthorize("hasRole('ROLE_SYNC_CSIP')")
-  @PostMapping("/csip")
+  @PostMapping("/prisoners/{prisonNumber}/csip-records")
   @Operation(hidden = true)
-  suspend fun createCSIP(csipRequest: CSIPSyncRequest): CSIPSyncResponse {
-    log.info("Created csip for sync with id ${csipRequest.nomisCSIPId} ")
-    return CSIPSyncResponse("DPS-${csipRequest.nomisCSIPId}")
+  suspend fun createCSIP(
+    csipRequest: CreateCsipRecordRequest,
+    @PathVariable
+    prisonNumber: String,
+  ): CsipRecord {
+    log.info("Created csip for sync offender $prisonNumber")
+    return dpsCsip()
   }
 
   @PreAuthorize("hasRole('ROLE_SYNC_CSIP')")
-  @DeleteMapping("/csip/{dpsCSIPId}")
+  @DeleteMapping("/csip-records/{recordUuid}")
   @Operation(hidden = true)
   suspend fun deleteCSIP(
     @PathVariable
-    dpsCSIPId: String,
-  ): CSIPSyncResponse {
-    log.info("Deleted csip for sync with id $dpsCSIPId ")
-    return CSIPSyncResponse("DPS-$dpsCSIPId")
+    recordUuid: String,
+  ): CsipRecord {
+    log.info("Deleted csip for sync with id $recordUuid ")
+    return return dpsCsip()
   }
+
+  data class MigrateCSIP(
+
+    /* User entered identifier for the CSIP record. Defaults to the prison code. */
+    @field:JsonProperty("logNumber")
+    val logNumber: kotlin.String,
+
+    @field:JsonProperty("referral")
+    val referral: CreateReferralRequest,
+
+  )
 }
-
-data class CSIPMigrateRequest(
-  val nomisCSIPId: Long,
-  val concernDescription: String?,
-)
-data class CSIPMigrateResponse(
-  val dpsCSIPId: String,
-)
-
-data class CSIPSyncRequest(
-  val nomisCSIPId: Long,
-  val concernDescription: String?,
-)
-
-data class CSIPSyncResponse(
-  val dpsCSIPId: String,
-)

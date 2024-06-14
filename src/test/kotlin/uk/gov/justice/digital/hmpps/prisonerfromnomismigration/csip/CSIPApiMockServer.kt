@@ -15,15 +15,26 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.CREATED
+import org.springframework.test.context.junit.jupiter.SpringExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateCsipRecordRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateReferralRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CsipRecord
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ReferenceData
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Referral
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.util.UUID
 
 class CSIPApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
   companion object {
     @JvmField
     val csipApi = CSIPApiMockServer()
+    lateinit var objectMapper: ObjectMapper
   }
 
   override fun beforeAll(context: ExtensionContext) {
     csipApi.start()
+    objectMapper = (SpringExtension.getApplicationContext(context).getBean("jacksonObjectMapper") as ObjectMapper)
   }
 
   override fun beforeEach(context: ExtensionContext) {
@@ -38,6 +49,84 @@ class CSIPApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback
 class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
   companion object {
     private const val WIREMOCK_PORT = 8088
+
+    fun dpsCreateCsipRecordRequest() =
+      CreateCsipRecordRequest(
+        logNumber = "ASI-001",
+        referral =
+        CreateReferralRequest(
+          incidentDate = LocalDate.parse("2024-06-12"),
+          incidentTypeCode = "INT",
+          incidentLocationCode = "LIB",
+          referredBy = "JIM_ADM",
+          refererAreaCode = "EDU",
+          incidentInvolvementCode = "PER",
+          descriptionOfConcern = "There was a worry about the offender",
+          knownReasons = "known reasons details go in here",
+          contributoryFactors = listOf(),
+          incidentTime = "10:00",
+          referralSummary = null,
+          isProactiveReferral = true,
+          isStaffAssaulted = true,
+          assaultedStaffName = "Fred Jones",
+          otherInformation = "other information goes in here",
+          isSaferCustodyTeamInformed = false,
+          isReferralComplete = true,
+        ),
+      )
+
+    fun dpsCSIPReport(dpsCSIPReportId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") = CsipRecord(
+      recordUuid = UUID.fromString(dpsCSIPReportId),
+      prisonNumber = "1234",
+      createdAt = LocalDateTime.parse("2024-03-29T11:32:15"),
+      createdBy = "JIM_SMITH",
+      createdByDisplayName = "Jim Smith",
+      referral =
+      Referral(
+        incidentDate = LocalDate.parse("2024-03-27"),
+        incidentType = ReferenceData(
+          code = "incidentTypeCode",
+          createdAt = LocalDateTime.parse("2024-03-29T11:32:16"),
+          createdBy = "JIM_SMITH",
+        ),
+        incidentLocation = ReferenceData(
+          code = "incidentLocationCode",
+          createdAt = LocalDateTime.parse("2024-03-29T11:32:16"),
+          createdBy = "JIM_SMITH",
+        ),
+        referredBy = "Jim Smith",
+        refererArea = ReferenceData(
+          code = "EDU",
+          createdAt = LocalDateTime.parse("2024-03-29T11:32:16"),
+          createdBy = "JIM_SMITH",
+        ),
+        incidentInvolvement = ReferenceData(
+          code = "involvementCode",
+          createdAt = LocalDateTime.parse("2024-03-29T11:32:16"),
+          createdBy = "JIM_SMITH",
+        ),
+        descriptionOfConcern = "Needs guidance",
+        knownReasons = "Fighting",
+        contributoryFactors = listOf(),
+        incidentTime = null,
+        referralSummary = null,
+        isProactiveReferral = null,
+        isStaffAssaulted = null,
+        assaultedStaffName = null,
+        otherInformation = null,
+        isSaferCustodyTeamInformed = null,
+        isReferralComplete = null,
+        investigation = null,
+        saferCustodyScreeningOutcome = null,
+        decisionAndActions = null,
+      ),
+      prisonCodeWhenRecorded = null,
+      logNumber = null,
+      lastModifiedAt = null,
+      lastModifiedBy = null,
+      lastModifiedByDisplayName = null,
+      plan = null,
+    )
   }
 
   fun stubHealthPing(status: Int) {
@@ -51,39 +140,31 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubCSIPMigrate(dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
+  fun stubCSIPMigrate(dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5", offenderNo: String = "A1234BC") {
     stubFor(
-      post("/migrate/csip-report").willReturn(
+      post("/migrate/prisoners/$offenderNo/csip-records").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(CREATED.value())
-          .withBody(
-            CSIPMigrateResponse(
-              dpsCSIPId = dpsCSIPId,
-            ).toJson(),
-          ),
+          .withBody(CSIPApiExtension.objectMapper.writeValueAsString(dpsCSIPReport(dpsCSIPReportId = dpsCSIPId))),
       ),
     )
   }
 
-  fun stubCSIPInsert(dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
+  fun stubCSIPInsert(dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5", offenderNo: String = "A1234BC") {
     stubFor(
-      post("/csip").willReturn(
+      post("/prisoners/$offenderNo/csip-records").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(CREATED.value())
-          .withBody(
-            CSIPSyncResponse(
-              dpsCSIPId = dpsCSIPId,
-            ).toJson(),
-          ),
+          .withBody(CSIPApiExtension.objectMapper.writeValueAsString(dpsCSIPReport(dpsCSIPReportId = dpsCSIPId))),
       ),
     )
   }
 
   fun stubCSIPDelete(dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
     stubFor(
-      delete("/csip/$dpsCSIPId").willReturn(
+      delete("/csip-records/$dpsCSIPId").willReturn(
         aResponse()
           .withStatus(HttpStatus.NO_CONTENT.value()),
       ),
@@ -92,7 +173,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubCSIPDeleteNotFound(status: HttpStatus = HttpStatus.NOT_FOUND) {
     stubFor(
-      delete(WireMock.urlPathMatching("/csip/.*"))
+      delete(WireMock.urlPathMatching("/csip-records/.*"))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -102,10 +183,8 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun createCSIPMigrationCount() =
-    findAll(postRequestedFor(urlMatching("/migrate/csip-report"))).count()
+    findAll(postRequestedFor(urlMatching("/migrate/prisoners/.*"))).count()
 
   fun createCSIPSyncCount() =
-    findAll(postRequestedFor(urlMatching("/csip"))).count()
+    findAll(postRequestedFor(urlMatching("/prisoners/.*"))).count()
 }
-
-private fun Any.toJson(): String = ObjectMapper().writeValueAsString(this)

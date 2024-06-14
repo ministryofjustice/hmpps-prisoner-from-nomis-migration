@@ -63,6 +63,7 @@ tasks {
       "buildNomisSyncApiModel",
       "buildAdjudicationApiModel",
       "buildIncidentsApiModel",
+      "buildCsipApiModel",
       "buildLocationsApiModel",
       "buildMappingServiceApiModel",
       "buildSentencingAdjustmentsApiModel",
@@ -78,6 +79,7 @@ tasks {
       "buildNomisSyncApiModel",
       "buildAdjudicationApiModel",
       "buildIncidentsApiModel",
+      "buildCsipApiModel",
       "buildLocationsApiModel",
       "buildMappingServiceApiModel",
       "buildSentencingAdjustmentsApiModel",
@@ -92,6 +94,7 @@ tasks {
       "buildNomisSyncApiModel",
       "buildAdjudicationApiModel",
       "buildIncidentsApiModel",
+      "buildCsipApiModel",
       "buildLocationsApiModel",
       "buildMappingServiceApiModel",
       "buildSentencingAdjustmentsApiModel",
@@ -167,6 +170,16 @@ tasks.register("buildIncidentsApiModel", GenerateTask::class) {
   globalProperties.set(mapOf("models" to ""))
 }
 
+tasks.register("buildCsipApiModel", GenerateTask::class) {
+  generatorName.set("kotlin")
+  inputSpec.set("openapi-specs/csip-api-docs.json")
+  outputDir.set("$buildDirectory/generated/csip")
+  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model")
+  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.api")
+  configOptions.set(configValues)
+  globalProperties.set(mapOf("models" to ""))
+}
+
 tasks.register("buildLocationsApiModel", GenerateTask::class) {
   generatorName.set("kotlin")
   inputSpec.set("openapi-specs/locations-api-docs.json")
@@ -211,7 +224,7 @@ tasks.register("buildCourtSentencingApiModel", GenerateTask::class) {
 }
 
 val generatedProjectDirs =
-  listOf("activities", "adjudications", "incidents", "locations", "nomissync", "mappings", "sentencingadjustments", "alerts", "courtsentencing")
+  listOf("activities", "adjudications", "incidents", "csip", "locations", "nomissync", "mappings", "sentencingadjustments", "alerts", "courtsentencing")
 
 kotlin {
   generatedProjectDirs.forEach { generatedProject ->
