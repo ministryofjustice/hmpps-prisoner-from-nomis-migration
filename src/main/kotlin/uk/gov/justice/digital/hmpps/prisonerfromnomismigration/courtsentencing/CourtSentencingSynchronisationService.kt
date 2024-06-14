@@ -99,36 +99,52 @@ class CourtSentencingSynchronisationService(
       mappingApiService.getCourtAppearanceOrNullByNomisId(event.courtAppearanceId)?.let { mapping ->
         telemetryClient.trackEvent(
           "court-appearance-synchronisation-created-ignored",
-          telemetry + ("dpsCourtAppearanceId" to mapping.dpsCourtAppearanceId),
+          telemetry + ("dpsCourtAppearanceId" to mapping.dpsCourtAppearanceId) + ("reason" to "appearance already mapped"),
         )
       } ?: let {
-        // TODO needs to fail if mapping for court case not there yet  (see charge behaviour if appearance not created)
-        val dpsCaseId =
-          nomisCourtAppearance.caseId?.let { mappingApiService.getCourtCaseOrNullByNomisId(it)?.dpsCourtCaseId }
-        telemetry.put("nomisCourtCaseId", nomisCourtAppearance.caseId?.toString() ?: "no nomis court case")
-        telemetry.put("dpsCourtCaseId", dpsCaseId ?: "null")
-        dpsApiService.createCourtAppearance(
-          nomisCourtAppearance.toDpsCourtAppearance(
-            event.offenderIdDisplay,
-            dpsCaseId,
-          ),
-        ).run {
-          telemetry.put("dpsCourtAppearanceId", this.appearanceUuid.toString())
-          tryToCreateCourtAppearanceMapping(
-            nomisCourtAppearance = nomisCourtAppearance,
-            dpsCourtAppearanceResponse = this,
-            telemetry,
-          ).also { mappingCreateResult ->
-            if (mappingCreateResult == MappingResponse.MAPPING_FAILED) telemetry.put("mapping", "initial-failure")
+        // only dealing with appearances associated with a court case, COURT_EVENTS are created by movements also
+        if (isAppearancePartOfACourtCase(nomisCourtAppearance)) {
+          mappingApiService.getCourtCaseOrNullByNomisId(nomisCourtAppearance.caseId!!)?.let { courtCaseMapping ->
+            telemetry.put("nomisCourtCaseId", courtCaseMapping.nomisCourtCaseId.toString())
+            telemetry.put("dpsCourtCaseId", courtCaseMapping.dpsCourtCaseId)
+            dpsApiService.createCourtAppearance(
+              nomisCourtAppearance.toDpsCourtAppearance(
+                event.offenderIdDisplay,
+                courtCaseMapping.dpsCourtCaseId,
+              ),
+            ).run {
+              telemetry.put("dpsCourtAppearanceId", this.appearanceUuid.toString())
+              tryToCreateCourtAppearanceMapping(
+                nomisCourtAppearance = nomisCourtAppearance,
+                dpsCourtAppearanceResponse = this,
+                telemetry,
+              ).also { mappingCreateResult ->
+                if (mappingCreateResult == MappingResponse.MAPPING_FAILED) telemetry.put("mapping", "initial-failure")
+                telemetryClient.trackEvent(
+                  "court-appearance-synchronisation-created-success",
+                  telemetry,
+                )
+              }
+            }
+          } ?: let {
             telemetryClient.trackEvent(
-              "court-appearance-synchronisation-created-success",
-              telemetry,
+              "court-appearance-synchronisation-created-failed",
+              telemetry + ("nomisCourtCaseId" to nomisCourtAppearance.caseId) + ("reason" to "associated court case is not mapped"),
             )
+            throw IllegalStateException("Received COURT_EVENTS_INSERTED for court case that has never been created/mapped")
           }
+        } else {
+          telemetryClient.trackEvent(
+            "court-appearance-synchronisation-created-ignored",
+            telemetry + ("reason" to "appearance not associated with a court case, for example generated as part of a movement"),
+          )
         }
       }
     }
   }
+
+  private suspend fun isAppearancePartOfACourtCase(nomisAppearance: CourtEventResponse) =
+    nomisAppearance.caseId?.let { true } ?: false
 
   suspend fun nomisCourtCaseUpdated(event: CourtCaseEvent) {
     val telemetry =
@@ -146,10 +162,7 @@ class CourtSentencingSynchronisationService(
           "court-case-synchronisation-updated-failed",
           telemetry,
         )
-        if (hasMigratedAllData) {
-          // after migration has run this should not happen so make sure this message goes in DLQ
-          throw IllegalStateException("Received OFFENDER_CASES-UPDATED for court-case that has never been created")
-        }
+        throw IllegalStateException("Received OFFENDER_CASES-UPDATED for court-case that has never been created")
       } else {
         val nomisCourtCase =
           nomisApiService.getCourtCase(offenderNo = event.offenderIdDisplay, courtCaseId = event.courtCaseId)
@@ -616,7 +629,12 @@ class CourtSentencingSynchronisationService(
           )
         } ?: let {
         // retrieve offence mappings (created as part of the court appearance flow)
-        dpsApiService.createSentence(nomisSentence.toDpsSentence(event.offenderIdDisplay, getDpsChargeMappings(nomisSentence))).run {
+        dpsApiService.createSentence(
+          nomisSentence.toDpsSentence(
+            event.offenderIdDisplay,
+            getDpsChargeMappings(nomisSentence),
+          ),
+        ).run {
           tryToCreateSentenceMapping(
             nomisSentence = nomisSentence,
             dpsSentenceResponse = this,

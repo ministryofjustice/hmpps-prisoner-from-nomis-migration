@@ -67,7 +67,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
   fun stubGetCourtAppearance(
     offenderNo: String = "A3864DZ",
     courtAppearanceId: Long = 3,
-    courtCaseId: Long = 2,
+    courtCaseId: Long? = 2,
     response: CourtEventResponse = CourtEventResponse(
       id = courtAppearanceId,
       offenderNo = offenderNo,
