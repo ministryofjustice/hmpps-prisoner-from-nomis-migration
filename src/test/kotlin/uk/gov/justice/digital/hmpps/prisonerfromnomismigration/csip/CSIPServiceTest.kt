@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip
 import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
+import com.github.tomakehurst.wiremock.client.WireMock.notContaining
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import kotlinx.coroutines.runBlocking
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension.Companion.csipApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsCreateCsipRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 
 @SpringAPIServiceTest
@@ -23,28 +25,22 @@ internal class CSIPServiceTest {
   private lateinit var csipService: CSIPService
 
   @Nested
-  @DisplayName("POST /migrate/csip-report")
+  @DisplayName("POST /migrate/prisoners/{offenderNo}/csip-records")
   inner class CreateCSIPForMigration {
-    private val nomisCSIPId = 1234L
 
     @BeforeEach
     internal fun setUp() {
       csipApi.stubCSIPMigrate()
 
       runBlocking {
-        csipService.migrateCSIP(
-          CSIPMigrateRequest(
-            nomisCSIPId = nomisCSIPId,
-            concernDescription = "Fighting on Prisoner Cell Block H",
-          ),
-        )
+        csipService.migrateCSIP("A1234BC", dpsCreateCsipRecordRequest())
       }
     }
 
     @Test
     fun `should call api with OAuth2 token`() {
       csipApi.verify(
-        postRequestedFor(urlEqualTo("/migrate/csip-report"))
+        postRequestedFor(urlEqualTo("/migrate/prisoners/A1234BC/csip-records"))
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
@@ -52,36 +48,44 @@ internal class CSIPServiceTest {
     @Test
     fun `will pass data to the api`() {
       csipApi.verify(
-        postRequestedFor(urlEqualTo("/migrate/csip-report"))
-          .withRequestBody(matchingJsonPath("nomisCSIPId", equalTo("$nomisCSIPId")))
-          .withRequestBody(matchingJsonPath("concernDescription", equalTo("Fighting on Prisoner Cell Block H"))),
+        postRequestedFor(urlEqualTo("/migrate/prisoners/A1234BC/csip-records"))
+          .withRequestBody(matchingJsonPath("logNumber", equalTo("ASI-001")))
+          .withRequestBody(matchingJsonPath("referral.incidentDate", equalTo("2024-06-12")))
+          .withRequestBody(matchingJsonPath("referral.incidentTypeCode", equalTo("INT")))
+          .withRequestBody(matchingJsonPath("referral.incidentLocationCode", equalTo("LIB")))
+          .withRequestBody(matchingJsonPath("referral.referredBy", equalTo("JIM_ADM")))
+          .withRequestBody(matchingJsonPath("referral.refererAreaCode", equalTo("EDU")))
+          .withRequestBody(matchingJsonPath("referral.incidentInvolvementCode", equalTo("PER")))
+          .withRequestBody(matchingJsonPath("referral.descriptionOfConcern", equalTo("There was a worry about the offender")))
+          .withRequestBody(matchingJsonPath("referral.knownReasons", equalTo("known reasons details go in here")))
+          .withRequestBody(notContaining("referral.contributoryFactors"))
+          .withRequestBody(matchingJsonPath("referral.incidentTime", equalTo("10:00")))
+          .withRequestBody(notContaining("referral.referralSummary"))
+          .withRequestBody(matchingJsonPath("referral.isProactiveReferral", equalTo("true")))
+          .withRequestBody(matchingJsonPath("referral.isStaffAssaulted", equalTo("true")))
+          .withRequestBody(matchingJsonPath("referral.assaultedStaffName", equalTo("Fred Jones")))
+          .withRequestBody(matchingJsonPath("referral.otherInformation", equalTo("other information goes in here")))
+          .withRequestBody(matchingJsonPath("referral.isSaferCustodyTeamInformed", equalTo("false"))),
       )
     }
   }
 
   @Nested
-  @DisplayName("POST /csip")
+  @DisplayName("POST /prisoners/{offenderNo}/csip-records")
   inner class CreateCSIP {
-    private val nomisCSIPId = 1234L
-
     @BeforeEach
     internal fun setUp() {
       csipApi.stubCSIPInsert()
 
       runBlocking {
-        csipService.createCSIP(
-          CSIPSyncRequest(
-            nomisCSIPId = nomisCSIPId,
-            concernDescription = "Fighting on Prisoner Cell Block H",
-          ),
-        )
+        csipService.createCSIPReport("A1234BC", dpsCreateCsipRecordRequest())
       }
     }
 
     @Test
     fun `should call api with OAuth2 token`() {
       csipApi.verify(
-        postRequestedFor(urlEqualTo("/csip"))
+        postRequestedFor(urlEqualTo("/prisoners/A1234BC/csip-records"))
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
@@ -89,15 +93,30 @@ internal class CSIPServiceTest {
     @Test
     fun `will pass data to the api`() {
       csipApi.verify(
-        postRequestedFor(urlEqualTo("/csip"))
-          .withRequestBody(matchingJsonPath("nomisCSIPId", equalTo("$nomisCSIPId")))
-          .withRequestBody(matchingJsonPath("concernDescription", equalTo("Fighting on Prisoner Cell Block H"))),
+        postRequestedFor(urlEqualTo("/prisoners/A1234BC/csip-records"))
+          .withRequestBody(matchingJsonPath("logNumber", equalTo("ASI-001")))
+          .withRequestBody(matchingJsonPath("referral.incidentDate", equalTo("2024-06-12")))
+          .withRequestBody(matchingJsonPath("referral.incidentTypeCode", equalTo("INT")))
+          .withRequestBody(matchingJsonPath("referral.incidentLocationCode", equalTo("LIB")))
+          .withRequestBody(matchingJsonPath("referral.referredBy", equalTo("JIM_ADM")))
+          .withRequestBody(matchingJsonPath("referral.refererAreaCode", equalTo("EDU")))
+          .withRequestBody(matchingJsonPath("referral.incidentInvolvementCode", equalTo("PER")))
+          .withRequestBody(matchingJsonPath("referral.descriptionOfConcern", equalTo("There was a worry about the offender")))
+          .withRequestBody(matchingJsonPath("referral.knownReasons", equalTo("known reasons details go in here")))
+          .withRequestBody(notContaining("referral.contributoryFactors"))
+          .withRequestBody(matchingJsonPath("referral.incidentTime", equalTo("10:00")))
+          .withRequestBody(notContaining("referral.referralSummary"))
+          .withRequestBody(matchingJsonPath("referral.isProactiveReferral", equalTo("true")))
+          .withRequestBody(matchingJsonPath("referral.isStaffAssaulted", equalTo("true")))
+          .withRequestBody(matchingJsonPath("referral.assaultedStaffName", equalTo("Fred Jones")))
+          .withRequestBody(matchingJsonPath("referral.otherInformation", equalTo("other information goes in here")))
+          .withRequestBody(matchingJsonPath("referral.isSaferCustodyTeamInformed", equalTo("false"))),
       )
     }
   }
 
   @Nested
-  @DisplayName("DELETE /csip/{dpsCSIPId}")
+  @DisplayName("DELETE /csip-records/{cspReportId}")
   inner class DeleteCSIP {
     private val dpsCSIPId = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5"
 
@@ -107,14 +126,14 @@ internal class CSIPServiceTest {
       internal fun setUp() {
         csipApi.stubCSIPDelete()
         runBlocking {
-          csipService.deleteCSIP(dpsCSIPId = dpsCSIPId)
+          csipService.deleteCSIP(csipReportId = dpsCSIPId)
         }
       }
 
       @Test
       fun `should call api with OAuth2 token`() {
         csipApi.verify(
-          deleteRequestedFor(urlEqualTo("/csip/$dpsCSIPId"))
+          deleteRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId"))
             .withHeader("Authorization", equalTo("Bearer ABCDE")),
         )
       }
@@ -130,7 +149,7 @@ internal class CSIPServiceTest {
       @Test
       fun `should ignore 404 error`() {
         runBlocking {
-          csipService.deleteCSIP(dpsCSIPId = dpsCSIPId)
+          csipService.deleteCSIP(csipReportId = dpsCSIPId)
         }
       }
     }

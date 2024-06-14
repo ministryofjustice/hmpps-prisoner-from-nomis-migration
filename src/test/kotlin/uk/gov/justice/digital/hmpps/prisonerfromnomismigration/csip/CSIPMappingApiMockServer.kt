@@ -168,5 +168,3 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
   fun verify(count: Int, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
   fun verify(count: CountMatchingStrategy, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
 }
-
-fun aDPSCSIPMigrateResponse() = CSIPMigrateResponse(dpsCSIPId = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5")

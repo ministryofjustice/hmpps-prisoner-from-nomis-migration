@@ -8,6 +8,7 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPMappingDto
@@ -72,22 +73,21 @@ class CSIPMigrationService(
       }
       ?: run {
         val nomisCSIPResponse = nomisApiService.getCSIP(nomisCSIPId)
-        val migratedCSIP = csipService.migrateCSIP(nomisCSIPResponse.toMigrateRequest())
+        val migratedCSIP = csipService.migrateCSIP(nomisCSIPResponse.offender.offenderNo, nomisCSIPResponse.toDPSCreateCSIP())
           .also {
             createCSIPMapping(
               nomisCSIPId = nomisCSIPId,
-              dpsCSIPId = it.dpsCSIPId,
+              dpsCSIPId = it.recordUuid.toString(),
               context = context,
             )
           }
         telemetryClient.trackEvent(
           "${MigrationType.CSIP.telemetryName}-migration-entity-migrated",
           mapOf(
-            "nomisCSIPId" to nomisCSIPId.toString(),
-            "dpsCSIPId" to migratedCSIP.dpsCSIPId,
+            "nomisCSIPId" to nomisCSIPId,
+            "dpsCSIPId" to migratedCSIP.recordUuid,
             "migrationId" to migrationId,
           ),
-          null,
         )
       }
   }
@@ -110,15 +110,14 @@ class CSIPMigrationService(
         val duplicateErrorDetails = (it.errorResponse!!).moreInfo
         telemetryClient.trackEvent(
           "${MigrationType.CSIP.telemetryName}-nomis-migration-duplicate",
-          mapOf<String, String>(
+          mapOf(
             "migrationId" to context.migrationId,
-            "existingNomisCSIPId" to duplicateErrorDetails.existing.nomisCSIPId.toString(),
-            "duplicateNomisCSIPId" to duplicateErrorDetails.duplicate.nomisCSIPId.toString(),
+            "existingNomisCSIPId" to duplicateErrorDetails.existing.nomisCSIPId,
+            "duplicateNomisCSIPId" to duplicateErrorDetails.duplicate.nomisCSIPId,
             "existingDPSCSIPId" to duplicateErrorDetails.existing.dpsCSIPId,
             "duplicateDPSCSIPId" to duplicateErrorDetails.duplicate.dpsCSIPId,
-            "durationMinutes" to context.durationMinutes().toString(),
+            "durationMinutes" to context.durationMinutes(),
           ),
-          null,
         )
       }
     }

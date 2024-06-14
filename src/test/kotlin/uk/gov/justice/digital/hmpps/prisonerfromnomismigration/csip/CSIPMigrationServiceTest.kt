@@ -15,6 +15,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.ArgumentMatchers.anyString
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
@@ -31,6 +32,9 @@ import org.mockito.kotlin.whenever
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsCSIPReport
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsCreateCsipRecordRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPNomisApiMockServer.Companion.nomisCSIPReport
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -813,8 +817,8 @@ internal class CSIPMigrationServiceTest {
     @BeforeEach
     internal fun setUp(): Unit = runTest {
       whenever(csipMappingService.findByNomisId(any())).thenReturn(null)
-      whenever(nomisApiService.getCSIP(any())).thenReturn(aNomisCSIPResponse())
-      whenever(csipService.migrateCSIP(any())).thenReturn(aDPSCSIPMigrateResponse())
+      whenever(nomisApiService.getCSIP(any())).thenReturn(nomisCSIPReport())
+      whenever(csipService.migrateCSIP(any(), any())).thenReturn(CSIPApiMockServer.dpsCSIPReport())
       whenever(csipMappingService.createMapping(any(), any())).thenReturn(CreateMappingResult())
     }
 
@@ -834,7 +838,7 @@ internal class CSIPMigrationServiceTest {
 
     @Test
     internal fun `will transform and send that csip to the csip api service`(): Unit = runTest {
-      whenever(nomisApiService.getCSIP(any())).thenReturn(aNomisCSIPResponse())
+      whenever(nomisApiService.getCSIP(any())).thenReturn(nomisCSIPReport())
 
       service.migrateNomisEntity(
         MigrationContext(
@@ -846,13 +850,14 @@ internal class CSIPMigrationServiceTest {
       )
 
       verify(csipService).migrateCSIP(
-        eq(aMigrationRequest()),
+        anyString(),
+        eq(dpsCreateCsipRecordRequest()),
       )
     }
 
     @Test
     internal fun `will add telemetry events`(): Unit = runTest {
-      whenever(nomisApiService.getCSIP(any())).thenReturn(aNomisCSIPResponse())
+      whenever(nomisApiService.getCSIP(any())).thenReturn(nomisCSIPReport())
 
       service.migrateNomisEntity(
         MigrationContext(
@@ -877,8 +882,8 @@ internal class CSIPMigrationServiceTest {
     @Test
     internal fun `will create a mapping between a new csip and a NOMIS csip`(): Unit =
       runTest {
-        whenever(nomisApiService.getCSIP(any())).thenReturn(aNomisCSIPResponse())
-        whenever(csipService.migrateCSIP(any())).thenReturn(aDPSCSIPMigrateResponse())
+        whenever(nomisApiService.getCSIP(any())).thenReturn(nomisCSIPReport())
+        whenever(csipService.migrateCSIP(any(), any())).thenReturn(dpsCSIPReport())
 
         service.migrateNomisEntity(
           MigrationContext(
@@ -903,8 +908,8 @@ internal class CSIPMigrationServiceTest {
     @Test
     internal fun `will not throw an exception (and place message back on queue) but create a new retry message`(): Unit =
       runTest {
-        whenever(nomisApiService.getCSIP(any())).thenReturn(aNomisCSIPResponse())
-        whenever(csipService.migrateCSIP(any())).thenReturn(aDPSCSIPMigrateResponse())
+        whenever(nomisApiService.getCSIP(any())).thenReturn(nomisCSIPReport())
+        whenever(csipService.migrateCSIP(any(), any())).thenReturn(dpsCSIPReport())
 
         whenever(
           csipMappingService.createMapping(
@@ -991,12 +996,6 @@ internal class CSIPMigrationServiceTest {
     }
   }
 }
-
-fun aMigrationRequest() =
-  CSIPMigrateRequest(
-    nomisCSIPId = NOMIS_CSIP_ID,
-    concernDescription = "Issues in the dinner hall",
-  )
 
 fun pages(total: Long, startId: Long = 1): PageImpl<CSIPIdResponse> = PageImpl<CSIPIdResponse>(
   (startId..total - 1 + startId).map { CSIPIdResponse(it) },
