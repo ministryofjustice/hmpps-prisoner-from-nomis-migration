@@ -40,9 +40,3 @@ class CSIPNomisApiService(@Qualifier("nomisApiWebClient") private val webClient:
       .bodyToMono(typeReference<RestResponsePage<CSIPIdResponse>>())
       .awaitSingle()
 }
-
-fun CSIPResponse.toMigrateRequest() =
-  CSIPMigrateRequest(
-    nomisCSIPId = id,
-    concernDescription = "Issues in the dinner hall",
-  )
