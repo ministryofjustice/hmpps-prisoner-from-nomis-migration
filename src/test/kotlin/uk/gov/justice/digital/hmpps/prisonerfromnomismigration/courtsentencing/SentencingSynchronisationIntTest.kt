@@ -27,7 +27,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.verification.VerificationMode
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.HttpStatus
+import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.dpsCourtSentencingServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
@@ -312,7 +312,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         inner class FailsConstantly {
           @BeforeEach
           fun setUp() {
-            courtSentencingMappingApiMockServer.stubPostSentenceMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
+            courtSentencingMappingApiMockServer.stubPostSentenceMapping(status = INTERNAL_SERVER_ERROR)
             awsSqsCourtSentencingOffenderEventsClient.sendMessage(
               courtSentencingQueueOffenderEventsUrl,
               sentenceEvent(
@@ -375,7 +375,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           )
           // one of the two charges is not mapped
           courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisIdNotFound(nomisCourtChargeId = 102)
-          courtSentencingMappingApiMockServer.stubPostSentenceMapping()
           awsSqsCourtSentencingOffenderEventsClient.sendMessage(
             courtSentencingQueueOffenderEventsUrl,
             sentenceEvent(
@@ -404,6 +403,29 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will retry charge mapping retrieval as part of sentence retry`() {
           await untilAsserted {
             courtSentencingMappingApiMockServer.verify(4, getRequestedFor(urlPathMatching("/mapping/court-sentencing/court-charges/nomis-court-charge-id/\\d+")))
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("Error retrieving charge mapping will retry")
+      inner class ChargeMappingFailsWithOtherError {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(status = NOT_FOUND)
+          courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(status = INTERNAL_SERVER_ERROR)
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            sentenceEvent(
+              eventType = "OFFENDER_SENTENCES-INSERTED",
+            ),
+          )
+        }
+
+        @Test
+        fun `will retry charge mapping retrieval as part of sentence retry (fails on first call so 2 calls in total)`() {
+          await untilAsserted {
+            courtSentencingMappingApiMockServer.verify(2, getRequestedFor(urlPathMatching("/mapping/court-sentencing/court-charges/nomis-court-charge-id/\\d+")))
           }
         }
       }
@@ -555,7 +577,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
               1,
-              WireMock.deleteRequestedFor(urlPathEqualTo("/sentence/$DPS_SENTENCE_ID")),
+              deleteRequestedFor(urlPathEqualTo("/sentence/$DPS_SENTENCE_ID")),
               // TODO DPS to implement this endpoint
             )
           }
@@ -566,7 +588,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             courtSentencingMappingApiMockServer.verify(
               1,
-              WireMock.deleteRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences/dps-sentence-id/$DPS_SENTENCE_ID")),
+              deleteRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences/dps-sentence-id/$DPS_SENTENCE_ID")),
             )
           }
         }
@@ -604,7 +626,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             ),
           )
 
-          courtSentencingMappingApiMockServer.stubDeleteSentenceMappingByDpsId(status = HttpStatus.INTERNAL_SERVER_ERROR)
+          courtSentencingMappingApiMockServer.stubDeleteSentenceMappingByDpsId(status = INTERNAL_SERVER_ERROR)
           dpsCourtSentencingServer.stubDeleteSentence(DPS_SENTENCE_ID)
           awsSqsCourtSentencingOffenderEventsClient.sendMessage(
             courtSentencingQueueOffenderEventsUrl,
@@ -621,7 +643,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
               1,
-              WireMock.deleteRequestedFor(urlPathEqualTo("/sentence/$DPS_SENTENCE_ID")),
+              deleteRequestedFor(urlPathEqualTo("/sentence/$DPS_SENTENCE_ID")),
               // TODO DPS to implement this endpoint
             )
           }
@@ -638,7 +660,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
             courtSentencingMappingApiMockServer.verify(
               1,
-              WireMock.deleteRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences/dps-sentence-id/$DPS_SENTENCE_ID")),
+              deleteRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences/dps-sentence-id/$DPS_SENTENCE_ID")),
             )
           }
         }
