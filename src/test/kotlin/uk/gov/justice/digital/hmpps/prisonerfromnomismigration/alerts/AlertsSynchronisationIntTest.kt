@@ -1062,8 +1062,28 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         alertsNomisApiMockServer.stubGetAlertsByBookingId(bookingId, alertCount = 4)
-        alertsMappingApiMockServer.stubGetByNomisId(bookingId, 1)
-        alertsMappingApiMockServer.stubGetByNomisId(bookingId, 2)
+        alertsMappingApiMockServer.stubGetByNomisId(
+          bookingId = bookingId,
+          alertSequence = 1,
+          mapping = AlertMappingDto(
+            nomisBookingId = bookingId,
+            nomisAlertSequence = 1,
+            dpsAlertId = "20640934-cd38-481e-9826-51da09a17f77",
+            offenderNo = "A1234KT",
+            mappingType = MIGRATED,
+          ),
+        )
+        alertsMappingApiMockServer.stubGetByNomisId(
+          bookingId = bookingId,
+          alertSequence = 2,
+          mapping = AlertMappingDto(
+            nomisBookingId = bookingId,
+            nomisAlertSequence = 2,
+            dpsAlertId = "432362fe-c6cc-4700-9099-952eec00f897",
+            offenderNo = "A1234KT",
+            mappingType = MIGRATED,
+          ),
+        )
         alertsMappingApiMockServer.stubGetByNomisId(bookingId, 3, status = NOT_FOUND)
         alertsMappingApiMockServer.stubGetByNomisId(bookingId, 4, status = NOT_FOUND)
         dpsAlertsServer.stubMergePrisonerAlerts(
@@ -1071,8 +1091,10 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
             mergedAlert().copy(offenderBookId = bookingId, alertSeq = 3, alertUuid = dpsAlertId1),
             mergedAlert().copy(offenderBookId = bookingId, alertSeq = 4, alertUuid = dpsAlertId2),
           ),
+          deleted = listOf(UUID.fromString("17e59ef4-8268-4afc-82df-440bae1eb54b"), UUID.fromString("220d8e5d-5f85-4b70-86b8-36390cde75b5")),
         )
         alertsMappingApiMockServer.stubPostBatchMappings()
+        alertsMappingApiMockServer.stubDeleteMapping()
         awsSqsSentencingOffenderEventsClient.sendMessage(
           alertsQueueOffenderEventsUrl,
           mergeDomainEvent(
@@ -1098,7 +1120,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
-      fun `will send missing alerts to DPS`() {
+      fun `will send missing alerts and retained alerts to DPS`() {
         dpsAlertsServer.verify(
           postRequestedFor(urlPathEqualTo("/merge-alerts"))
             .withRequestBodyJsonPath("prisonNumberMergeFrom", "A1000KT")
@@ -1106,7 +1128,9 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
             .withRequestBodyJsonPath("newAlerts[0].offenderBookId", "$bookingId")
             .withRequestBodyJsonPath("newAlerts[0].alertSeq", "3")
             .withRequestBodyJsonPath("newAlerts[1].offenderBookId", "$bookingId")
-            .withRequestBodyJsonPath("newAlerts[1].alertSeq", "4"),
+            .withRequestBodyJsonPath("newAlerts[1].alertSeq", "4")
+            .withRequestBodyJsonPath("retainedAlertUuids[0]", "20640934-cd38-481e-9826-51da09a17f77")
+            .withRequestBodyJsonPath("retainedAlertUuids[1]", "432362fe-c6cc-4700-9099-952eec00f897"),
         )
       }
 
@@ -1121,6 +1145,12 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
             .withRequestBodyJsonPath("$[1].nomisAlertSequence", "4")
             .withRequestBodyJsonPath("$[1].dpsAlertId", "$dpsAlertId2"),
         )
+      }
+
+      @Test
+      fun `will delete mappings for replaced alerts`() {
+        alertsMappingApiMockServer.verify(deleteRequestedFor(urlPathEqualTo("/mapping/alerts/dps-alert-id/17e59ef4-8268-4afc-82df-440bae1eb54b")))
+        alertsMappingApiMockServer.verify(deleteRequestedFor(urlPathEqualTo("/mapping/alerts/dps-alert-id/220d8e5d-5f85-4b70-86b8-36390cde75b5")))
       }
 
       @Test

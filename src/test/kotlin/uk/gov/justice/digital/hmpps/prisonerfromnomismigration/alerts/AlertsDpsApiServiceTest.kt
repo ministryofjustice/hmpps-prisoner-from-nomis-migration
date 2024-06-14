@@ -355,6 +355,7 @@ class AlertsDpsApiServiceTest {
             description = null,
           ),
         ),
+        retainedAlertIds = listOf(UUID.randomUUID().toString()),
       )
 
       dpsAlertsServer.verify(
@@ -380,13 +381,16 @@ class AlertsDpsApiServiceTest {
             description = null,
           ),
         ),
+        retainedAlertIds = listOf("a01b4d92-8d19-4a7e-8fd7-85b4c5e296bb", "20640934-cd38-481e-9826-51da09a17f77"),
       )
 
       dpsAlertsServer.verify(
         postRequestedFor(urlMatching("/merge-alerts"))
           .withRequestBody(matchingJsonPath("prisonNumberMergeFrom", equalTo("A1000KL")))
           .withRequestBody(matchingJsonPath("prisonNumberMergeTo", equalTo("A1234KL")))
-          .withRequestBody(matchingJsonPath("newAlerts[0].alertCode", equalTo("XA"))),
+          .withRequestBody(matchingJsonPath("newAlerts[0].alertCode", equalTo("XA")))
+          .withRequestBody(matchingJsonPath("retainedAlertUuids[0]", equalTo("a01b4d92-8d19-4a7e-8fd7-85b4c5e296bb")))
+          .withRequestBody(matchingJsonPath("retainedAlertUuids[1]", equalTo("20640934-cd38-481e-9826-51da09a17f77"))),
       )
     }
 
@@ -407,6 +411,7 @@ class AlertsDpsApiServiceTest {
             description = null,
           ),
         ),
+        retainedAlertIds = listOf(UUID.randomUUID().toString()),
       )
 
       assertThat(response.alertsCreated[0].alertUuid.toString()).isEqualTo("f3f31737-6ee3-4ec5-8a79-0ac110fe50e2")

@@ -187,7 +187,9 @@ class AlertsSynchronisationService(
     val offenderNo = prisonerMergeEvent.additionalInformation.nomsNumber
     val removedOffenderNo = prisonerMergeEvent.additionalInformation.removedNomsNumber
     val alerts = nomisApiService.getAlertsByBookingId(bookingId).alerts
-    val newAlerts = alerts.filter { mappingApiService.getOrNullByNomisId(bookingId = it.bookingId, alertSequence = it.alertSequence) == null }
+    val alertsMapping = alerts.groupBy { mappingApiService.getOrNullByNomisId(bookingId = it.bookingId, alertSequence = it.alertSequence) }
+    val newAlerts = alertsMapping[null] ?: emptyList()
+    val retainedDpsAlertIds = alertsMapping.keys.filterNotNull().map { it.dpsAlertId }
     val telemetry = mapOf(
       "bookingId" to bookingId,
       "offenderNo" to offenderNo,
@@ -195,8 +197,8 @@ class AlertsSynchronisationService(
       "newAlertsCount" to newAlerts.size,
       "newAlerts" to newAlerts.map { it.alertSequence }.joinToString(),
     )
-    val dpsResponse = dpsApiService.mergePrisonerAlerts(offenderNo = offenderNo, removedOffenderNo = removedOffenderNo, alerts = newAlerts.map { it.toDPSMergeAlert() })
-    val mappings = dpsResponse.alertsCreated.map {
+    val dpsResponse = dpsApiService.mergePrisonerAlerts(offenderNo = offenderNo, removedOffenderNo = removedOffenderNo, alerts = newAlerts.map { it.toDPSMergeAlert() }, retainedAlertIds = retainedDpsAlertIds)
+    val mappingsToCreate = dpsResponse.alertsCreated.map {
       AlertMappingDto(
         dpsAlertId = it.alertUuid.toString(),
         nomisBookingId = it.offenderBookId,
@@ -205,8 +207,10 @@ class AlertsSynchronisationService(
         mappingType = NOMIS_CREATED,
       )
     }
-
-    val mappingResponse = tryToCreateMappings(mappings, telemetry)
+    val mappingResponse = tryToCreateMappings(mappingsToCreate, telemetry)
+    dpsResponse.alertsDeleted.forEach {
+      tryToDeletedMapping(it.toString())
+    }
     telemetryClient.trackEvent(
       "from-nomis-synch-alerts-merge",
       telemetry + ("mappingSuccess" to (mappingResponse == MAPPING_CREATED).toString()),
