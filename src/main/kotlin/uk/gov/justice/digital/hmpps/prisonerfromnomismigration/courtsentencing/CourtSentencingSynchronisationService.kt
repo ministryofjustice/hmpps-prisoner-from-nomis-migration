@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
+import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearanceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCaseResponse
@@ -650,7 +651,7 @@ class CourtSentencingSynchronisationService(
       nomisSentence.offenderCharges.map {
         mappingApiService.getOffenderChargeByNomisId(it.id).dpsCourtChargeId
       }
-    } catch (e: Exception) {
+    } catch (notFoundException: WebClientResponseException.NotFound) {
       telemetryClient.trackEvent(
         name = "charge-mapping-missing",
         properties = mutableMapOf(
@@ -659,7 +660,7 @@ class CourtSentencingSynchronisationService(
         ),
       )
       log.error("Unable to find mapping for nomis offender charges in the context of sentence: bookingId= ${nomisSentence.bookingId} sentenceSequence= ${nomisSentence.sentenceSeq}}\nPossible causes: events out of order or offender charge has not been migrated")
-      throw e
+      throw notFoundException
     }
   }
 
