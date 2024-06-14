@@ -1293,6 +1293,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         courtSentencingNomisApiMockServer.stubGetCourtAppearance(
           courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
           offenderNo = OFFENDER_ID_DISPLAY,
+          courtCaseId = NOMIS_COURT_CASE_ID,
         )
       }
 
