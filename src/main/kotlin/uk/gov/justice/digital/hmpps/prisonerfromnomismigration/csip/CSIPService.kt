@@ -4,27 +4,30 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateCsipRecordRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CsipRecord
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 
 @Service
 class CSIPService(@Qualifier("csipApiWebClient") private val webClient: WebClient) {
-  suspend fun migrateCSIP(migrateRequest: CSIPMigrateRequest): CSIPMigrateResponse =
+
+  suspend fun migrateCSIP(offenderNo: String, csipReport: CreateCsipRecordRequest): CsipRecord =
     webClient.post()
-      .uri("/migrate/csip-report")
-      .bodyValue(migrateRequest)
+      .uri("/migrate/prisoners/{offenderNo}/csip-records", offenderNo)
+      .bodyValue(csipReport)
       .retrieve()
       .awaitBody()
 
-  suspend fun createCSIP(csip: CSIPSyncRequest): CSIPSyncResponse =
+  suspend fun createCSIPReport(offenderNo: String, csipReport: CreateCsipRecordRequest): CsipRecord =
     webClient.post()
-      .uri("/csip")
-      .bodyValue(csip)
+      .uri("/prisoners/{offenderNo}/csip-records", offenderNo)
+      .bodyValue(csipReport)
       .retrieve()
       .awaitBody()
 
-  suspend fun deleteCSIP(dpsCSIPId: String) =
+  suspend fun deleteCSIP(csipReportId: String) =
     webClient.delete()
-      .uri("/csip/{dpsCSIPId}", dpsCSIPId)
+      .uri("/csip-records/{cspReportId}", csipReportId)
       .retrieve()
       .awaitBodyOrNullWhenNotFound<Unit>()
 }

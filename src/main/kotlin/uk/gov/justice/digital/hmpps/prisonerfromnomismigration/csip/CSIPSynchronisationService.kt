@@ -26,7 +26,7 @@ class CSIPSynchronisationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  suspend fun synchroniseCSIPInsert(event: CSIPOffenderEvent) {
+  suspend fun csipReportInserted(event: CSIPReportEvent) {
     // Avoid duplicate sync if originated from DPS
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent(
@@ -45,26 +45,22 @@ class CSIPSynchronisationService(
         event.toTelemetryProperties(it.dpsCSIPId),
       )
     } ?: let {
-      csipService.createCSIP(
-        CSIPSyncRequest(
-          nomisCSIPId = nomisCSIP.id,
-          concernDescription = nomisCSIP.reportDetails.concern,
-        ),
-      ).also { csip ->
-        tryToCreateCSIPMapping(event, csip.dpsCSIPId).also { result ->
-          telemetryClient.trackEvent(
-            "csip-synchronisation-created-success",
-            event.toTelemetryProperties(
-              csip.dpsCSIPId,
-              result == MAPPING_FAILED,
-            ),
-          )
+      csipService.createCSIPReport(event.offenderIdDisplay, nomisCSIP.toDPSCreateCSIP())
+        .also { dpsCsip ->
+          tryToCreateCSIPReportMapping(event, dpsCsip.recordUuid.toString()).also { result ->
+            telemetryClient.trackEvent(
+              "csip-synchronisation-created-success",
+              event.toTelemetryProperties(
+                dpsCsip.recordUuid.toString(),
+                result == MAPPING_FAILED,
+              ),
+            )
+          }
         }
-      }
     }
   }
 
-  suspend fun synchroniseCSIPDelete(event: CSIPOffenderEvent) {
+  suspend fun csipReportDeleted(event: CSIPReportEvent) {
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent(
         "csip-synchronisation-deleted-skipped",
@@ -73,17 +69,16 @@ class CSIPSynchronisationService(
       return
     }
 
-    mappingApiService.findByNomisId(
-      nomisCSIPId = event.csipReportId,
-    )?.let {
-      log.debug("Found csip mapping: {}", it)
-      csipService.deleteCSIP(it.dpsCSIPId)
-      tryToDeletedMapping(it.dpsCSIPId)
-      telemetryClient.trackEvent(
-        "csip-synchronisation-deleted-success",
-        event.toTelemetryProperties(dpsCSIPId = it.dpsCSIPId),
-      )
-    } ?: let {
+    mappingApiService.findByNomisId(nomisCSIPId = event.csipReportId)
+      ?.let {
+        log.debug("Found csip mapping: {}", it)
+        csipService.deleteCSIP(it.dpsCSIPId)
+        tryToDeleteCSIPReportMapping(it.dpsCSIPId)
+        telemetryClient.trackEvent(
+          "csip-synchronisation-deleted-success",
+          event.toTelemetryProperties(dpsCSIPReportId = it.dpsCSIPId),
+        )
+      } ?: let {
       telemetryClient.trackEvent(
         "csip-synchronisation-deleted-ignored",
         event.toTelemetryProperties(),
@@ -91,8 +86,8 @@ class CSIPSynchronisationService(
     }
   }
 
-  private suspend fun tryToCreateCSIPMapping(
-    event: CSIPOffenderEvent,
+  private suspend fun tryToCreateCSIPReportMapping(
+    event: CSIPReportEvent,
     dpsCSIPId: String,
   ): MappingResponse {
     val mapping = CSIPMappingDto(
@@ -122,7 +117,7 @@ class CSIPSynchronisationService(
       return MappingResponse.MAPPING_CREATED
     } catch (e: Exception) {
       log.error(
-        "Failed to create mapping for dpsCSIPId id $dpsCSIPId, nomisCSIPId ${event.csipReportId}",
+        "Failed to create mapping for csip report dpsCSIPId id $dpsCSIPId, nomisCSIPId ${event.csipReportId}",
         e,
       )
       queueService.sendMessage(
@@ -135,7 +130,7 @@ class CSIPSynchronisationService(
     }
   }
 
-  suspend fun retryCreateCSIPMapping(retryMessage: InternalMessage<CSIPMappingDto>) {
+  suspend fun retryCreateCSIPReportMapping(retryMessage: InternalMessage<CSIPMappingDto>) {
     mappingApiService.createMapping(
       retryMessage.body,
       object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPMappingDto>>() {},
@@ -147,11 +142,11 @@ class CSIPSynchronisationService(
     }
   }
 
-  private suspend fun tryToDeletedMapping(dpsCSIPId: String) = runCatching {
+  private suspend fun tryToDeleteCSIPReportMapping(dpsCSIPId: String) = runCatching {
     mappingApiService.deleteMappingByDPSId(dpsCSIPId)
   }.onFailure { e ->
     telemetryClient.trackEvent("csip-mapping-deleted-failed", mapOf("dpsCSIPId" to dpsCSIPId))
-    log.warn("Unable to delete mapping for csip $dpsCSIPId. Please delete manually", e)
+    log.warn("Unable to delete mapping for csip report $dpsCSIPId. Please delete manually", e)
   }
 }
 
@@ -160,12 +155,12 @@ private enum class MappingResponse {
   MAPPING_FAILED,
 }
 
-private fun CSIPOffenderEvent.toTelemetryProperties(
-  dpsCSIPId: String? = null,
+private fun CSIPReportEvent.toTelemetryProperties(
+  dpsCSIPReportId: String? = null,
   mappingFailed: Boolean? = null,
 ) = mapOf(
   "nomisCSIPId" to "$csipReportId",
-) + (dpsCSIPId?.let { mapOf("dpsCSIPId" to it) } ?: emptyMap()) + (
+) + (dpsCSIPReportId?.let { mapOf("dpsCSIPId" to it) } ?: emptyMap()) + (
   mappingFailed?.takeIf { it }
     ?.let { mapOf("mapping" to "initial-failure") } ?: emptyMap()
   )

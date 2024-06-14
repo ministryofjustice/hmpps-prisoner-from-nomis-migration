@@ -39,9 +39,9 @@ class CSIPPrisonOffenderEventListener(
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
           if (eventFeatureSwitch.isEnabled(eventType)) {
             when (eventType) {
-              "CSIP_REPORTS-INSERTED" -> csipSynchronisationService.synchroniseCSIPInsert(sqsMessage.Message.fromJson())
+              "CSIP_REPORTS-INSERTED" -> csipSynchronisationService.csipReportInserted(sqsMessage.Message.fromJson())
               "CSIP_REPORTS-UPDATED" -> log.debug("Update CSIP Report")
-              "CSIP_REPORTS-DELETED" -> csipSynchronisationService.synchroniseCSIPDelete(sqsMessage.Message.fromJson())
+              "CSIP_REPORTS-DELETED" -> csipSynchronisationService.csipReportDeleted(sqsMessage.Message.fromJson())
               "CSIP_PLANS-INSERTED" -> log.debug("Insert CSIP Plan")
               "CSIP_PLANS-UPDATED" -> log.debug("Update CSIP Plan")
               "CSIP_PLANS-DELETED" -> log.debug("Delete CSIP Plan")
@@ -67,7 +67,7 @@ class CSIPPrisonOffenderEventListener(
           }
         }
 
-        RETRY_SYNCHRONISATION_MAPPING.name -> csipSynchronisationService.retryCreateCSIPMapping(
+        RETRY_SYNCHRONISATION_MAPPING.name -> csipSynchronisationService.retryCreateCSIPReportMapping(
           sqsMessage.Message.fromJson(),
         )
       }
@@ -79,8 +79,9 @@ class CSIPPrisonOffenderEventListener(
 }
 
 // Depending on the type of update/delete there will be additional params - but we don't care
-data class CSIPOffenderEvent(
+data class CSIPReportEvent(
   val csipReportId: Long,
+  val offenderIdDisplay: String,
   val auditModuleName: String?,
 )
 
