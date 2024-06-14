@@ -74,6 +74,7 @@ curl https://adjustments-api-dev.hmpps.service.justice.gov.uk/v3/api-docs | jq .
 curl https://incident-reporting-api-dev.hmpps.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/incidents-api-docs.json
 curl https://alerts-api-dev.hmpps.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/alerts-api-docs.json
 curl https://remand-and-sentencing-api-dev.hmpps.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/court-sentencing-api-docs.json
+curl https://prison-person-api-dev.prison.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/prison-person-api-docs.json
 ```
 
 Go into the specs and reformat so they and the diffs are easier for humans to read.

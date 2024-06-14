@@ -68,6 +68,7 @@ tasks {
       "buildSentencingAdjustmentsApiModel",
       "buildAlertsApiModel",
       "buildCourtSentencingApiModel",
+      "buildPrisonPersonApiModel",
     )
     compilerOptions.jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
   }
@@ -83,6 +84,7 @@ tasks {
       "buildSentencingAdjustmentsApiModel",
       "buildAlertsApiModel",
       "buildCourtSentencingApiModel",
+      "buildPrisonPersonApiModel",
     )
   }
   withType<KtLintFormatTask> {
@@ -97,6 +99,7 @@ tasks {
       "buildSentencingAdjustmentsApiModel",
       "buildAlertsApiModel",
       "buildCourtSentencingApiModel",
+      "buildPrisonPersonApiModel",
     )
   }
 }
@@ -210,8 +213,19 @@ tasks.register("buildCourtSentencingApiModel", GenerateTask::class) {
   globalProperties.set(mapOf("models" to ""))
 }
 
+tasks.register("buildPrisonPersonApiModel", GenerateTask::class) {
+  generatorName.set("kotlin")
+  skipValidateSpec.set(true)
+  inputSpec.set("openapi-specs/prison-person-api-docs.json")
+  outputDir.set("$buildDirectory/generated/prisonperson")
+  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model")
+  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.api")
+  configOptions.set(configValues)
+  globalProperties.set(mapOf("models" to ""))
+}
+
 val generatedProjectDirs =
-  listOf("activities", "adjudications", "incidents", "locations", "nomissync", "mappings", "sentencingadjustments", "alerts", "courtsentencing")
+  listOf("activities", "adjudications", "incidents", "locations", "nomissync", "mappings", "sentencingadjustments", "alerts", "courtsentencing", "prisonperson")
 
 kotlin {
   generatedProjectDirs.forEach { generatedProject ->

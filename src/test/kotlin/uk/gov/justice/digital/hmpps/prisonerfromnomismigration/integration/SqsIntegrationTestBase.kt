@@ -30,6 +30,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExten
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.JwtAuthHelper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.LocalStackContainer.setLocalStackProperties
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonerprofile.PrisonPersonDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ACTIVITIES_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ADJUDICATIONS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ALLOCATIONS_QUEUE_ID
@@ -65,6 +66,7 @@ import java.util.concurrent.TimeUnit
   LocationsApiExtension::class,
   AlertsDpsApiExtension::class,
   CourtSentencingDpsApiExtension::class,
+  PrisonPersonDpsApiExtension::class,
 )
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
