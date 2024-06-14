@@ -804,7 +804,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     }
 
     @Nested
-    @DisplayName("When court case was created in NOMIS")
+    @DisplayName("When court appearance was created in NOMIS")
     inner class NomisCreated {
       @BeforeEach
       fun setUp() {
@@ -878,6 +878,81 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
                 assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
                 assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+                assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("Ignore appearances unrelated to a court case")
+      inner class NoAssociatedCourtCase {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingNomisApiMockServer.stubGetCourtAppearance(
+            courtCaseId = null,
+            offenderNo = OFFENDER_ID_DISPLAY,
+            courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+          )
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            courtAppearanceEvent(
+              eventType = "COURT_EVENTS-INSERTED",
+            ),
+          )
+        }
+
+        @Test
+        fun `will track a telemetry event for ignored`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("court-appearance-synchronisation-created-ignored"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisCourtCaseId"]).isNull()
+                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+                assertThat(it["reason"]).contains("appearance not associated with a court case")
+                assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("Ignore appearances without a court case mapping")
+      inner class CourtCaseNotMapped {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingNomisApiMockServer.stubGetCourtAppearance(
+            courtCaseId = NOMIS_COURT_CASE_ID,
+            offenderNo = OFFENDER_ID_DISPLAY,
+            courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+          )
+          courtSentencingMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            courtAppearanceEvent(
+              eventType = "COURT_EVENTS-INSERTED",
+            ),
+          )
+        }
+
+        @Test
+        fun `will track a telemetry event for failed`() {
+          await untilAsserted {
+            verify(telemetryClient, times(2)).trackEvent(
+              eq("court-appearance-synchronisation-created-failed"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+                assertThat(it["reason"]).isEqualTo("associated court case is not mapped")
                 assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
               },
               isNull(),
