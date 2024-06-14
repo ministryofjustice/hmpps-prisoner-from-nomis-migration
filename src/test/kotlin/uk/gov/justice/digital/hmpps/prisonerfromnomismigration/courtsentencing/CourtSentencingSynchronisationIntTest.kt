@@ -1347,6 +1347,10 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
           )
 
+          courtSentencingMappingApiMockServer.stubGetByNomisId(
+            nomisCourtCaseId = NOMIS_COURT_CASE_ID,
+          )
+
           dpsCourtSentencingServer.stubPutCourtAppearanceForUpdate(
             courtAppearanceId = UUID.fromString(
               DPS_COURT_APPEARANCE_ID,
@@ -1382,6 +1386,89 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
                 assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
                 assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("Ignore appearances unrelated to a court case")
+      inner class NoAssociatedCourtCase {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+            dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
+          )
+          courtSentencingNomisApiMockServer.stubGetCourtAppearance(
+            courtCaseId = null,
+            offenderNo = OFFENDER_ID_DISPLAY,
+            courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+          )
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            courtAppearanceEvent(
+              eventType = "COURT_EVENTS-UPDATED",
+            ),
+          )
+        }
+
+        @Test
+        fun `will track a telemetry event for ignored`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("court-appearance-synchronisation-updated-ignored"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisCourtCaseId"]).isNull()
+                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+                assertThat(it["reason"]).contains("appearance not associated with a court case")
+                assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("appearances without a court case mapping fail")
+      inner class CourtCaseNotMapped {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+            dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
+          )
+          courtSentencingNomisApiMockServer.stubGetCourtAppearance(
+            courtCaseId = NOMIS_COURT_CASE_ID,
+            offenderNo = OFFENDER_ID_DISPLAY,
+            courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+          )
+          courtSentencingMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            courtAppearanceEvent(
+              eventType = "COURT_EVENTS-UPDATED",
+            ),
+          )
+        }
+
+        @Test
+        fun `will track a telemetry event for failed`() {
+          await untilAsserted {
+            verify(telemetryClient, times(2)).trackEvent(
+              eq("court-appearance-synchronisation-updated-failed"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+                assertThat(it["reason"]).isEqualTo("associated court case is not mapped")
+                assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
               },
               isNull(),
             )
