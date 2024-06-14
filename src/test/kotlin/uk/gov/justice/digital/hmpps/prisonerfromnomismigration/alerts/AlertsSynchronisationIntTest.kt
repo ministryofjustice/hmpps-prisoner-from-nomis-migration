@@ -1129,8 +1129,8 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
             .withRequestBodyJsonPath("newAlerts[0].alertSeq", "3")
             .withRequestBodyJsonPath("newAlerts[1].offenderBookId", "$bookingId")
             .withRequestBodyJsonPath("newAlerts[1].alertSeq", "4")
-            .withRequestBodyJsonPath("retainedAlertUuids[0].alertUuid", "20640934-cd38-481e-9826-51da09a17f77")
-            .withRequestBodyJsonPath("retainedAlertUuids[1].alertUuid", "432362fe-c6cc-4700-9099-952eec00f897"),
+            .withRequestBodyJsonPath("retainedAlertUuids[0]", "20640934-cd38-481e-9826-51da09a17f77")
+            .withRequestBodyJsonPath("retainedAlertUuids[1]", "432362fe-c6cc-4700-9099-952eec00f897"),
         )
       }
 

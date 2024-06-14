@@ -12,7 +12,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.Merg
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MergedAlerts
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MigrateAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MigratedAlert
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.RetainedAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.UpdateAlert
 import java.util.*
 
@@ -62,11 +61,7 @@ class AlertsDpsApiService(@Qualifier("alertsApiWebClient") private val webClient
         prisonNumberMergeTo = offenderNo,
         prisonNumberMergeFrom = removedOffenderNo,
         newAlerts = alerts,
-        retainedAlertUuids = retainedAlertIds.map {
-          RetainedAlert(
-            UUID.fromString(it),
-          )
-        },
+        retainedAlertUuids = retainedAlertIds.map { UUID.fromString(it) },
       ),
     )
     .retrieve()
