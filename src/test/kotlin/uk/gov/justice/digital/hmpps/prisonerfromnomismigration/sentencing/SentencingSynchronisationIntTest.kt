@@ -1814,7 +1814,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           mergeNomisEvent(
             bookingId = bookingId,
           ),
-        )
+        ).also { waitForAnyProcessingToComplete("from-nomis-synch-adjustment-merge") }
       }
 
       @Test
