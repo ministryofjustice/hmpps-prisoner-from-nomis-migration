@@ -40,7 +40,7 @@ class CSIPPrisonOffenderEventListener(
           if (eventFeatureSwitch.isEnabled(eventType)) {
             when (eventType) {
               "CSIP_REPORTS-INSERTED" -> csipSynchronisationService.csipReportInserted(sqsMessage.Message.fromJson())
-              "CSIP_REPORTS-UPDATED" -> log.debug("Update CSIP Report")
+              "CSIP_REPORTS-UPDATED" -> csipReportUpdated(sqsMessage.Message.fromJson())
               "CSIP_REPORTS-DELETED" -> csipSynchronisationService.csipReportDeleted(sqsMessage.Message.fromJson())
               "CSIP_PLANS-INSERTED" -> log.debug("Insert CSIP Plan")
               "CSIP_PLANS-UPDATED" -> log.debug("Update CSIP Plan")
@@ -71,6 +71,14 @@ class CSIPPrisonOffenderEventListener(
           sqsMessage.Message.fromJson(),
         )
       }
+    }
+  }
+
+  private suspend fun csipReportUpdated(event: CSIPReportEvent) {
+    when (event.auditModuleName) {
+      "OIDCSIPS" -> csipSynchronisationService.csipSaferCustodyScreeningInserted(event)
+      "DPS_SYNCHRONISATION" -> log.debug("TODO Ensure ignored")
+      else -> log.debug("Update CSIP Report")
     }
   }
 

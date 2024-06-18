@@ -17,6 +17,7 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.returnResult
 import org.springframework.web.reactive.function.BodyInserters
@@ -107,7 +108,7 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
       csipNomisApi.stubGetCSIPIds(totalElements = 86, pageSize = 10)
       csipNomisApi.stubMultipleGetCSIP(1..86)
 
-      csipMappingApi.stubGetByNomisIdWithError()
+      csipMappingApi.stubGetByNomisId(status = HttpStatus.NOT_FOUND)
       mappingApi.stubMappingCreate(CSIP_CREATE_MAPPING_URL)
 
       csipApi.stubCSIPMigrate()
@@ -141,7 +142,7 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
       csipNomisApi.stubGetCSIPIds(totalElements = 26, pageSize = 10)
       csipNomisApi.stubMultipleGetCSIP(1..26)
       csipApi.stubCSIPMigrate()
-      csipMappingApi.stubGetByNomisIdWithError()
+      csipMappingApi.stubGetByNomisId(status = HttpStatus.NOT_FOUND)
       mappingApi.stubMappingCreate(CSIP_CREATE_MAPPING_URL)
 
       // stub 25 migrated records and 1 fake a failure
@@ -179,7 +180,7 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
       csipNomisApi.stubGetInitialCount(CSIP_ID_URL, 1) { csipIdsPagedResponse(it) }
       csipNomisApi.stubGetCSIPIds(totalElements = 1, pageSize = 10)
       csipNomisApi.stubMultipleGetCSIP(1..1)
-      csipMappingApi.stubGetByNomisIdWithError()
+      csipMappingApi.stubGetByNomisId(status = HttpStatus.NOT_FOUND)
       csipMappingApi.stubCSIPMappingByMigrationId()
       csipApi.stubCSIPMigrate()
       mappingApi.stubMappingCreateFailureFollowedBySuccess(CSIP_CREATE_MAPPING_URL)
@@ -200,7 +201,7 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
       csipNomisApi.stubGetInitialCount(CSIP_ID_URL, 1) { csipIdsPagedResponse(it) }
       csipNomisApi.stubGetCSIPIds(totalElements = 1, pageSize = 10)
       csipNomisApi.stubMultipleGetCSIP(1..1)
-      csipMappingApi.stubGetByNomisIdWithError()
+      csipMappingApi.stubGetByNomisId(status = HttpStatus.NOT_FOUND)
       csipMappingApi.stubCSIPMappingByMigrationId()
       csipApi.stubCSIPMigrate(duplicateDPSCSIPId)
       csipMappingApi.stubCSIPMappingCreateConflict()

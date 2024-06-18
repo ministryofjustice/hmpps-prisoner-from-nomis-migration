@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension.Companion.csipApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsCreateCsipRecordRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsCreateSaferCustodyScreeningOutcomeRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 
 @SpringAPIServiceTest
@@ -64,8 +65,8 @@ internal class CSIPServiceTest {
           .withRequestBody(matchingJsonPath("referral.isProactiveReferral", equalTo("true")))
           .withRequestBody(matchingJsonPath("referral.isStaffAssaulted", equalTo("true")))
           .withRequestBody(matchingJsonPath("referral.assaultedStaffName", equalTo("Fred Jones")))
-          .withRequestBody(matchingJsonPath("referral.otherInformation", equalTo("other information goes in here")))
-          .withRequestBody(matchingJsonPath("referral.isSaferCustodyTeamInformed", equalTo("false"))),
+          .withRequestBody(notContaining("referral.otherInformation"))
+          .withRequestBody(notContaining("referral.isSaferCustodyTeamInformed")),
       )
     }
   }
@@ -78,7 +79,7 @@ internal class CSIPServiceTest {
       csipApi.stubCSIPInsert()
 
       runBlocking {
-        csipService.createCSIPReport("A1234BC", dpsCreateCsipRecordRequest())
+        csipService.createCSIPReport("A1234BC", dpsCreateCsipRecordRequest(), "JIM_ADM")
       }
     }
 
@@ -109,8 +110,8 @@ internal class CSIPServiceTest {
           .withRequestBody(matchingJsonPath("referral.isProactiveReferral", equalTo("true")))
           .withRequestBody(matchingJsonPath("referral.isStaffAssaulted", equalTo("true")))
           .withRequestBody(matchingJsonPath("referral.assaultedStaffName", equalTo("Fred Jones")))
-          .withRequestBody(matchingJsonPath("referral.otherInformation", equalTo("other information goes in here")))
-          .withRequestBody(matchingJsonPath("referral.isSaferCustodyTeamInformed", equalTo("false"))),
+          .withRequestBody(notContaining("referral.otherInformation"))
+          .withRequestBody(notContaining("referral.isSaferCustodyTeamInformed")),
       )
     }
   }
@@ -152,6 +153,44 @@ internal class CSIPServiceTest {
           csipService.deleteCSIP(csipReportId = dpsCSIPId)
         }
       }
+    }
+  }
+
+  @Nested
+  @DisplayName("POST /csip-records/{cspReportId}/referral/safer-custody-screening")
+  inner class CreateCSIPSCS {
+    private val dpsCSIPId = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e6"
+
+    @BeforeEach
+    internal fun setUp() {
+      csipApi.stubCSIPInsertSCS(dpsCSIPId = dpsCSIPId)
+
+      runBlocking {
+        csipService.createCSIPSaferCustodyScreening(
+          csipReportId = dpsCSIPId,
+          csipSCS = dpsCreateSaferCustodyScreeningOutcomeRequest(),
+          "JIM_ADM",
+        )
+      }
+    }
+
+    @Test
+    fun `should call api with OAuth2 token`() {
+      csipApi.verify(
+        postRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral/safer-custody-screening"))
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will pass data to the api`() {
+      csipApi.verify(
+        postRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral/safer-custody-screening"))
+          .withRequestBody(matchingJsonPath("outcomeTypeCode", equalTo("CUR")))
+          .withRequestBody(matchingJsonPath("date", equalTo("2024-04-08")))
+          .withRequestBody(matchingJsonPath("reasonForDecision", equalTo("There is a reason for the decision - it goes here"))),
+
+      )
     }
   }
 }

@@ -45,7 +45,7 @@ class CSIPSynchronisationService(
         event.toTelemetryProperties(it.dpsCSIPId),
       )
     } ?: let {
-      csipService.createCSIPReport(event.offenderIdDisplay, nomisCSIP.toDPSCreateCSIP())
+      csipService.createCSIPReport(event.offenderIdDisplay, nomisCSIP.toDPSCreateCSIP(), nomisCSIP.createdBy)
         .also { dpsCsip ->
           tryToCreateCSIPReportMapping(event, dpsCsip.recordUuid.toString()).also { result ->
             telemetryClient.trackEvent(
@@ -83,6 +83,25 @@ class CSIPSynchronisationService(
         "csip-synchronisation-deleted-ignored",
         event.toTelemetryProperties(),
       )
+    }
+  }
+
+  suspend fun csipSaferCustodyScreeningInserted(event: CSIPReportEvent) {
+    val nomisCSIP = nomisApiService.getCSIP(event.csipReportId)
+    mappingApiService.findByNomisId(nomisCSIPId = event.csipReportId)?.let {
+      csipService.createCSIPSaferCustodyScreening(
+        it.dpsCSIPId,
+        nomisCSIP.saferCustodyScreening.toDPSCreateCSIPSCS(),
+        nomisCSIP.saferCustodyScreening.recordedBy!!,
+      )
+      telemetryClient.trackEvent(
+        "csip-scs-synchronisation-created-success",
+        event.toTelemetryProperties(it.dpsCSIPId),
+      )
+    } ?: let {
+      // The CSIP Report should exist already - if not, then the ordering of events may be incorrect - put back on dlq
+      telemetryClient.trackEvent("csip-scs-synchronisation-created-failed", event.toTelemetryProperties())
+      throw IllegalStateException("Received CSIP_REPORTS_UPDATED for Safer Custody Screening that has never been created/mapped")
     }
   }
 
