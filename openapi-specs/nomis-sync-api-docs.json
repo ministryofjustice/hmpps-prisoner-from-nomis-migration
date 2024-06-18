@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-06-12.8032.1da3aa7"
+    "version": "2024-06-17.8066.d4e9c71"
   },
   "servers": [
     {
@@ -16232,6 +16232,7 @@
       "BookingPhysicalAttributesResponse": {
         "required": [
           "bookingId",
+          "latestBooking",
           "physicalAttributes",
           "startDate"
         ],
@@ -16261,6 +16262,11 @@
             "items": {
               "$ref": "#/components/schemas/PhysicalAttributesResponse"
             }
+          },
+          "latestBooking": {
+            "type": "boolean",
+            "description": "Whether this is the latest booking or not. Note that latest does not imply active.",
+            "example": true
           }
         },
         "description": "Physical attributes held against a booking"

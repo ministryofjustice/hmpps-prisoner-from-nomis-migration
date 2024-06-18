@@ -10,8 +10,11 @@ import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
+import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonerprofile.PrisonPersonDpsApiExtension.Companion.objectMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesHistoryDto
 
 class PrisonPersonDpsApiExtension :
   BeforeAllCallback,
@@ -43,7 +46,7 @@ class PrisonPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubSyncPrisonPerson(
-    response: PhysicalAttributesDto = PhysicalAttributesDto(180, 80),
+    response: PhysicalAttributesHistoryDto,
   ) {
     stubFor(
       put(urlPathMatching("/sync/prisoners/.*/physical-attributes"))
@@ -51,7 +54,19 @@ class PrisonPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(200)
             .withHeader("Content-Type", "application/json")
-            .withBody(PrisonPersonDpsApiExtension.objectMapper.writeValueAsString(response)),
+            .withBody(objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubSyncPrisonPerson(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    stubFor(
+      put(urlPathMatching("/sync/prisoners/.*/physical-attributes"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody(objectMapper.writeValueAsString(error)),
         ),
     )
   }
