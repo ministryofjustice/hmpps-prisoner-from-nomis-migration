@@ -65,8 +65,8 @@ internal class CSIPServiceTest {
           .withRequestBody(matchingJsonPath("referral.isProactiveReferral", equalTo("true")))
           .withRequestBody(matchingJsonPath("referral.isStaffAssaulted", equalTo("true")))
           .withRequestBody(matchingJsonPath("referral.assaultedStaffName", equalTo("Fred Jones")))
-          .withRequestBody(matchingJsonPath("referral.otherInformation", equalTo("other information goes in here")))
-          .withRequestBody(matchingJsonPath("referral.isSaferCustodyTeamInformed", equalTo("false"))),
+          .withRequestBody(notContaining("referral.otherInformation"))
+          .withRequestBody(notContaining("referral.isSaferCustodyTeamInformed")),
       )
     }
   }
@@ -110,8 +110,8 @@ internal class CSIPServiceTest {
           .withRequestBody(matchingJsonPath("referral.isProactiveReferral", equalTo("true")))
           .withRequestBody(matchingJsonPath("referral.isStaffAssaulted", equalTo("true")))
           .withRequestBody(matchingJsonPath("referral.assaultedStaffName", equalTo("Fred Jones")))
-          .withRequestBody(matchingJsonPath("referral.otherInformation", equalTo("other information goes in here")))
-          .withRequestBody(matchingJsonPath("referral.isSaferCustodyTeamInformed", equalTo("false"))),
+          .withRequestBody(notContaining("referral.otherInformation"))
+          .withRequestBody(notContaining("referral.isSaferCustodyTeamInformed")),
       )
     }
   }
