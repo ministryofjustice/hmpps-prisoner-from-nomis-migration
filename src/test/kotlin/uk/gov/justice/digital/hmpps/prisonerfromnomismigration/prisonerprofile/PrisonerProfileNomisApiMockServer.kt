@@ -28,6 +28,7 @@ class PrisonerProfileNomisApiMockServer(private val objectMapper: ObjectMapper) 
           bookingId = 1,
           startDate = LocalDate.parse("2024-02-03"),
           endDate = LocalDate.parse("2024-10-21"),
+          latestBooking = true,
           physicalAttributes = listOf(
             PhysicalAttributesResponse(
               heightCentimetres = 180,

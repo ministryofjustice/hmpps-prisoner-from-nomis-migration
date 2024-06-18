@@ -61,8 +61,8 @@ class PrisonerProfileNomisApiServiceTest {
       with(physicalAttributesResponse) {
         assertThat(offenderNo).isEqualTo("A1234AA")
         assertThat(bookings)
-          .extracting("bookingId", "startDate", "endDate")
-          .containsExactly(tuple(1L, LocalDate.parse("2024-02-03"), LocalDate.parse("2024-10-21")))
+          .extracting("bookingId", "startDate", "endDate", "latestBooking")
+          .containsExactly(tuple(1L, LocalDate.parse("2024-02-03"), LocalDate.parse("2024-10-21"), true))
         assertThat(bookings[0].physicalAttributes)
           .extracting("heightCentimetres", "weightKilograms", "auditModuleName")
           .containsExactly(tuple(180, 80, "MODULE"))

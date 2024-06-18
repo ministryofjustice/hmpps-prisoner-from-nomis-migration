@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-06-10.114.d8d2a54"
+    "version": "2024-06-17"
   },
   "servers": [
     {
@@ -28,18 +28,113 @@
   ],
   "tags": [
     {
+      "name": "Sync with NOMIS",
+      "description": "Endpoints to keep the Prison Person database in sync with changes in the NOMIS database"
+    },
+    {
+      "name": "Prison Person Data",
+      "description": "Data about a person that is specific to their time in prison"
+    },
+    {
       "name": "Physical Attributes",
-      "description": "Provides ability to add or update physical attributes for a prisoner"
+      "description": "The height and weight of a prisoner"
     }
   ],
   "paths": {
+    "/sync/prisoners/{prisonerNumber}/physical-attributes": {
+      "put": {
+        "tags": [
+          "Physical Attributes",
+          "Sync with NOMIS"
+        ],
+        "summary": "SYNC endpoint to sync changes to physical attributes made in NOMIS",
+        "description": "This endpoint <b>SHOULD ONLY BE USED IN ORDER TO SYNC CHANGES MADE IN NOMIS.</b> There is a separate endpoint for normal editing of the Physical Attributes.<br/><br/>Requires role `ROLE_PRISON_PERSON_API__PHYSICAL_ATTRIBUTES_SYNC__RW`<br/><br/>Edits can be made to physical attributes in NOMIS to both the current booking and to old bookings. This sync API can handle both by accepting the `appliesFrom` and `appliesTo` timestamps.  For edits to the current booking, `appliesFrom` should be equal to the point in time that the edit happened, and `appliesTo` should be null.  For edits to historical bookings `appliesFrom` should be equal to the booking start date and and `appliesTo` should be equal to the booking end date. The `createdAt` date should always be the point in time that the user made the edit.",
+        "operationId": "syncPhysicalAttributes",
+        "parameters": [
+          {
+            "name": "prisonerNumber",
+            "in": "path",
+            "description": "The prisoner number",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The prisoner number",
+              "example": "A1234AA"
+            },
+            "example": "A1234AA"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhysicalAttributesSyncRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Returns prisoner's physical attributes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhysicalAttributesHistoryDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires ROLE_PRISON_PERSON_API__PHYSICAL_ATTRIBUTES_SYNC__RW",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhysicalAttributesHistoryDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/prisoners/{prisonerNumber}/physical-attributes": {
       "put": {
         "tags": [
           "Physical Attributes"
         ],
         "summary": "Updates the physical attributes (height and weight) for a prisoner",
-        "description": "Requires role ROLE_PRISON_PERSON_API__PHYSICAL_ATTRIBUTES__RW",
+        "description": "Requires role `ROLE_PRISON_PERSON_API__PHYSICAL_ATTRIBUTES__RW`",
         "operationId": "setPhysicalAttributes",
         "parameters": [
           {
@@ -59,7 +154,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdatePhysicalAttributesRequest"
+                "$ref": "#/components/schemas/PhysicalAttributesUpdateRequest"
               }
             }
           },
@@ -76,6 +171,16 @@
               }
             }
           },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized to access this endpoint",
             "content": {
@@ -87,17 +192,7 @@
             }
           },
           "403": {
-            "description": "Missing required role. Requires ROLE_PRISON_PERSON_API____RW",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Data not found",
+            "description": "Missing required role. Requires ROLE_PRISON_PERSON_API__PHYSICAL_ATTRIBUTES__RW",
             "content": {
               "application/json": {
                 "schema": {
@@ -124,8 +219,7 @@
         "tags": [
           "Prison Person Data"
         ],
-        "summary": "Returns Prison Person Data (data about a person that is specific to their time in prison)",
-        "description": "Requires role ROLE_PRISON_PERSON_API__PRISON_PERSON_DATA__RO",
+        "description": "Requires role `ROLE_PRISON_PERSON_API__PRISON_PERSON_DATA__RO`",
         "operationId": "getPrisonPersonData",
         "parameters": [
           {
@@ -212,9 +306,70 @@
           }
         }
       },
-      "UpdatePhysicalAttributesRequest": {
+      "PhysicalAttributesSyncRequest": {
+        "required": [
+          "appliesFrom",
+          "createdAt",
+          "createdBy"
+        ],
         "type": "object",
         "properties": {
+          "height": {
+            "type": "integer",
+            "description": "Height (in centimetres). May be left null if no data available for height.",
+            "format": "int32",
+            "nullable": true,
+            "example": 180
+          },
+          "weight": {
+            "type": "integer",
+            "description": "Weight (in kilograms). May be left null if no data available for weight.",
+            "format": "int32",
+            "nullable": true,
+            "example": 70
+          },
+          "appliesFrom": {
+            "type": "string",
+            "description": "The timestamp indicating from when these physical attributes were true for the prisoner. For edits to the current booking, this should be equal to the 'createdAt' date. For edits to historical bookings, this should be equal to the booking start date.",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+01:00[Europe/London]"
+          },
+          "appliesTo": {
+            "type": "string",
+            "description": "The timestamp of when these physical attributes should no longer be considered applicable. For edits to the current booking, this should be left null. For edits to historical bookings, this should be equal to the booking end date.",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+01:00[Europe/London]"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "The timestamp indicating when this record was created in NOMIS.",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+01:00[Europe/London]"
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "The username of who created the record in NOMIS",
+            "nullable": true,
+            "example": "USER1"
+          }
+        },
+        "description": "Request object for syncing a prisoner's physical attributes"
+      },
+      "PhysicalAttributesHistoryDto": {
+        "required": [
+          "appliesFrom",
+          "createdAt",
+          "createdBy",
+          "physicalAttributesHistoryId"
+        ],
+        "type": "object",
+        "properties": {
+          "physicalAttributesHistoryId": {
+            "type": "integer",
+            "description": "Unique identifier for the history entry",
+            "format": "int64",
+            "example": 123
+          },
           "height": {
             "type": "integer",
             "description": "Height (in centimetres)",
@@ -224,6 +379,46 @@
           "weight": {
             "type": "integer",
             "description": "Weight (in kilograms)",
+            "format": "int32",
+            "example": 70
+          },
+          "appliesFrom": {
+            "type": "string",
+            "description": "The timestamp indicating from when these physical attributes were true for the prisoner",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+01:00[Europe/London]"
+          },
+          "appliesTo": {
+            "type": "string",
+            "description": "The timestamp of when these physical attributes were superseded by another record. If they are currently applicable, this is null.",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+01:00[Europe/London]"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "The timestamp indicating when this record was created",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+01:00[Europe/London]"
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "The username of who created the record"
+          }
+        },
+        "description": "Physical Attributes History"
+      },
+      "PhysicalAttributesUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "height": {
+            "type": "integer",
+            "description": "Height (in centimetres). May be left null if no data available for height.",
+            "format": "int32",
+            "example": 180
+          },
+          "weight": {
+            "type": "integer",
+            "description": "Weight (in kilograms). May be left null if no data available for weight.",
             "format": "int32",
             "example": 70
           }
@@ -279,22 +474,22 @@
         "type": "oauth2",
         "flows": {
           "clientCredentials": {
-            "tokenUrl": "https://sign-in-dev.hmpps.service.justice.gov.uk/auth/oauth/token",
+            "tokenUrl": "http://localhost:9090/auth/oauth/token",
             "scopes": {
               "read": "Allows read of data",
               "write": "Allows write of data"
             }
           },
           "authorizationCode": {
-            "authorizationUrl": "https://sign-in-dev.hmpps.service.justice.gov.uk/auth/oauth/authorize",
-            "tokenUrl": "https://sign-in-dev.hmpps.service.justice.gov.uk/auth/oauth/token",
+            "authorizationUrl": "http://localhost:9090/auth/oauth/authorize",
+            "tokenUrl": "http://localhost:9090/auth/oauth/token",
             "scopes": {
               "read": "Allows read of data",
               "write": "Allows write of data"
             }
           }
         },
-        "openIdConnectUrl": "https://sign-in-dev.hmpps.service.justice.gov.uk/auth/.well-known/openid-configuration"
+        "openIdConnectUrl": "http://localhost:9090/auth/.well-known/openid-configuration"
       }
     }
   }
