@@ -64,7 +64,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubGetByNomisIdWithError(status: HttpStatus = HttpStatus.NOT_FOUND) {
+  fun stubGetByNomisId(status: HttpStatus) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/csip/nomis-csip-id/\\d"))
         .willReturn(

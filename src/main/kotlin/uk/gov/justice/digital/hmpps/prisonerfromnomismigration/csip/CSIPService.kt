@@ -5,7 +5,9 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateCsipRecordRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateSaferCustodyScreeningOutcomeRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CsipRecord
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SaferCustodyScreeningOutcome
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 
 @Service
@@ -18,10 +20,11 @@ class CSIPService(@Qualifier("csipApiWebClient") private val webClient: WebClien
       .retrieve()
       .awaitBody()
 
-  suspend fun createCSIPReport(offenderNo: String, csipReport: CreateCsipRecordRequest): CsipRecord =
+  suspend fun createCSIPReport(offenderNo: String, csipReport: CreateCsipRecordRequest, createdByUsername: String): CsipRecord =
     webClient.post()
       .uri("/prisoners/{offenderNo}/csip-records", offenderNo)
       .bodyValue(csipReport)
+      .header("Username", createdByUsername)
       .retrieve()
       .awaitBody()
 
@@ -30,4 +33,12 @@ class CSIPService(@Qualifier("csipApiWebClient") private val webClient: WebClien
       .uri("/csip-records/{cspReportId}", csipReportId)
       .retrieve()
       .awaitBodyOrNullWhenNotFound<Unit>()
+
+  suspend fun createCSIPSaferCustodyScreening(csipReportId: String, csipSCS: CreateSaferCustodyScreeningOutcomeRequest, createdByUsername: String): SaferCustodyScreeningOutcome =
+    webClient.post()
+      .uri("/csip-records/{cspReportId}/referral/safer-custody-screening", csipReportId)
+      .header("Username", createdByUsername)
+      .bodyValue(csipSCS)
+      .retrieve()
+      .awaitBody()
 }

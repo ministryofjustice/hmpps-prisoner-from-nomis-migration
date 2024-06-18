@@ -11,9 +11,11 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateCsipRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateReferralRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateSaferCustodyScreeningOutcomeRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CsipRecord
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ReferenceData
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Referral
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SaferCustodyScreeningOutcome
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -79,6 +81,21 @@ class MockCSIPResource {
       lastModifiedByDisplayName = null,
       plan = null,
     )
+
+    fun dpsSaferCustodyScreening() =
+      SaferCustodyScreeningOutcome(
+        outcome = ReferenceData(
+          code = "CUR",
+          description	= "Progress to CSIP",
+          listSequence = 1,
+          createdAt = LocalDateTime.parse("2024-03-29T11:32:16"),
+          createdBy = "FRED_ADM",
+        ),
+        recordedBy = "FRED_ADM",
+        recordedByDisplayName = "FRED_ADM",
+        date = LocalDate.parse("2024-04-08"),
+        reasonForDecision = "There is a reason for the decision - it goes here",
+      )
   }
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_CSIP')")
@@ -116,14 +133,24 @@ class MockCSIPResource {
     return return dpsCsip()
   }
 
-  data class MigrateCSIP(
+  @PreAuthorize("hasRole('ROLE_SYNC_CSIP')")
+  @PostMapping("/csip-records/{recordUuid}/referral/safer-custody-screening")
+  @Operation(hidden = true)
+  suspend fun createCSIPSCS(
+    csipRequest: CreateSaferCustodyScreeningOutcomeRequest,
+    @PathVariable
+    recordUuid: String,
+  ): SaferCustodyScreeningOutcome {
+    log.info("Created csip scs for sync offender $recordUuid")
+    return dpsSaferCustodyScreening()
+  }
 
+  data class MigrateCSIP(
     /* User entered identifier for the CSIP record. Defaults to the prison code. */
     @field:JsonProperty("logNumber")
     val logNumber: kotlin.String,
 
     @field:JsonProperty("referral")
     val referral: CreateReferralRequest,
-
   )
 }

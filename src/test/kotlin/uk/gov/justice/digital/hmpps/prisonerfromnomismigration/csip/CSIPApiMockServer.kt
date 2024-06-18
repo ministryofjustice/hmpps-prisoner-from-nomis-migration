@@ -18,9 +18,11 @@ import org.springframework.http.HttpStatus.CREATED
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateCsipRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateReferralRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateSaferCustodyScreeningOutcomeRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CsipRecord
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ReferenceData
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Referral
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SaferCustodyScreeningOutcome
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -69,9 +71,6 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
           isProactiveReferral = true,
           isStaffAssaulted = true,
           assaultedStaffName = "Fred Jones",
-          otherInformation = "other information goes in here",
-          isSaferCustodyTeamInformed = false,
-          isReferralComplete = true,
         ),
       )
 
@@ -127,6 +126,28 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
       lastModifiedByDisplayName = null,
       plan = null,
     )
+
+    fun dpsCreateSaferCustodyScreeningOutcomeRequest() =
+      CreateSaferCustodyScreeningOutcomeRequest(
+        outcomeTypeCode = "CUR",
+        date = LocalDate.parse("2024-04-08"),
+        reasonForDecision = "There is a reason for the decision - it goes here",
+      )
+
+    fun dpsSaferCustodyScreening() =
+      SaferCustodyScreeningOutcome(
+        outcome = ReferenceData(
+          code = "CUR",
+          description	= "Progress to CSIP",
+          listSequence = 1,
+          createdAt = LocalDateTime.parse("2024-03-29T11:32:16"),
+          createdBy = "FRED_ADM",
+        ),
+        recordedBy = "FRED_ADM",
+        recordedByDisplayName = "FRED_ADM",
+        date = LocalDate.parse("2024-04-08"),
+        reasonForDecision = "There is a reason for the decision - it goes here",
+      )
   }
 
   fun stubHealthPing(status: Int) {
@@ -179,6 +200,19 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withHeader("Content-Type", "application/json")
             .withStatus(status.value()),
         ),
+    )
+  }
+
+  fun stubCSIPInsertSCS(dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
+    stubFor(
+      post("/csip-records/$dpsCSIPId/referral/safer-custody-screening").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(CREATED.value())
+          .withBody(
+            CSIPApiExtension.objectMapper.writeValueAsString(dpsSaferCustodyScreening()),
+          ),
+      ),
     )
   }
 
