@@ -13,7 +13,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.B
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PhysicalAttributesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerPhysicalAttributesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
-import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -26,14 +25,16 @@ class PrisonerProfileNomisApiMockServer(private val objectMapper: ObjectMapper) 
       bookings = listOf(
         BookingPhysicalAttributesResponse(
           bookingId = 1,
-          startDate = LocalDate.parse("2024-02-03"),
-          endDate = LocalDate.parse("2024-10-21"),
+          startDateTime = "2024-02-03T12:34:56",
+          endDateTime = "2024-10-21T12:34:56",
           latestBooking = true,
           physicalAttributes = listOf(
             PhysicalAttributesResponse(
               heightCentimetres = 180,
               weightKilograms = 80,
+              createdBy = "A_USER",
               createDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+              modifiedBy = "ANOTHER_USER",
               modifiedDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
               auditModuleName = "MODULE",
             ),
