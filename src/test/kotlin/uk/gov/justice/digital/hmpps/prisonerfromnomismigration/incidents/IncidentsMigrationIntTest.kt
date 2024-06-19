@@ -17,6 +17,7 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.returnResult
 import org.springframework.web.reactive.function.BodyInserters
@@ -108,7 +109,7 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
       incidentsNomisApi.stubMultipleGetIncidents(1..86)
 
       incidentsMappingApi.stubGetAnyIncidentNotFound()
-      mappingApi.stubMappingCreate(INCIDENTS_CREATE_MAPPING_URL)
+      incidentsMappingApi.stubMappingCreate()
 
       incidentsApi.stubIncidentUpsert()
       incidentsMappingApi.stubIncidentsMappingByMigrationId(count = 86)
@@ -141,7 +142,7 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
       incidentsNomisApi.stubMultipleGetIncidents(1..26)
       incidentsApi.stubIncidentUpsert()
       incidentsMappingApi.stubGetAnyIncidentNotFound()
-      mappingApi.stubMappingCreate(INCIDENTS_CREATE_MAPPING_URL)
+      incidentsMappingApi.stubMappingCreate()
 
       // stub 25 migrated records and 1 fake a failure
       incidentsMappingApi.stubIncidentsMappingByMigrationId(count = 25)
@@ -179,7 +180,7 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
       incidentsNomisApi.stubMultipleGetIncidentIdCounts(totalElements = 1, pageSize = 10)
       incidentsNomisApi.stubMultipleGetIncidents(1..1)
       incidentsMappingApi.stubGetAnyIncidentNotFound()
-      incidentsMappingApi.stubIncidentsMappingByMigrationId()
+      incidentsMappingApi.stubIncidentsMappingByMigrationId(count = 1)
       incidentsApi.stubIncidentUpsert()
       mappingApi.stubMappingCreateFailureFollowedBySuccess(INCIDENTS_CREATE_MAPPING_URL)
 
@@ -193,7 +194,7 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Test
-    internal fun `it will not retry after a 409 (duplicate incident written to Incidents API)`() {
+    internal fun `it will not retry after a 409 (duplicate incident written to Mapping API)`() {
       val duplicateDPSIncidentId = "ddd596da-8eab-4d2a-a026-bc5afb8acda0"
 
       nomisApi.stubGetInitialCount(INCIDENTS_ID_URL, 1) { incidentIdsPagedResponse(it) }
@@ -218,6 +219,75 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(it["duplicateNomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
           assertThat(it["existingDPSIncidentId"]).isEqualTo(DPS_INCIDENT_ID)
           assertThat(it["duplicateDPSIncidentId"]).isEqualTo(duplicateDPSIncidentId)
+          assertThat(it["migrationId"]).isNotNull()
+        },
+        isNull(),
+      )
+    }
+
+    @Test
+    internal fun `it will attempt to determine dpsIncident Id if get a 409 (duplicate incident written to Incidents API)`() {
+      nomisApi.stubGetInitialCount(INCIDENTS_ID_URL, 1) { incidentIdsPagedResponse(it) }
+      incidentsNomisApi.stubMultipleGetIncidentIdCounts(totalElements = 1, pageSize = 10)
+      incidentsNomisApi.stubMultipleGetIncidents(1..1)
+      incidentsMappingApi.stubGetAnyIncidentNotFound()
+      incidentsApi.stubIncidentUpsert(status = HttpStatus.CONFLICT)
+      incidentsApi.stubGetBasicIncident()
+      incidentsMappingApi.stubMappingCreate()
+
+      webTestClient.performMigration()
+
+      assertThat(incidentsApi.createIncidentUpsertCount()).isEqualTo(1)
+
+      verify(telemetryClient).trackEvent(
+        eq("incidents-migration-entity-migration-conflict"),
+        check {
+          assertThat(it["nomisIncidentId"]).isEqualTo("1")
+          assertThat(it["reason"]).contains("Conflict: 409 Conflict from POST")
+          assertThat(it["migrationId"]).isNotNull()
+        },
+        isNull(),
+      )
+
+      incidentsApi.verifyGetBasicIncident()
+      incidentsMappingApi.verifyCreateMappingIncidentId(dpsIncidentId = DPS_INCIDENT_ID)
+    }
+
+    @Test
+    internal fun `it will retry to write mapping after recovering from incidents api conflict 409 (from Incidents API)`() {
+      nomisApi.stubGetInitialCount(INCIDENTS_ID_URL, 1) { incidentIdsPagedResponse(it) }
+      incidentsNomisApi.stubMultipleGetIncidentIdCounts(totalElements = 1, pageSize = 10)
+      incidentsNomisApi.stubMultipleGetIncidents(1..1)
+      incidentsMappingApi.stubGetAnyIncidentNotFound()
+      incidentsApi.stubIncidentUpsert(status = HttpStatus.CONFLICT)
+      incidentsApi.stubGetBasicIncident()
+      incidentsMappingApi.stubMappingCreate()
+      mappingApi.stubMappingCreateFailureFollowedBySuccess(INCIDENTS_CREATE_MAPPING_URL)
+
+      webTestClient.performMigration()
+
+      assertThat(incidentsApi.createIncidentUpsertCount()).isEqualTo(1)
+
+      verify(telemetryClient).trackEvent(
+        eq("incidents-migration-entity-migration-conflict"),
+        check {
+          assertThat(it["nomisIncidentId"]).isEqualTo("1")
+          assertThat(it["reason"]).contains("Conflict: 409 Conflict from POST")
+          assertThat(it["migrationId"]).isNotNull()
+        },
+        isNull(),
+      )
+
+      incidentsApi.verifyGetBasicIncident()
+
+      // should retry to create mapping twice
+      incidentsMappingApi.verifyCreateMappingIncidentId(DPS_INCIDENT_ID, times = 2)
+
+      verify(telemetryClient).trackEvent(
+        eq("incidents-migration-entity-migrated"),
+        check {
+          assertThat(it["nomisIncidentId"]).isEqualTo("1")
+          assertThat(it["dpsIncidentId"]).isEqualTo(DPS_INCIDENT_ID)
           assertThat(it["migrationId"]).isNotNull()
         },
         isNull(),
