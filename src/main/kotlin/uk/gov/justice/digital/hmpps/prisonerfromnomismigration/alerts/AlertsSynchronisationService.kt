@@ -27,7 +27,7 @@ class AlertsSynchronisationService(
   private val dpsApiService: AlertsDpsApiService,
   private val queueService: SynchronisationQueueService,
   private val telemetryClient: TelemetryClient,
-  @Value("\${alerts.has-migrated-data:false}")
+  @Value("\${alerts.has-migrated-data:true}")
   private val hasMigratedAllData: Boolean,
 ) {
   private companion object {
