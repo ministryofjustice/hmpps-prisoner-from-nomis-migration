@@ -27,7 +27,7 @@ class AlertsSynchronisationService(
   private val dpsApiService: AlertsDpsApiService,
   private val queueService: SynchronisationQueueService,
   private val telemetryClient: TelemetryClient,
-  @Value("\${alerts.has-migrated-data:true}")
+  @Value("\${alerts.has-migrated-data:false}")
   private val hasMigratedAllData: Boolean,
 ) {
   private companion object {
@@ -285,7 +285,9 @@ class AlertsSynchronisationService(
         "alert-synchronisation-booking-transfer-failed",
         telemetry + ("previousBookingId" to previousBooking.bookingId.toString()),
       )
-      throw IllegalStateException("Mapping was not found to update for booking ${previousBooking.bookingId} and alertSequence ${event.alertSeq}")
+      if (hasMigratedAllData) {
+        throw IllegalStateException("Mapping was not found to update for booking ${previousBooking.bookingId} and alertSequence ${event.alertSeq}")
+      }
     }
   }
 }
