@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonerprofile
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson
 
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
@@ -9,13 +9,13 @@ import org.springframework.boot.test.system.CapturedOutput
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 
-class PrisonerProfileSyncIntTest : SqsIntegrationTestBase() {
+class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
 
   @Test
   @DisplayName("Temporary test to prove the test listeners are wired up - to be replaced with some proper sync tests")
   fun `can consume events`(output: CapturedOutput) {
-    awsSqsPrisonerProfileOffenderEventsClient.sendMessage(
-      prisonerProfileQueueOffenderEventsUrl,
+    awsSqsPrisonPersonOffenderEventsClient.sendMessage(
+      prisonPersonQueueOffenderEventsUrl,
       physicalAttributesChangedEvent(),
     )
 

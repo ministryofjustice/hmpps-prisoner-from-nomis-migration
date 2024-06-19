@@ -57,6 +57,6 @@ hmpps.sqs:
     eventcourtsentencing:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
-    eventprisonerprofile:
+    eventprisonperson:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}

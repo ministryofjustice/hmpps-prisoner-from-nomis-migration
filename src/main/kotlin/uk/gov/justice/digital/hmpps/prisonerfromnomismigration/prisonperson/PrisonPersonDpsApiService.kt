@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonerprofile
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson
 
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service

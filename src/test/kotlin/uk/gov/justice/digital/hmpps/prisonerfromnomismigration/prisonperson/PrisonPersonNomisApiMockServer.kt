@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonerprofile
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
@@ -17,7 +17,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Component
-class PrisonerProfileNomisApiMockServer(private val objectMapper: ObjectMapper) {
+class PrisonPersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubGetPhysicalAttributes(
     offenderNo: String = "A1234AA",
     response: PrisonerPhysicalAttributesResponse = PrisonerPhysicalAttributesResponse(

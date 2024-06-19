@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonerprofile
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -16,7 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMess
 import java.util.concurrent.CompletableFuture
 
 @Service
-class PrisonerProfileEventListener(
+class PrisonPersonEventListener(
   private val objectMapper: ObjectMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
 ) {
@@ -25,8 +25,8 @@ class PrisonerProfileEventListener(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  @SqsListener("eventprisonerprofile", factory = "hmppsQueueContainerFactoryProxy")
-  @WithSpan(value = "syscon-devs-prisoner_from_nomis_prisonerprofile_queue", kind = SpanKind.SERVER)
+  @SqsListener("eventprisonperson", factory = "hmppsQueueContainerFactoryProxy")
+  @WithSpan(value = "syscon-devs-prisoner_from_nomis_prisonperson_queue", kind = SpanKind.SERVER)
   fun onMessage(message: String): CompletableFuture<Void> {
     log.debug("Received offender event message {}", message)
     val sqsMessage: SQSMessage = objectMapper.readValue(message)
@@ -53,8 +53,6 @@ class PrisonerProfileEventListener(
 
 private fun asCompletableFuture(
   process: suspend () -> Unit,
-): CompletableFuture<Void> {
-  return CoroutineScope(Dispatchers.Default).future {
-    process()
-  }.thenAccept { }
-}
+): CompletableFuture<Void> = CoroutineScope(Dispatchers.Default).future {
+  process()
+}.thenAccept { }
