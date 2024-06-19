@@ -30,7 +30,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExten
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.JwtAuthHelper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.LocalStackContainer.setLocalStackProperties
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonerprofile.PrisonPersonDpsApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ACTIVITIES_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ADJUDICATIONS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ALLOCATIONS_QUEUE_ID
@@ -157,11 +157,11 @@ class SqsIntegrationTestBase : TestBase() {
   internal val awsSqsCourtSentencingOffenderEventsClient by lazy { courtSentencingOffenderEventsQueue.sqsClient }
   internal val awsSqsCourtSentencingOffenderEventDlqClient by lazy { courtSentencingOffenderEventsQueue.sqsDlqClient as SqsAsyncClient }
 
-  internal val prisonerProfileOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId("eventprisonerprofile") as HmppsQueue }
-  internal val prisonerProfileQueueOffenderEventsUrl by lazy { prisonerProfileOffenderEventsQueue.queueUrl }
-  internal val prisonerProfileQueueOffenderEventsDlqUrl by lazy { prisonerProfileOffenderEventsQueue.dlqUrl as String }
-  internal val awsSqsPrisonerProfileOffenderEventsClient by lazy { prisonerProfileOffenderEventsQueue.sqsClient }
-  internal val awsSqsPrisonerProfileOffenderEventDlqClient by lazy { prisonerProfileOffenderEventsQueue.sqsDlqClient as SqsAsyncClient }
+  internal val prisonPersonOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId("eventprisonperson") as HmppsQueue }
+  internal val prisonPersonQueueOffenderEventsUrl by lazy { prisonPersonOffenderEventsQueue.queueUrl }
+  internal val prisonPersonQueueOffenderEventsDlqUrl by lazy { prisonPersonOffenderEventsQueue.dlqUrl as String }
+  internal val awsSqsPrisonPersonOffenderEventsClient by lazy { prisonPersonOffenderEventsQueue.sqsClient }
+  internal val awsSqsPrisonPersonOffenderEventDlqClient by lazy { prisonPersonOffenderEventsQueue.sqsDlqClient as SqsAsyncClient }
 
   private val allQueues by lazy {
     listOf(
@@ -180,7 +180,7 @@ class SqsIntegrationTestBase : TestBase() {
       visitsMigrationQueue,
       alertsOffenderEventsQueue,
       courtSentencingOffenderEventsQueue,
-      prisonerProfileOffenderEventsQueue,
+      prisonPersonOffenderEventsQueue,
     )
   }
 

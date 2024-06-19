@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonerprofile
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
@@ -20,41 +20,41 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 @SpringAPIServiceTest
-@Import(PrisonerProfileNomisApiService::class, PrisonerProfileNomisApiMockServer::class)
-class PrisonerProfileNomisApiServiceTest {
+@Import(PrisonPersonNomisApiService::class, PrisonPersonNomisApiMockServer::class)
+class PrisonPersonNomisApiServiceTest {
   @Autowired
-  private lateinit var apiService: PrisonerProfileNomisApiService
+  private lateinit var apiService: PrisonPersonNomisApiService
 
   @Autowired
-  private lateinit var prisonerProfileNomisApiMockServer: PrisonerProfileNomisApiMockServer
+  private lateinit var prisonPersonNomisApiMockServer: PrisonPersonNomisApiMockServer
 
   @Nested
   inner class GetPhysicalAttributes {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
-      prisonerProfileNomisApiMockServer.stubGetPhysicalAttributes(offenderNo = "A1234AA")
+      prisonPersonNomisApiMockServer.stubGetPhysicalAttributes(offenderNo = "A1234AA")
 
       apiService.getPhysicalAttributes(offenderNo = "A1234AA")
 
-      prisonerProfileNomisApiMockServer.verify(
+      prisonPersonNomisApiMockServer.verify(
         getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
     @Test
     internal fun `will pass NOMIS ids to service`() = runTest {
-      prisonerProfileNomisApiMockServer.stubGetPhysicalAttributes(offenderNo = "A1234AA")
+      prisonPersonNomisApiMockServer.stubGetPhysicalAttributes(offenderNo = "A1234AA")
 
       apiService.getPhysicalAttributes(offenderNo = "A1234AA")
 
-      prisonerProfileNomisApiMockServer.verify(
+      prisonPersonNomisApiMockServer.verify(
         getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/physical-attributes")),
       )
     }
 
     @Test
     fun `will return physical attributes`() = runTest {
-      prisonerProfileNomisApiMockServer.stubGetPhysicalAttributes(offenderNo = "A1234AA")
+      prisonPersonNomisApiMockServer.stubGetPhysicalAttributes(offenderNo = "A1234AA")
 
       val physicalAttributesResponse = apiService.getPhysicalAttributes("A1234AA")
 
@@ -73,7 +73,7 @@ class PrisonerProfileNomisApiServiceTest {
 
     @Test
     fun `will throw error when bookings do not exist`() = runTest {
-      prisonerProfileNomisApiMockServer.stubGetPhysicalAttributes(NOT_FOUND)
+      prisonPersonNomisApiMockServer.stubGetPhysicalAttributes(NOT_FOUND)
 
       assertThrows<WebClientResponseException.NotFound> {
         apiService.getPhysicalAttributes("A1234AA")
@@ -82,7 +82,7 @@ class PrisonerProfileNomisApiServiceTest {
 
     @Test
     fun `will throw error when API returns an error`() = runTest {
-      prisonerProfileNomisApiMockServer.stubGetPhysicalAttributes(INTERNAL_SERVER_ERROR)
+      prisonPersonNomisApiMockServer.stubGetPhysicalAttributes(INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.getPhysicalAttributes("A1234AA")
