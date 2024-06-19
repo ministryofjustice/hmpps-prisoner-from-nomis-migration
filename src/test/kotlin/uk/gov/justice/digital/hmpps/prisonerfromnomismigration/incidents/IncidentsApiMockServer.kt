@@ -2,11 +2,14 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
@@ -14,6 +17,11 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.CREATED
+import org.springframework.http.HttpStatus.NOT_FOUND
+import org.springframework.http.HttpStatus.NO_CONTENT
+import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
+import org.springframework.test.context.junit.jupiter.SpringExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension.Companion.objectMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.CorrectionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.Event
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.Evidence
@@ -24,20 +32,24 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.L
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisSyncReportId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.PrisonerInvolvement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.Question
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.Report
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.ReportBasic
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.ReportWithDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.Response
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.StaffInvolvement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.StatusHistory
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import java.util.UUID
 
 class IncidentsApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
   companion object {
     @JvmField
     val incidentsApi = IncidentsApiMockServer()
+    lateinit var objectMapper: ObjectMapper
   }
 
   override fun beforeAll(context: ExtensionContext) {
     incidentsApi.start()
+    objectMapper = (SpringExtension.getApplicationContext(context).getBean("jacksonObjectMapper") as ObjectMapper)
   }
 
   override fun beforeEach(context: ExtensionContext) {
@@ -58,14 +70,14 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       NomisSyncReportId(id = UUID.fromString(dpsIncidentId))
 
     fun dpsIncidentReport(dpsIncidentId: String = DPS_INCIDENT_ID) =
-      Report(
+      ReportWithDetails(
         id = UUID.fromString(dpsIncidentId),
-        incidentNumber = "string",
-        type = Report.Type.SELF_HARM,
+        incidentNumber = "1234",
+        type = ReportWithDetails.Type.SELF_HARM,
         incidentDateAndTime = "2021-07-05T10:35:17",
         prisonId = "MDI",
-        title = "string",
-        description = "string",
+        title = "There was an incident in the exercise yard",
+        description = "Fred and Jimmy were fighting outside.",
         event = Event(
           eventId = "123",
           eventDateAndTime = "2021-07-05T10:35:17",
@@ -78,8 +90,8 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
         reportedBy = "JSMITH",
         reportedAt = "2021-07-05T10:35:17",
-        status = Report.Status.DRAFT,
-        assignedTo = "string",
+        status = ReportWithDetails.Status.DRAFT,
+        assignedTo = "BJONES",
         questions = listOf(
           Question(
             code = "string",
@@ -156,7 +168,25 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             correctionRequestedAt = "2021-07-05T10:35:17",
           ),
         ),
+        createdAt = "2021-07-05T10:35:17",
+        modifiedAt = "2021-07-05T10:35:17",
+        modifiedBy = "JSMITH",
+        createdInNomis = true,
+      )
 
+    fun dpsBasicIncidentReport(dpsIncidentId: String = DPS_INCIDENT_ID) =
+      ReportBasic(
+        id = UUID.fromString(dpsIncidentId),
+        incidentNumber = "1234",
+        type = ReportBasic.Type.SELF_HARM,
+        incidentDateAndTime = "2021-07-05T10:35:17",
+        prisonId = "MDI",
+        title = "There was an incident in the exercise yard",
+        description = "Fred and Jimmy were fighting outside.",
+        reportedBy = "JSMITH",
+        reportedAt = "2021-07-05T10:35:17",
+        status = ReportBasic.Status.DRAFT,
+        assignedTo = "BJONES",
         createdAt = "2021-07-05T10:35:17",
         modifiedAt = "2021-07-05T10:35:17",
         modifiedBy = "JSMITH",
@@ -181,8 +211,25 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(CREATED.value())
-          .withBody(dpsIncidentReportId(dpsIncidentId).toJson()),
+          .withBody(
+            objectMapper.writeValueAsString(dpsIncidentReportId(dpsIncidentId)),
+          ),
       ),
+    )
+  }
+
+  fun stubIncidentUpsert(
+    status: HttpStatus,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    stubFor(
+      post("/sync/upsert")
+        .willReturn(
+          aResponse()
+            .withStatus(status.value())
+            .withHeader("Content-Type", APPLICATION_JSON_VALUE)
+            .withBody(objectMapper.writeValueAsString(error)),
+        ),
     )
   }
 
@@ -190,7 +237,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     stubFor(
       delete("/incident-reports/$incidentId").willReturn(
         aResponse()
-          .withStatus(HttpStatus.NO_CONTENT.value()),
+          .withStatus(NO_CONTENT.value()),
       ),
     )
   }
@@ -199,13 +246,29 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     stubFor(
       delete("/incident-reports/$incidentId").willReturn(
         aResponse()
-          .withStatus(HttpStatus.NOT_FOUND.value()),
+          .withStatus(NOT_FOUND.value()),
       ),
     )
   }
 
-  fun createIncidentUpsertCount() =
-    findAll(postRequestedFor(urlMatching("/sync/upsert"))).count()
-}
+  fun stubGetBasicIncident() {
+    stubFor(
+      get(WireMock.urlPathMatching("/incident-reports/incident-number/.*")).willReturn(
+        aResponse()
+          .withStatus(HttpStatus.OK.value())
+          .withHeader("Content-Type", APPLICATION_JSON_VALUE)
+          .withBody(
+            objectMapper.writeValueAsString(dpsBasicIncidentReport()),
+          ),
+      ),
+    )
+  }
 
-private fun Any.toJson(): String = ObjectMapper().writeValueAsString(this)
+  fun verifyGetBasicIncident() =
+    verify(
+      getRequestedFor(urlMatching("/incident-reports/incident-number/.*")),
+    )
+
+  fun createIncidentUpsertCount() =
+    findAll(postRequestedFor(urlEqualTo("/sync/upsert"))).count()
+}

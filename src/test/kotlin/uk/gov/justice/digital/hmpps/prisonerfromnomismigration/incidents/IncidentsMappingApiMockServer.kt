@@ -5,8 +5,11 @@ import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
@@ -23,15 +26,14 @@ class IncidentsMappingApiMockServer(private val objectMapper: ObjectMapper) {
     const val INCIDENTS_CREATE_MAPPING_URL = "/mapping/incidents"
     const val INCIDENTS_GET_MAPPING_URL = "/mapping/incidents/nomis-incident-id"
   }
+
   fun verifyCreateMappingIncidentId(dpsIncidentId: String, times: Int = 1) =
     verify(
       times,
-      WireMock.postRequestedFor(WireMock.urlPathEqualTo("/mapping/incidents")).withRequestBody(
-        WireMock.matchingJsonPath(
-          "dpsIncidentId",
-          WireMock.equalTo("$dpsIncidentId"),
+      postRequestedFor(WireMock.urlPathEqualTo("/mapping/incidents"))
+        .withRequestBody(
+          matchingJsonPath("dpsIncidentId", equalTo("$dpsIncidentId")),
         ),
-      ),
     )
 
   fun stubIncidentMappingCreateConflict(
@@ -126,14 +128,11 @@ class IncidentsMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
+  fun stubMappingCreate() {
+    mappingApi.stubMappingCreate(INCIDENTS_CREATE_MAPPING_URL)
+  }
+
   fun stubIncidentsMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 54327) {
-    val content = """{
-      "dpsIncidentId": "fb4b2e91-91e7-457b-aa17-797f8c5c2f42",
-      "nomisIncidentId": 1234,                                       
-      "label": "2022-02-14T09:58:45",
-      "whenCreated": "$whenCreated",
-      "mappingType": "MIGRATED"
-    }"""
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/incidents/migration-id/.*")).willReturn(
         aResponse()

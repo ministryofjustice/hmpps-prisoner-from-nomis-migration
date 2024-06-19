@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
+import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -70,33 +71,68 @@ class IncidentsMigrationService(
     incidentsMappingService.findByNomisId(nomisIncidentId)
       ?.run {
         log.info("Will not migrate the nomis incident=$nomisIncidentId since it was already mapped to DPS incident ${this.dpsIncidentId} during migration ${this.label}")
-      } ?: runCatching {
-      val nomisIncidentResponse = nomisApiService.getIncident(nomisIncidentId)
-      incidentsService.upsertIncident(nomisIncidentResponse.toMigrateUpsertNomisIncident()).also {
-        createIncidentMapping(
-          dpsIncidentId = it.id.toString(),
-          nomisIncidentId = nomisIncidentId,
-          context = context,
-        )
+      }
+      ?: try {
+        val nomisIncidentResponse = nomisApiService.getIncident(nomisIncidentId)
+        incidentsService.upsertIncident(nomisIncidentResponse.toMigrateUpsertNomisIncident()).also {
+          createIncidentMapping(
+            dpsIncidentId = it.id.toString(),
+            nomisIncidentId = nomisIncidentId,
+            context = context,
+          )
+          telemetryClient.trackEvent(
+            "${MigrationType.INCIDENTS.telemetryName}-migration-entity-migrated",
+            mapOf(
+              "nomisIncidentId" to nomisIncidentId,
+              "dpsIncidentId" to it.id,
+              "migrationId" to migrationId,
+            ),
+          )
+        }
+      } catch (e: WebClientResponseException.Conflict) {
+        // We have a conflict - this should only ever happen if the incident was stored in DPS, but we didn't receive a response in time
+        // so is never added to the incidents mapping table
+        log.error("Conflict received from DPS for nomisIncidentId: $nomisIncidentId, attempting to recover.", e)
         telemetryClient.trackEvent(
-          "${MigrationType.INCIDENTS.telemetryName}-migration-entity-migrated",
+          "${MigrationType.INCIDENTS.telemetryName}-migration-entity-migration-conflict",
           mapOf(
             "nomisIncidentId" to nomisIncidentId,
-            "dpsIncidentId" to it.id,
+            "reason" to e.toString(),
+            "migrationId" to context.migrationId,
+          ),
+        )
+        recoverFromDPSConflict(nomisIncidentId, context)
+      } catch (e: Exception) {
+        telemetryClient.trackEvent(
+          "${MigrationType.INCIDENTS.telemetryName}-migration-entity-migration-failed",
+          mapOf(
+            "nomisIncidentId" to nomisIncidentId,
+            "reason" to e.toString(),
             "migrationId" to migrationId,
           ),
         )
+        throw e
       }
-    }.onFailure {
+  }
+
+  private suspend fun recoverFromDPSConflict(
+    nomisIncidentId: Long,
+    context: MigrationContext<*>,
+  ) {
+    incidentsService.getIncidentByNomisId(nomisIncidentId).also {
+      createIncidentMapping(
+        dpsIncidentId = it.id.toString(),
+        nomisIncidentId = nomisIncidentId,
+        context = context,
+      )
       telemetryClient.trackEvent(
-        "${MigrationType.INCIDENTS.telemetryName}-migration-entity-migration-failed",
+        "${MigrationType.INCIDENTS.telemetryName}-migration-entity-migrated",
         mapOf(
           "nomisIncidentId" to nomisIncidentId,
-          "reason" to it.toString(),
-          "migrationId" to migrationId,
+          "dpsIncidentId" to it.id,
+          "migrationId" to context.migrationId,
         ),
       )
-      throw it
     }
   }
 
