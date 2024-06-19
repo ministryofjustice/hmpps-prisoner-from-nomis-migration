@@ -497,7 +497,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
               alertSequence = alertSequence,
               offenderNo = offenderNo,
             ),
-          )
+          ).also { waitForAnyProcessingToComplete("alert-synchronisation-booking-transfer-success") }
         }
 
         @Test

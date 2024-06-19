@@ -285,7 +285,9 @@ class AlertsSynchronisationService(
         "alert-synchronisation-booking-transfer-failed",
         telemetry + ("previousBookingId" to previousBooking.bookingId.toString()),
       )
-      throw IllegalStateException("Mapping was not found to update for booking ${previousBooking.bookingId} and alertSequence ${event.alertSeq}")
+      if (hasMigratedAllData) {
+        throw IllegalStateException("Mapping was not found to update for booking ${previousBooking.bookingId} and alertSequence ${event.alertSeq}")
+      }
     }
   }
 }
