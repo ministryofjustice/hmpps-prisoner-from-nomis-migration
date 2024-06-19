@@ -136,10 +136,10 @@ generic-service:
       HMPPS_SQS_QUEUES_EVENTCOURTSENTENCING_QUEUE_NAME: "sqs_name"
     prison-events-courtsentencing-dl-queue:
       HMPPS_SQS_QUEUES_EVENTCOURTSENTENCING_DLQ_NAME: "sqs_name"
-    prison-events-prisonerprofile-queue:
-      HMPPS_SQS_QUEUES_EVENTPRISONERPROFILE_QUEUE_NAME: "sqs_name"
-    prison-events-prisonerprofile-dl-queue:
-      HMPPS_SQS_QUEUES_EVENTPRISONERPROFILE_DLQ_NAME: "sqs_name"
+    prison-events-prisonperson-queue:
+      HMPPS_SQS_QUEUES_EVENTPRISONPERSON_QUEUE_NAME: "sqs_name"
+    prison-events-prisonperson-dl-queue:
+      HMPPS_SQS_QUEUES_EVENTPRISONPERSON_DLQ_NAME: "sqs_name"
     rds-database:
       SPRING_FLYWAY_USER: "database_username"
       SPRING_FLYWAY_PASSWORD: "database_password"

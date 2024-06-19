@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonerprofile
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson
 
 import com.github.tomakehurst.wiremock.client.WireMock.absent
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
@@ -15,14 +15,14 @@ import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonerprofile.PrisonPersonDpsApiExtension.Companion.dpsPrisonPersonServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonDpsApiExtension.Companion.dpsPrisonPersonServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesHistoryDto
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
 @SpringAPIServiceTest
-@Import(PrisonPersonDpsApiService::class, PrisonerProfileConfiguration::class)
+@Import(PrisonPersonDpsApiService::class, PrisonPersonConfiguration::class)
 class PrisonPersonDpsApiServiceTest {
   @Autowired
   private lateinit var apiService: PrisonPersonDpsApiService

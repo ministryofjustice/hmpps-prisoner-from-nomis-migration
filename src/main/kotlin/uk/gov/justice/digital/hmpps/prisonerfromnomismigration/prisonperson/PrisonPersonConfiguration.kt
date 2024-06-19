@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonerprofile
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson
 
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
@@ -13,7 +13,7 @@ import uk.gov.justice.hmpps.kotlin.health.ReactiveHealthPingCheck
 import java.time.Duration
 
 @Configuration
-class PrisonerProfileConfiguration(
+class PrisonPersonConfiguration(
   @Value("\${api.base.url.prison.person}") val apiBaseUri: String,
   @Value("\${api.health-timeout:2s}") val healthTimeout: Duration,
   @Value("\${api.timeout:90s}") val timeout: Duration,
