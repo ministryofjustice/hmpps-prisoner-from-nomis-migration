@@ -32,8 +32,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.L
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisSyncReportId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.PrisonerInvolvement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.Question
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.Report
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.ReportBasic
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.ReportWithDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.Response
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.StaffInvolvement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.StatusHistory
@@ -70,10 +70,10 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       NomisSyncReportId(id = UUID.fromString(dpsIncidentId))
 
     fun dpsIncidentReport(dpsIncidentId: String = DPS_INCIDENT_ID) =
-      Report(
+      ReportWithDetails(
         id = UUID.fromString(dpsIncidentId),
         incidentNumber = "1234",
-        type = Report.Type.SELF_HARM,
+        type = ReportWithDetails.Type.SELF_HARM,
         incidentDateAndTime = "2021-07-05T10:35:17",
         prisonId = "MDI",
         title = "There was an incident in the exercise yard",
@@ -90,7 +90,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
         reportedBy = "JSMITH",
         reportedAt = "2021-07-05T10:35:17",
-        status = Report.Status.DRAFT,
+        status = ReportWithDetails.Status.DRAFT,
         assignedTo = "BJONES",
         questions = listOf(
           Question(
