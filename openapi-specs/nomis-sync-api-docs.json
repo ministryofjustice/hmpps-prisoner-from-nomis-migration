@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-06-17.8066.d4e9c71"
+    "version": "2024-06-19.8097.6d4e3b3"
   },
   "servers": [
     {
@@ -16234,7 +16234,7 @@
           "bookingId",
           "latestBooking",
           "physicalAttributes",
-          "startDate"
+          "startDateTime"
         ],
         "type": "object",
         "properties": {
@@ -16244,17 +16244,17 @@
             "format": "int64",
             "example": 1234567
           },
-          "startDate": {
+          "startDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
             "description": "The start date of the booking",
-            "format": "date",
-            "example": "2020-07-17"
+            "example": "2021-07-05T10:35:17"
           },
-          "endDate": {
+          "endDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
             "description": "The end date of the booking, or null if the booking is still active",
-            "format": "date",
-            "example": "2021-07-16"
+            "example": "2021-07-05T10:35:17"
           },
           "physicalAttributes": {
             "type": "array",
@@ -16273,7 +16273,8 @@
       },
       "PhysicalAttributesResponse": {
         "required": [
-          "createDateTime"
+          "createDateTime",
+          "createdBy"
         ],
         "type": "object",
         "properties": {
@@ -16295,11 +16296,21 @@
             "description": "The time the physical attributes were created",
             "example": "2021-07-05T10:35:17"
           },
+          "createdBy": {
+            "type": "string",
+            "description": "The user who created the physical attributes",
+            "example": "AQ425D"
+          },
           "modifiedDateTime": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
             "description": "The time the physical attributes were last changed",
             "example": "2021-07-05T10:35:17"
+          },
+          "modifiedBy": {
+            "type": "string",
+            "description": "The user who modified the physical attributes",
+            "example": "AQ425D"
           },
           "auditModuleName": {
             "type": "string",
