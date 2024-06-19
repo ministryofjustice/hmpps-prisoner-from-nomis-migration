@@ -7,6 +7,7 @@ import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisSyncReportId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisSyncRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.ReportBasic
 
 @Service
 class IncidentsService(@Qualifier("incidentsApiWebClient") private val webClient: WebClient) {
@@ -22,4 +23,10 @@ class IncidentsService(@Qualifier("incidentsApiWebClient") private val webClient
       .uri("/incident-reports/{incidentId}", incidentId)
       .retrieve()
       .awaitBodyOrNullWhenNotFound<Unit>()
+
+  suspend fun getIncidentByNomisId(nomisIncidentId: Long): ReportBasic =
+    webClient.get()
+      .uri("/incident-reports/incident-number/{nomisIncidentId}", nomisIncidentId)
+      .retrieve()
+      .awaitBody()
 }

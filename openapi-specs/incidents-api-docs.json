@@ -10,7 +10,7 @@
     "license": {
       "name": "MIT"
     },
-    "version": "2024-06-10.1923.548c0fe"
+    "version": "2024-06-18.2114.b7891e5"
   },
   "servers": [
     {
@@ -37,6 +37,10 @@
     {
       "name": "Incident reports",
       "description": "Create, retrieve, update and delete incident reports"
+    },
+    {
+      "name": "Objects related to incident reports",
+      "description": "Create, retrieve, update and delete objects that are related to incident reports"
     },
     {
       "name": "Migrate/Upsert NOMIS Incident Report",
@@ -214,9 +218,9 @@
         "tags": [
           "Incident reports"
         ],
-        "summary": "Returns pages of filtered incident reports",
+        "summary": "Returns pages of filtered incident reports (with only basic information)",
         "description": "Requires role VIEW_INCIDENT_REPORTS",
-        "operationId": "getReports",
+        "operationId": "getBasicReports",
         "parameters": [
           {
             "name": "prisonId",
@@ -224,7 +228,7 @@
             "description": "Filter by given prison ID",
             "required": false,
             "schema": {
-              "maxLength": 10,
+              "maxLength": 6,
               "minLength": 2,
               "type": "string",
               "description": "Filter by given prison ID",
@@ -426,7 +430,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SimplePageReport"
+                  "$ref": "#/components/schemas/SimplePageReportBasic"
                 }
               }
             }
@@ -467,7 +471,7 @@
         "tags": [
           "Incident reports"
         ],
-        "summary": "Creates an incident report",
+        "summary": "Creates a draft incident report",
         "description": "Requires role MAINTAIN_INCIDENT_REPORTS and write scope",
         "operationId": "createReport",
         "requestBody": {
@@ -482,11 +486,1844 @@
         },
         "responses": {
           "201": {
-            "description": "Returns created incident report",
+            "description": "Returns created draft incident report",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Report"
+                  "$ref": "#/components/schemas/ReportWithDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the MAINTAIN_INCIDENT_REPORTS role with write scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/incident-reports/{reportId}/staff-involved": {
+      "get": {
+        "tags": [
+          "Objects related to incident reports"
+        ],
+        "summary": "Returns staff involvement for this incident report",
+        "description": "Requires role VIEW_INCIDENT_REPORTS",
+        "operationId": "listObjects",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "description": "The incident report id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The incident report id",
+              "example": "11111111-2222-3333-4444-555555555555"
+            },
+            "example": "11111111-2222-3333-4444-555555555555"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns staff involvement",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StaffInvolvement"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the VIEW_INCIDENT_REPORTS role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Objects related to incident reports"
+        ],
+        "summary": "Adds an involved member of staff to this incident report",
+        "description": "Requires role MAINTAIN_INCIDENT_REPORTS and write scope",
+        "operationId": "addObject",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "description": "The incident report id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The incident report id",
+              "example": "11111111-2222-3333-4444-555555555555"
+            },
+            "example": "11111111-2222-3333-4444-555555555555"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddStaffInvolvement"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Returns staff involvement",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StaffInvolvement"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the MAINTAIN_INCIDENT_REPORTS role with write scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/incident-reports/{reportId}/prisoners-involved": {
+      "get": {
+        "tags": [
+          "Objects related to incident reports"
+        ],
+        "summary": "Returns prisoner involvement for this incident report",
+        "description": "Requires role VIEW_INCIDENT_REPORTS",
+        "operationId": "listObjects_1",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "description": "The incident report id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The incident report id",
+              "example": "11111111-2222-3333-4444-555555555555"
+            },
+            "example": "11111111-2222-3333-4444-555555555555"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns prisoner involvement",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PrisonerInvolvement"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the VIEW_INCIDENT_REPORTS role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Objects related to incident reports"
+        ],
+        "summary": "Adds an invovled prisoner to this incident report",
+        "description": "Requires role MAINTAIN_INCIDENT_REPORTS and write scope",
+        "operationId": "addObject_1",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "description": "The incident report id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The incident report id",
+              "example": "11111111-2222-3333-4444-555555555555"
+            },
+            "example": "11111111-2222-3333-4444-555555555555"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddPrisonerInvolvement"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Returns prisoner involvement",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PrisonerInvolvement"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the MAINTAIN_INCIDENT_REPORTS role with write scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/incident-reports/{reportId}/locations": {
+      "get": {
+        "tags": [
+          "Objects related to incident reports"
+        ],
+        "summary": "Returns locations for this incident report",
+        "description": "Requires role VIEW_INCIDENT_REPORTS",
+        "operationId": "listObjects_2",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "description": "The incident report id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The incident report id",
+              "example": "11111111-2222-3333-4444-555555555555"
+            },
+            "example": "11111111-2222-3333-4444-555555555555"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns locations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Location"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the VIEW_INCIDENT_REPORTS role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Objects related to incident reports"
+        ],
+        "summary": "Adds a location request to this incident report",
+        "description": "Requires role MAINTAIN_INCIDENT_REPORTS and write scope",
+        "operationId": "addObject_2",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "description": "The incident report id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The incident report id",
+              "example": "11111111-2222-3333-4444-555555555555"
+            },
+            "example": "11111111-2222-3333-4444-555555555555"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddLocation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Returns locations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Location"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the MAINTAIN_INCIDENT_REPORTS role with write scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/incident-reports/{reportId}/evidence": {
+      "get": {
+        "tags": [
+          "Objects related to incident reports"
+        ],
+        "summary": "Returns evidence for this incident report",
+        "description": "Requires role VIEW_INCIDENT_REPORTS",
+        "operationId": "listObjects_3",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "description": "The incident report id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The incident report id",
+              "example": "11111111-2222-3333-4444-555555555555"
+            },
+            "example": "11111111-2222-3333-4444-555555555555"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns evidence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Evidence"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the VIEW_INCIDENT_REPORTS role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Objects related to incident reports"
+        ],
+        "summary": "Adds evidence to this incident report",
+        "description": "Requires role MAINTAIN_INCIDENT_REPORTS and write scope",
+        "operationId": "addObject_3",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "description": "The incident report id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The incident report id",
+              "example": "11111111-2222-3333-4444-555555555555"
+            },
+            "example": "11111111-2222-3333-4444-555555555555"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddEvidence"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Returns evidence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Evidence"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the MAINTAIN_INCIDENT_REPORTS role with write scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/incident-reports/{reportId}/correction-requests": {
+      "get": {
+        "tags": [
+          "Objects related to incident reports"
+        ],
+        "summary": "Returns correction requests for this incident report",
+        "description": "Requires role VIEW_INCIDENT_REPORTS",
+        "operationId": "listObjects_4",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "description": "The incident report id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The incident report id",
+              "example": "11111111-2222-3333-4444-555555555555"
+            },
+            "example": "11111111-2222-3333-4444-555555555555"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns correction requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CorrectionRequest"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the VIEW_INCIDENT_REPORTS role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Objects related to incident reports"
+        ],
+        "summary": "Adds a correction request to this incident report",
+        "description": "Requires role MAINTAIN_INCIDENT_REPORTS and write scope",
+        "operationId": "addObject_4",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "description": "The incident report id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The incident report id",
+              "example": "11111111-2222-3333-4444-555555555555"
+            },
+            "example": "11111111-2222-3333-4444-555555555555"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddCorrectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Returns correction requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CorrectionRequest"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the MAINTAIN_INCIDENT_REPORTS role with write scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/incident-reports/{reportId}/staff-involved/{index}": {
+      "delete": {
+        "tags": [
+          "Objects related to incident reports"
+        ],
+        "summary": "Remove an involved member of staff from this incident report",
+        "description": "Requires role MAINTAIN_INCIDENT_REPORTS and write scope",
+        "operationId": "removeObject",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "description": "The incident report id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The incident report id",
+              "example": "11111111-2222-3333-4444-555555555555"
+            },
+            "example": "11111111-2222-3333-4444-555555555555"
+          },
+          {
+            "name": "index",
+            "in": "path",
+            "description": "The index of the object to delete (starts from 1)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The index of the object to delete (starts from 1)",
+              "example": 1
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns staff involvement",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StaffInvolvement"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the MAINTAIN_INCIDENT_REPORTS role with write scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Objects related to incident reports"
+        ],
+        "summary": "Update an involved member of staff in this incident report",
+        "description": "Requires role MAINTAIN_INCIDENT_REPORTS and write scope",
+        "operationId": "updateObject",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "description": "The incident report id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The incident report id",
+              "example": "11111111-2222-3333-4444-555555555555"
+            },
+            "example": "11111111-2222-3333-4444-555555555555"
+          },
+          {
+            "name": "index",
+            "in": "path",
+            "description": "The index of the object to update (starts from 1)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The index of the object to update (starts from 1)",
+              "example": 1
+            },
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStaffInvolvement"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Returns staff involvement",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StaffInvolvement"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the MAINTAIN_INCIDENT_REPORTS role with write scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/incident-reports/{reportId}/prisoners-involved/{index}": {
+      "delete": {
+        "tags": [
+          "Objects related to incident reports"
+        ],
+        "summary": "Remove an involved prisoner from this incident report",
+        "description": "Requires role MAINTAIN_INCIDENT_REPORTS and write scope",
+        "operationId": "removeObject_1",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "description": "The incident report id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The incident report id",
+              "example": "11111111-2222-3333-4444-555555555555"
+            },
+            "example": "11111111-2222-3333-4444-555555555555"
+          },
+          {
+            "name": "index",
+            "in": "path",
+            "description": "The index of the object to delete (starts from 1)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The index of the object to delete (starts from 1)",
+              "example": 1
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns prisoner involvement",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PrisonerInvolvement"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the MAINTAIN_INCIDENT_REPORTS role with write scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Objects related to incident reports"
+        ],
+        "summary": "Update an involved prisoner in this incident report",
+        "description": "Requires role MAINTAIN_INCIDENT_REPORTS and write scope",
+        "operationId": "updateObject_1",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "description": "The incident report id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The incident report id",
+              "example": "11111111-2222-3333-4444-555555555555"
+            },
+            "example": "11111111-2222-3333-4444-555555555555"
+          },
+          {
+            "name": "index",
+            "in": "path",
+            "description": "The index of the object to update (starts from 1)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The index of the object to update (starts from 1)",
+              "example": 1
+            },
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePrisonerInvolvement"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Returns prisoner involvement",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PrisonerInvolvement"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the MAINTAIN_INCIDENT_REPORTS role with write scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/incident-reports/{reportId}/locations/{index}": {
+      "delete": {
+        "tags": [
+          "Objects related to incident reports"
+        ],
+        "summary": "Remove a location from this incident report",
+        "description": "Requires role MAINTAIN_INCIDENT_REPORTS and write scope",
+        "operationId": "removeObject_2",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "description": "The incident report id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The incident report id",
+              "example": "11111111-2222-3333-4444-555555555555"
+            },
+            "example": "11111111-2222-3333-4444-555555555555"
+          },
+          {
+            "name": "index",
+            "in": "path",
+            "description": "The index of the object to delete (starts from 1)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The index of the object to delete (starts from 1)",
+              "example": 1
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns locations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Location"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the MAINTAIN_INCIDENT_REPORTS role with write scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Objects related to incident reports"
+        ],
+        "summary": "Update a location in this incident report",
+        "description": "Requires role MAINTAIN_INCIDENT_REPORTS and write scope",
+        "operationId": "updateObject_2",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "description": "The incident report id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The incident report id",
+              "example": "11111111-2222-3333-4444-555555555555"
+            },
+            "example": "11111111-2222-3333-4444-555555555555"
+          },
+          {
+            "name": "index",
+            "in": "path",
+            "description": "The index of the object to update (starts from 1)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The index of the object to update (starts from 1)",
+              "example": 1
+            },
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLocation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Returns locations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Location"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the MAINTAIN_INCIDENT_REPORTS role with write scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/incident-reports/{reportId}/evidence/{index}": {
+      "delete": {
+        "tags": [
+          "Objects related to incident reports"
+        ],
+        "summary": "Remove evidence from this incident report",
+        "description": "Requires role MAINTAIN_INCIDENT_REPORTS and write scope",
+        "operationId": "removeObject_3",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "description": "The incident report id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The incident report id",
+              "example": "11111111-2222-3333-4444-555555555555"
+            },
+            "example": "11111111-2222-3333-4444-555555555555"
+          },
+          {
+            "name": "index",
+            "in": "path",
+            "description": "The index of the object to delete (starts from 1)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The index of the object to delete (starts from 1)",
+              "example": 1
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns evidence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Evidence"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the MAINTAIN_INCIDENT_REPORTS role with write scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Objects related to incident reports"
+        ],
+        "summary": "Update evidence in this incident report",
+        "description": "Requires role MAINTAIN_INCIDENT_REPORTS and write scope",
+        "operationId": "updateObject_3",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "description": "The incident report id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The incident report id",
+              "example": "11111111-2222-3333-4444-555555555555"
+            },
+            "example": "11111111-2222-3333-4444-555555555555"
+          },
+          {
+            "name": "index",
+            "in": "path",
+            "description": "The index of the object to update (starts from 1)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The index of the object to update (starts from 1)",
+              "example": 1
+            },
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEvidence"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Returns evidence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Evidence"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the MAINTAIN_INCIDENT_REPORTS role with write scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/incident-reports/{reportId}/correction-requests/{index}": {
+      "delete": {
+        "tags": [
+          "Objects related to incident reports"
+        ],
+        "summary": "Remove a correction request from this incident report",
+        "description": "Requires role MAINTAIN_INCIDENT_REPORTS and write scope",
+        "operationId": "removeObject_4",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "description": "The incident report id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The incident report id",
+              "example": "11111111-2222-3333-4444-555555555555"
+            },
+            "example": "11111111-2222-3333-4444-555555555555"
+          },
+          {
+            "name": "index",
+            "in": "path",
+            "description": "The index of the object to delete (starts from 1)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The index of the object to delete (starts from 1)",
+              "example": 1
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns correction requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CorrectionRequest"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the MAINTAIN_INCIDENT_REPORTS role with write scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Objects related to incident reports"
+        ],
+        "summary": "Update a correction request in this incident report",
+        "description": "Requires role MAINTAIN_INCIDENT_REPORTS and write scope",
+        "operationId": "updateObject_4",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "description": "The incident report id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The incident report id",
+              "example": "11111111-2222-3333-4444-555555555555"
+            },
+            "example": "11111111-2222-3333-4444-555555555555"
+          },
+          {
+            "name": "index",
+            "in": "path",
+            "description": "The index of the object to update (starts from 1)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The index of the object to update (starts from 1)",
+              "example": 1
+            },
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCorrectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Returns correction requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CorrectionRequest"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the MAINTAIN_INCIDENT_REPORTS role with write scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/incident-reports/{id}": {
+      "get": {
+        "tags": [
+          "Incident reports"
+        ],
+        "summary": "Returns the incident report (with only basic information) for this ID",
+        "description": "Requires role VIEW_INCIDENT_REPORTS",
+        "operationId": "getBasicReportById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The incident report id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The incident report id",
+              "example": "11111111-2222-3333-4444-555555555555"
+            },
+            "example": "11111111-2222-3333-4444-555555555555"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns an incident report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportBasic"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the VIEW_INCIDENT_REPORTS role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Incident reports"
+        ],
+        "summary": "Deletes an incident report",
+        "description": "Requires role MAINTAIN_INCIDENT_REPORTS and write scope",
+        "operationId": "deleteReport",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The incident report id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The incident report id",
+              "example": "11111111-2222-3333-4444-555555555555"
+            },
+            "example": "11111111-2222-3333-4444-555555555555"
+          },
+          {
+            "name": "deleteOrphanedEvents",
+            "in": "query",
+            "description": "Whether orphaned events should also be deleted",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Whether orphaned events should also be deleted",
+              "example": false,
+              "default": "true"
+            },
+            "example": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns deleted incident report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportWithDetails"
                 }
               }
             }
@@ -530,9 +2367,83 @@
                 }
               }
             }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Incident reports"
+        ],
+        "summary": "Updates key properties of an existing incident report",
+        "description": "Requires role MAINTAIN_INCIDENT_REPORTS and write scope",
+        "operationId": "updateReport",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The internal ID of the report to update",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The internal ID of the report to update",
+              "example": "11111111-2222-3333-4444-555555555555"
+            },
+            "example": "11111111-2222-3333-4444-555555555555"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateReportRequest"
+              }
+            }
           },
-          "409": {
-            "description": "Incident report already exists",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Returns updated incident report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportBasic"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the MAINTAIN_INCIDENT_REPORTS role with write scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -696,14 +2607,14 @@
         }
       }
     },
-    "/incident-reports/{id}": {
+    "/incident-reports/{id}/with-details": {
       "get": {
         "tags": [
           "Incident reports"
         ],
-        "summary": "Returns the incident report information for this ID",
+        "summary": "Returns the incident report (with all related details) for this ID",
         "description": "Requires role VIEW_INCIDENT_REPORTS",
-        "operationId": "getReport",
+        "operationId": "getReportWithDetailsById",
         "parameters": [
           {
             "name": "id",
@@ -724,7 +2635,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Report"
+                  "$ref": "#/components/schemas/ReportWithDetails"
                 }
               }
             }
@@ -760,58 +2671,37 @@
             }
           }
         }
-      },
-      "delete": {
+      }
+    },
+    "/incident-reports/incident-number/{incidentNumber}": {
+      "get": {
         "tags": [
           "Incident reports"
         ],
-        "summary": "Deletes an incident report",
-        "description": "Requires role MAINTAIN_INCIDENT_REPORTS and write scope",
-        "operationId": "deleteReport",
+        "summary": "Returns the incident report (with only basic information) for this incident number",
+        "description": "Requires role VIEW_INCIDENT_REPORTS",
+        "operationId": "getBasicReportByIncidentNumber",
         "parameters": [
           {
-            "name": "id",
+            "name": "incidentNumber",
             "in": "path",
-            "description": "The incident report id",
+            "description": "The incident report number",
             "required": true,
             "schema": {
               "type": "string",
-              "description": "The incident report id",
-              "example": "11111111-2222-3333-4444-555555555555"
+              "description": "The incident report number",
+              "example": 2342341242
             },
-            "example": "11111111-2222-3333-4444-555555555555"
-          },
-          {
-            "name": "deleteOrphanedEvents",
-            "in": "query",
-            "description": "Whether orphaned events should also be deleted",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "description": "Whether orphaned events should also be deleted",
-              "example": false,
-              "default": "true"
-            },
-            "example": false
+            "example": 2342341242
           }
         ],
         "responses": {
           "200": {
-            "description": "Returns deleted incident report",
+            "description": "Returns an incident report",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Report"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "$ref": "#/components/schemas/ReportBasic"
                 }
               }
             }
@@ -827,7 +2717,7 @@
             }
           },
           "403": {
-            "description": "Missing required role. Requires the MAINTAIN_INCIDENT_REPORTS role with write scope.",
+            "description": "Missing required role. Requires the VIEW_INCIDENT_REPORTS role",
             "content": {
               "application/json": {
                 "schema": {
@@ -849,14 +2739,14 @@
         }
       }
     },
-    "/incident-reports/incident-number/{incidentNumber}": {
+    "/incident-reports/incident-number/{incidentNumber}/with-details": {
       "get": {
         "tags": [
           "Incident reports"
         ],
-        "summary": "Returns the incident report information for this incident number",
+        "summary": "Returns the incident report (with all related details) for this incident number",
         "description": "Requires role VIEW_INCIDENT_REPORTS",
-        "operationId": "getReportByNumber",
+        "operationId": "getReportWithDetailsByIncidentNumber",
         "parameters": [
           {
             "name": "incidentNumber",
@@ -877,7 +2767,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Report"
+                  "$ref": "#/components/schemas/ReportWithDetails"
                 }
               }
             }
@@ -1721,8 +3611,8 @@
           "description",
           "incidentDateAndTime",
           "prisonId",
+          "reportedAt",
           "reportedBy",
-          "reportedDate",
           "title",
           "type"
         ],
@@ -1787,11 +3677,15 @@
             "example": "2021-07-05T10:35:17"
           },
           "prisonId": {
+            "maxLength": 6,
+            "minLength": 2,
             "type": "string",
             "description": "The NOMIS id of the prison where incident took place",
             "example": "MDI"
           },
           "title": {
+            "maxLength": 255,
+            "minLength": 5,
             "type": "string",
             "description": "Brief title describing the incident"
           },
@@ -1810,17 +3704,19 @@
             "default": "null"
           },
           "reportedBy": {
+            "maxLength": 120,
+            "minLength": 3,
             "type": "string",
             "description": "Username of person who created the incident report"
           },
-          "reportedDate": {
+          "reportedAt": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
             "description": "When the incident report was created",
             "example": "2021-07-05T10:35:17"
           }
         },
-        "description": "Payload to create a new incident report"
+        "description": "Payload to create a new draft incident report"
       },
       "CorrectionRequest": {
         "required": [
@@ -2195,7 +4091,7 @@
         },
         "description": "Question with responses making up an incident report"
       },
-      "Report": {
+      "ReportWithDetails": {
         "required": [
           "correctionRequests",
           "createdAt",
@@ -2217,6 +4113,7 @@
           "reportedAt",
           "reportedBy",
           "staffInvolved",
+          "status",
           "title",
           "type"
         ],
@@ -2224,16 +4121,13 @@
         "properties": {
           "id": {
             "type": "string",
-            "description": "The internal ID of this report",
             "format": "uuid"
           },
           "incidentNumber": {
-            "type": "string",
-            "description": "The human-readable identifier of this report"
+            "type": "string"
           },
           "type": {
             "type": "string",
-            "description": "Incident report type",
             "enum": [
               "ABSCONDER",
               "ASSAULT",
@@ -2286,39 +4180,27 @@
           "incidentDateAndTime": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
-            "description": "When the incident took place",
             "example": "2021-07-05T10:35:17"
           },
           "prisonId": {
-            "type": "string",
-            "description": "The NOMIS id of the prison where incident took place",
-            "example": "MDI"
+            "type": "string"
           },
           "title": {
-            "type": "string",
-            "description": "Brief title describing the incident"
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "description": "Longer summary of the incident"
-          },
-          "event": {
-            "$ref": "#/components/schemas/Event"
+            "type": "string"
           },
           "reportedBy": {
-            "type": "string",
-            "description": "Username of person who created the incident report"
+            "type": "string"
           },
           "reportedAt": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
-            "description": "When the incident report was created",
             "example": "2021-07-05T10:35:17"
           },
           "status": {
             "type": "string",
-            "description": "The current status of this report",
-            "default": "DRAFT",
             "enum": [
               "DRAFT",
               "AWAITING_ANALYSIS",
@@ -2332,9 +4214,26 @@
             ]
           },
           "assignedTo": {
+            "type": "string"
+          },
+          "createdAt": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
-            "description": "Optional user who this report is currently assigned to",
-            "default": "null"
+            "example": "2021-07-05T10:35:17"
+          },
+          "modifiedAt": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "example": "2021-07-05T10:35:17"
+          },
+          "modifiedBy": {
+            "type": "string"
+          },
+          "createdInNomis": {
+            "type": "boolean"
+          },
+          "event": {
+            "$ref": "#/components/schemas/Event"
           },
           "questions": {
             "type": "array",
@@ -2391,28 +4290,9 @@
             "items": {
               "$ref": "#/components/schemas/CorrectionRequest"
             }
-          },
-          "createdAt": {
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
-            "type": "string",
-            "description": "When the report was first created",
-            "example": "2021-07-05T10:35:17"
-          },
-          "modifiedAt": {
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
-            "type": "string",
-            "description": "When the report was last changed",
-            "example": "2021-07-05T10:35:17"
-          },
-          "modifiedBy": {
-            "type": "string",
-            "description": "Username of the person who last changed this report"
-          },
-          "createdInNomis": {
-            "type": "boolean"
           }
         },
-        "description": "Incident report"
+        "description": "Incident report with all related information"
       },
       "Response": {
         "required": [
@@ -2522,6 +4402,581 @@
         },
         "description": "Previous statuses an incident report transitioned to"
       },
+      "AddStaffInvolvement": {
+        "required": [
+          "staffRole",
+          "staffUsername"
+        ],
+        "type": "object",
+        "properties": {
+          "staffUsername": {
+            "maxLength": 120,
+            "minLength": 3,
+            "type": "string",
+            "description": "Username"
+          },
+          "staffRole": {
+            "type": "string",
+            "description": "Their role",
+            "enum": [
+              "ACTIVELY_INVOLVED",
+              "AUTHORISING_OFFICER",
+              "CR_HEAD",
+              "CR_LEFT_ARM",
+              "CR_LEGS",
+              "CR_RIGHT_ARM",
+              "CR_SUPERVISOR",
+              "DECEASED",
+              "FIRST_ON_SCENE",
+              "HEALTHCARE",
+              "HOSTAGE",
+              "IN_POSSESSION",
+              "NEGOTIATOR",
+              "PRESENT_AT_SCENE",
+              "SUSPECTED_INVOLVEMENT",
+              "VICTIM",
+              "WITNESS"
+            ]
+          },
+          "comment": {
+            "type": "string",
+            "description": "Optional comment on staff member involvement",
+            "default": "null"
+          }
+        },
+        "description": "Add an involved member of staff to an incident report"
+      },
+      "AddPrisonerInvolvement": {
+        "required": [
+          "prisonerNumber",
+          "prisonerRole"
+        ],
+        "type": "object",
+        "properties": {
+          "prisonerNumber": {
+            "type": "string",
+            "description": "Prisoner’s NOMIS number"
+          },
+          "prisonerRole": {
+            "type": "string",
+            "description": "Their role",
+            "enum": [
+              "ABSCONDER",
+              "ACTIVE_INVOLVEMENT",
+              "ASSAILANT",
+              "ASSISTED_STAFF",
+              "DECEASED",
+              "ESCAPE",
+              "FIGHTER",
+              "HOSTAGE",
+              "IMPEDED_STAFF",
+              "IN_POSSESSION",
+              "INTENDED_RECIPIENT",
+              "LICENSE_FAILURE",
+              "PERPETRATOR",
+              "PRESENT_AT_SCENE",
+              "SUSPECTED_ASSAILANT",
+              "SUSPECTED_INVOLVED",
+              "TEMPORARY_RELEASE_FAILURE",
+              "VICTIM"
+            ]
+          },
+          "outcome": {
+            "type": "string",
+            "description": "Optional outcome of prisoner’s involvement",
+            "default": "null",
+            "enum": [
+              "ACCT",
+              "CHARGED_BY_POLICE",
+              "CONVICTED",
+              "CORONER_INFORMED",
+              "DEATH",
+              "FURTHER_CHARGES",
+              "LOCAL_INVESTIGATION",
+              "NEXT_OF_KIN_INFORMED",
+              "PLACED_ON_REPORT",
+              "POLICE_INVESTIGATION",
+              "REMAND",
+              "SEEN_DUTY_GOV",
+              "SEEN_HEALTHCARE",
+              "SEEN_IMB",
+              "SEEN_OUTSIDE_HOSP",
+              "TRANSFER",
+              "TRIAL"
+            ]
+          },
+          "comment": {
+            "type": "string",
+            "description": "Optional comment on prisoner’s involvement",
+            "default": "null"
+          }
+        },
+        "description": "Add an involved prisoner to an incident report"
+      },
+      "AddLocation": {
+        "required": [
+          "description",
+          "locationId",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "locationId": {
+            "type": "string",
+            "description": "NOMIS id of location"
+          },
+          "type": {
+            "type": "string",
+            "description": "Type of location"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of location"
+          }
+        },
+        "description": "Add a location to an incident report"
+      },
+      "AddEvidence": {
+        "required": [
+          "description",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Type of evidence"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of evidence"
+          }
+        },
+        "description": "Add evidence to an incident report"
+      },
+      "AddCorrectionRequest": {
+        "required": [
+          "correctionRequestedAt",
+          "correctionRequestedBy",
+          "descriptionOfChange",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Why the correction is needed",
+            "enum": [
+              "MISTAKE",
+              "INCORRECT_INFORMATION",
+              "MISSING_INFORMATION",
+              "OTHER",
+              "NOT_SPECIFIED"
+            ]
+          },
+          "descriptionOfChange": {
+            "type": "string",
+            "description": "The changes being requested"
+          },
+          "correctionRequestedBy": {
+            "maxLength": 120,
+            "minLength": 3,
+            "type": "string",
+            "description": "Member of staff requesting changed"
+          },
+          "correctionRequestedAt": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "When the changes were requested",
+            "example": "2021-07-05T10:35:17"
+          }
+        },
+        "description": "Add a correction request to an incident report"
+      },
+      "UpdateStaffInvolvement": {
+        "type": "object",
+        "properties": {
+          "staffUsername": {
+            "maxLength": 120,
+            "minLength": 3,
+            "type": "string",
+            "description": "Username",
+            "default": "null"
+          },
+          "staffRole": {
+            "type": "string",
+            "description": "Their role",
+            "default": "null",
+            "enum": [
+              "ACTIVELY_INVOLVED",
+              "AUTHORISING_OFFICER",
+              "CR_HEAD",
+              "CR_LEFT_ARM",
+              "CR_LEGS",
+              "CR_RIGHT_ARM",
+              "CR_SUPERVISOR",
+              "DECEASED",
+              "FIRST_ON_SCENE",
+              "HEALTHCARE",
+              "HOSTAGE",
+              "IN_POSSESSION",
+              "NEGOTIATOR",
+              "PRESENT_AT_SCENE",
+              "SUSPECTED_INVOLVEMENT",
+              "VICTIM",
+              "WITNESS"
+            ]
+          },
+          "comment": {
+            "type": "string",
+            "description": "Optional comment on staff member involvement – omit to preserve existing comment, provide null to clear it",
+            "default": "null"
+          }
+        },
+        "description": "Update an involved member of staff in an incident report"
+      },
+      "UpdatePrisonerInvolvement": {
+        "type": "object",
+        "properties": {
+          "prisonerNumber": {
+            "type": "string",
+            "description": "Prisoner’s NOMIS number",
+            "default": "null"
+          },
+          "prisonerRole": {
+            "type": "string",
+            "description": "Their role",
+            "default": "null",
+            "enum": [
+              "ABSCONDER",
+              "ACTIVE_INVOLVEMENT",
+              "ASSAILANT",
+              "ASSISTED_STAFF",
+              "DECEASED",
+              "ESCAPE",
+              "FIGHTER",
+              "HOSTAGE",
+              "IMPEDED_STAFF",
+              "IN_POSSESSION",
+              "INTENDED_RECIPIENT",
+              "LICENSE_FAILURE",
+              "PERPETRATOR",
+              "PRESENT_AT_SCENE",
+              "SUSPECTED_ASSAILANT",
+              "SUSPECTED_INVOLVED",
+              "TEMPORARY_RELEASE_FAILURE",
+              "VICTIM"
+            ]
+          },
+          "outcome": {
+            "type": "string",
+            "description": "Optional outcome of prisoner’s involvement – omit to preserve existing outcome, provide null to clear it",
+            "default": "null",
+            "enum": [
+              "ACCT",
+              "CHARGED_BY_POLICE",
+              "CONVICTED",
+              "CORONER_INFORMED",
+              "DEATH",
+              "FURTHER_CHARGES",
+              "LOCAL_INVESTIGATION",
+              "NEXT_OF_KIN_INFORMED",
+              "PLACED_ON_REPORT",
+              "POLICE_INVESTIGATION",
+              "REMAND",
+              "SEEN_DUTY_GOV",
+              "SEEN_HEALTHCARE",
+              "SEEN_IMB",
+              "SEEN_OUTSIDE_HOSP",
+              "TRANSFER",
+              "TRIAL"
+            ]
+          },
+          "comment": {
+            "type": "string",
+            "description": "Optional comment on prisoner’s involvement – omit to preserve existing comment, provide null to clear it",
+            "default": "null"
+          }
+        },
+        "description": "Update an involved prisoner in an incident report"
+      },
+      "UpdateLocation": {
+        "type": "object",
+        "properties": {
+          "locationId": {
+            "type": "string",
+            "description": "NOMIS id of location",
+            "default": "null"
+          },
+          "type": {
+            "type": "string",
+            "description": "Type of location",
+            "default": "null"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of location",
+            "default": "null"
+          }
+        },
+        "description": "Update a location in an incident report"
+      },
+      "UpdateEvidence": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Type of evidence",
+            "default": "null"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of evidence",
+            "default": "null"
+          }
+        },
+        "description": "Update evidence in an incident report"
+      },
+      "UpdateCorrectionRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Why the correction is needed",
+            "default": "null",
+            "enum": [
+              "MISTAKE",
+              "INCORRECT_INFORMATION",
+              "MISSING_INFORMATION",
+              "OTHER",
+              "NOT_SPECIFIED"
+            ]
+          },
+          "descriptionOfChange": {
+            "type": "string",
+            "description": "The changes being requested",
+            "default": "null"
+          },
+          "correctionRequestedBy": {
+            "maxLength": 120,
+            "minLength": 3,
+            "type": "string",
+            "description": "Member of staff requesting changed",
+            "default": "null"
+          },
+          "correctionRequestedAt": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "When the changes were requested",
+            "example": "2021-07-05T10:35:17"
+          }
+        },
+        "description": "Update a correction request in an incident report"
+      },
+      "UpdateReportRequest": {
+        "type": "object",
+        "properties": {
+          "incidentDateAndTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "When the incident took place",
+            "example": "2021-07-05T10:35:17"
+          },
+          "prisonId": {
+            "maxLength": 6,
+            "minLength": 2,
+            "type": "string",
+            "description": "The NOMIS id of the prison where incident took place",
+            "example": "MDI",
+            "default": "null"
+          },
+          "title": {
+            "maxLength": 255,
+            "minLength": 5,
+            "type": "string",
+            "description": "Brief title describing the incident",
+            "default": "null"
+          },
+          "description": {
+            "type": "string",
+            "description": "Longer summary of the incident",
+            "default": "null"
+          },
+          "reportedBy": {
+            "maxLength": 120,
+            "minLength": 3,
+            "type": "string",
+            "description": "Username of person who created the incident report",
+            "default": "null"
+          },
+          "reportedAt": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "When the incident report was created",
+            "example": "2021-07-05T10:35:17"
+          },
+          "updateEvent": {
+            "type": "boolean",
+            "description": "Whether the parent event should also be updated",
+            "example": true,
+            "default": false
+          }
+        },
+        "description": "Payload to update key properties of an incident report"
+      },
+      "ReportBasic": {
+        "required": [
+          "assignedTo",
+          "createdAt",
+          "createdInNomis",
+          "description",
+          "id",
+          "incidentDateAndTime",
+          "incidentNumber",
+          "modifiedAt",
+          "modifiedBy",
+          "prisonId",
+          "reportedAt",
+          "reportedBy",
+          "status",
+          "title",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The internal ID of this report",
+            "format": "uuid"
+          },
+          "incidentNumber": {
+            "type": "string",
+            "description": "The human-readable identifier of this report"
+          },
+          "type": {
+            "type": "string",
+            "description": "Incident report type",
+            "enum": [
+              "ABSCONDER",
+              "ASSAULT",
+              "ATTEMPTED_ESCAPE_FROM_CUSTODY",
+              "ATTEMPTED_ESCAPE_FROM_ESCORT",
+              "BOMB_THREAT",
+              "BREACH_OF_SECURITY",
+              "DAMAGE",
+              "DEATH_IN_CUSTODY",
+              "DEATH_OTHER",
+              "DISORDER",
+              "DRONE_SIGHTING",
+              "ESCAPE_FROM_CUSTODY",
+              "ESCAPE_FROM_ESCORT",
+              "FINDS",
+              "FIRE",
+              "FOOD_REFUSAL",
+              "FULL_CLOSE_DOWN_SEARCH",
+              "KEY_LOCK_INCIDENT",
+              "MISCELLANEOUS",
+              "RADIO_COMPROMISE",
+              "RELEASED_IN_ERROR",
+              "SELF_HARM",
+              "TEMPORARY_RELEASE_FAILURE",
+              "TOOL_LOSS",
+              "OLD_ASSAULT",
+              "OLD_ASSAULT1",
+              "OLD_ASSAULT2",
+              "OLD_ASSAULT3",
+              "OLD_BARRICADE",
+              "OLD_CONCERTED_INDISCIPLINE",
+              "OLD_DISORDER",
+              "OLD_DRONE_SIGHTING",
+              "OLD_DRUGS",
+              "OLD_FINDS",
+              "OLD_FINDS1",
+              "OLD_FINDS2",
+              "OLD_FINDS3",
+              "OLD_FINDS4",
+              "OLD_FIREARM_ETC",
+              "OLD_HOSTAGE",
+              "OLD_KEY_LOCK_INCIDENT",
+              "OLD_MOBILES",
+              "OLD_ROOF_CLIMB",
+              "OLD_TEMPORARY_RELEASE_FAILURE",
+              "OLD_TEMPORARY_RELEASE_FAILURE1",
+              "OLD_TEMPORARY_RELEASE_FAILURE2"
+            ]
+          },
+          "incidentDateAndTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "When the incident took place",
+            "example": "2021-07-05T10:35:17"
+          },
+          "prisonId": {
+            "type": "string",
+            "description": "The NOMIS id of the prison where incident took place",
+            "example": "MDI"
+          },
+          "title": {
+            "type": "string",
+            "description": "Brief title describing the incident"
+          },
+          "description": {
+            "type": "string",
+            "description": "Longer summary of the incident"
+          },
+          "reportedBy": {
+            "type": "string",
+            "description": "Username of person who created the incident report"
+          },
+          "reportedAt": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "When the incident report was created",
+            "example": "2021-07-05T10:35:17"
+          },
+          "status": {
+            "type": "string",
+            "description": "The current status of this report",
+            "example": "DRAFT",
+            "enum": [
+              "DRAFT",
+              "AWAITING_ANALYSIS",
+              "IN_ANALYSIS",
+              "INFORMATION_REQUIRED",
+              "INFORMATION_AMENDED",
+              "CLOSED",
+              "POST_INCIDENT_UPDATE",
+              "INCIDENT_UPDATED",
+              "DUPLICATE"
+            ]
+          },
+          "assignedTo": {
+            "type": "string",
+            "description": "Optional user who this report is currently assigned to",
+            "example": "null"
+          },
+          "createdAt": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "When the report was first created",
+            "example": "2021-07-05T10:35:17"
+          },
+          "modifiedAt": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "When the report was last changed",
+            "example": "2021-07-05T10:35:17"
+          },
+          "modifiedBy": {
+            "type": "string",
+            "description": "Username of the person who last changed this report"
+          },
+          "createdInNomis": {
+            "type": "boolean"
+          }
+        },
+        "description": "Incident report with only key information"
+      },
       "HmppsSubjectAccessRequestContent": {
         "required": [
           "content"
@@ -2576,7 +5031,7 @@
           }
         }
       },
-      "SimplePageReport": {
+      "SimplePageReportBasic": {
         "required": [
           "content",
           "number",
@@ -2593,7 +5048,7 @@
             "description": "Elements in this pages",
             "example": "[…]",
             "items": {
-              "$ref": "#/components/schemas/Report"
+              "$ref": "#/components/schemas/ReportBasic"
             }
           },
           "number": {
