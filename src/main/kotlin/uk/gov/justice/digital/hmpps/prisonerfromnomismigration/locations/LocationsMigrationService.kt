@@ -213,7 +213,6 @@ fun toMigrationRequest(nomisLocationResponse: LocationResponse, parentId: String
       nomisLocationResponse.reactivateDate
     },
     isDeactivated = !nomisLocationResponse.active,
-    isCell = nomisLocationResponse.locationType == "CELL",
     history = nomisLocationResponse.amendments?.map {
       ChangeHistory(
         attribute = toHistoryAttribute(it.columnName),

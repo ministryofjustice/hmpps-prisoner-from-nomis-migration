@@ -44,7 +44,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Migrati
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Capacity
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Certification
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.ChangeHistory
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Location
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.LegacyLocation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.NomisMigrateLocationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.NonResidentialUsageDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.LocationMappingDto
@@ -810,20 +810,15 @@ class LocationsMigrationServiceTest {
   inner class MigrateLocation {
     val createdId = "45678901-3e3e-3e3e-3e3e-3e3e3e3e3e3e"
 
-    val basicLocation = Location(
+    val basicLocation = LegacyLocation(
       id = UUID.fromString(createdId),
       // Note we only care about the id
       code = "3",
-      locationType = Location.LocationType.LANDING,
+      locationType = LegacyLocation.LocationType.LANDING,
       prisonId = "MDI",
       active = true,
-      isResidential = true,
       key = "key",
-      topLevelId = UUID.fromString(DPS_PARENT_ID),
       pathHierarchy = "MDI-C",
-      deactivatedByParent = false,
-      permanentlyInactive = false,
-      status = Location.Status.ACTIVE,
       lastModifiedBy = "me",
       lastModifiedDate = "2024-05-25",
     )
@@ -897,7 +892,6 @@ class LocationsMigrationServiceTest {
               ),
             ),
             isDeactivated = false,
-            isCell = false,
             history = listOf(
               ChangeHistory(
                 amendedDate = "2023-09-25T11:12:45",
@@ -1164,22 +1158,17 @@ fun aNomisLocationResponse() = LocationResponse(
   ),
 )
 
-fun aDpsLocation() = Location(
+fun aDpsLocation() = LegacyLocation(
   id = UUID.fromString("f1c1e3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e"),
-  locationType = Location.LocationType.LANDING,
+  locationType = LegacyLocation.LocationType.LANDING,
   code = "3",
   localName = "Wing C",
   prisonId = "MDI",
   comments = "Test comment",
   active = true,
-  isResidential = true,
   key = "key",
-  topLevelId = UUID.fromString(DPS_PARENT_ID),
   pathHierarchy = "MDI-C",
   parentId = UUID.fromString(DPS_PARENT_ID),
-  deactivatedByParent = false,
-  permanentlyInactive = false,
-  status = Location.Status.ACTIVE,
   lastModifiedBy = "me",
   lastModifiedDate = "2024-05-25",
 )
