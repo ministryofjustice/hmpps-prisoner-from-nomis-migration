@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-06-19.8097.6d4e3b3"
+    "version": "2024-06-19.8107.4599375"
   },
   "servers": [
     {
@@ -7117,10 +7117,10 @@
     "/prisoners/{offenderNo}/physical-attributes": {
       "get": {
         "tags": [
-          "prisoner-profile-resource"
+          "prison-person-resource"
         ],
         "summary": "Get physical attributes for a prisoner",
-        "description": "Retrieves physical attributes for a prisoner and all of their aliases and bookings. Requires ROLE_NOMIS_PRISONER_PROFILE",
+        "description": "Retrieves physical attributes for a prisoner and all of their aliases and bookings. Requires ROLE_NOMIS_PRISON_PERSON",
         "operationId": "getPhysicalAttributes",
         "parameters": [
           {
@@ -7158,7 +7158,7 @@
             }
           },
           "403": {
-            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_PRISONER_PROFILE",
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_PRISON_PERSON",
             "content": {
               "application/json": {
                 "schema": {

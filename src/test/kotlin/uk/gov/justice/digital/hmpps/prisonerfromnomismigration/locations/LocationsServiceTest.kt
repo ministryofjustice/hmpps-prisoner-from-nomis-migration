@@ -42,7 +42,6 @@ internal class LocationsServiceTest {
             prisonId = "LEI",
             lastUpdatedBy = "TJONES_ADM",
             isDeactivated = false,
-            isCell = false,
           ),
         )
       }
@@ -87,7 +86,6 @@ internal class LocationsServiceTest {
             lastUpdatedBy = "TJONES_ADM",
             parentId = UUID.fromString("12345678-1234-1234-1234-1234567890ab"),
             isDeactivated = false,
-            isCell = false,
           ),
         )
       }

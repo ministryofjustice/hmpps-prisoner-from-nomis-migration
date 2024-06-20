@@ -16,7 +16,7 @@ import org.springframework.http.HttpStatus.CREATED
 import org.springframework.http.HttpStatus.NO_CONTENT
 import org.springframework.http.HttpStatus.OK
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Location
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.LegacyLocation
 import java.util.UUID
 
 class LocationsApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
@@ -113,21 +113,16 @@ class LocationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun createLocationSynchronisationCount() =
     findAll(postRequestedFor(urlMatching("/sync/upsert"))).count()
 
-  private fun aLocation(locationId: String) = Location(
+  private fun aLocation(locationId: String) = LegacyLocation(
     id = UUID.fromString(locationId),
-    locationType = Location.LocationType.WING,
+    locationType = LegacyLocation.LocationType.WING,
     code = "C",
     localName = "Wing C",
     prisonId = "MDI",
     comments = "Test comment",
     active = true,
-    isResidential = true,
     key = "key",
-    topLevelId = UUID.fromString("f1c1e3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e"),
     pathHierarchy = "MDI-C",
-    deactivatedByParent = false,
-    permanentlyInactive = false,
-    status = Location.Status.ACTIVE,
     lastModifiedBy = "me",
     lastModifiedDate = "2024-05-25",
   ).toJson()
