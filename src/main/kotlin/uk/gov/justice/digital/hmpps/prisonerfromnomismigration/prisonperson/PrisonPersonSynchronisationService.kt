@@ -31,6 +31,7 @@ class PrisonPersonSynchronisationService(
       val booking = nomisResponse.bookings.find { it.bookingId == bookingId }
         ?: throw PhysicalAttributesChangedException("Booking with physical attributes not found for bookingId=$bookingId")
       val physicalAttributes = booking.findLastModifiedPhysicalAttributes()
+      telemetry["attributeSequence"] = physicalAttributes.attributeSequence.toString()
 
       getIgnoreReason(nomisResponse, physicalAttributes)?.let { ignoreReason ->
         telemetry["reason"] = ignoreReason
@@ -53,15 +54,8 @@ class PrisonPersonSynchronisationService(
       throw e
     }
 
-    telemetryClient.trackEvent(
-      "physical-attributes-synchronisation-updated",
-      mapOf(
-        "offenderNo" to offenderNo,
-        "bookingId" to bookingId.toString(),
-        // TODO SDIT-1816 we should add attributeSeq in the telemetry so we know which one we've synchronised - need to return it from the API
-        "physicalAttributesHistoryId" to dpsResponse.physicalAttributesHistoryId.toString(),
-      ),
-    )
+    telemetry["physicalAttributesHistoryId"] = dpsResponse.physicalAttributesHistoryId.toString()
+    telemetryClient.trackEvent("physical-attributes-synchronisation-updated", telemetry)
   }
 
   private fun getIgnoreReason(

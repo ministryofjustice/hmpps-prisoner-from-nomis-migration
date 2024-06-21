@@ -64,8 +64,8 @@ class PrisonPersonNomisApiServiceTest {
           .extracting("bookingId", "startDateTime", "endDateTime", "latestBooking")
           .containsExactly(tuple(1L, "2024-02-03T12:34:56", "2024-10-21T12:34:56", true))
         assertThat(bookings[0].physicalAttributes)
-          .extracting("heightCentimetres", "weightKilograms", "auditModuleName", "createdBy", "modifiedBy")
-          .containsExactly(tuple(180, 80, "MODULE", "A_USER", "ANOTHER_USER"))
+          .extracting("attributeSequence", "heightCentimetres", "weightKilograms", "auditModuleName", "createdBy", "modifiedBy")
+          .containsExactly(tuple(1L, 180, 80, "MODULE", "A_USER", "ANOTHER_USER"))
         assertThat(LocalDateTime.parse(bookings[0].physicalAttributes[0].createDateTime).toLocalDate()).isEqualTo(LocalDate.now())
         assertThat(LocalDateTime.parse(bookings[0].physicalAttributes[0].modifiedDateTime!!).toLocalDate()).isEqualTo(LocalDate.now())
       }

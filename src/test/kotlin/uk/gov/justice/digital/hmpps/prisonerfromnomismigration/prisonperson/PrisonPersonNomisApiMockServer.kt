@@ -30,6 +30,7 @@ class PrisonPersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
           latestBooking = true,
           physicalAttributes = listOf(
             PhysicalAttributesResponse(
+              attributeSequence = 1,
               heightCentimetres = 180,
               weightKilograms = 80,
               createdBy = "A_USER",
