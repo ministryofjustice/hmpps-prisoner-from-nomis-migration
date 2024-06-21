@@ -12,10 +12,10 @@ parameters:
     default: dps-releases
   test-executor-packages:
     type: string
-    default: "activities adjudications alerts appointments courtsentencing csip incidents locations sentencing visits"
+    default: "activities adjudications alerts appointments courtsentencing csip incidents locations prisonperson sentencing visits"
   test-executors-count:
     type: integer
-    default: 11
+    default: 12
 
 jobs:
   validate:

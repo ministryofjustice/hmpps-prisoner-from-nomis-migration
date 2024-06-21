@@ -17,6 +17,7 @@ import java.util.concurrent.CompletableFuture
 
 @Service
 class PrisonPersonEventListener(
+  private val prisonPersonService: PrisonPersonSynchronisationService,
   private val objectMapper: ObjectMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
 ) {
@@ -36,7 +37,7 @@ class PrisonPersonEventListener(
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
           if (eventFeatureSwitch.isEnabled(eventType)) {
             when (eventType) {
-              "OFFENDER_PHYSICAL_ATTRIBUTES-CHANGED" -> log.info("Received physical attributes changed event")
+              "OFFENDER_PHYSICAL_ATTRIBUTES-CHANGED" -> prisonPersonService.physicalAttributesChanged(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
@@ -56,3 +57,8 @@ private fun asCompletableFuture(
 ): CompletableFuture<Void> = CoroutineScope(Dispatchers.Default).future {
   process()
 }.thenAccept { }
+
+data class PhysicalAttributesChangedEvent(
+  val offenderIdDisplay: String,
+  val bookingId: Long,
+)

@@ -99,4 +99,4 @@ hmpps.sqs:
     eventcourtsentencing:
       dlqMaxReceiveCount: 2
     eventprisonperson:
-      dlqMaxReceiveCount: 2
+      dlqMaxReceiveCount: 1

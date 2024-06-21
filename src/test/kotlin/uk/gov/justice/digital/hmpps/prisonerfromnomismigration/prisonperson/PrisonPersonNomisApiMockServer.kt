@@ -42,9 +42,11 @@ class PrisonPersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
         ),
       ),
     ),
-  ) =
+  ) = stubGetPhysicalAttributes(response)
+
+  fun stubGetPhysicalAttributes(response: PrisonerPhysicalAttributesResponse) =
     nomisApi.stubFor(
-      get(urlEqualTo("/prisoners/$offenderNo/physical-attributes")).willReturn(
+      get(urlEqualTo("/prisoners/${response.offenderNo}/physical-attributes")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())

@@ -1,0 +1,109 @@
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson
+
+import com.microsoft.applicationinsights.TelemetryClient
+import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.BookingPhysicalAttributesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PhysicalAttributesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerPhysicalAttributesResponse
+import java.time.LocalDateTime
+
+@Service
+class PrisonPersonSynchronisationService(
+  private val nomisApiService: PrisonPersonNomisApiService,
+  private val dpsApiService: PrisonPersonDpsApiService,
+  private val telemetryClient: TelemetryClient,
+) {
+
+  private val synchronisationUser = "DPS_SYNCHRONISATION"
+
+  suspend fun physicalAttributesChanged(event: PhysicalAttributesChangedEvent) {
+    val offenderNo = event.offenderIdDisplay
+    val bookingId = event.bookingId
+    val telemetry = mutableMapOf(
+      "offenderNo" to offenderNo,
+      "bookingId" to bookingId.toString(),
+    )
+
+    val dpsResponse = try {
+      val nomisResponse = nomisApiService.getPhysicalAttributes(offenderNo)
+
+      val booking = nomisResponse.bookings.find { it.bookingId == bookingId }
+        ?: throw PhysicalAttributesChangedException("Booking with physical attributes not found for bookingId=$bookingId")
+      val physicalAttributes = booking.findLastModifiedPhysicalAttributes()
+
+      getIgnoreReason(nomisResponse, physicalAttributes)?.let { ignoreReason ->
+        telemetry["reason"] = ignoreReason
+        telemetryClient.trackEvent("physical-attributes-synchronisation-ignored", telemetry)
+        return
+      }
+
+      dpsApiService.syncPhysicalAttributes(
+        offenderNo,
+        physicalAttributes.heightCentimetres,
+        physicalAttributes.weightKilograms,
+        booking.startDateTime.toLocalDateTime(),
+        booking.endDateTime?.toLocalDateTime(),
+        (physicalAttributes.modifiedDateTime ?: physicalAttributes.createDateTime).toLocalDateTime(),
+        physicalAttributes.createdBy,
+      )
+    } catch (e: Exception) {
+      telemetry["error"] = e.message.toString()
+      telemetryClient.trackEvent("physical-attributes-synchronisation-error", telemetry)
+      throw e
+    }
+
+    telemetryClient.trackEvent(
+      "physical-attributes-synchronisation-updated",
+      mapOf(
+        "offenderNo" to offenderNo,
+        "bookingId" to bookingId.toString(),
+        // TODO SDIT-1816 we should add attributeSeq in the telemetry so we know which one we've synchronised - need to return it from the API
+        "physicalAttributesHistoryId" to dpsResponse.physicalAttributesHistoryId.toString(),
+      ),
+    )
+  }
+
+  private fun getIgnoreReason(
+    nomisResponse: PrisonerPhysicalAttributesResponse,
+    physicalAttributes: PhysicalAttributesResponse,
+  ): String? =
+    if (nomisResponse.isNewAndEmpty()) {
+      "New physical attributes are empty"
+    } else if (physicalAttributes.updatedBySync()) {
+      "The physical attributes were created by $synchronisationUser"
+    } else {
+      null
+    }
+
+  private fun PrisonerPhysicalAttributesResponse.isNew() =
+    bookings.size == 1 &&
+      bookings.first().physicalAttributes.size == 1 &&
+      bookings.first().physicalAttributes.first().modifiedDateTime == null
+
+  private fun PrisonerPhysicalAttributesResponse.isNewAndEmpty() =
+    isNew() &&
+      bookings.first().physicalAttributes.first().heightCentimetres == null &&
+      bookings.first().physicalAttributes.first().weightKilograms == null
+
+  private fun PhysicalAttributesResponse.updatedBySync() =
+    if (modifiedDateTime != null) {
+      modifiedBy == synchronisationUser
+    } else {
+      createdBy == synchronisationUser
+    }
+
+  private fun BookingPhysicalAttributesResponse.findLastModifiedPhysicalAttributes() =
+    physicalAttributes
+      .maxBy {
+        if (it.modifiedDateTime != null) {
+          it.modifiedDateTime.toLocalDateTime()
+        } else {
+          it.createDateTime.toLocalDateTime()
+        }
+      }
+
+  private fun String.toLocalDateTime() = LocalDateTime.parse(this)
+}
+
+class PhysicalAttributesChangedException(message: String) : IllegalArgumentException(message)
