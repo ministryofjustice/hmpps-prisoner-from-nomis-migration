@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-06-11.4430.8a05e27"
+    "version": "2024-06-20.4478.c31e071"
   },
   "servers": [
     {
@@ -215,7 +215,7 @@
         ],
         "summary": "get mapping",
         "description": "Retrieves a mapping by NOMIS id. Requires role NOMIS_ALERTS",
-        "operationId": "getMappingByNomisId_2",
+        "operationId": "getMappingByNomisId_3",
         "parameters": [
           {
             "name": "bookingId",
@@ -452,7 +452,7 @@
         ],
         "summary": "Creates a new activity mapping",
         "description": "Creates a mapping between nomis id and Activity service id. Requires NOMIS_ACTIVITIES",
-        "operationId": "createMapping_14",
+        "operationId": "createMapping_15",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1513,6 +1513,220 @@
         }
       }
     },
+    "/mapping/casenotes/nomis-casenote-id": {
+      "post": {
+        "tags": [
+          "case-notes-mapping-resource"
+        ],
+        "summary": "get mappings by Nomis id",
+        "description": "Retrieves multiple mappings by NOMIS case note id. Requires role NOMIS_CASENOTES",
+        "operationId": "getMappingsByNomisId",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string",
+                "description": "NOMIS booking id",
+                "example": 2
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseNoteMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/casenotes/batch": {
+      "post": {
+        "tags": [
+          "case-notes-mapping-resource"
+        ],
+        "summary": "Creates a batch of new casenote mappings",
+        "description": "Creates a mapping between a batch of nomis casenote ids and dps casenote id. Requires ROLE_NOMIS_CASENOTES",
+        "operationId": "createMappings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CaseNoteMappingDto"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Mappings created"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access forbidden for this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Indicates a duplicate mapping has been rejected. If Error code = 1409 the body will return a DuplicateErrorResponse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateMappingErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/casenotes": {
+      "post": {
+        "tags": [
+          "case-notes-mapping-resource"
+        ],
+        "summary": "Creates a new casenote mapping",
+        "description": "Creates a mapping between nomis casenote id and dps casenote id. Requires ROLE_NOMIS_CASENOTES",
+        "operationId": "createMapping_9",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaseNoteMappingDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Mapping created"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access forbidden for this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Indicates a duplicate mapping has been rejected. If Error code = 1409 the body will return a DuplicateErrorResponse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateMappingErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "case-notes-mapping-resource"
+        ],
+        "summary": "Deletes all casenote mappings",
+        "description": "Deletes all casenote mappings regardless of source. This is expected to only ever been used in a non-production environment. Requires ROLE_NOMIS_CASENOTES",
+        "operationId": "deleteAllMappings_1",
+        "parameters": [
+          {
+            "name": "onlyMigrated",
+            "in": "query",
+            "description": "Only delete migrated mappings",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Only delete migrated mappings",
+              "example": true
+            },
+            "example": true
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Mappings deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access forbidden for this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/appointments": {
       "get": {
         "tags": [
@@ -1553,7 +1767,7 @@
         ],
         "summary": "Creates a new appointment mapping",
         "description": "Creates a mapping between nomis id and Appointment instance id. Requires NOMIS_APPOINTMENTS",
-        "operationId": "createMapping_9",
+        "operationId": "createMapping_10",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1608,7 +1822,7 @@
         ],
         "summary": "Creates a new allocation migration mapping",
         "description": "Creates a mapping between nomis allocation id and Actvities allocation id. Requires NOMIS_ACTIVITIES",
-        "operationId": "createMapping_10",
+        "operationId": "createMapping_11",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1776,7 +1990,7 @@
         ],
         "summary": "Creates a batch of new alert mappings",
         "description": "Creates a mapping between a batch of nomis alert ids and dps alert id. Requires ROLE_NOMIS_ALERTS",
-        "operationId": "createMappings",
+        "operationId": "createMappings_1",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1884,7 +2098,7 @@
         ],
         "summary": "Creates a new alert mapping",
         "description": "Creates a mapping between nomis alert ids and dps alert id. Requires ROLE_NOMIS_ALERTS",
-        "operationId": "createMapping_11",
+        "operationId": "createMapping_12",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1937,7 +2151,7 @@
         ],
         "summary": "Deletes all alert mappings",
         "description": "Deletes all alert mappings regardless of source. This is expected to only ever been used in a non-production environment. Requires ROLE_NOMIS_ALERTS",
-        "operationId": "deleteAllMappings_1",
+        "operationId": "deleteAllMappings_2",
         "responses": {
           "204": {
             "description": "Mappings deleted"
@@ -2015,7 +2229,7 @@
         ],
         "summary": "Delete all adjudication related mapping entries",
         "description": "Delete mapping entries created during any migration or synchronisation for adjudications and associated hearings and punishments",
-        "operationId": "deleteAllMappings_2",
+        "operationId": "deleteAllMappings_3",
         "parameters": [
           {
             "name": "migrationOnly",
@@ -2097,7 +2311,7 @@
         ],
         "summary": "Creates a new adjudication mapping",
         "description": "Creates a record of a adjudication number. Requires NOMIS_ADJUDICATIONS",
-        "operationId": "createMapping_12",
+        "operationId": "createMapping_13",
         "requestBody": {
           "content": {
             "application/json": {
@@ -2142,7 +2356,7 @@
         ],
         "summary": "Creates a new activity migration mapping",
         "description": "Creates a mapping between nomis id and up to 2 Activity service ids. Requires NOMIS_ACTIVITIES",
-        "operationId": "createMapping_13",
+        "operationId": "createMapping_14",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4730,6 +4944,165 @@
         }
       }
     },
+    "/mapping/casenotes/nomis-casenote-id/{caseNoteId}": {
+      "get": {
+        "tags": [
+          "case-notes-mapping-resource"
+        ],
+        "summary": "get mapping",
+        "description": "Retrieves a mapping by NOMIS id. Requires role NOMIS_CASENOTES",
+        "operationId": "getMappingByNomisId_2",
+        "parameters": [
+          {
+            "name": "caseNoteId",
+            "in": "path",
+            "description": "NOMIS case note id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "NOMIS case note id",
+              "example": 23456789
+            },
+            "example": 23456789
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseNoteMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/casenotes/dps-casenote-id/{dpsCaseNoteId}": {
+      "get": {
+        "tags": [
+          "case-notes-mapping-resource"
+        ],
+        "summary": "get mapping",
+        "description": "Retrieves a mapping by DPS id. Requires role NOMIS_CASENOTES",
+        "operationId": "getMappingByDpsId",
+        "parameters": [
+          {
+            "name": "dpsCaseNoteId",
+            "in": "path",
+            "description": "DPS casenote id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "DPS casenote id",
+              "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+            },
+            "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseNoteMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "case-notes-mapping-resource"
+        ],
+        "summary": "Deletes mapping",
+        "description": "Deletes a mapping by DPS id. Requires role NOMIS_CASENOTES",
+        "operationId": "deleteMappingByDpsId_2",
+        "parameters": [
+          {
+            "name": "dpsCaseNoteId",
+            "in": "path",
+            "description": "DPS casenote id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "DPS casenote id",
+              "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+            },
+            "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Mapping Deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/appointments/nomis-event-id/{eventId}": {
       "get": {
         "tags": [
@@ -5272,7 +5645,7 @@
         ],
         "summary": "get mapping",
         "description": "Retrieves a mapping by DPS id. Requires role NOMIS_ALERTS",
-        "operationId": "getMappingByDpsId",
+        "operationId": "getMappingByDpsId_1",
         "parameters": [
           {
             "name": "dpsAlertId",
@@ -5326,7 +5699,7 @@
         ],
         "summary": "Deletes mapping",
         "description": "Deletes a mapping by DPS id. Requires role NOMIS_ALERTS",
-        "operationId": "deleteMappingByDpsId_2",
+        "operationId": "deleteMappingByDpsId_3",
         "parameters": [
           {
             "name": "dpsAlertId",
@@ -6385,6 +6758,55 @@
               "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
             },
             "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Mapping Deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/casenotes/nomis-casenote-id/{nomisCaseNoteId}": {
+      "delete": {
+        "tags": [
+          "case-notes-mapping-resource"
+        ],
+        "summary": "Deletes mapping",
+        "description": "Deletes a mapping by Nomis id. Requires role NOMIS_CASENOTES",
+        "operationId": "deleteMappingByNomisId_1",
+        "parameters": [
+          {
+            "name": "nomisCaseNoteId",
+            "in": "path",
+            "description": "Nomis casenote id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Nomis casenote id",
+              "example": 3344556677
+            },
+            "example": 3344556677
           }
         ],
         "responses": {
@@ -7824,6 +8246,50 @@
             "type": "boolean"
           }
         }
+      },
+      "CaseNoteMappingDto": {
+        "required": [
+          "dpsCaseNoteId",
+          "mappingType",
+          "nomisCaseNoteId"
+        ],
+        "type": "object",
+        "properties": {
+          "dpsCaseNoteId": {
+            "type": "string",
+            "description": "Case note id in DPS"
+          },
+          "nomisCaseNoteId": {
+            "type": "integer",
+            "description": "Case note id in Nomis",
+            "format": "int64"
+          },
+          "label": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": "string",
+            "description": "Label (a timestamp for migrated ids)"
+          },
+          "mappingType": {
+            "type": "string",
+            "description": "Mapping type",
+            "enum": [
+              "MIGRATED",
+              "NOMIS_CREATED",
+              "DPS_CREATED",
+              "MIGRATED",
+              "NOMIS_CREATED",
+              "DPS_CREATED"
+            ]
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "Date-time the mapping was created",
+            "example": "2021-07-05T10:35:17"
+          }
+        },
+        "description": "Case note mapping"
       },
       "AppointmentMappingDto": {
         "required": [

@@ -269,7 +269,6 @@ fun toUpsertSyncRequest(nomisLocationResponse: LocationResponse, parentId: Strin
       nomisLocationResponse.reactivateDate
     },
     isDeactivated = !nomisLocationResponse.active,
-    isCell = nomisLocationResponse.locationType == "CELL",
   )
 
 private fun toLocationType(locationType: String): NomisSyncLocationRequest.LocationType =

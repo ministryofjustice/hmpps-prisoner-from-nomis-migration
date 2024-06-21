@@ -6,7 +6,6 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.LegacyLocation
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Location
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.NomisMigrateLocationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.NomisSyncLocationRequest
 
@@ -26,7 +25,7 @@ class LocationsService(@Qualifier("locationsApiWebClient") private val webClient
       .awaitBodilessEntity()
   }
 
-  suspend fun migrateLocation(request: NomisMigrateLocationRequest): Location =
+  suspend fun migrateLocation(request: NomisMigrateLocationRequest): LegacyLocation =
     webClient.post()
       .uri("/migrate/location")
       .bodyValue(request)
