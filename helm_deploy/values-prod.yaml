@@ -22,9 +22,7 @@ generic-service:
     API_BASE_URL_ADJUDICATIONS: https://manage-adjudications-api.hmpps.service.justice.gov.uk
     API_BASE_URL_ALERTS: https://alerts-api.hmpps.service.justice.gov.uk
     API_BASE_URL_COURT_SENTENCING: https://remand-and-sentencing-api.hmpps.service.justice.gov.uk
-    # currently set to self for a mock API until real API is ready
-    # API_BASE_URL_PRISON_PERSON: https://prison-person-api.prison.service.justice.gov.uk
-    API_BASE_URL_PRISON_PERSON: https://prisoner-nomis-migration.hmpps.service.justice.gov.uk
+    API_BASE_URL_PRISON_PERSON: https://prison-person-api.prison.service.justice.gov.uk
     FEATURE_EVENT_INCIDENT-INSERTED: false
     FEATURE_EVENT_INCIDENT-CHANGED-CASES: false
     FEATURE_EVENT_INCIDENT-CHANGED-PARTIES: false
@@ -64,6 +62,7 @@ generic-service:
     FEATURE_EVENT_OFFENDER_SENTENCES-INSERTED: false
     FEATURE_EVENT_OFFENDER_SENTENCES-DELETED: false
     FEATURE_EVENT_OFFENDER_SENTENCES-UPDATED: false
+    FEATURE_EVENT_OFFENDER_PHYSICAL_ATTRIBUTES-CHANGED: false
 
 generic-prometheus-alerts:
   rdsAlertsDatabases:

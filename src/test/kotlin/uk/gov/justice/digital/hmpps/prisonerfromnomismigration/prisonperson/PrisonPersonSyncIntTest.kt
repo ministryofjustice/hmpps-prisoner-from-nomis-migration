@@ -115,12 +115,14 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
                 endDateTime = null,
                 physicalAttributes = listOf(
                   aPhysicalAttributesResponse(
+                    attributeSequence = 1,
                     heightCentimetres = 180,
                     weightKilograms = 80,
                     createDateTime = "$yesterday",
                     modifiedDateTime = null,
                   ),
                   aPhysicalAttributesResponse(
+                    attributeSequence = 2,
                     heightCentimetres = 170,
                     weightKilograms = 70,
                     createDateTime = "$now",
@@ -136,6 +138,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
         sendPhysicalAttributesChangedEvent()
 
         verifyResults(
+          attributeSequence = 2,
           dpsUpdates = mapOf(
             "height" to equalTo("170"),
             "weight" to equalTo("70"),
@@ -152,12 +155,14 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
                 endDateTime = null,
                 physicalAttributes = listOf(
                   aPhysicalAttributesResponse(
+                    attributeSequence = 1,
                     heightCentimetres = 180,
                     weightKilograms = 80,
                     createDateTime = "${now.minusDays(3)}",
                     modifiedDateTime = "${now.minusDays(1)}",
                   ),
                   aPhysicalAttributesResponse(
+                    attributeSequence = 2,
                     heightCentimetres = 170,
                     weightKilograms = 70,
                     createDateTime = "${now.minusDays(2)}",
@@ -173,6 +178,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
         sendPhysicalAttributesChangedEvent()
 
         verifyResults(
+          attributeSequence = 1,
           dpsUpdates = mapOf(
             "height" to equalTo("180"),
             "weight" to equalTo("80"),
@@ -308,11 +314,13 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
                 endDateTime = "${now.minusDays(2)}",
                 physicalAttributes = listOf(
                   aPhysicalAttributesResponse(
+                    attributeSequence = 1,
                     heightCentimetres = 180,
                     weightKilograms = 80,
                     modifiedDateTime = "$now",
                   ),
                   aPhysicalAttributesResponse(
+                    attributeSequence = 2,
                     heightCentimetres = 190,
                     weightKilograms = 90,
                     modifiedDateTime = "$yesterday",
@@ -339,6 +347,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
 
         verifyResults(
           bookingId = 12344,
+          attributeSequence = 1,
           dpsUpdates = mapOf(
             "height" to equalTo("180"),
             "weight" to equalTo("80"),
@@ -395,6 +404,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
           check {
             assertThat(it["offenderNo"]).isEqualTo("A1234AA")
             assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["attributeSequence"]).isEqualTo("1")
             assertThat(it["error"]).contains("Bad Request")
           },
           isNull(),
@@ -447,6 +457,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
     """.trimIndent()
 
     private fun aPhysicalAttributesResponse(
+      attributeSequence: Int = 1,
       heightCentimetres: Int? = 180,
       weightKilograms: Int? = 80,
       createdBy: String = "A_USER",
@@ -456,6 +467,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
       auditModuleName: String = "MODULE",
     ) =
       PhysicalAttributesResponse(
+        attributeSequence = attributeSequence.toLong(),
         heightCentimetres = heightCentimetres,
         weightKilograms = weightKilograms,
         createdBy = createdBy,
@@ -511,6 +523,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
     private fun verifyResults(
       type: String = "updated",
       bookingId: Int = 12345,
+      attributeSequence: Int = 1,
       reason: String? = null,
       dpsUpdates: Map<String, StringValuePattern> = mapOf(),
     ) {
@@ -537,6 +550,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
         check {
           assertThat(it["offenderNo"]).isEqualTo("A1234AA")
           assertThat(it["bookingId"]).isEqualTo("$bookingId")
+          assertThat(it["attributeSequence"]).isEqualTo("$attributeSequence")
           // Verify the ignored reason if expected
           reason?.run { assertThat(it["reason"]).isEqualTo(this) }
           // For updates verify we track the DPS ID returned
