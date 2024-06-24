@@ -6,6 +6,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -128,7 +129,7 @@ internal class IncidentsServiceTest {
           assertThat(incidentNumber).isEqualTo("$NOMIS_INCIDENT_ID")
           assertThat(type).isEqualTo(ReportBasic.Type.SELF_HARM)
           assertThat(incidentDateAndTime).isEqualTo("2021-07-05T10:35:17")
-          assertThat(prisonId).isEqualTo("MDI")
+          assertThat(prisonId).isEqualTo("ASI")
           assertThat(title).isEqualTo("There was an incident in the exercise yard")
           assertThat(description).isEqualTo("Fred and Jimmy were fighting outside.")
           assertThat(reportedBy).isEqualTo("JSMITH")
@@ -140,6 +141,34 @@ internal class IncidentsServiceTest {
           assertThat(modifiedBy).isEqualTo("JSMITH")
           assertThat(createdInNomis).isEqualTo(true)
         }
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /incident-reports")
+  inner class GetIncidents {
+    @BeforeEach
+    internal fun setUp() {
+      incidentsApi.stubGetIncidents(5, 5)
+
+      runBlocking {
+        incidentsService.getOpenIncidentsCount(agencyId = "ASI")
+      }
+    }
+
+    @Test
+    fun `should call api with OAuth2 token`() {
+      incidentsApi.verify(
+        getRequestedFor(urlMatching("/incident-reports?.*"))
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will retrieve paged incidents from the api`() {
+      runBlocking {
+        assertThat(incidentsService.getOpenIncidentsCount(agencyId = "ASI")).isEqualTo(5L)
       }
     }
   }

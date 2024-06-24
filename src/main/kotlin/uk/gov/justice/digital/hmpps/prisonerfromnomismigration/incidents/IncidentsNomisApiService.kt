@@ -1,10 +1,11 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents
 
-import kotlinx.coroutines.reactive.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisCode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisHistoryQuestion
@@ -23,8 +24,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.History
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.HistoryQuestion
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.HistoryResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentAgencyId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentsReconciliationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Offender
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderParty
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Question
@@ -64,6 +67,36 @@ class IncidentsNomisApiService(@Qualifier("nomisApiWebClient") private val webCl
       .retrieve()
       .bodyToMono(typeReference<RestResponsePage<IncidentIdResponse>>())
       .awaitSingle()
+
+  suspend fun getAllAgencies(): List<IncidentAgencyId> =
+    webClient.get()
+      .uri("/incidents/reconciliation/agencies")
+      .retrieve()
+      .awaitBody()
+
+  suspend fun getIncidentsReconciliation(prisonId: String): IncidentsReconciliationResponse =
+    webClient.get()
+      .uri("incidents/reconciliation/agency/{agencyId}/counts", prisonId)
+      .retrieve()
+      .awaitBody()
+
+/* TODO
+  suspend fun getOpenIncidentIds(
+    pageNumber: Long,
+    pageSize: Long,
+  ): PageImpl<IncidentIdResponse> =
+    webClient.get()
+      .uri {
+        it.path("/incidents/ids")
+          .queryParam("open", true)
+          .queryParam("page", pageNumber)
+          .queryParam("size", pageSize)
+          .build()
+      }
+      .retrieve()
+      .bodyToMono(typeReference<RestResponsePage<IncidentIdResponse>>())
+      .awaitSingle()
+ */
 }
 
 fun IncidentResponse.toMigrateUpsertNomisIncident() =

@@ -20,6 +20,10 @@ generic-service:
           deny all;
           return 401;
         }
+        location /incidents/reports/reconciliation {
+          deny all;
+          return 401;
+        }
     host: app-hostname.local # override per environment
     tlsSecretName: prisoner-from-nomis-cert
 
@@ -162,3 +166,4 @@ generic-prometheus-alerts:
 
 cron:
   retry_dlqs_schedule: "*/10 * * * *"
+# TODO  incidentsReportSchedule: "5 7 * * *"

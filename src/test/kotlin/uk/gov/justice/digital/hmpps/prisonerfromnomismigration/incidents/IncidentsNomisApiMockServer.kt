@@ -2,6 +2,8 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder
+import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
@@ -9,9 +11,13 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentAgencyId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentStatus
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentsCount
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentsReconciliationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Staff
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
@@ -40,9 +46,7 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
       val startIncidentId = (page * pageSize) + 1
       val endIncidentId = min((page * pageSize) + pageSize, totalElements)
       nomisApi.stubFor(
-        get(
-          urlPathEqualTo("/incidents/ids"),
-        )
+        get(urlPathEqualTo("/incidents/ids"))
           .withQueryParam("page", equalTo(page.toString()))
           .willReturn(
             aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
@@ -61,21 +65,27 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
 
   fun stubGetIncident(nomisIncidentId: Long = 1234) {
     nomisApi.stubFor(
-      get(
-        urlPathEqualTo("/incidents/$nomisIncidentId"),
-      )
+      get(urlPathEqualTo("/incidents/$nomisIncidentId"))
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(objectMapper.writeValueAsString(incidentResponse(nomisIncidentId))),
+            .withBody(incidentResponse(nomisIncidentId)),
         ),
     )
   }
 
+  fun stubGetIncident(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    nomisApi.stubFor(
+      get(WireMock.urlPathMatching("/incidents/\\d+")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(error),
+      ),
+    )
+  }
   fun stubGetIncidentNotFound(nomisIncidentId: Long = 1234) {
     nomisApi.stubFor(
-      get(
-        urlPathEqualTo("/incidents/$nomisIncidentId"),
-      )
+      get(urlPathEqualTo("/incidents/$nomisIncidentId"))
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value()),
@@ -86,15 +96,59 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubMultipleGetIncidents(intProgression: IntProgression) {
     (intProgression).forEach {
       nomisApi.stubFor(
-        get(
-          urlPathEqualTo("/incidents/$it"),
-        )
+        get(urlPathEqualTo("/incidents/$it"))
           .willReturn(
             aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-              .withBody(objectMapper.writeValueAsString(incidentResponse(nomisIncidentId = it.toLong()))),
+              .withBody(incidentResponse(nomisIncidentId = it.toLong())),
           ),
       )
     }
+  }
+
+  fun stubGetIncidentAgencies() {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/incidents/reconciliation/agencies"))
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+            .withBody(incidentAgencies()),
+        ),
+    )
+  }
+
+  fun stubGetIncidentAgenciesWithError(status: HttpStatus) {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/incidents/reconciliation/agencies"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody("""{"message":"Error"}"""),
+        ),
+    )
+  }
+
+  fun stubGetIncidentForAgencyReconciliation(agencyId: String = "ASI", open: Long = 3, closed: Long = 3) {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/incidents/reconciliation/agency/$agencyId/counts"))
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+            .withBody(incidentAgencyCount(agencyId, open, closed)),
+        ),
+    )
+  }
+  fun stubGetIncidentForAgencyReconciliationWithError(agencyId: String = "ASI", status: HttpStatus) {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/incidents/reconciliation/agency/$agencyId/counts"))
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json").withStatus(status.value())
+            .withBody("""{"message":"Error"}"""),
+        ),
+    )
+  }
+
+  fun ResponseDefinitionBuilder.withBody(body: Any): ResponseDefinitionBuilder {
+    this.withBody(IncidentsApiExtension.objectMapper.writeValueAsString(body))
+    return this
   }
 
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
@@ -111,6 +165,12 @@ fun incidentIdsPagedResponse(
   val content = ids.map { """{ "incidentId": $it }""" }.joinToString { it }
   return pageContent(content, pageSize, pageNumber, totalElements, ids.size)
 }
+
+private fun incidentAgencies() =
+  listOf(IncidentAgencyId("ASI"), IncidentAgencyId("BFI"), IncidentAgencyId("WWI"))
+
+private fun incidentAgencyCount(agencyId: String = "ASI", open: Long, closed: Long) =
+  IncidentsReconciliationResponse(agencyId = agencyId, IncidentsCount(openIncidents = open, closedIncidents = closed))
 
 private fun incidentResponse(
   nomisIncidentId: Long = 1234,
