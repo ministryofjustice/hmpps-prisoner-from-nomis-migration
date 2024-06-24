@@ -2,7 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
-import com.github.tomakehurst.wiremock.client.WireMock
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
@@ -11,6 +11,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
@@ -35,10 +36,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.Q
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.ReportBasic
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.ReportWithDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.Response
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.SimplePageReportBasic
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.StaffInvolvement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.StatusHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import java.util.UUID
+import kotlin.math.min
 
 class IncidentsApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
   companion object {
@@ -174,13 +177,13 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         createdInNomis = true,
       )
 
-    fun dpsBasicIncidentReport(dpsIncidentId: String = DPS_INCIDENT_ID) =
+    fun dpsBasicIncidentReport(dpsIncidentId: String = DPS_INCIDENT_ID, prisonId: String = "ASI") =
       ReportBasic(
         id = UUID.fromString(dpsIncidentId),
         incidentNumber = "1234",
         type = ReportBasic.Type.SELF_HARM,
         incidentDateAndTime = "2021-07-05T10:35:17",
-        prisonId = "MDI",
+        prisonId = "ASI",
         title = "There was an incident in the exercise yard",
         description = "Fred and Jimmy were fighting outside.",
         reportedBy = "JSMITH",
@@ -253,7 +256,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubGetBasicIncident() {
     stubFor(
-      get(WireMock.urlPathMatching("/incident-reports/incident-number/.*")).willReturn(
+      get(urlPathMatching("/incident-reports/incident-number/.*")).willReturn(
         aResponse()
           .withStatus(HttpStatus.OK.value())
           .withHeader("Content-Type", APPLICATION_JSON_VALUE)
@@ -264,6 +267,76 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  private fun incidentAgencies() =
+    listOf(
+      dpsBasicIncidentReport(dpsIncidentId = UUID.randomUUID().toString(), prisonId = "ASI"),
+      dpsBasicIncidentReport(dpsIncidentId = UUID.randomUUID().toString(), prisonId = "BFI"),
+      dpsBasicIncidentReport(dpsIncidentId = UUID.randomUUID().toString(), prisonId = "WWI"),
+    )
+
+  fun stubGetIncidentsForAgencies(totalElements: Long = 3, pageSize: Long = 20) {
+    stubFor(
+      get(urlPathMatching("/incident-reports"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(
+              objectMapper.writeValueAsString(
+                SimplePageReportBasic(
+                  content = incidentAgencies(),
+                  number = 0,
+                  propertySize = pageSize.toInt(),
+                  totalElements = totalElements,
+                  sort = listOf("incidentDateAndTime,DESC"),
+                  numberOfElements = pageSize.toInt(),
+                  totalPages = totalElements.toInt(),
+                ),
+              ),
+            ),
+        ),
+    )
+  }
+
+  fun stubGetIncidents(totalElements: Long = 3, pageSize: Long = 20) {
+    val content: List<ReportBasic> = (1..min(pageSize, totalElements)).map {
+      dpsBasicIncidentReport(dpsIncidentId = UUID.randomUUID().toString())
+    }
+    stubFor(
+      get(urlPathMatching("/incident-reports"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(
+              objectMapper.writeValueAsString(
+                SimplePageReportBasic(
+                  content = content,
+                  number = 0,
+                  propertySize = pageSize.toInt(),
+                  totalElements = totalElements,
+                  sort = listOf("incidentDateAndTime,DESC"),
+                  numberOfElements = pageSize.toInt(),
+                  totalPages = totalElements.toInt(),
+                ),
+              ),
+            ),
+        ),
+    )
+  }
+
+  fun stubGetIncidentsWithError(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    stubFor(
+      get(urlPathMatching("/incident-reports"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody(error),
+        ),
+    )
+  }
+
   fun verifyGetBasicIncident() =
     verify(
       getRequestedFor(urlMatching("/incident-reports/incident-number/.*")),
@@ -271,4 +344,9 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun createIncidentUpsertCount() =
     findAll(postRequestedFor(urlEqualTo("/sync/upsert"))).count()
+
+  fun ResponseDefinitionBuilder.withBody(body: Any): ResponseDefinitionBuilder {
+    this.withBody(objectMapper.writeValueAsString(body))
+    return this
+  }
 }
