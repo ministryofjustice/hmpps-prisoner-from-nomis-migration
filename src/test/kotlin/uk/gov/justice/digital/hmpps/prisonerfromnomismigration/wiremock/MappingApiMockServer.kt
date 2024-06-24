@@ -11,6 +11,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.okJson
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
@@ -700,6 +701,27 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
     stubFor(
       post(urlPathEqualTo(url))
+        .inScenario("Retry create Scenario")
+        .whenScenarioStateIs("Cause create Success")
+        .willReturn(created())
+        .willSetStateTo(STARTED),
+    )
+  }
+  fun stubMappingUpdateFailureFollowedBySuccess(url: String) {
+    stubFor(
+      put(urlPathEqualTo(url))
+        .inScenario("Retry create Scenario")
+        .whenScenarioStateIs(STARTED)
+        .willReturn(
+          aResponse()
+            .withStatus(500) // request unsuccessful with status code 500
+            .withHeader("Content-Type", "application/json"),
+        )
+        .willSetStateTo("Cause create Success"),
+    )
+
+    stubFor(
+      put(urlPathEqualTo(url))
         .inScenario("Retry create Scenario")
         .whenScenarioStateIs("Cause create Success")
         .willReturn(created())

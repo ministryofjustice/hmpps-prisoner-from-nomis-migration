@@ -22,8 +22,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto.MappingType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto.MappingType.NOMIS_CREATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerAlertMappingsDto
 import java.util.UUID
 
 @SpringAPIServiceTest
@@ -317,6 +319,60 @@ class AlertsMappingApiServiceTest {
       alertsMappingApiMockServer.verify(
         putRequestedFor(urlPathEqualTo("/mapping/alerts/nomis-booking-id/5000/nomis-alert-sequence/3"))
           .withRequestBody(matchingJsonPath("bookingId", equalTo("123456"))),
+      )
+    }
+  }
+
+  @Nested
+  inner class ReplaceMappings {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      alertsMappingApiMockServer.stubReplaceMappings("A1234KT")
+
+      apiService.replaceMappings(
+        offenderNo = "A1234KT",
+        PrisonerAlertMappingsDto(
+          mappingType = PrisonerAlertMappingsDto.MappingType.NOMIS_CREATED,
+          mappings = listOf(
+            AlertMappingIdDto(
+              nomisBookingId = 123456,
+              nomisAlertSequence = 1,
+              dpsAlertId = UUID.randomUUID().toString(),
+            ),
+          ),
+        ),
+      )
+
+      alertsMappingApiMockServer.verify(
+        putRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass ids to service`() = runTest {
+      val dpsAlertId = "a04f7a8d-61aa-400c-9395-f4dc62f36ab0"
+      alertsMappingApiMockServer.stubReplaceMappings("A1234KT")
+
+      apiService.replaceMappings(
+        offenderNo = "A1234KT",
+        PrisonerAlertMappingsDto(
+          mappingType = PrisonerAlertMappingsDto.MappingType.NOMIS_CREATED,
+          mappings = listOf(
+            AlertMappingIdDto(
+              nomisBookingId = 123456,
+              nomisAlertSequence = 1,
+              dpsAlertId = dpsAlertId,
+            ),
+          ),
+        ),
+      )
+
+      alertsMappingApiMockServer.verify(
+        putRequestedFor(anyUrl())
+          .withRequestBody(matchingJsonPath("mappings[0].nomisBookingId", equalTo("123456")))
+          .withRequestBody(matchingJsonPath("mappings[0].nomisAlertSequence", equalTo("1")))
+          .withRequestBody(matchingJsonPath("mappings[0].dpsAlertId", equalTo(dpsAlertId)))
+          .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
       )
     }
   }

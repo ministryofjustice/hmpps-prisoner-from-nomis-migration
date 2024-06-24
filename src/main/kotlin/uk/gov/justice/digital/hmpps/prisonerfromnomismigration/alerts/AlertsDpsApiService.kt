@@ -53,6 +53,14 @@ class AlertsDpsApiService(@Qualifier("alertsApiWebClient") private val webClient
     .retrieve()
     .awaitBody()
 
+  // TODO - switch to new API when available
+  suspend fun resynchroniseAlerts(offenderNo: String, alerts: List<MigrateAlert>): List<MigratedAlert> = webClient
+    .post()
+    .uri("/migrate/{offenderNo}/alerts", offenderNo)
+    .bodyValue(alerts)
+    .retrieve()
+    .awaitBody()
+
   suspend fun mergePrisonerAlerts(offenderNo: String, removedOffenderNo: String, alerts: List<MergeAlert>, retainedAlertIds: List<String>): MergedAlerts = webClient
     .post()
     .uri("/merge-alerts")
