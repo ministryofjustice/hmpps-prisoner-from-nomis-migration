@@ -13,3 +13,12 @@ data class MergeAdditionalInformationEvent(
   val removedNomsNumber: String,
   val bookingId: Long,
 )
+
+data class PrisonerReceiveDomainEvent(
+  val additionalInformation: ReceivePrisonerAdditionalInformationEvent,
+)
+
+data class ReceivePrisonerAdditionalInformationEvent(
+  val nomsNumber: String,
+  val reason: String,
+)

@@ -12,4 +12,5 @@ enum class MigrationMessageType {
 enum class SynchronisationMessageType {
   RETRY_SYNCHRONISATION_MAPPING,
   RETRY_SYNCHRONISATION_MAPPING_BATCH,
+  RETRY_RESYNCHRONISATION_MAPPING_BATCH,
 }

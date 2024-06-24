@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_RESYNCHRONISATION_MAPPING_BATCH
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING_BATCH
 import java.util.concurrent.CompletableFuture
@@ -43,6 +44,7 @@ class AlertsEventListener(
               "ALERT-INSERTED" -> alertsSynchronisationService.nomisAlertInserted(sqsMessage.Message.fromJson())
               "ALERT-DELETED" -> alertsSynchronisationService.nomisAlertDeleted(sqsMessage.Message.fromJson())
               "prison-offender-events.prisoner.merged" -> alertsSynchronisationService.synchronisePrisonerMerge(sqsMessage.Message.fromJson())
+              "prisoner-offender-search.prisoner.received" -> alertsSynchronisationService.resynchronisePrisonerAlertsForAdmission(sqsMessage.Message.fromJson())
 
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
@@ -56,6 +58,9 @@ class AlertsEventListener(
         )
 
         RETRY_SYNCHRONISATION_MAPPING_BATCH.name -> alertsSynchronisationService.retryCreateMappingsBatch(
+          sqsMessage.Message.fromJson(),
+        )
+        RETRY_RESYNCHRONISATION_MAPPING_BATCH.name -> alertsSynchronisationService.retryReplaceMappingsBatch(
           sqsMessage.Message.fromJson(),
         )
       }

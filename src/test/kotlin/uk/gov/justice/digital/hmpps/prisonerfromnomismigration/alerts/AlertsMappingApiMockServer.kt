@@ -130,6 +130,18 @@ class AlertsMappingApiMockServer(private val objectMapper: ObjectMapper) {
       ),
     )
   }
+  fun stubReplaceMappings(offenderNo: String) {
+    mappingApi.stubFor(
+      put("/mapping/alerts/$offenderNo/all").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(200),
+      ),
+    )
+  }
+  fun stubReplaceMappingsFailureFollowedBySuccess(offenderNo: String) {
+    mappingApi.stubMappingUpdateFailureFollowedBySuccess(url = "/mapping/alerts/$offenderNo/all")
+  }
 
   fun stubMigrationCount(recordsMigrated: Long) {
     mappingApi.stubFor(

@@ -12,14 +12,12 @@ import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
-import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.Alert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.AlertCodeSummary
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MergedAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MergedAlerts
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MigratedAlert
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -99,20 +97,6 @@ class AlertsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubMigrateAlert(
-    response: Alert = dpsAlert(),
-  ) {
-    stubFor(
-      post("/migrate/alerts")
-        .willReturn(
-          aResponse()
-            .withStatus(201)
-            .withHeader("Content-Type", "application/json")
-            .withBody(AlertsDpsApiExtension.objectMapper.writeValueAsString(response)),
-        ),
-    )
-  }
-
   fun stubMigrateAlerts(
     offenderNo: String,
     response: List<MigratedAlert> = listOf(migratedAlert()),
@@ -127,18 +111,18 @@ class AlertsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
     )
   }
-
-  fun stubMigrateAlert(
-    status: HttpStatus,
-    error: ErrorResponse = ErrorResponse(status = status.value()),
+  fun stubResynchroniseAlerts(
+    offenderNo: String,
+    response: List<MigratedAlert> = listOf(migratedAlert()),
   ) {
     stubFor(
-      post("/migrate/alerts")
+      // TODO - switch to new API when available
+      post("/migrate/$offenderNo/alerts")
         .willReturn(
           aResponse()
-            .withStatus(status.value())
+            .withStatus(201)
             .withHeader("Content-Type", "application/json")
-            .withBody(AlertsDpsApiExtension.objectMapper.writeValueAsString(error)),
+            .withBody(AlertsDpsApiExtension.objectMapper.writeValueAsString(response)),
         ),
     )
   }

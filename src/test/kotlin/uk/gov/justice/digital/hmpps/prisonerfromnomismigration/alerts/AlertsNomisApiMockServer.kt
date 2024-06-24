@@ -94,6 +94,37 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
       ),
     )
   }
+  fun stubGetAlertsToResynchronise(
+    offenderNo: String,
+    bookingId: Long,
+    currentAlertCount: Long = 1,
+    alert: AlertResponse = AlertResponse(
+      bookingId = bookingId,
+      alertSequence = 1,
+      bookingSequence = 10,
+      alertCode = CodeDescription("XA", "TACT"),
+      type = CodeDescription("X", "Security"),
+      date = LocalDate.now(),
+      isActive = true,
+      isVerified = false,
+      audit = NomisAudit(
+        createDatetime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+        createUsername = "Q1251T",
+      ),
+    ),
+  ) {
+    val response = PrisonerAlertsResponse(
+      latestBookingAlerts = (1..currentAlertCount).map { alert.copy(bookingId = bookingId, alertSequence = it) },
+    )
+    nomisApi.stubFor(
+      get(urlEqualTo("/prisoners/$offenderNo/alerts/to-migrate")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(objectMapper.writeValueAsString(response)),
+      ),
+    )
+  }
 
   fun stubGetAlertsToMigrate(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     nomisApi.stubFor(

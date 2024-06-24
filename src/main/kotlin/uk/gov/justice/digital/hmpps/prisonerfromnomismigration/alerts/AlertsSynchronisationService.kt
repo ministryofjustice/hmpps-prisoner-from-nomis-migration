@@ -10,12 +10,17 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.MappingRes
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.Alert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerMergeDomainEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerReceiveDomainEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.ReceivePrisonerAdditionalInformationEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto.MappingType.NOMIS_CREATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingIdDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerAlertMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerAlertsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
@@ -216,6 +221,62 @@ class AlertsSynchronisationService(
       telemetry + ("mappingSuccess" to (mappingResponse == MAPPING_CREATED).toString()),
     )
   }
+  suspend fun resynchronisePrisonerAlerts(offenderNo: String) = resynchronisePrisonerAlertsForAdmission(
+    PrisonerReceiveDomainEvent(
+      ReceivePrisonerAdditionalInformationEvent(nomsNumber = offenderNo, reason = "READMISSION"),
+    ),
+  )
+
+  suspend fun resynchronisePrisonerAlertsForAdmission(prisonerReceiveEvent: PrisonerReceiveDomainEvent) {
+    val receiveReason = prisonerReceiveEvent.additionalInformation.reason
+    val offenderNo = prisonerReceiveEvent.additionalInformation.nomsNumber
+
+    // TODO - narrow this down to just receiving on old books - requires search change
+    if (receiveReason !in setOf("READMISSION", "NEW_ADMISSION")) {
+      telemetryClient.trackEvent(
+        "from-nomis-synch-alerts-resynchronise-ignored",
+        mapOf(
+          "offenderNo" to offenderNo,
+          "receiveReason" to receiveReason,
+        ),
+      )
+      return
+    }
+
+    // when NOMIS does not find a booking this will be null so just resynchronise as if there is no alerts
+    val nomisAlerts = nomisApiService.getAlertsToResynchronise(offenderNo) ?: PrisonerAlertsResponse(emptyList())
+    val alertsToResynchronise = nomisAlerts.latestBookingAlerts.map { it.toDPSMigratedAlert() }
+    val telemetry = mapOf(
+      "offenderNo" to offenderNo,
+      "alertsCount" to alertsToResynchronise.size,
+      "alerts" to alertsToResynchronise.map { it.alertSeq }.joinToString(),
+    )
+
+    dpsApiService.resynchroniseAlerts(
+      offenderNo = offenderNo,
+      alerts = alertsToResynchronise,
+    ).also {
+      val prisonerMappings = PrisonerAlertMappingsDto(
+        mappingType = PrisonerAlertMappingsDto.MappingType.NOMIS_CREATED,
+        mappings = it.map { dpsAlert ->
+          AlertMappingIdDto(
+            nomisBookingId = dpsAlert.offenderBookId,
+            nomisAlertSequence = dpsAlert.alertSeq.toLong(),
+            dpsAlertId = dpsAlert.alertUuid.toString(),
+          )
+        },
+      )
+      tryToReplaceMappings(
+        offenderNo = offenderNo,
+        prisonerMappings = prisonerMappings,
+        telemetry,
+      )
+      telemetryClient.trackEvent(
+        "from-nomis-synch-alerts-resynchronise",
+        telemetry,
+      )
+    }
+  }
 
   private suspend fun tryToCreateMappings(
     mappings: List<AlertMappingDto>,
@@ -232,6 +293,23 @@ class AlertsSynchronisationService(
         telemetryAttributes = telemetry.valuesAsStrings(),
       )
       return MAPPING_FAILED
+    }
+  }
+  private suspend fun tryToReplaceMappings(
+    offenderNo: String,
+    prisonerMappings: PrisonerAlertMappingsDto,
+    telemetry: Map<String, Any>,
+  ) {
+    try {
+      replaceMappingsBatch(offenderNo = offenderNo, prisonerMappings)
+    } catch (e: Exception) {
+      log.error("Failed to create mappings for alert id $prisonerMappings", e)
+      queueService.sendMessage(
+        messageType = SynchronisationMessageType.RETRY_RESYNCHRONISATION_MAPPING_BATCH.name,
+        synchronisationType = SynchronisationType.ALERTS,
+        message = ReplaceMappings(offenderNo = offenderNo, prisonerMappings),
+        telemetryAttributes = telemetry.valuesAsStrings(),
+      )
     }
   }
 
@@ -272,6 +350,24 @@ class AlertsSynchronisationService(
         }
       }
   }
+  suspend fun retryReplaceMappingsBatch(retryMessage: InternalMessage<ReplaceMappings>) {
+    replaceMappingsBatch(offenderNo = retryMessage.body.offenderNo, prisonerMappings = retryMessage.body.prisonerMappings)
+      .also {
+        telemetryClient.trackEvent(
+          "alert-mapping-replace-success",
+          retryMessage.telemetryAttributes,
+        )
+      }
+  }
+
+  private suspend fun replaceMappingsBatch(
+    offenderNo: String,
+    prisonerMappings: PrisonerAlertMappingsDto,
+  ) =
+    mappingApiService.replaceMappings(
+      offenderNo,
+      prisonerMappings,
+    )
 
   suspend fun moveAlertMappingsToNewBooking(event: AlertInsertedEvent, telemetry: Map<String, Any>) {
     val previousBooking = nomisApiService.getBookingPreviousTo(offenderNo = event.offenderIdDisplay, bookingId = event.bookingId)
@@ -302,3 +398,4 @@ private fun AlertResponse.isCreatedDueToNewBooking() = audit.auditAdditionalInfo
 
 private fun AlertResponse.shouldBeCreatedInDPS() = bookingSequence == 1L
 private fun AlertResponse.shouldNotBeCreatedInDPS() = !shouldBeCreatedInDPS()
+data class ReplaceMappings(val offenderNo: String, val prisonerMappings: PrisonerAlertMappingsDto)

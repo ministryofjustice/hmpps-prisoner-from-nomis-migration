@@ -32,7 +32,9 @@ import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension.Companion.dpsAlertsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.dpsAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.mergedAlert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.migratedAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomainEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.prisonerReceivedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
@@ -1349,6 +1351,195 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
             assertThat(it["existingDpsAlertId"]).isEqualTo(existingAlertId.toString())
             assertThat(it["existingNomisBookingId"]).isEqualTo("$bookingId")
             assertThat(it["existingNomisAlertSequence"]).isEqualTo("1")
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("prisoner-offender-search.prisoner.received")
+  inner class PrisonerReceived {
+    @Nested
+    inner class HappyPath {
+      val offenderNo = OFFENDER_ID_DISPLAY
+      val bookingId = BOOKING_ID
+      private val dpsAlertId1 = UUID.fromString("956d4326-b0c3-47ac-ab12-f0165109a6c5")
+      private val dpsAlertId2 = UUID.fromString("f612a10f-4827-4022-be96-d882193dfabd")
+
+      @BeforeEach
+      fun setUp() {
+        alertsNomisApiMockServer.stubGetAlertsToResynchronise(offenderNo, bookingId = bookingId, currentAlertCount = 2)
+        dpsAlertsServer.stubResynchroniseAlerts(
+          offenderNo = offenderNo,
+          response = listOf(
+            migratedAlert().copy(offenderBookId = bookingId, alertSeq = 1, alertUuid = dpsAlertId1),
+            migratedAlert().copy(offenderBookId = bookingId, alertSeq = 2, alertUuid = dpsAlertId2),
+          ),
+        )
+        alertsMappingApiMockServer.stubReplaceMappings(offenderNo)
+        awsSqsSentencingOffenderEventsClient.sendMessage(
+          alertsQueueOffenderEventsUrl,
+          prisonerReceivedDomainEvent(
+            offenderNo = offenderNo,
+          ),
+        )
+        waitForAnyProcessingToComplete("from-nomis-synch-alerts-resynchronise")
+      }
+
+      @Test
+      fun `will retrieve current alerts for the prisoner`() {
+        alertsNomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/prisoners/$offenderNo/alerts/to-migrate")))
+      }
+
+      @Test
+      fun `will send all alerts to DPS`() {
+        dpsAlertsServer.verify(
+          postRequestedFor(urlPathEqualTo("/migrate/$offenderNo/alerts"))
+            .withRequestBodyJsonPath("[0].offenderBookId", "$bookingId")
+            .withRequestBodyJsonPath("[0].alertSeq", "1")
+            .withRequestBodyJsonPath("[1].offenderBookId", "$bookingId")
+            .withRequestBodyJsonPath("[1].alertSeq", "2"),
+        )
+      }
+
+      @Test
+      fun `will replaces mapping between the DPS and NOMIS alerts`() {
+        alertsMappingApiMockServer.verify(
+          putRequestedFor(urlPathEqualTo("/mapping/alerts/$offenderNo/all"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("mappings[0].nomisBookingId", "$bookingId")
+            .withRequestBodyJsonPath("mappings[0].nomisAlertSequence", "1")
+            .withRequestBodyJsonPath("mappings[0].dpsAlertId", "$dpsAlertId1")
+            .withRequestBodyJsonPath("mappings[1].nomisBookingId", "$bookingId")
+            .withRequestBodyJsonPath("mappings[1].nomisAlertSequence", "2")
+            .withRequestBodyJsonPath("mappings[1].dpsAlertId", "$dpsAlertId2"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for the resynchronise`() {
+        verify(telemetryClient).trackEvent(
+          eq("from-nomis-synch-alerts-resynchronise"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["alertsCount"]).isEqualTo("2")
+            assertThat(it["alerts"]).isEqualTo("1, 2")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class HappyPathWithFailure {
+      val offenderNo = OFFENDER_ID_DISPLAY
+      val bookingId = BOOKING_ID
+      private val dpsAlertId1 = UUID.fromString("956d4326-b0c3-47ac-ab12-f0165109a6c5")
+      private val dpsAlertId2 = UUID.fromString("f612a10f-4827-4022-be96-d882193dfabd")
+
+      @BeforeEach
+      fun setUp() {
+        alertsNomisApiMockServer.stubGetAlertsToResynchronise(offenderNo, bookingId = bookingId, currentAlertCount = 2)
+        dpsAlertsServer.stubResynchroniseAlerts(
+          offenderNo = offenderNo,
+          response = listOf(
+            migratedAlert().copy(offenderBookId = bookingId, alertSeq = 1, alertUuid = dpsAlertId1),
+            migratedAlert().copy(offenderBookId = bookingId, alertSeq = 2, alertUuid = dpsAlertId2),
+          ),
+        )
+        alertsMappingApiMockServer.stubReplaceMappingsFailureFollowedBySuccess(offenderNo)
+        awsSqsSentencingOffenderEventsClient.sendMessage(
+          alertsQueueOffenderEventsUrl,
+          prisonerReceivedDomainEvent(
+            offenderNo = offenderNo,
+          ),
+        )
+        waitForAnyProcessingToComplete("alert-mapping-replace-success")
+      }
+
+      @Test
+      fun `will retrieve current alerts for the prisoner once`() {
+        alertsNomisApiMockServer.verify(1, getRequestedFor(urlPathEqualTo("/prisoners/$offenderNo/alerts/to-migrate")))
+      }
+
+      @Test
+      fun `will send all alerts to DPS once`() {
+        dpsAlertsServer.verify(
+          1,
+          postRequestedFor(urlPathEqualTo("/migrate/$offenderNo/alerts"))
+            .withRequestBodyJsonPath("[0].offenderBookId", "$bookingId")
+            .withRequestBodyJsonPath("[0].alertSeq", "1")
+            .withRequestBodyJsonPath("[1].offenderBookId", "$bookingId")
+            .withRequestBodyJsonPath("[1].alertSeq", "2"),
+        )
+      }
+
+      @Test
+      fun `will attempt create a mapping between the DPS and NOMIS alerts until it succeeds`() {
+        alertsMappingApiMockServer.verify(
+          2,
+          putRequestedFor(urlPathEqualTo("/mapping/alerts/$offenderNo/all"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("mappings[0].nomisBookingId", "$bookingId")
+            .withRequestBodyJsonPath("mappings[0].nomisAlertSequence", "1")
+            .withRequestBodyJsonPath("mappings[0].dpsAlertId", "$dpsAlertId1")
+            .withRequestBodyJsonPath("mappings[1].nomisBookingId", "$bookingId")
+            .withRequestBodyJsonPath("mappings[1].nomisAlertSequence", "2")
+            .withRequestBodyJsonPath("mappings[1].dpsAlertId", "$dpsAlertId2"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for the resynchronisation and mapping success`() {
+        verify(telemetryClient).trackEvent(
+          eq("from-nomis-synch-alerts-resynchronise"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["alertsCount"]).isEqualTo("2")
+            assertThat(it["alerts"]).isEqualTo("1, 2")
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("alert-mapping-replace-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenNotReAdmission {
+      val offenderNo = OFFENDER_ID_DISPLAY
+
+      @BeforeEach
+      fun setUp() {
+        awsSqsSentencingOffenderEventsClient.sendMessage(
+          alertsQueueOffenderEventsUrl,
+          prisonerReceivedDomainEvent(
+            offenderNo = offenderNo,
+            reason = "TRANSFERRED",
+          ),
+        )
+        waitForAnyProcessingToComplete("from-nomis-synch-alerts-resynchronise-ignored")
+      }
+
+      @Test
+      fun `will not even retrieve current alerts for the prisoner`() {
+        alertsNomisApiMockServer.verify(0, getRequestedFor(urlPathEqualTo("/prisoners/$offenderNo/alerts/to-migrate")))
+      }
+
+      @Test
+      fun `will track telemetry for the resynchronisation ignore`() {
+        verify(telemetryClient).trackEvent(
+          eq("from-nomis-synch-alerts-resynchronise-ignored"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["receiveReason"]).isEqualTo("TRANSFERRED")
           },
           isNull(),
         )
