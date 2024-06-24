@@ -223,7 +223,7 @@ class AlertsSynchronisationService(
   }
   suspend fun resynchronisePrisonerAlerts(offenderNo: String) = resynchronisePrisonerAlertsForAdmission(
     PrisonerReceiveDomainEvent(
-      ReceivePrisonerAdditionalInformationEvent(nomsNumber = offenderNo, reason = "READMISSION"),
+      ReceivePrisonerAdditionalInformationEvent(nomsNumber = offenderNo, reason = "READMISSION_SWITCH_BOOKING"),
     ),
   )
 
@@ -231,8 +231,7 @@ class AlertsSynchronisationService(
     val receiveReason = prisonerReceiveEvent.additionalInformation.reason
     val offenderNo = prisonerReceiveEvent.additionalInformation.nomsNumber
 
-    // TODO - narrow this down to just receiving on old books - requires search change
-    if (receiveReason !in setOf("READMISSION", "NEW_ADMISSION")) {
+    if (receiveReason != "READMISSION_SWITCH_BOOKING") {
       telemetryClient.trackEvent(
         "from-nomis-synch-alerts-resynchronise-ignored",
         mapOf(

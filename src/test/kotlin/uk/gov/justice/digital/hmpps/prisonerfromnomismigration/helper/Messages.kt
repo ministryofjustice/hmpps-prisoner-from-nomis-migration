@@ -53,7 +53,7 @@ fun mergeDomainEvent(
 fun prisonerReceivedDomainEvent(
   eventType: String = "prisoner-offender-search.prisoner.received",
   offenderNo: String = "A1234KT",
-  reason: String = "READMISSION",
+  reason: String = "READMISSION_SWITCH_BOOKING",
 ) =
   //language=JSON
   """{
