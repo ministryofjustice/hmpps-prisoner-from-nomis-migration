@@ -244,7 +244,7 @@ class AlertsSynchronisationService(
 
     // when NOMIS does not find a booking this will be null so just resynchronise as if there is no alerts
     val nomisAlerts = nomisApiService.getAlertsToResynchronise(offenderNo) ?: PrisonerAlertsResponse(emptyList())
-    val alertsToResynchronise = nomisAlerts.latestBookingAlerts.map { it.toDPSMigratedAlert() }
+    val alertsToResynchronise = nomisAlerts.latestBookingAlerts.map { it.toDPSResyncAlert() }
     val telemetry = mapOf(
       "offenderNo" to offenderNo,
       "alertsCount" to alertsToResynchronise.size,

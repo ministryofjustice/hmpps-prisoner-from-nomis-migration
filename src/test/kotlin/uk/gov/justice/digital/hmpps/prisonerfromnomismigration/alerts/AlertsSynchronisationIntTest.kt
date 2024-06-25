@@ -32,7 +32,7 @@ import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension.Companion.dpsAlertsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.dpsAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.mergedAlert
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.migratedAlert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.resyncedAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.prisonerReceivedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
@@ -1374,8 +1374,8 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
         dpsAlertsServer.stubResynchroniseAlerts(
           offenderNo = offenderNo,
           response = listOf(
-            migratedAlert().copy(offenderBookId = bookingId, alertSeq = 1, alertUuid = dpsAlertId1),
-            migratedAlert().copy(offenderBookId = bookingId, alertSeq = 2, alertUuid = dpsAlertId2),
+            resyncedAlert().copy(offenderBookId = bookingId, alertSeq = 1, alertUuid = dpsAlertId1),
+            resyncedAlert().copy(offenderBookId = bookingId, alertSeq = 2, alertUuid = dpsAlertId2),
           ),
         )
         alertsMappingApiMockServer.stubReplaceMappings(offenderNo)
@@ -1396,7 +1396,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will send all alerts to DPS`() {
         dpsAlertsServer.verify(
-          postRequestedFor(urlPathEqualTo("/migrate/$offenderNo/alerts"))
+          postRequestedFor(urlPathEqualTo("/resync/$offenderNo/alerts"))
             .withRequestBodyJsonPath("[0].offenderBookId", "$bookingId")
             .withRequestBodyJsonPath("[0].alertSeq", "1")
             .withRequestBodyJsonPath("[1].offenderBookId", "$bookingId")
@@ -1445,8 +1445,8 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
         dpsAlertsServer.stubResynchroniseAlerts(
           offenderNo = offenderNo,
           response = listOf(
-            migratedAlert().copy(offenderBookId = bookingId, alertSeq = 1, alertUuid = dpsAlertId1),
-            migratedAlert().copy(offenderBookId = bookingId, alertSeq = 2, alertUuid = dpsAlertId2),
+            resyncedAlert().copy(offenderBookId = bookingId, alertSeq = 1, alertUuid = dpsAlertId1),
+            resyncedAlert().copy(offenderBookId = bookingId, alertSeq = 2, alertUuid = dpsAlertId2),
           ),
         )
         alertsMappingApiMockServer.stubReplaceMappingsFailureFollowedBySuccess(offenderNo)
@@ -1468,7 +1468,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will send all alerts to DPS once`() {
         dpsAlertsServer.verify(
           1,
-          postRequestedFor(urlPathEqualTo("/migrate/$offenderNo/alerts"))
+          postRequestedFor(urlPathEqualTo("/resync/$offenderNo/alerts"))
             .withRequestBodyJsonPath("[0].offenderBookId", "$bookingId")
             .withRequestBodyJsonPath("[0].alertSeq", "1")
             .withRequestBodyJsonPath("[1].offenderBookId", "$bookingId")

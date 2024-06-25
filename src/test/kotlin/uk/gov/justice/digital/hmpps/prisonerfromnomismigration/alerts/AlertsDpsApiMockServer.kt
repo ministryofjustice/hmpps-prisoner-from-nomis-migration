@@ -18,6 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.Aler
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MergedAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MergedAlerts
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MigratedAlert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.ResyncedAlert
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -75,6 +76,11 @@ class AlertsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       alertSeq = 1,
       offenderBookId = 1234567,
     )
+    fun resyncedAlert() = ResyncedAlert(
+      alertUuid = UUID.randomUUID(),
+      alertSeq = 1,
+      offenderBookId = 1234567,
+    )
 
     fun mergedAlert() = MergedAlert(
       alertUuid = UUID.randomUUID(),
@@ -113,11 +119,10 @@ class AlertsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
   fun stubResynchroniseAlerts(
     offenderNo: String,
-    response: List<MigratedAlert> = listOf(migratedAlert()),
+    response: List<ResyncedAlert> = listOf(resyncedAlert()),
   ) {
     stubFor(
-      // TODO - switch to new API when available
-      post("/migrate/$offenderNo/alerts")
+      post("/resync/$offenderNo/alerts")
         .willReturn(
           aResponse()
             .withStatus(201)
