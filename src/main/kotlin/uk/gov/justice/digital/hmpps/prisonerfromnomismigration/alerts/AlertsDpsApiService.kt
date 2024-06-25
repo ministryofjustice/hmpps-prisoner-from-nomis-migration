@@ -12,6 +12,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.Merg
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MergedAlerts
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MigrateAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MigratedAlert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.ResyncAlert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.ResyncedAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.UpdateAlert
 import java.util.*
 
@@ -53,10 +55,9 @@ class AlertsDpsApiService(@Qualifier("alertsApiWebClient") private val webClient
     .retrieve()
     .awaitBody()
 
-  // TODO - switch to new API when available
-  suspend fun resynchroniseAlerts(offenderNo: String, alerts: List<MigrateAlert>): List<MigratedAlert> = webClient
+  suspend fun resynchroniseAlerts(offenderNo: String, alerts: List<ResyncAlert>): List<ResyncedAlert> = webClient
     .post()
-    .uri("/migrate/{offenderNo}/alerts", offenderNo)
+    .uri("/resync/{offenderNo}/alerts", offenderNo)
     .bodyValue(alerts)
     .retrieve()
     .awaitBody()

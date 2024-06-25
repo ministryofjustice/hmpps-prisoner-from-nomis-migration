@@ -18,9 +18,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsA
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.dpsAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.mergedAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.migratedAlert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.resyncedAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.CreateAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MergeAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MigrateAlert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.ResyncAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.UpdateAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import java.time.LocalDate
@@ -345,9 +347,8 @@ class AlertsDpsApiServiceTest {
       apiService.resynchroniseAlerts(
         offenderNo = "A1234KL",
         alerts = listOf(
-          MigrateAlert(
+          ResyncAlert(
             offenderBookId = 1234567,
-            bookingSeq = 1,
             alertSeq = 2,
             activeFrom = LocalDate.now(),
             alertCode = "XA",
@@ -356,6 +357,7 @@ class AlertsDpsApiServiceTest {
             createdBy = "B.MORRIS",
             createdByDisplayName = "B. Morris",
             createdAt = LocalDateTime.now(),
+            isActive = true,
           ),
         ),
       )
@@ -373,9 +375,8 @@ class AlertsDpsApiServiceTest {
       apiService.resynchroniseAlerts(
         offenderNo = "A1234KL",
         alerts = listOf(
-          MigrateAlert(
+          ResyncAlert(
             offenderBookId = 1234567,
-            bookingSeq = 1,
             alertSeq = 2,
             activeFrom = LocalDate.now(),
             alertCode = "XA",
@@ -384,27 +385,26 @@ class AlertsDpsApiServiceTest {
             createdBy = "B.MORRIS",
             createdByDisplayName = "B. Morris",
             createdAt = LocalDateTime.now(),
+            isActive = true,
           ),
         ),
       )
 
-      // TODO - switch to new endpoint when available
       dpsAlertsServer.verify(
-        postRequestedFor(urlMatching("/migrate/A1234KL/alerts"))
+        postRequestedFor(urlMatching("/resync/A1234KL/alerts"))
           .withRequestBody(matchingJsonPath("$[0].alertCode", equalTo("XA"))),
       )
     }
 
     @Test
     fun `will return dpsAlertIds`() = runTest {
-      dpsAlertsServer.stubResynchroniseAlerts(offenderNo = "A1234KL", response = listOf(migratedAlert().copy(alertUuid = UUID.fromString("f3f31737-6ee3-4ec5-8a79-0ac110fe50e2"))))
+      dpsAlertsServer.stubResynchroniseAlerts(offenderNo = "A1234KL", response = listOf(resyncedAlert().copy(alertUuid = UUID.fromString("f3f31737-6ee3-4ec5-8a79-0ac110fe50e2"))))
 
       val dpsAlerts = apiService.resynchroniseAlerts(
         offenderNo = "A1234KL",
         alerts = listOf(
-          MigrateAlert(
+          ResyncAlert(
             offenderBookId = 1234567,
-            bookingSeq = 1,
             alertSeq = 2,
             activeFrom = LocalDate.now(),
             alertCode = "XA",
@@ -413,6 +413,7 @@ class AlertsDpsApiServiceTest {
             createdBy = "B.MORRIS",
             createdByDisplayName = "B. Morris",
             createdAt = LocalDateTime.now(),
+            isActive = true,
           ),
         ),
       )

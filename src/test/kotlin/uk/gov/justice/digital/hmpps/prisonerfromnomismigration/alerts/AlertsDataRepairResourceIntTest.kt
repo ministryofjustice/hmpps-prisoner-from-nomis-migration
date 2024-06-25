@@ -15,7 +15,7 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension.Companion.dpsAlertsServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.migratedAlert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.resyncedAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.util.*
@@ -29,7 +29,7 @@ class AlertsDataRepairResourceIntTest : SqsIntegrationTestBase() {
 
   @DisplayName("POST /prisoners/{offenderNo}/alerts/resynchronise")
   @Nested
-  inner class RepairAdlerts {
+  inner class RepairAlerts {
     val offenderNo = "A1234KT"
 
     @Nested
@@ -71,8 +71,8 @@ class AlertsDataRepairResourceIntTest : SqsIntegrationTestBase() {
         dpsAlertsServer.stubResynchroniseAlerts(
           offenderNo = offenderNo,
           response = listOf(
-            migratedAlert().copy(offenderBookId = bookingId, alertSeq = 1, alertUuid = dpsAlertId1),
-            migratedAlert().copy(offenderBookId = bookingId, alertSeq = 2, alertUuid = dpsAlertId2),
+            resyncedAlert().copy(offenderBookId = bookingId, alertSeq = 1, alertUuid = dpsAlertId1),
+            resyncedAlert().copy(offenderBookId = bookingId, alertSeq = 2, alertUuid = dpsAlertId2),
           ),
         )
         alertsMappingApiMockServer.stubReplaceMappings(offenderNo)
@@ -91,7 +91,7 @@ class AlertsDataRepairResourceIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will send all alerts to DPS`() {
         dpsAlertsServer.verify(
-          postRequestedFor(urlPathEqualTo("/migrate/$offenderNo/alerts"))
+          postRequestedFor(urlPathEqualTo("/resync/$offenderNo/alerts"))
             .withRequestBodyJsonPath("[0].offenderBookId", "$bookingId")
             .withRequestBodyJsonPath("[0].alertSeq", "1")
             .withRequestBodyJsonPath("[1].offenderBookId", "$bookingId")
