@@ -7,6 +7,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentAgencyId
@@ -17,15 +18,19 @@ class IncidentsReconciliationService(
   private val telemetryClient: TelemetryClient,
   private val incidentsService: IncidentsService,
   private val nomisIncidentsApiService: IncidentsNomisApiService,
+  @Value("\${reports.incidents.reconciliation.page-size}")
+  private val pageSize: Long = 20,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
   suspend fun generateReconciliationReport(agencies: List<IncidentAgencyId>): List<MismatchIncidents> =
-    withContext(Dispatchers.Unconfined) {
-      agencies.map { async { checkIncidentsMatch(it.agencyId) } }
-    }.awaitAll().filterNotNull()
+    agencies.chunked(pageSize.toInt()).flatMap { pagedAgencies ->
+      withContext(Dispatchers.Unconfined) {
+        pagedAgencies.map { async { checkIncidentsMatch(it.agencyId) } }
+      }.awaitAll().filterNotNull()
+    }
 
   suspend fun checkIncidentsMatch(agencyId: String): MismatchIncidents? = runCatching {
     val nomisIncidents = doApiCallWithRetries { nomisIncidentsApiService.getIncidentsReconciliation(agencyId) }

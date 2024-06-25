@@ -160,3 +160,8 @@ hmpps.sqs:
     # and there needs to be a significant delay before they are retried which is long enough for the parent to be created.
     migrationlocations:
       errorVisibilityTimeout: 60
+
+reports:
+  incidents:
+    reconciliation:
+      page-size: 20
