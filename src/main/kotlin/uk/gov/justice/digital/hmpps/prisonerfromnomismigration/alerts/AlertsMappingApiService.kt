@@ -13,7 +13,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.NomisMappingIdUpdate
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerAlertMappingsDto
 
 @Service
@@ -54,17 +53,6 @@ class AlertsMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebCl
       .retrieve()
       .awaitBodilessEntity()
   }
-
-  suspend fun updateNomisMappingId(previousBookingId: Long, alertSequence: Long, newBookingId: Long): AlertMappingDto? =
-    webClient.put()
-      .uri(
-        "/mapping/alerts/nomis-booking-id/{bookingId}/nomis-alert-sequence/{alertSequence}",
-        previousBookingId,
-        alertSequence,
-      )
-      .bodyValue(NomisMappingIdUpdate(bookingId = newBookingId))
-      .retrieve()
-      .awaitBodyOrNullWhenNotFound()
 
   suspend fun replaceMappings(
     offenderNo: String,

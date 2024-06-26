@@ -298,32 +298,6 @@ class AlertsMappingApiServiceTest {
   }
 
   @Nested
-  inner class UpdateNomisMappingId {
-    @Test
-    internal fun `will pass oath2 token to service`() = runTest {
-      alertsMappingApiMockServer.stubUpdateByNomisId(previousBookingId = 5000, alertSequence = 3)
-
-      apiService.updateNomisMappingId(previousBookingId = 5000, alertSequence = 3, newBookingId = 123456)
-
-      alertsMappingApiMockServer.verify(
-        putRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    internal fun `will pass ids to service`() = runTest {
-      alertsMappingApiMockServer.stubUpdateByNomisId(previousBookingId = 5000, alertSequence = 3)
-
-      apiService.updateNomisMappingId(previousBookingId = 5000, alertSequence = 3, newBookingId = 123456)
-
-      alertsMappingApiMockServer.verify(
-        putRequestedFor(urlPathEqualTo("/mapping/alerts/nomis-booking-id/5000/nomis-alert-sequence/3"))
-          .withRequestBody(matchingJsonPath("bookingId", equalTo("123456"))),
-      )
-    }
-  }
-
-  @Nested
   inner class ReplaceMappings {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {

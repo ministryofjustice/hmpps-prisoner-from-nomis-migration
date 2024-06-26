@@ -47,7 +47,7 @@ class AlertsSynchronisationService(
       telemetryClient.trackEvent("alert-synchronisation-created-skipped", telemetry)
     } else {
       if (nomisAlert.isCreatedDueToNewBooking()) {
-        moveAlertMappingsToNewBooking(event, telemetry)
+        telemetryClient.trackEvent("alert-created-new-booking-ignored", telemetry)
       } else {
         val mapping = mappingApiService.getOrNullByNomisId(event.bookingId, event.alertSeq)
         if (mapping != null) {
@@ -231,7 +231,7 @@ class AlertsSynchronisationService(
     val receiveReason = prisonerReceiveEvent.additionalInformation.reason
     val offenderNo = prisonerReceiveEvent.additionalInformation.nomsNumber
 
-    if (receiveReason != "READMISSION_SWITCH_BOOKING") {
+    if (receiveReason !in listOf("READMISSION_SWITCH_BOOKING", "NEW_ADMISSION")) {
       telemetryClient.trackEvent(
         "from-nomis-synch-alerts-resynchronise-ignored",
         mapOf(
@@ -367,24 +367,6 @@ class AlertsSynchronisationService(
       offenderNo,
       prisonerMappings,
     )
-
-  suspend fun moveAlertMappingsToNewBooking(event: AlertInsertedEvent, telemetry: Map<String, Any>) {
-    val previousBooking = nomisApiService.getBookingPreviousTo(offenderNo = event.offenderIdDisplay, bookingId = event.bookingId)
-    mappingApiService.updateNomisMappingId(previousBookingId = previousBooking.bookingId, alertSequence = event.alertSeq, newBookingId = event.bookingId)?.also { mapping ->
-      telemetryClient.trackEvent(
-        "alert-synchronisation-booking-transfer-success",
-        telemetry + mapOf("dpsAlertId" to mapping.dpsAlertId, "previousBookingId" to previousBooking.bookingId.toString()),
-      )
-    } ?: run {
-      telemetryClient.trackEvent(
-        "alert-synchronisation-booking-transfer-failed",
-        telemetry + ("previousBookingId" to previousBooking.bookingId.toString()),
-      )
-      if (hasMigratedAllData) {
-        throw IllegalStateException("Mapping was not found to update for booking ${previousBooking.bookingId} and alertSequence ${event.alertSeq}")
-      }
-    }
-  }
 }
 
 private enum class MappingResponse {
