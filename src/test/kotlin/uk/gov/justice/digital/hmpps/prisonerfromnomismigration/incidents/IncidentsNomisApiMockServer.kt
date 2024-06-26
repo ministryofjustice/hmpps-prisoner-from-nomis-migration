@@ -163,10 +163,8 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun ResponseDefinitionBuilder.withBody(body: Any): ResponseDefinitionBuilder {
+  fun ResponseDefinitionBuilder.withBody(body: Any): ResponseDefinitionBuilder =
     this.withBody(objectMapper.writeValueAsString(body))
-    return this
-  }
 
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
@@ -186,7 +184,7 @@ fun incidentIdsPagedResponse(
 private fun incidentAgencies() =
   listOf(IncidentAgencyId("ASI"), IncidentAgencyId("BFI"), IncidentAgencyId("WWI"))
 
-private fun incidentAgencyCount(agencyId: String = "ASI", open: Long, closed: Long) =
+private fun incidentAgencyCount(agencyId: String, open: Long, closed: Long) =
   IncidentsReconciliationResponse(agencyId = agencyId, IncidentsCount(openIncidents = open, closedIncidents = closed))
 
 private fun incidentResponse(

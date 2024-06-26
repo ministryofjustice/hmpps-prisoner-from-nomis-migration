@@ -19,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito
 import org.mockito.Mockito.eq
 import org.mockito.internal.verification.Times
 import org.mockito.kotlin.any
@@ -176,56 +177,24 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Nested
-      inner class WhenUpdateByNomisSuccess {
-        @BeforeEach
-        fun setUp() {
+      inner class WhenMappingAlreadyExists {
+
+        @Test
+        internal fun `telemetry added to track the failure`() {
           incidentsNomisApi.stubGetIncident()
           incidentsMappingApi.stubGetIncident()
-          incidentsApi.stubIncidentUpsert()
 
           awsSqsIncidentsOffenderEventsClient.sendMessage(
             incidentsQueueOffenderEventsUrl,
             incidentEvent(eventType = "INCIDENT-INSERTED"),
           )
-        }
 
-        @Test
-        fun `will retrieve details about the incident from NOMIS`() {
-          await untilAsserted {
-            nomisApi.verify(getRequestedFor(urlEqualTo(NOMIS_API_URL)))
-          }
-        }
-
-        @Test
-        fun `will retrieve mapping to check if this is a new incident`() {
-          await untilAsserted {
-            mappingApi.verify(getRequestedFor(urlPathEqualTo(NOMIS_MAPPING_API_URL)))
-          }
-        }
-
-        @Test
-        fun `will send the update to the incident in the incidents service`() {
-          await untilAsserted {
-            incidentsApi.verify(postRequestedFor(urlPathEqualTo("/sync/upsert")))
-          }
-        }
-
-        @Test
-        fun `will not add a new mapping between the two records`() {
-          await untilAsserted {
-            verify(telemetryClient, Times(1)).trackEvent(any(), any(), isNull())
-            mappingApi.verify(exactly(0), postRequestedFor(anyUrl()))
-          }
-        }
-
-        @Test
-        fun `will create telemetry tracking the create`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("incidents-synchronisation-updated-success"),
+              eq("incidents-synchronisation-created-ignored"),
               check {
-                assertThat(it["dpsIncidentId"]).isEqualTo(DPS_INCIDENT_ID)
                 assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
+                assertThat(it["migrationId"]).isNull()
               },
               isNull(),
             )
@@ -285,7 +254,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         awsSqsIncidentsOffenderEventsClient.sendMessage(
           incidentsQueueOffenderEventsUrl,
-          incidentEvent(auditModuleName = "DPS_SYNCHRONISATION"),
+          incidentEvent(eventType = "INCIDENT-INSERTED", auditModuleName = "DPS_SYNCHRONISATION"),
         )
       }
 
@@ -309,69 +278,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
 
     @Nested
     @DisplayName("When there is a new Update Incident event")
-    inner class WhenNewUpdateIncident {
-
-      @Nested
-      inner class WhenCreateByNomisSuccess {
-        @BeforeEach
-        fun setUp() {
-          incidentsNomisApi.stubGetIncident()
-          incidentsMappingApi.stubGetAnyIncidentNotFound()
-          incidentsApi.stubIncidentUpsert()
-          mappingApi.stubMappingCreate(INCIDENTS_CREATE_MAPPING_URL)
-
-          awsSqsIncidentsOffenderEventsClient.sendMessage(
-            incidentsQueueOffenderEventsUrl,
-            incidentEvent(),
-          )
-        }
-
-        @Test
-        fun `will retrieve details about the incident from NOMIS`() {
-          await untilAsserted {
-            nomisApi.verify(getRequestedFor(urlEqualTo(NOMIS_API_URL)))
-          }
-        }
-
-        @Test
-        fun `will retrieve mapping to check if this is a new incident`() {
-          await untilAsserted {
-            mappingApi.verify(getRequestedFor(urlPathEqualTo(NOMIS_MAPPING_API_URL)))
-          }
-        }
-
-        @Test
-        fun `will create the incident in the incidents service`() {
-          await untilAsserted {
-            incidentsApi.verify(postRequestedFor(urlPathEqualTo("/sync/upsert")))
-          }
-        }
-
-        @Test
-        fun `will create a mapping between the two records`() {
-          await untilAsserted {
-            mappingApi.verify(
-              postRequestedFor(urlPathEqualTo("/mapping/incidents"))
-                .withRequestBody(matchingJsonPath("dpsIncidentId", equalTo(DPS_INCIDENT_ID)))
-                .withRequestBody(matchingJsonPath("nomisIncidentId", equalTo("$NOMIS_INCIDENT_ID"))),
-            )
-          }
-        }
-
-        @Test
-        fun `will create telemetry tracking the create`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("incidents-synchronisation-created-success"),
-              check {
-                assertThat(it["dpsIncidentId"]).isEqualTo(DPS_INCIDENT_ID)
-                assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
-              },
-              isNull(),
-            )
-          }
-        }
-      }
+    inner class WhenUpdateByNomis {
 
       @Nested
       inner class WhenNomisHasNoIncident {
@@ -381,7 +288,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
 
           awsSqsIncidentsOffenderEventsClient.sendMessage(
             incidentsQueueOffenderEventsUrl,
-            incidentEvent(),
+            incidentEvent("INCIDENT-CHANGED-PARTIES"),
           )
           awsSqsIncidentsOffenderEventDlqClient.waitForMessageCountOnQueue(incidentsQueueOffenderEventsDlqUrl, 1)
         }
@@ -393,12 +300,48 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will not attempt to get mapping data`() {
-          mappingApi.verify(exactly(0), getRequestedFor(anyUrl()))
+          incidentsMappingApi.verify(exactly(0), getRequestedFor(anyUrl()))
         }
 
         @Test
         fun `will not create telemetry tracking`() {
           verify(telemetryClient, Times(0)).trackEvent(any(), any(), isNull())
+        }
+      }
+
+      @Nested
+      @DisplayName("When mapping doesn't exist")
+      inner class MappingDoesNotExist {
+        @BeforeEach
+        fun setUp() {
+          incidentsNomisApi.stubGetIncident()
+          incidentsMappingApi.stubGetAnyIncidentNotFound()
+          awsSqsIncidentsOffenderEventsClient.sendMessage(
+            incidentsQueueOffenderEventsUrl,
+            incidentEvent(eventType = "INCIDENT-CHANGED-RESPONSES"),
+          )
+        }
+
+        @Test
+        fun `telemetry added to track the failure`() {
+          await untilAsserted {
+            verify(telemetryClient, Mockito.atLeastOnce()).trackEvent(
+              eq("incidents-synchronisation-updated-failed"),
+              check {
+                assertThat(it["nomisIncidentId"]).isEqualTo("1234")
+              },
+              isNull(),
+            )
+          }
+        }
+
+        @Test
+        fun `the event is placed on dead letter queue`() {
+          await untilAsserted {
+            assertThat(
+              awsSqsIncidentsOffenderEventDlqClient.countAllMessagesOnQueue(incidentsQueueOffenderEventsDlqUrl).get(),
+            ).isEqualTo(1)
+          }
         }
       }
 
@@ -412,7 +355,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
 
           awsSqsIncidentsOffenderEventsClient.sendMessage(
             incidentsQueueOffenderEventsUrl,
-            incidentEvent(),
+            incidentEvent("INCIDENT-CHANGED-PARTIES"),
           )
         }
 
@@ -453,47 +396,6 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
               check {
                 assertThat(it["dpsIncidentId"]).isEqualTo(DPS_INCIDENT_ID)
                 assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
-              },
-              isNull(),
-            )
-          }
-        }
-      }
-
-      @Nested
-      inner class WhenDuplicateMapping {
-        private val duplicateDPSIncidentId = "ddd596da-8eab-4d2a-a026-bc5afb8acda0"
-
-        @Test
-        internal fun `it will not retry after a 409 (duplicate incident written to Incident API)`() {
-          incidentsNomisApi.stubGetIncident()
-          incidentsMappingApi.stubGetAnyIncidentNotFound()
-          incidentsApi.stubIncidentUpsert(duplicateDPSIncidentId)
-          incidentsMappingApi.stubIncidentMappingCreateConflict()
-
-          awsSqsIncidentsOffenderEventsClient.sendMessage(
-            incidentsQueueOffenderEventsUrl,
-            incidentEvent(),
-          )
-
-          // wait for all mappings to be created before verifying
-          await untilCallTo { mappingApi.createMappingCount(INCIDENTS_CREATE_MAPPING_URL) } matches { it == 1 }
-
-          // check that one incident is created
-          assertThat(incidentsApi.createIncidentUpsertCount()).isEqualTo(1)
-
-          // doesn't retry
-          incidentsMappingApi.verifyCreateMappingIncidentId(duplicateDPSIncidentId)
-
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("incidents-synchronisation-nomis-duplicate"),
-              check {
-                assertThat(it["existingNomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
-                assertThat(it["duplicateNomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
-                assertThat(it["existingDPSIncidentId"]).isEqualTo(DPS_INCIDENT_ID)
-                assertThat(it["duplicateDPSIncidentId"]).isEqualTo(duplicateDPSIncidentId)
-                assertThat(it["migrationId"]).isNull()
               },
               isNull(),
             )
@@ -649,7 +551,7 @@ fun SqsAsyncClient.waitForMessageCountOnQueue(queueUrl: String, messageCount: In
   } matches { it == messageCount }
 
 fun incidentEvent(
-  eventType: String = "INCIDENT-CHANGED-PARTIES",
+  eventType: String,
   nomisIncidentId: String = "$NOMIS_INCIDENT_ID",
   auditModuleName: String = "OIDINCRS",
 ) = """

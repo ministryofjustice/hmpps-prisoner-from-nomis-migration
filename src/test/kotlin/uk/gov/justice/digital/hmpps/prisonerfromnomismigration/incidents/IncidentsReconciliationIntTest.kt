@@ -77,9 +77,9 @@ class IncidentsReconciliationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `will show mismatch counts in report`() {
-      incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts("ASI", open = 2)
-      incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts("BFI", open = 1, closed = 4)
-      incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts("WWI")
+      incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts(agencyId = "ASI", open = 2)
+      incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts(agencyId = "BFI", open = 1, closed = 4)
+      incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts(agencyId = "WWI")
 
       webTestClient.put().uri("/incidents/reports/reconciliation")
         .exchange()

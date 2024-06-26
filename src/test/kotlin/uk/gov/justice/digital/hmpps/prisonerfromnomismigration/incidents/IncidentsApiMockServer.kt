@@ -78,13 +78,13 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         incidentNumber = "1234",
         type = ReportWithDetails.Type.SELF_HARM,
         incidentDateAndTime = "2021-07-05T10:35:17",
-        prisonId = "MDI",
+        prisonId = "ASI",
         title = "There was an incident in the exercise yard",
         description = "Fred and Jimmy were fighting outside.",
         event = Event(
           eventId = "123",
           eventDateAndTime = "2021-07-05T10:35:17",
-          prisonId = "MDI",
+          prisonId = "ASI",
           title = "There was a problem",
           description = "Fighting was happening",
           createdAt = "2021-07-05T10:35:17",
@@ -97,11 +97,11 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         assignedTo = "BJONES",
         questions = listOf(
           Question(
-            code = "string",
-            question = "string",
+            code = "Q1",
+            question = "Was anybody hurt?",
             responses = listOf(
               Response(
-                response = "They answered",
+                response = "Yes",
                 recordedBy = "JSMITH",
                 recordedAt = "2021-07-05T10:35:17",
                 additionalInformation = null,
@@ -117,12 +117,12 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             changedBy = "JSMITH",
             questions = listOf(
               HistoricalQuestion(
-                code = "string",
-                question = "string",
+                code = "HQ1",
+                question = "Were tools involved?",
                 responses = listOf(
                   HistoricalResponse(
-                    response = "string",
-                    recordedBy = "string",
+                    response = "Yes",
+                    recordedBy = "Fred Jones",
                     recordedAt = "2021-07-05T10:35:17",
                     additionalInformation = "more info",
                   ),
@@ -141,24 +141,24 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
         staffInvolved = listOf(
           StaffInvolvement(
-            staffUsername = "string",
+            staffUsername = "Dave Jones",
             staffRole = StaffInvolvement.StaffRole.ACTIVELY_INVOLVED,
-            comment = "null",
+            comment = "Dave was hit",
           ),
         ),
         prisonersInvolved = listOf(
           PrisonerInvolvement(
-            prisonerNumber = "string",
+            prisonerNumber = "A1234BC",
             prisonerRole = PrisonerInvolvement.PrisonerRole.ABSCONDER,
-            outcome = null,
-            comment = "null",
+            outcome = PrisonerInvolvement.Outcome.PLACED_ON_REPORT,
+            comment = "There were issues",
           ),
         ),
         locations = listOf(
           Location(
-            locationId = "string",
-            type = "string",
-            description = "string",
+            locationId = "In the library",
+            type = "LIB",
+            description = "Books",
           ),
         ),
         evidence = listOf(Evidence(type = "string", description = "string")),
@@ -166,8 +166,8 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         correctionRequests = listOf(
           CorrectionRequest(
             reason = CorrectionRequest.Reason.MISTAKE,
-            descriptionOfChange = "string",
-            correctionRequestedBy = "string",
+            descriptionOfChange = "There was a change",
+            correctionRequestedBy = "Fred Black",
             correctionRequestedAt = "2021-07-05T10:35:17",
           ),
         ),
@@ -214,9 +214,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(CREATED.value())
-          .withBody(
-            objectMapper.writeValueAsString(dpsIncidentReportId(dpsIncidentId)),
-          ),
+          .withBody(dpsIncidentReportId(dpsIncidentId)),
       ),
     )
   }
@@ -231,7 +229,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(status.value())
             .withHeader("Content-Type", APPLICATION_JSON_VALUE)
-            .withBody(objectMapper.writeValueAsString(error)),
+            .withBody(error),
         ),
     )
   }
@@ -260,9 +258,18 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         aResponse()
           .withStatus(HttpStatus.OK.value())
           .withHeader("Content-Type", APPLICATION_JSON_VALUE)
-          .withBody(
-            objectMapper.writeValueAsString(dpsBasicIncidentReport()),
-          ),
+          .withBody(dpsBasicIncidentReport()),
+      ),
+    )
+  }
+
+  fun stubGetIncident() {
+    stubFor(
+      get(urlPathMatching("/incident-reports/incident-number/.*")).willReturn(
+        aResponse()
+          .withStatus(HttpStatus.OK.value())
+          .withHeader("Content-Type", APPLICATION_JSON_VALUE)
+          .withBody(dpsIncidentReport()),
       ),
     )
   }
@@ -282,16 +289,14 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
             .withBody(
-              objectMapper.writeValueAsString(
-                SimplePageReportBasic(
-                  content = incidentAgencies(),
-                  number = 0,
-                  propertySize = pageSize.toInt(),
-                  totalElements = totalElements,
-                  sort = listOf("incidentDateAndTime,DESC"),
-                  numberOfElements = pageSize.toInt(),
-                  totalPages = totalElements.toInt(),
-                ),
+              SimplePageReportBasic(
+                content = incidentAgencies(),
+                number = 0,
+                propertySize = pageSize.toInt(),
+                totalElements = totalElements,
+                sort = listOf("incidentDateAndTime,DESC"),
+                numberOfElements = pageSize.toInt(),
+                totalPages = totalElements.toInt(),
               ),
             ),
         ),
@@ -309,16 +314,14 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
             .withBody(
-              objectMapper.writeValueAsString(
-                SimplePageReportBasic(
-                  content = content,
-                  number = 0,
-                  propertySize = pageSize.toInt(),
-                  totalElements = totalElements,
-                  sort = listOf("incidentDateAndTime,DESC"),
-                  numberOfElements = pageSize.toInt(),
-                  totalPages = totalElements.toInt(),
-                ),
+              SimplePageReportBasic(
+                content = content,
+                number = 0,
+                propertySize = pageSize.toInt(),
+                totalElements = totalElements,
+                sort = listOf("incidentDateAndTime,DESC"),
+                numberOfElements = pageSize.toInt(),
+                totalPages = totalElements.toInt(),
               ),
             ),
         ),
@@ -338,15 +341,11 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun verifyGetBasicIncident() =
-    verify(
-      getRequestedFor(urlMatching("/incident-reports/incident-number/.*")),
-    )
+    verify(getRequestedFor(urlMatching("/incident-reports/incident-number/.*")))
 
   fun createIncidentUpsertCount() =
     findAll(postRequestedFor(urlEqualTo("/sync/upsert"))).count()
 
-  fun ResponseDefinitionBuilder.withBody(body: Any): ResponseDefinitionBuilder {
+  fun ResponseDefinitionBuilder.withBody(body: Any): ResponseDefinitionBuilder =
     this.withBody(objectMapper.writeValueAsString(body))
-    return this
-  }
 }

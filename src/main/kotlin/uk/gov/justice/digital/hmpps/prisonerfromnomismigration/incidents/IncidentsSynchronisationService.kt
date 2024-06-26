@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsSynchronisationService.MappingResponse.MAPPING_FAILED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -28,7 +29,7 @@ class IncidentsSynchronisationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  suspend fun synchroniseIncidentUpsert(event: IncidentsOffenderEvent) {
+  suspend fun synchroniseIncidentInsert(event: IncidentsOffenderEvent) {
     // Should never happen
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent(
@@ -39,21 +40,14 @@ class IncidentsSynchronisationService(
     }
 
     val nomisIncident = nomisApiService.getIncident(event.incidentCaseId)
-    incidentsMappingService.findByNomisId(
-      nomisIncidentId = event.incidentCaseId,
-    )?.let {
-      incidentsService.upsertIncident(
-        NomisSyncRequest(
-          id = UUID.fromString(it.dpsIncidentId),
-          initialMigration = false,
-          incidentReport = nomisIncident.toNomisIncidentReport(),
-        ),
-      )
-      telemetryClient.trackEvent(
-        "incidents-synchronisation-updated-success",
-        event.toTelemetryProperties(it.dpsIncidentId),
-      )
-    } ?: let {
+    incidentsMappingService.findByNomisId(nomisIncidentId = event.incidentCaseId)
+      ?.let {
+        // Should never happen - it shouldn't exist in the mapping table
+        telemetryClient.trackEvent(
+          "incidents-synchronisation-created-ignored",
+          event.toTelemetryProperties(),
+        )
+      } ?: let {
       incidentsService.upsertIncident(
         NomisSyncRequest(
           initialMigration = false,
@@ -70,6 +64,42 @@ class IncidentsSynchronisationService(
           )
         }
       }
+    }
+  }
+
+  suspend fun synchroniseIncidentUpdate(event: IncidentsOffenderEvent) {
+    // Should never happen
+    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      telemetryClient.trackEvent(
+        "incidents-synchronisation-skipped",
+        event.toTelemetryProperties(),
+      )
+      return
+    }
+
+    val nomisIncident = nomisApiService.getIncident(event.incidentCaseId)
+    incidentsMappingService.findByNomisId(
+      nomisIncidentId = event.incidentCaseId,
+    )?.let {
+      // For an update - this is the happy path - the mapping exists
+      incidentsService.upsertIncident(
+        NomisSyncRequest(
+          id = UUID.fromString(it.dpsIncidentId),
+          initialMigration = false,
+          incidentReport = nomisIncident.toNomisIncidentReport(),
+        ),
+      )
+      telemetryClient.trackEvent(
+        "incidents-synchronisation-updated-success",
+        event.toTelemetryProperties(it.dpsIncidentId),
+      )
+    } ?: let {
+      // The mapping does not exist, fail gracefully - yes we are
+      telemetryClient.trackEvent(
+        "incidents-synchronisation-updated-failed",
+        event.toTelemetryProperties(),
+      )
+      throw IllegalStateException("Received UPDATED event for incident that has never been created")
     }
   }
 
