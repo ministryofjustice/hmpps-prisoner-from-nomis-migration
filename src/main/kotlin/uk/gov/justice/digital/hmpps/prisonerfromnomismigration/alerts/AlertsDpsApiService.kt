@@ -22,7 +22,7 @@ class AlertsDpsApiService(@Qualifier("alertsApiWebClient") private val webClient
   suspend fun createAlert(alert: CreateAlert, createdByUsername: String): Alert =
     webClient
       .post()
-      .uri("/alerts")
+      .uri("/prisoners/{prisonNumber}/alerts", alert.prisonNumber)
       .bodyValue(alert)
       .header("Source", "NOMIS")
       .header("Username", createdByUsername)

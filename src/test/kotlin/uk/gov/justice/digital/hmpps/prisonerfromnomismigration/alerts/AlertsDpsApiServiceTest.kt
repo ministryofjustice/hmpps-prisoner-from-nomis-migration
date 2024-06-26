@@ -39,7 +39,7 @@ class AlertsDpsApiServiceTest {
   inner class CreateAlert {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
-      dpsAlertsServer.stubPostAlert()
+      dpsAlertsServer.stubPostAlert("A1234KL")
 
       apiService.createAlert(
         alert = CreateAlert(
@@ -58,7 +58,7 @@ class AlertsDpsApiServiceTest {
 
     @Test
     internal fun `will pass alert to service`() = runTest {
-      dpsAlertsServer.stubPostAlert()
+      dpsAlertsServer.stubPostAlert("A1234KL")
 
       apiService.createAlert(
         alert = CreateAlert(
@@ -70,14 +70,14 @@ class AlertsDpsApiServiceTest {
       )
 
       dpsAlertsServer.verify(
-        postRequestedFor(urlMatching("/alerts"))
+        postRequestedFor(urlMatching("/prisoners/A1234KL/alerts"))
           .withRequestBody(matchingJsonPath("alertCode", equalTo("XA"))),
       )
     }
 
     @Test
     internal fun `will pass username to service via header`() = runTest {
-      dpsAlertsServer.stubPostAlert()
+      dpsAlertsServer.stubPostAlert("A1234KL")
 
       apiService.createAlert(
         alert = CreateAlert(
@@ -89,14 +89,14 @@ class AlertsDpsApiServiceTest {
       )
 
       dpsAlertsServer.verify(
-        postRequestedFor(urlMatching("/alerts"))
+        postRequestedFor(urlMatching("/prisoners/A1234KL/alerts"))
           .withHeader("Username", equalTo("B.MORRIS")),
       )
     }
 
     @Test
     internal fun `will pass source as NOMIS to service via header`() = runTest {
-      dpsAlertsServer.stubPostAlert()
+      dpsAlertsServer.stubPostAlert("A1234KL")
 
       apiService.createAlert(
         alert = CreateAlert(
@@ -108,14 +108,14 @@ class AlertsDpsApiServiceTest {
       )
 
       dpsAlertsServer.verify(
-        postRequestedFor(urlMatching("/alerts"))
+        postRequestedFor(urlMatching("/prisoners/A1234KL/alerts"))
           .withHeader("Source", equalTo("NOMIS")),
       )
     }
 
     @Test
     fun `will return dpsAlertId`() = runTest {
-      dpsAlertsServer.stubPostAlert(response = dpsAlert().copy(alertUuid = UUID.fromString("f3f31737-6ee3-4ec5-8a79-0ac110fe50e2")))
+      dpsAlertsServer.stubPostAlert("A1234KL", response = dpsAlert().copy(alertUuid = UUID.fromString("f3f31737-6ee3-4ec5-8a79-0ac110fe50e2")))
 
       val dpsAlert = apiService.createAlert(
         alert = CreateAlert(
