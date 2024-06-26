@@ -143,6 +143,16 @@ class AlertsMappingApiMockServer(private val objectMapper: ObjectMapper) {
     mappingApi.stubMappingUpdateFailureFollowedBySuccess(url = "/mapping/alerts/$offenderNo/all")
   }
 
+  fun stubReplaceMappingsForMerge(offenderNo: String) {
+    mappingApi.stubFor(
+      put("/mapping/alerts/$offenderNo/merge").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(200),
+      ),
+    )
+  }
+
   fun stubMigrationCount(recordsMigrated: Long) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/alerts/migration-id/.*/grouped-by-prisoner")).willReturn(
@@ -213,46 +223,6 @@ class AlertsMappingApiMockServer(private val objectMapper: ObjectMapper) {
               size = 1,
             ),
           ),
-      ),
-    )
-  }
-
-  fun stubUpdateByNomisId(
-    previousBookingId: Long = 123456,
-    alertSequence: Long = 1,
-    newBookingId: Long = 5000,
-    dpsAlertId: String = UUID.randomUUID().toString(),
-  ) {
-    mappingApi.stubFor(
-      put("/mapping/alerts/nomis-booking-id/$previousBookingId/nomis-alert-sequence/$alertSequence").willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(200)
-          .withBody(
-            objectMapper.writeValueAsString(
-              AlertMappingDto(
-                dpsAlertId = dpsAlertId,
-                nomisBookingId = newBookingId,
-                nomisAlertSequence = alertSequence,
-                mappingType = MIGRATED,
-                offenderNo = "A1234KT",
-              ),
-            ),
-          ),
-      ),
-    )
-  }
-
-  fun stubUpdateByNomisId(
-    status: HttpStatus,
-    error: ErrorResponse = ErrorResponse(status = status.value()),
-  ) {
-    mappingApi.stubFor(
-      put(urlPathMatching("/mapping/alerts/nomis-booking-id/\\d+/nomis-alert-sequence/\\d+")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
       ),
     )
   }
