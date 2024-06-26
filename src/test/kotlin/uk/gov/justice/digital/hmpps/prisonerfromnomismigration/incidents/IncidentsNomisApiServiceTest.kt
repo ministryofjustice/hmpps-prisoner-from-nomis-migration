@@ -10,7 +10,6 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.any
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
@@ -126,7 +125,7 @@ class IncidentsNomisApiServiceTest {
       nomisApiService.getAllAgencies()
 
       incidentsNomisApiMockServer.verify(
-        getRequestedFor(any()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
@@ -162,7 +161,7 @@ class IncidentsNomisApiServiceTest {
       nomisApiService.getIncidentsReconciliation("ASI")
 
       incidentsNomisApiMockServer.verify(
-        getRequestedFor(any()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
@@ -199,7 +198,7 @@ class IncidentsNomisApiServiceTest {
       nomisApiService.getOpenIncidentIds("ASI", 2, 5)
 
       incidentsNomisApiMockServer.verify(
-        getRequestedFor(any()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
