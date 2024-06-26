@@ -13,6 +13,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.MergedPrisonerAlertMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerAlertMappingsDto
 
 @Service
@@ -62,6 +63,19 @@ class AlertsMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebCl
       .uri("/mapping/alerts/{offenderNo}/all", offenderNo)
       .bodyValue(
         prisonerMapping,
+      )
+      .retrieve()
+      .awaitBodilessEntity()
+  }
+
+  suspend fun replaceMappingsForMerge(
+    offenderNo: String,
+    mergedPrisonerMapping: MergedPrisonerAlertMappingsDto,
+  ) {
+    webClient.put()
+      .uri("/mapping/alerts/{offenderNo}/merge", offenderNo)
+      .bodyValue(
+        mergedPrisonerMapping,
       )
       .retrieve()
       .awaitBodilessEntity()
