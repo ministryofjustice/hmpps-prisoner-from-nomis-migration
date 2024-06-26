@@ -11,7 +11,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
-import org.mockito.kotlin.reset
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
@@ -29,11 +28,10 @@ class IncidentsReconciliationIntTest : SqsIntegrationTestBase() {
 
     @BeforeEach
     fun setUp() {
-      reset(telemetryClient)
       incidentsNomisApi.stubGetIncidentAgencies()
-      incidentsNomisApi.stubGetIncidentForAgencyReconciliation("ASI")
-      incidentsNomisApi.stubGetIncidentForAgencyReconciliation("BFI")
-      incidentsNomisApi.stubGetIncidentForAgencyReconciliation("WWI")
+      incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts("ASI")
+      incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts("BFI")
+      incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts("WWI")
       incidentsApi.stubGetIncidents()
     }
 
@@ -79,9 +77,9 @@ class IncidentsReconciliationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `will show mismatch counts in report`() {
-      incidentsNomisApi.stubGetIncidentForAgencyReconciliation("ASI", open = 2)
-      incidentsNomisApi.stubGetIncidentForAgencyReconciliation("BFI", open = 1, closed = 4)
-      incidentsNomisApi.stubGetIncidentForAgencyReconciliation("WWI")
+      incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts("ASI", open = 2)
+      incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts("BFI", open = 1, closed = 4)
+      incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts("WWI")
 
       webTestClient.put().uri("/incidents/reports/reconciliation")
         .exchange()

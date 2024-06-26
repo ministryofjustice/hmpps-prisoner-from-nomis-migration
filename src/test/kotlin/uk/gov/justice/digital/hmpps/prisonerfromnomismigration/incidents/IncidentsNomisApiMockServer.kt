@@ -127,7 +127,7 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubGetIncidentForAgencyReconciliation(agencyId: String = "ASI", open: Long = 3, closed: Long = 3) {
+  fun stubGetReconciliationAgencyIncidentCounts(agencyId: String = "ASI", open: Long = 3, closed: Long = 3) {
     nomisApi.stubFor(
       get(urlPathEqualTo("/incidents/reconciliation/agency/$agencyId/counts"))
         .willReturn(
@@ -146,8 +146,25 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
+  fun stubGetReconciliationOpenIncidentIds(agencyId: String = "ASI") {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/incidents/reconciliation/agency/$agencyId/ids"))
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+            .withBody(
+              incidentIdsPagedResponse(
+                totalElements = 35,
+                ids = (33L..37L).map { it },
+                pageNumber = 2,
+                pageSize = 5,
+              ),
+            ),
+        ),
+    )
+  }
+
   fun ResponseDefinitionBuilder.withBody(body: Any): ResponseDefinitionBuilder {
-    this.withBody(IncidentsApiExtension.objectMapper.writeValueAsString(body))
+    this.withBody(objectMapper.writeValueAsString(body))
     return this
   }
 
