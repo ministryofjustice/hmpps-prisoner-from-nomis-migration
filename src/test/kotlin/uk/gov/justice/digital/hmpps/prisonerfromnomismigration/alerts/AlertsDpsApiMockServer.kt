@@ -90,10 +90,11 @@ class AlertsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubPostAlert(
+    prisonerNumber: String,
     response: Alert = dpsAlert(),
   ) {
     stubFor(
-      post("/alerts")
+      post("/prisoners/$prisonerNumber/alerts")
         .willReturn(
           aResponse()
             .withStatus(201)

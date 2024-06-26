@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.MergedPrisonerAlertMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerAlertMappingsDto
 import java.util.UUID
 
@@ -347,6 +348,67 @@ class AlertsMappingApiServiceTest {
           .withRequestBody(matchingJsonPath("mappings[0].nomisAlertSequence", equalTo("1")))
           .withRequestBody(matchingJsonPath("mappings[0].dpsAlertId", equalTo(dpsAlertId)))
           .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
+      )
+    }
+  }
+
+  @Nested
+  inner class ReplaceMappingsForMerge {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      alertsMappingApiMockServer.stubReplaceMappingsForMerge("A1234KT")
+
+      apiService.replaceMappingsForMerge(
+        offenderNo = "A1234KT",
+        MergedPrisonerAlertMappingsDto(
+          "A9999KT",
+          PrisonerAlertMappingsDto(
+            mappingType = PrisonerAlertMappingsDto.MappingType.NOMIS_CREATED,
+            mappings = listOf(
+              AlertMappingIdDto(
+                nomisBookingId = 123456,
+                nomisAlertSequence = 1,
+                dpsAlertId = UUID.randomUUID().toString(),
+              ),
+            ),
+          ),
+        ),
+      )
+
+      alertsMappingApiMockServer.verify(
+        putRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass ids to service`() = runTest {
+      val dpsAlertId = "a04f7a8d-61aa-400c-9395-f4dc62f36ab0"
+      alertsMappingApiMockServer.stubReplaceMappingsForMerge("A1234KT")
+
+      apiService.replaceMappingsForMerge(
+        offenderNo = "A1234KT",
+        MergedPrisonerAlertMappingsDto(
+          "A9999KT",
+          PrisonerAlertMappingsDto(
+            mappingType = PrisonerAlertMappingsDto.MappingType.NOMIS_CREATED,
+            mappings = listOf(
+              AlertMappingIdDto(
+                nomisBookingId = 123456,
+                nomisAlertSequence = 1,
+                dpsAlertId = dpsAlertId,
+              ),
+            ),
+          ),
+        ),
+      )
+
+      alertsMappingApiMockServer.verify(
+        putRequestedFor(anyUrl())
+          .withRequestBody(matchingJsonPath("prisonerMapping.mappings[0].nomisBookingId", equalTo("123456")))
+          .withRequestBody(matchingJsonPath("prisonerMapping.mappings[0].nomisAlertSequence", equalTo("1")))
+          .withRequestBody(matchingJsonPath("prisonerMapping.mappings[0].dpsAlertId", equalTo(dpsAlertId)))
+          .withRequestBody(matchingJsonPath("prisonerMapping.mappingType", equalTo("NOMIS_CREATED")))
+          .withRequestBody(matchingJsonPath("removedOffenderNo", equalTo("A9999KT"))),
       )
     }
   }

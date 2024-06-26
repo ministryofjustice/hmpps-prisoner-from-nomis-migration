@@ -149,7 +149,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           alertsMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
-          dpsAlertsServer.stubPostAlert(dpsAlert().copy(alertUuid = UUID.fromString(dpsAlertId)))
+          dpsAlertsServer.stubPostAlert(offenderNo, dpsAlert().copy(alertUuid = UUID.fromString(dpsAlertId)))
           alertsMappingApiMockServer.stubPostMapping()
           awsSqsAlertOffenderEventsClient.sendMessage(
             alertsQueueOffenderEventsUrl,
@@ -166,7 +166,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create alert in DPS`() {
           await untilAsserted {
             dpsAlertsServer.verify(
-              postRequestedFor(urlPathEqualTo("/alerts"))
+              postRequestedFor(urlPathEqualTo("/prisoners/$offenderNo/alerts"))
                 .withRequestBody(matchingJsonPath("alertCode", equalTo("XNR"))),
             )
           }
@@ -260,7 +260,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           alertsMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
-          dpsAlertsServer.stubPostAlert(dpsAlert().copy(alertUuid = UUID.fromString(dpsAlertId)))
+          dpsAlertsServer.stubPostAlert(offenderNo, dpsAlert().copy(alertUuid = UUID.fromString(dpsAlertId)))
         }
 
         @Nested
@@ -284,7 +284,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
           fun `will create alert in DPS`() {
             await untilAsserted {
               dpsAlertsServer.verify(
-                postRequestedFor(urlPathEqualTo("/alerts"))
+                postRequestedFor(urlPathEqualTo("/prisoners/$offenderNo/alerts"))
                   .withRequestBody(matchingJsonPath("alertCode", equalTo("XNR"))),
               )
             }
@@ -363,7 +363,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
             await untilAsserted {
               dpsAlertsServer.verify(
                 1,
-                postRequestedFor(urlPathEqualTo("/alerts"))
+                postRequestedFor(urlPathEqualTo("/prisoners/$offenderNo/alerts"))
                   .withRequestBody(matchingJsonPath("alertCode", equalTo("XNR"))),
               )
             }
