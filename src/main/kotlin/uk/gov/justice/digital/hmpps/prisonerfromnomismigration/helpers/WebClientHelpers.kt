@@ -20,3 +20,14 @@ suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitBodyOrNullWhenC
   this.bodyToMono<T>()
     .onErrorResume(WebClientResponseException.Conflict::class.java) { Mono.empty() }
     .awaitSingleOrNull()
+
+class DuplicateMappingException(val error: DuplicateErrorResponse) : RuntimeException("message")
+
+class DuplicateErrorResponse(
+  val moreInfo: DuplicateErrorContent,
+)
+
+data class DuplicateErrorContent(
+  val duplicate: Map<String, *>,
+  val existing: Map<String, *>? = null,
+)
