@@ -8,6 +8,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
@@ -18,6 +19,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.I
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentsCount
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentsReconciliationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Offender
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderParty
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Staff
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
@@ -63,12 +66,16 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
     }
   }
 
-  fun stubGetIncident(nomisIncidentId: Long = 1234) {
+  fun stubGetIncident(
+    nomisIncidentId: Long = 1234,
+    lastModifiedDateTime: String = "2021-07-23T10:35:17",
+    offenderParty: String = "A1234BC",
+  ) {
     nomisApi.stubFor(
       get(urlPathEqualTo("/incidents/$nomisIncidentId"))
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(incidentResponse(nomisIncidentId)),
+            .withBody(incidentResponse(nomisIncidentId, lastModifiedDateTime, offenderParty)),
         ),
     )
   }
@@ -146,17 +153,17 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubGetReconciliationOpenIncidentIds(agencyId: String = "ASI") {
+  fun stubGetReconciliationOpenIncidentIds(agencyId: String, start: Int = 33, finish: Long = 35) {
     nomisApi.stubFor(
-      get(urlPathEqualTo("/incidents/reconciliation/agency/$agencyId/ids"))
+      get(urlPathMatching("/incidents/reconciliation/agency/$agencyId/ids"))
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
             .withBody(
               incidentIdsPagedResponse(
-                totalElements = 35,
-                ids = (33L..37L).map { it },
+                totalElements = 40,
+                ids = (start..finish).map { it },
                 pageNumber = 2,
-                pageSize = 5,
+                pageSize = 3,
               ),
             ),
         ),
@@ -189,6 +196,8 @@ private fun incidentAgencyCount(agencyId: String, open: Long, closed: Long) =
 
 private fun incidentResponse(
   nomisIncidentId: Long = 1234,
+  lastModifiedDateTime: String = "2021-07-23T10:35:17",
+  offenderParty: String = "A1234BC",
 ): IncidentResponse =
   IncidentResponse(
     incidentId = nomisIncidentId,
@@ -216,11 +225,21 @@ private fun incidentResponse(
       lastName = "STAFF",
     ),
     followUpDate = LocalDate.parse("2017-04-12"),
-    createDateTime = "2024-02-06T12:36:00",
+    createDateTime = "2021-02-06T12:36:00",
     createdBy = "JIM SMITH",
+    lastModifiedBy = "JIM_ADM",
+    lastModifiedDateTime = lastModifiedDateTime,
     reportedDateTime = "2024-02-06T12:36:00",
     staffParties = listOf(),
-    offenderParties = listOf(),
+    offenderParties = listOf(
+      OffenderParty(
+        offender =
+        Offender(offenderParty, firstName = "Fred", lastName = "smith"),
+        role = CodeDescription("ABS", "Absconder"),
+        createDateTime = "2024-02-06T12:36:00",
+        createdBy = "JIM",
+      ),
+    ),
     requirements = listOf(),
     questions = listOf(),
     history = listOf(),

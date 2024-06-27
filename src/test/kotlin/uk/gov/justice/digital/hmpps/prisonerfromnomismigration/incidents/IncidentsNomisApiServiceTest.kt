@@ -193,7 +193,7 @@ class IncidentsNomisApiServiceTest {
   inner class GetReconciliationOpenIncidentIds {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
-      incidentsNomisApiMockServer.stubGetReconciliationOpenIncidentIds()
+      incidentsNomisApiMockServer.stubGetReconciliationOpenIncidentIds("ASI", 33, 35)
 
       nomisApiService.getOpenIncidentIds("ASI", 2, 5)
 
@@ -204,7 +204,7 @@ class IncidentsNomisApiServiceTest {
 
     @Test
     internal fun `will pass NOMIS agency id to service`() = runTest {
-      incidentsNomisApiMockServer.stubGetReconciliationOpenIncidentIds()
+      incidentsNomisApiMockServer.stubGetReconciliationOpenIncidentIds("ASI", 33, 35)
 
       nomisApiService.getOpenIncidentIds("ASI", 2, 5)
 
@@ -215,13 +215,13 @@ class IncidentsNomisApiServiceTest {
 
     @Test
     fun `will return open incident Ids`() = runTest {
-      incidentsNomisApiMockServer.stubGetReconciliationOpenIncidentIds("ASI")
+      incidentsNomisApiMockServer.stubGetReconciliationOpenIncidentIds("ASI", 33, 35)
 
       val incidentIds = nomisApiService.getOpenIncidentIds("ASI", 2, 5)
 
-      assertThat(incidentIds.totalElements).isEqualTo(35)
-      assertThat(incidentIds.content.size).isEqualTo(5)
-      assertThat(incidentIds.content).extracting<Long>(IncidentIdResponse::incidentId).containsExactly(33, 34, 35, 36, 37)
+      assertThat(incidentIds.totalElements).isEqualTo(40)
+      assertThat(incidentIds.content.size).isEqualTo(3)
+      assertThat(incidentIds.content).extracting<Long>(IncidentIdResponse::incidentId).containsExactly(33, 34, 35)
     }
   }
 }

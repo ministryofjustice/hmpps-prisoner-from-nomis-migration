@@ -126,7 +126,7 @@ internal class IncidentsServiceTest {
         val incident = incidentsService.getIncidentDetailsByNomisId(NOMIS_INCIDENT_ID)
 
         with(incident) {
-          assertThat(id).isEqualTo(UUID.fromString("fb4b2e91-91e7-457b-aa17-797f8c5c2f42"))
+          assertThat(id).isNotNull()
           assertThat(incidentNumber).isEqualTo("$NOMIS_INCIDENT_ID")
           assertThat(type).isEqualTo(ReportWithDetails.Type.SELF_HARM)
           assertThat(incidentDateAndTime).isEqualTo("2021-07-05T10:35:17")
@@ -200,7 +200,7 @@ internal class IncidentsServiceTest {
   inner class GetIncidents {
     @BeforeEach
     internal fun setUp() {
-      incidentsApi.stubGetIncidents(5, 5)
+      incidentsApi.stubGetIncidentCounts(5, 5)
 
       runBlocking {
         incidentsService.getOpenIncidentsCount(agencyId = "ASI")

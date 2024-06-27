@@ -29,107 +29,264 @@ class IncidentsReconciliationIntTest : SqsIntegrationTestBase() {
     @BeforeEach
     fun setUp() {
       incidentsNomisApi.stubGetIncidentAgencies()
-      incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts("ASI")
-      incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts("BFI")
-      incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts("WWI")
-      incidentsApi.stubGetIncidents()
-    }
 
-    @Test
-    fun `will successfully finish report with no errors`() {
+      incidentsNomisApi.stubGetIncident(33)
+      incidentsNomisApi.stubGetIncident(34)
+      incidentsNomisApi.stubGetIncident(35)
+      incidentsApi.stubGetIncident(nomisIncidentId = 33)
+      incidentsApi.stubGetIncident(nomisIncidentId = 34)
+      incidentsApi.stubGetIncident(nomisIncidentId = 35)
+      incidentsNomisApi.stubGetReconciliationOpenIncidentIds("ASI", 33, 35)
+      incidentsNomisApi.stubGetReconciliationOpenIncidentIds("BFI", 36, 38)
+      incidentsNomisApi.stubGetReconciliationOpenIncidentIds("WWI", 39, 41)
       incidentsApi.stubGetIncidentsForAgencies()
-
-      webTestClient.put().uri("/incidents/reports/reconciliation")
-        .exchange()
-        .expectStatus().isAccepted
-
-      verify(telemetryClient).trackEvent(
-        eq("incidents-reports-reconciliation-requested"),
-        check { assertThat(it).containsEntry("prisonCount", "3") },
-        isNull(),
-      )
-
-      awaitReportFinished()
-      verify(telemetryClient).trackEvent(
-        eq("incidents-reports-reconciliation-report"),
-        check {
-          assertThat(it).containsEntry("mismatch-count", "0")
-          assertThat(it).containsEntry("success", "true")
-        },
-        isNull(),
-      )
     }
 
-    @Test
-    fun `will output report requested telemetry`() {
-      webTestClient.put().uri("/incidents/reports/reconciliation")
-        .exchange()
-        .expectStatus().isAccepted
+    @Nested
+    @DisplayName("Happy Path")
+    inner class HappyPath {
 
-      verify(telemetryClient).trackEvent(
-        eq("incidents-reports-reconciliation-requested"),
-        check { assertThat(it).containsEntry("prisonCount", "3") },
-        isNull(),
-      )
+      fun setUp() {
+        incidentsNomisApi.stubGetIncidentAgencies()
+        incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts("ASI")
+        incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts("BFI")
+        incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts("WWI")
+      }
 
-      awaitReportFinished()
-    }
+      @Test
+      fun `will successfully finish report with no errors`() {
+        webTestClient.put().uri("/incidents/reports/reconciliation")
+          .exchange()
+          .expectStatus().isAccepted
 
-    @Test
-    fun `will show mismatch counts in report`() {
-      incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts(agencyId = "ASI", open = 2)
-      incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts(agencyId = "BFI", open = 1, closed = 4)
-      incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts(agencyId = "WWI")
+        verify(telemetryClient).trackEvent(
+          eq("incidents-reports-reconciliation-requested"),
+          check { assertThat(it).containsEntry("prisonCount", "3") },
+          isNull(),
+        )
 
-      webTestClient.put().uri("/incidents/reports/reconciliation")
-        .exchange()
-        .expectStatus().isAccepted
-
-      awaitReportFinished()
-
-      verify(telemetryClient).trackEvent(
-        eq("incidents-reports-reconciliation-report"),
-        check {
-          assertThat(it).containsEntry("mismatch-count", "2")
-          assertThat(it).containsEntry("success", "true")
-          assertThat(it).containsEntry("ASI", "open-dps=3:open-nomis=2; closed-dps=3:closed-nomis=3")
-          assertThat(it).containsEntry("BFI", "open-dps=3:open-nomis=1; closed-dps=3:closed-nomis=4")
-        },
-        isNull(),
-      )
-
-      verify(telemetryClient, times(2)).trackEvent(
-        eq("incidents-reports-reconciliation-mismatch"),
-        any(),
-        isNull(),
-      )
-    }
-
-    @Test
-    fun `will complete a report even if some of the checks fail`() {
-      incidentsApi.stubGetIncidentsWithError(HttpStatus.INTERNAL_SERVER_ERROR)
-
-      webTestClient.put().uri("/incidents/reports/reconciliation")
-        .exchange()
-        .expectStatus().isAccepted
-
-      awaitReportFinished()
-
-      verify(telemetryClient, times(3)).trackEvent(
-        eq("incidents-reports-reconciliation-mismatch-error"),
-        any(),
-        isNull(),
-      )
-    }
-
-    private fun awaitReportFinished() {
-      await untilAsserted {
+        awaitReportFinished()
         verify(telemetryClient).trackEvent(
           eq("incidents-reports-reconciliation-report"),
+          check {
+            assertThat(it).containsEntry("mismatch-count", "0")
+            assertThat(it).containsEntry("success", "true")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will output report requested telemetry`() {
+        webTestClient.put().uri("/incidents/reports/reconciliation")
+          .exchange()
+          .expectStatus().isAccepted
+
+        verify(telemetryClient).trackEvent(
+          eq("incidents-reports-reconciliation-requested"),
+          check { assertThat(it).containsEntry("prisonCount", "3") },
+          isNull(),
+        )
+
+        awaitReportFinished()
+      }
+
+      @Test
+      fun `will not invoke mismatch telemetry`() {
+        incidentsApi.stubGetIncidentsWithError(HttpStatus.INTERNAL_SERVER_ERROR)
+
+        webTestClient.put().uri("/incidents/reports/reconciliation")
+          .exchange()
+          .expectStatus().isAccepted
+
+        awaitReportFinished()
+
+        verify(telemetryClient, times(0)).trackEvent(
+          eq("incidents-reports-reconciliation-mismatch"),
+          any(),
+          isNull(),
+        )
+
+        verify(telemetryClient, times(0)).trackEvent(
+          eq("incidents-reports-reconciliation-detail-mismatch"),
           any(),
           isNull(),
         )
       }
+    }
+
+    @Nested
+    @DisplayName("Counts Unhappy Path")
+    inner class CountsUnHappyPath {
+
+      @BeforeEach
+      fun setUp() {
+        incidentsNomisApi.stubGetIncidentAgencies()
+        incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts(agencyId = "ASI", open = 2)
+        incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts(agencyId = "BFI", open = 1, closed = 4)
+        incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts(agencyId = "WWI")
+      }
+
+      @Test
+      fun `will show mismatch counts in report`() {
+        webTestClient.put().uri("/incidents/reports/reconciliation")
+          .exchange()
+          .expectStatus().isAccepted
+
+        awaitReportFinished()
+
+        verify(telemetryClient).trackEvent(
+          eq("incidents-reports-reconciliation-report"),
+          check {
+            assertThat(it).containsEntry("mismatch-count", "2")
+            assertThat(it).containsEntry("success", "true")
+            assertThat(it).containsEntry("ASI", "open-dps=3:open-nomis=2; closed-dps=3:closed-nomis=3")
+            assertThat(it).containsEntry("BFI", "open-dps=3:open-nomis=1; closed-dps=3:closed-nomis=4")
+            assertThat(it).doesNotContainKeys("WWI")
+          },
+          isNull(),
+        )
+
+        verify(telemetryClient, times(2)).trackEvent(
+          eq("incidents-reports-reconciliation-mismatch"),
+          any(),
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will not invoke detail mismatch`() {
+        verify(telemetryClient, times(0)).trackEvent(
+          eq("incidents-reports-reconciliation-detail-mismatch"),
+          any(),
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will complete a report even if some of the checks fail`() {
+        incidentsApi.stubGetIncidentsWithError(HttpStatus.INTERNAL_SERVER_ERROR)
+
+        webTestClient.put().uri("/incidents/reports/reconciliation")
+          .exchange()
+          .expectStatus().isAccepted
+
+        awaitReportFinished()
+
+        verify(telemetryClient, times(3)).trackEvent(
+          eq("incidents-reports-reconciliation-mismatch-error"),
+          any(),
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @DisplayName("Incident Detail Unhappy Path")
+    inner class DetailUnHappyPath {
+
+      @BeforeEach
+      fun setUp() {
+        incidentsApi.stubGetIncidentCounts()
+        incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts(agencyId = "ASI", open = 2)
+        incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts(agencyId = "BFI", open = 1, closed = 4)
+        incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts(agencyId = "WWI")
+      }
+
+      @Test
+      fun `will show mismatch counts in report`() {
+        webTestClient.put().uri("/incidents/reports/reconciliation")
+          .exchange()
+          .expectStatus().isAccepted
+
+        awaitReportFinished()
+
+        verify(telemetryClient).trackEvent(
+          eq("incidents-reports-reconciliation-report"),
+          check {
+            assertThat(it).containsEntry("mismatch-count", "2")
+            assertThat(it).containsEntry("success", "true")
+            assertThat(it).containsEntry("ASI", "open-dps=3:open-nomis=2; closed-dps=3:closed-nomis=3")
+            assertThat(it).containsEntry("BFI", "open-dps=3:open-nomis=1; closed-dps=3:closed-nomis=4")
+            assertThat(it).doesNotContainKeys("WWI")
+          },
+          isNull(),
+        )
+
+        verify(telemetryClient, times(2)).trackEvent(
+          eq("incidents-reports-reconciliation-mismatch"),
+          any(),
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will show mismatch differences in report`() {
+        incidentsNomisApi.stubGetIncident(33, offenderParty = "Z4321YX", lastModifiedDateTime = "2022-08-23T12:46:33")
+
+        webTestClient.put().uri("/incidents/reports/reconciliation")
+          .exchange()
+          .expectStatus().isAccepted
+
+        awaitReportFinished()
+
+        verify(telemetryClient).trackEvent(
+          eq("incidents-reports-reconciliation-report"),
+          check {
+            assertThat(it).containsEntry("mismatch-count", "2")
+            assertThat(it).containsEntry("success", "true")
+            assertThat(it).containsEntry("ASI", "open-dps=3:open-nomis=2; closed-dps=3:closed-nomis=3")
+            assertThat(it).containsEntry("BFI", "open-dps=3:open-nomis=1; closed-dps=3:closed-nomis=4")
+            assertThat(it).doesNotContainKeys("WWI")
+          },
+          isNull(),
+        )
+
+        verify(telemetryClient, times(2)).trackEvent(
+          eq("incidents-reports-reconciliation-mismatch"),
+          any(),
+          isNull(),
+        )
+
+        verify(telemetryClient).trackEvent(
+          eq("incidents-reports-reconciliation-detail-mismatch"),
+          check {
+            assertThat(it).containsEntry("nomisId", "33")
+            assertThat(it).containsKey("dpsId")
+            assertThat(it).containsEntry("verdict", "Modified mismatch")
+            assertThat(it).containsEntry("nomis", "IncidentReportDetail(type=ATT_ESC_E, lastModifiedDateTime=2022-08-23T12:46:33, reportedBy=FSTAFF_GEN, offenderParties=[Z4321YX])")
+            assertThat(it).containsEntry("dps", "IncidentReportDetail(type=ATTEMPTED_ESCAPE_FROM_ESCORT, lastModifiedDateTime=2021-07-23T10:35:17, reportedBy=FSTAFF_GEN, offenderParties=[A1234BC])")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will complete a report even if some of the checks fail`() {
+        incidentsApi.stubGetIncidentsWithError(HttpStatus.INTERNAL_SERVER_ERROR)
+
+        webTestClient.put().uri("/incidents/reports/reconciliation")
+          .exchange()
+          .expectStatus().isAccepted
+
+        awaitReportFinished()
+
+        verify(telemetryClient, times(3)).trackEvent(
+          eq("incidents-reports-reconciliation-mismatch-error"),
+          any(),
+          isNull(),
+        )
+      }
+    }
+  }
+
+  private fun awaitReportFinished() {
+    await untilAsserted {
+      verify(telemetryClient).trackEvent(
+        eq("incidents-reports-reconciliation-report"),
+        any(),
+        isNull(),
+      )
     }
   }
 }
