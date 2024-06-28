@@ -122,8 +122,8 @@ class IncidentsReconciliationService(
   private suspend fun checkOpenIncidentMatch(nomisOpenIncidentId: Long): MismatchOpenIncident? = runCatching {
     val (nomisOpenIncident, dpsOpenIncident) =
       withContext(Dispatchers.Unconfined) {
-        async { nomisIncidentsApiService.getIncident(nomisOpenIncidentId) } to
-          async { incidentsService.getIncidentDetailsByNomisId(nomisOpenIncidentId) }
+        async { doApiCallWithRetries { nomisIncidentsApiService.getIncident(nomisOpenIncidentId) } } to
+          async { doApiCallWithRetries { incidentsService.getIncidentDetailsByNomisId(nomisOpenIncidentId) } }
       }.awaitBoth()
 
     val verdict = doesNotMatch(nomisOpenIncident, dpsOpenIncident)
