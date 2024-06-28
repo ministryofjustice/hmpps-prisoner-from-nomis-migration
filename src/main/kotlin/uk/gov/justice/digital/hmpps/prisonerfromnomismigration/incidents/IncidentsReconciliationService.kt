@@ -9,9 +9,14 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.asPages
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBoth
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.ReportWithDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentAgencyId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.doApiCallWithRetries
+import java.util.UUID
 
 @Service
 class IncidentsReconciliationService(
@@ -38,14 +43,21 @@ class IncidentsReconciliationService(
     val dpsClosedIncidentsCount = doApiCallWithRetries { incidentsService.getClosedIncidentsCount(agencyId) }
     val nomisOpenIncidentsCount = nomisIncidents.incidentCount.openIncidents
     val nomisClosedIncidentsCount = nomisIncidents.incidentCount.closedIncidents
+    val openIncidentsMisMatch = checkOpenIncidentsMatch(agencyId, nomisOpenIncidentsCount)
 
-    return if (nomisOpenIncidentsCount != dpsOpenIncidentsCount || nomisClosedIncidentsCount != dpsClosedIncidentsCount) {
+    log.debug(
+      "Incidents: Checking for $agencyId; Nomis->open:$nomisOpenIncidentsCount;closed:$nomisClosedIncidentsCount; " +
+        "DPS->open:$dpsOpenIncidentsCount;closed:$dpsClosedIncidentsCount",
+    )
+
+    val result = if (nomisOpenIncidentsCount != dpsOpenIncidentsCount || nomisClosedIncidentsCount != dpsClosedIncidentsCount) {
       MismatchIncidents(
         agencyId = agencyId,
         dpsOpenIncidents = dpsOpenIncidentsCount,
         nomisOpenIncidents = nomisOpenIncidentsCount,
         dpsClosedIncidents = dpsOpenIncidentsCount,
         nomisClosedIncidents = nomisClosedIncidentsCount,
+        mismatchOpenIncidents = openIncidentsMisMatch,
       )
         .also { mismatch ->
           log.info("Incidents Mismatch found  $mismatch")
@@ -61,8 +73,20 @@ class IncidentsReconciliationService(
           )
         }
     } else {
-      null
+      if (openIncidentsMisMatch.isNotEmpty()) {
+        MismatchIncidents(
+          agencyId = agencyId,
+          dpsOpenIncidents = dpsOpenIncidentsCount,
+          nomisOpenIncidents = nomisOpenIncidentsCount,
+          dpsClosedIncidents = dpsOpenIncidentsCount,
+          nomisClosedIncidents = nomisClosedIncidentsCount,
+          mismatchOpenIncidents = openIncidentsMisMatch,
+        )
+      } else {
+        null
+      }
     }
+    return result
   }.onFailure {
     log.error("Unable to match incidents for agency with $agencyId ", it)
     telemetryClient.trackEvent(
@@ -72,6 +96,89 @@ class IncidentsReconciliationService(
       ),
     )
   }.getOrNull()
+
+  suspend fun checkOpenIncidentsMatch(agencyId: String, openIncidentCount: Long): List<MismatchOpenIncident> {
+    return openIncidentCount.asPages(pageSize).flatMap { page ->
+      val openIncidentIds = getOpenIncidentsForPage(agencyId, page)
+      openIncidentIds.mapNotNull { checkOpenIncidentMatch(it.incidentId) }
+    }
+  }
+
+  private suspend fun getOpenIncidentsForPage(agencyId: String, page: Pair<Long, Long>) =
+
+    runCatching { nomisIncidentsApiService.getOpenIncidentIds(agencyId, page.first, page.second).content }
+      .onFailure {
+        telemetryClient.trackEvent(
+          "incidents-reports-reconciliation-mismatch-page-error",
+          mapOf(
+            "page" to page.first.toString(),
+          ),
+        )
+        log.error("Unable to match entire page of incidents: $page", it)
+      }
+      .getOrElse { emptyList() }
+      .also { log.info("Page requested: $page, with ${it.size} open incidents") }
+
+  private suspend fun checkOpenIncidentMatch(nomisOpenIncidentId: Long): MismatchOpenIncident? = runCatching {
+    val (nomisOpenIncident, dpsOpenIncident) =
+      withContext(Dispatchers.Unconfined) {
+        async { nomisIncidentsApiService.getIncident(nomisOpenIncidentId) } to
+          async { incidentsService.getIncidentDetailsByNomisId(nomisOpenIncidentId) }
+      }.awaitBoth()
+
+    val verdict = doesNotMatch(nomisOpenIncident, dpsOpenIncident)
+    log.debug("Incidents-NomisIncidentId:$nomisOpenIncidentId; DPSIncidentId:${dpsOpenIncident.id} matchVerdict: $verdict")
+
+    return if (verdict != null) {
+      MismatchOpenIncident(
+        nomisId = nomisOpenIncident.incidentId,
+        dpsId = dpsOpenIncident.id,
+        nomisIncident = nomisOpenIncident.toReportDetail(),
+        dpsIncident = dpsOpenIncident.toReportDetail(),
+      )
+        .also { mismatch ->
+          log.info("Incident Mismatch found  $mismatch")
+          telemetryClient.trackEvent(
+            "incidents-reports-reconciliation-detail-mismatch",
+            mapOf(
+              "nomisId" to mismatch.nomisId,
+              "dpsId" to mismatch.dpsId,
+              "verdict" to verdict,
+              "nomis" to (mismatch.nomisIncident?.toString() ?: "null"),
+              "dps" to (mismatch.dpsIncident?.toString() ?: "null"),
+            ),
+          )
+        }
+    } else {
+      null
+    }
+  }.onSuccess {
+    log.debug("Checking Incident (onSuccess: $nomisOpenIncidentId)")
+  }
+    .onFailure {
+      log.error("Unable to match agency for incident: $nomisOpenIncidentId", it)
+      telemetryClient.trackEvent(
+        "incidents-reports-reconciliation-detail-mismatch-error",
+        mapOf("nomisId" to nomisOpenIncidentId),
+      )
+    }.getOrNull()
+
+  internal fun doesNotMatch(
+    nomis: IncidentResponse,
+    dps: ReportWithDetails,
+  ): String? {
+    if (nomis.lastModifiedDateTime != dps.modifiedAt) return "Modified mismatch"
+    if (nomis.reportingStaff.username != dps.reportedBy) return "Reporting Staff mismatch"
+    if (nomis.offenderParties.size != dps.prisonersInvolved.size) return "Offender parties mismatch"
+    val offendersDifference = nomis.offenderParties.map { it.offender.offenderNo }.compare(dps.prisonersInvolved.map { it.prisonerNumber })
+    if (offendersDifference.isNotEmpty()) return "offender parties mismatch $offendersDifference"
+    return null
+  }
+
+  fun List<String>.compare(otherList: List<String>): List<String> {
+    val both = (this + otherList).toSet()
+    return both.filterNot { this.contains(it) && otherList.contains(it) }
+  }
 }
 
 data class MismatchIncidents(
@@ -80,4 +187,35 @@ data class MismatchIncidents(
   val nomisOpenIncidents: Long,
   val dpsClosedIncidents: Long,
   val nomisClosedIncidents: Long,
+  val mismatchOpenIncidents: List<MismatchOpenIncident> = listOf(),
 )
+
+data class MismatchOpenIncident(
+  val nomisId: Long,
+  val dpsId: UUID,
+  val nomisIncident: IncidentReportDetail? = null,
+  val dpsIncident: IncidentReportDetail? = null,
+)
+
+data class IncidentReportDetail(
+  val type: String,
+  val lastModifiedDateTime: String? = null,
+  val reportedBy: String,
+  val offenderParties: List<String>? = null,
+)
+
+fun IncidentResponse.toReportDetail() =
+  IncidentReportDetail(
+    type,
+    lastModifiedDateTime,
+    reportingStaff.username,
+    offenderParties.map { it.offender.offenderNo },
+  )
+
+fun ReportWithDetails.toReportDetail() =
+  IncidentReportDetail(
+    type.toString(),
+    modifiedAt,
+    reportedBy,
+    prisonersInvolved.map { it.prisonerNumber },
+  )

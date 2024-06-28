@@ -72,11 +72,11 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     fun dpsIncidentReportId(dpsIncidentId: String) =
       NomisSyncReportId(id = UUID.fromString(dpsIncidentId))
 
-    fun dpsIncidentReport(dpsIncidentId: String = DPS_INCIDENT_ID) =
+    fun dpsIncidentReport(nomisIncidentId: String = "1234") =
       ReportWithDetails(
-        id = UUID.fromString(dpsIncidentId),
-        incidentNumber = "1234",
-        type = ReportWithDetails.Type.SELF_HARM,
+        id = UUID.randomUUID(),
+        incidentNumber = nomisIncidentId,
+        type = ReportWithDetails.Type.ATTEMPTED_ESCAPE_FROM_ESCORT,
         incidentDateAndTime = "2021-07-05T10:35:17",
         prisonId = "ASI",
         title = "There was an incident in the exercise yard",
@@ -91,7 +91,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           modifiedAt = "2021-07-05T10:35:17",
           modifiedBy = "JSMITH",
         ),
-        reportedBy = "JSMITH",
+        reportedBy = "FSTAFF_GEN",
         reportedAt = "2021-07-05T10:35:17",
         status = ReportWithDetails.Status.DRAFT,
         assignedTo = "BJONES",
@@ -172,7 +172,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           ),
         ),
         createdAt = "2021-07-05T10:35:17",
-        modifiedAt = "2021-07-05T10:35:17",
+        modifiedAt = "2021-07-23T10:35:17",
         modifiedBy = "JSMITH",
         createdInNomis = true,
       )
@@ -183,7 +183,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         incidentNumber = "1234",
         type = ReportBasic.Type.SELF_HARM,
         incidentDateAndTime = "2021-07-05T10:35:17",
-        prisonId = "ASI",
+        prisonId = prisonId,
         title = "There was an incident in the exercise yard",
         description = "Fred and Jimmy were fighting outside.",
         reportedBy = "JSMITH",
@@ -263,13 +263,13 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubGetIncident() {
+  fun stubGetIncident(nomisIncidentId: Long = 1234) {
     stubFor(
-      get(urlPathMatching("/incident-reports/incident-number/.*")).willReturn(
+      get(urlPathMatching("/incident-reports/incident-number/$nomisIncidentId/with-details")).willReturn(
         aResponse()
           .withStatus(HttpStatus.OK.value())
           .withHeader("Content-Type", APPLICATION_JSON_VALUE)
-          .withBody(dpsIncidentReport()),
+          .withBody(dpsIncidentReport(nomisIncidentId.toString())),
       ),
     )
   }
@@ -303,7 +303,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubGetIncidents(totalElements: Long = 3, pageSize: Long = 20) {
+  fun stubGetIncidentCounts(totalElements: Long = 3, pageSize: Long = 20) {
     val content: List<ReportBasic> = (1..min(pageSize, totalElements)).map {
       dpsBasicIncidentReport(dpsIncidentId = UUID.randomUUID().toString())
     }
