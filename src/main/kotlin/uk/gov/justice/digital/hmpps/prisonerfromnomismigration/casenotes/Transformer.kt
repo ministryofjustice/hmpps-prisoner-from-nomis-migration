@@ -2,14 +2,10 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes
 
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse
 
-// fun CaseNoteResponse.toDPSCreateCaseNote(offenderNo: String) = CreateCaseNote(
-//   prisonNumber = offenderNo,
-//   alertCode = this.alertCode.code,
-//   description = this.comment,
-//   activeFrom = this.date,
-//   activeTo = this.expiryDate,
-//   authorisedBy = this.authorisedBy,
-// )
+fun CaseNoteResponse.toDPSCreateCaseNote() = MigrateCaseNoteRequest(
+  dummyAttribute = this.caseNoteText,
+  // TODO
+)
 
 // fun CaseNoteResponse.toDPSUpdateCaseNote() = UpdateCaseNote(
 //   description = this.comment,
@@ -21,6 +17,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 
 fun CaseNoteResponse.toDPSMigratedCaseNote() = DpsCaseNote(
   dummyAttribute = this.caseNoteText,
+  caseNoteId = this.caseNoteId.toString(),
   // TODO
 )
 

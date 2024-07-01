@@ -1,11 +1,14 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes
 
 import io.swagger.v3.oas.annotations.Operation
+import jakarta.validation.Valid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
@@ -25,11 +28,11 @@ class MockCaseNotesResource {
   @PostMapping("/migrate/{offenderNo}/casenotes")
   @Operation(hidden = true)
   suspend fun migrateCaseNotes(
+    @PathVariable
     offenderNo: String,
-//    @RequestBody @Valid
-//    caseNoteRequest: List<MigrateCaseNoteRequest>, TODO get weird error
+    @RequestBody @Valid
+    caseNoteRequest: List<MigrateCaseNoteRequest>,
   ): List<DpsCaseNote> {
-    val caseNoteRequest: List<MigrateCaseNoteRequest> = listOf()
     log.info("Creating case notes for migrate case notes for offender $offenderNo, size ${caseNoteRequest.size}}")
     return caseNoteRequest.map {
       DpsCaseNote(

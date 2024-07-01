@@ -78,7 +78,7 @@ class CaseNotesByPrisonerMigrationService(
     // when NOMIS does not find a booking this will be null so just migrate as if there is no casenotes
     val nomisCaseNotes =
       caseNotesNomisService.getCaseNotesToMigrate(offenderNo) ?: PrisonerCaseNotesResponse(emptyList())
-    val caseNotesToMigrate = nomisCaseNotes.caseNotes.map { it.toDPSMigratedCaseNote() }
+    val caseNotesToMigrate = nomisCaseNotes.caseNotes.map { it.toDPSCreateCaseNote() }
     caseNotesDpsService.migrateCaseNotes(
       offenderNo = offenderNo,
       dpsCaseNotes = caseNotesToMigrate,

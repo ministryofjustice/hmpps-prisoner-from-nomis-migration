@@ -24,7 +24,7 @@ class CaseNotesApiService(@Qualifier("caseNotesApiWebClient") private val webCli
       .awaitBodilessEntity()
   }
 
-  suspend fun migrateCaseNotes(offenderNo: String, dpsCaseNotes: List<DpsCaseNote>): List<DpsCaseNote> =
+  suspend fun migrateCaseNotes(offenderNo: String, dpsCaseNotes: List<MigrateCaseNoteRequest>): List<DpsCaseNote> =
     webClient.post()
       .uri("/migrate/{offenderNo}/casenotes", offenderNo)
       .contentType(MediaType.APPLICATION_JSON)
