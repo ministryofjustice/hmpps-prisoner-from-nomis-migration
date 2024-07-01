@@ -153,6 +153,10 @@ class AlertsMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
+  fun stubReplaceMappingsForMergeFollowedBySuccess(offenderNo: String) {
+    mappingApi.stubMappingUpdateFailureFollowedBySuccess(url = "/mapping/alerts/$offenderNo/merge")
+  }
+
   fun stubMigrationCount(recordsMigrated: Long) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/alerts/migration-id/.*/grouped-by-prisoner")).willReturn(
