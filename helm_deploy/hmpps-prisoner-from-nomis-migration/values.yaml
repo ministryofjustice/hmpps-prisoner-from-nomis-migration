@@ -67,6 +67,8 @@ generic-service:
       LOCATIONS_CLIENT_SECRET: "LOCATIONS_CLIENT_SECRET"
       ALERTS_CLIENT_ID: "ALERTS_CLIENT_ID"
       ALERTS_CLIENT_SECRET: "ALERTS_CLIENT_SECRET"
+      CASENOTES_CLIENT_ID: "CASENOTES_CLIENT_ID"
+      CASENOTES_CLIENT_SECRET: "CASENOTES_CLIENT_SECRET"
       COURT_SENTENCING_CLIENT_ID: "COURT_SENTENCING_CLIENT_ID"
       COURT_SENTENCING_CLIENT_SECRET: "COURT_SENTENCING_CLIENT_SECRET"
       PRISON_PERSON_CLIENT_ID: "PRISON_PERSON_CLIENT_ID"
@@ -111,6 +113,10 @@ generic-service:
       HMPPS_SQS_QUEUES_MIGRATIONALERTS_QUEUE_NAME: "sqs_name"
     sqs-migration-alerts-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONALERTS_DLQ_NAME: "sqs_name"
+    sqs-migration-casenotes-queue:
+      HMPPS_SQS_QUEUES_MIGRATIONCASENOTES_QUEUE_NAME: "sqs_name"
+    sqs-migration-casenotes-dlq:
+      HMPPS_SQS_QUEUES_MIGRATIONCASENOTES_DLQ_NAME: "sqs_name"
     prison-events-visits-queue:
       HMPPS_SQS_QUEUES_EVENTVISITS_QUEUE_NAME: "sqs_name"
     prison-events-visits-dl-queue:
@@ -135,6 +141,10 @@ generic-service:
       HMPPS_SQS_QUEUES_EVENTALERTS_QUEUE_NAME: "sqs_name"
     prison-events-alerts-dl-queue:
       HMPPS_SQS_QUEUES_EVENTALERTS_DLQ_NAME: "sqs_name"
+    prison-events-casenotes-queue:
+      HMPPS_SQS_QUEUES_EVENTCASENOTES_QUEUE_NAME: "sqs_name"
+    prison-events-casenotes-dl-queue:
+      HMPPS_SQS_QUEUES_EVENTCASENOTES_DLQ_NAME: "sqs_name"
     prison-events-courtsentencing-queue:
       HMPPS_SQS_QUEUES_EVENTCOURTSENTENCING_QUEUE_NAME: "sqs_name"
     prison-events-courtsentencing-dl-queue:
