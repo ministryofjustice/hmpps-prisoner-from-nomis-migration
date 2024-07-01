@@ -67,7 +67,7 @@ class CSIPMigrationService(
     val nomisCSIPId = context.body.id
     val migrationId = context.migrationId
 
-    csipMappingService.findByNomisId(nomisCSIPId)
+    csipMappingService.findCSIPReportByNomisId(nomisCSIPId)
       ?.run {
         log.info("Will not migrate the CSIP $nomisCSIPId since it was already mapped to DPS CSIP ${this.dpsCSIPId} during migration ${this.label}")
       }
