@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-06-21.8119.ca8b0f7"
+    "version": "2024-06-28.8167.d1694db"
   },
   "servers": [
     {
@@ -4688,6 +4688,70 @@
       }
     },
     "/prisoners/{offenderNo}/casenotes": {
+      "get": {
+        "tags": [
+          "case-notes-resource"
+        ],
+        "summary": "Gets all case notes for a prisoner",
+        "description": "Retrieves all case notes for a specific prisoner, for migration or reconciliation. Requires ROLE_NOMIS_CASENOTES",
+        "operationId": "getCaseNotesForPrisoner",
+        "parameters": [
+          {
+            "name": "offenderNo",
+            "in": "path",
+            "description": "Offender No AKA prisoner number",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Offender No AKA prisoner number",
+              "example": "A3745XD"
+            },
+            "example": "A3745XD"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Case notes Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrisonerCaseNotesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_CASENOTES",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Prisoner does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
           "case-notes-resource"
@@ -8478,7 +8542,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PageLong"
+                  "$ref": "#/components/schemas/PageIncidentIdResponse"
                 }
               }
             }
@@ -9234,168 +9298,6 @@
           },
           "403": {
             "description": "Forbidden, requires role NOMIS_CSIP",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/bookings/{bookingId}/casenotes": {
-      "get": {
-        "tags": [
-          "case-notes-resource"
-        ],
-        "summary": "Gets all case notes for a booking",
-        "description": "Retrieves all case notes for a specific booking, for migration or reconciliation. Requires ROLE_NOMIS_CASENOTES",
-        "operationId": "getCaseNotes",
-        "parameters": [
-          {
-            "name": "bookingId",
-            "in": "path",
-            "description": "Booking id",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "Booking id",
-              "example": 12345678
-            },
-            "example": 12345678
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "CaseNotes Returned",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BookingCaseNotesResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized to access this endpoint",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_CASENOTES",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Prisoner does not exist or has no bookings",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/bookings/ids": {
-      "get": {
-        "tags": [
-          "case-notes-resource"
-        ],
-        "summary": "Gets all booking ids",
-        "description": "Retrieves all booking ids subject to filters, for migration or reconciliation. Requires ROLE_NOMIS_CASENOTES",
-        "operationId": "getBookings",
-        "parameters": [
-          {
-            "name": "fromId",
-            "in": "query",
-            "description": "Start or minimum booking id",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "description": "Start or minimum booking id",
-              "example": 12345678
-            },
-            "example": 12345678
-          },
-          {
-            "name": "toId",
-            "in": "query",
-            "description": "End or maximum booking id",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "description": "End or maximum booking id",
-              "example": 98765432
-            },
-            "example": 98765432
-          },
-          {
-            "name": "activeOnly",
-            "in": "query",
-            "description": "If true return only bookings currently in prison",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "If true return only bookings currently in prison"
-            }
-          },
-          {
-            "name": "pageable",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/Pageable"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "CaseNotes Returned",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Page"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized to access this endpoint",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_CASENOTES",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Prisoner does not exist or has no bookings",
             "content": {
               "application/json": {
                 "schema": {
@@ -15286,6 +15188,12 @@
             "type": "integer",
             "format": "int64"
           },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
           "size": {
             "type": "integer",
             "format": "int32"
@@ -15305,12 +15213,6 @@
             "items": {
               "$ref": "#/components/schemas/SortObject"
             }
-          },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
           },
           "numberOfElements": {
             "type": "integer",
@@ -15736,6 +15638,12 @@
             "type": "integer",
             "format": "int64"
           },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
           "size": {
             "type": "integer",
             "format": "int32"
@@ -15755,12 +15663,6 @@
             "items": {
               "$ref": "#/components/schemas/SortObject"
             }
-          },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
           },
           "numberOfElements": {
             "type": "integer",
@@ -16389,6 +16291,21 @@
         },
         "description": "Details of a prisoner merge"
       },
+      "PrisonerCaseNotesResponse": {
+        "required": [
+          "caseNotes"
+        ],
+        "type": "object",
+        "properties": {
+          "caseNotes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaseNoteResponse"
+            }
+          }
+        },
+        "description": "The list of case notes held against a booking"
+      },
       "PreviousBookingId": {
         "required": [
           "bookingId",
@@ -16437,6 +16354,12 @@
             "type": "integer",
             "format": "int64"
           },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
           "size": {
             "type": "integer",
             "format": "int32"
@@ -16456,12 +16379,6 @@
             "items": {
               "$ref": "#/components/schemas/SortObject"
             }
-          },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
           },
           "numberOfElements": {
             "type": "integer",
@@ -16507,6 +16424,12 @@
             "type": "integer",
             "format": "int64"
           },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
           "size": {
             "type": "integer",
             "format": "int32"
@@ -16526,12 +16449,6 @@
             "items": {
               "$ref": "#/components/schemas/SortObject"
             }
-          },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
           },
           "numberOfElements": {
             "type": "integer",
@@ -17091,6 +17008,12 @@
             "type": "integer",
             "format": "int64"
           },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
           "size": {
             "type": "integer",
             "format": "int32"
@@ -17110,12 +17033,6 @@
             "items": {
               "$ref": "#/components/schemas/SortObject"
             }
-          },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
           },
           "numberOfElements": {
             "type": "integer",
@@ -17349,6 +17266,12 @@
             "type": "integer",
             "format": "int64"
           },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
           "size": {
             "type": "integer",
             "format": "int32"
@@ -17368,12 +17291,6 @@
             "items": {
               "$ref": "#/components/schemas/SortObject"
             }
-          },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
           },
           "numberOfElements": {
             "type": "integer",
@@ -17929,7 +17846,21 @@
         },
         "description": "Staff involved in the incident"
       },
-      "PageLong": {
+      "IncidentIdResponse": {
+        "required": [
+          "incidentId"
+        ],
+        "type": "object",
+        "properties": {
+          "incidentId": {
+            "type": "integer",
+            "description": "The incident id",
+            "format": "int64"
+          }
+        },
+        "description": "Incident id"
+      },
+      "PageIncidentIdResponse": {
         "type": "object",
         "properties": {
           "totalPages": {
@@ -17940,6 +17871,12 @@
             "type": "integer",
             "format": "int64"
           },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
           "size": {
             "type": "integer",
             "format": "int32"
@@ -17947,8 +17884,7 @@
           "content": {
             "type": "array",
             "items": {
-              "type": "integer",
-              "format": "int64"
+              "$ref": "#/components/schemas/IncidentIdResponse"
             }
           },
           "number": {
@@ -17960,12 +17896,6 @@
             "items": {
               "$ref": "#/components/schemas/SortObject"
             }
-          },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
           },
           "numberOfElements": {
             "type": "integer",
@@ -18033,69 +17963,6 @@
         },
         "description": "Incident Agency Id"
       },
-      "IncidentIdResponse": {
-        "required": [
-          "incidentId"
-        ],
-        "type": "object",
-        "properties": {
-          "incidentId": {
-            "type": "integer",
-            "description": "The incident id",
-            "format": "int64"
-          }
-        },
-        "description": "Incident id"
-      },
-      "PageIncidentIdResponse": {
-        "type": "object",
-        "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "size": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/IncidentIdResponse"
-            }
-          },
-          "number": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "sort": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SortObject"
-            }
-          },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
-          },
-          "numberOfElements": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "empty": {
-            "type": "boolean"
-          }
-        }
-      },
       "IncentiveIdResponse": {
         "required": [
           "bookingId",
@@ -18127,6 +17994,12 @@
             "type": "integer",
             "format": "int64"
           },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
           "size": {
             "type": "integer",
             "format": "int32"
@@ -18146,12 +18019,6 @@
             "items": {
               "$ref": "#/components/schemas/SortObject"
             }
-          },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
           },
           "numberOfElements": {
             "type": "integer",
@@ -18926,6 +18793,12 @@
             "type": "integer",
             "format": "int64"
           },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
           "size": {
             "type": "integer",
             "format": "int32"
@@ -18945,76 +18818,6 @@
             "items": {
               "$ref": "#/components/schemas/SortObject"
             }
-          },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
-          },
-          "numberOfElements": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "empty": {
-            "type": "boolean"
-          }
-        }
-      },
-      "BookingCaseNotesResponse": {
-        "required": [
-          "caseNotes"
-        ],
-        "type": "object",
-        "properties": {
-          "caseNotes": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CaseNoteResponse"
-            }
-          }
-        },
-        "description": "The list of case notes held against a booking"
-      },
-      "Page": {
-        "type": "object",
-        "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "size": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "content": {
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
-          },
-          "number": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "sort": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SortObject"
-            }
-          },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
           },
           "numberOfElements": {
             "type": "integer",
@@ -19186,6 +18989,12 @@
             "type": "integer",
             "format": "int64"
           },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
           "size": {
             "type": "integer",
             "format": "int32"
@@ -19205,12 +19014,6 @@
             "items": {
               "$ref": "#/components/schemas/SortObject"
             }
-          },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
           },
           "numberOfElements": {
             "type": "integer",
@@ -19515,6 +19318,12 @@
             "type": "integer",
             "format": "int64"
           },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
           "size": {
             "type": "integer",
             "format": "int32"
@@ -19534,12 +19343,6 @@
             "items": {
               "$ref": "#/components/schemas/SortObject"
             }
-          },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
           },
           "numberOfElements": {
             "type": "integer",
@@ -19583,6 +19386,12 @@
             "type": "integer",
             "format": "int64"
           },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
           "size": {
             "type": "integer",
             "format": "int32"
@@ -19602,12 +19411,6 @@
             "items": {
               "$ref": "#/components/schemas/SortObject"
             }
-          },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
           },
           "numberOfElements": {
             "type": "integer",
@@ -19657,6 +19460,12 @@
             "type": "integer",
             "format": "int64"
           },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
           "size": {
             "type": "integer",
             "format": "int32"
@@ -19676,12 +19485,6 @@
             "items": {
               "$ref": "#/components/schemas/SortObject"
             }
-          },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
           },
           "numberOfElements": {
             "type": "integer",
@@ -19965,6 +19768,12 @@
             "type": "integer",
             "format": "int64"
           },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
           "size": {
             "type": "integer",
             "format": "int32"
@@ -19984,12 +19793,6 @@
             "items": {
               "$ref": "#/components/schemas/SortObject"
             }
-          },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
           },
           "numberOfElements": {
             "type": "integer",
