@@ -98,6 +98,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
             incidentsQueueOffenderEventsUrl,
             incidentEvent(eventType = "INCIDENT-INSERTED"),
           )
+          waitForAnyProcessingToComplete("incidents-synchronisation-created-success")
         }
 
         @Test
@@ -320,6 +321,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
             incidentsQueueOffenderEventsUrl,
             incidentEvent(eventType = "INCIDENT-CHANGED-RESPONSES"),
           )
+          awsSqsIncidentsOffenderEventDlqClient.waitForMessageCountOnQueue(incidentsQueueOffenderEventsDlqUrl, 1)
         }
 
         @Test
@@ -357,6 +359,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
             incidentsQueueOffenderEventsUrl,
             incidentEvent("INCIDENT-CHANGED-PARTIES"),
           )
+          waitForAnyProcessingToComplete("incidents-synchronisation-updated-success")
         }
 
         @Test
@@ -452,9 +455,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
             auditModuleName = "OIUDINCRS",
           ),
         )
-        await untilAsserted {
-          verify(telemetryClient, Times(1)).trackEvent(any(), any(), isNull())
-        }
+        waitForAnyProcessingToComplete("incidents-synchronisation-deleted-ignored")
       }
 
       @Test
@@ -503,6 +504,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
               auditModuleName = "OIUDINCRS",
             ),
           )
+          waitForAnyProcessingToComplete("incidents-synchronisation-deleted-success")
         }
 
         @Test
