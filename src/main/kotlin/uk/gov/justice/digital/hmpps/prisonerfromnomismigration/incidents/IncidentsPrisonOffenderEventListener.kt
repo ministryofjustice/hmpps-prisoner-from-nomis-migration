@@ -39,7 +39,7 @@ class IncidentsPrisonOffenderEventListener(
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
           if (eventFeatureSwitch.isEnabled(eventType)) {
             when (eventType) {
-              "INCIDENT-INSERTED" -> incidentsSynchronisationService.synchroniseIncidentUpsert(sqsMessage.Message.fromJson())
+              "INCIDENT-INSERTED" -> incidentsSynchronisationService.synchroniseIncidentInsert(sqsMessage.Message.fromJson())
 
               "INCIDENT-DELETED-CASES" -> incidentsSynchronisationService.synchroniseIncidentDelete(sqsMessage.Message.fromJson())
 
@@ -51,7 +51,7 @@ class IncidentsPrisonOffenderEventListener(
               "INCIDENT-DELETED-PARTIES",
               "INCIDENT-DELETED-RESPONSES",
               "INCIDENT-DELETED-REQUIREMENTS",
-              -> incidentsSynchronisationService.synchroniseIncidentUpsert(sqsMessage.Message.fromJson())
+              -> incidentsSynchronisationService.synchroniseIncidentUpdate(sqsMessage.Message.fromJson())
 
               // TODO do we need to check for this event
               // "prison-offender-events.prisoner.merged" -> incidentsSynchronisationService.synchronisePrisonerMerge(sqsMessage.Message.fromJson())

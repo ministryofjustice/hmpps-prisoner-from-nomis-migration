@@ -74,29 +74,27 @@ class IncidentsNomisApiService(@Qualifier("nomisApiWebClient") private val webCl
       .retrieve()
       .awaitBody()
 
-  suspend fun getIncidentsReconciliation(prisonId: String): IncidentsReconciliationResponse =
+  suspend fun getIncidentsReconciliation(agencyId: String): IncidentsReconciliationResponse =
     webClient.get()
-      .uri("incidents/reconciliation/agency/{agencyId}/counts", prisonId)
+      .uri("/incidents/reconciliation/agency/{agencyId}/counts", agencyId)
       .retrieve()
       .awaitBody()
 
-/* TODO
   suspend fun getOpenIncidentIds(
+    agencyId: String,
     pageNumber: Long,
     pageSize: Long,
   ): PageImpl<IncidentIdResponse> =
     webClient.get()
       .uri {
-        it.path("/incidents/ids")
-          .queryParam("open", true)
+        it.path("/incidents/reconciliation/agency/{agencyId}/ids")
           .queryParam("page", pageNumber)
           .queryParam("size", pageSize)
-          .build()
+          .build(agencyId)
       }
       .retrieve()
       .bodyToMono(typeReference<RestResponsePage<IncidentIdResponse>>())
       .awaitSingle()
- */
 }
 
 fun IncidentResponse.toMigrateUpsertNomisIncident() =

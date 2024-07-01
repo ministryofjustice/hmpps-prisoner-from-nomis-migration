@@ -18,6 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Synchro
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingIdDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.MergedPrisonerAlertMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerAlertMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerAlertsResponse
@@ -191,36 +192,44 @@ class AlertsSynchronisationService(
     val bookingId = prisonerMergeEvent.additionalInformation.bookingId
     val offenderNo = prisonerMergeEvent.additionalInformation.nomsNumber
     val removedOffenderNo = prisonerMergeEvent.additionalInformation.removedNomsNumber
-    val alerts = nomisApiService.getAlertsByBookingId(bookingId).alerts
-    val alertsMapping = alerts.groupBy { mappingApiService.getOrNullByNomisId(bookingId = it.bookingId, alertSequence = it.alertSequence) }
-    val newAlerts = alertsMapping[null] ?: emptyList()
-    val retainedDpsAlertIds = alertsMapping.keys.filterNotNull().map { it.dpsAlertId }
+
+    val alerts = nomisApiService.getAlertsToResynchronise(offenderNo) ?: PrisonerAlertsResponse(emptyList())
+    val alertsToResynchronise = alerts.latestBookingAlerts.map { it.toDPSResyncAlert() }
     val telemetry = mapOf(
-      "bookingId" to bookingId,
       "offenderNo" to offenderNo,
+      "bookingId" to bookingId,
       "removedOffenderNo" to removedOffenderNo,
-      "newAlertsCount" to newAlerts.size,
-      "newAlerts" to newAlerts.map { it.alertSequence }.joinToString(),
+      "alertsCount" to alertsToResynchronise.size,
+      "alerts" to alertsToResynchronise.map { it.alertSeq }.joinToString(),
     )
-    val dpsResponse = dpsApiService.mergePrisonerAlerts(offenderNo = offenderNo, removedOffenderNo = removedOffenderNo, alerts = newAlerts.map { it.toDPSMergeAlert() }, retainedAlertIds = retainedDpsAlertIds)
-    val mappingsToCreate = dpsResponse.alertsCreated.map {
-      AlertMappingDto(
-        dpsAlertId = it.alertUuid.toString(),
-        nomisBookingId = it.offenderBookId,
-        nomisAlertSequence = it.alertSeq.toLong(),
-        offenderNo = offenderNo,
-        mappingType = NOMIS_CREATED,
+    dpsApiService.resynchroniseAlerts(
+      offenderNo = removedOffenderNo,
+      alerts = emptyList(),
+    )
+
+    dpsApiService.resynchroniseAlerts(
+      offenderNo = offenderNo,
+      alerts = alertsToResynchronise,
+    ).also {
+      val prisonerMappings = PrisonerAlertMappingsDto(
+        mappingType = PrisonerAlertMappingsDto.MappingType.NOMIS_CREATED,
+        mappings = it.map { dpsAlert ->
+          AlertMappingIdDto(
+            nomisBookingId = dpsAlert.offenderBookId,
+            nomisAlertSequence = dpsAlert.alertSeq.toLong(),
+            dpsAlertId = dpsAlert.alertUuid.toString(),
+          )
+        },
+      )
+
+      tryToReplaceMergedMappings(offenderNo, MergedPrisonerAlertMappingsDto(removedOffenderNo, prisonerMappings), telemetry)
+      telemetryClient.trackEvent(
+        "from-nomis-synch-alerts-merge",
+        telemetry,
       )
     }
-    val mappingResponse = tryToCreateMappings(mappingsToCreate, telemetry)
-    dpsResponse.alertsDeleted.forEach {
-      tryToDeletedMapping(it.toString())
-    }
-    telemetryClient.trackEvent(
-      "from-nomis-synch-alerts-merge",
-      telemetry + ("mappingSuccess" to (mappingResponse == MAPPING_CREATED).toString()),
-    )
   }
+
   suspend fun resynchronisePrisonerAlerts(offenderNo: String) = resynchronisePrisonerAlertsForAdmission(
     PrisonerReceiveDomainEvent(
       ReceivePrisonerAdditionalInformationEvent(nomsNumber = offenderNo, reason = "READMISSION_SWITCH_BOOKING"),
@@ -311,6 +320,23 @@ class AlertsSynchronisationService(
       )
     }
   }
+  private suspend fun tryToReplaceMergedMappings(
+    offenderNo: String,
+    mergedPrisonerMapping: MergedPrisonerAlertMappingsDto,
+    telemetry: Map<String, Any>,
+  ) {
+    try {
+      replaceMergedMappingsBatch(offenderNo = offenderNo, mergedPrisonerMapping)
+    } catch (e: Exception) {
+      log.error("Failed to create mappings for merge $mergedPrisonerMapping", e)
+      queueService.sendMessage(
+        messageType = SynchronisationMessageType.RETRY_RESYNCHRONISATION_MERGED_MAPPING_BATCH.name,
+        synchronisationType = SynchronisationType.ALERTS,
+        message = ReplaceMergedMappings(offenderNo = offenderNo, mergedPrisonerMapping),
+        telemetryAttributes = telemetry.valuesAsStrings(),
+      )
+    }
+  }
 
   private suspend fun createMappingsBatch(
     mappings: List<AlertMappingDto>,
@@ -358,6 +384,15 @@ class AlertsSynchronisationService(
         )
       }
   }
+  suspend fun retryReplaceMergedMappingsBatch(retryMessage: InternalMessage<ReplaceMergedMappings>) {
+    replaceMergedMappingsBatch(offenderNo = retryMessage.body.offenderNo, mergedPrisonerMapping = retryMessage.body.prisonerMappings)
+      .also {
+        telemetryClient.trackEvent(
+          "alert-mapping-merged-replace-success",
+          retryMessage.telemetryAttributes,
+        )
+      }
+  }
 
   private suspend fun replaceMappingsBatch(
     offenderNo: String,
@@ -366,6 +401,14 @@ class AlertsSynchronisationService(
     mappingApiService.replaceMappings(
       offenderNo,
       prisonerMappings,
+    )
+  private suspend fun replaceMergedMappingsBatch(
+    offenderNo: String,
+    mergedPrisonerMapping: MergedPrisonerAlertMappingsDto,
+  ) =
+    mappingApiService.replaceMappingsForMerge(
+      offenderNo,
+      mergedPrisonerMapping,
     )
 }
 
@@ -380,3 +423,4 @@ private fun AlertResponse.isCreatedDueToNewBooking() = audit.auditAdditionalInfo
 private fun AlertResponse.shouldBeCreatedInDPS() = bookingSequence == 1L
 private fun AlertResponse.shouldNotBeCreatedInDPS() = !shouldBeCreatedInDPS()
 data class ReplaceMappings(val offenderNo: String, val prisonerMappings: PrisonerAlertMappingsDto)
+data class ReplaceMergedMappings(val offenderNo: String, val prisonerMappings: MergedPrisonerAlertMappingsDto)

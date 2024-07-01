@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_RESYNCHRONISATION_MAPPING_BATCH
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_RESYNCHRONISATION_MERGED_MAPPING_BATCH
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING_BATCH
 import java.util.concurrent.CompletableFuture
@@ -61,6 +62,9 @@ class AlertsEventListener(
           sqsMessage.Message.fromJson(),
         )
         RETRY_RESYNCHRONISATION_MAPPING_BATCH.name -> alertsSynchronisationService.retryReplaceMappingsBatch(
+          sqsMessage.Message.fromJson(),
+        )
+        RETRY_RESYNCHRONISATION_MERGED_MAPPING_BATCH.name -> alertsSynchronisationService.retryReplaceMergedMappingsBatch(
           sqsMessage.Message.fromJson(),
         )
       }

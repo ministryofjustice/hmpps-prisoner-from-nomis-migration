@@ -8,6 +8,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisSyncReportId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.ReportBasic
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.ReportWithDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.SimplePageReportBasic
 
 @Service
@@ -33,6 +34,12 @@ class IncidentsService(@Qualifier("incidentsApiWebClient") private val webClient
   suspend fun getIncidentByNomisId(nomisIncidentId: Long): ReportBasic =
     webClient.get()
       .uri("/incident-reports/incident-number/{nomisIncidentId}", nomisIncidentId)
+      .retrieve()
+      .awaitBody()
+
+  suspend fun getIncidentDetailsByNomisId(nomisIncidentId: Long): ReportWithDetails =
+    webClient.get()
+      .uri("/incident-reports/incident-number/{nomisIncidentId}/with-details", nomisIncidentId)
       .retrieve()
       .awaitBody()
 
