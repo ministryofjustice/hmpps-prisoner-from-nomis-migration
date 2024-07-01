@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-06-27.4551.19086e9"
+    "version": "2024-07-01.4566.a12ebee"
   },
   "servers": [
     {
@@ -454,7 +454,7 @@
         ],
         "summary": "get mapping",
         "description": "Retrieves a mapping by NOMIS id. Requires role NOMIS_ALERTS",
-        "operationId": "getMappingByNomisId_3",
+        "operationId": "getMappingByNomisId_4",
         "parameters": [
           {
             "name": "bookingId",
@@ -1471,6 +1471,51 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/csip/factors": {
+      "post": {
+        "tags": [
+          "csip-factor-mapping-resource"
+        ],
+        "summary": "Creates a new CSIP Factor mapping",
+        "description": "Creates a mapping between a Nomis CSIP factor id and DPS CSIP factor id. Requires role NOMIS_CSIP",
+        "operationId": "createFactorMapping",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CSIPFactorMappingDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Mapping entry created"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Indicates a duplicate csip has been rejected. If Error code = 409 the body will return a DuplicateErrorResponse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateMappingErrorResponse"
                 }
               }
             }
@@ -4664,6 +4709,165 @@
         }
       }
     },
+    "/mapping/csip/factors/nomis-csip-factor-id/{nomisCSIPFactorId}": {
+      "get": {
+        "tags": [
+          "csip-factor-mapping-resource"
+        ],
+        "summary": "get CSIP Factor mapping",
+        "description": "Retrieves a CSIP Factor mapping by NOMIS id. Requires role NOMIS_CSIP",
+        "operationId": "getMappingByNomisId_1",
+        "parameters": [
+          {
+            "name": "nomisCSIPFactorId",
+            "in": "path",
+            "description": "NOMIS CSIP Factor id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "NOMIS CSIP Factor id",
+              "example": 12345
+            },
+            "example": 12345
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CSIPFactorMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/csip/factors/dps-csip-factor-id/{dpsCSIPFactorId}": {
+      "get": {
+        "tags": [
+          "csip-factor-mapping-resource"
+        ],
+        "summary": "get CSIP Factor mapping",
+        "description": "Retrieves a csip factor mapping by DPS id. Requires role NOMIS_CSIP",
+        "operationId": "getCSIPFactorMappingByDpsId",
+        "parameters": [
+          {
+            "name": "dpsCSIPFactorId",
+            "in": "path",
+            "description": "DPS alert id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "DPS alert id",
+              "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+            },
+            "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CSIPFactorMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "csip-factor-mapping-resource"
+        ],
+        "summary": "Deletes CSIP Factor mapping",
+        "description": "Deletes a CSIP Factor mapping by DPS id. Requires role NOMIS_CSIP",
+        "operationId": "deleteCSIPFactorMappingByDpsId",
+        "parameters": [
+          {
+            "name": "dpsCSIPFactorId",
+            "in": "path",
+            "description": "DPS CSIP Factor id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "DPS CSIP Factor id",
+              "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+            },
+            "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Mapping Deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/csip/dps-csip-id/{csipId}": {
       "get": {
         "tags": [
@@ -5022,7 +5226,7 @@
         ],
         "summary": "get court case mapping",
         "description": "Retrieves a mapping by DPS id. Requires role NOMIS_COURT_SENTENCING",
-        "operationId": "getMappingByNomisId_1",
+        "operationId": "getMappingByNomisId_2",
         "parameters": [
           {
             "name": "courtCaseId",
@@ -5190,7 +5394,7 @@
         ],
         "summary": "get mapping",
         "description": "Retrieves a mapping by NOMIS id. Requires role NOMIS_CASENOTES",
-        "operationId": "getMappingByNomisId_2",
+        "operationId": "getMappingByNomisId_3",
         "parameters": [
           {
             "name": "caseNoteId",
@@ -8221,6 +8425,47 @@
           }
         },
         "description": "Adjudication mapping (same value for NOMIS and DPS)"
+      },
+      "CSIPFactorMappingDto": {
+        "required": [
+          "dpsCSIPFactorId",
+          "mappingType",
+          "nomisCSIPFactorId"
+        ],
+        "type": "object",
+        "properties": {
+          "nomisCSIPFactorId": {
+            "type": "integer",
+            "description": "NOMIS CSIP Factor id",
+            "format": "int64"
+          },
+          "dpsCSIPFactorId": {
+            "type": "string",
+            "description": "DPS CSIP Factor id"
+          },
+          "label": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": "string",
+            "description": "Label (a timestamp for migrated ids)"
+          },
+          "mappingType": {
+            "type": "string",
+            "description": "Mapping type",
+            "enum": [
+              "MIGRATED",
+              "NOMIS_CREATED",
+              "DPS_CREATED"
+            ]
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "Date-time the mapping was created",
+            "example": "2021-07-05T10:35:17"
+          }
+        },
+        "description": "CSIP Factor mapping"
       },
       "CSIPMappingDto": {
         "required": [
