@@ -46,7 +46,7 @@ class PrisonPersonSynchronisationService(
         booking.startDateTime.toLocalDateTime(),
         booking.endDateTime?.toLocalDateTime(),
         (physicalAttributes.modifiedDateTime ?: physicalAttributes.createDateTime).toLocalDateTime(),
-        physicalAttributes.createdBy,
+        physicalAttributes.modifiedDateTime?.let { physicalAttributes.modifiedBy } ?: physicalAttributes.createdBy,
       )
     } catch (e: Exception) {
       telemetry["error"] = e.message.toString()

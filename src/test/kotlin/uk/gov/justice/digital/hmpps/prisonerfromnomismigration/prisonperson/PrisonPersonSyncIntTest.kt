@@ -160,6 +160,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
                     weightKilograms = 80,
                     createDateTime = "${now.minusDays(3)}",
                     modifiedDateTime = "${now.minusDays(1)}",
+                    modifiedBy = "MODIFY_USER",
                   ),
                   aPhysicalAttributesResponse(
                     attributeSequence = 2,
@@ -182,6 +183,8 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
           dpsUpdates = mapOf(
             "height" to equalTo("180"),
             "weight" to equalTo("80"),
+            "createdAt" to equalTo("${now.minusDays(1).toZoned()}"),
+            "createdBy" to equalTo("MODIFY_USER"),
           ),
         )
       }
