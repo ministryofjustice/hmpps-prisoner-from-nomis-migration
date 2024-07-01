@@ -202,6 +202,10 @@ class AlertsSynchronisationService(
       "alertsCount" to alertsToResynchronise.size,
       "alerts" to alertsToResynchronise.map { it.alertSeq }.joinToString(),
     )
+    dpsApiService.resynchroniseAlerts(
+      offenderNo = removedOffenderNo,
+      alerts = emptyList(),
+    )
 
     dpsApiService.resynchroniseAlerts(
       offenderNo = offenderNo,

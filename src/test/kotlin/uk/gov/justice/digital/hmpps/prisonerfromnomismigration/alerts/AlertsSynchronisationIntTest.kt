@@ -965,6 +965,10 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
             resyncedAlert().copy(offenderBookId = bookingId, alertSeq = 2, alertUuid = dpsAlertId2),
           ),
         )
+        dpsAlertsServer.stubResynchroniseAlerts(
+          offenderNo = "A1000KT",
+          response = listOf(),
+        )
         alertsMappingApiMockServer.stubReplaceMappingsForMerge(offenderNo)
         awsSqsSentencingOffenderEventsClient.sendMessage(
           alertsQueueOffenderEventsUrl,
@@ -990,6 +994,14 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
             .withRequestBodyJsonPath("[0].alertSeq", "1")
             .withRequestBodyJsonPath("[1].offenderBookId", "$bookingId")
             .withRequestBodyJsonPath("[1].alertSeq", "2"),
+        )
+      }
+
+      @Test
+      fun `will remove all alerts from DPS for removed record`() {
+        dpsAlertsServer.verify(
+          postRequestedFor(urlPathEqualTo("/resync/A1000KT/alerts"))
+            .withRequestBodyJsonPath("$.size()", "0"),
         )
       }
 
@@ -1041,6 +1053,10 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
             resyncedAlert().copy(offenderBookId = bookingId, alertSeq = 2, alertUuid = dpsAlertId2),
           ),
         )
+        dpsAlertsServer.stubResynchroniseAlerts(
+          offenderNo = "A1000KT",
+          response = listOf(),
+        )
         alertsMappingApiMockServer.stubReplaceMappingsForMerge(offenderNo)
         alertsMappingApiMockServer.stubReplaceMappingsForMergeFollowedBySuccess(offenderNo)
         awsSqsSentencingOffenderEventsClient.sendMessage(
@@ -1068,6 +1084,14 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
             .withRequestBodyJsonPath("[0].alertSeq", "1")
             .withRequestBodyJsonPath("[1].offenderBookId", "$bookingId")
             .withRequestBodyJsonPath("[1].alertSeq", "2"),
+        )
+      }
+
+      @Test
+      fun `will remove all alerts from DPS for removed record`() {
+        dpsAlertsServer.verify(
+          postRequestedFor(urlPathEqualTo("/resync/A1000KT/alerts"))
+            .withRequestBodyJsonPath("$.size()", "0"),
         )
       }
 
