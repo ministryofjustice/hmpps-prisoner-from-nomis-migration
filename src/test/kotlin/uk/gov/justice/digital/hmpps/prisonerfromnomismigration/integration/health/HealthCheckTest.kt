@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.heal
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension
@@ -106,6 +107,7 @@ class HealthCheckTest : SqsIntegrationTestBase() {
     CSIPApiExtension.csipApi.stubHealthPing(status)
     LocationsApiExtension.locationsApi.stubHealthPing(status)
     AlertsDpsApiExtension.dpsAlertsServer.stubHealthPing(status)
+    CaseNotesApiExtension.caseNotesApi.stubHealthPing(status)
     CourtSentencingDpsApiExtension.dpsCourtSentencingServer.stubHealthPing(status)
     PrisonPersonDpsApiExtension.dpsPrisonPersonServer.stubHealthPing(status)
   }

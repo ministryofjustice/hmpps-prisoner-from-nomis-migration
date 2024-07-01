@@ -20,6 +20,7 @@ api.base.url:
   locations: http://localhost:8093
   court.sentencing: http://localhost:8094
   prison.person: http://localhost:8095
+  casenotes: http://localhost:8096/mock
 
 visits:
   page:
@@ -46,6 +47,9 @@ csip:
   page:
     size: 10
 locations:
+  page:
+    size: 10
+casenotes:
   page:
     size: 10
 alerts:
@@ -90,11 +94,15 @@ hmpps.sqs:
   queues:
     migrationsentencing:
       dlqMaxReceiveCount: 2
+    migrationcasenotes:
+      dlqMaxReceiveCount: 2
     eventsentencing:
       dlqMaxReceiveCount: 2
     eventalerts:
       dlqMaxReceiveCount: 2
     eventlocations:
+      dlqMaxReceiveCount: 2
+    eventcasenotes:
       dlqMaxReceiveCount: 2
     eventcourtsentencing:
       dlqMaxReceiveCount: 2

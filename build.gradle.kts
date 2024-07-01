@@ -64,6 +64,7 @@ tasks {
       "buildIncidentsApiModel",
       "buildCsipApiModel",
       "buildLocationsApiModel",
+      "buildCaseNotesApiModel",
       "buildMappingServiceApiModel",
       "buildSentencingAdjustmentsApiModel",
       "buildAlertsApiModel",
@@ -81,6 +82,7 @@ tasks {
       "buildIncidentsApiModel",
       "buildCsipApiModel",
       "buildLocationsApiModel",
+      "buildCaseNotesApiModel",
       "buildMappingServiceApiModel",
       "buildSentencingAdjustmentsApiModel",
       "buildAlertsApiModel",
@@ -97,6 +99,7 @@ tasks {
       "buildIncidentsApiModel",
       "buildCsipApiModel",
       "buildLocationsApiModel",
+      "buildCaseNotesApiModel",
       "buildMappingServiceApiModel",
       "buildSentencingAdjustmentsApiModel",
       "buildAlertsApiModel",
@@ -133,11 +136,7 @@ tasks.register("buildNomisSyncApiModel", GenerateTask::class) {
   modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model")
   apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.api")
   configOptions.set(configValues)
-  globalProperties.set(
-    mapOf(
-      "models" to "",
-    ),
-  )
+  globalProperties.set(mapOf("models" to ""))
 }
 
 tasks.register("buildMappingServiceApiModel", GenerateTask::class) {
@@ -192,6 +191,16 @@ tasks.register("buildLocationsApiModel", GenerateTask::class) {
   globalProperties.set(mapOf("models" to ""))
 }
 
+tasks.register("buildCaseNotesApiModel", GenerateTask::class) {
+  generatorName.set("kotlin")
+  inputSpec.set("openapi-specs/casenotes-api-docs.json")
+  outputDir.set("$buildDirectory/generated/casenotes")
+  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model")
+  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.api")
+  configOptions.set(configValues)
+  globalProperties.set(mapOf("models" to ""))
+}
+
 tasks.register("buildSentencingAdjustmentsApiModel", GenerateTask::class) {
   generatorName.set("kotlin")
   skipValidateSpec.set(true)
@@ -237,7 +246,10 @@ tasks.register("buildPrisonPersonApiModel", GenerateTask::class) {
 }
 
 val generatedProjectDirs =
-  listOf("activities", "adjudications", "incidents", "csip", "locations", "nomissync", "mappings", "sentencingadjustments", "alerts", "courtsentencing", "prisonperson")
+  listOf(
+    "activities", "adjudications", "incidents", "csip", "locations", "casenotes",
+    "nomissync", "mappings", "sentencingadjustments", "alerts", "courtsentencing", "prisonperson",
+  )
 
 kotlin {
   generatedProjectDirs.forEach { generatedProject ->

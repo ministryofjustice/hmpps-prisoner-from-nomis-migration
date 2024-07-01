@@ -29,6 +29,9 @@ hmpps.sqs:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
       errorVisibilityTimeout: 0
+    migrationcasenotes:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
     migrationalerts:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
@@ -49,6 +52,9 @@ hmpps.sqs:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
     eventlocations:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
+    eventcasenotes:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
     eventalerts:

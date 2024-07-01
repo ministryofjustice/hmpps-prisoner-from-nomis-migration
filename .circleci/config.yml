@@ -37,6 +37,7 @@ jobs:
 
   tests:
     parallelism: << pipeline.parameters.test-executors-count >>
+    resource_class: large
     executor:
       name: hmpps/java_localstack_postgres
       jdk_tag: "21.0"
