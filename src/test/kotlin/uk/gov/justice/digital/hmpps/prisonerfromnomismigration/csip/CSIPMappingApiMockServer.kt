@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
@@ -12,6 +13,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFactorMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
@@ -23,6 +25,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
     const val CSIP_CREATE_MAPPING_URL = "/mapping/csip"
     const val CSIP_GET_MAPPING_URL = "/mapping/csip/nomis-csip-id"
   }
+
   fun stubCSIPMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 54327) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/csip/migration-id/.*")).willReturn(
@@ -51,28 +54,27 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
   }
 
   fun stubGetByNomisId(nomisCSIPId: Long = 1234, dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
-    val content = """{
-      "dpsCSIPId": "$dpsCSIPId",
-      "nomisCSIPId": $nomisCSIPId,
-      "label": "2022-02-14T09:58:45",
-      "whenCreated": "2020-01-01T11:10:00",
-      "mappingType": "NOMIS_CREATED"
-    }"""
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/csip/nomis-csip-id/$nomisCSIPId"))
-        .willReturn(WireMock.okJson(content)),
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(
+              CSIPMappingDto(
+                nomisCSIPId = nomisCSIPId,
+                dpsCSIPId = dpsCSIPId,
+                mappingType = CSIPMappingDto.MappingType.NOMIS_CREATED,
+                label = "2022-02-14T09:58:45",
+                whenCreated = "2020-01-01T11:10:00",
+              ),
+            ),
+        ),
     )
   }
 
   fun stubGetByNomisId(status: HttpStatus) {
-    mappingApi.stubFor(
-      get(urlPathMatching("/mapping/csip/nomis-csip-id/\\d"))
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(status.value()),
-        ),
-    )
+    stubGetErrorResponse(status = status, url = "/mapping/csip/nomis-csip-id/.*")
   }
 
   fun stubCSIPLatestMigration(migrationId: String) {
@@ -80,16 +82,15 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
       get(urlEqualTo("/mapping/csip/migrated/latest")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
           .withBody(
-            """
-            {
-              "dpsCSIPId": "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5",
-              "nomisCSIPId": 1234,                                       
-              "label": "$migrationId",
-              "whenCreated": "2020-01-01T11:10:00",
-              "mappingType": "MIGRATED"
-            }              
-            """,
+            CSIPMappingDto(
+              nomisCSIPId = 1234,
+              dpsCSIPId = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5",
+              mappingType = CSIPMappingDto.MappingType.MIGRATED,
+              label = migrationId,
+              whenCreated = "2020-01-01T11:10:00",
+            ),
           ),
       ),
     )
@@ -163,6 +164,54 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
         ),
     )
   }
+
+  fun stubGetFactorByNomisId(nomisCSIPFactorId: Long, dpsCSIPFactorId: String) {
+    mappingApi.stubFor(
+      get(urlPathMatching("/mapping/csip/factors/nomis-csip-factor-id/$nomisCSIPFactorId"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(
+              CSIPFactorMappingDto(
+                nomisCSIPFactorId = nomisCSIPFactorId,
+                dpsCSIPFactorId = dpsCSIPFactorId,
+                mappingType = CSIPFactorMappingDto.MappingType.NOMIS_CREATED,
+                label = "2022-02-14T09:58:45",
+                whenCreated = "2020-01-01T11:10:00",
+              ),
+            ),
+        ),
+    )
+  }
+
+  fun stubGetFactorByNomisId(status: HttpStatus) =
+    stubGetErrorResponse(status = status, url = "/mapping/csip/factors/nomis-csip-factor-id/.*")
+
+  fun stubDeleteFactorMapping(dpsCSIPFactorId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
+    mappingApi.stubFor(
+      delete(urlEqualTo("/mapping/csip/factors/dps-csip-factor-id/$dpsCSIPFactorId"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NO_CONTENT.value()),
+        ),
+    )
+  }
+
+  fun stubGetErrorResponse(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value()), url: String) {
+    mappingApi.stubFor(
+      get(urlPathMatching(url))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody(objectMapper.writeValueAsString(error)),
+        ),
+    )
+  }
+  fun ResponseDefinitionBuilder.withBody(body: Any): ResponseDefinitionBuilder =
+    this.withBody(objectMapper.writeValueAsString(body))
 
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)

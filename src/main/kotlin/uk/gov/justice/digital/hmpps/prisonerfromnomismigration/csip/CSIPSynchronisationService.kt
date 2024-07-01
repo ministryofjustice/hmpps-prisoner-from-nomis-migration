@@ -37,8 +37,8 @@ class CSIPSynchronisationService(
     }
 
     val nomisCSIP = nomisApiService.getCSIP(event.csipReportId)
-    mappingApiService.findByNomisId(
-      nomisCSIPId = event.csipReportId,
+    mappingApiService.findCSIPReportByNomisId(
+      nomisCSIPReportId = event.csipReportId,
     )?.let {
       telemetryClient.trackEvent(
         "csip-synchronisation-created-ignored",
@@ -69,7 +69,7 @@ class CSIPSynchronisationService(
       return
     }
 
-    mappingApiService.findByNomisId(nomisCSIPId = event.csipReportId)
+    mappingApiService.findCSIPReportByNomisId(nomisCSIPReportId = event.csipReportId)
       ?.let {
         log.debug("Found csip mapping: {}", it)
         csipService.deleteCSIP(it.dpsCSIPId)
@@ -88,7 +88,7 @@ class CSIPSynchronisationService(
 
   suspend fun csipSaferCustodyScreeningInserted(event: CSIPReportEvent) {
     val nomisCSIP = nomisApiService.getCSIP(event.csipReportId)
-    mappingApiService.findByNomisId(nomisCSIPId = event.csipReportId)?.let {
+    mappingApiService.findCSIPReportByNomisId(nomisCSIPReportId = event.csipReportId)?.let {
       csipService.createCSIPSaferCustodyScreening(
         it.dpsCSIPId,
         nomisCSIP.saferCustodyScreening.toDPSCreateCSIPSCS(),
@@ -162,7 +162,7 @@ class CSIPSynchronisationService(
   }
 
   private suspend fun tryToDeleteCSIPReportMapping(dpsCSIPId: String) = runCatching {
-    mappingApiService.deleteMappingByDPSId(dpsCSIPId)
+    mappingApiService.deleteCSIPReportMappingByDPSId(dpsCSIPId)
   }.onFailure { e ->
     telemetryClient.trackEvent("csip-mapping-deleted-failed", mapOf("dpsCSIPId" to dpsCSIPId))
     log.warn("Unable to delete mapping for csip report $dpsCSIPId. Please delete manually", e)
