@@ -27,6 +27,10 @@ fun CSIPResponse.toDPSMigrateCSIP() =
       descriptionOfConcern = reportDetails.concern,
       knownReasons = reportDetails.knownReasons,
       contributoryFactors = listOf(),
+      otherInformation = reportDetails.otherInformation,
+      referralSummary = null,
+      isSaferCustodyTeamInformed = false,
+      isReferralComplete = true,
     ),
   )
 
@@ -40,7 +44,6 @@ fun CSIPResponse.toDPSCreateCSIP() =
       incidentLocationCode = location.code,
       referredBy = reportedBy,
       refererAreaCode = areaOfWork.code,
-
       isProactiveReferral = proActiveReferral,
       isStaffAssaulted = staffAssaulted,
       assaultedStaffName = staffAssaultedName,
