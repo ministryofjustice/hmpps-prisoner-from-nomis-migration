@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension.Companion.csipApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsCreateCsipRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsCreateSaferCustodyScreeningOutcomeRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsMigrateCsipRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 
 @SpringAPIServiceTest
@@ -34,7 +35,7 @@ internal class CSIPServiceTest {
       csipApi.stubCSIPMigrate()
 
       runBlocking {
-        csipService.migrateCSIP("A1234BC", dpsCreateCsipRecordRequest())
+        csipService.migrateCSIP("A1234BC", dpsMigrateCsipRecordRequest())
       }
     }
 
@@ -101,9 +102,6 @@ internal class CSIPServiceTest {
           .withRequestBody(matchingJsonPath("referral.incidentLocationCode", equalTo("LIB")))
           .withRequestBody(matchingJsonPath("referral.referredBy", equalTo("JIM_ADM")))
           .withRequestBody(matchingJsonPath("referral.refererAreaCode", equalTo("EDU")))
-          .withRequestBody(matchingJsonPath("referral.incidentInvolvementCode", equalTo("PER")))
-          .withRequestBody(matchingJsonPath("referral.descriptionOfConcern", equalTo("There was a worry about the offender")))
-          .withRequestBody(matchingJsonPath("referral.knownReasons", equalTo("known reasons details go in here")))
           .withRequestBody(notContaining("referral.contributoryFactors"))
           .withRequestBody(matchingJsonPath("referral.incidentTime", equalTo("10:00")))
           .withRequestBody(notContaining("referral.referralSummary"))

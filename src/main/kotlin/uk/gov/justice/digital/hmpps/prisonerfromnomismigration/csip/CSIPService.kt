@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateContributoryFactorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateCsipRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateSaferCustodyScreeningOutcomeRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CsipRecord
@@ -39,6 +40,14 @@ class CSIPService(@Qualifier("csipApiWebClient") private val webClient: WebClien
       .uri("/csip-records/{cspReportId}/referral/safer-custody-screening", csipReportId)
       .header("Username", createdByUsername)
       .bodyValue(csipSCS)
+      .retrieve()
+      .awaitBody()
+
+  suspend fun createCSIPFactor(csipReportId: String, csipFactor: CreateContributoryFactorRequest, createdByUsername: String): SaferCustodyScreeningOutcome =
+    webClient.post()
+      .uri("/csip-records/{cspReportId}/referral/contributory-factors", csipReportId)
+      .header("Username", createdByUsername)
+      .bodyValue(csipFactor)
       .retrieve()
       .awaitBody()
 }

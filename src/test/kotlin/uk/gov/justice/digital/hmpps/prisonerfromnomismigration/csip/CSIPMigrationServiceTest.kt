@@ -773,10 +773,10 @@ internal class CSIPMigrationServiceTest {
         val (firstPage, secondPage, thirdPage) = allContexts
         val lastPage = allContexts.last()
 
-        assertThat(firstPage.body.id).isEqualTo(1000)
-        assertThat(secondPage.body.id).isEqualTo(1001)
-        assertThat(thirdPage.body.id).isEqualTo(1002)
-        assertThat(lastPage.body.id).isEqualTo(1014)
+        assertThat(firstPage.body.csipId).isEqualTo(1000)
+        assertThat(secondPage.body.csipId).isEqualTo(1001)
+        assertThat(thirdPage.body.csipId).isEqualTo(1002)
+        assertThat(lastPage.body.csipId).isEqualTo(1014)
       }
 
     @Test
@@ -818,7 +818,7 @@ internal class CSIPMigrationServiceTest {
     internal fun setUp(): Unit = runTest {
       whenever(csipMappingService.findCSIPReportByNomisId(any())).thenReturn(null)
       whenever(nomisApiService.getCSIP(any())).thenReturn(nomisCSIPReport())
-      whenever(csipService.migrateCSIP(any(), any())).thenReturn(CSIPApiMockServer.dpsCSIPReport())
+      whenever(csipService.migrateCSIP(any(), any())).thenReturn(dpsCSIPReport())
       whenever(csipMappingService.createMapping(any(), any())).thenReturn(CreateMappingResult())
     }
 
