@@ -2,20 +2,21 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
-import com.github.tomakehurst.wiremock.client.WireMock
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Actions
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPFactorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Decision
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FactorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.InvestigationDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Offender
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Plan
@@ -46,15 +47,7 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
         staffAssaulted = true,
         staffAssaultedName = "Fred Jones",
         reportDetails = ReportDetails(
-          factors = listOf(
-            FactorResponse(
-              id = 43,
-              type = CodeDescription(code = "BUL", description = "Bullying"),
-              comment = "Offender causes trouble",
-              createDateTime = "2024-04-01T10:00:00",
-              createdBy = "JSMITH",
-            ),
-          ),
+          factors = listOf(nomisCSIPFactor()),
           saferCustodyTeamInformed = false,
           referralComplete = true,
           referralCompletedBy = "JIM_ADM",
@@ -128,7 +121,17 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
         planReason = "helper",
         firstCaseReviewDate = LocalDate.parse("2024-04-15"),
       )
+
+    fun nomisCSIPFactor(nomisCSIPFactorId: Long = 43) =
+      CSIPFactorResponse(
+        id = nomisCSIPFactorId,
+        type = CodeDescription(code = "BUL", description = "Bullying"),
+        comment = "Offender causes trouble",
+        createDateTime = "2024-04-01T10:00:00",
+        createdBy = "JSMITH",
+      )
   }
+
   fun stubHealthPing(status: Int) {
     nomisApi.stubFor(
       get("/health/ping").willReturn(
@@ -138,7 +141,7 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubGetCSIPIds(totalElements: Long = 20, pageSize: Long = 20) {
+  fun stubGetPagedCSIPIds(totalElements: Long = 20, pageSize: Long = 20) {
     // for each page create a response for each csip id starting from 1 up to `totalElements`
 
     val pages = (totalElements / pageSize) + 1
@@ -173,9 +176,7 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
         )
           .willReturn(
             aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-              .withBody(
-                objectMapper.writeValueAsString(nomisCSIPReport(it.toLong())),
-              ),
+              .withBody(nomisCSIPReport(it.toLong())),
           ),
       )
     }
@@ -186,21 +187,40 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
       get(urlPathEqualTo("/csip/$nomisCSIPId"))
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(
-              objectMapper.writeValueAsString(nomisCSIPReport(nomisCSIPId)),
-            ),
+            .withBody(nomisCSIPReport(nomisCSIPId)),
         ),
     )
   }
 
   fun stubGetCSIP(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     nomisApi.stubFor(
-      get(WireMock.urlPathMatching("/csip/[0-9]+"))
+      get(urlPathMatching("/csip/[0-9]+"))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(status.value())
-            .withBody(objectMapper.writeValueAsString(error)),
+            .withBody(error),
+        ),
+    )
+  }
+
+  fun stubGetCSIPFactor(nomisCSIPFactorId: Long = 43) {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/csip/factors/$nomisCSIPFactorId"))
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+            .withBody(nomisCSIPFactor(nomisCSIPFactorId)),
+        ),
+    )
+  }
+  fun stubGetCSIPFactor(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    nomisApi.stubFor(
+      get(urlPathMatching("/csip/factors/[0-9]+"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody(error),
         ),
     )
   }
@@ -210,6 +230,9 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
   fun verify(countMatchingStrategy: CountMatchingStrategy, requestPatternBuilder: RequestPatternBuilder) = nomisApi.verify(countMatchingStrategy, requestPatternBuilder)
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
+
+  fun ResponseDefinitionBuilder.withBody(body: Any): ResponseDefinitionBuilder =
+    this.withBody(objectMapper.writeValueAsString(body))
 }
 
 fun csipIdsPagedResponse(
@@ -218,6 +241,6 @@ fun csipIdsPagedResponse(
   pageSize: Long = 10,
   pageNumber: Long = 0,
 ): String {
-  val content = ids.map { """{ "id": $it }""" }.joinToString { it }
+  val content = ids.map { """{ "csipId": $it }""" }.joinToString { it }
   return pageContent(content, pageSize, pageNumber, totalElements, ids.size)
 }

@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-06-26.8146.deb6705"
+    "version": "2024-07-02.8203.2ec758a"
   },
   "servers": [
     {
@@ -4688,6 +4688,70 @@
       }
     },
     "/prisoners/{offenderNo}/casenotes": {
+      "get": {
+        "tags": [
+          "case-notes-resource"
+        ],
+        "summary": "Gets all case notes for a prisoner",
+        "description": "Retrieves all case notes for a specific prisoner, for migration or reconciliation. Requires ROLE_NOMIS_CASENOTES",
+        "operationId": "getCaseNotesForPrisoner",
+        "parameters": [
+          {
+            "name": "offenderNo",
+            "in": "path",
+            "description": "Offender No AKA prisoner number",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Offender No AKA prisoner number",
+              "example": "A3745XD"
+            },
+            "example": "A3745XD"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Case notes Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrisonerCaseNotesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_CASENOTES",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Prisoner does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
           "case-notes-resource"
@@ -9072,6 +9136,14 @@
               "type": "string",
               "description": "CSIP id"
             }
+          },
+          {
+            "name": "includeDocumentIds",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -9202,6 +9274,127 @@
         }
       }
     },
+    "/csip/factors/{csipFactorId}": {
+      "get": {
+        "tags": [
+          "csip-factor-resource"
+        ],
+        "summary": "Get CSIP factor details",
+        "description": "Gets csip factor details. Requires role NOMIS_CSIP",
+        "operationId": "getCSIPFactor",
+        "parameters": [
+          {
+            "name": "csipFactorId",
+            "in": "path",
+            "description": "CSIP Factor id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "CSIP Factor id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CSIPFactorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires role NOMIS_CSIP",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "csip-factor-resource"
+        ],
+        "summary": "Deletes a csip factor",
+        "description": "Deletes a csip factor. Requires ROLE_NOMIS_CSIP",
+        "operationId": "deleteCSIPFactor",
+        "parameters": [
+          {
+            "name": "csipFactorId",
+            "in": "path",
+            "description": "CSIP Factor Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "CSIP Factor Id",
+              "example": 12345
+            },
+            "example": 12345
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Csip factor Deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_CSIP",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/csip/count": {
       "get": {
         "tags": [
@@ -9234,168 +9427,6 @@
           },
           "403": {
             "description": "Forbidden, requires role NOMIS_CSIP",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/bookings/{bookingId}/casenotes": {
-      "get": {
-        "tags": [
-          "case-notes-resource"
-        ],
-        "summary": "Gets all case notes for a booking",
-        "description": "Retrieves all case notes for a specific booking, for migration or reconciliation. Requires ROLE_NOMIS_CASENOTES",
-        "operationId": "getCaseNotes",
-        "parameters": [
-          {
-            "name": "bookingId",
-            "in": "path",
-            "description": "Booking id",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "Booking id",
-              "example": 12345678
-            },
-            "example": 12345678
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "CaseNotes Returned",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BookingCaseNotesResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized to access this endpoint",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_CASENOTES",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Prisoner does not exist or has no bookings",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/bookings/ids": {
-      "get": {
-        "tags": [
-          "case-notes-resource"
-        ],
-        "summary": "Gets all booking ids",
-        "description": "Retrieves all booking ids subject to filters, for migration or reconciliation. Requires ROLE_NOMIS_CASENOTES",
-        "operationId": "getBookings",
-        "parameters": [
-          {
-            "name": "fromId",
-            "in": "query",
-            "description": "Start or minimum booking id",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "description": "Start or minimum booking id",
-              "example": 12345678
-            },
-            "example": 12345678
-          },
-          {
-            "name": "toId",
-            "in": "query",
-            "description": "End or maximum booking id",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "description": "End or maximum booking id",
-              "example": 98765432
-            },
-            "example": 98765432
-          },
-          {
-            "name": "activeOnly",
-            "in": "query",
-            "description": "If true return only bookings currently in prison",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "If true return only bookings currently in prison"
-            }
-          },
-          {
-            "name": "pageable",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/Pageable"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "CaseNotes Returned",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Page"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized to access this endpoint",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_CASENOTES",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Prisoner does not exist or has no bookings",
             "content": {
               "application/json": {
                 "schema": {
@@ -10896,6 +10927,55 @@
           },
           "403": {
             "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_ADJUDICATIONS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/csip/{csipId}": {
+      "delete": {
+        "tags": [
+          "csip-resource"
+        ],
+        "summary": "Deletes a csip report",
+        "description": "Deletes a csip report. Requires ROLE_NOMIS_CSIP",
+        "operationId": "deleteCSIP",
+        "parameters": [
+          {
+            "name": "csipId",
+            "in": "path",
+            "description": "CSIP Factor Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "CSIP Factor Id",
+              "example": 12345
+            },
+            "example": 12345
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Csip report Deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_CSIP",
             "content": {
               "application/json": {
                 "schema": {
@@ -16389,6 +16469,21 @@
         },
         "description": "Details of a prisoner merge"
       },
+      "PrisonerCaseNotesResponse": {
+        "required": [
+          "caseNotes"
+        ],
+        "type": "object",
+        "properties": {
+          "caseNotes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaseNoteResponse"
+            }
+          }
+        },
+        "description": "The list of case notes held against a booking"
+      },
       "PreviousBookingId": {
         "required": [
           "bookingId",
@@ -18296,6 +18391,50 @@
         },
         "description": "Summary details"
       },
+      "CSIPFactorResponse": {
+        "required": [
+          "createDateTime",
+          "createdBy",
+          "id",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Factor type id",
+            "format": "int64"
+          },
+          "type": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "comment": {
+            "type": "string",
+            "description": "Factor comment"
+          },
+          "createDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The date and time the report was created",
+            "example": "2021-07-05T10:35:17"
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "The username of the person who created the report"
+          },
+          "lastModifiedDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The date and time the report was last updated",
+            "example": "2021-07-05T10:35:17"
+          },
+          "lastModifiedBy": {
+            "type": "string",
+            "description": "The username of the person who last updated the report"
+          }
+        },
+        "description": "Contributory factors"
+      },
       "CSIPResponse": {
         "required": [
           "areaOfWork",
@@ -18303,7 +18442,6 @@
           "createDateTime",
           "createdBy",
           "decision",
-          "documents",
           "id",
           "investigation",
           "location",
@@ -18311,6 +18449,7 @@
           "plans",
           "proActiveReferral",
           "reportDetails",
+          "reportedBy",
           "reportedDate",
           "reviews",
           "saferCustodyScreening",
@@ -18483,50 +18622,6 @@
           }
         },
         "description": "DecisionAndActions"
-      },
-      "FactorResponse": {
-        "required": [
-          "createDateTime",
-          "createdBy",
-          "id",
-          "type"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "description": "Factor type id",
-            "format": "int64"
-          },
-          "type": {
-            "$ref": "#/components/schemas/CodeDescription"
-          },
-          "comment": {
-            "type": "string",
-            "description": "Factor comment"
-          },
-          "createDateTime": {
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
-            "type": "string",
-            "description": "The date and time the report was created",
-            "example": "2021-07-05T10:35:17"
-          },
-          "createdBy": {
-            "type": "string",
-            "description": "The username of the person who created the report"
-          },
-          "lastModifiedDateTime": {
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
-            "type": "string",
-            "description": "The date and time the report was last updated",
-            "example": "2021-07-05T10:35:17"
-          },
-          "lastModifiedBy": {
-            "type": "string",
-            "description": "The username of the person who last updated the report"
-          }
-        },
-        "description": "Contributory factors"
       },
       "InterviewDetails": {
         "required": [
@@ -18709,7 +18804,7 @@
             "type": "array",
             "description": "Contributory factors",
             "items": {
-              "$ref": "#/components/schemas/FactorResponse"
+              "$ref": "#/components/schemas/CSIPFactorResponse"
             }
           },
           "knownReasons": {
@@ -18853,11 +18948,11 @@
       },
       "CSIPIdResponse": {
         "required": [
-          "id"
+          "csipId"
         ],
         "type": "object",
         "properties": {
-          "id": {
+          "csipId": {
             "type": "integer",
             "description": "The csip id",
             "format": "int64"
@@ -18890,70 +18985,6 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CSIPIdResponse"
-            }
-          },
-          "number": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "sort": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SortObject"
-            }
-          },
-          "numberOfElements": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "empty": {
-            "type": "boolean"
-          }
-        }
-      },
-      "BookingCaseNotesResponse": {
-        "required": [
-          "caseNotes"
-        ],
-        "type": "object",
-        "properties": {
-          "caseNotes": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CaseNoteResponse"
-            }
-          }
-        },
-        "description": "The list of case notes held against a booking"
-      },
-      "Page": {
-        "type": "object",
-        "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
-          },
-          "size": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "content": {
-            "type": "array",
-            "items": {
-              "type": "object"
             }
           },
           "number": {

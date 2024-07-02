@@ -5,6 +5,8 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.awaitBody
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPFactorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RestResponsePage
@@ -18,8 +20,13 @@ class CSIPNomisApiService(@Qualifier("nomisApiWebClient") private val webClient:
     webClient.get()
       .uri("/csip/{csipId}", csipId)
       .retrieve()
-      .bodyToMono(CSIPResponse::class.java)
-      .awaitSingle()
+      .awaitBody()
+
+  suspend fun getCSIPFactor(csipFactorId: Long): CSIPFactorResponse =
+    webClient.get()
+      .uri("/csip/factors/{csipFactorId}", csipFactorId)
+      .retrieve()
+      .awaitBody()
 
   suspend fun getCSIPIds(
     fromDate: LocalDate?,

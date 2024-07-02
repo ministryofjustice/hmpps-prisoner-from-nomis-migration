@@ -64,7 +64,7 @@ class CSIPMigrationService(
 
   override suspend fun migrateNomisEntity(context: MigrationContext<CSIPIdResponse>) {
     log.info("attempting to migrate $this")
-    val nomisCSIPId = context.body.id
+    val nomisCSIPId = context.body.csipId
     val migrationId = context.migrationId
 
     csipMappingService.findCSIPReportByNomisId(nomisCSIPId)
@@ -73,7 +73,7 @@ class CSIPMigrationService(
       }
       ?: run {
         val nomisCSIPResponse = nomisApiService.getCSIP(nomisCSIPId)
-        val migratedCSIP = csipService.migrateCSIP(nomisCSIPResponse.offender.offenderNo, nomisCSIPResponse.toDPSCreateCSIP())
+        val migratedCSIP = csipService.migrateCSIP(nomisCSIPResponse.offender.offenderNo, nomisCSIPResponse.toDPSMigrateCSIP())
           .also {
             createCSIPMapping(
               nomisCSIPId = nomisCSIPId,

@@ -105,7 +105,7 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     internal fun `will start processing pages of CSIP`() {
       csipNomisApi.stubGetInitialCount(CSIP_ID_URL, 86) { csipIdsPagedResponse(it) }
-      csipNomisApi.stubGetCSIPIds(totalElements = 86, pageSize = 10)
+      csipNomisApi.stubGetPagedCSIPIds(totalElements = 86, pageSize = 10)
       csipNomisApi.stubMultipleGetCSIP(1..86)
 
       csipMappingApi.stubGetByNomisId(status = HttpStatus.NOT_FOUND)
@@ -139,7 +139,7 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     internal fun `will add analytical events for starting, ending and each migrated record`() {
       csipNomisApi.stubGetInitialCount(CSIP_ID_URL, 26) { csipIdsPagedResponse(it) }
-      csipNomisApi.stubGetCSIPIds(totalElements = 26, pageSize = 10)
+      csipNomisApi.stubGetPagedCSIPIds(totalElements = 26, pageSize = 10)
       csipNomisApi.stubMultipleGetCSIP(1..26)
       csipApi.stubCSIPMigrate()
       csipMappingApi.stubGetByNomisId(status = HttpStatus.NOT_FOUND)
@@ -178,7 +178,7 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     internal fun `will retry to create a mapping, and only the mapping, if it fails first time`() {
       csipNomisApi.stubGetInitialCount(CSIP_ID_URL, 1) { csipIdsPagedResponse(it) }
-      csipNomisApi.stubGetCSIPIds(totalElements = 1, pageSize = 10)
+      csipNomisApi.stubGetPagedCSIPIds(totalElements = 1, pageSize = 10)
       csipNomisApi.stubMultipleGetCSIP(1..1)
       csipMappingApi.stubGetByNomisId(status = HttpStatus.NOT_FOUND)
       csipMappingApi.stubCSIPMappingByMigrationId()
@@ -199,7 +199,7 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
       val duplicateDPSCSIPId = "ddd596da-8eab-4d2a-a026-bc5afb8acda0"
 
       csipNomisApi.stubGetInitialCount(CSIP_ID_URL, 1) { csipIdsPagedResponse(it) }
-      csipNomisApi.stubGetCSIPIds(totalElements = 1, pageSize = 10)
+      csipNomisApi.stubGetPagedCSIPIds(totalElements = 1, pageSize = 10)
       csipNomisApi.stubMultipleGetCSIP(1..1)
       csipMappingApi.stubGetByNomisId(status = HttpStatus.NOT_FOUND)
       csipMappingApi.stubCSIPMappingByMigrationId()
@@ -597,7 +597,7 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
     internal fun `will terminate a running migration`() {
       val count = 30L
       csipNomisApi.stubGetInitialCount(CSIP_ID_URL, count) { csipIdsPagedResponse(it) }
-      csipNomisApi.stubGetCSIPIds(totalElements = count, pageSize = 10)
+      csipNomisApi.stubGetPagedCSIPIds(totalElements = count, pageSize = 10)
       csipMappingApi.stubCSIPMappingByMigrationId(count = count.toInt())
 
       val migrationId = webTestClient.post().uri("/migrate/csip")
