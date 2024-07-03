@@ -169,39 +169,6 @@ class CSIPSynchronisationService(
       }
   }
 
-  suspend fun csipReviewAttendeeInserted(event: CSIPReportEvent) {
-    // Avoid duplicate sync if originated from DPS
-    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
-      telemetryClient.trackEvent(
-        "csip-scs-attendee-synchronisation-skipped",
-        event.toTelemetryProperties(),
-      )
-      return
-    }
-    val nomisCSIP = nomisApiService.getCSIP(event.csipReportId)
-    mappingApiService.findCSIPReportByNomisId(nomisCSIPReportId = event.csipReportId)
-      ?.let {
-        csipService.createCSIPSaferCustodyScreening(
-          it.dpsCSIPId,
-          nomisCSIP.saferCustodyScreening.toDPSCreateCSIPSCS(),
-          nomisCSIP.saferCustodyScreening.recordedBy!!,
-        )
-        telemetryClient.trackEvent(
-          "csip-scs-synchronisation-created-success",
-          event.toTelemetryProperties(it.dpsCSIPId),
-        )
-      } ?: let {
-      // The CSIP Report should exist already - if not, then the ordering of events may be incorrect - put back on queue
-      telemetryClient.trackEvent("csip-scs-synchronisation-created-failed", event.toTelemetryProperties())
-      throw IllegalStateException("Received CSIP_REPORTS_UPDATED for Safer Custody Screening that has never been created/mapped")
-      // TODO
-      /*
-      Do you mean put it back on the 'normal' queue? And if this can happen routinely, you might want to consider lengthening the time before a retry is attempted
-      (like I did for locations in the to-nomis repo)
-       */
-    }
-  }
-
   private suspend fun tryToCreateCSIPReportMapping(
     event: CSIPReportEvent,
     dpsCSIPId: String,
