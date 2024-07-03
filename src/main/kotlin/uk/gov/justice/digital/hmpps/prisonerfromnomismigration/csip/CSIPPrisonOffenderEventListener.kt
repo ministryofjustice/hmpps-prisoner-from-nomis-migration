@@ -51,7 +51,7 @@ class CSIPPrisonOffenderEventListener(
               "CSIP_ATTENDEES-INSERTED" -> log.debug("Insert CSIP Attendee")
               "CSIP_ATTENDEES-UPDATED" -> log.debug("Update CSIP Attendee")
               "CSIP_ATTENDEES-DELETED" -> log.debug("Delete CSIP Attendee")
-              "CSIP_FACTORS-INSERTED" -> log.debug("Insert CSIP Factor")
+              "CSIP_FACTORS-INSERTED" -> csipSynchronisationService.csipFactorInserted(sqsMessage.Message.fromJson())
               "CSIP_FACTORS-UPDATED" -> log.debug("Update CSIP Factor")
               "CSIP_FACTORS-DELETED" -> log.debug("Delete CSIP Factor")
               "CSIP_INTVW-INSERTED" -> log.debug("Insert CSIP Interview")
@@ -76,7 +76,12 @@ class CSIPPrisonOffenderEventListener(
 
   private suspend fun csipReportUpdated(event: CSIPReportEvent) {
     when (event.auditModuleName) {
+      "OIDCSIPN" -> log.debug("Update CSIP Report - referral")
+      "OIDCSIPC" -> log.debug("Update CSIP Report - referral continued")
       "OIDCSIPS" -> csipSynchronisationService.csipSaferCustodyScreeningInserted(event)
+      "OIDCSIPD" -> log.debug("Update CSIP Report - decisions and actions")
+      "OIDCSIPP" -> log.debug("Update CSIP Report - plan")
+      "OIDCSIPR" -> log.debug("Update CSIP Report - review")
       "DPS_SYNCHRONISATION" -> log.debug("TODO Ensure ignored")
       else -> log.debug("Update CSIP Report")
     }
@@ -88,6 +93,12 @@ class CSIPPrisonOffenderEventListener(
 
 // Depending on the type of update/delete there will be additional params - but we don't care
 data class CSIPReportEvent(
+  val csipReportId: Long,
+  val offenderIdDisplay: String,
+  val auditModuleName: String?,
+)
+data class CSIPFactorEvent(
+  val csipFactorId: Long,
   val csipReportId: Long,
   val offenderIdDisplay: String,
   val auditModuleName: String?,

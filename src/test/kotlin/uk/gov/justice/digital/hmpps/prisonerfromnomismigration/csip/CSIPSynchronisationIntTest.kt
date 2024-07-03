@@ -201,7 +201,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(csipApi.createCSIPSyncCount()).isEqualTo(1)
 
           // doesn't retry
-          csipMappingApi.verifyCreateMappingCSIPId(dpsCSIPId = duplicateDPSCSIPId)
+          csipMappingApi.verifyCreateCSIPReportMapping(dpsCSIPId = duplicateDPSCSIPId)
 
           await untilAsserted {
             verify(telemetryClient).trackEvent(
@@ -488,7 +488,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPId)
-          csipApi.stubCSIPInsertSCS(dpsCSIPId = dpsCSIPId)
+          csipApi.stubCSIPSCSInsert(dpsCSIPId = dpsCSIPId)
         }
 
         @Test

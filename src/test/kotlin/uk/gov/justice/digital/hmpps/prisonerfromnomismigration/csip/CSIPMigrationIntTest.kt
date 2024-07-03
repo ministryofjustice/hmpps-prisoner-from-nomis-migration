@@ -191,7 +191,7 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
       assertThat(csipApi.createCSIPMigrationCount()).isEqualTo(1)
 
       // should retry to create mapping twice
-      csipMappingApi.verifyCreateMappingCSIPId(DPS_CSIP_ID, times = 2)
+      csipMappingApi.verifyCreateCSIPReportMapping(DPS_CSIP_ID, times = 2)
     }
 
     @Test
@@ -211,7 +211,7 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
       assertThat(csipApi.createCSIPMigrationCount()).isEqualTo(1)
 
       // doesn't retry
-      csipMappingApi.verifyCreateMappingCSIPId(duplicateDPSCSIPId)
+      csipMappingApi.verifyCreateCSIPReportMapping(duplicateDPSCSIPId)
 
       verify(telemetryClient).trackEvent(
         eq("csip-nomis-migration-duplicate"),

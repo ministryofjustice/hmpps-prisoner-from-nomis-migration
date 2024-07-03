@@ -18,6 +18,8 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.CREATED
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension.Companion.objectMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ContributoryFactor
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateContributoryFactorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateCsipRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateSaferCustodyScreeningOutcomeRequest
@@ -171,6 +173,27 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
         date = LocalDate.parse("2024-04-08"),
         reasonForDecision = "There is a reason for the decision - it goes here",
       )
+
+    fun dpsCreateContributoryFactorRequest() =
+      CreateContributoryFactorRequest(
+        factorTypeCode = "BUL",
+        comment = "Offender causes trouble",
+      )
+
+    fun dpsCSIPFactor(dpsCsipFactorId: String) =
+      ContributoryFactor(
+        factorUuid = UUID.fromString(dpsCsipFactorId),
+        factorType = ReferenceData(
+          code = "BUL",
+          description = "Bullying",
+          createdAt = LocalDateTime.parse("2024-03-29T11:32:16"),
+          createdBy = "JIM_ADM",
+        ),
+        createdAt = LocalDateTime.parse("2024-03-29T11:32:16"),
+        createdBy = "JIM_ADM",
+        createdByDisplayName = "Jim Admin",
+        comment = "Offender causes trouble",
+      )
   }
 
   fun stubHealthPing(status: Int) {
@@ -226,7 +249,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubCSIPInsertSCS(dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
+  fun stubCSIPSCSInsert(dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
     stubFor(
       post("/csip-records/$dpsCSIPId/referral/safer-custody-screening").willReturn(
         aResponse()
@@ -237,11 +260,25 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubCSIPFactorInsert(dpsCsipReportId: String, dpsCsipFactorId: String) {
+    stubFor(
+      post("/csip-records/$dpsCsipReportId/referral/contributory-factors").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(CREATED.value())
+          .withBody(dpsCSIPFactor(dpsCsipFactorId)),
+      ),
+    )
+  }
+
   fun createCSIPMigrationCount() =
     findAll(postRequestedFor(urlMatching("/migrate/prisoners/.*"))).count()
 
   fun createCSIPSyncCount() =
     findAll(postRequestedFor(urlMatching("/prisoners/.*"))).count()
+
+  fun createCSIPFactorSyncCount() =
+    findAll(postRequestedFor(urlMatching("/csip-records/.*/referral/contributory-factors"))).count()
 
   fun ResponseDefinitionBuilder.withBody(body: Any): ResponseDefinitionBuilder =
     this.withBody(objectMapper.writeValueAsString(body))
