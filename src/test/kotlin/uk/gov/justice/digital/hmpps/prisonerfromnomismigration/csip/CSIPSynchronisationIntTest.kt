@@ -66,7 +66,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `the event is ignored`() {
         await untilAsserted {
           verify(telemetryClient).trackEvent(
-            eq("csip-synchronisation-skipped"),
+            eq("csip-synchronisation-created-skipped"),
             check {
               assertThat(it["nomisCSIPId"]).isEqualTo("$NOMIS_CSIP_ID")
               assertThat(it["dpsCSIPId"]).isNull()
@@ -258,8 +258,38 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
   @Nested
   inner class CSIPDeleted {
     @Nested
-    @DisplayName("When csip was deleted in either NOMIS or DPS")
-    inner class DeletedInEitherNOMISOrDPS {
+    @DisplayName("When csip was deleted in DPS")
+    inner class WhenDeletedInDPS {
+
+      @BeforeEach
+      fun setUp() {
+        awsSqsCSIPOffenderEventsClient.sendMessage(
+          csipQueueOffenderEventsUrl,
+          csipEvent(eventType = "CSIP_REPORTS-DELETED", auditModuleName = "DPS_SYNCHRONISATION"),
+        )
+      }
+
+      @Test
+      fun `the event is ignored`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            eq("csip-synchronisation-deleted-skipped"),
+            check {
+              assertThat(it["nomisCSIPId"]).isEqualTo("$NOMIS_CSIP_ID")
+              assertThat(it["dpsCSIPId"]).isNull()
+            },
+            isNull(),
+          )
+        }
+        csipNomisApi.verify(exactly(0), getRequestedFor(anyUrl()))
+        csipMappingApi.verify(exactly(0), getRequestedFor(anyUrl()))
+        csipApi.verify(exactly(0), anyRequestedFor(anyUrl()))
+      }
+    }
+
+    @Nested
+    @DisplayName("When csip was deleted in NOMIS")
+    inner class WhenDeletedInNOMIS {
 
       @Nested
       @DisplayName("When mapping doesn't exist")
@@ -297,7 +327,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
           csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPId)
 
           csipApi.stubCSIPDelete(dpsCSIPId = dpsCSIPId)
-          csipMappingApi.stubDeleteMapping(dpsCSIPId = dpsCSIPId)
+          csipMappingApi.stubDeleteCSIPReportMapping(dpsCSIPId = dpsCSIPId)
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
             csipEvent(eventType = "CSIP_REPORTS-DELETED"),
@@ -348,7 +378,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         fun setUp() {
           csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPId)
           csipApi.stubCSIPDelete(dpsCSIPId = dpsCSIPId)
-          csipMappingApi.stubDeleteMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
+          csipMappingApi.stubDeleteCSIPReportMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
             csipEvent(eventType = "CSIP_REPORTS-DELETED"),
@@ -416,7 +446,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
       /*
       await untilAsserted {
         verify(telemetryClient).trackEvent(
-          eq("csip-synchronisation-skipped"),
+          eq("csip-synchronisation-updated-skipped"),
           check {
             assertThat(it["nomisCSIPId"]).isEqualTo("$NOMIS_CSIP_ID")
             assertThat(it["dpsCSIPId"]).isNull()

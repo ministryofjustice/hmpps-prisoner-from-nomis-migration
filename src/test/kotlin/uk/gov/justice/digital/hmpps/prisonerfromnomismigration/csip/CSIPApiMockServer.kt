@@ -240,7 +240,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubCSIPDeleteNotFound(status: HttpStatus = HttpStatus.NOT_FOUND) {
     stubFor(
-      delete(WireMock.urlPathMatching("/csip-records/.*"))
+      delete(WireMock.urlPathMatching("/csip-records/\\S+"))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -249,7 +249,8 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubCSIPSCSInsert(dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
+  // /////////////// CSIP Safer Custody Screening
+  fun stubCSIPSCSInsert(dpsCSIPId: String) {
     stubFor(
       post("/csip-records/$dpsCSIPId/referral/safer-custody-screening").willReturn(
         aResponse()
@@ -260,13 +261,37 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubCSIPFactorInsert(dpsCsipReportId: String, dpsCsipFactorId: String) {
+  // /////////////// CSIP Factor
+  fun stubCSIPFactorInsert(dpsCSIPReportId: String, dpsCSIPFactorId: String) {
     stubFor(
-      post("/csip-records/$dpsCsipReportId/referral/contributory-factors").willReturn(
+      post("/csip-records/$dpsCSIPReportId/referral/contributory-factors").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(CREATED.value())
-          .withBody(dpsCSIPFactor(dpsCsipFactorId)),
+          .withBody(dpsCSIPFactor(dpsCSIPFactorId)),
+      ),
+    )
+  }
+  fun stubCSIPFactorDelete(dpsCSIPFactorId: String) {
+    stubDelete("/csip-records/referral/contributory-factors/$dpsCSIPFactorId")
+  }
+
+  fun stubCSIPFactorDeleteNotFound(status: HttpStatus = HttpStatus.NOT_FOUND) {
+    stubFor(
+      delete(WireMock.urlPathMatching("/csip-records/referral/contributory-factors/\\S+"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value()),
+        ),
+    )
+  }
+
+  private fun stubDelete(url: String) {
+    stubFor(
+      delete(WireMock.urlPathMatching(url)).willReturn(
+        aResponse()
+          .withStatus(HttpStatus.NO_CONTENT.value()),
       ),
     )
   }
