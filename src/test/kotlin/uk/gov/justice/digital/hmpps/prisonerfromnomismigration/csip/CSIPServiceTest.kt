@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension.Companion.csipApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsCreateContributoryFactorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsCreateCsipRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsCreateSaferCustodyScreeningOutcomeRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsMigrateCsipRecordRequest
@@ -115,7 +116,7 @@ internal class CSIPServiceTest {
   }
 
   @Nested
-  @DisplayName("DELETE /csip-records/{cspReportId}")
+  @DisplayName("DELETE /csip-records/{dpsReportId}")
   inner class DeleteCSIP {
     private val dpsCSIPId = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5"
 
@@ -155,13 +156,13 @@ internal class CSIPServiceTest {
   }
 
   @Nested
-  @DisplayName("POST /csip-records/{cspReportId}/referral/safer-custody-screening")
+  @DisplayName("POST /csip-records/{dpsReportId}/referral/safer-custody-screening")
   inner class CreateCSIPSCS {
     private val dpsCSIPId = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e6"
 
     @BeforeEach
     internal fun setUp() {
-      csipApi.stubCSIPInsertSCS(dpsCSIPId = dpsCSIPId)
+      csipApi.stubCSIPSCSInsert(dpsCSIPId = dpsCSIPId)
 
       runBlocking {
         csipService.createCSIPSaferCustodyScreening(
@@ -188,6 +189,43 @@ internal class CSIPServiceTest {
           .withRequestBody(matchingJsonPath("date", equalTo("2024-04-08")))
           .withRequestBody(matchingJsonPath("reasonForDecision", equalTo("There is a reason for the decision - it goes here"))),
 
+      )
+    }
+  }
+
+  @Nested
+  @DisplayName("POST /csip-records/{dpsReportId}/referral/contributory-factors")
+  inner class CreateCSIPFactor {
+    private val dpsCSIPReportId = "3cafcfd5-1577-4130-8a5e-0c801e27c13f"
+    private val dpsCSIPFactorId = "a388c6db-2ccd-42e9-bf66-754d5a712909"
+
+    @BeforeEach
+    internal fun setUp() {
+      csipApi.stubCSIPFactorInsert(dpsCsipReportId = dpsCSIPReportId, dpsCsipFactorId = dpsCSIPFactorId)
+
+      runBlocking {
+        csipService.createCSIPFactor(
+          csipReportId = dpsCSIPReportId,
+          csipFactor = dpsCreateContributoryFactorRequest(),
+          "JIM_ADM",
+        )
+      }
+    }
+
+    @Test
+    fun `should call api with OAuth2 token`() {
+      csipApi.verify(
+        postRequestedFor(urlEqualTo("/csip-records/$dpsCSIPReportId/referral/contributory-factors"))
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will pass data to the api`() {
+      csipApi.verify(
+        postRequestedFor(urlEqualTo("/csip-records/$dpsCSIPReportId/referral/contributory-factors"))
+          .withRequestBody(matchingJsonPath("factorTypeCode", equalTo("BUL")))
+          .withRequestBody(matchingJsonPath("comment", equalTo("Offender causes trouble"))),
       )
     }
   }
