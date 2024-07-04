@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CSIP_SYNC_QUEUE_ID
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_CSIP_FACTOR_SYNCHRONISATION_MAPPING
 import java.util.concurrent.CompletableFuture
 
 @Service
@@ -69,6 +70,10 @@ class CSIPPrisonOffenderEventListener(
         }
 
         RETRY_SYNCHRONISATION_MAPPING.name -> csipSynchronisationService.retryCreateCSIPReportMapping(
+          sqsMessage.Message.fromJson(),
+        )
+
+        RETRY_CSIP_FACTOR_SYNCHRONISATION_MAPPING -> csipFactorSynchronisationService.retryCreateCSIPFactorMapping(
           sqsMessage.Message.fromJson(),
         )
       }

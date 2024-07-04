@@ -61,14 +61,6 @@ class CSIPSynchronisationService(
   }
 
   suspend fun csipReportDeleted(event: CSIPReportEvent) {
-    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
-      telemetryClient.trackEvent(
-        "csip-synchronisation-deleted-skipped",
-        event.toTelemetryProperties(),
-      )
-      return
-    }
-
     mappingApiService.findCSIPReportByNomisId(nomisCSIPReportId = event.csipReportId)
       ?.let {
         log.debug("Found csip mapping: {}", it)
