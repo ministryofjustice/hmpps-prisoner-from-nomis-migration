@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ContributoryFactor
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateContributoryFactorRequest
@@ -10,7 +11,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Create
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateSaferCustodyScreeningOutcomeRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CsipRecord
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SaferCustodyScreeningOutcome
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 
 @Service
 class CSIPService(@Qualifier("csipApiWebClient") private val webClient: WebClient) {
@@ -31,12 +31,13 @@ class CSIPService(@Qualifier("csipApiWebClient") private val webClient: WebClien
       .retrieve()
       .awaitBody()
 
-  suspend fun deleteCSIP(csipReportId: String) =
+  suspend fun deleteCSIP(csipReportId: String) {
     webClient.delete()
       .uri("/csip-records/{cspReportId}", csipReportId)
       .header("Source", "NOMIS")
       .retrieve()
-      .awaitBodyOrNullWhenNotFound<Unit>()
+      .awaitBodilessEntity()
+  }
 
   suspend fun createCSIPSaferCustodyScreening(csipReportId: String, csipSCS: CreateSaferCustodyScreeningOutcomeRequest, createdByUsername: String): SaferCustodyScreeningOutcome =
     webClient.post()
@@ -55,4 +56,13 @@ class CSIPService(@Qualifier("csipApiWebClient") private val webClient: WebClien
       .bodyValue(csipFactor)
       .retrieve()
       .awaitBody()
+
+  suspend fun deleteCSIPFactor(csipFactorId: String) {
+    webClient
+      .delete()
+      .uri("/csip-records/referral/contributory-factors/{csipFactorId}", csipFactorId)
+      .header("Source", "NOMIS")
+      .retrieve()
+      .awaitBodilessEntity()
+  }
 }
