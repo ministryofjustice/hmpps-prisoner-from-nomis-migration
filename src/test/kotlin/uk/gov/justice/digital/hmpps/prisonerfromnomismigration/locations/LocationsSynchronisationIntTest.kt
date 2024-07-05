@@ -50,16 +50,12 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
   @Nested
   inner class WhenCreateByDPS {
-    @BeforeEach
-    fun setUp() {
+    @Test
+    fun `the event is ignored`() {
       awsSqsLocationsOffenderEventsClient.sendMessage(
         locationsQueueOffenderEventsUrl,
         locationEvent(auditModuleName = "DPS_SYNCHRONISATION"),
       )
-    }
-
-    @Test
-    fun `the event is ignored`() {
       await untilAsserted {
         verify(telemetryClient).trackEvent(
           eq("locations-synchronisation-skipped"),
@@ -73,6 +69,27 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
       nomisApi.verify(exactly(0), getRequestedFor(anyUrl()))
       mappingApi.verify(exactly(0), getRequestedFor(anyUrl()))
       locationsApi.verify(exactly(0), anyRequestedFor(anyUrl()))
+    }
+
+    @Test
+    fun `the event is processed if it was the creation of a VSIP room`() {
+      awsSqsLocationsOffenderEventsClient.sendMessage(
+        locationsQueueOffenderEventsUrl,
+        locationEvent(auditModuleName = "DPS_SYNCHRONISATION", description = "BLI-VISITS-VSIP_SOC"),
+      )
+      await untilAsserted {
+        verify(telemetryClient).trackEvent(
+          eq("locations-synchronisation-skipped"),
+          check {
+            assertThat(it["nomisLocationId"]).isEqualTo("$NOMIS_LOCATION_ID")
+            assertThat(it["dpsLocationId"]).isNull()
+          },
+          isNull(),
+        )
+      }
+      nomisApi.verify(getRequestedFor(urlEqualTo(NOMIS_API_URL)))
+      mappingApi.verify(getRequestedFor(urlPathEqualTo(NOMIS_MAPPING_API_URL)))
+      locationsApi.verify(postRequestedFor(urlPathEqualTo("/sync/upsert")))
     }
   }
 
@@ -751,11 +768,12 @@ fun locationEvent(
   locationId: Long = NOMIS_LOCATION_ID,
   auditModuleName: String = "OIMILOCA",
   recordDeleted: Boolean = false,
+  description: String = "HMI-D-1-007",
 ) = """{
     "Type" : "Notification",
     "MessageId" : "be8e7273-0446-5590-8c7f-2f24e966322e",
     "TopicArn" : "arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-f221e27fcfcf78f6ab4f4c3cc165eee7",
-    "Message" : "{\"oldDescription\":\"HMI-D-1-007\",\"nomisEventType\":\"$eventType\",\"recordDeleted\":\"$recordDeleted\",\"eventDatetime\":\"2024-04-22T16:36:47.0000000Z\",\"prisonId\":\"HMI\",\"description\":\"HMI-D-1-007\",\"eventType\":\"$eventType\",\"auditModuleName\":\"$auditModuleName\",\"internalLocationId\":\"$locationId\"}",
+    "Message" : "{\"nomisEventType\":\"$eventType\",\"recordDeleted\":\"$recordDeleted\",\"eventDatetime\":\"2024-04-22T16:36:47.0000000Z\",\"prisonId\":\"HMI\",\"description\":\"$description\",\"eventType\":\"$eventType\",\"auditModuleName\":\"$auditModuleName\",\"internalLocationId\":\"$locationId\"}",
     "Timestamp" : "2023-08-17T09:39:44.790Z",
     "SignatureVersion" : "1",
     "Signature" : "dummy==",
