@@ -31,6 +31,7 @@ const val ALLOCATIONS_QUEUE_ID = "migrationallocations"
 const val INCIDENTS_QUEUE_ID = "migrationincidents"
 const val CSIP_QUEUE_ID = "migrationcsip"
 const val LOCATIONS_QUEUE_ID = "migrationlocations"
+const val CASENOTES_QUEUE_ID = "migrationcasenotes"
 const val ALERTS_QUEUE_ID = "migrationalerts"
 
 const val VISITS_SYNC_QUEUE_ID = "eventvisits"
@@ -39,6 +40,7 @@ const val COURT_SENTENCING_SYNC_QUEUE_ID = "eventcourtsentencing"
 const val INCIDENTS_SYNC_QUEUE_ID = "eventincidents"
 const val CSIP_SYNC_QUEUE_ID = "eventcsip"
 const val LOCATIONS_SYNC_QUEUE_ID = "eventlocations"
+const val CASENOTES_SYNC_QUEUE_ID = "eventcasenotes"
 const val ALERTS_SYNC_QUEUE_ID = "eventalerts"
 
 enum class MigrationType(val queueId: String, val telemetryName: String) {
@@ -51,6 +53,7 @@ enum class MigrationType(val queueId: String, val telemetryName: String) {
   INCIDENTS(INCIDENTS_QUEUE_ID, "incidents"),
   CSIP(CSIP_QUEUE_ID, "csip"),
   LOCATIONS(LOCATIONS_QUEUE_ID, "locations"),
+  CASENOTES(CASENOTES_QUEUE_ID, "casenotes"),
   ALERTS(ALERTS_QUEUE_ID, "alerts"),
 }
 
@@ -61,6 +64,7 @@ enum class SynchronisationType(val queueId: String) {
   CSIP(CSIP_SYNC_QUEUE_ID),
   ALERTS(ALERTS_SYNC_QUEUE_ID),
   LOCATIONS(LOCATIONS_SYNC_QUEUE_ID),
+  CASENOTES(CASENOTES_SYNC_QUEUE_ID),
   COURT_SENTENCING(COURT_SENTENCING_SYNC_QUEUE_ID),
 }
 

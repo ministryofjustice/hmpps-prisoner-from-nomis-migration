@@ -25,6 +25,7 @@ import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension
@@ -65,6 +66,7 @@ import java.util.concurrent.TimeUnit
   CSIPApiExtension::class,
   LocationsApiExtension::class,
   AlertsDpsApiExtension::class,
+  CaseNotesApiExtension::class,
   CourtSentencingDpsApiExtension::class,
   PrisonPersonDpsApiExtension::class,
 )

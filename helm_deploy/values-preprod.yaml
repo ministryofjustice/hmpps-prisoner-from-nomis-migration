@@ -19,6 +19,8 @@ generic-service:
     API_BASE_URL_ACTIVITIES: https://activities-api-preprod.prison.service.justice.gov.uk
     API_BASE_URL_INCIDENTS: https://incident-reporting-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_LOCATIONS: https://locations-inside-prison-api-preprod.hmpps.service.justice.gov.uk
+    # currently set to self for a mock API until real API is ready
+    API_BASE_URL_CASENOTES: https://prisoner-nomis-migration-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_ADJUDICATIONS: https://manage-adjudications-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_ALERTS: https://alerts-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_COURT_SENTENCING: https://remand-and-sentencing-api-preprod.hmpps.service.justice.gov.uk
@@ -100,6 +102,11 @@ generic-prometheus-alerts:
       - "syscon-devs-preprod-prisoner_from_nomis_locations_dl_queue"
       - "syscon-devs-preprod-migration_locations_queue"
       - "syscon-devs-preprod-migration_locations_dlq"
+    casenotes:
+      - "syscon-devs-preprod-prisoner_from_nomis_casenotes_queue"
+      - "syscon-devs-preprod-prisoner_from_nomis_casenotes_dl_queue"
+      - "syscon-devs-preprod-migration_casenotes_queue"
+      - "syscon-devs-preprod-migration_casenotes_dlq"
     alerts:
       - "syscon-devs-preprod-prisoner_from_nomis_alerts_queue"
       - "syscon-devs-preprod-prisoner_from_nomis_alerts_dl_queue"
