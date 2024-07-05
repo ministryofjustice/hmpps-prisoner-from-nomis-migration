@@ -11,6 +11,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Create
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateSaferCustodyScreeningOutcomeRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CsipRecord
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SaferCustodyScreeningOutcome
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateContributoryFactorRequest
 
 @Service
 class CSIPService(@Qualifier("csipApiWebClient") private val webClient: WebClient) {
@@ -57,9 +58,17 @@ class CSIPService(@Qualifier("csipApiWebClient") private val webClient: WebClien
       .retrieve()
       .awaitBody()
 
+  suspend fun updateCSIPFactor(csipFactorId: String, csipFactor: UpdateContributoryFactorRequest, updatedByUsername: String): ContributoryFactor =
+    webClient.patch()
+      .uri("/csip-records/referral/contributory-factors/{csipFactorId}", csipFactorId)
+      .bodyValue(csipFactor)
+      .header("Source", "NOMIS")
+      .header("Username", updatedByUsername)
+      .retrieve()
+      .awaitBody()
+
   suspend fun deleteCSIPFactor(csipFactorId: String) {
-    webClient
-      .delete()
+    webClient.delete()
       .uri("/csip-records/referral/contributory-factors/{csipFactorId}", csipFactorId)
       .header("Source", "NOMIS")
       .retrieve()

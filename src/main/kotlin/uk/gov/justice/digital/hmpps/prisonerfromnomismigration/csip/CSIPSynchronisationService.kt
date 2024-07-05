@@ -37,7 +37,7 @@ class CSIPSynchronisationService(
     }
 
     val nomisCSIP = nomisApiService.getCSIP(event.csipReportId)
-    mappingApiService.findCSIPReportByNomisId(
+    mappingApiService.getCSIPReportByNomisId(
       nomisCSIPReportId = event.csipReportId,
     )?.let {
       telemetryClient.trackEvent(
@@ -61,7 +61,7 @@ class CSIPSynchronisationService(
   }
 
   suspend fun csipReportDeleted(event: CSIPReportEvent) {
-    mappingApiService.findCSIPReportByNomisId(nomisCSIPReportId = event.csipReportId)
+    mappingApiService.getCSIPReportByNomisId(nomisCSIPReportId = event.csipReportId)
       ?.let {
         log.debug("Found csip mapping: {}", it)
         csipService.deleteCSIP(it.dpsCSIPId)
@@ -80,7 +80,7 @@ class CSIPSynchronisationService(
 
   suspend fun csipSaferCustodyScreeningInserted(event: CSIPReportEvent) {
     val nomisCSIP = nomisApiService.getCSIP(event.csipReportId)
-    mappingApiService.findCSIPReportByNomisId(nomisCSIPReportId = event.csipReportId)?.let {
+    mappingApiService.getCSIPReportByNomisId(nomisCSIPReportId = event.csipReportId)?.let {
       csipService.createCSIPSaferCustodyScreening(
         it.dpsCSIPId,
         nomisCSIP.saferCustodyScreening.toDPSCreateCSIPSCS(),

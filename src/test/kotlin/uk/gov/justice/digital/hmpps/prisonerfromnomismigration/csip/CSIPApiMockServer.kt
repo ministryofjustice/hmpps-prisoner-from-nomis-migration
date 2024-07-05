@@ -7,6 +7,7 @@ import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.patch
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
@@ -27,6 +28,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CsipRe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ReferenceData
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Referral
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SaferCustodyScreeningOutcome
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateContributoryFactorRequest
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -179,6 +181,11 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
         factorTypeCode = "BUL",
         comment = "Offender causes trouble",
       )
+    fun dpsUpdateContributoryFactorRequest() =
+      UpdateContributoryFactorRequest(
+        factorTypeCode = "BUL",
+        comment = "Offender causes trouble",
+      )
 
     fun dpsCSIPFactor(dpsCsipFactorId: String) =
       ContributoryFactor(
@@ -265,6 +272,16 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubCSIPFactorInsert(dpsCSIPReportId: String, dpsCSIPFactorId: String) {
     stubFor(
       post("/csip-records/$dpsCSIPReportId/referral/contributory-factors").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(CREATED.value())
+          .withBody(dpsCSIPFactor(dpsCSIPFactorId)),
+      ),
+    )
+  }
+  fun stubCSIPFactorUpdate(dpsCSIPFactorId: String) {
+    stubFor(
+      patch("/csip-records/referral/contributory-factors/$dpsCSIPFactorId").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(CREATED.value())

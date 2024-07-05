@@ -42,9 +42,9 @@ class CSIPFactorSynchronisationService(
 
     val nomisFactorResponse = nomisApiService.getCSIPFactor(event.csipFactorId)
     // Get the report mapping
-    mappingApiService.findCSIPReportByNomisId(nomisCSIPReportId = event.csipReportId)
+    mappingApiService.getCSIPReportByNomisId(nomisCSIPReportId = event.csipReportId)
       ?.let { reportMapping ->
-        mappingApiService.findCSIPFactorByNomisId(nomisCSIPFactorId = event.csipFactorId)
+        mappingApiService.getCSIPFactorByNomisId(nomisCSIPFactorId = event.csipFactorId)
           ?.let {
             // Should never happen - factor should not exist in the mapping table
             telemetryClient.trackEvent(
@@ -56,7 +56,7 @@ class CSIPFactorSynchronisationService(
             // HAPPY PATH
             csipService.createCSIPFactor(
               reportMapping.dpsCSIPId,
-              nomisFactorResponse.toDPSFactorRequest(),
+              nomisFactorResponse.toDPSCreateFactorRequest(),
               nomisFactorResponse.createdBy,
             ).also {
               telemetry.put("dpsCSIPFactorId", it.factorUuid.toString())
@@ -82,6 +82,36 @@ class CSIPFactorSynchronisationService(
       }
   }
 
+  suspend fun csipFactorUpdated(event: CSIPFactorEvent) {
+    val telemetry =
+      mutableMapOf(
+        "nomisCSIPReportId" to event.csipReportId,
+        "offenderNo" to event.offenderIdDisplay,
+        "nomisCSIPFactorId" to event.csipFactorId,
+      )
+    val nomisFactorResponse = nomisApiService.getCSIPFactor(event.csipFactorId)
+    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      telemetryClient.trackEvent("csip-factor-synchronisation-updated-skipped", telemetry)
+    } else {
+      val mapping = mappingApiService.getCSIPFactorByNomisId(event.csipFactorId)
+      if (mapping == null) {
+        // Should never happen
+        telemetryClient.trackEvent("csip-factor-synchronisation-updated-failed", telemetry)
+        throw IllegalStateException("Received CSIP_FACTORS-UPDATED for factor that has never been created")
+      } else {
+        csipService.updateCSIPFactor(
+          csipFactorId = mapping.dpsCSIPFactorId,
+          nomisFactorResponse.toDPSUpdateFactorRequest(),
+          updatedByUsername = nomisFactorResponse.lastModifiedBy ?: nomisFactorResponse.createdBy,
+        )
+        telemetryClient.trackEvent(
+          "csip-factor-synchronisation-updated-success",
+          telemetry + ("dpsCSIPFactorId" to mapping.dpsCSIPFactorId),
+        )
+      }
+    }
+  }
+
   suspend fun csipFactorDeleted(event: CSIPFactorEvent) {
     val telemetry =
       mutableMapOf(
@@ -90,7 +120,7 @@ class CSIPFactorSynchronisationService(
         "nomisCSIPFactorId" to event.csipFactorId,
       )
 
-    mappingApiService.findCSIPFactorByNomisId(nomisCSIPFactorId = event.csipFactorId)
+    mappingApiService.getCSIPFactorByNomisId(nomisCSIPFactorId = event.csipFactorId)
       ?.let { mapping ->
         log.debug("Found csip factor mapping: {}", mapping)
         csipService.deleteCSIPFactor(mapping.dpsCSIPFactorId)
@@ -133,7 +163,7 @@ class CSIPFactorSynchronisationService(
       }
       return MappingResponse.MAPPING_CREATED
     } catch (e: Exception) {
-      log.error("Failed to create mapping for sentence ids $mapping", e)
+      log.error("Failed to create mapping for csip factor ids $mapping", e)
       queueService.sendMessage(
         messageType = RETRY_CSIP_FACTOR_SYNCHRONISATION_MAPPING,
         synchronisationType = SynchronisationType.CSIP,
@@ -144,6 +174,7 @@ class CSIPFactorSynchronisationService(
     }
   }
   suspend fun retryCreateCSIPFactorMapping(retryMessage: InternalMessage<CSIPFactorMappingDto>) {
+    log.debug("CSIP - Retrying CSIP Factor Mapping after failure")
     mappingApiService.createCSIPFactorMapping(
       retryMessage.body,
     ).also {

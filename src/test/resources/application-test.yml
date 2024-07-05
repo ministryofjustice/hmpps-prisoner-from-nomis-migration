@@ -100,3 +100,5 @@ hmpps.sqs:
       dlqMaxReceiveCount: 2
     eventprisonperson:
       dlqMaxReceiveCount: 1
+    eventcsip:
+      dlqMaxReceiveCount: 2

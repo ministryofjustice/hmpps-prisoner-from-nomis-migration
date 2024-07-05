@@ -816,7 +816,7 @@ internal class CSIPMigrationServiceTest {
 
     @BeforeEach
     internal fun setUp(): Unit = runTest {
-      whenever(csipMappingService.findCSIPReportByNomisId(any())).thenReturn(null)
+      whenever(csipMappingService.getCSIPReportByNomisId(any())).thenReturn(null)
       whenever(nomisApiService.getCSIP(any())).thenReturn(nomisCSIPReport())
       whenever(csipService.migrateCSIP(any(), any())).thenReturn(dpsCSIPReport())
       whenever(csipMappingService.createMapping(any(), any())).thenReturn(CreateMappingResult())
@@ -944,7 +944,7 @@ internal class CSIPMigrationServiceTest {
     inner class WhenMigratedAlready {
       @BeforeEach
       internal fun setUp(): Unit = runTest {
-        whenever(csipMappingService.findCSIPReportByNomisId(any())).thenReturn(
+        whenever(csipMappingService.getCSIPReportByNomisId(any())).thenReturn(
           CSIPMappingDto(
             dpsCSIPId = DPS_CSIP_ID,
             nomisCSIPId = NOMIS_CSIP_ID,

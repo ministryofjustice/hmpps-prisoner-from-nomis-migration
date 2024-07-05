@@ -211,6 +211,9 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
+  fun stubCreateFactorMapping(status: HttpStatus) {
+    stubPostErrorResponse(status = status, url = "/mapping/csip/factors")
+  }
   fun stubDeleteFactorMapping(dpsCSIPFactorId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
     stubDeleteMapping(url = "/mapping/csip/factors/dps-csip-factor-id/$dpsCSIPFactorId")
   }
@@ -227,6 +230,17 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
         ),
       ),
     )
+
+  fun stubPostErrorResponse(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value()), url: String) {
+    mappingApi.stubFor(
+      post(url).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
 
   fun stubDeleteMapping(url: String) {
     mappingApi.stubFor(

@@ -6,6 +6,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RestController
@@ -18,6 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CsipRe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ReferenceData
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Referral
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SaferCustodyScreeningOutcome
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateContributoryFactorRequest
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -172,6 +174,28 @@ class MockCSIPResource {
   ): ContributoryFactor {
     log.info("Created csip factor for sync for report $recordUuid")
     return dpsCsipFactor()
+  }
+
+  @PreAuthorize("hasRole('ROLE_NOMIS_CSIP')")
+  @PatchMapping("/csip-records/referral/contributory-factors/{contributoryFactorUuid}")
+  @Operation(hidden = true)
+  suspend fun updateCSIPFactor(
+    csipRequest: UpdateContributoryFactorRequest,
+    @PathVariable
+    contributoryFactorUuid: String,
+  ): ContributoryFactor {
+    log.info("Updated csip factor for sync for factor $contributoryFactorUuid")
+    return dpsCsipFactor()
+  }
+
+  @PreAuthorize("hasRole('ROLE_NOMIS_CSIP')")
+  @DeleteMapping("/csip-records/referral/contributory-factors/{contributoryFactorUuid}")
+  @Operation(hidden = true)
+  suspend fun deleteCSIPFactor(
+    @PathVariable
+    contributoryFactorUuid: String,
+  ) {
+    log.info("Deleted csip factor for sync for factor $contributoryFactorUuid")
   }
 
   data class MigrateCSIP(

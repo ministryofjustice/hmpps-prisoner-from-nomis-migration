@@ -55,14 +55,14 @@ internal class CSIPMappingServiceTest {
       internal fun `will return null when not found`() = runTest {
         csipMappingApi.stubGetByNomisId(HttpStatus.NOT_FOUND)
 
-        assertThat(csipMappingService.findCSIPReportByNomisId(nomisCSIPReportId = NOMIS_CSIP_ID)).isNull()
+        assertThat(csipMappingService.getCSIPReportByNomisId(nomisCSIPReportId = NOMIS_CSIP_ID)).isNull()
       }
 
       @Test
       internal fun `will return the mapping when found`(): Unit = runTest {
         csipMappingApi.stubGetByNomisId()
 
-        val mapping = csipMappingService.findCSIPReportByNomisId(
+        val mapping = csipMappingService.getCSIPReportByNomisId(
           nomisCSIPReportId = NOMIS_CSIP_ID,
         )
         assertThat(mapping).isNotNull
@@ -78,7 +78,7 @@ internal class CSIPMappingServiceTest {
         csipMappingApi.stubGetByNomisId(HttpStatus.INTERNAL_SERVER_ERROR)
 
         assertThrows<WebClientResponseException.InternalServerError> {
-          csipMappingService.findCSIPReportByNomisId(nomisCSIPReportId = NOMIS_CSIP_ID)
+          csipMappingService.getCSIPReportByNomisId(nomisCSIPReportId = NOMIS_CSIP_ID)
         }
       }
     }
@@ -209,14 +209,14 @@ internal class CSIPMappingServiceTest {
   @DisplayName("CSIPFactor")
   inner class CSIPFactor {
     @Nested
-    @DisplayName("FindCSIPFactorMapping")
-    inner class FindCSIPFactorMapping {
+    @DisplayName("GetCSIPFactorMapping")
+    inner class GetCSIPFactorMapping {
 
       @Test
       internal fun `will return null when not found`() = runTest {
         csipMappingApi.stubGetFactorByNomisId(HttpStatus.NOT_FOUND)
 
-        assertThat(csipMappingService.findCSIPFactorByNomisId(nomisCSIPFactorId = NOMIS_CSIP_ID)).isNull()
+        assertThat(csipMappingService.getCSIPFactorByNomisId(nomisCSIPFactorId = NOMIS_CSIP_ID)).isNull()
       }
 
       @Test
@@ -225,7 +225,7 @@ internal class CSIPMappingServiceTest {
         val dpsCsipFactorId = UUID.randomUUID().toString()
         csipMappingApi.stubGetFactorByNomisId(nomisCsipFactorId, dpsCsipFactorId)
 
-        val mapping = csipMappingService.findCSIPFactorByNomisId(nomisCSIPFactorId = nomisCsipFactorId)
+        val mapping = csipMappingService.getCSIPFactorByNomisId(nomisCSIPFactorId = nomisCsipFactorId)
 
         assertThat(mapping).isNotNull
         assertThat(mapping!!.dpsCSIPFactorId).isEqualTo(dpsCsipFactorId)
@@ -241,7 +241,7 @@ internal class CSIPMappingServiceTest {
         csipMappingApi.stubGetFactorByNomisId(HttpStatus.INTERNAL_SERVER_ERROR)
 
         assertThrows<WebClientResponseException.InternalServerError> {
-          csipMappingService.findCSIPFactorByNomisId(nomisCSIPFactorId = nomisCsipFactorId)
+          csipMappingService.getCSIPFactorByNomisId(nomisCSIPFactorId = nomisCsipFactorId)
         }
       }
     }

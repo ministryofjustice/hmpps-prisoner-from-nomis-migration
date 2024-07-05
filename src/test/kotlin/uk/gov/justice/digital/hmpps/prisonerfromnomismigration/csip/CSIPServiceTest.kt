@@ -4,6 +4,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.notContaining
+import com.github.tomakehurst.wiremock.client.WireMock.patchRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import kotlinx.coroutines.runBlocking
@@ -21,6 +22,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsCreateCsipRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsCreateSaferCustodyScreeningOutcomeRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsMigrateCsipRecordRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsUpdateContributoryFactorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import java.util.UUID
 
@@ -239,6 +241,42 @@ internal class CSIPServiceTest {
       fun `will pass data to the api`() {
         csipApi.verify(
           postRequestedFor(urlEqualTo("/csip-records/$dpsCSIPReportId/referral/contributory-factors"))
+            .withRequestBody(matchingJsonPath("factorTypeCode", equalTo("BUL")))
+            .withRequestBody(matchingJsonPath("comment", equalTo("Offender causes trouble"))),
+        )
+      }
+    }
+
+    @Nested
+    @DisplayName("PATCH /csip-records/referral/contributory-factors/{contributorFactorUuid}")
+    inner class UpdateCSIPFactor {
+      private val dpsCSIPFactorId = UUID.randomUUID().toString()
+
+      @BeforeEach
+      internal fun setUp() {
+        csipApi.stubCSIPFactorUpdate(dpsCSIPFactorId = dpsCSIPFactorId)
+
+        runBlocking {
+          csipService.updateCSIPFactor(
+            csipFactorId = dpsCSIPFactorId,
+            csipFactor = dpsUpdateContributoryFactorRequest(),
+            "JIM_ADM",
+          )
+        }
+      }
+
+      @Test
+      fun `should call api with OAuth2 token`() {
+        csipApi.verify(
+          patchRequestedFor(urlEqualTo("/csip-records/referral/contributory-factors/$dpsCSIPFactorId"))
+            .withHeader("Authorization", equalTo("Bearer ABCDE")),
+        )
+      }
+
+      @Test
+      fun `will pass data to the api`() {
+        csipApi.verify(
+          patchRequestedFor(urlEqualTo("/csip-records/referral/contributory-factors/$dpsCSIPFactorId"))
             .withRequestBody(matchingJsonPath("factorTypeCode", equalTo("BUL")))
             .withRequestBody(matchingJsonPath("comment", equalTo("Offender causes trouble"))),
         )
