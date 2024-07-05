@@ -247,7 +247,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
           csipApi.verify(0, postRequestedFor(anyUrl()))
 
           // doesn't try to create a new mapping
-          mappingApi.verify(0, postRequestedFor(anyUrl()))
+          csipMappingApi.verify(0, postRequestedFor(anyUrl()))
 
           await untilAsserted {
             verify(telemetryClient).trackEvent(
@@ -285,7 +285,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
           csipApi.verify(0, postRequestedFor(anyUrl()))
 
           // doesn't try to create a new mapping
-          mappingApi.verify(0, postRequestedFor(anyUrl()))
+          csipMappingApi.verify(0, postRequestedFor(anyUrl()))
 
           await untilAsserted {
             verify(telemetryClient, Mockito.atLeastOnce()).trackEvent(
