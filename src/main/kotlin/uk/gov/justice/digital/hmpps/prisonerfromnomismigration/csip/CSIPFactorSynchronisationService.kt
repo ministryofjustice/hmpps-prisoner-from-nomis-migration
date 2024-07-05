@@ -10,6 +10,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEven
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFactorMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPFactorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_CSIP_FACTOR_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
@@ -89,11 +90,6 @@ class CSIPFactorSynchronisationService(
         "nomisCSIPFactorId" to event.csipFactorId,
       )
 
-    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
-      telemetryClient.trackEvent("csip-factor-synchronisation-deleted-skipped", telemetry)
-      return
-    }
-
     mappingApiService.findCSIPFactorByNomisId(nomisCSIPFactorId = event.csipFactorId)
       ?.let { mapping ->
         log.debug("Found csip factor mapping: {}", mapping)
@@ -147,7 +143,16 @@ class CSIPFactorSynchronisationService(
       return MappingResponse.MAPPING_FAILED
     }
   }
-
+  suspend fun retryCreateCSIPFactorMapping(retryMessage: InternalMessage<CSIPFactorMappingDto>) {
+    mappingApiService.createCSIPFactorMapping(
+      retryMessage.body,
+    ).also {
+      telemetryClient.trackEvent(
+        "csip-factor-mapping-created-synchronisation-success",
+        retryMessage.telemetryAttributes,
+      )
+    }
+  }
   private suspend fun tryToDeleteCSIPFactorMapping(dpsCSIPFactorId: String) = runCatching {
     mappingApiService.deleteCSIPFactorMappingByDPSId(dpsCSIPFactorId)
   }.onFailure { e ->
