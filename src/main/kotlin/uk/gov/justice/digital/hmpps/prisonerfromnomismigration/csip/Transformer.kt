@@ -4,6 +4,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Create
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateCsipRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateSaferCustodyScreeningOutcomeRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateContributoryFactorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPFactorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SaferCustodyScreening
@@ -58,8 +59,13 @@ fun SaferCustodyScreening.toDPSCreateCSIPSCS() =
     reasonForDecision = reasonForDecision!!,
   )
 
-fun CSIPFactorResponse.toDPSFactorRequest() =
+fun CSIPFactorResponse.toDPSCreateFactorRequest() =
   CreateContributoryFactorRequest(
+    factorTypeCode = type.code,
+    comment = comment,
+  )
+fun CSIPFactorResponse.toDPSUpdateFactorRequest() =
+  UpdateContributoryFactorRequest(
     factorTypeCode = type.code,
     comment = comment,
   )

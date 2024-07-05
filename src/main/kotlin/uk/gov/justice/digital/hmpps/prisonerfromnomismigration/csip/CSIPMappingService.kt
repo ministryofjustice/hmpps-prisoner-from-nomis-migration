@@ -19,7 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 class CSIPMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) :
   MigrationMapping<CSIPMappingDto>(domainUrl = "/mapping/csip", webClient) {
 
-  suspend fun findCSIPReportByNomisId(nomisCSIPReportId: Long): CSIPMappingDto? =
+  suspend fun getCSIPReportByNomisId(nomisCSIPReportId: Long): CSIPMappingDto? =
     webClient.get()
       .uri("/mapping/csip/nomis-csip-id/{nomisCSIPReportId}", nomisCSIPReportId)
       .retrieve()
@@ -32,7 +32,7 @@ class CSIPMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient)
       .awaitBodilessEntity()
   }
 
-  suspend fun findCSIPFactorByNomisId(nomisCSIPFactorId: Long): CSIPFactorMappingDto? =
+  suspend fun getCSIPFactorByNomisId(nomisCSIPFactorId: Long): CSIPFactorMappingDto? =
     webClient.get()
       .uri("/mapping/csip/factors/nomis-csip-factor-id/{nomisCSIPFactorId}", nomisCSIPFactorId)
       .retrieve()
