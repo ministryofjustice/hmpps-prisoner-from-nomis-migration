@@ -96,7 +96,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun verifyCreateMappingCSIPId(dpsCSIPId: String, times: Int = 1) =
+  fun verifyCreateCSIPReportMapping(dpsCSIPId: String, times: Int = 1) =
     verify(
       times,
       WireMock.postRequestedFor(WireMock.urlPathEqualTo("/mapping/csip")).withRequestBody(
@@ -107,26 +107,12 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
       ),
     )
 
-  fun stubDeleteMapping(dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
-    mappingApi.stubFor(
-      delete(urlEqualTo("/mapping/csip/dps-csip-id/$dpsCSIPId"))
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.NO_CONTENT.value()),
-        ),
-    )
+  fun stubDeleteCSIPReportMapping(dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
+    stubDeleteMapping("/mapping/csip/dps-csip-id/$dpsCSIPId")
   }
 
-  fun stubDeleteMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
-    mappingApi.stubFor(
-      delete(urlPathMatching("/mapping/csip/dps-csip-id/.*")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
-      ),
-    )
+  fun stubDeleteCSIPReportMapping(status: HttpStatus) {
+    stubDeleteErrorResponse(status = status, url = "/mapping/csip/dps-csip-id/.*")
   }
 
   fun stubCSIPMappingCreateConflict(
@@ -165,6 +151,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
+  // /////// CSIP Factor
   fun stubGetFactorByNomisId(nomisCSIPFactorId: Long, dpsCSIPFactorId: String) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/csip/factors/nomis-csip-factor-id/$nomisCSIPFactorId"))
@@ -188,9 +175,62 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubGetFactorByNomisId(status: HttpStatus) =
     stubGetErrorResponse(status = status, url = "/mapping/csip/factors/nomis-csip-factor-id/.*")
 
-  fun stubDeleteFactorMapping(dpsCSIPFactorId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
+  fun stubCSIPFactorMappingCreateConflict(
+    nomisCSIPFactorId: Long,
+    existingDPSCSIPFactorId: String,
+    duplicateDPSCSIPFactorId: String,
+  ) {
     mappingApi.stubFor(
-      delete(urlEqualTo("/mapping/csip/factors/dps-csip-factor-id/$dpsCSIPFactorId"))
+      post(WireMock.urlPathEqualTo("/mapping/csip/factors"))
+        .willReturn(
+          aResponse()
+            .withStatus(409)
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
+              "moreInfo": 
+              {
+                "existing" :  {
+                  "nomisCSIPFactorId": $nomisCSIPFactorId,
+                  "dpsCSIPFactorId": "$existingDPSCSIPFactorId",
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "NOMIS_CREATED"
+                 },
+                 "duplicate" : {
+                  "nomisCSIPFactorId": $nomisCSIPFactorId,
+                  "dpsCSIPFactorId": "$duplicateDPSCSIPFactorId",
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "NOMIS_CREATED"
+                }
+              }
+              }""",
+            ),
+        ),
+    )
+  }
+
+  fun stubDeleteFactorMapping(dpsCSIPFactorId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
+    stubDeleteMapping(url = "/mapping/csip/factors/dps-csip-factor-id/$dpsCSIPFactorId")
+  }
+  fun stubDeleteFactorMapping(status: HttpStatus) {
+    stubDeleteErrorResponse(status = status, url = "/mapping/csip/factors/dps-csip-factor-id/.*")
+  }
+  fun verifyCreateCSIPFactorMapping(dpsCSIPFactorId: String, times: Int = 1) =
+    verify(
+      times,
+      WireMock.postRequestedFor(WireMock.urlPathEqualTo("/mapping/csip/factors")).withRequestBody(
+        WireMock.matchingJsonPath(
+          "dpsCSIPFactorId",
+          WireMock.equalTo("$dpsCSIPFactorId"),
+        ),
+      ),
+    )
+
+  fun stubDeleteMapping(url: String) {
+    mappingApi.stubFor(
+      delete(urlEqualTo(url))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -210,6 +250,18 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
         ),
     )
   }
+  fun stubDeleteErrorResponse(status: HttpStatus, url: String, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      delete(urlPathMatching(url))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody(objectMapper.writeValueAsString(error)),
+        ),
+    )
+  }
+
   fun ResponseDefinitionBuilder.withBody(body: Any): ResponseDefinitionBuilder =
     this.withBody(objectMapper.writeValueAsString(body))
 

@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
@@ -16,6 +17,9 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.CREATED
 import org.springframework.test.context.junit.jupiter.SpringExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension.Companion.objectMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ContributoryFactor
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateContributoryFactorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateCsipRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateSaferCustodyScreeningOutcomeRequest
@@ -52,7 +56,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
   companion object {
     private const val WIREMOCK_PORT = 8088
 
-    fun dpsCreateCsipRecordRequest() =
+    fun dpsMigrateCsipRecordRequest() =
       CreateCsipRecordRequest(
         logNumber = "ASI-001",
         referral =
@@ -68,6 +72,27 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
           contributoryFactors = listOf(),
           incidentTime = "10:00",
           referralSummary = null,
+          isProactiveReferral = true,
+          isStaffAssaulted = true,
+          assaultedStaffName = "Fred Jones",
+          otherInformation = "other information goes in here",
+          isSaferCustodyTeamInformed = false,
+          isReferralComplete = true,
+        ),
+      )
+
+    fun dpsCreateCsipRecordRequest() =
+      CreateCsipRecordRequest(
+        logNumber = "ASI-001",
+        referral =
+        CreateReferralRequest(
+          incidentDate = LocalDate.parse("2024-06-12"),
+          incidentTypeCode = "INT",
+          incidentLocationCode = "LIB",
+          referredBy = "JIM_ADM",
+          refererAreaCode = "EDU",
+          contributoryFactors = listOf(),
+          incidentTime = "10:00",
           isProactiveReferral = true,
           isStaffAssaulted = true,
           assaultedStaffName = "Fred Jones",
@@ -148,6 +173,27 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
         date = LocalDate.parse("2024-04-08"),
         reasonForDecision = "There is a reason for the decision - it goes here",
       )
+
+    fun dpsCreateContributoryFactorRequest() =
+      CreateContributoryFactorRequest(
+        factorTypeCode = "BUL",
+        comment = "Offender causes trouble",
+      )
+
+    fun dpsCSIPFactor(dpsCsipFactorId: String) =
+      ContributoryFactor(
+        factorUuid = UUID.fromString(dpsCsipFactorId),
+        factorType = ReferenceData(
+          code = "BUL",
+          description = "Bullying",
+          createdAt = LocalDateTime.parse("2024-03-29T11:32:16"),
+          createdBy = "JIM_ADM",
+        ),
+        createdAt = LocalDateTime.parse("2024-03-29T11:32:16"),
+        createdBy = "JIM_ADM",
+        createdByDisplayName = "Jim Admin",
+        comment = "Offender causes trouble",
+      )
   }
 
   fun stubHealthPing(status: Int) {
@@ -167,7 +213,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(CREATED.value())
-          .withBody(CSIPApiExtension.objectMapper.writeValueAsString(dpsCSIPReport(dpsCSIPReportId = dpsCSIPId))),
+          .withBody(dpsCSIPReport(dpsCSIPReportId = dpsCSIPId)),
       ),
     )
   }
@@ -178,7 +224,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(CREATED.value())
-          .withBody(CSIPApiExtension.objectMapper.writeValueAsString(dpsCSIPReport(dpsCSIPReportId = dpsCSIPId))),
+          .withBody(dpsCSIPReport(dpsCSIPReportId = dpsCSIPId)),
       ),
     )
   }
@@ -194,7 +240,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubCSIPDeleteNotFound(status: HttpStatus = HttpStatus.NOT_FOUND) {
     stubFor(
-      delete(WireMock.urlPathMatching("/csip-records/.*"))
+      delete(WireMock.urlPathMatching("/csip-records/\\S+"))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -203,15 +249,49 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubCSIPInsertSCS(dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
+  // /////////////// CSIP Safer Custody Screening
+  fun stubCSIPSCSInsert(dpsCSIPId: String) {
     stubFor(
       post("/csip-records/$dpsCSIPId/referral/safer-custody-screening").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(CREATED.value())
-          .withBody(
-            CSIPApiExtension.objectMapper.writeValueAsString(dpsSaferCustodyScreening()),
-          ),
+          .withBody(dpsSaferCustodyScreening()),
+      ),
+    )
+  }
+
+  // /////////////// CSIP Factor
+  fun stubCSIPFactorInsert(dpsCSIPReportId: String, dpsCSIPFactorId: String) {
+    stubFor(
+      post("/csip-records/$dpsCSIPReportId/referral/contributory-factors").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(CREATED.value())
+          .withBody(dpsCSIPFactor(dpsCSIPFactorId)),
+      ),
+    )
+  }
+  fun stubCSIPFactorDelete(dpsCSIPFactorId: String) {
+    stubDelete("/csip-records/referral/contributory-factors/$dpsCSIPFactorId")
+  }
+
+  fun stubCSIPFactorDeleteNotFound(status: HttpStatus = HttpStatus.NOT_FOUND) {
+    stubFor(
+      delete(WireMock.urlPathMatching("/csip-records/referral/contributory-factors/\\S+"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value()),
+        ),
+    )
+  }
+
+  private fun stubDelete(url: String) {
+    stubFor(
+      delete(WireMock.urlPathMatching(url)).willReturn(
+        aResponse()
+          .withStatus(HttpStatus.NO_CONTENT.value()),
       ),
     )
   }
@@ -221,4 +301,10 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun createCSIPSyncCount() =
     findAll(postRequestedFor(urlMatching("/prisoners/.*"))).count()
+
+  fun createCSIPFactorSyncCount() =
+    findAll(postRequestedFor(urlMatching("/csip-records/.*/referral/contributory-factors"))).count()
+
+  fun ResponseDefinitionBuilder.withBody(body: Any): ResponseDefinitionBuilder =
+    this.withBody(objectMapper.writeValueAsString(body))
 }

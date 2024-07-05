@@ -15,11 +15,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CSIP_SYNC_QUEUE_ID
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_CSIP_FACTOR_SYNCHRONISATION_MAPPING
 import java.util.concurrent.CompletableFuture
 
 @Service
 class CSIPPrisonOffenderEventListener(
   private val csipSynchronisationService: CSIPSynchronisationService,
+  private val csipFactorSynchronisationService: CSIPFactorSynchronisationService,
   private val objectMapper: ObjectMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
 ) {
@@ -51,9 +53,9 @@ class CSIPPrisonOffenderEventListener(
               "CSIP_ATTENDEES-INSERTED" -> log.debug("Insert CSIP Attendee")
               "CSIP_ATTENDEES-UPDATED" -> log.debug("Update CSIP Attendee")
               "CSIP_ATTENDEES-DELETED" -> log.debug("Delete CSIP Attendee")
-              "CSIP_FACTORS-INSERTED" -> log.debug("Insert CSIP Factor")
+              "CSIP_FACTORS-INSERTED" -> csipFactorSynchronisationService.csipFactorInserted(sqsMessage.Message.fromJson())
               "CSIP_FACTORS-UPDATED" -> log.debug("Update CSIP Factor")
-              "CSIP_FACTORS-DELETED" -> log.debug("Delete CSIP Factor")
+              "CSIP_FACTORS-DELETED" -> csipFactorSynchronisationService.csipFactorDeleted(sqsMessage.Message.fromJson())
               "CSIP_INTVW-INSERTED" -> log.debug("Insert CSIP Interview")
               "CSIP_INTVW-UPDATED" -> log.debug("Update CSIP Interview")
               "CSIP_INTVW-DELETED" -> log.debug("Delete CSIP Interview")
@@ -70,13 +72,22 @@ class CSIPPrisonOffenderEventListener(
         RETRY_SYNCHRONISATION_MAPPING.name -> csipSynchronisationService.retryCreateCSIPReportMapping(
           sqsMessage.Message.fromJson(),
         )
+
+        RETRY_CSIP_FACTOR_SYNCHRONISATION_MAPPING -> csipFactorSynchronisationService.retryCreateCSIPFactorMapping(
+          sqsMessage.Message.fromJson(),
+        )
       }
     }
   }
 
   private suspend fun csipReportUpdated(event: CSIPReportEvent) {
     when (event.auditModuleName) {
+      "OIDCSIPN" -> log.debug("Update CSIP Report - referral")
+      "OIDCSIPC" -> log.debug("Update CSIP Report - referral continued")
       "OIDCSIPS" -> csipSynchronisationService.csipSaferCustodyScreeningInserted(event)
+      "OIDCSIPD" -> log.debug("Update CSIP Report - decisions and actions")
+      "OIDCSIPP" -> log.debug("Update CSIP Report - plan")
+      "OIDCSIPR" -> log.debug("Update CSIP Report - review")
       "DPS_SYNCHRONISATION" -> log.debug("TODO Ensure ignored")
       else -> log.debug("Update CSIP Report")
     }
@@ -88,6 +99,12 @@ class CSIPPrisonOffenderEventListener(
 
 // Depending on the type of update/delete there will be additional params - but we don't care
 data class CSIPReportEvent(
+  val csipReportId: Long,
+  val offenderIdDisplay: String,
+  val auditModuleName: String?,
+)
+data class CSIPFactorEvent(
+  val csipFactorId: Long,
   val csipReportId: Long,
   val offenderIdDisplay: String,
   val auditModuleName: String?,

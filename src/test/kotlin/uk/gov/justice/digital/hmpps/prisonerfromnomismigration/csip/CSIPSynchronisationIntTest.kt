@@ -66,7 +66,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `the event is ignored`() {
         await untilAsserted {
           verify(telemetryClient).trackEvent(
-            eq("csip-synchronisation-skipped"),
+            eq("csip-synchronisation-created-skipped"),
             check {
               assertThat(it["nomisCSIPId"]).isEqualTo("$NOMIS_CSIP_ID")
               assertThat(it["dpsCSIPId"]).isNull()
@@ -201,7 +201,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(csipApi.createCSIPSyncCount()).isEqualTo(1)
 
           // doesn't retry
-          csipMappingApi.verifyCreateMappingCSIPId(dpsCSIPId = duplicateDPSCSIPId)
+          csipMappingApi.verifyCreateCSIPReportMapping(dpsCSIPId = duplicateDPSCSIPId)
 
           await untilAsserted {
             verify(telemetryClient).trackEvent(
@@ -297,7 +297,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
           csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPId)
 
           csipApi.stubCSIPDelete(dpsCSIPId = dpsCSIPId)
-          csipMappingApi.stubDeleteMapping(dpsCSIPId = dpsCSIPId)
+          csipMappingApi.stubDeleteCSIPReportMapping(dpsCSIPId = dpsCSIPId)
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
             csipEvent(eventType = "CSIP_REPORTS-DELETED"),
@@ -348,7 +348,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         fun setUp() {
           csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPId)
           csipApi.stubCSIPDelete(dpsCSIPId = dpsCSIPId)
-          csipMappingApi.stubDeleteMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
+          csipMappingApi.stubDeleteCSIPReportMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
             csipEvent(eventType = "CSIP_REPORTS-DELETED"),
@@ -416,7 +416,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
       /*
       await untilAsserted {
         verify(telemetryClient).trackEvent(
-          eq("csip-synchronisation-skipped"),
+          eq("csip-synchronisation-updated-skipped"),
           check {
             assertThat(it["nomisCSIPId"]).isEqualTo("$NOMIS_CSIP_ID")
             assertThat(it["dpsCSIPId"]).isNull()
@@ -488,7 +488,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPId)
-          csipApi.stubCSIPInsertSCS(dpsCSIPId = dpsCSIPId)
+          csipApi.stubCSIPSCSInsert(dpsCSIPId = dpsCSIPId)
         }
 
         @Test

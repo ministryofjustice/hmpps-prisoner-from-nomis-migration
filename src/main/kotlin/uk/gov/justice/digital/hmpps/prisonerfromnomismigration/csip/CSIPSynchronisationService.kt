@@ -30,7 +30,7 @@ class CSIPSynchronisationService(
     // Avoid duplicate sync if originated from DPS
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent(
-        "csip-synchronisation-skipped",
+        "csip-synchronisation-created-skipped",
         event.toTelemetryProperties(),
       )
       return
@@ -52,7 +52,7 @@ class CSIPSynchronisationService(
               "csip-synchronisation-created-success",
               event.toTelemetryProperties(
                 dpsCsip.recordUuid.toString(),
-                result == MAPPING_FAILED,
+                result == MappingResponse.MAPPING_FAILED,
               ),
             )
           }
@@ -61,14 +61,6 @@ class CSIPSynchronisationService(
   }
 
   suspend fun csipReportDeleted(event: CSIPReportEvent) {
-    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
-      telemetryClient.trackEvent(
-        "csip-synchronisation-deleted-skipped",
-        event.toTelemetryProperties(),
-      )
-      return
-    }
-
     mappingApiService.findCSIPReportByNomisId(nomisCSIPReportId = event.csipReportId)
       ?.let {
         log.debug("Found csip mapping: {}", it)
@@ -99,8 +91,11 @@ class CSIPSynchronisationService(
         event.toTelemetryProperties(it.dpsCSIPId),
       )
     } ?: let {
-      // The CSIP Report should exist already - if not, then the ordering of events may be incorrect - put back on dlq
-      telemetryClient.trackEvent("csip-scs-synchronisation-created-failed", event.toTelemetryProperties())
+      // The CSIP Report Mapping  should exist already - if not, then the ordering of events may be incorrect
+      telemetryClient.trackEvent(
+        "csip-scs-synchronisation-created-failed",
+        event.toTelemetryProperties() + ("reason" to "CSIP Report for CSIP SCS not mapped"),
+      )
       throw IllegalStateException("Received CSIP_REPORTS_UPDATED for Safer Custody Screening that has never been created/mapped")
     }
   }
@@ -169,7 +164,7 @@ class CSIPSynchronisationService(
   }
 }
 
-private enum class MappingResponse {
+enum class MappingResponse {
   MAPPING_CREATED,
   MAPPING_FAILED,
 }
@@ -177,9 +172,6 @@ private enum class MappingResponse {
 private fun CSIPReportEvent.toTelemetryProperties(
   dpsCSIPReportId: String? = null,
   mappingFailed: Boolean? = null,
-) = mapOf(
-  "nomisCSIPId" to "$csipReportId",
-) + (dpsCSIPReportId?.let { mapOf("dpsCSIPId" to it) } ?: emptyMap()) + (
-  mappingFailed?.takeIf { it }
-    ?.let { mapOf("mapping" to "initial-failure") } ?: emptyMap()
-  )
+) = mapOf("nomisCSIPId" to "$csipReportId") +
+  (dpsCSIPReportId?.let { mapOf("dpsCSIPId" to it) } ?: emptyMap()) +
+  (mappingFailed?.let { mapOf("mapping" to "initial-failure") } ?: emptyMap())

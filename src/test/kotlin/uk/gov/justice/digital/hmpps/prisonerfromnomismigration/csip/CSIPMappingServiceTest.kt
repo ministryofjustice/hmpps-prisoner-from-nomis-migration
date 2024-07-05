@@ -182,7 +182,7 @@ internal class CSIPMappingServiceTest {
 
       @Test
       internal fun `will pass oath2 token to service`() = runTest {
-        csipMappingApi.stubDeleteMapping(dpsCsipId)
+        csipMappingApi.stubDeleteCSIPReportMapping(dpsCsipId)
 
         csipMappingService.deleteCSIPReportMappingByDPSId(dpsCsipId)
 
@@ -194,7 +194,7 @@ internal class CSIPMappingServiceTest {
       @Test
       internal fun `will pass id to service`() = runTest {
         val dpsCsipId = "a04f7a8d-61aa-400c-9395-f4dc62f36ab0"
-        csipMappingApi.stubDeleteMapping(dpsCsipId)
+        csipMappingApi.stubDeleteCSIPReportMapping(dpsCsipId)
 
         csipMappingService.deleteCSIPReportMappingByDPSId(dpsCsipId)
 

@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-06-28.8167.d1694db"
+    "version": "2024-07-02.8203.2ec758a"
   },
   "servers": [
     {
@@ -9136,6 +9136,14 @@
               "type": "string",
               "description": "CSIP id"
             }
+          },
+          {
+            "name": "includeDocumentIds",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -9255,6 +9263,127 @@
           },
           "403": {
             "description": "Forbidden to access this endpoint when role NOMIS_CSIP not present",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/csip/factors/{csipFactorId}": {
+      "get": {
+        "tags": [
+          "csip-factor-resource"
+        ],
+        "summary": "Get CSIP factor details",
+        "description": "Gets csip factor details. Requires role NOMIS_CSIP",
+        "operationId": "getCSIPFactor",
+        "parameters": [
+          {
+            "name": "csipFactorId",
+            "in": "path",
+            "description": "CSIP Factor id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "CSIP Factor id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CSIPFactorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires role NOMIS_CSIP",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "csip-factor-resource"
+        ],
+        "summary": "Deletes a csip factor",
+        "description": "Deletes a csip factor. Requires ROLE_NOMIS_CSIP",
+        "operationId": "deleteCSIPFactor",
+        "parameters": [
+          {
+            "name": "csipFactorId",
+            "in": "path",
+            "description": "CSIP Factor Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "CSIP Factor Id",
+              "example": 12345
+            },
+            "example": 12345
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Csip factor Deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_CSIP",
             "content": {
               "application/json": {
                 "schema": {
@@ -10798,6 +10927,55 @@
           },
           "403": {
             "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_ADJUDICATIONS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/csip/{csipId}": {
+      "delete": {
+        "tags": [
+          "csip-resource"
+        ],
+        "summary": "Deletes a csip report",
+        "description": "Deletes a csip report. Requires ROLE_NOMIS_CSIP",
+        "operationId": "deleteCSIP",
+        "parameters": [
+          {
+            "name": "csipId",
+            "in": "path",
+            "description": "CSIP Factor Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "CSIP Factor Id",
+              "example": 12345
+            },
+            "example": 12345
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Csip report Deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_CSIP",
             "content": {
               "application/json": {
                 "schema": {
@@ -18213,6 +18391,50 @@
         },
         "description": "Summary details"
       },
+      "CSIPFactorResponse": {
+        "required": [
+          "createDateTime",
+          "createdBy",
+          "id",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Factor type id",
+            "format": "int64"
+          },
+          "type": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "comment": {
+            "type": "string",
+            "description": "Factor comment"
+          },
+          "createDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The date and time the report was created",
+            "example": "2021-07-05T10:35:17"
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "The username of the person who created the report"
+          },
+          "lastModifiedDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The date and time the report was last updated",
+            "example": "2021-07-05T10:35:17"
+          },
+          "lastModifiedBy": {
+            "type": "string",
+            "description": "The username of the person who last updated the report"
+          }
+        },
+        "description": "Contributory factors"
+      },
       "CSIPResponse": {
         "required": [
           "areaOfWork",
@@ -18220,7 +18442,6 @@
           "createDateTime",
           "createdBy",
           "decision",
-          "documents",
           "id",
           "investigation",
           "location",
@@ -18228,6 +18449,7 @@
           "plans",
           "proActiveReferral",
           "reportDetails",
+          "reportedBy",
           "reportedDate",
           "reviews",
           "saferCustodyScreening",
@@ -18400,50 +18622,6 @@
           }
         },
         "description": "DecisionAndActions"
-      },
-      "FactorResponse": {
-        "required": [
-          "createDateTime",
-          "createdBy",
-          "id",
-          "type"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "description": "Factor type id",
-            "format": "int64"
-          },
-          "type": {
-            "$ref": "#/components/schemas/CodeDescription"
-          },
-          "comment": {
-            "type": "string",
-            "description": "Factor comment"
-          },
-          "createDateTime": {
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
-            "type": "string",
-            "description": "The date and time the report was created",
-            "example": "2021-07-05T10:35:17"
-          },
-          "createdBy": {
-            "type": "string",
-            "description": "The username of the person who created the report"
-          },
-          "lastModifiedDateTime": {
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
-            "type": "string",
-            "description": "The date and time the report was last updated",
-            "example": "2021-07-05T10:35:17"
-          },
-          "lastModifiedBy": {
-            "type": "string",
-            "description": "The username of the person who last updated the report"
-          }
-        },
-        "description": "Contributory factors"
       },
       "InterviewDetails": {
         "required": [
@@ -18626,7 +18804,7 @@
             "type": "array",
             "description": "Contributory factors",
             "items": {
-              "$ref": "#/components/schemas/FactorResponse"
+              "$ref": "#/components/schemas/CSIPFactorResponse"
             }
           },
           "knownReasons": {
@@ -18770,11 +18948,11 @@
       },
       "CSIPIdResponse": {
         "required": [
-          "id"
+          "csipId"
         ],
         "type": "object",
         "properties": {
-          "id": {
+          "csipId": {
             "type": "integer",
             "description": "The csip id",
             "format": "int64"

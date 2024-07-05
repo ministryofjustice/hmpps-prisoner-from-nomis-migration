@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RestController
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ContributoryFactor
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateContributoryFactorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateCsipRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateSaferCustodyScreeningOutcomeRequest
@@ -96,6 +98,21 @@ class MockCSIPResource {
         date = LocalDate.parse("2024-04-08"),
         reasonForDecision = "There is a reason for the decision - it goes here",
       )
+
+    fun dpsCsipFactor() =
+      ContributoryFactor(
+        factorUuid = UUID.randomUUID(),
+        factorType = ReferenceData(
+          code = "BUL",
+          description = "Bullying",
+          createdAt = LocalDateTime.parse("2024-03-29T11:32:16"),
+          createdBy = "JIM_ADM",
+        ),
+        createdAt = LocalDateTime.parse("2024-03-29T11:32:16"),
+        createdBy = "JIM_ADM",
+        createdByDisplayName = "Jim Admin",
+        comment = "Offender causes trouble",
+      )
   }
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_CSIP')")
@@ -110,7 +127,7 @@ class MockCSIPResource {
     return dpsCsip()
   }
 
-  @PreAuthorize("hasRole('ROLE_SYNC_CSIP')")
+  @PreAuthorize("hasRole('ROLE_NOMIS_CSIP')")
   @PostMapping("/prisoners/{prisonNumber}/csip-records")
   @Operation(hidden = true)
   suspend fun createCSIP(
@@ -122,7 +139,7 @@ class MockCSIPResource {
     return dpsCsip()
   }
 
-  @PreAuthorize("hasRole('ROLE_SYNC_CSIP')")
+  @PreAuthorize("hasRole('ROLE_NOMIS_CSIP')")
   @DeleteMapping("/csip-records/{recordUuid}")
   @Operation(hidden = true)
   suspend fun deleteCSIP(
@@ -133,7 +150,7 @@ class MockCSIPResource {
     return return dpsCsip()
   }
 
-  @PreAuthorize("hasRole('ROLE_SYNC_CSIP')")
+  @PreAuthorize("hasRole('ROLE_NOMIS_CSIP')")
   @PostMapping("/csip-records/{recordUuid}/referral/safer-custody-screening")
   @Operation(hidden = true)
   suspend fun createCSIPSCS(
@@ -141,8 +158,20 @@ class MockCSIPResource {
     @PathVariable
     recordUuid: String,
   ): SaferCustodyScreeningOutcome {
-    log.info("Created csip scs for sync offender $recordUuid")
+    log.info("Created csip scs for sync report $recordUuid")
     return dpsSaferCustodyScreening()
+  }
+
+  @PreAuthorize("hasRole('ROLE_NOMIS_CSIP')")
+  @PostMapping("/csip-records/{recordUuid}/referral/contributory-factors")
+  @Operation(hidden = true)
+  suspend fun createCSIPFactor(
+    csipRequest: CreateContributoryFactorRequest,
+    @PathVariable
+    recordUuid: String,
+  ): ContributoryFactor {
+    log.info("Created csip factor for sync for report $recordUuid")
+    return dpsCsipFactor()
   }
 
   data class MigrateCSIP(
