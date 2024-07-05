@@ -52,11 +52,10 @@ class LocationsMigrationService(
   completeCheckDelaySeconds = completeCheckDelaySeconds,
   completeCheckCount = completeCheckCount,
 ) {
-  private companion object {
-    val log: Logger = LoggerFactory.getLogger(this::class.java)
+  companion object {
+    private val log: Logger = LoggerFactory.getLogger(this::class.java)
+    val invalidPrisons = listOf("ZZGHI", "UNKNWN", "TRN", "LT3", "LT4")
   }
-
-  private val invalidPrisons = listOf("ZZGHI", "UNKNWN", "TRN", "LT3", "LT4")
 
   override suspend fun getIds(
     migrationFilter: LocationsMigrationFilter,
