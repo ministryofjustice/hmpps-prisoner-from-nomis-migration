@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
-import java.util.UUID
+import java.util.*
 
 /**
  * This represents the possible interface for the CaseNote API service.
@@ -40,5 +40,19 @@ class MockCaseNotesResource {
         dummyAttribute = it.dummyAttribute,
       )
     }
+  }
+
+  @PreAuthorize("hasRole('ROLE_MIGRATE_CASENOTES')")
+  @PostMapping("/sync/upsert")
+  @Operation(hidden = true)
+  suspend fun syncCaseNote(
+    @RequestBody @Valid
+    caseNoteRequest: SyncCaseNoteRequest,
+  ): DpsCaseNote {
+    log.info("Creating case note for sync request $caseNoteRequest}")
+    return DpsCaseNote(
+      caseNoteId = UUID.randomUUID().toString(),
+      dummyAttribute = caseNoteRequest.dummyAttribute,
+    )
   }
 }
