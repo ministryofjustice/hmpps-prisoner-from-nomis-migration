@@ -73,16 +73,22 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `the event is processed if it was the creation of a VSIP room`() {
+      nomisApi.stubGetLocation(NOMIS_LOCATION_ID, NOMIS_PARENT_LOCATION_ID)
+      // mappingApi.stubGetAnyLocationNotFound()
+      mappingApi.stubGetLocation(DPS_PARENT_LOCATION_ID, NOMIS_PARENT_LOCATION_ID)
+      locationsApi.stubUpsertLocationForSynchronisation(DPS_LOCATION_ID)
+      mappingApi.stubMappingCreate(LOCATIONS_CREATE_MAPPING_URL)
+
       awsSqsLocationsOffenderEventsClient.sendMessage(
         locationsQueueOffenderEventsUrl,
         locationEvent(auditModuleName = "DPS_SYNCHRONISATION", description = "BLI-VISITS-VSIP_SOC"),
       )
       await untilAsserted {
         verify(telemetryClient).trackEvent(
-          eq("locations-synchronisation-skipped"),
+          eq("locations-created-synchronisation-success"),
           check {
             assertThat(it["nomisLocationId"]).isEqualTo("$NOMIS_LOCATION_ID")
-            assertThat(it["dpsLocationId"]).isNull()
+            assertThat(it["dpsLocationId"]).isEqualTo(DPS_LOCATION_ID)
           },
           isNull(),
         )
