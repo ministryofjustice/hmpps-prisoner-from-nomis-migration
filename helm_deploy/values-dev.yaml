@@ -20,7 +20,7 @@ generic-service:
     API_BASE_URL_INCIDENTS: https://incident-reporting-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_LOCATIONS: https://locations-inside-prison-api-dev.hmpps.service.justice.gov.uk
     # currently set to self for a mock API until real API is ready
-    API_BASE_URL_CASENOTES: https://prisoner-nomis-migration-dev.hmpps.service.justice.gov.uk
+    API_BASE_URL_CASENOTES: https://prisoner-nomis-migration-dev.hmpps.service.justice.gov.uk/mock
     API_BASE_URL_ADJUDICATIONS: https://manage-adjudications-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_ALERTS: https://alerts-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_COURT_SENTENCING: https://remand-and-sentencing-api-dev.hmpps.service.justice.gov.uk
