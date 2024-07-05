@@ -50,16 +50,12 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
   @Nested
   inner class WhenCreateByDPS {
-    @BeforeEach
-    fun setUp() {
+    @Test
+    fun `the event is ignored`() {
       awsSqsLocationsOffenderEventsClient.sendMessage(
         locationsQueueOffenderEventsUrl,
         locationEvent(auditModuleName = "DPS_SYNCHRONISATION"),
       )
-    }
-
-    @Test
-    fun `the event is ignored`() {
       await untilAsserted {
         verify(telemetryClient).trackEvent(
           eq("locations-synchronisation-skipped"),
@@ -73,6 +69,33 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
       nomisApi.verify(exactly(0), getRequestedFor(anyUrl()))
       mappingApi.verify(exactly(0), getRequestedFor(anyUrl()))
       locationsApi.verify(exactly(0), anyRequestedFor(anyUrl()))
+    }
+
+    @Test
+    fun `the event is processed if it was the creation of a VSIP room`() {
+      nomisApi.stubGetLocation(NOMIS_LOCATION_ID, NOMIS_PARENT_LOCATION_ID)
+      // mappingApi.stubGetAnyLocationNotFound()
+      mappingApi.stubGetLocation(DPS_PARENT_LOCATION_ID, NOMIS_PARENT_LOCATION_ID)
+      locationsApi.stubUpsertLocationForSynchronisation(DPS_LOCATION_ID)
+      mappingApi.stubMappingCreate(LOCATIONS_CREATE_MAPPING_URL)
+
+      awsSqsLocationsOffenderEventsClient.sendMessage(
+        locationsQueueOffenderEventsUrl,
+        locationEvent(auditModuleName = "DPS_SYNCHRONISATION", description = "BLI-VISITS-VSIP_SOC"),
+      )
+      await untilAsserted {
+        verify(telemetryClient).trackEvent(
+          eq("locations-created-synchronisation-success"),
+          check {
+            assertThat(it["nomisLocationId"]).isEqualTo("$NOMIS_LOCATION_ID")
+            assertThat(it["dpsLocationId"]).isEqualTo(DPS_LOCATION_ID)
+          },
+          isNull(),
+        )
+      }
+      nomisApi.verify(getRequestedFor(urlEqualTo(NOMIS_API_URL)))
+      mappingApi.verify(getRequestedFor(urlPathEqualTo(NOMIS_MAPPING_API_URL)))
+      locationsApi.verify(postRequestedFor(urlPathEqualTo("/sync/upsert")))
     }
   }
 
@@ -374,6 +397,38 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
               eq("locations-updated-synchronisation-skipped-deactivated"),
               check {
                 assertThat(it["dpsLocationId"]).isEqualTo(DPS_LOCATION_ID)
+                assertThat(it["nomisLocationId"]).isEqualTo(NOMIS_LOCATION_ID.toString())
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      inner class WhenUpdateByNomisInGhostPrison {
+        @BeforeEach
+        fun setUp() {
+          awsSqsLocationsOffenderEventsClient.sendMessage(
+            locationsQueueOffenderEventsUrl,
+            locationEvent(prison = "ZZGHI"),
+          )
+        }
+
+        @Test
+        fun `will be ignored`() {
+          await untilAsserted {
+            nomisApi.verify(exactly(0), anyRequestedFor(anyUrl()))
+            locationsApi.verify(exactly(0), anyRequestedFor(anyUrl()))
+          }
+        }
+
+        @Test
+        fun `will create telemetry tracking the update`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("locations-synchronisation-skipped-ignored-prison"),
+              check {
                 assertThat(it["nomisLocationId"]).isEqualTo(NOMIS_LOCATION_ID.toString())
               },
               isNull(),
@@ -751,11 +806,13 @@ fun locationEvent(
   locationId: Long = NOMIS_LOCATION_ID,
   auditModuleName: String = "OIMILOCA",
   recordDeleted: Boolean = false,
+  prison: String = "HMI",
+  description: String = "$prison-D-1-007",
 ) = """{
     "Type" : "Notification",
     "MessageId" : "be8e7273-0446-5590-8c7f-2f24e966322e",
     "TopicArn" : "arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-f221e27fcfcf78f6ab4f4c3cc165eee7",
-    "Message" : "{\"oldDescription\":\"HMI-D-1-007\",\"nomisEventType\":\"$eventType\",\"recordDeleted\":\"$recordDeleted\",\"eventDatetime\":\"2024-04-22T16:36:47.0000000Z\",\"prisonId\":\"HMI\",\"description\":\"HMI-D-1-007\",\"eventType\":\"$eventType\",\"auditModuleName\":\"$auditModuleName\",\"internalLocationId\":\"$locationId\"}",
+    "Message" : "{\"nomisEventType\":\"$eventType\",\"recordDeleted\":\"$recordDeleted\",\"eventDatetime\":\"2024-04-22T16:36:47.0000000Z\",\"prisonId\":\"$prison\",\"description\":\"$description\",\"eventType\":\"$eventType\",\"auditModuleName\":\"$auditModuleName\",\"internalLocationId\":\"$locationId\"}",
     "Timestamp" : "2023-08-17T09:39:44.790Z",
     "SignatureVersion" : "1",
     "Signature" : "dummy==",

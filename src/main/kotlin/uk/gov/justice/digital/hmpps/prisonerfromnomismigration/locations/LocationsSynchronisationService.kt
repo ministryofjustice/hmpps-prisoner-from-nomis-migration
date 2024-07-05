@@ -9,6 +9,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.LocationsMigrationService.Companion.invalidPrisons
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.LocationsSynchronisationService.MappingResponse.MAPPING_FAILED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Capacity
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Certification
@@ -23,7 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.LOCATIONS
-import java.util.UUID
+import java.util.*
 
 @Service
 class LocationsSynchronisationService(
@@ -62,7 +63,7 @@ class LocationsSynchronisationService(
   }
 
   suspend fun synchroniseLocation(event: LocationsOffenderEvent) {
-    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+    if (event.auditModuleName == "DPS_SYNCHRONISATION" && !isVsipVisitRoomCreation(event)) {
       telemetryClient.trackEvent("locations-synchronisation-skipped", event.toTelemetryProperties())
       return
     }
@@ -83,7 +84,20 @@ class LocationsSynchronisationService(
     }
   }
 
+  private fun isVsipVisitRoomCreation(event: LocationsOffenderEvent): Boolean =
+    event.oldDescription == null && event.description != null && (
+      event.description.endsWith("-VISITS-VSIP_CLO") ||
+        event.description.endsWith("-VISITS-VSIP_SOC")
+      )
+
   private suspend fun synchroniseUpdateOrCreate(event: LocationsOffenderEvent, mapping: LocationMappingDto?) {
+    if (invalidPrisons.contains(event.prisonId)) {
+      telemetryClient.trackEvent(
+        "locations-synchronisation-skipped-ignored-prison",
+        event.toTelemetryProperties(),
+      )
+      return
+    }
     val nomisLocation = nomisApiService.getLocation(event.internalLocationId)
 
     val parent = nomisLocation.parentLocationId?.let {

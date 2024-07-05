@@ -11,6 +11,7 @@ api.base.url:
   incidents: http://localhost:8089
   csip: http://localhost:8088
   locations: http://localhost:8091
+  casenotes: http://localhost:8080/mock
   mapping: http://localhost:8083
   court.sentencing: http://localhost:8090
 
