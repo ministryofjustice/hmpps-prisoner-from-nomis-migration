@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
+import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -37,4 +38,10 @@ class CaseNotesMappingApiService(@Qualifier("mappingApiWebClient") webClient: We
       .retrieve()
       .awaitBodilessEntity()
   }
+
+  suspend fun getMappingGivenNomisId(caseNoteId: Long): CaseNoteMappingDto =
+    webClient.get()
+      .uri("/mapping/casenotes/nomis-casenote-id/$caseNoteId")
+      .retrieve()
+      .awaitBody()
 }

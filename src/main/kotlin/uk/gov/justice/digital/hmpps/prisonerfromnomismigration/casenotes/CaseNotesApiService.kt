@@ -38,6 +38,7 @@ data class MigrateCaseNoteRequest(
 )
 
 data class SyncCaseNoteRequest(
+  val caseNoteId: String? = null,
   val dummyAttribute: String? = null,
 )
 
