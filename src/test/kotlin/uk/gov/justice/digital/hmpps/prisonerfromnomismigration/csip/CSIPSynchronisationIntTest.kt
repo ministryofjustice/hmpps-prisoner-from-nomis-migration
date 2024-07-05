@@ -258,38 +258,8 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
   @Nested
   inner class CSIPDeleted {
     @Nested
-    @DisplayName("When csip was deleted in DPS")
-    inner class WhenDeletedInDPS {
-
-      @BeforeEach
-      fun setUp() {
-        awsSqsCSIPOffenderEventsClient.sendMessage(
-          csipQueueOffenderEventsUrl,
-          csipEvent(eventType = "CSIP_REPORTS-DELETED", auditModuleName = "DPS_SYNCHRONISATION"),
-        )
-      }
-
-      @Test
-      fun `the event is ignored`() {
-        await untilAsserted {
-          verify(telemetryClient).trackEvent(
-            eq("csip-synchronisation-deleted-skipped"),
-            check {
-              assertThat(it["nomisCSIPId"]).isEqualTo("$NOMIS_CSIP_ID")
-              assertThat(it["dpsCSIPId"]).isNull()
-            },
-            isNull(),
-          )
-        }
-        csipNomisApi.verify(exactly(0), getRequestedFor(anyUrl()))
-        csipMappingApi.verify(exactly(0), getRequestedFor(anyUrl()))
-        csipApi.verify(exactly(0), anyRequestedFor(anyUrl()))
-      }
-    }
-
-    @Nested
-    @DisplayName("When csip was deleted in NOMIS")
-    inner class WhenDeletedInNOMIS {
+    @DisplayName("When csip was deleted in either NOMIS or DPS")
+    inner class DeletedInEitherNOMISOrDPS {
 
       @Nested
       @DisplayName("When mapping doesn't exist")

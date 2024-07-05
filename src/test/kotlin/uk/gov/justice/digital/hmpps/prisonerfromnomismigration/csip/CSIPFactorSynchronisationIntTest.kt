@@ -306,45 +306,8 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
     private val nomisCSIPFactorId = 343L
 
     @Nested
-    @DisplayName("When csip factor was deleted in DPS")
-    inner class WhenDeletedInDPS {
-
-      @BeforeEach
-      fun setUp() {
-        awsSqsCSIPOffenderEventsClient.sendMessage(
-          csipQueueOffenderEventsUrl,
-          csipFactorEvent(
-            eventType = "CSIP_FACTORS-DELETED",
-            auditModuleName = "DPS_SYNCHRONISATION",
-            csipReportId = nomisCSIPReportId.toString(),
-            csipFactorId = nomisCSIPFactorId.toString(),
-          ),
-        )
-      }
-
-      @Test
-      fun `the event is ignored`() {
-        await untilAsserted {
-          verify(telemetryClient).trackEvent(
-            eq("csip-factor-synchronisation-deleted-skipped"),
-            check {
-              assertThat(it["nomisCSIPReportId"]).isEqualTo(nomisCSIPReportId.toString())
-              assertThat(it["offenderNo"]).isEqualTo("A1234BC")
-              assertThat(it["nomisCSIPFactorId"]).isEqualTo(nomisCSIPFactorId.toString())
-              assertThat(it["dpsCSIPFactorId"]).isNull()
-            },
-            isNull(),
-          )
-        }
-        csipNomisApi.verify(exactly(0), getRequestedFor(anyUrl()))
-        csipMappingApi.verify(exactly(0), getRequestedFor(anyUrl()))
-        csipApi.verify(exactly(0), anyRequestedFor(anyUrl()))
-      }
-    }
-
-    @Nested
-    @DisplayName("When csip factor was deleted in NOMIS")
-    inner class WhenDeletedInNOMIS {
+    @DisplayName("When csip factor was deleted")
+    inner class DeletedInEitherNOMISOrDPS {
 
       @Nested
       @DisplayName("When mapping doesn't exist")
