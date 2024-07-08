@@ -40,7 +40,7 @@ class CaseNotesApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubHealthPing(status: Int) {
     stubFor(
-      get("/mock/health/ping").willReturn(
+      get("/health/ping").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody(if (status == 200) "pong" else "some error")
@@ -54,7 +54,7 @@ class CaseNotesApiMockServer : WireMockServer(WIREMOCK_PORT) {
     dpsCaseNotesIds: List<String>,
   ) {
     stubFor(
-      post("/mock/migrate/$offenderNo/casenotes").willReturn(
+      post("/migrate/$offenderNo/casenotes").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(CREATED.value())

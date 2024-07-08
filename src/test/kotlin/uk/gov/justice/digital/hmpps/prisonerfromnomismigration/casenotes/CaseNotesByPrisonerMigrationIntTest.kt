@@ -134,8 +134,8 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will POST all casenotes to DPS for each prisoner`() {
-        caseNotesApi.verify(postRequestedFor(urlPathEqualTo("/mock/migrate/$OFFENDER_NUMBER1/casenotes")))
-        caseNotesApi.verify(postRequestedFor(urlPathEqualTo("/mock/migrate/$OFFENDER_NUMBER2/casenotes")))
+        caseNotesApi.verify(postRequestedFor(urlPathEqualTo("/migrate/$OFFENDER_NUMBER1/casenotes")))
+        caseNotesApi.verify(postRequestedFor(urlPathEqualTo("/migrate/$OFFENDER_NUMBER2/casenotes")))
       }
 
       @Test
@@ -163,7 +163,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will transform NOMIS case note to DPS case note`() {
         caseNotesApi.verify(
-          postRequestedFor(urlPathEqualTo("/mock/migrate/$OFFENDER_NUMBER1/casenotes"))
+          postRequestedFor(urlPathEqualTo("/migrate/$OFFENDER_NUMBER1/casenotes"))
             .withRequestBodyJsonPath("$[0].dummyAttribute", "text"),
         )
       }
@@ -182,7 +182,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will POST the casenotes to DPS only once`() {
-        caseNotesApi.verify(1, postRequestedFor(urlPathEqualTo("/mock/migrate/$OFFENDER_NUMBER1/casenotes")))
+        caseNotesApi.verify(1, postRequestedFor(urlPathEqualTo("/migrate/$OFFENDER_NUMBER1/casenotes")))
       }
 
       @Test
