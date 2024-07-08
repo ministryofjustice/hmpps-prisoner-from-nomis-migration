@@ -21,12 +21,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationMinutes
 
 @Service
 class AlertsByPrisonerMigrationService(
   queueService: MigrationQueueService,
   private val alertsNomisService: AlertsNomisApiService,
+  private val nomisService: NomisApiService,
   private val alertsMappingService: AlertsByPrisonerMigrationMappingApiService,
   private val alertsDpsService: AlertsDpsApiService,
   migrationHistoryService: MigrationHistoryService,
@@ -55,7 +57,7 @@ class AlertsByPrisonerMigrationService(
     pageSize: Long,
     pageNumber: Long,
   ): PageImpl<PrisonerId> {
-    return alertsNomisService.getPrisonerIds(
+    return nomisService.getPrisonerIds(
       pageNumber = pageNumber,
       pageSize = pageSize,
     )

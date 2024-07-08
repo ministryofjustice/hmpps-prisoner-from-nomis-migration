@@ -9,8 +9,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.A
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.BookingAlertsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PreviousBookingId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerAlertsResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RestResponsePage
 
 @Service
 class AlertsNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
@@ -20,16 +18,6 @@ class AlertsNomisApiService(@Qualifier("nomisApiWebClient") private val webClien
       bookingId,
       alertSequence,
     )
-    .retrieve()
-    .awaitBody()
-
-  suspend fun getPrisonerIds(pageNumber: Long, pageSize: Long): RestResponsePage<PrisonerId> = webClient.get()
-    .uri {
-      it.path("/prisoners/ids/all")
-        .queryParam("page", pageNumber)
-        .queryParam("size", pageSize)
-        .build()
-    }
     .retrieve()
     .awaitBody()
 

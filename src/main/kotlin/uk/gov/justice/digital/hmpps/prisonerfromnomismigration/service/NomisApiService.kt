@@ -28,6 +28,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.G
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetAllocationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.LocationIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.LocationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.model.LegacyAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.model.LegacyAdjustment.AdjustmentType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomUsageResponse
@@ -277,6 +278,18 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       .retrieve()
       .bodyToMono(typeReference<RestResponsePage<LocationIdResponse>>())
       .awaitSingle()
+
+  // /////////////////////////////////////// General
+
+  suspend fun getPrisonerIds(pageNumber: Long, pageSize: Long): RestResponsePage<PrisonerId> = webClient.get()
+    .uri {
+      it.path("/prisoners/ids/all")
+        .queryParam("page", pageNumber)
+        .queryParam("size", pageSize)
+        .build()
+    }
+    .retrieve()
+    .awaitBody()
 }
 
 data class VisitId(

@@ -8,7 +8,6 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsNomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -23,12 +22,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationMinutes
 
 @Service
 class CaseNotesByPrisonerMigrationService(
   queueService: MigrationQueueService,
-  private val alertsNomisService: AlertsNomisApiService,
+  private val nomisService: NomisApiService,
   private val caseNotesNomisService: CaseNotesNomisApiService,
   private val caseNotesMappingService: CaseNotesByPrisonerMigrationMappingApiService,
   private val caseNotesDpsService: CaseNotesApiService,
@@ -65,17 +65,15 @@ class CaseNotesByPrisonerMigrationService(
         migrationFilter.offenderNos.size.toLong(),
       )
     }
-      ?: alertsNomisService.getPrisonerIds(
+      ?: nomisService.getPrisonerIds(
         pageNumber = pageNumber,
         pageSize = pageSize,
       )
-  // TODO move this fun?
 
   override suspend fun migrateNomisEntity(context: MigrationContext<PrisonerId>) {
     log.info("attempting to migrate ${context.body}")
     val offenderNo = context.body.offenderNo
 
-    // when NOMIS does not find a booking this will be null so just migrate as if there is no casenotes
     val nomisCaseNotes =
       caseNotesNomisService.getCaseNotesToMigrate(offenderNo) ?: PrisonerCaseNotesResponse(emptyList())
     val caseNotesToMigrate = nomisCaseNotes.caseNotes.map { it.toDPSCreateCaseNote() }
