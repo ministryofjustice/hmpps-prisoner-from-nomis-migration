@@ -20,7 +20,7 @@ api.base.url:
   locations: http://localhost:8093
   court.sentencing: http://localhost:8094
   prison.person: http://localhost:8095
-  casenotes: http://localhost:8096/mock
+  casenotes: http://localhost:8096
 
 visits:
   page:
