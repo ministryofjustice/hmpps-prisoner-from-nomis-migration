@@ -37,7 +37,7 @@ class IncidentsPrisonOffenderEventListener(
       when (sqsMessage.Type) {
         "Notification" -> {
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
-          if (eventFeatureSwitch.isEnabled(eventType)) {
+          if (eventFeatureSwitch.isEnabled(eventType, "incidents")) {
             when (eventType) {
               "INCIDENT-INSERTED" -> incidentsSynchronisationService.synchroniseIncidentInsert(sqsMessage.Message.fromJson())
 
@@ -82,8 +82,6 @@ data class IncidentsOffenderEvent(
 
 private fun asCompletableFuture(
   process: suspend () -> Unit,
-): CompletableFuture<Void> {
-  return CoroutineScope(Dispatchers.Default).future {
-    process()
-  }.thenAccept { }
-}
+): CompletableFuture<Void> = CoroutineScope(Dispatchers.Default).future {
+  process()
+}.thenAccept { }

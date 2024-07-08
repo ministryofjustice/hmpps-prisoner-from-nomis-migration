@@ -39,7 +39,7 @@ class CSIPPrisonOffenderEventListener(
       when (sqsMessage.Type) {
         "Notification" -> {
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
-          if (eventFeatureSwitch.isEnabled(eventType)) {
+          if (eventFeatureSwitch.isEnabled(eventType, "csip")) {
             when (eventType) {
               "CSIP_REPORTS-INSERTED" -> csipSynchronisationService.csipReportInserted(sqsMessage.Message.fromJson())
               "CSIP_REPORTS-UPDATED" -> csipReportUpdated(sqsMessage.Message.fromJson())
@@ -112,8 +112,6 @@ data class CSIPFactorEvent(
 
 private fun asCompletableFuture(
   process: suspend () -> Unit,
-): CompletableFuture<Void> {
-  return CoroutineScope(Dispatchers.Default).future {
-    process()
-  }.thenAccept { }
-}
+): CompletableFuture<Void> = CoroutineScope(Dispatchers.Default).future {
+  process()
+}.thenAccept { }

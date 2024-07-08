@@ -35,7 +35,7 @@ class PrisonPersonEventListener(
       when (sqsMessage.Type) {
         "Notification" -> {
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
-          if (eventFeatureSwitch.isEnabled(eventType)) {
+          if (eventFeatureSwitch.isEnabled(eventType, "prisonperson")) {
             when (eventType) {
               "OFFENDER_PHYSICAL_ATTRIBUTES-CHANGED" -> prisonPersonService.physicalAttributesChanged(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)

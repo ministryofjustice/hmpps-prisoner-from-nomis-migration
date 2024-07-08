@@ -39,7 +39,7 @@ class AlertsEventListener(
       when (sqsMessage.Type) {
         "Notification" -> {
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
-          if (eventFeatureSwitch.isEnabled(eventType)) {
+          if (eventFeatureSwitch.isEnabled(eventType, "alerts")) {
             when (eventType) {
               "ALERT-UPDATED" -> alertsSynchronisationService.nomisAlertUpdated(sqsMessage.Message.fromJson())
               "ALERT-INSERTED" -> alertsSynchronisationService.nomisAlertInserted(sqsMessage.Message.fromJson())
@@ -89,8 +89,6 @@ data class AlertUpdatedEvent(
 
 private fun asCompletableFuture(
   process: suspend () -> Unit,
-): CompletableFuture<Void> {
-  return CoroutineScope(Dispatchers.Default).future {
-    process()
-  }.thenAccept { }
-}
+): CompletableFuture<Void> = CoroutineScope(Dispatchers.Default).future {
+  process()
+}.thenAccept { }
