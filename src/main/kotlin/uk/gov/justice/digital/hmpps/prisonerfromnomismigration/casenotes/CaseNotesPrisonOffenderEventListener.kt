@@ -37,7 +37,7 @@ class CaseNotesPrisonOffenderEventListener(
       when (sqsMessage.Type) {
         "Notification" -> {
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
-          if (eventFeatureSwitch.isEnabled(eventType)) {
+          if (eventFeatureSwitch.isEnabled(eventType, "casenotes")) {
             when (eventType) {
               "OFFENDER_CASE_NOTES-INSERTED" -> caseNotesSynchronisationService.caseNoteInserted(sqsMessage.Message.fromJson())
               "OFFENDER_CASE_NOTES-UPDATED" -> caseNotesSynchronisationService.caseNoteUpdated(sqsMessage.Message.fromJson())
@@ -72,8 +72,6 @@ data class CaseNotesEvent(
 
 private fun asCompletableFuture(
   process: suspend () -> Unit,
-): CompletableFuture<Void> {
-  return CoroutineScope(Dispatchers.Default).future {
-    process()
-  }.thenAccept { }
-}
+): CompletableFuture<Void> = CoroutineScope(Dispatchers.Default).future {
+  process()
+}.thenAccept { }
