@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
+import uk.gov.justice.hmpps.kotlin.auth.HmppsReactiveAuthenticationHolder
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
 import java.time.Instant
 
@@ -14,7 +15,7 @@ class AuditService(
   hmppsQueueService: HmppsQueueService,
   @Value("\${spring.application.name}")
   private val serviceName: String,
-  private val securityUserContext: SecurityUserContext,
+  private val securityUserContext: HmppsReactiveAuthenticationHolder,
   private val mapper: ObjectMapper,
 ) {
   private val hmppsQueue by lazy {
@@ -32,7 +33,7 @@ class AuditService(
   suspend fun sendAuditEvent(what: String, details: Any) {
     val auditEvent = AuditEvent(
       what = what,
-      who = securityUserContext.username().toString(),
+      who = securityUserContext.getPrincipal(),
       service = serviceName,
       details = mapper.writeValueAsString(details),
     )
