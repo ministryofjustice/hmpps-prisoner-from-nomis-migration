@@ -23,7 +23,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsNomisApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiExtension.Companion.caseNotesApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
@@ -31,6 +30,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repos
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.Duration
 import java.time.LocalDateTime
@@ -40,9 +40,6 @@ private const val OFFENDER_NUMBER2 = "A0002KT"
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
-  @Autowired
-  private lateinit var alertsNomisApiMockServer: AlertsNomisApiMockServer
-
   @Autowired
   private lateinit var caseNotesNomisApiMockServer: CaseNotesNomisApiMockServer
 
@@ -93,7 +90,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
-        alertsNomisApiMockServer.stubGetPrisonIds(totalElements = 2, pageSize = 10, offenderNo = OFFENDER_NUMBER1)
+        nomisApi.stubGetPrisonIds(totalElements = 2, pageSize = 10, offenderNo = OFFENDER_NUMBER1)
         caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(
           offenderNo = OFFENDER_NUMBER1,
           currentCaseNoteCount = 1,
@@ -176,7 +173,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
     inner class ErrorRecovery {
       @BeforeEach
       fun setUp() {
-        alertsNomisApiMockServer.stubGetPrisonIds(totalElements = 1, pageSize = 10, offenderNo = OFFENDER_NUMBER1)
+        nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, offenderNo = OFFENDER_NUMBER1)
         caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(offenderNo = OFFENDER_NUMBER1, currentCaseNoteCount = 1)
         caseNotesApi.stubMigrateCaseNotes(OFFENDER_NUMBER1, listOf("00000000-0000-0000-0000-000000000001"))
         caseNotesMappingApiMockServer.stubPostBatchMappingsFailureFollowedBySuccess(OFFENDER_NUMBER1)
@@ -540,7 +537,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will terminate a running migration`() {
-      alertsNomisApiMockServer.stubGetPrisonIds(totalElements = 2, pageSize = 10, offenderNo = OFFENDER_NUMBER1)
+      nomisApi.stubGetPrisonIds(totalElements = 2, pageSize = 10, offenderNo = OFFENDER_NUMBER1)
       caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(offenderNo = OFFENDER_NUMBER1, currentCaseNoteCount = 1)
       caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(offenderNo = OFFENDER_NUMBER1, currentCaseNoteCount = 1)
 

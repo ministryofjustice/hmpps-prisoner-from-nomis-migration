@@ -33,6 +33,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repos
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.Duration
 import java.time.LocalDate
@@ -91,7 +92,7 @@ class AlertsByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
-        alertsNomisApiMockServer.stubGetPrisonIds(totalElements = 2, pageSize = 10, offenderNo = "A0001KT")
+        nomisApi.stubGetPrisonIds(totalElements = 2, pageSize = 10, offenderNo = "A0001KT")
         alertsNomisApiMockServer.stubGetAlertsToMigrate(
           offenderNo = "A0001KT",
           currentAlertCount = 1,
@@ -200,7 +201,7 @@ class AlertsByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
     inner class ErrorRecovery {
       @BeforeEach
       fun setUp() {
-        alertsNomisApiMockServer.stubGetPrisonIds(totalElements = 1, pageSize = 10, offenderNo = "A0001KT")
+        nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, offenderNo = "A0001KT")
         alertsNomisApiMockServer.stubGetAlertsToMigrate(offenderNo = "A0001KT", currentAlertCount = 1)
         dpsAlertsServer.stubMigrateAlerts(offenderNo = "A0001KT", response = listOf(migratedAlert().copy(alertUuid = UUID.fromString("00000000-0000-0000-0000-000000000001"), offenderBookId = 1234567, alertSeq = 1)))
         alertsMappingApiMockServer.stubPostMappingsFailureFollowedBySuccess(offenderNo = "A0001KT")
@@ -561,7 +562,7 @@ class AlertsByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will terminate a running migration`() {
-      alertsNomisApiMockServer.stubGetPrisonIds(totalElements = 2, pageSize = 10, offenderNo = "A0001KT")
+      nomisApi.stubGetPrisonIds(totalElements = 2, pageSize = 10, offenderNo = "A0001KT")
       alertsNomisApiMockServer.stubGetAlertsToMigrate(offenderNo = "A0001KT", currentAlertCount = 1)
       alertsNomisApiMockServer.stubGetAlertsToMigrate(offenderNo = "A0002KT", currentAlertCount = 1)
 

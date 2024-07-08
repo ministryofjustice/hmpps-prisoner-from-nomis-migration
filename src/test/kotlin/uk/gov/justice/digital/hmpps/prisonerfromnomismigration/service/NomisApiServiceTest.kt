@@ -1,13 +1,15 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 
-import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -68,7 +70,7 @@ internal class NomisApiServiceTest {
         getRequestedFor(
           urlPathEqualTo("/visits/ids"),
         )
-          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
@@ -332,7 +334,7 @@ internal class NomisApiServiceTest {
         getRequestedFor(
           urlPathEqualTo("/visits/10309617"),
         )
-          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
@@ -412,7 +414,7 @@ internal class NomisApiServiceTest {
         getRequestedFor(
           urlPathEqualTo("/activities/ids"),
         )
-          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
@@ -584,7 +586,7 @@ internal class NomisApiServiceTest {
         getRequestedFor(
           urlPathEqualTo("/activities/3333"),
         )
-          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
@@ -687,7 +689,7 @@ internal class NomisApiServiceTest {
         getRequestedFor(
           urlPathEqualTo("/allocations/ids"),
         )
-          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
@@ -851,7 +853,7 @@ internal class NomisApiServiceTest {
         getRequestedFor(
           urlPathEqualTo("/allocations/3333"),
         )
-          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
@@ -904,6 +906,53 @@ internal class NomisApiServiceTest {
           }
         }.isInstanceOf(NotFound::class.java)
       }
+    }
+  }
+
+  @Nested
+  inner class GetPrisonerIds {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      nomisApi.stubGetPrisonIds()
+
+      nomisService.getPrisonerIds(
+        pageNumber = 0,
+        pageSize = 20,
+      )
+
+      nomisApi.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass page params to service`() = runTest {
+      nomisApi.stubGetPrisonIds()
+
+      nomisService.getPrisonerIds(
+        pageNumber = 5,
+        pageSize = 100,
+      )
+
+      nomisApi.verify(
+        getRequestedFor(urlPathEqualTo("/prisoners/ids/all"))
+          .withQueryParam("page", equalTo("5"))
+          .withQueryParam("size", equalTo("100")),
+      )
+    }
+
+    @Test
+    fun `will return a page of alerts`() = runTest {
+      nomisApi.stubGetPrisonIds(totalElements = 10, offenderNo = "A0001KT")
+
+      val prisonerIds = nomisService.getPrisonerIds(
+        pageNumber = 5,
+        pageSize = 100,
+      )
+
+      assertThat(prisonerIds.content).hasSize(10)
+      assertThat(prisonerIds.content[0].offenderNo).isEqualTo("A0001KT")
+      assertThat(prisonerIds.content[1].offenderNo).isEqualTo("A0002KT")
     }
   }
 }

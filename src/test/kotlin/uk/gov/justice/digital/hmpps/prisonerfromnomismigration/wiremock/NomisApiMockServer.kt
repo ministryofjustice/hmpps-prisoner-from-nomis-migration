@@ -17,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.objectMapper
 import java.lang.Long.min
@@ -739,6 +740,31 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     prisonId?.let { request.withQueryParam("prisonIds", equalTo(prisonId)) }
     nomisApi.verify(
       request,
+    )
+  }
+
+  fun stubGetPrisonIds(totalElements: Long = 20, pageSize: Long = 20, offenderNo: String = "A0001KT") {
+    val content: List<PrisonerId> = (1..kotlin.math.min(pageSize, totalElements)).map {
+      PrisonerId(
+        offenderNo = offenderNo.replace("0001", "$it".padStart(4, '0')),
+      )
+    }
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/prisoners/ids/all")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(
+            pageContent(
+              objectMapper = objectMapper,
+              content = content,
+              pageSize = pageSize,
+              pageNumber = 0,
+              totalElements = totalElements,
+              size = pageSize.toInt(),
+            ),
+          ),
+      ),
     )
   }
 }

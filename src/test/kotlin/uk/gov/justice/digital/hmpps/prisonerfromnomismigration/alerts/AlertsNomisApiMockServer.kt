@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
-import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
@@ -15,13 +14,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.B
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerAlertsResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import kotlin.math.min
 
 @Component
 class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
@@ -164,31 +160,6 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
           .withBody(objectMapper.writeValueAsString(response)),
-      ),
-    )
-  }
-
-  fun stubGetPrisonIds(totalElements: Long = 20, pageSize: Long = 20, offenderNo: String = "A0001KT") {
-    val content: List<PrisonerId> = (1..min(pageSize, totalElements)).map {
-      PrisonerId(
-        offenderNo = offenderNo.replace("0001", "$it".padStart(4, '0')),
-      )
-    }
-    nomisApi.stubFor(
-      get(urlPathEqualTo("/prisoners/ids/all")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-          .withBody(
-            pageContent(
-              objectMapper = objectMapper,
-              content = content,
-              pageSize = pageSize,
-              pageNumber = 0,
-              totalElements = totalElements,
-              size = pageSize.toInt(),
-            ),
-          ),
       ),
     )
   }
