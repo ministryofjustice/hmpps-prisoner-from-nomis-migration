@@ -29,10 +29,8 @@ class CaseNotesSynchronisationService(
   }
 
   suspend fun caseNoteInserted(event: CaseNotesEvent) {
-    val telemetry = event.toTelemetryProperties()
-
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
-      telemetryClient.trackEvent("casenotes-synchronisation-skipped", telemetry)
+      telemetryClient.trackEvent("casenotes-synchronisation-skipped", event.toTelemetryProperties())
       return
     }
     val nomisCaseNote = nomisApiService.getCaseNote(event.caseNoteId)
@@ -41,23 +39,20 @@ class CaseNotesSynchronisationService(
         event,
         this.caseNoteId!!,
       ).also { mappingCreateResult ->
-        val mappingSuccessTelemetry =
-          (if (mappingCreateResult == MAPPING_CREATED) mapOf() else mapOf("mapping" to "initial-failure"))
-        val additionalTelemetry = mappingSuccessTelemetry + ("dpsCaseNoteId" to this.caseNoteId.toString())
-
         telemetryClient.trackEvent(
           "casenotes-synchronisation-created-success",
-          telemetry + additionalTelemetry,
+          event.toTelemetryProperties(
+            dpsCaseNoteId = this.caseNoteId,
+            mappingFailed = mappingCreateResult != MAPPING_CREATED,
+          ),
         )
       }
     }
   }
 
   suspend fun caseNoteUpdated(event: CaseNotesEvent) { // , mapping: CaseNoteMappingDto?) {
-    val telemetry = event.toTelemetryProperties()
-    // mapOf("bookingId" to event.bookingId, "alertSequence" to event.alertSeq, "offenderNo" to event.offenderIdDisplay)
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
-      telemetryClient.trackEvent("casenotes-synchronisation-skipped", telemetry)
+      telemetryClient.trackEvent("casenotes-synchronisation-skipped", event.toTelemetryProperties())
       return
     }
     val nomisCaseNote = nomisApiService.getCaseNote(event.caseNoteId)
@@ -126,7 +121,6 @@ class CaseNotesSynchronisationService(
               "existingDpsCaseNoteId" to duplicateErrorDetails.existing.dpsCaseNoteId,
               "existingNomisCaseNoteId" to duplicateErrorDetails.existing.nomisCaseNoteId.toString(),
             ),
-            null,
           )
         }
       }
@@ -173,6 +167,7 @@ private fun CaseNotesEvent.toTelemetryProperties(
 ) = mapOf(
   "nomisCaseNoteId" to this.caseNoteId.toString(),
   "offenderNo" to (this.offenderIdDisplay ?: ""),
+  "bookingId" to this.bookingId.toString(),
 ) + (dpsCaseNoteId?.let { mapOf("dpsCaseNoteId" to it) } ?: emptyMap()) + (
   mappingFailed?.let { mapOf("mapping" to "initial-failure") } ?: emptyMap()
   )
