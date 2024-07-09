@@ -31,6 +31,7 @@ import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension.Companion.dpsAlertsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.dpsAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.resyncedAlert
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.prisonerReceivedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
@@ -1067,7 +1068,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
             removedOffenderNo = "A1000KT",
           ),
         )
-        waitForAnyProcessingToComplete("alert-mapping-merged-replace-success")
+        waitForAnyProcessingToComplete("alert-mapping-replace-success")
       }
 
       @Test
@@ -1125,11 +1126,182 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
           isNull(),
         )
         verify(telemetryClient).trackEvent(
-          eq("alert-mapping-merged-replace-success"),
+          eq("alert-mapping-replace-success"),
           check {
             assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
             assertThat(it["offenderNo"]).isEqualTo("A1234KT")
             assertThat(it["removedOffenderNo"]).isEqualTo("A1000KT")
+            assertThat(it["alertsCount"]).isEqualTo("2")
+            assertThat(it["alerts"]).isEqualTo("1, 2")
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("prison-offender-events.prisoner.booking.moved")
+  inner class BookingMoved {
+    @Nested
+    inner class HappyPath {
+      val bookingId = BOOKING_ID
+      private val movedToNomsNumber = "A1234KT"
+      private val movedFromNomsNumber = "A1000KT"
+      private val dpsAlertId1 = UUID.fromString("956d4326-b0c3-47ac-ab12-f0165109a6c5")
+      private val dpsAlertId2 = UUID.fromString("f612a10f-4827-4022-be96-d882193dfabd")
+
+      @BeforeEach
+      fun setUp() {
+        alertsNomisApiMockServer.stubGetAlertsToResynchronise(movedFromNomsNumber, bookingId = bookingId, currentAlertCount = 2)
+        dpsAlertsServer.stubResynchroniseAlerts(
+          offenderNo = movedFromNomsNumber,
+          response = listOf(
+            resyncedAlert().copy(offenderBookId = bookingId, alertSeq = 1, alertUuid = dpsAlertId1),
+            resyncedAlert().copy(offenderBookId = bookingId, alertSeq = 2, alertUuid = dpsAlertId2),
+          ),
+        )
+        alertsMappingApiMockServer.stubReplaceMappingsForMerge(movedFromNomsNumber)
+        awsSqsSentencingOffenderEventsClient.sendMessage(
+          alertsQueueOffenderEventsUrl,
+          bookingMovedDomainEvent(
+            bookingId = bookingId,
+            movedFromNomsNumber = movedFromNomsNumber,
+            movedToNomsNumber = movedToNomsNumber,
+          ),
+        )
+        waitForAnyProcessingToComplete()
+      }
+
+      @Test
+      fun `will retrieve alerts for the bookings that has changed`() {
+        alertsNomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/prisoners/$movedFromNomsNumber/alerts/to-migrate")))
+      }
+
+      @Test
+      fun `will send all alerts to DPS`() {
+        dpsAlertsServer.verify(
+          postRequestedFor(urlPathEqualTo("/resync/$movedFromNomsNumber/alerts"))
+            .withRequestBodyJsonPath("[0].offenderBookId", "$bookingId")
+            .withRequestBodyJsonPath("[0].alertSeq", "1")
+            .withRequestBodyJsonPath("[1].offenderBookId", "$bookingId")
+            .withRequestBodyJsonPath("[1].alertSeq", "2"),
+        )
+      }
+
+      @Test
+      fun `will create a mapping between the DPS and NOMIS alerts`() {
+        alertsMappingApiMockServer.verify(
+          putRequestedFor(urlPathEqualTo("/mapping/alerts/$movedFromNomsNumber/merge"))
+            .withRequestBodyJsonPath("prisonerMapping.mappings[0].nomisBookingId", "$bookingId")
+            .withRequestBodyJsonPath("prisonerMapping.mappings[0].nomisAlertSequence", "1")
+            .withRequestBodyJsonPath("prisonerMapping.mappings[0].dpsAlertId", "$dpsAlertId1")
+            .withRequestBodyJsonPath("prisonerMapping.mappings[1].nomisBookingId", "$bookingId")
+            .withRequestBodyJsonPath("prisonerMapping.mappings[1].nomisAlertSequence", "2")
+            .withRequestBodyJsonPath("prisonerMapping.mappings[1].dpsAlertId", "$dpsAlertId2")
+            .withRequestBodyJsonPath("prisonerMapping.mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("removedOffenderNo", "A1000KT"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for the booking move`() {
+        verify(telemetryClient).trackEvent(
+          eq("from-nomis-synch-alerts-booking-moved"),
+          check {
+            assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["movedToNomsNumber"]).isEqualTo(movedToNomsNumber)
+            assertThat(it["movedFromNomsNumber"]).isEqualTo(movedFromNomsNumber)
+            assertThat(it["alertsCount"]).isEqualTo("2")
+            assertThat(it["alerts"]).isEqualTo("1, 2")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class HappyPathWithFailure {
+      val bookingId = BOOKING_ID
+      private val movedToNomsNumber = "A1234KT"
+      private val movedFromNomsNumber = "A1000KT"
+      private val dpsAlertId1 = UUID.fromString("956d4326-b0c3-47ac-ab12-f0165109a6c5")
+      private val dpsAlertId2 = UUID.fromString("f612a10f-4827-4022-be96-d882193dfabd")
+
+      @BeforeEach
+      fun setUp() {
+        alertsNomisApiMockServer.stubGetAlertsToResynchronise(movedFromNomsNumber, bookingId = bookingId, currentAlertCount = 2)
+        dpsAlertsServer.stubResynchroniseAlerts(
+          offenderNo = movedFromNomsNumber,
+          response = listOf(
+            resyncedAlert().copy(offenderBookId = bookingId, alertSeq = 1, alertUuid = dpsAlertId1),
+            resyncedAlert().copy(offenderBookId = bookingId, alertSeq = 2, alertUuid = dpsAlertId2),
+          ),
+        )
+        alertsMappingApiMockServer.stubReplaceMappingsForMergeFollowedBySuccess(movedFromNomsNumber)
+        awsSqsSentencingOffenderEventsClient.sendMessage(
+          alertsQueueOffenderEventsUrl,
+          bookingMovedDomainEvent(
+            bookingId = bookingId,
+            movedFromNomsNumber = movedFromNomsNumber,
+            movedToNomsNumber = movedToNomsNumber,
+          ),
+        )
+        waitForAnyProcessingToComplete("alert-mapping-replace-success")
+      }
+
+      @Test
+      fun `will retrieve alerts for the bookings that has changed`() {
+        alertsNomisApiMockServer.verify(1, getRequestedFor(urlPathEqualTo("/prisoners/$movedFromNomsNumber/alerts/to-migrate")))
+      }
+
+      @Test
+      fun `will send all alerts to DPS once`() {
+        dpsAlertsServer.verify(
+          1,
+          postRequestedFor(urlPathEqualTo("/resync/$movedFromNomsNumber/alerts"))
+            .withRequestBodyJsonPath("[0].offenderBookId", "$bookingId")
+            .withRequestBodyJsonPath("[0].alertSeq", "1")
+            .withRequestBodyJsonPath("[1].offenderBookId", "$bookingId")
+            .withRequestBodyJsonPath("[1].alertSeq", "2"),
+        )
+      }
+
+      @Test
+      fun `will try to create a mapping between the DPS and NOMIS alerts until it succeeds`() {
+        alertsMappingApiMockServer.verify(
+          2,
+          putRequestedFor(urlPathEqualTo("/mapping/alerts/$movedFromNomsNumber/merge"))
+            .withRequestBodyJsonPath("prisonerMapping.mappings[0].nomisBookingId", "$bookingId")
+            .withRequestBodyJsonPath("prisonerMapping.mappings[0].nomisAlertSequence", "1")
+            .withRequestBodyJsonPath("prisonerMapping.mappings[0].dpsAlertId", "$dpsAlertId1")
+            .withRequestBodyJsonPath("prisonerMapping.mappings[1].nomisBookingId", "$bookingId")
+            .withRequestBodyJsonPath("prisonerMapping.mappings[1].nomisAlertSequence", "2")
+            .withRequestBodyJsonPath("prisonerMapping.mappings[1].dpsAlertId", "$dpsAlertId2")
+            .withRequestBodyJsonPath("prisonerMapping.mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("removedOffenderNo", "A1000KT"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for the merge and mapping success`() {
+        verify(telemetryClient).trackEvent(
+          eq("from-nomis-synch-alerts-booking-moved"),
+          check {
+            assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["movedToNomsNumber"]).isEqualTo(movedToNomsNumber)
+            assertThat(it["movedFromNomsNumber"]).isEqualTo(movedFromNomsNumber)
+            assertThat(it["alertsCount"]).isEqualTo("2")
+            assertThat(it["alerts"]).isEqualTo("1, 2")
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("alert-mapping-replace-success"),
+          check {
+            assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["movedToNomsNumber"]).isEqualTo(movedToNomsNumber)
+            assertThat(it["movedFromNomsNumber"]).isEqualTo(movedFromNomsNumber)
             assertThat(it["alertsCount"]).isEqualTo("2")
             assertThat(it["alerts"]).isEqualTo("1, 2")
           },

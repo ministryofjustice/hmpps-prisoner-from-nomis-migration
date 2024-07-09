@@ -22,3 +22,13 @@ data class ReceivePrisonerAdditionalInformationEvent(
   val nomsNumber: String,
   val reason: String,
 )
+
+data class PrisonerBookingMovedDomainEvent(
+  val additionalInformation: BookingMovedAdditionalInformationEvent,
+)
+
+data class BookingMovedAdditionalInformationEvent(
+  val movedToNomsNumber: String,
+  val movedFromNomsNumber: String,
+  val bookingId: Long,
+)
