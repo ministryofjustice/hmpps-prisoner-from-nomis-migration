@@ -45,6 +45,7 @@ class AlertsEventListener(
               "ALERT-INSERTED" -> alertsSynchronisationService.nomisAlertInserted(sqsMessage.Message.fromJson())
               "ALERT-DELETED" -> alertsSynchronisationService.nomisAlertDeleted(sqsMessage.Message.fromJson())
               "prison-offender-events.prisoner.merged" -> alertsSynchronisationService.synchronisePrisonerMerge(sqsMessage.Message.fromJson())
+              "prison-offender-events.prisoner.booking.moved" -> alertsSynchronisationService.synchronisePrisonerBookingMoved(sqsMessage.Message.fromJson())
               "prisoner-offender-search.prisoner.received" -> alertsSynchronisationService.resynchronisePrisonerAlertsForAdmission(sqsMessage.Message.fromJson())
 
               else -> log.info("Received a message I wasn't expecting {}", eventType)

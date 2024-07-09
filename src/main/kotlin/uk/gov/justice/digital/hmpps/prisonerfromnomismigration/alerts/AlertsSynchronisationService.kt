@@ -9,6 +9,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.MappingRes
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.MappingResponse.MAPPING_FAILED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.Alert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerBookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerMergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerReceiveDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.ReceivePrisonerAdditionalInformationEvent
@@ -229,6 +230,46 @@ class AlertsSynchronisationService(
       )
     }
   }
+  suspend fun synchronisePrisonerBookingMoved(prisonerMergeEvent: PrisonerBookingMovedDomainEvent) {
+    val bookingId = prisonerMergeEvent.additionalInformation.bookingId
+    val movedToNomsNumber = prisonerMergeEvent.additionalInformation.movedToNomsNumber
+    val movedFromNomsNumber = prisonerMergeEvent.additionalInformation.movedFromNomsNumber
+
+    val alerts = nomisApiService.getAlertsToResynchronise(movedFromNomsNumber) ?: PrisonerAlertsResponse(emptyList())
+    val alertsToResynchronise = alerts.latestBookingAlerts.map { it.toDPSResyncAlert() }
+    val telemetry = mapOf(
+      "bookingId" to bookingId,
+      "movedToNomsNumber" to movedToNomsNumber,
+      "movedFromNomsNumber" to movedFromNomsNumber,
+      "alertsCount" to alertsToResynchronise.size,
+      "alerts" to alertsToResynchronise.map { it.alertSeq }.joinToString(),
+    )
+
+    // we only need to update the source prisoner since the prisoner
+    // receiving the booking would have already been updated via the
+    // prisoner receive event
+    dpsApiService.resynchroniseAlerts(
+      offenderNo = movedFromNomsNumber,
+      alerts = alertsToResynchronise,
+    ).also {
+      val prisonerMappings = PrisonerAlertMappingsDto(
+        mappingType = PrisonerAlertMappingsDto.MappingType.NOMIS_CREATED,
+        mappings = it.map { dpsAlert ->
+          AlertMappingIdDto(
+            nomisBookingId = dpsAlert.offenderBookId,
+            nomisAlertSequence = dpsAlert.alertSeq.toLong(),
+            dpsAlertId = dpsAlert.alertUuid.toString(),
+          )
+        },
+      )
+
+      tryToReplaceMergedMappings(movedFromNomsNumber, MergedPrisonerAlertMappingsDto(movedFromNomsNumber, prisonerMappings), telemetry)
+      telemetryClient.trackEvent(
+        "from-nomis-synch-alerts-booking-moved",
+        telemetry,
+      )
+    }
+  }
 
   suspend fun resynchronisePrisonerAlerts(offenderNo: String) = resynchronisePrisonerAlertsForAdmission(
     PrisonerReceiveDomainEvent(
@@ -388,7 +429,7 @@ class AlertsSynchronisationService(
     replaceMergedMappingsBatch(offenderNo = retryMessage.body.offenderNo, mergedPrisonerMapping = retryMessage.body.prisonerMappings)
       .also {
         telemetryClient.trackEvent(
-          "alert-mapping-merged-replace-success",
+          "alert-mapping-replace-success",
           retryMessage.telemetryAttributes,
         )
       }
