@@ -5,6 +5,8 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesSynchronisationService.MappingResponse.MAPPING_CREATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesSynchronisationService.MappingResponse.MAPPING_FAILED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
@@ -36,7 +38,15 @@ class CaseNotesSynchronisationService(
       tryToCreateCaseNoteMapping(
         event,
         this.caseNoteId!!,
-      )
+      ).also { mappingCreateResult ->
+        telemetryClient.trackEvent(
+          "casenotes-synchronisation-created-success",
+          event.toTelemetryProperties(
+            dpsCaseNoteId = this.caseNoteId,
+            mappingFailed = mappingCreateResult != MAPPING_CREATED,
+          ),
+        )
+      }
     }
   }
 
@@ -48,7 +58,7 @@ class CaseNotesSynchronisationService(
     val nomisCaseNote = nomisApiService.getCaseNote(event.caseNoteId)
     val mapping = caseNotesMappingService.getMappingGivenNomisId(event.caseNoteId)
 
-    caseNotesService.upsertCaseNote(nomisCaseNote.toDPSUpdateCaseNote(mapping.dpsCaseNoteId)).apply {}
+    caseNotesService.upsertCaseNote(nomisCaseNote.toDPSUpdateCaseNote(mapping.dpsCaseNoteId))
 //     "caseNoteId").isEqualTo(casenote1.id)
 //     "bookingId").isEqualTo(bookingId)
 //     "caseNoteType.code").isEqualTo("ALL")
@@ -58,6 +68,11 @@ class CaseNotesSynchronisationService(
 //     "caseNoteText").isEqualTo("A note")
 //     "amended").isEqualTo("false")
 //     "occurrenceDateTime") assertThat(LocalDateTime.parse(it)).isCloseTo(now, within(2, ChronoUnit.MINUTES)) }
+
+    telemetryClient.trackEvent(
+      "casenotes-synchronisation-updated-success",
+      event.toTelemetryProperties(mapping.dpsCaseNoteId),
+    )
   }
 
   suspend fun caseNoteDeleted(event: CaseNotesEvent) {
@@ -106,11 +121,10 @@ class CaseNotesSynchronisationService(
               "existingDpsCaseNoteId" to duplicateErrorDetails.existing.dpsCaseNoteId,
               "existingNomisCaseNoteId" to duplicateErrorDetails.existing.nomisCaseNoteId.toString(),
             ),
-            null,
           )
         }
       }
-      return MappingResponse.MAPPING_CREATED
+      return MAPPING_CREATED
     } catch (e: Exception) {
       log.error(
         "Failed to create mapping for dpsCaseNote id $caseNoteId, nomisCaseNoteId ${event.caseNoteId}",
@@ -122,7 +136,7 @@ class CaseNotesSynchronisationService(
         message = mapping,
         telemetryAttributes = event.toTelemetryProperties(caseNoteId),
       )
-      return MappingResponse.MAPPING_FAILED
+      return MAPPING_FAILED
     }
   }
 
@@ -153,6 +167,7 @@ private fun CaseNotesEvent.toTelemetryProperties(
 ) = mapOf(
   "nomisCaseNoteId" to this.caseNoteId.toString(),
   "offenderNo" to (this.offenderIdDisplay ?: ""),
+  "bookingId" to this.bookingId.toString(),
 ) + (dpsCaseNoteId?.let { mapOf("dpsCaseNoteId" to it) } ?: emptyMap()) + (
   mappingFailed?.let { mapOf("mapping" to "initial-failure") } ?: emptyMap()
   )

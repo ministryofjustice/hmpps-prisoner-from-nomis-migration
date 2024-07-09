@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes
 
 import io.swagger.v3.oas.annotations.Operation
 import jakarta.validation.Valid
+import kotlinx.coroutines.delay
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
@@ -18,7 +19,7 @@ import java.util.*
  * This can be deleted once the real service is available.
  */
 @RestController
-@RequestMapping("/mock", produces = [MediaType.APPLICATION_JSON_VALUE])
+@RequestMapping(produces = [MediaType.APPLICATION_JSON_VALUE])
 class MockCaseNotesResource {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -34,6 +35,7 @@ class MockCaseNotesResource {
     caseNoteRequest: List<MigrateCaseNoteRequest>,
   ): List<DpsCaseNote> {
     log.info("Creating case notes for migrate case notes for offender $offenderNo, size ${caseNoteRequest.size}}")
+    delay(350) // simulate time taken to store case notes
     return caseNoteRequest.map {
       DpsCaseNote(
         caseNoteId = UUID.randomUUID().toString(),
@@ -50,6 +52,7 @@ class MockCaseNotesResource {
     caseNoteRequest: SyncCaseNoteRequest,
   ): DpsCaseNote {
     log.info("Creating case note for sync request $caseNoteRequest}")
+    delay(350)
     return DpsCaseNote(
       caseNoteId = UUID.randomUUID().toString(),
       dummyAttribute = caseNoteRequest.dummyAttribute,
