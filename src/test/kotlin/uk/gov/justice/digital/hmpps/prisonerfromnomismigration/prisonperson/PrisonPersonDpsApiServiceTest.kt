@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonDpsApiExtension.Companion.dpsPrisonPersonServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesHistoryDto
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -114,6 +115,88 @@ class PrisonPersonDpsApiServiceTest {
       appliesTo = appliesToTime?.toString(),
       createdAt = createdAtTime.toString(),
       createdBy = createdByUser,
+    )
+  }
+
+  @Nested
+  inner class MigratePhysicalAttributes {
+    private val prisonerNumber = "A1234AA"
+    private val height = 180
+    private val weight = 80
+    private val appliesFrom = LocalDateTime.now().minusDays(1L)
+    private val appliesTo = LocalDateTime.now()
+    private val createdAt = LocalDateTime.now()
+    private val createdBy = "A_USER"
+
+    @Test
+    fun `should pass auth token to the service`() = runTest {
+      dpsPrisonPersonServer.stubMigratePhysicalAttributes(aResponse())
+
+      apiService.migratePhysicalAttributes(prisonerNumber, height, weight, appliesFrom, appliesTo, createdAt, createdBy)
+
+      dpsPrisonPersonServer.verify(
+        putRequestedFor(urlPathMatching("/migration/prisoners/$prisonerNumber/physical-attributes"))
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `should pass data to the service`() = runTest {
+      dpsPrisonPersonServer.stubMigratePhysicalAttributes(aResponse())
+
+      apiService.migratePhysicalAttributes(prisonerNumber, height, weight, appliesFrom, appliesTo, createdAt, createdBy)
+
+      dpsPrisonPersonServer.verify(
+        putRequestedFor(urlPathMatching("/migration/prisoners/$prisonerNumber/physical-attributes"))
+          .withRequestBody(matchingJsonPath("height", equalTo(height.toString())))
+          .withRequestBody(matchingJsonPath("weight", equalTo(weight.toString())))
+          .withRequestBody(matchingJsonPath("appliesFrom", equalTo(appliesFrom.atZone(ZoneId.of("Europe/London")).toString())))
+          .withRequestBody(matchingJsonPath("appliesTo", equalTo(appliesTo.atZone(ZoneId.of("Europe/London")).toString())))
+          .withRequestBody(matchingJsonPath("createdAt", equalTo(createdAt.atZone(ZoneId.of("Europe/London")).toString())))
+          .withRequestBody(matchingJsonPath("createdBy", equalTo(createdBy))),
+      )
+    }
+
+    @Test
+    fun `should not pass null data to the service`() = runTest {
+      dpsPrisonPersonServer.stubMigratePhysicalAttributes(aResponse(heightCentimetres = null, weightKilograms = null))
+
+      apiService.migratePhysicalAttributes(prisonerNumber, null, null, appliesFrom, null, createdAt, createdBy)
+
+      dpsPrisonPersonServer.verify(
+        putRequestedFor(urlPathMatching("/migration/prisoners/$prisonerNumber/physical-attributes"))
+          .withRequestBody(matchingJsonPath("height", absent()))
+          .withRequestBody(matchingJsonPath("weight", absent()))
+          .withRequestBody(matchingJsonPath("appliesTo", absent())),
+      )
+    }
+
+    @Test
+    fun `should parse the response`() = runTest {
+      dpsPrisonPersonServer.stubMigratePhysicalAttributes(aResponse())
+
+      val response = apiService.migratePhysicalAttributes(prisonerNumber, height, weight, appliesFrom, appliesTo, createdAt, createdBy)
+
+      assertThat(response.height).isEqualTo(height)
+      assertThat(response.weight).isEqualTo(weight)
+    }
+
+    @Test
+    fun `should throw when API returns an error`() = runTest {
+      dpsPrisonPersonServer.stubMigratePhysicalAttributes(INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.migratePhysicalAttributes(prisonerNumber, height, weight, appliesFrom, appliesTo, createdAt, createdBy)
+      }
+    }
+
+    // TODO SDIT-1825 We are expecting this to change, hopefully to include just the ID of the entity created in DPS so we can write it to the mapping table
+    private fun aResponse(
+      heightCentimetres: Int? = height,
+      weightKilograms: Int? = weight,
+    ) = PhysicalAttributesDto(
+      height = heightCentimetres,
+      weight = weightKilograms,
     )
   }
 }
