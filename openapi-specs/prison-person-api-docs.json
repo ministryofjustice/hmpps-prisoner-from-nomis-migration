@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-06-17"
+    "version": "2024-07-04.306.871d4fc"
   },
   "servers": [
     {
@@ -38,6 +38,10 @@
     {
       "name": "Physical Attributes",
       "description": "The height and weight of a prisoner"
+    },
+    {
+      "name": "Migration from NOMIS",
+      "description": "Endpoints to facilitate migration of data from NOMIS to the Prison Person database"
     }
   ],
   "paths": {
@@ -214,6 +218,97 @@
         }
       }
     },
+    "/migration/prisoners/{prisonerNumber}/physical-attributes": {
+      "put": {
+        "tags": [
+          "Physical Attributes",
+          "Migration from NOMIS"
+        ],
+        "summary": "MIGRATION endpoint to sync changes to physical attributes made in NOMIS",
+        "description": "This endpoint <b>SHOULD ONLY BE USED IN ORDER TO MIGRATE DATA.</b><br/><br/>Requires role `ROLE_PRISON_PERSON_API__PHYSICAL_ATTRIBUTES_MIGRATION__RW` user made the edit.",
+        "operationId": "migratePhysicalAttributes",
+        "parameters": [
+          {
+            "name": "prisonerNumber",
+            "in": "path",
+            "description": "The prisoner number",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The prisoner number",
+              "example": "A1234AA"
+            },
+            "example": "A1234AA"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "uniqueItems": true,
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PhysicalAttributesMigrationRequest"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Returns prisoner's physical attributes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhysicalAttributesDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires ROLE_PRISON_PERSON_API__PHYSICAL_ATTRIBUTES_MIGRATION__RW",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhysicalAttributesDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/prisoners/{prisonerNumber}": {
       "get": {
         "tags": [
@@ -342,14 +437,13 @@
           },
           "createdAt": {
             "type": "string",
-            "description": "The timestamp indicating when this record was created in NOMIS.",
+            "description": "The timestamp indicating when this record was last edited in NOMIS.",
             "format": "yyyy-MM-dd'T'HH:mm:ssX",
             "example": "2024-06-14T10:35:17+01:00[Europe/London]"
           },
           "createdBy": {
             "type": "string",
-            "description": "The username of who created the record in NOMIS",
-            "nullable": true,
+            "description": "The username of who last edited the record in NOMIS",
             "example": "USER1"
           }
         },
@@ -443,6 +537,54 @@
         },
         "description": "Physical Attributes"
       },
+      "PhysicalAttributesMigrationRequest": {
+        "required": [
+          "appliesFrom",
+          "createdAt",
+          "createdBy"
+        ],
+        "type": "object",
+        "properties": {
+          "height": {
+            "type": "integer",
+            "description": "Height (in centimetres). May be left null if no data available for height.",
+            "format": "int32",
+            "nullable": true,
+            "example": 180
+          },
+          "weight": {
+            "type": "integer",
+            "description": "Weight (in kilograms). May be left null if no data available for weight.",
+            "format": "int32",
+            "nullable": true,
+            "example": 70
+          },
+          "appliesFrom": {
+            "type": "string",
+            "description": "The timestamp indicating from when these physical attributes were true for the prisoner. For migration of the current booking, this should be equal to the 'createdAt' date. For migration of historical bookings, this should be equal to the booking start date.",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+01:00[Europe/London]"
+          },
+          "appliesTo": {
+            "type": "string",
+            "description": "The timestamp of when these physical attributes should no longer be considered applicable. For migration of the current booking, this should be left null. For migration of historical bookings, this should be equal to the booking end date.",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+01:00[Europe/London]"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "The timestamp indicating when this record was last edited in NOMIS.",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+01:00[Europe/London]"
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "The username of who last edited the record in NOMIS",
+            "example": "USER1"
+          }
+        },
+        "description": "Request object for migration of a prisoner's physical attributes"
+      },
       "PrisonPersonDto": {
         "required": [
           "physicalAttributes",
@@ -474,22 +616,22 @@
         "type": "oauth2",
         "flows": {
           "clientCredentials": {
-            "tokenUrl": "http://localhost:9090/auth/oauth/token",
+            "tokenUrl": "https://sign-in-dev.hmpps.service.justice.gov.uk/auth/oauth/token",
             "scopes": {
               "read": "Allows read of data",
               "write": "Allows write of data"
             }
           },
           "authorizationCode": {
-            "authorizationUrl": "http://localhost:9090/auth/oauth/authorize",
-            "tokenUrl": "http://localhost:9090/auth/oauth/token",
+            "authorizationUrl": "https://sign-in-dev.hmpps.service.justice.gov.uk/auth/oauth/authorize",
+            "tokenUrl": "https://sign-in-dev.hmpps.service.justice.gov.uk/auth/oauth/token",
             "scopes": {
               "read": "Allows read of data",
               "write": "Allows write of data"
             }
           }
         },
-        "openIdConnectUrl": "http://localhost:9090/auth/.well-known/openid-configuration"
+        "openIdConnectUrl": "https://sign-in-dev.hmpps.service.justice.gov.uk/auth/.well-known/openid-configuration"
       }
     }
   }
