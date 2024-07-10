@@ -263,7 +263,7 @@ class AlertsSynchronisationService(
         },
       )
 
-      tryToReplaceMergedMappings(movedFromNomsNumber, MergedPrisonerAlertMappingsDto(movedFromNomsNumber, prisonerMappings), telemetry)
+      tryToReplaceMappings(offenderNo = movedFromNomsNumber, prisonerMappings = prisonerMappings, telemetry)
       telemetryClient.trackEvent(
         "from-nomis-synch-alerts-booking-moved",
         telemetry,
@@ -327,23 +327,6 @@ class AlertsSynchronisationService(
     }
   }
 
-  private suspend fun tryToCreateMappings(
-    mappings: List<AlertMappingDto>,
-    telemetry: Map<String, Any>,
-  ): MappingResponse {
-    try {
-      return createMappingsBatch(mappings, telemetry)
-    } catch (e: Exception) {
-      log.error("Failed to create mappings for alert id $mappings", e)
-      queueService.sendMessage(
-        messageType = SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING_BATCH.name,
-        synchronisationType = SynchronisationType.ALERTS,
-        message = mappings,
-        telemetryAttributes = telemetry.valuesAsStrings(),
-      )
-      return MAPPING_FAILED
-    }
-  }
   private suspend fun tryToReplaceMappings(
     offenderNo: String,
     prisonerMappings: PrisonerAlertMappingsDto,
