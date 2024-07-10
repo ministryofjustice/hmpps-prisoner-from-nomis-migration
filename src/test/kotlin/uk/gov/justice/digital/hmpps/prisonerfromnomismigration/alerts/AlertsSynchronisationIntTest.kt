@@ -1161,7 +1161,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
             resyncedAlert().copy(offenderBookId = bookingId, alertSeq = 2, alertUuid = dpsAlertId2),
           ),
         )
-        alertsMappingApiMockServer.stubReplaceMappingsForMerge(movedFromNomsNumber)
+        alertsMappingApiMockServer.stubReplaceMappings(movedFromNomsNumber)
         awsSqsSentencingOffenderEventsClient.sendMessage(
           alertsQueueOffenderEventsUrl,
           bookingMovedDomainEvent(
@@ -1192,15 +1192,14 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will create a mapping between the DPS and NOMIS alerts`() {
         alertsMappingApiMockServer.verify(
-          putRequestedFor(urlPathEqualTo("/mapping/alerts/$movedFromNomsNumber/merge"))
-            .withRequestBodyJsonPath("prisonerMapping.mappings[0].nomisBookingId", "$bookingId")
-            .withRequestBodyJsonPath("prisonerMapping.mappings[0].nomisAlertSequence", "1")
-            .withRequestBodyJsonPath("prisonerMapping.mappings[0].dpsAlertId", "$dpsAlertId1")
-            .withRequestBodyJsonPath("prisonerMapping.mappings[1].nomisBookingId", "$bookingId")
-            .withRequestBodyJsonPath("prisonerMapping.mappings[1].nomisAlertSequence", "2")
-            .withRequestBodyJsonPath("prisonerMapping.mappings[1].dpsAlertId", "$dpsAlertId2")
-            .withRequestBodyJsonPath("prisonerMapping.mappingType", "NOMIS_CREATED")
-            .withRequestBodyJsonPath("removedOffenderNo", "A1000KT"),
+          putRequestedFor(urlPathEqualTo("/mapping/alerts/$movedFromNomsNumber/all"))
+            .withRequestBodyJsonPath("mappings[0].nomisBookingId", "$bookingId")
+            .withRequestBodyJsonPath("mappings[0].nomisAlertSequence", "1")
+            .withRequestBodyJsonPath("mappings[0].dpsAlertId", "$dpsAlertId1")
+            .withRequestBodyJsonPath("mappings[1].nomisBookingId", "$bookingId")
+            .withRequestBodyJsonPath("mappings[1].nomisAlertSequence", "2")
+            .withRequestBodyJsonPath("mappings[1].dpsAlertId", "$dpsAlertId2")
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
         )
       }
 
@@ -1238,7 +1237,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
             resyncedAlert().copy(offenderBookId = bookingId, alertSeq = 2, alertUuid = dpsAlertId2),
           ),
         )
-        alertsMappingApiMockServer.stubReplaceMappingsForMergeFollowedBySuccess(movedFromNomsNumber)
+        alertsMappingApiMockServer.stubReplaceMappingsFailureFollowedBySuccess(movedFromNomsNumber)
         awsSqsSentencingOffenderEventsClient.sendMessage(
           alertsQueueOffenderEventsUrl,
           bookingMovedDomainEvent(
@@ -1271,15 +1270,14 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will try to create a mapping between the DPS and NOMIS alerts until it succeeds`() {
         alertsMappingApiMockServer.verify(
           2,
-          putRequestedFor(urlPathEqualTo("/mapping/alerts/$movedFromNomsNumber/merge"))
-            .withRequestBodyJsonPath("prisonerMapping.mappings[0].nomisBookingId", "$bookingId")
-            .withRequestBodyJsonPath("prisonerMapping.mappings[0].nomisAlertSequence", "1")
-            .withRequestBodyJsonPath("prisonerMapping.mappings[0].dpsAlertId", "$dpsAlertId1")
-            .withRequestBodyJsonPath("prisonerMapping.mappings[1].nomisBookingId", "$bookingId")
-            .withRequestBodyJsonPath("prisonerMapping.mappings[1].nomisAlertSequence", "2")
-            .withRequestBodyJsonPath("prisonerMapping.mappings[1].dpsAlertId", "$dpsAlertId2")
-            .withRequestBodyJsonPath("prisonerMapping.mappingType", "NOMIS_CREATED")
-            .withRequestBodyJsonPath("removedOffenderNo", "A1000KT"),
+          putRequestedFor(urlPathEqualTo("/mapping/alerts/$movedFromNomsNumber/all"))
+            .withRequestBodyJsonPath("mappings[0].nomisBookingId", "$bookingId")
+            .withRequestBodyJsonPath("mappings[0].nomisAlertSequence", "1")
+            .withRequestBodyJsonPath("mappings[0].dpsAlertId", "$dpsAlertId1")
+            .withRequestBodyJsonPath("mappings[1].nomisBookingId", "$bookingId")
+            .withRequestBodyJsonPath("mappings[1].nomisAlertSequence", "2")
+            .withRequestBodyJsonPath("mappings[1].dpsAlertId", "$dpsAlertId2")
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
         )
       }
 
