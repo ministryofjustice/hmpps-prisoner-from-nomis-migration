@@ -9,6 +9,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
@@ -44,4 +45,10 @@ class CaseNotesMappingApiService(@Qualifier("mappingApiWebClient") webClient: We
       .uri("/mapping/casenotes/nomis-casenote-id/$caseNoteId")
       .retrieve()
       .awaitBody()
+
+  suspend fun getMappingGivenNomisIdOrNull(caseNoteId: Long): CaseNoteMappingDto? =
+    webClient.get()
+      .uri("/mapping/casenotes/nomis-casenote-id/$caseNoteId")
+      .retrieve()
+      .awaitBodyOrNullWhenNotFound()
 }

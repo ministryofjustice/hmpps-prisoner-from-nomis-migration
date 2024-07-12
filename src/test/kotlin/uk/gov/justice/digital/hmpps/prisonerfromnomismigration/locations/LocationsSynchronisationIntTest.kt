@@ -38,6 +38,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingA
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
+import java.util.AbstractMap.SimpleEntry
 
 private const val DPS_LOCATION_ID = "abcdef12-1234-1234-1234-1234567890ab"
 private const val NOMIS_LOCATION_ID = 12345L
@@ -163,6 +164,8 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
               check {
                 assertThat(it["dpsLocationId"]).isEqualTo(DPS_LOCATION_ID)
                 assertThat(it["nomisLocationId"]).isEqualTo(NOMIS_LOCATION_ID.toString())
+                assertThat(it["key"]).isEqualTo("HMI-D-1-007")
+                assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
               },
               isNull(),
             )

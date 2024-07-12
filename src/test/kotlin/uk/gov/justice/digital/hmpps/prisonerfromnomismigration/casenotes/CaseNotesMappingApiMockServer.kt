@@ -5,8 +5,10 @@ import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.jsonResponse
 import com.github.tomakehurst.wiremock.client.WireMock.okJson
 import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
@@ -18,10 +20,73 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
 @Component
 class CaseNotesMappingApiMockServer(private val objectMapper: ObjectMapper) {
+  fun stubGetByNomisId(
+    caseNoteId: Long = 1,
+    mapping: CaseNoteMappingDto = CaseNoteMappingDto(
+      nomisBookingId = 123456,
+      dpsCaseNoteId = UUID.randomUUID().toString(),
+      nomisCaseNoteId = 1234567,
+      offenderNo = "A1234KT",
+      mappingType = CaseNoteMappingDto.MappingType.MIGRATED,
+    ),
+  ) {
+    mappingApi.stubFor(
+      get(urlEqualTo("/mapping/casenotes/nomis-casenote-id/$caseNoteId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(objectMapper.writeValueAsString(mapping)),
+      ),
+    )
+  }
+
+  fun stubGetByNomisId(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      get(urlPathMatching("/mapping/casenotes/nomis-casenote-id/\\d+")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubGetByNomisId(
+    caseNoteId: Long = 1,
+    status: HttpStatus,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    mappingApi.stubFor(
+      get(urlEqualTo("/mapping/casenotes/nomis-casenote-id/$caseNoteId")).willReturn(
+        jsonResponse(error, status.value()),
+      ),
+    )
+  }
+
+  fun stubPostMapping() {
+    mappingApi.stubFor(
+      post("/mapping/casenotes").willReturn(
+        jsonResponse(null, 201),
+      ),
+    )
+  }
+
+  fun stubPostMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      post("/mapping/casenotes").willReturn(
+        jsonResponse(error, status.value()),
+      ),
+    )
+  }
+
+  fun stubPostMappingFailureFollowedBySuccess() {
+    mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/casenotes")
+  }
+
   fun stubPostBatchMappings(offenderNo: String) {
     mappingApi.stubFor(
       post("/mapping/casenotes/$offenderNo/all").willReturn(

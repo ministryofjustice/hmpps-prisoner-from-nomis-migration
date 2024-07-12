@@ -3,14 +3,18 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus.CREATED
 import org.springframework.test.context.junit.jupiter.SpringExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiExtension.Companion.objectMapper
+import java.util.UUID
 
 class CaseNotesApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
   companion object {
@@ -36,6 +40,27 @@ class CaseNotesApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCal
 class CaseNotesApiMockServer : WireMockServer(WIREMOCK_PORT) {
   companion object {
     private const val WIREMOCK_PORT = 8096
+
+    fun dpsCaseNote() = SyncCaseNoteRequest(
+      caseNoteId = UUID.randomUUID().toString(),
+      dummyAttribute = "text",
+      // TBC
+//      offenderIdentifier = "",
+//      type = "",
+//      typeDescription = "",
+//      subType = "",
+//      subTypeDescription = "",
+//      source = "",
+//      creationDateTime = LocalDateTime.now(),
+//      occurrenceDateTime = LocalDateTime.now(),
+//      authorName = "",
+//      authorUserId = "",
+//      text = "",
+//      eventId = 0,
+//      sensitive = false,
+//      amendments = emptyList(),
+      // locationId: String? = null
+    )
   }
 
   fun stubHealthPing(status: Int) {
@@ -59,7 +84,7 @@ class CaseNotesApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withHeader("Content-Type", "application/json")
           .withStatus(CREATED.value())
           .withBody(
-            CaseNotesApiExtension.objectMapper.writeValueAsString(
+            objectMapper.writeValueAsString(
               dpsCaseNotesIds.map {
                 DpsCaseNote(
                   dummyAttribute = "qwerty",
@@ -72,6 +97,36 @@ class CaseNotesApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubPostCaseNote(
+    caseNoteRequest: SyncCaseNoteRequest,
+  ) {
+    stubFor(
+      post("/sync/upsert").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(CREATED.value())
+          .withBody(
+            objectMapper.writeValueAsString(
+              DpsCaseNote(
+                dummyAttribute = caseNoteRequest.dummyAttribute,
+                caseNoteId = caseNoteRequest.caseNoteId,
+              ),
+            ),
+          ),
+      ),
+    )
+  }
+
+  fun stubDeleteCaseNote() {
+    stubFor(
+      delete(urlPathMatching("/sync/delete/.+"))
+        .willReturn(
+          aResponse()
+            .withStatus(204)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
 //  fun createCaseNotesMigrationCount() =
 //    findAll(postRequestedFor(urlMatching("/migrate/bookings/.*"))).count()
 //

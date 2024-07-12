@@ -70,77 +70,49 @@ class CaseNotesNomisApiServiceTest {
       assertThat(response.caseNotes[0].bookingId).isEqualTo(1L)
       assertThat(response.caseNotes[0].caseNoteId).isEqualTo(1001L)
     }
-
-//    @Test
-//    fun extra() = runTest {
-//      caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(
-//        bookingId = 1,
-//        currentCaseNoteCount = 1,
-//          caseNote = CaseNoteResponse(
-//            bookingId = 1,
-//            caseNoteType = CodeDescription("X", "Security"),
-//            caseNoteSubType = CodeDescription("X", "Security"),
-//            authorUsername = "me",
-//            amended = false,
-//            caseNoteId = 1001,
-//          ),
-//      )
-//      caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(bookingId = 2, currentCaseNoteCount = 1)
-//
-//      val response1 = apiService.getCaseNotesToMigrate(1)
-//      val response2 = apiService.getCaseNotesToMigrate(2)
-//
-//      assertThat(response1.caseNotes).hasSize(1)
-//    }
   }
 
-//  @Nested
-//  inner class GetBookingIds {
-//    @Test
-//    internal fun `will pass oath2 token to service`() = runTest {
-//      caseNotesNomisApiMockServer.stubGetAllBookings()
-//
-//      apiService.getAllBookingIds(
-//        pageNumber = 0,
-//        pageSize = 20,
-//        activeOnly = true,
-//      )
-//
-//      caseNotesNomisApiMockServer.verify(
-//        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
-//      )
-//    }
-//
-//    @Test
-//    internal fun `will pass page params to service`() = runTest {
-//      caseNotesNomisApiMockServer.stubGetAllBookings()
-//
-//      apiService.getAllBookingIds(
-//        pageNumber = 5,
-//        pageSize = 100,
-//        activeOnly = false,
-//      )
-//
-//      caseNotesNomisApiMockServer.verify(
-//        getRequestedFor(urlPathEqualTo("/bookings/ids"))
-//          .withQueryParam("page", equalTo("5"))
-//          .withQueryParam("size", equalTo("100")),
-//      )
-//    }
-//
-//    @Test
-//    fun `will return a page of caseNotes`() = runTest {
-//      caseNotesNomisApiMockServer.stubGetAllBookings(totalElements = 10)
-//
-//      val prisonerIds = apiService.getAllBookingIds(
-//        pageNumber = 5,
-//        pageSize = 100,
-//        activeOnly = true,
-//      )
-//
-//      assertThat(prisonerIds.content).hasSize(10)
-//      assertThat(prisonerIds.content[0].bookingId).isEqualTo(1)
-//      assertThat(prisonerIds.content[1].bookingId).isEqualTo(2)
-//    }
-//  }
+  @Nested
+  inner class GetCaseNote {
+    @Test
+    fun `will pass oath2 token to service`() = runTest {
+      caseNotesNomisApiMockServer.stubGetCaseNote()
+
+      apiService.getCaseNote(1001)
+
+      caseNotesNomisApiMockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will pass NOMIS ids to service`() = runTest {
+      caseNotesNomisApiMockServer.stubGetCaseNote()
+
+      apiService.getCaseNote(1001)
+
+      caseNotesNomisApiMockServer.verify(
+        getRequestedFor(urlPathEqualTo("/casenotes/1001")),
+      )
+    }
+
+    @Test
+    fun `will return caseNotes`() = runTest {
+      caseNotesNomisApiMockServer.stubGetCaseNote(
+        caseNote = CaseNoteResponse(
+          bookingId = 1,
+          caseNoteType = CodeDescription("X", "Security"),
+          caseNoteSubType = CodeDescription("X", "Security"),
+          authorUsername = "me",
+          amended = false,
+          caseNoteId = 1001,
+        ),
+      )
+
+      val response = apiService.getCaseNote(1001)
+
+      assertThat(response.bookingId).isEqualTo(1L)
+      assertThat(response.caseNoteId).isEqualTo(1001L)
+    }
+  }
 }

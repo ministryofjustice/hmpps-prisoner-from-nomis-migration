@@ -24,7 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.LOCATIONS
-import java.util.*
+import java.util.UUID
 
 @Service
 class LocationsSynchronisationService(
@@ -228,7 +228,7 @@ private fun LocationsOffenderEvent.toTelemetryProperties(
   "nomisLocationId" to this.internalLocationId.toString(),
   "key" to (this.description ?: ""),
 ) + (dpsLocationId?.let { mapOf("dpsLocationId" to it) } ?: emptyMap()) + (
-  mappingFailed?.let { mapOf("mapping" to "initial-failure") } ?: emptyMap()
+  if (mappingFailed == true) mapOf("mapping" to "initial-failure") else emptyMap()
   )
 
 private val warningLogger = LoggerFactory.getLogger(LocationsMigrationService::class.java)

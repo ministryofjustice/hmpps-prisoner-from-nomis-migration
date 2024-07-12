@@ -16,26 +16,6 @@ class CaseNotesNomisApiService(@Qualifier("nomisApiWebClient") private val webCl
       .retrieve()
       .awaitBodyOrNullWhenNotFound()
 
-//  suspend fun getAllBookingIds(
-//    fromId: Long? = null,
-//    toId: Long? = null,
-//    activeOnly: Boolean,
-//    pageNumber: Long,
-//    pageSize: Long,
-//  ): RestResponsePage<BookingIdResponse> =
-//    webClient.get()
-//      .uri {
-//        it.path("/bookings/ids")
-//          .queryParam("fromId", fromId)
-//          .queryParam("toId", toId)
-//          .queryParam("activeOnly", activeOnly)
-//          .queryParam("page", pageNumber)
-//          .queryParam("size", pageSize)
-//          .build()
-//      }
-//      .retrieve()
-//      .awaitBody()
-
   suspend fun getCaseNote(caseNoteId: Long): CaseNoteResponse =
     webClient.get()
       .uri("/casenotes/{caseNoteId}", caseNoteId)

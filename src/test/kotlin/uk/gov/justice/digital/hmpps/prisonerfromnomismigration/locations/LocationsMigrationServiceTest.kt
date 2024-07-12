@@ -64,7 +64,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
 private const val NOMIS_PARENT_ID = 23456L
 private const val DPS_PARENT_ID = "fedcba98-3e3e-3e3e-3e3e-3e3e3e3e3e3e"

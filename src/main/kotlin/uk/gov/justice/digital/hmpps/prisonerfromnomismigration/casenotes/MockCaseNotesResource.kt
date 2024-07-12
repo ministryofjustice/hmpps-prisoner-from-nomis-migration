@@ -5,14 +5,17 @@ import jakarta.validation.Valid
 import kotlinx.coroutines.delay
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
-import java.util.*
+import java.util.UUID
 
 /**
  * This represents the possible interface for the CaseNote API service.
@@ -20,12 +23,12 @@ import java.util.*
  */
 @RestController
 @RequestMapping(produces = [MediaType.APPLICATION_JSON_VALUE])
+@PreAuthorize("hasRole('ROLE_MIGRATE_CASENOTES')")
 class MockCaseNotesResource {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_CASENOTES')")
   @PostMapping("/migrate/{offenderNo}/casenotes")
   @Operation(hidden = true)
   suspend fun migrateCaseNotes(
@@ -44,7 +47,6 @@ class MockCaseNotesResource {
     }
   }
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_CASENOTES')")
   @PostMapping("/sync/upsert")
   @Operation(hidden = true)
   suspend fun syncCaseNote(
@@ -52,10 +54,21 @@ class MockCaseNotesResource {
     caseNoteRequest: SyncCaseNoteRequest,
   ): DpsCaseNote {
     log.info("Creating case note for sync request $caseNoteRequest}")
-    delay(350)
+    delay(20)
     return DpsCaseNote(
       caseNoteId = UUID.randomUUID().toString(),
       dummyAttribute = caseNoteRequest.dummyAttribute,
     )
+  }
+
+  @DeleteMapping("/sync/delete/{caseNoteId}")
+  @Operation(hidden = true)
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  suspend fun deleteCaseNote(
+    @PathVariable
+    caseNoteId: String,
+  ) {
+    log.info("Deleting case note $caseNoteId}")
+    delay(10)
   }
 }
