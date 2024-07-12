@@ -27,7 +27,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.B
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PhysicalAttributesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerPhysicalAttributesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonDpsApiExtension.Companion.dpsPrisonPersonServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesHistoryDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesSyncResponse
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -66,7 +66,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
-        dpsPrisonPersonServer.stubSyncPrisonPerson(aPhysicalAttributesHistoryDto())
+        dpsPrisonPersonServer.stubSyncPrisonPerson(aResponse())
 
         sendPhysicalAttributesChangedEvent()
 
@@ -133,7 +133,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
-        dpsPrisonPersonServer.stubSyncPrisonPerson(aPhysicalAttributesHistoryDto())
+        dpsPrisonPersonServer.stubSyncPrisonPerson(aResponse())
 
         sendPhysicalAttributesChangedEvent()
 
@@ -174,7 +174,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
-        dpsPrisonPersonServer.stubSyncPrisonPerson(aPhysicalAttributesHistoryDto())
+        dpsPrisonPersonServer.stubSyncPrisonPerson(aResponse())
 
         sendPhysicalAttributesChangedEvent()
 
@@ -246,7 +246,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
-        dpsPrisonPersonServer.stubSyncPrisonPerson(aPhysicalAttributesHistoryDto())
+        dpsPrisonPersonServer.stubSyncPrisonPerson(aResponse())
 
         sendPhysicalAttributesChangedEvent(bookingId = 12345)
 
@@ -291,7 +291,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
-        dpsPrisonPersonServer.stubSyncPrisonPerson(aPhysicalAttributesHistoryDto())
+        dpsPrisonPersonServer.stubSyncPrisonPerson(aResponse())
 
         sendPhysicalAttributesChangedEvent(bookingId = 12344)
 
@@ -344,7 +344,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
-        dpsPrisonPersonServer.stubSyncPrisonPerson(aPhysicalAttributesHistoryDto())
+        dpsPrisonPersonServer.stubSyncPrisonPerson(aResponse())
 
         sendPhysicalAttributesChangedEvent(bookingId = 12344)
 
@@ -504,16 +504,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
         bookings = bookings,
       )
 
-    private fun aPhysicalAttributesHistoryDto(
-      physicalAttributesHistoryId: Long = 321,
-    ) =
-      PhysicalAttributesHistoryDto(
-        physicalAttributesHistoryId = physicalAttributesHistoryId,
-        appliesFrom = "2024-02-03T12:34:56",
-        appliesTo = "2024-10-21T12:34:56",
-        createdBy = "A_USER",
-        createdAt = "$now",
-      )
+    private fun aResponse(ids: List<Long> = listOf(321)) = PhysicalAttributesSyncResponse(ids)
 
     private fun LocalDateTime.toZoned() = atZone(ZoneId.of("Europe/London"))
 
@@ -558,7 +549,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
           reason?.run { assertThat(it["reason"]).isEqualTo(this) }
           // For updates verify we track the DPS ID returned
           if (type == "updated") {
-            assertThat(it["physicalAttributesHistoryId"]).isEqualTo("321")
+            assertThat(it["physicalAttributesHistoryId"]).isEqualTo("[321]")
           }
         },
         isNull(),

@@ -14,8 +14,8 @@ import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonDpsApiExtension.Companion.objectMapper
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesHistoryDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesMigrationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesSyncResponse
 
 class PrisonPersonDpsApiExtension :
   BeforeAllCallback,
@@ -47,7 +47,7 @@ class PrisonPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubSyncPrisonPerson(
-    response: PhysicalAttributesHistoryDto,
+    response: PhysicalAttributesSyncResponse,
   ) {
     stubFor(
       put(urlPathMatching("/sync/prisoners/.*/physical-attributes"))
@@ -73,7 +73,7 @@ class PrisonPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubMigratePhysicalAttributes(
-    response: PhysicalAttributesDto,
+    response: PhysicalAttributesMigrationResponse,
   ) {
     stubFor(
       put(urlPathMatching("/migration/prisoners/.*/physical-attributes"))
