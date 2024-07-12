@@ -54,7 +54,7 @@ class PrisonPersonSynchronisationService(
       throw e
     }
 
-    telemetry["physicalAttributesHistoryId"] = dpsResponse.physicalAttributesHistoryId.toString()
+    telemetry["physicalAttributesHistoryId"] = dpsResponse.fieldHistoryInserted.toString()
     telemetryClient.trackEvent("physical-attributes-synchronisation-updated", telemetry)
   }
 

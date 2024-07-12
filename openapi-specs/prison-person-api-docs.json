@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-07-04.306.871d4fc"
+    "version": "2024-07-11.369.25acf84"
   },
   "servers": [
     {
@@ -28,6 +28,10 @@
   ],
   "tags": [
     {
+      "name": "Reference Data Domains",
+      "description": "Reference Data Domains for Prison Person data"
+    },
+    {
       "name": "Sync with NOMIS",
       "description": "Endpoints to keep the Prison Person database in sync with changes in the NOMIS database"
     },
@@ -42,6 +46,10 @@
     {
       "name": "Migration from NOMIS",
       "description": "Endpoints to facilitate migration of data from NOMIS to the Prison Person database"
+    },
+    {
+      "name": "Reference Data Codes",
+      "description": "Reference Data Codes for Prison Person data"
     }
   ],
   "paths": {
@@ -84,7 +92,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PhysicalAttributesHistoryDto"
+                  "$ref": "#/components/schemas/PhysicalAttributesSyncResponse"
                 }
               }
             }
@@ -124,7 +132,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PhysicalAttributesHistoryDto"
+                  "$ref": "#/components/schemas/PhysicalAttributesSyncResponse"
                 }
               }
             }
@@ -261,7 +269,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PhysicalAttributesDto"
+                  "$ref": "#/components/schemas/PhysicalAttributesMigrationResponse"
                 }
               }
             }
@@ -301,7 +309,229 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PhysicalAttributesDto"
+                  "$ref": "#/components/schemas/PhysicalAttributesMigrationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reference-data/domains": {
+      "get": {
+        "tags": [
+          "Reference Data Domains"
+        ],
+        "summary": "Get all reference data domains",
+        "description": "Returns the list of reference data domains. By default this endpoint only returns active reference data domains. The `includeInactive` parameter can be used to return all reference data domains. Requires role `ROLE_PRISON_PERSON_API__REFERENCE_DATA__RO`",
+        "operationId": "getReferenceDataDomains",
+        "parameters": [
+          {
+            "name": "includeInactive",
+            "in": "query",
+            "description": "Include inactive reference data domains. Defaults to false.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reference data domains found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReferenceDataDomainDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reference-data/domains/{domain}": {
+      "get": {
+        "tags": [
+          "Reference Data Domains"
+        ],
+        "summary": "Get a reference data domain",
+        "description": "Returns the reference data domain, including all reference data codes linked to that domain. Requires role `ROLE_PRISON_PERSON_API__REFERENCE_DATA__RO`",
+        "operationId": "getReferenceDataDomain",
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reference data domain retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferenceDataDomainDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, the reference data domain was not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reference-data/domains/{domain}/codes": {
+      "get": {
+        "tags": [
+          "Reference Data Codes"
+        ],
+        "summary": "Get all reference data codes for {domain}",
+        "description": "Returns the list of reference data codes within {domain}. By default this endpoint only returns active reference data codes. The `includeInactive` parameter can be used to return all reference data codes. Requires role `ROLE_PRISON_PERSON_API__REFERENCE_DATA__RO`",
+        "operationId": "getReferenceDataCodes",
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "includeInactive",
+            "in": "query",
+            "description": "Include inactive reference data codes. Defaults to false. Requires role `ROLE_PRISON_PERSON_API__REFERENCE_DATA__RO`",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reference data codes found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReferenceDataCodeDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, the reference data domain was not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reference-data/domains/{domain}/codes/{code}": {
+      "get": {
+        "tags": [
+          "Reference Data Codes"
+        ],
+        "summary": "Get a reference data code",
+        "description": "Returns the reference data code.",
+        "operationId": "getReferenceDataCode",
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reference data code retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferenceDataCodeDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, the reference data code was not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -449,57 +679,27 @@
         },
         "description": "Request object for syncing a prisoner's physical attributes"
       },
-      "PhysicalAttributesHistoryDto": {
+      "PhysicalAttributesSyncResponse": {
         "required": [
-          "appliesFrom",
-          "createdAt",
-          "createdBy",
-          "physicalAttributesHistoryId"
+          "fieldHistoryInserted"
         ],
         "type": "object",
         "properties": {
-          "physicalAttributesHistoryId": {
-            "type": "integer",
-            "description": "Unique identifier for the history entry",
-            "format": "int64",
-            "example": 123
-          },
-          "height": {
-            "type": "integer",
-            "description": "Height (in centimetres)",
-            "format": "int32",
-            "example": 180
-          },
-          "weight": {
-            "type": "integer",
-            "description": "Weight (in kilograms)",
-            "format": "int32",
-            "example": 70
-          },
-          "appliesFrom": {
-            "type": "string",
-            "description": "The timestamp indicating from when these physical attributes were true for the prisoner",
-            "format": "yyyy-MM-dd'T'HH:mm:ssX",
-            "example": "2024-06-14T10:35:17+01:00[Europe/London]"
-          },
-          "appliesTo": {
-            "type": "string",
-            "description": "The timestamp of when these physical attributes were superseded by another record. If they are currently applicable, this is null.",
-            "format": "yyyy-MM-dd'T'HH:mm:ssX",
-            "example": "2024-06-14T10:35:17+01:00[Europe/London]"
-          },
-          "createdAt": {
-            "type": "string",
-            "description": "The timestamp indicating when this record was created",
-            "format": "yyyy-MM-dd'T'HH:mm:ssX",
-            "example": "2024-06-14T10:35:17+01:00[Europe/London]"
-          },
-          "createdBy": {
-            "type": "string",
-            "description": "The username of who created the record"
+          "fieldHistoryInserted": {
+            "type": "array",
+            "description": "The IDs of field history inserted during the sync",
+            "example": [
+              123,
+              456
+            ],
+            "items": {
+              "type": "integer",
+              "description": "The IDs of field history inserted during the sync",
+              "format": "int64"
+            }
           }
         },
-        "description": "Physical Attributes History"
+        "description": "Physical Attributes Sync Response"
       },
       "PhysicalAttributesUpdateRequest": {
         "type": "object",
@@ -584,6 +784,178 @@
           }
         },
         "description": "Request object for migration of a prisoner's physical attributes"
+      },
+      "PhysicalAttributesMigrationResponse": {
+        "required": [
+          "fieldHistoryInserted"
+        ],
+        "type": "object",
+        "properties": {
+          "fieldHistoryInserted": {
+            "type": "array",
+            "description": "The IDs of field history created during the migration",
+            "example": [
+              123,
+              456
+            ],
+            "items": {
+              "type": "integer",
+              "description": "The IDs of field history created during the migration",
+              "format": "int64"
+            }
+          }
+        },
+        "description": "Physical Attributes Migration Response"
+      },
+      "ReferenceDataCodeDto": {
+        "required": [
+          "code",
+          "createdAt",
+          "createdBy",
+          "description",
+          "domain",
+          "isActive",
+          "listSequence"
+        ],
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "Short code for the reference data code",
+            "example": "FACIAL_HAIR"
+          },
+          "code": {
+            "type": "string",
+            "description": "Short code for reference data code",
+            "example": "FULL_BEARD"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the reference data code",
+            "example": "Full Beard"
+          },
+          "listSequence": {
+            "type": "integer",
+            "description": "The sequence number of the reference data code. Used for ordering reference data correctly in lists and dropdowns.",
+            "format": "int32",
+            "example": 3
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Indicates that the reference data code is active and can be used. Inactive reference data codes are not returned by default in the API",
+            "example": true
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "The date and time the reference data code was created",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+01:00[Europe/London]"
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "The username of the user who created the reference data code",
+            "example": "USER1234"
+          },
+          "modifiedAt": {
+            "type": "string",
+            "description": "The date and time the reference data code was last modified",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+01:00[Europe/London]"
+          },
+          "modifiedBy": {
+            "type": "string",
+            "description": "The username of the user who last modified the reference data code",
+            "example": "USER1234"
+          },
+          "deactivatedAt": {
+            "type": "string",
+            "description": "The date and time the reference data code was deactivated",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+01:00[Europe/London]"
+          },
+          "deactivatedBy": {
+            "type": "string",
+            "description": "The username of the user who deactivated the reference data code",
+            "example": "USER1234"
+          }
+        },
+        "description": "Reference Data Code"
+      },
+      "ReferenceDataDomainDto": {
+        "required": [
+          "code",
+          "createdAt",
+          "createdBy",
+          "description",
+          "isActive",
+          "listSequence",
+          "referenceDataCodes"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Short code for the reference data domain",
+            "example": "HAIR"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the reference data domain",
+            "example": "Hair type or colour"
+          },
+          "listSequence": {
+            "type": "integer",
+            "description": "The sequence number of the reference data domain. Used for ordering domains correctly in lists.",
+            "format": "int32",
+            "example": 3
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Indicates that the reference data domain is active and can be used. Inactive reference data domains are not returned by default in the API",
+            "example": true
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "The date and time the reference data domain was created",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+01:00[Europe/London]"
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "The username of the user who created the reference data domain",
+            "example": "USER1234"
+          },
+          "modifiedAt": {
+            "type": "string",
+            "description": "The date and time the reference data domain was last modified",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+01:00[Europe/London]"
+          },
+          "modifiedBy": {
+            "type": "string",
+            "description": "The username of the user who last modified the reference data domain",
+            "example": "USER1234"
+          },
+          "deactivatedAt": {
+            "type": "string",
+            "description": "The date and time the reference data domain was deactivated",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+01:00[Europe/London]"
+          },
+          "deactivatedBy": {
+            "type": "string",
+            "description": "The username of the user who deactivated the reference data domain",
+            "example": "USER1234"
+          },
+          "referenceDataCodes": {
+            "type": "array",
+            "description": "The reference data codes associated with this reference data domain",
+            "items": {
+              "$ref": "#/components/schemas/ReferenceDataCodeDto"
+            }
+          }
+        },
+        "description": "Reference Data Domain"
       },
       "PrisonPersonDto": {
         "required": [

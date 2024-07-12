@@ -16,11 +16,10 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonDpsApiExtension.Companion.dpsPrisonPersonServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesHistoryDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesMigrationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesSyncResponse
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.time.ZonedDateTime
 
 @SpringAPIServiceTest
 @Import(PrisonPersonDpsApiService::class, PrisonPersonConfiguration::class)
@@ -69,7 +68,7 @@ class PrisonPersonDpsApiServiceTest {
 
     @Test
     fun `should not pass null data to the service`() = runTest {
-      dpsPrisonPersonServer.stubSyncPrisonPerson(aResponse(heightCentimetres = null, weightKilograms = null, appliesToTime = null))
+      dpsPrisonPersonServer.stubSyncPrisonPerson(aResponse())
 
       apiService.syncPhysicalAttributes(prisonerNumber, null, null, appliesFrom, null, createdAt, createdBy)
 
@@ -83,11 +82,11 @@ class PrisonPersonDpsApiServiceTest {
 
     @Test
     fun `should parse the response`() = runTest {
-      dpsPrisonPersonServer.stubSyncPrisonPerson(aResponse(physicalAttributesHistoryId = 321))
+      dpsPrisonPersonServer.stubSyncPrisonPerson(aResponse(ids = listOf(321)))
 
       val response = apiService.syncPhysicalAttributes(prisonerNumber, height, weight, appliesFrom, appliesTo, createdAt, createdBy)
 
-      assertThat(response.physicalAttributesHistoryId).isEqualTo(321L)
+      assertThat(response.fieldHistoryInserted).containsExactly(321L)
     }
 
     @Test
@@ -99,23 +98,7 @@ class PrisonPersonDpsApiServiceTest {
       }
     }
 
-    private fun aResponse(
-      physicalAttributesHistoryId: Long = 123,
-      heightCentimetres: Int? = height,
-      weightKilograms: Int? = weight,
-      appliesFromTime: ZonedDateTime = appliesFrom.atZone(ZoneId.of("Europe/London")),
-      appliesToTime: ZonedDateTime? = appliesTo.atZone(ZoneId.of("Europe/London")),
-      createdAtTime: ZonedDateTime = createdAt.atZone(ZoneId.of("Europe/London")),
-      createdByUser: String = createdBy,
-    ) = PhysicalAttributesHistoryDto(
-      physicalAttributesHistoryId = physicalAttributesHistoryId,
-      height = heightCentimetres,
-      weight = weightKilograms,
-      appliesFrom = appliesFromTime.toString(),
-      appliesTo = appliesToTime?.toString(),
-      createdAt = createdAtTime.toString(),
-      createdBy = createdByUser,
-    )
+    private fun aResponse(ids: List<Long> = listOf(1)) = PhysicalAttributesSyncResponse(ids)
   }
 
   @Nested
@@ -159,7 +142,7 @@ class PrisonPersonDpsApiServiceTest {
 
     @Test
     fun `should not pass null data to the service`() = runTest {
-      dpsPrisonPersonServer.stubMigratePhysicalAttributes(aResponse(heightCentimetres = null, weightKilograms = null))
+      dpsPrisonPersonServer.stubMigratePhysicalAttributes(aResponse())
 
       apiService.migratePhysicalAttributes(prisonerNumber, null, null, appliesFrom, null, createdAt, createdBy)
 
@@ -177,8 +160,7 @@ class PrisonPersonDpsApiServiceTest {
 
       val response = apiService.migratePhysicalAttributes(prisonerNumber, height, weight, appliesFrom, appliesTo, createdAt, createdBy)
 
-      assertThat(response.height).isEqualTo(height)
-      assertThat(response.weight).isEqualTo(weight)
+      assertThat(response.fieldHistoryInserted).containsExactly(321)
     }
 
     @Test
@@ -190,13 +172,6 @@ class PrisonPersonDpsApiServiceTest {
       }
     }
 
-    // TODO SDIT-1825 We are expecting this to change, hopefully to include just the ID of the entity created in DPS so we can write it to the mapping table
-    private fun aResponse(
-      heightCentimetres: Int? = height,
-      weightKilograms: Int? = weight,
-    ) = PhysicalAttributesDto(
-      height = heightCentimetres,
-      weight = weightKilograms,
-    )
+    private fun aResponse(ids: List<Long> = listOf(321)) = PhysicalAttributesMigrationResponse(ids)
   }
 }
