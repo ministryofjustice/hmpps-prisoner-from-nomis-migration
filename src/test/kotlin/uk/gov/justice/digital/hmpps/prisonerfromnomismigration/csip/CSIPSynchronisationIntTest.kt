@@ -36,6 +36,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
+import java.util.AbstractMap.SimpleEntry
 
 private const val DPS_CSIP_ID = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5"
 private const val NOMIS_CSIP_ID = 1234L
@@ -142,6 +143,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
               check {
                 assertThat(it["dpsCSIPId"]).isEqualTo(DPS_CSIP_ID)
                 assertThat(it["nomisCSIPId"]).isEqualTo("$NOMIS_CSIP_ID")
+                assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
               },
               isNull(),
             )

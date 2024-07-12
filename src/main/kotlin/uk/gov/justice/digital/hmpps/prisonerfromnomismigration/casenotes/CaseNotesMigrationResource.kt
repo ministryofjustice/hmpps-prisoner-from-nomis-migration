@@ -23,11 +23,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 
 @RestController
 @RequestMapping("/migrate", produces = [MediaType.APPLICATION_JSON_VALUE])
+@PreAuthorize("hasRole('ROLE_MIGRATE_CASENOTES')")
 class CaseNotesMigrationResource(
   private val caseNotesByPrisonerMigrationService: CaseNotesByPrisonerMigrationService,
   private val migrationHistoryService: MigrationHistoryService,
 ) {
-  @PreAuthorize("hasRole('ROLE_MIGRATE_CASENOTES')")
   @PostMapping("/casenotes")
   @ResponseStatus(value = HttpStatus.ACCEPTED)
   @Operation(
@@ -64,7 +64,6 @@ class CaseNotesMigrationResource(
     migrationFilter: CaseNotesMigrationFilter,
   ) = caseNotesByPrisonerMigrationService.startMigration(migrationFilter)
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_CASENOTES')")
   @GetMapping("/casenotes/history")
   @Operation(
     summary = "Lists all migration history records un-paged for casenotes",
@@ -88,7 +87,6 @@ class CaseNotesMigrationResource(
   )
   suspend fun getAll() = migrationHistoryService.findAll(HistoryFilter(migrationTypes = listOf(MigrationType.CASENOTES.name)))
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_CASENOTES')")
   @GetMapping("/casenotes/history/{migrationId}")
   @Operation(
     summary = "Gets a specific migration history record",
@@ -121,7 +119,6 @@ class CaseNotesMigrationResource(
     migrationId: String,
   ) = migrationHistoryService.get(migrationId)
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_CASENOTES')")
   @PostMapping("/casenotes/{migrationId}/cancel")
   @ResponseStatus(value = HttpStatus.ACCEPTED)
   @Operation(
@@ -155,7 +152,6 @@ class CaseNotesMigrationResource(
     migrationId: String,
   ) = caseNotesByPrisonerMigrationService.cancel(migrationId)
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_CASENOTES')")
   @GetMapping("/casenotes/active-migration")
   @Operation(
     summary = "Gets active/currently running migration data, using migration record and migration queues",

@@ -174,4 +174,4 @@ private fun CSIPReportEvent.toTelemetryProperties(
   mappingFailed: Boolean? = null,
 ) = mapOf("nomisCSIPId" to "$csipReportId") +
   (dpsCSIPReportId?.let { mapOf("dpsCSIPId" to it) } ?: emptyMap()) +
-  (mappingFailed?.let { mapOf("mapping" to "initial-failure") } ?: emptyMap())
+  (if (mappingFailed == true) mapOf("mapping" to "initial-failure") else emptyMap())

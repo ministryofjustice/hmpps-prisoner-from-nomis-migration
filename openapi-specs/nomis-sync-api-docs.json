@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-07-02.8203.2ec758a"
+    "version": "2024-07-11.8279.2d293e8"
   },
   "servers": [
     {
@@ -288,6 +288,71 @@
             }
           },
           "403": {
+            "description": "Forbidden, requires role NOMIS_ACTIVITIES",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "activities-resource"
+        ],
+        "summary": "Deletes an attendance record",
+        "description": "Deletes an attendance for the course schedule. Requires role NOMIS_ACTIVITIES",
+        "operationId": "deleteAttendance",
+        "parameters": [
+          {
+            "name": "courseScheduleId",
+            "in": "path",
+            "description": "Course schedule id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Course schedule id"
+            }
+          },
+          {
+            "name": "bookingId",
+            "in": "path",
+            "description": "Booking id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Booking id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Attendance deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires role NOMIS_ACTIVITIES",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
             "description": "Forbidden, requires role NOMIS_ACTIVITIES",
             "content": {
               "application/json": {
@@ -10994,7 +11059,7 @@
         ],
         "summary": "Delete a NOMIS attendance (from OFFENDER_COURSE_ATTENDANCES table)",
         "description": "Deletes an attendance from NOMIS. Requires role NOMIS_ACTIVITIES",
-        "operationId": "deleteAttendance",
+        "operationId": "deleteAttendance_1",
         "parameters": [
           {
             "name": "eventId",
@@ -11992,6 +12057,9 @@
         "description": "Location usage"
       },
       "DeactivateRequest": {
+        "required": [
+          "force"
+        ],
         "type": "object",
         "properties": {
           "deactivateDate": {
@@ -12023,6 +12091,10 @@
             "description": "The expected reactivation date if any",
             "format": "date",
             "example": "2024-12-31"
+          },
+          "force": {
+            "type": "boolean",
+            "description": "If true, update Nomis even if already inactive. Useful when a temporarily inactive location is deactivated permanently"
           }
         },
         "description": "Location deactivate request"
@@ -12359,6 +12431,11 @@
             "type": "boolean",
             "description": "Whether the case note was amended",
             "example": false
+          },
+          "auditModuleName": {
+            "type": "string",
+            "description": "Which screen (or DPS) created the case note",
+            "example": "false"
           }
         },
         "description": "The data held in NOMIS about a case note associated with a prisoner"

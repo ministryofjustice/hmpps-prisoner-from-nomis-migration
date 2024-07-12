@@ -27,7 +27,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.LOCATIONS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationMinutes
-import java.util.*
+import java.util.UUID
 
 @Service
 class LocationsMigrationService(

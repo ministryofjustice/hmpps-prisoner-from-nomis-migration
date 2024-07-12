@@ -15,7 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.NomisMigrateLocationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.NomisSyncLocationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.LocationsApiExtension.Companion.locationsApi
-import java.util.*
+import java.util.UUID
 
 private const val LOCATION_ID = "abcde123-1234-1234-1234-1234567890ab"
 

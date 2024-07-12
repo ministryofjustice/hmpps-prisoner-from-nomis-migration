@@ -1,8 +1,8 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.okJson
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
@@ -16,6 +16,28 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApi
 
 @Component
 class CaseNotesNomisApiMockServer(private val objectMapper: ObjectMapper) {
+  fun stubGetCaseNote(
+    caseNoteId: Long = 1001,
+    bookingId: Long = 123456,
+    alertSequence: Long = 1,
+    auditModuleName: String = "OIDNOMIS",
+    caseNote: CaseNoteResponse = CaseNoteResponse(
+      caseNoteId = caseNoteId,
+      bookingId = bookingId,
+      caseNoteType = CodeDescription("X", "Security"),
+      caseNoteSubType = CodeDescription("X", "Security"),
+      authorUsername = "me",
+      amended = false,
+      auditModuleName = auditModuleName,
+    ),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/casenotes/$caseNoteId")).willReturn(
+        okJson(objectMapper.writeValueAsString(caseNote)),
+      ),
+    )
+  }
+
   fun stubGetCaseNotesToMigrate(
     offenderNo: String,
     currentCaseNoteCount: Long = 1,
@@ -34,10 +56,7 @@ class CaseNotesNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
     nomisApi.stubFor(
       get(urlEqualTo("/prisoners/$offenderNo/casenotes")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(response)),
+        okJson(objectMapper.writeValueAsString(response)),
       ),
     )
   }
@@ -45,34 +64,10 @@ class CaseNotesNomisApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubGetCaseNotesToMigrate(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     nomisApi.stubFor(
       get(urlPathMatching("/prisoners/.+/casenotes")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+        okJson(objectMapper.writeValueAsString(error)),
       ),
     )
   }
-
-//  fun stubGetAllBookings(totalElements: Long = 20, pageSize: Long = 20) { // , bookingId: Long = 1) {
-//    val content: List<BookingIdResponse> = (1..min(pageSize, totalElements)).map { BookingIdResponse(it.toLong()) }
-//    nomisApi.stubFor(
-//      get(urlPathEqualTo("/bookings/ids")).willReturn(
-//        aResponse()
-//          .withHeader("Content-Type", "application/json")
-//          .withStatus(HttpStatus.OK.value())
-//          .withBody(
-//            pageContent(
-//              objectMapper = objectMapper,
-//              content = content,
-//              pageSize = pageSize,
-//              pageNumber = 0,
-//              totalElements = totalElements,
-//              size = pageSize.toInt(),
-//            ),
-//          ),
-//      ),
-//    )
-//  }
 
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
