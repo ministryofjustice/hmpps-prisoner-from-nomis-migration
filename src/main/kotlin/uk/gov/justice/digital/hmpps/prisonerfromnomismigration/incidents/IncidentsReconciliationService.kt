@@ -16,6 +16,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.R
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentAgencyId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.doApiCallWithRetries
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 @Service
@@ -42,6 +44,7 @@ class IncidentsReconciliationService(
     val dpsOpenIncidentsCount = doApiCallWithRetries { incidentsService.getOpenIncidentsCount(agencyId) }
     val dpsClosedIncidentsCount = doApiCallWithRetries { incidentsService.getClosedIncidentsCount(agencyId) }
     val nomisOpenIncidentsCount = nomisIncidents.incidentCount.openIncidents
+
     val nomisClosedIncidentsCount = nomisIncidents.incidentCount.closedIncidents
     val openIncidentsMisMatch = checkOpenIncidentsMatch(agencyId, nomisOpenIncidentsCount)
 
@@ -167,13 +170,17 @@ class IncidentsReconciliationService(
     nomis: IncidentResponse,
     dps: ReportWithDetails,
   ): String? {
-    if (nomis.lastModifiedDateTime != dps.modifiedAt) return "Modified mismatch"
+    val nomisLastModified = nomis.lastModifiedDateTime?.let { nomis.lastModifiedDateTime } ?: nomis.createDateTime
+    if (nomisLastModified.dateWithoutMillis() != dps.modifiedAt.dateWithoutMillis()) return "Modified mismatch"
     if (nomis.reportingStaff.username != dps.reportedBy) return "Reporting Staff mismatch"
     if (nomis.offenderParties.size != dps.prisonersInvolved.size) return "Offender parties mismatch"
     val offendersDifference = nomis.offenderParties.map { it.offender.offenderNo }.compare(dps.prisonersInvolved.map { it.prisonerNumber })
     if (offendersDifference.isNotEmpty()) return "offender parties mismatch $offendersDifference"
     return null
   }
+
+  fun String.dateWithoutMillis(): LocalDateTime =
+    LocalDateTime.parse(this).truncatedTo(ChronoUnit.SECONDS)
 
   fun List<String>.compare(otherList: List<String>): List<String> {
     val both = (this + otherList).toSet()

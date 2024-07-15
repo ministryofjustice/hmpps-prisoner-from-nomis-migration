@@ -3,7 +3,6 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder
-import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
@@ -82,13 +81,18 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
 
   fun stubGetIncident(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     nomisApi.stubFor(
-      get(WireMock.urlPathMatching("/incidents/\\d+")).willReturn(
+      get(urlPathMatching("/incidents/\\d+")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
           .withBody(error),
       ),
     )
+  }
+  fun stubGetIncidents(startIncidentId: Long, endIncidentId: Long) {
+    (startIncidentId..endIncidentId).forEach { nomisIncidentId ->
+      stubGetIncident(nomisIncidentId)
+    }
   }
   fun stubGetIncidentNotFound(nomisIncidentId: Long = 1234) {
     nomisApi.stubFor(
