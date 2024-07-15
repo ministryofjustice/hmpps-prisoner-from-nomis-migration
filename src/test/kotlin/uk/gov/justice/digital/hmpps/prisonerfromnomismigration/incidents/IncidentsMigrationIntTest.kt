@@ -249,7 +249,7 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
         isNull(),
       )
 
-      incidentsApi.verifyGetBasicIncident()
+      incidentsApi.verifyMigrationGetBasicIncident()
       incidentsMappingApi.verifyCreateMappingIncidentId(dpsIncidentId = DPS_INCIDENT_ID)
     }
 
@@ -278,7 +278,7 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
         isNull(),
       )
 
-      incidentsApi.verifyGetBasicIncident()
+      incidentsApi.verifyMigrationGetBasicIncident()
 
       // should retry to create mapping twice
       incidentsMappingApi.verifyCreateMappingIncidentId(DPS_INCIDENT_ID, times = 2)
