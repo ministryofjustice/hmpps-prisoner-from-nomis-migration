@@ -43,7 +43,7 @@ class IncidentsService(@Qualifier("incidentsApiWebClient") private val webClient
       .retrieve()
       .awaitBody()
 
-  suspend fun getIncidents(agencyId: String, statusValues: List<String>): SimplePageReportBasic =
+  suspend fun getIncidentsForAgencyAndStatus(agencyId: String, statusValues: List<String>): SimplePageReportBasic =
     webClient.get()
       .uri {
         it.path("/incident-reports")
@@ -55,6 +55,6 @@ class IncidentsService(@Qualifier("incidentsApiWebClient") private val webClient
       .retrieve()
       .awaitBody()
 
-  suspend fun getOpenIncidentsCount(agencyId: String) = getIncidents(agencyId, openStatusValues).totalElements
-  suspend fun getClosedIncidentsCount(agencyId: String) = getIncidents(agencyId, closedStatusValues).totalElements
+  suspend fun getOpenIncidentsCount(agencyId: String) = getIncidentsForAgencyAndStatus(agencyId, openStatusValues).totalElements
+  suspend fun getClosedIncidentsCount(agencyId: String) = getIncidentsForAgencyAndStatus(agencyId, closedStatusValues).totalElements
 }

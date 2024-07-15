@@ -5,6 +5,7 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
+import com.github.tomakehurst.wiremock.client.WireMock.exactly
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.post
@@ -254,7 +255,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubGetBasicIncident() {
     stubFor(
-      get(urlPathMatching("/incident-reports/incident-number/.*")).willReturn(
+      get(urlMatching("/incident-reports/incident-number/[0-9]+")).willReturn(
         aResponse()
           .withStatus(HttpStatus.OK.value())
           .withHeader("Content-Type", APPLICATION_JSON_VALUE)
@@ -265,7 +266,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubGetIncident(nomisIncidentId: Long = 1234) {
     stubFor(
-      get(urlPathMatching("/incident-reports/incident-number/$nomisIncidentId/with-details")).willReturn(
+      get(urlMatching("/incident-reports/incident-number/$nomisIncidentId/with-details")).willReturn(
         aResponse()
           .withStatus(HttpStatus.OK.value())
           .withHeader("Content-Type", APPLICATION_JSON_VALUE)
@@ -273,34 +274,10 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       ),
     )
   }
-
-  private fun incidentAgencies() =
-    listOf(
-      dpsBasicIncidentReport(dpsIncidentId = UUID.randomUUID().toString(), prisonId = "ASI"),
-      dpsBasicIncidentReport(dpsIncidentId = UUID.randomUUID().toString(), prisonId = "BFI"),
-      dpsBasicIncidentReport(dpsIncidentId = UUID.randomUUID().toString(), prisonId = "WWI"),
-    )
-
-  fun stubGetIncidentsForAgencies(totalElements: Long = 3, pageSize: Long = 20) {
-    stubFor(
-      get(urlPathMatching("/incident-reports"))
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.OK.value())
-            .withBody(
-              SimplePageReportBasic(
-                content = incidentAgencies(),
-                number = 0,
-                propertySize = pageSize.toInt(),
-                totalElements = totalElements,
-                sort = listOf("incidentDateAndTime,DESC"),
-                numberOfElements = pageSize.toInt(),
-                totalPages = totalElements.toInt(),
-              ),
-            ),
-        ),
-    )
+  fun stubGetIncidents(startIncidentId: Long, endIncidentId: Long) {
+    (startIncidentId..endIncidentId).forEach { nomisIncidentId ->
+      stubGetIncident(nomisIncidentId)
+    }
   }
 
   fun stubGetIncidentCounts(totalElements: Long = 3, pageSize: Long = 20) {
@@ -340,8 +317,14 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun verifyGetBasicIncident() =
-    verify(getRequestedFor(urlMatching("/incident-reports/incident-number/.*")))
+  fun verifyMigrationGetBasicIncident() =
+    verify(getRequestedFor(urlMatching("/incident-reports/incident-number/[0-9]+")))
+
+  fun verifyGetIncidentCounts(times: Int = 1) =
+    verify(exactly(times), getRequestedFor(urlPathMatching("/incident-reports")))
+
+  fun verifyGetIncidentDetail(times: Int = 1) =
+    verify(exactly(times), getRequestedFor(urlMatching("/incident-reports/incident-number/[0-9]+/with-details")))
 
   fun createIncidentUpsertCount() =
     findAll(postRequestedFor(urlEqualTo("/sync/upsert"))).count()

@@ -30,24 +30,21 @@ class IncidentsReconciliationIntTest : SqsIntegrationTestBase() {
     fun setUp() {
       incidentsNomisApi.stubGetIncidentAgencies()
 
-      incidentsNomisApi.stubGetIncident(33)
-      incidentsNomisApi.stubGetIncident(34)
-      incidentsNomisApi.stubGetIncident(35)
-      incidentsApi.stubGetIncident(nomisIncidentId = 33)
-      incidentsApi.stubGetIncident(nomisIncidentId = 34)
-      incidentsApi.stubGetIncident(nomisIncidentId = 35)
       incidentsNomisApi.stubGetReconciliationOpenIncidentIds("ASI", 33, 35)
       incidentsNomisApi.stubGetReconciliationOpenIncidentIds("BFI", 36, 38)
       incidentsNomisApi.stubGetReconciliationOpenIncidentIds("WWI", 39, 41)
-      incidentsApi.stubGetIncidentsForAgencies()
+      incidentsNomisApi.stubGetIncident(33, lastModifiedDateTime = "2021-07-23T10:35:17.12345")
+      incidentsNomisApi.stubGetIncidents(34, 41)
+      incidentsApi.stubGetIncidents(33, 41)
     }
 
     @Nested
     @DisplayName("Happy Path")
     inner class HappyPath {
 
+      @BeforeEach
       fun setUp() {
-        incidentsNomisApi.stubGetIncidentAgencies()
+        incidentsApi.stubGetIncidentCounts()
         incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts("ASI")
         incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts("BFI")
         incidentsNomisApi.stubGetReconciliationAgencyIncidentCounts("WWI")
@@ -87,8 +84,30 @@ class IncidentsReconciliationIntTest : SqsIntegrationTestBase() {
           check { assertThat(it).containsEntry("prisonCount", "3") },
           isNull(),
         )
+      }
+
+      @Test
+      fun `will call incidents api for open and closed counts for each agency`() {
+        webTestClient.put().uri("/incidents/reports/reconciliation")
+          .exchange()
+          .expectStatus().isAccepted
 
         awaitReportFinished()
+        await untilAsserted {
+          incidentsApi.verifyGetIncidentCounts(6)
+        }
+      }
+
+      @Test
+      fun `will call incidents api for each open incident details - 3 per agency`() {
+        webTestClient.put().uri("/incidents/reports/reconciliation")
+          .exchange()
+          .expectStatus().isAccepted
+
+        awaitReportFinished()
+        await untilAsserted {
+          incidentsApi.verifyGetIncidentDetail(9)
+        }
       }
 
       @Test
@@ -112,6 +131,12 @@ class IncidentsReconciliationIntTest : SqsIntegrationTestBase() {
           any(),
           isNull(),
         )
+
+        verify(telemetryClient, times(0)).trackEvent(
+          eq("incidents-reports-reconciliation-detail-mismatch-error"),
+          any(),
+          isNull(),
+        )
       }
     }
 
@@ -129,6 +154,7 @@ class IncidentsReconciliationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will show mismatch counts in report`() {
+        incidentsApi.stubGetIncidentCounts()
         webTestClient.put().uri("/incidents/reports/reconciliation")
           .exchange()
           .expectStatus().isAccepted
