@@ -59,6 +59,8 @@ class CSIPNomisApiServiceTest {
       assertThat(csip.id).isEqualTo(nomisCSIPId)
       assertThat(csip.bookingId).isEqualTo(1214478)
       assertThat(csip.offender.offenderNo).isEqualTo("A1234BC")
+      assertThat(csip.incidentDate).isEqualTo("2024-06-12")
+      assertThat(csip.incidentTime).isEqualTo("10:32:12")
     }
 
     @Test

@@ -119,7 +119,9 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             csipApi.verify(
               postRequestedFor(urlPathEqualTo("/prisoners/A1234BC/csip-records"))
-                .withHeader("Username", equalTo("JSMITH")),
+                .withHeader("Username", equalTo("JSMITH"))
+                .withRequestBody(matchingJsonPath("referral.incidentDate", equalTo("2024-06-12")))
+                .withRequestBody(matchingJsonPath("referral.incidentTime", equalTo("10:32:12"))),
             )
           }
         }

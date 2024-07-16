@@ -8,15 +8,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Update
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPFactorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SaferCustodyScreening
-import java.time.LocalDateTime
 
 fun CSIPResponse.toDPSMigrateCSIP() =
   CreateCsipRecordRequest(
     logNumber = logNumber,
     referral =
     CreateReferralRequest(
-      incidentDate = LocalDateTime.parse(incidentDateTime).toLocalDate(),
-      incidentTime = LocalDateTime.parse(incidentDateTime).toLocalTime()?.toString(),
+      incidentDate = incidentDate,
+      incidentTime = incidentTime,
       incidentTypeCode = type.code,
       incidentLocationCode = location.code,
       referredBy = reportedBy,
@@ -39,8 +38,8 @@ fun CSIPResponse.toDPSCreateCSIP() =
   CreateCsipRecordRequest(
     logNumber = logNumber,
     referral = CreateReferralRequest(
-      incidentDate = LocalDateTime.parse(incidentDateTime).toLocalDate(),
-      incidentTime = LocalDateTime.parse(incidentDateTime).toLocalTime()?.toString(),
+      incidentDate = incidentDate,
+      incidentTime = incidentTime,
       incidentTypeCode = type.code,
       incidentLocationCode = location.code,
       referredBy = reportedBy,
