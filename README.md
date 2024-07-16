@@ -154,7 +154,7 @@ Given the health check page reports the number of messages in the main queue and
 ```azure
 AppEvents 
 | where AppRoleName == 'hmpps-prisoner-from-nomis-migration' 
-| where Name contains "visits" 
+| where Name contains "visit" 
 | summarize count() by Name
 ```
 
