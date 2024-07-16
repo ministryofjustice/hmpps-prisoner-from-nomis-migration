@@ -303,7 +303,6 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
         }
       }
 
-      /* TODO Add back in - getting test bleed
       @Nested
       @DisplayName("When mapping POST fails")
       inner class MappingFail {
@@ -327,30 +326,27 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
               csipQueueOffenderEventsUrl,
               csipFactorEvent(eventType = "CSIP_FACTORS-INSERTED", csipFactorId = nomisCSIPFactorId.toString()),
             )
+            waitForAnyProcessingToComplete("csip-factor-mapping-created-synchronisation-success")
           }
 
           @Test
           fun `will create csip factor in DPS`() {
-            await untilAsserted {
-              csipApi.verify(
-                postRequestedFor(urlPathEqualTo("/csip-records/$dpsCSIPReportId/referral/contributory-factors"))
-                  .withRequestBody(matchingJsonPath("factorTypeCode", equalTo("BUL")))
-                  .withRequestBody(matchingJsonPath("comment", equalTo("Offender causes trouble"))),
-              )
-            }
+            csipApi.verify(
+              postRequestedFor(urlPathEqualTo("/csip-records/$dpsCSIPReportId/referral/contributory-factors"))
+                .withRequestBody(matchingJsonPath("factorTypeCode", equalTo("BUL")))
+                .withRequestBody(matchingJsonPath("comment", equalTo("Offender causes trouble"))),
+            )
           }
 
           @Test
           fun `will attempt to create mapping two times and succeed`() {
-            await untilAsserted {
-              csipMappingApi.verify(
-                exactly(2),
-                postRequestedFor(urlPathEqualTo("/mapping/csip/factors"))
-                  .withRequestBody(matchingJsonPath("dpsCSIPFactorId", equalTo(dpsCSIPFactorId)))
-                  .withRequestBody(matchingJsonPath("nomisCSIPFactorId", equalTo(nomisCSIPFactorId.toString())))
-                  .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
-              )
-            }
+            csipMappingApi.verify(
+              exactly(2),
+              postRequestedFor(urlPathEqualTo("/mapping/csip/factors"))
+                .withRequestBody(matchingJsonPath("dpsCSIPFactorId", equalTo(dpsCSIPFactorId)))
+                .withRequestBody(matchingJsonPath("nomisCSIPFactorId", equalTo(nomisCSIPFactorId.toString())))
+                .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
+            )
 
             assertThat(
               awsSqsCSIPOffenderEventDlqClient.countAllMessagesOnQueue(csipQueueOffenderEventsDlqUrl).get(),
@@ -359,31 +355,27 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
 
           @Test
           fun `will track a telemetry event for partial success`() {
-            await untilAsserted {
-              verify(telemetryClient).trackEvent(
-                eq("csip-factor-synchronisation-created-success"),
-                check {
-                  assertThat(it["offenderNo"]).isEqualTo("A1234BC")
-                  assertThat(it["nomisCSIPFactorId"]).isEqualTo(nomisCSIPFactorId.toString())
-                  assertThat(it["nomisCSIPReportId"]).isEqualTo(nomisCSIPReportId.toString())
-                  assertThat(it["dpsCSIPFactorId"]).isEqualTo(dpsCSIPFactorId)
-                  assertThat(it["mapping"]).isEqualTo("initial-failure")
-                },
-                isNull(),
-              )
-            }
+            verify(telemetryClient).trackEvent(
+              eq("csip-factor-synchronisation-created-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+                assertThat(it["nomisCSIPFactorId"]).isEqualTo(nomisCSIPFactorId.toString())
+                assertThat(it["nomisCSIPReportId"]).isEqualTo(nomisCSIPReportId.toString())
+                assertThat(it["dpsCSIPFactorId"]).isEqualTo(dpsCSIPFactorId)
+                assertThat(it["mapping"]).isEqualTo("initial-failure")
+              },
+              isNull(),
+            )
 
-            await untilAsserted {
-              verify(telemetryClient).trackEvent(
-                eq("csip-factor-mapping-created-synchronisation-success"),
-                check {
-                  assertThat(it["offenderNo"]).isEqualTo("A1234BC")
-                  assertThat(it["nomisCSIPFactorId"]).isEqualTo(nomisCSIPFactorId.toString())
-                  assertThat(it["dpsCSIPFactorId"]).isEqualTo(dpsCSIPFactorId)
-                },
-                isNull(),
-              )
-            }
+            verify(telemetryClient).trackEvent(
+              eq("csip-factor-mapping-created-synchronisation-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+                assertThat(it["nomisCSIPFactorId"]).isEqualTo(nomisCSIPFactorId.toString())
+                assertThat(it["dpsCSIPFactorId"]).isEqualTo(dpsCSIPFactorId)
+              },
+              isNull(),
+            )
           }
         }
 
@@ -441,7 +433,6 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
           }
         }
       }
-       */
     }
   }
 
