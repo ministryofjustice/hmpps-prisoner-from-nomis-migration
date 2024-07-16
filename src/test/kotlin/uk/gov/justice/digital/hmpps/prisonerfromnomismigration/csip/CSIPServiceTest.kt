@@ -72,7 +72,7 @@ internal class CSIPServiceTest {
             .withRequestBody(matchingJsonPath("referral.descriptionOfConcern", equalTo("There was a worry about the offender")))
             .withRequestBody(matchingJsonPath("referral.knownReasons", equalTo("known reasons details go in here")))
             .withRequestBody(notContaining("referral.contributoryFactors"))
-            .withRequestBody(matchingJsonPath("referral.incidentTime", equalTo("10:00")))
+            .withRequestBody(matchingJsonPath("referral.incidentTime", equalTo("10:32:12")))
             .withRequestBody(notContaining("referral.referralSummary"))
             .withRequestBody(matchingJsonPath("referral.isProactiveReferral", equalTo("true")))
             .withRequestBody(matchingJsonPath("referral.isStaffAssaulted", equalTo("true")))
