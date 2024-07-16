@@ -160,12 +160,13 @@ AppEvents
 
 will show all significant visit migration events
 
-- `nomis-migration-visits-started` - the single event for a migration which will contain the estimate count and the migration id
-- `nomis-migration-visit-migrated` - the event for each visit migrated. It will contain the visit ids and basic information about the visit
+- `visits-migration-started` - the single event for a migration which will contain the estimate count and the migration id
+- `visits-migration-completed` - the status of the migration id event. It will contain the migration id, estimate count and how long it took to complete the migration
+- `visits-migration-entity-migrated` - the status of a single migrated visit. It will contain information on the prison, prisoner, visit, refernce and room.
 - `nomis-migration-visit-mapping-failed`- indicates the visit was migrated but the mapping record could not be created. These events require manual intervention; see below.
 - `nomis-migration-visit-no-room-mapping` - indicates a visit was not migrated because the room it was in could not be mapped. These events require room mapping change and a rerun of the migration.
 
-`nomis-migration-visit-mapping-failed` requires the 2 IDs are extracted from application insights and manually added to the mapping table via the API
+`nomis-migration-visit-mapping-failed` requires the 2 IDs are extracted from App Insights and manually added to the mapping table via the API
 
 ```azure
 AppEvents 
