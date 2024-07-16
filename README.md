@@ -112,7 +112,7 @@ Since this services uses the HMPPS SQS library with defaults this has all the de
 
 For purging queues the queue name can be found in the [health check](https://prisoner-nomis-migration.hmpps.service.justice.gov.uk/health) and the required role is the default `ROLE_QUEUE_ADMIN`.
 
-## Visit a Person in Prison (VSIP)
+## Visit Someone in Prison (VSIP)
 
 With the kubernetes pods scaled to around 12, around `200,000` visits can be migrated per hour.
 
@@ -171,9 +171,9 @@ will show all significant visit migration events
 AppEvents 
 | where AppRoleName == 'hmpps-prisoner-from-nomis-migration' 
 | where Name == 'nomis-migration-visit-mapping-failed'
-| extend migrationId_ = tostring(customDimensions.migrationId)
-| extend nomisVisitId_ = tostring(customDimensions.nomisVisitId)
-| extend vsipVisitId_ = tostring(customDimensions.vsipVisitId)
+| extend migrationId_ = tostring(Properties.migrationId)
+| extend nomisVisitId_ = tostring(Properties.nomisVisitId)
+| extend vsipVisitId_ = tostring(Properties.vsipVisitId)
 
 ```
 For each failure the mapping endpoint should be called to create the mapping record.
