@@ -50,21 +50,16 @@ class PrisonPersonDpsApiService(@Qualifier("prisonPersonApiWebClient") private v
 
   suspend fun migratePhysicalAttributes(
     prisonerNumber: String,
-    heightCentimetres: Int?,
-    weightKilograms: Int?,
-    appliesFrom: LocalDateTime,
-    appliesTo: LocalDateTime?,
-    createdAt: LocalDateTime,
-    createdBy: String,
+    requests: List<PhysicalAttributesMigrationRequest>,
   ): PhysicalAttributesMigrationResponse =
     webClient
       .put()
       .uri("/migration/prisoners/{prisonerNumber}/physical-attributes", prisonerNumber)
-      .bodyValue(migratePhysicalAttributesRequest(heightCentimetres, weightKilograms, appliesFrom, appliesTo, createdAt, createdBy))
+      .bodyValue(requests)
       .retrieve()
       .awaitBody()
 
-  private fun migratePhysicalAttributesRequest(
+  fun migratePhysicalAttributesRequest(
     heightCentimetres: Int?,
     weightKilograms: Int?,
     appliesFrom: LocalDateTime,

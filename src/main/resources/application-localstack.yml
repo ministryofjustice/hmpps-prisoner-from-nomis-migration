@@ -36,6 +36,9 @@ hmpps.sqs:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
       errorVisibilityTimeout: 0
+    migrationprisonperson:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
     audit:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}

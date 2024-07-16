@@ -117,6 +117,10 @@ generic-service:
       HMPPS_SQS_QUEUES_MIGRATIONCASENOTES_QUEUE_NAME: "sqs_name"
     sqs-migration-casenotes-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONCASENOTES_DLQ_NAME: "sqs_name"
+    sqs-migration-prisonperson-queue:
+      HMPPS_SQS_QUEUES_MIGRATIONPRISONPERSON_QUEUE_NAME: "sqs_name"
+    sqs-migration-prisonperson-dlq:
+      HMPPS_SQS_QUEUES_MIGRATIONPRISONPERSON_DLQ_NAME: "sqs_name"
     prison-events-visits-queue:
       HMPPS_SQS_QUEUES_EVENTVISITS_QUEUE_NAME: "sqs_name"
     prison-events-visits-dl-queue:

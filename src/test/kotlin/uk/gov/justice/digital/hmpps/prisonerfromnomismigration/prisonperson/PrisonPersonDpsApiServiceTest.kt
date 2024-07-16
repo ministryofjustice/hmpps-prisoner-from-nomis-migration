@@ -115,8 +115,12 @@ class PrisonPersonDpsApiServiceTest {
     fun `should pass auth token to the service`() = runTest {
       dpsPrisonPersonServer.stubMigratePhysicalAttributes(aResponse())
 
-      apiService.migratePhysicalAttributes(prisonerNumber, height, weight, appliesFrom, appliesTo, createdAt, createdBy)
-
+      apiService.migratePhysicalAttributes(
+        prisonerNumber,
+        listOf(
+          apiService.migratePhysicalAttributesRequest(height, weight, appliesFrom, appliesTo, createdAt, createdBy),
+        ),
+      )
       dpsPrisonPersonServer.verify(
         putRequestedFor(urlPathMatching("/migration/prisoners/$prisonerNumber/physical-attributes"))
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -127,16 +131,21 @@ class PrisonPersonDpsApiServiceTest {
     fun `should pass data to the service`() = runTest {
       dpsPrisonPersonServer.stubMigratePhysicalAttributes(aResponse())
 
-      apiService.migratePhysicalAttributes(prisonerNumber, height, weight, appliesFrom, appliesTo, createdAt, createdBy)
+      apiService.migratePhysicalAttributes(
+        prisonerNumber,
+        listOf(
+          apiService.migratePhysicalAttributesRequest(height, weight, appliesFrom, appliesTo, createdAt, createdBy),
+        ),
+      )
 
       dpsPrisonPersonServer.verify(
         putRequestedFor(urlPathMatching("/migration/prisoners/$prisonerNumber/physical-attributes"))
-          .withRequestBody(matchingJsonPath("height", equalTo(height.toString())))
-          .withRequestBody(matchingJsonPath("weight", equalTo(weight.toString())))
-          .withRequestBody(matchingJsonPath("appliesFrom", equalTo(appliesFrom.atZone(ZoneId.of("Europe/London")).toString())))
-          .withRequestBody(matchingJsonPath("appliesTo", equalTo(appliesTo.atZone(ZoneId.of("Europe/London")).toString())))
-          .withRequestBody(matchingJsonPath("createdAt", equalTo(createdAt.atZone(ZoneId.of("Europe/London")).toString())))
-          .withRequestBody(matchingJsonPath("createdBy", equalTo(createdBy))),
+          .withRequestBody(matchingJsonPath("$[0].height", equalTo(height.toString())))
+          .withRequestBody(matchingJsonPath("$[0].weight", equalTo(weight.toString())))
+          .withRequestBody(matchingJsonPath("$[0].appliesFrom", equalTo(appliesFrom.atZone(ZoneId.of("Europe/London")).toString())))
+          .withRequestBody(matchingJsonPath("$[0].appliesTo", equalTo(appliesTo.atZone(ZoneId.of("Europe/London")).toString())))
+          .withRequestBody(matchingJsonPath("$[0].createdAt", equalTo(createdAt.atZone(ZoneId.of("Europe/London")).toString())))
+          .withRequestBody(matchingJsonPath("$[0].createdBy", equalTo(createdBy))),
       )
     }
 
@@ -144,13 +153,18 @@ class PrisonPersonDpsApiServiceTest {
     fun `should not pass null data to the service`() = runTest {
       dpsPrisonPersonServer.stubMigratePhysicalAttributes(aResponse())
 
-      apiService.migratePhysicalAttributes(prisonerNumber, null, null, appliesFrom, null, createdAt, createdBy)
+      apiService.migratePhysicalAttributes(
+        prisonerNumber,
+        listOf(
+          apiService.migratePhysicalAttributesRequest(null, null, appliesFrom, null, createdAt, createdBy),
+        ),
+      )
 
       dpsPrisonPersonServer.verify(
         putRequestedFor(urlPathMatching("/migration/prisoners/$prisonerNumber/physical-attributes"))
-          .withRequestBody(matchingJsonPath("height", absent()))
-          .withRequestBody(matchingJsonPath("weight", absent()))
-          .withRequestBody(matchingJsonPath("appliesTo", absent())),
+          .withRequestBody(matchingJsonPath("$[0].height", absent()))
+          .withRequestBody(matchingJsonPath("$[0].weight", absent()))
+          .withRequestBody(matchingJsonPath("$[0].appliesTo", absent())),
       )
     }
 
@@ -158,7 +172,12 @@ class PrisonPersonDpsApiServiceTest {
     fun `should parse the response`() = runTest {
       dpsPrisonPersonServer.stubMigratePhysicalAttributes(aResponse())
 
-      val response = apiService.migratePhysicalAttributes(prisonerNumber, height, weight, appliesFrom, appliesTo, createdAt, createdBy)
+      val response = apiService.migratePhysicalAttributes(
+        prisonerNumber,
+        listOf(
+          apiService.migratePhysicalAttributesRequest(height, weight, appliesFrom, appliesTo, createdAt, createdBy),
+        ),
+      )
 
       assertThat(response.fieldHistoryInserted).containsExactly(321)
     }
@@ -168,7 +187,12 @@ class PrisonPersonDpsApiServiceTest {
       dpsPrisonPersonServer.stubMigratePhysicalAttributes(INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.migratePhysicalAttributes(prisonerNumber, height, weight, appliesFrom, appliesTo, createdAt, createdBy)
+        apiService.migratePhysicalAttributes(
+          prisonerNumber,
+          listOf(
+            apiService.migratePhysicalAttributesRequest(height, weight, appliesFrom, appliesTo, createdAt, createdBy),
+          ),
+        )
       }
     }
 
