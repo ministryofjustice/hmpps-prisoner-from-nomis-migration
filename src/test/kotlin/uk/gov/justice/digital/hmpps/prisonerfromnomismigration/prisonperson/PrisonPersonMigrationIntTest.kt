@@ -70,6 +70,7 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
       }
     }
 
+    // TODO add tests for telemetry, multiple physical attributes, multiple bookings, mappings created, negative tests
     @Nested
     inner class HappyPath {
       @BeforeEach

@@ -57,9 +57,9 @@ class PrisonPersonMigrationService(
     log.info("attempting to migrate ${context.body}")
     val offenderNo = context.body.offenderNo
 
+    // TODO wrap this in a try catch for negative telemetry
     val physicalAttributes = prisonPersonNomisApiService.getPhysicalAttributes(offenderNo)
-    lateinit var dpsIds: List<Long>
-    physicalAttributes.bookings.flatMap { booking ->
+    val dpsIds = physicalAttributes.bookings.flatMap { booking ->
       booking.physicalAttributes.map { pa ->
         val (lastModifiedAt, lastModifiedBy) = pa.lastModified()
         prisonPersonDpsService.migratePhysicalAttributesRequest(
@@ -71,12 +71,10 @@ class PrisonPersonMigrationService(
           createdBy = lastModifiedBy,
         )
       }
-    }.also { requests ->
+    }.let { requests ->
       prisonPersonDpsService.migratePhysicalAttributes(offenderNo, requests)
-        .also { response ->
-          dpsIds = response.fieldHistoryInserted
-        }
-    }
+    }.fieldHistoryInserted
+
     // TODO create mappings
     telemetryClient.trackEvent(
       "prisonperson-migration-entity-migrated",
