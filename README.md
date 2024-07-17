@@ -112,7 +112,7 @@ Since this services uses the HMPPS SQS library with defaults this has all the de
 
 For purging queues the queue name can be found in the [health check](https://prisoner-nomis-migration.hmpps.service.justice.gov.uk/health) and the required role is the default `ROLE_QUEUE_ADMIN`.
 
-## Visit a Person in Prison (VSIP)
+## Visit Someone in Prison (VSIP)
 
 With the kubernetes pods scaled to around 12, around `200,000` visits can be migrated per hour.
 
@@ -154,26 +154,27 @@ Given the health check page reports the number of messages in the main queue and
 ```azure
 AppEvents 
 | where AppRoleName == 'hmpps-prisoner-from-nomis-migration' 
-| where Name startswith "nomis-migration" 
+| where Name contains "visit" 
 | summarize count() by Name
 ```
 
 will show all significant visit migration events
 
-- `nomis-migration-visits-started` - the single event for a migration which will contain the estimate count and the migration id
-- `nomis-migration-visit-migrated` - the event for each visit migrated. It will contain the visit ids and basic information about the visit
+- `visits-migration-started` - the single event for a migration which will contain the estimate count and the migration id
+- `visits-migration-completed` - the status of the migration id event. It will contain the migration id, estimate count and how long it took to complete the migration
+- `visits-migration-entity-migrated` - the status of a single migrated visit. It will contain information on the prison, prisoner, visit, refernce and room.
 - `nomis-migration-visit-mapping-failed`- indicates the visit was migrated but the mapping record could not be created. These events require manual intervention; see below.
 - `nomis-migration-visit-no-room-mapping` - indicates a visit was not migrated because the room it was in could not be mapped. These events require room mapping change and a rerun of the migration.
 
-`nomis-migration-visit-mapping-failed` requires the 2 IDs are extracted from application insights and manually added to the mapping table via the API
+`nomis-migration-visit-mapping-failed` requires the 2 IDs are extracted from App Insights and manually added to the mapping table via the API
 
 ```azure
 AppEvents 
 | where AppRoleName == 'hmpps-prisoner-from-nomis-migration' 
 | where Name == 'nomis-migration-visit-mapping-failed'
-| extend migrationId_ = tostring(customDimensions.migrationId)
-| extend nomisVisitId_ = tostring(customDimensions.nomisVisitId)
-| extend vsipVisitId_ = tostring(customDimensions.vsipVisitId)
+| extend migrationId_ = tostring(Properties.migrationId)
+| extend nomisVisitId_ = tostring(Properties.nomisVisitId)
+| extend vsipVisitId_ = tostring(Properties.vsipVisitId)
 
 ```
 For each failure the mapping endpoint should be called to create the mapping record.

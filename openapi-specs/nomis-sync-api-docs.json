@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-07-11.8279.2d293e8"
+    "version": "2024-07-16.8298.dadbd7e"
   },
   "servers": [
     {
@@ -11438,7 +11438,6 @@
       },
       "ExistingOffenderChargeRequest": {
         "required": [
-          "mostSeriousFlag",
           "offenceCode",
           "offenderChargeId"
         ],
@@ -11465,16 +11464,12 @@
           },
           "resultCode1": {
             "type": "string"
-          },
-          "mostSeriousFlag": {
-            "type": "boolean"
           }
         },
         "description": "Court Event"
       },
       "OffenderChargeRequest": {
         "required": [
-          "mostSeriousFlag",
           "offenceCode"
         ],
         "type": "object",
@@ -11496,9 +11491,6 @@
           },
           "resultCode1": {
             "type": "string"
-          },
-          "mostSeriousFlag": {
-            "type": "boolean"
           }
         },
         "description": "Court Event"
@@ -18520,6 +18512,7 @@
           "createdBy",
           "decision",
           "id",
+          "incidentDate",
           "investigation",
           "location",
           "offender",
@@ -18556,11 +18549,15 @@
             "type": "string",
             "description": "Log number"
           },
-          "incidentDateTime": {
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+          "incidentDate": {
             "type": "string",
             "description": "Date/Time incident occurred",
-            "example": "2021-07-05T10:35:17"
+            "format": "date"
+          },
+          "incidentTime": {
+            "type": "string",
+            "description": "Date/Time incident occurred",
+            "format": "partial-time"
           },
           "type": {
             "$ref": "#/components/schemas/CodeDescription"
