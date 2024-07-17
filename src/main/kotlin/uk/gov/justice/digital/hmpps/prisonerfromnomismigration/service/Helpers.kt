@@ -33,6 +33,7 @@ const val CSIP_QUEUE_ID = "migrationcsip"
 const val LOCATIONS_QUEUE_ID = "migrationlocations"
 const val CASENOTES_QUEUE_ID = "migrationcasenotes"
 const val ALERTS_QUEUE_ID = "migrationalerts"
+const val PRISONPERSON_QUEUE_ID = "migrationprisonperson"
 
 const val VISITS_SYNC_QUEUE_ID = "eventvisits"
 const val SENTENCING_ADJUSTMENTS_SYNC_QUEUE_ID = "eventsentencing"
@@ -55,6 +56,7 @@ enum class MigrationType(val queueId: String, val telemetryName: String) {
   LOCATIONS(LOCATIONS_QUEUE_ID, "locations"),
   CASENOTES(CASENOTES_QUEUE_ID, "casenotes"),
   ALERTS(ALERTS_QUEUE_ID, "alerts"),
+  PRISONPERSON(PRISONPERSON_QUEUE_ID, "prisonperson"),
 }
 
 enum class SynchronisationType(val queueId: String) {
@@ -68,8 +70,6 @@ enum class SynchronisationType(val queueId: String) {
   COURT_SENTENCING(COURT_SENTENCING_SYNC_QUEUE_ID),
 }
 
-fun Any.asMap(): Map<String, String> {
-  return this::class.memberProperties
-    .filter { it.getter.call(this) != null }
-    .associate { it.name to it.getter.call(this).toString() }
-}
+fun Any.asMap(): Map<String, String> = this::class.memberProperties
+  .filter { it.getter.call(this) != null }
+  .associate { it.name to it.getter.call(this).toString() }
