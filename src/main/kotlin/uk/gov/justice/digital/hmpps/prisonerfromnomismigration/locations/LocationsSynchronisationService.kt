@@ -24,7 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.LOCATIONS
-import java.util.UUID
+import java.util.*
 
 @Service
 class LocationsSynchronisationService(
@@ -49,7 +49,7 @@ class LocationsSynchronisationService(
       // (but no profile records)
       telemetryClient.trackEvent("locations-synchronisation-skipped-usage", event.toTelemetryProperties())
     } else {
-      synchroniseUpdateOrCreate(event, mapping)
+      synchroniseUpdate(event, mapping)
     }
   }
 
@@ -59,7 +59,8 @@ class LocationsSynchronisationService(
       return
     }
     val mapping = locationsMappingService.getMappingGivenNomisId(event.internalLocationId)
-    synchroniseUpdateOrCreate(event, mapping)
+      ?: throw IllegalStateException("Cannot find mapping for location ${event.internalLocationId} to update attribute")
+    synchroniseUpdate(event, mapping)
   }
 
   suspend fun synchroniseLocation(event: LocationsOffenderEvent) {
@@ -79,8 +80,10 @@ class LocationsSynchronisationService(
         "locations-deleted-synchronisation-success",
         event.toTelemetryProperties(mapping.dpsLocationId),
       )
+    } else if (mapping == null) {
+      synchroniseCreate(event)
     } else {
-      synchroniseUpdateOrCreate(event, mapping)
+      synchroniseUpdate(event, mapping)
     }
   }
 
@@ -90,16 +93,79 @@ class LocationsSynchronisationService(
         event.description.endsWith("-VISITS-VSIP_SOC")
       )
 
-  private suspend fun synchroniseUpdateOrCreate(event: LocationsOffenderEvent, mapping: LocationMappingDto?) {
+  private suspend fun synchroniseCreate(event: LocationsOffenderEvent) {
+    if (ignoreInvalidPrisons(event)) {
+      return
+    }
+    val nomisLocation = nomisApiService.getLocation(event.internalLocationId)
+    val parent = findParent(nomisLocation, event)
+
+    val upsertSyncRequest = toUpsertSyncRequest(nomisLocation, parent?.dpsLocationId)
+    log.debug("No location mapping - sending location upsert sync {} ", upsertSyncRequest)
+
+    locationsService.upsertLocation(upsertSyncRequest).also { location ->
+      tryToCreateLocationMapping(event, location.id.toString()).also { result ->
+        telemetryClient.trackEvent(
+          "locations-created-synchronisation-success",
+          event.toTelemetryProperties(location.id.toString(), result == MAPPING_FAILED),
+        )
+      }
+    }
+  }
+
+  private suspend fun synchroniseUpdate(event: LocationsOffenderEvent, mapping: LocationMappingDto) {
+    if (ignoreInvalidPrisons(event)) {
+      return
+    }
+    val nomisLocation = nomisApiService.getLocation(event.internalLocationId)
+    val parent = findParent(nomisLocation, event)
+
+    val upsertSyncRequest =
+      toUpsertSyncRequest(UUID.fromString(mapping.dpsLocationId), nomisLocation, parent?.dpsLocationId)
+    log.debug("Found location mapping: {}, sending location upsert sync {}", mapping, upsertSyncRequest)
+
+    try {
+      locationsService.upsertLocation(upsertSyncRequest)
+
+      telemetryClient.trackEvent(
+        "locations-updated-synchronisation-success",
+        event.toTelemetryProperties(mapping.dpsLocationId),
+      )
+    } catch (e: Exception) {
+      if (e is WebClientResponseException.Conflict &&
+        (e.getResponseBodyAs(ErrorResponse::class.java) as ErrorResponse).errorCode == 107
+      ) {
+        log.error("Detected a permanent deactivation or cell converted to non-res: ignoring update", e)
+        telemetryClient.trackEvent(
+          "locations-updated-synchronisation-skipped-deactivated",
+          event.toTelemetryProperties(mapping.dpsLocationId),
+        )
+      } else {
+        telemetryClient.trackEvent(
+          "locations-updated-synchronisation-failed",
+          event.toTelemetryProperties(mapping.dpsLocationId) + mapOf("exception" to (e.message ?: "")),
+        )
+        throw e
+      }
+    }
+  }
+
+  private fun ignoreInvalidPrisons(event: LocationsOffenderEvent): Boolean {
     if (invalidPrisons.contains(event.prisonId)) {
       telemetryClient.trackEvent(
         "locations-synchronisation-skipped-ignored-prison",
         event.toTelemetryProperties(),
       )
-      return
+      return true
     }
-    val nomisLocation = nomisApiService.getLocation(event.internalLocationId)
+    return false
+  }
 
+  private suspend fun findParent(
+    nomisLocation: LocationResponse,
+    event: LocationsOffenderEvent,
+    //   updateOnly: Boolean,
+  ): LocationMappingDto? {
     val parent = nomisLocation.parentLocationId?.let {
       locationsMappingService.getMappingGivenNomisId(nomisLocation.parentLocationId)
     }
@@ -107,48 +173,10 @@ class LocationsSynchronisationService(
       throw IllegalStateException("No mapping found for parent NOMIS location ${nomisLocation.parentLocationId} syncing NOMIS location ${event.internalLocationId}, ${nomisLocation.description}")
     }
 
-    mapping?.let {
-      val upsertSyncRequest =
-        toUpsertSyncRequest(UUID.fromString(it.dpsLocationId), nomisLocation, parent?.dpsLocationId)
-      log.debug("Found location mapping: {}, sending location upsert sync {}", it, upsertSyncRequest)
-
-      try {
-        locationsService.upsertLocation(upsertSyncRequest)
-
-        telemetryClient.trackEvent(
-          "locations-updated-synchronisation-success",
-          event.toTelemetryProperties(it.dpsLocationId),
-        )
-      } catch (e: Exception) {
-        if (e is WebClientResponseException.Conflict &&
-          (e.getResponseBodyAs(ErrorResponse::class.java) as ErrorResponse).errorCode == 107
-        ) {
-          log.error("Detected a permanent deactivation or cell converted to non-res: ignoring update", e)
-          telemetryClient.trackEvent(
-            "locations-updated-synchronisation-skipped-deactivated",
-            event.toTelemetryProperties(mapping.dpsLocationId),
-          )
-        } else {
-          telemetryClient.trackEvent(
-            "locations-updated-synchronisation-failed",
-            event.toTelemetryProperties(mapping.dpsLocationId) + mapOf("exception" to (e.message ?: "")),
-          )
-          throw e
-        }
-      }
-    } ?: let {
-      val upsertSyncRequest = toUpsertSyncRequest(nomisLocation, parent?.dpsLocationId)
-      log.debug("No location mapping - sending location upsert sync {} ", upsertSyncRequest)
-
-      locationsService.upsertLocation(upsertSyncRequest).also { location ->
-        tryToCreateLocationMapping(event, location.id.toString()).also { result ->
-          telemetryClient.trackEvent(
-            "locations-created-synchronisation-success",
-            event.toTelemetryProperties(location.id.toString(), result == MAPPING_FAILED),
-          )
-        }
-      }
-    }
+//    if (updateOnly && mapping == null) {
+//      throw IllegalStateException("No mapping found for location ${event.internalLocationId} to update)")
+//      }
+    return parent
   }
 
   enum class MappingResponse {

@@ -265,6 +265,96 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Nested
+      inner class WhenCreateByProfileFails {
+        @BeforeEach
+        fun setUp() {
+          nomisApi.stubGetLocationWithMinimalData(NOMIS_LOCATION_ID)
+          mappingApi.stubGetAnyLocationNotFound()
+
+          awsSqsLocationsOffenderEventsClient.sendMessage(
+            locationsQueueOffenderEventsUrl,
+            locationEvent(eventType = "AGY_INT_LOC_PROFILES-UPDATED"),
+          )
+        }
+
+        @Test
+        fun `will repeatedly fail to retrieve mapping`() {
+          await untilAsserted {
+            mappingApi.verify(
+              moreThanOrExactly(2),
+              getRequestedFor(urlPathEqualTo(NOMIS_MAPPING_API_URL)),
+            )
+          }
+        }
+
+        @Test
+        fun `will not retrieve details about the location from NOMIS`() {
+          await untilAsserted {
+            nomisApi.verify(exactly(0), getRequestedFor(urlEqualTo(NOMIS_API_URL)))
+          }
+        }
+
+        @Test
+        fun `will not create the location in the locations service`() {
+          await untilAsserted {
+            locationsApi.verify(exactly(0), postRequestedFor(urlPathEqualTo("/sync/upsert")))
+          }
+        }
+
+        @Test
+        fun `will not create a mapping between the two records`() {
+          await untilAsserted {
+            mappingApi.verify(exactly(0), postRequestedFor(urlPathEqualTo("/mapping/locations")))
+          }
+        }
+      }
+
+      @Nested
+      inner class WhenCreateByUsageFails {
+        @BeforeEach
+        fun setUp() {
+          nomisApi.stubGetLocationWithMinimalData(NOMIS_LOCATION_ID)
+          mappingApi.stubGetAnyLocationNotFound()
+
+          awsSqsLocationsOffenderEventsClient.sendMessage(
+            locationsQueueOffenderEventsUrl,
+            locationEvent(eventType = "INT_LOC_USAGE_LOCATIONS-UPDATED"),
+          )
+        }
+
+        @Test
+        fun `will repeatedly fail to retrieve mapping`() {
+          await untilAsserted {
+            mappingApi.verify(
+              moreThanOrExactly(2),
+              getRequestedFor(urlPathEqualTo(NOMIS_MAPPING_API_URL)),
+            )
+          }
+        }
+
+        @Test
+        fun `will not retrieve details about the location from NOMIS`() {
+          await untilAsserted {
+            nomisApi.verify(exactly(0), getRequestedFor(urlEqualTo(NOMIS_API_URL)))
+          }
+        }
+
+        @Test
+        fun `will not create the location in the locations service`() {
+          await untilAsserted {
+            locationsApi.verify(exactly(0), postRequestedFor(urlPathEqualTo("/sync/upsert")))
+          }
+        }
+
+        @Test
+        fun `will not create a mapping between the two records`() {
+          await untilAsserted {
+            mappingApi.verify(exactly(0), postRequestedFor(urlPathEqualTo("/mapping/locations")))
+          }
+        }
+      }
+
+      @Nested
       inner class WhenUpdateByNomisSuccess {
         @BeforeEach
         fun setUp() {
