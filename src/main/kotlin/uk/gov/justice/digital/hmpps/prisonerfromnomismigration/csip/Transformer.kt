@@ -10,6 +10,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SaferCustodyScreening
 
+// TODO This needs updating once csip api updated
 fun CSIPResponse.toDPSMigrateCSIP() =
   CreateCsipRecordRequest(
     logCode = logNumber,
@@ -29,9 +30,8 @@ fun CSIPResponse.toDPSMigrateCSIP() =
       knownReasons = reportDetails.knownReasons,
       contributoryFactors = listOf(),
       otherInformation = reportDetails.otherInformation,
-      referralSummary = null,
-      isSaferCustodyTeamInformed = false,
-      isReferralComplete = true,
+      isSaferCustodyTeamInformed = if (reportDetails.saferCustodyTeamInformed) CreateReferralRequest.IsSaferCustodyTeamInformed.yes else CreateReferralRequest.IsSaferCustodyTeamInformed.no,
+      isReferralComplete = reportDetails.referralComplete,
 
     ),
   )
@@ -51,6 +51,7 @@ fun CSIPResponse.toDPSCreateRequest() =
       isStaffAssaulted = staffAssaulted,
       assaultedStaffName = staffAssaultedName,
       contributoryFactors = listOf(),
+      isSaferCustodyTeamInformed = CreateReferralRequest.IsSaferCustodyTeamInformed.doMinusNotMinusKnow,
     ),
   )
 
@@ -67,6 +68,7 @@ fun CSIPResponse.toDPSUpdateReferralRequest() =
     isProactiveReferral = proActiveReferral,
     isStaffAssaulted = staffAssaulted,
     assaultedStaffName = staffAssaultedName,
+    isSaferCustodyTeamInformed = if (reportDetails.saferCustodyTeamInformed) UpdateReferralRequest.IsSaferCustodyTeamInformed.yes else UpdateReferralRequest.IsSaferCustodyTeamInformed.no,
   )
 
 fun CSIPResponse.toDPSUpdateReferralContRequest() =
@@ -85,7 +87,7 @@ fun CSIPResponse.toDPSUpdateReferralContRequest() =
     descriptionOfConcern = reportDetails.concern,
     knownReasons = reportDetails.knownReasons,
     otherInformation = reportDetails.otherInformation,
-    isSaferCustodyTeamInformed = reportDetails.saferCustodyTeamInformed,
+    isSaferCustodyTeamInformed = if (reportDetails.saferCustodyTeamInformed) UpdateReferralRequest.IsSaferCustodyTeamInformed.yes else UpdateReferralRequest.IsSaferCustodyTeamInformed.no,
     isReferralComplete = reportDetails.referralComplete,
   )
 

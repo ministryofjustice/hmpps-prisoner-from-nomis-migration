@@ -81,7 +81,7 @@ class CSIPSynchronisationService(
       if (mapping == null) {
         // Should never happen
         telemetryClient.trackEvent("csip-synchronisation-updated-failed", telemetry)
-        throw IllegalStateException("Received CSIP_REPORTS-UPDATED for csip that has never been created")
+        throw IllegalStateException("Received CSIP_REPORTS-UPDATED - main screen - for csip that has never been created")
       } else {
         csipService.updateCSIPReferral(
           csipReportId = mapping.dpsCSIPId,
@@ -100,7 +100,7 @@ class CSIPSynchronisationService(
   suspend fun csipReportReferralContUpdated(event: CSIPReportEvent) {
     val telemetry =
       mutableMapOf(
-        "nomisCSIPReportId" to event.csipReportId,
+        "nomisCSIPId" to event.csipReportId,
         "offenderNo" to event.offenderIdDisplay,
       )
 
@@ -116,7 +116,7 @@ class CSIPSynchronisationService(
       if (mapping == null) {
         // Should never happen
         telemetryClient.trackEvent("csip-synchronisation-updated-failed", telemetry)
-        throw IllegalStateException("Received CSIP_REPORTS-UPDATED for csip that has never been created")
+        throw IllegalStateException("Received CSIP_REPORTS-UPDATED - referral continued - for csip that has never been created")
       } else {
         csipService.updateCSIPReferral(
           csipReportId = mapping.dpsCSIPId,

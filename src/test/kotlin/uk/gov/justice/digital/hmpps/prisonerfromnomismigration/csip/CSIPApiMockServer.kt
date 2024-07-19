@@ -79,7 +79,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
           isStaffAssaulted = true,
           assaultedStaffName = "Fred Jones",
           otherInformation = "other information goes in here",
-          isSaferCustodyTeamInformed = false,
+          isSaferCustodyTeamInformed = CreateReferralRequest.IsSaferCustodyTeamInformed.doMinusNotMinusKnow,
           isReferralComplete = true,
         ),
       )
@@ -99,6 +99,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
           isProactiveReferral = true,
           isStaffAssaulted = true,
           assaultedStaffName = "Fred Jones",
+          isSaferCustodyTeamInformed = CreateReferralRequest.IsSaferCustodyTeamInformed.doMinusNotMinusKnow,
         ),
       )
 
@@ -141,7 +142,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
         isStaffAssaulted = null,
         assaultedStaffName = null,
         otherInformation = null,
-        isSaferCustodyTeamInformed = null,
+        isSaferCustodyTeamInformed = Referral.IsSaferCustodyTeamInformed.no,
         isReferralComplete = null,
         investigation = null,
         saferCustodyScreeningOutcome = null,
