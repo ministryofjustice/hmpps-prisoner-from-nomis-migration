@@ -62,7 +62,7 @@ internal class CSIPServiceTest {
       fun `will pass data to the api`() {
         csipApi.verify(
           postRequestedFor(urlEqualTo("/migrate/prisoners/A1234BC/csip-records"))
-            .withRequestBody(matchingJsonPath("logNumber", equalTo("ASI-001")))
+            .withRequestBody(matchingJsonPath("logCode", equalTo("ASI-001")))
             .withRequestBody(matchingJsonPath("referral.incidentDate", equalTo("2024-06-12")))
             .withRequestBody(matchingJsonPath("referral.incidentTypeCode", equalTo("INT")))
             .withRequestBody(matchingJsonPath("referral.incidentLocationCode", equalTo("LIB")))
@@ -107,7 +107,7 @@ internal class CSIPServiceTest {
       fun `will pass data to the api`() {
         csipApi.verify(
           postRequestedFor(urlEqualTo("/prisoners/A1234BC/csip-records"))
-            .withRequestBody(matchingJsonPath("logNumber", equalTo("ASI-001")))
+            .withRequestBody(matchingJsonPath("logCode", equalTo("ASI-001")))
             .withRequestBody(matchingJsonPath("referral.incidentDate", equalTo("2024-06-12")))
             .withRequestBody(matchingJsonPath("referral.incidentTime", equalTo("10:32:12")))
             .withRequestBody(matchingJsonPath("referral.incidentTypeCode", equalTo("INT")))
