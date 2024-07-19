@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-06-19.565.7f16233"
+    "version": "2024-07-17.873.92db5cc"
   },
   "servers": [
     {
@@ -97,6 +97,16 @@
           }
         ],
         "responses": {
+          "404": {
+            "description": "The reference data associated with this domain was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
@@ -109,16 +119,6 @@
           },
           "403": {
             "description": "Forbidden, requires an appropriate role",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "The reference data associated with this domain was not found.",
             "content": {
               "application/json": {
                 "schema": {
@@ -191,6 +191,16 @@
               }
             }
           },
+          "404": {
+            "description": "The reference data associated with this domain was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
@@ -220,16 +230,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "The reference data associated with this domain was not found.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -240,7 +240,7 @@
           "1. CSIP Record Controller"
         ],
         "summary": "Retrieve and filter all CSIP records for a prisoner.",
-        "description": "Returns the CSIP records for a prisoner. Supports log number filtering.\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI",
+        "description": "Returns the CSIP records for a prisoner. Supports log code filtering.\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI",
         "operationId": "getCsipRecordsByPrisonNumber",
         "parameters": [
           {
@@ -253,9 +253,9 @@
             }
           },
           {
-            "name": "logNumber",
+            "name": "logCode",
             "in": "query",
-            "description": "Filter CSIP records that contain the search text in their Log Number. The search is case insensitive.",
+            "description": "Filter CSIP records that contain the search text in their Log Code. The search is case insensitive.",
             "required": false,
             "schema": {
               "type": "string"
@@ -360,7 +360,7 @@
           "1. CSIP Record Controller"
         ],
         "summary": "Create a CSIP record for a prisoner.",
-        "description": "Create the CSIP record, referral and contributory factors. This starts the CSIP process. Publishes prisoner-csip.csip-record-created and prisoner-csip.contributory-factor-created events\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI\n* ROLE_NOMIS_CSIP",
+        "description": "Create the CSIP record, referral and contributory factors. This starts the CSIP process. Publishes person.csip.record.created and person.csip.contributory-factor.created events\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI\n* ROLE_NOMIS_CSIP",
         "operationId": "createCsipRecord",
         "parameters": [
           {
@@ -404,22 +404,22 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "201": {
             "description": "CSIP record created",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CsipRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -433,7 +433,7 @@
           "5. Safer Custody Screening Outcome Controller"
         ],
         "summary": "Add safer custody screening outcome to the referral.",
-        "description": "Create the safer custody screening outcome. Publishes prisoner-csip.csip-record-updated event with saferCustodyScreeningOutcomeAffected = true\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI\n* ROLE_NOMIS_CSIP",
+        "description": "Create the safer custody screening outcome. Publishes person.csip.record.updated event with saferCustodyScreeningOutcomeAffected = true\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI\n* ROLE_NOMIS_CSIP",
         "operationId": "createScreeningOutcome",
         "parameters": [
           {
@@ -498,8 +498,8 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request",
+          "404": {
+            "description": "The CSIP referral associated with this identifier was not found.",
             "content": {
               "application/json": {
                 "schema": {
@@ -508,8 +508,8 @@
               }
             }
           },
-          "404": {
-            "description": "The CSIP referral associated with this identifier was not found.",
+          "400": {
+            "description": "Bad request",
             "content": {
               "application/json": {
                 "schema": {
@@ -525,7 +525,7 @@
           "5. Safer Custody Screening Outcome Controller"
         ],
         "summary": "Update the safer custody screening outcome.",
-        "description": "Update the safer custody screening outcome. Publishes prisoner-csip.csip-record-updated event with saferCustodyScreeningOutcomeAffected = true\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI",
+        "description": "Update the safer custody screening outcome. Publishes person.csip.record.updated event with saferCustodyScreeningOutcomeAffected = true\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI",
         "operationId": "updateScreeningOutcome",
         "parameters": [
           {
@@ -550,6 +550,16 @@
           "required": true
         },
         "responses": {
+          "200": {
+            "description": "Safer Custody Screening Outcome updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaferCustodyScreeningOutcome"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
@@ -570,18 +580,8 @@
               }
             }
           },
-          "200": {
-            "description": "Safer Custody Screening Outcome updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SaferCustodyScreeningOutcome"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request",
+          "404": {
+            "description": "The CSIP referral associated with this identifier was not found.",
             "content": {
               "application/json": {
                 "schema": {
@@ -590,8 +590,8 @@
               }
             }
           },
-          "404": {
-            "description": "The CSIP referral associated with this identifier was not found.",
+          "400": {
+            "description": "Bad request",
             "content": {
               "application/json": {
                 "schema": {
@@ -609,7 +609,7 @@
           "3. Investigations Controller"
         ],
         "summary": "Add investigation and any interviews to the referral.",
-        "description": "Create the investigation and any interviews. Publishes prisoner-csip.csip-record-updated event with investigationAffected = true and prisoner-csip.interview-created event\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI\n* ROLE_NOMIS_CSIP",
+        "description": "Create the investigation and any interviews. Publishes person.csip.record.updated event with investigationAffected = true and person.csip.interview.created event\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI\n* ROLE_NOMIS_CSIP",
         "operationId": "createInvestigation",
         "parameters": [
           {
@@ -634,6 +634,16 @@
           "required": true
         },
         "responses": {
+          "409": {
+            "description": "Conflict. The CSIP referral already has an Investigation created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
@@ -646,26 +656,6 @@
           },
           "403": {
             "description": "Forbidden, requires an appropriate role",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict. The CSIP referral already has an Investigation created.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request",
             "content": {
               "application/json": {
                 "schema": {
@@ -693,6 +683,16 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       },
@@ -701,7 +701,7 @@
           "3. Investigations Controller"
         ],
         "summary": "Update the investigation.",
-        "description": "Update the investigation only. Cannot update interviews with this endpoint. Publishes prisoner-csip.csip-record-updated event with investigationAffected = true\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI",
+        "description": "Update the investigation only. Cannot update interviews with this endpoint. Publishes person.csip.record.updated event with investigationAffected = true\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI",
         "operationId": "updateInvestigation",
         "parameters": [
           {
@@ -756,8 +756,8 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request",
+          "404": {
+            "description": "The CSIP referral associated with this identifier was not found.",
             "content": {
               "application/json": {
                 "schema": {
@@ -766,8 +766,8 @@
               }
             }
           },
-          "404": {
-            "description": "The CSIP referral associated with this identifier was not found.",
+          "400": {
+            "description": "Bad request",
             "content": {
               "application/json": {
                 "schema": {
@@ -785,7 +785,7 @@
           "3. Investigations Controller"
         ],
         "summary": "Add an interview to the investigation.",
-        "description": "Add an interview to the investigation. Publishes prisoner-csip.interview-created event\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI",
+        "description": "Add an interview to the investigation. Publishes person.csip.interview.created event\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI",
         "operationId": "createInterview",
         "parameters": [
           {
@@ -830,16 +830,6 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "201": {
             "description": "Interview added to CSIP referral",
             "content": {
@@ -859,6 +849,16 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -869,7 +869,7 @@
           "4. Decision And Actions Controller"
         ],
         "summary": "Add decision and actions to the referral.",
-        "description": "Create the decision and actions. Publishes prisoner-csip.csip-record-updated event with decisionAndActionsAffected = true\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI\n* ROLE_NOMIS_CSIP",
+        "description": "Create the decision and actions. Publishes person.csip.record.updated event with decisionAndActionsAffected = true\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI\n* ROLE_NOMIS_CSIP",
         "operationId": "createDecision",
         "parameters": [
           {
@@ -894,6 +894,16 @@
           "required": true
         },
         "responses": {
+          "409": {
+            "description": "The CSIP referral associated with this identifier already has a decision and actions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
@@ -914,16 +924,6 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "201": {
             "description": "Decision and actions added to CSIP referral",
             "content": {
@@ -934,8 +934,8 @@
               }
             }
           },
-          "409": {
-            "description": "The CSIP referral associated with this identifier already has a decision and actions",
+          "404": {
+            "description": "The CSIP referral associated with this identifier was not found.",
             "content": {
               "application/json": {
                 "schema": {
@@ -944,8 +944,8 @@
               }
             }
           },
-          "404": {
-            "description": "The CSIP referral associated with this identifier was not found.",
+          "400": {
+            "description": "Bad request",
             "content": {
               "application/json": {
                 "schema": {
@@ -961,7 +961,7 @@
           "4. Decision And Actions Controller"
         ],
         "summary": "Update the decision and actions.",
-        "description": "Update the decision and actions. Publishes prisoner-csip.csip-record-updated event with decisionAndActionsAffected = true\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI",
+        "description": "Update the decision and actions. Publishes person.csip.record.updated event with decisionAndActionsAffected = true\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI",
         "operationId": "updateDecision",
         "parameters": [
           {
@@ -1016,8 +1016,8 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request",
+          "404": {
+            "description": "The CSIP referral associated with this identifier was not found.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1026,8 +1026,8 @@
               }
             }
           },
-          "404": {
-            "description": "The CSIP referral associated with this identifier was not found.",
+          "400": {
+            "description": "Bad request",
             "content": {
               "application/json": {
                 "schema": {
@@ -1045,7 +1045,7 @@
           "2. Referral Controller"
         ],
         "summary": "Add a contributory factor to the referral.",
-        "description": "Add a contributory factor to the referral. Publishes prisoner-csip.contributory-factor-created event\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI",
+        "description": "Add a contributory factor to the referral. Publishes person.csip.contributory-factor.created event\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI",
         "operationId": "createContributoryFactor",
         "parameters": [
           {
@@ -1070,6 +1070,16 @@
           "required": true
         },
         "responses": {
+          "201": {
+            "description": "New contributory factor added to CSIP referral",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContributoryFactor"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
@@ -1090,18 +1100,8 @@
               }
             }
           },
-          "201": {
-            "description": "New contributory factor added to CSIP referral",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ContributoryFactor"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request",
+          "404": {
+            "description": "The CSIP referral associated with this identifier was not found.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1110,8 +1110,8 @@
               }
             }
           },
-          "404": {
-            "description": "The CSIP referral associated with this identifier was not found.",
+          "400": {
+            "description": "Bad request",
             "content": {
               "application/json": {
                 "schema": {
@@ -1129,7 +1129,7 @@
           "6. Plans Controller"
         ],
         "summary": "Create the CSIP plan and identified needs.",
-        "description": "Create the CSIP plan and identified needs. Publishes prisoner-csip.csip-record-updated event with planAffected = true and prisoner-csip.identified-need-created event\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI",
+        "description": "Create the CSIP plan and identified needs. Publishes person.csip.record.updated event with planAffected = true and prisoner-csip.identified-need-created event\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI",
         "operationId": "createPlan",
         "parameters": [
           {
@@ -1174,8 +1174,8 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request",
+          "404": {
+            "description": "The CSIP referral associated with this identifier was not found.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1194,8 +1194,8 @@
               }
             }
           },
-          "404": {
-            "description": "The CSIP referral associated with this identifier was not found.",
+          "400": {
+            "description": "Bad request",
             "content": {
               "application/json": {
                 "schema": {
@@ -1211,7 +1211,7 @@
           "6. Plans Controller"
         ],
         "summary": "Update the CSIP plan.",
-        "description": "Update the plan only. Cannot update identified needs with this endpoint. Publishes prisoner-csip.csip-record-updated event with planAffected = true\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI",
+        "description": "Update the plan only. Cannot update identified needs with this endpoint. Publishes person.csip.record.updated event with planAffected = true\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI",
         "operationId": "updatePlan",
         "parameters": [
           {
@@ -1256,16 +1256,6 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "200": {
             "description": "CSIP Plan updated",
             "content": {
@@ -1278,6 +1268,16 @@
           },
           "404": {
             "description": "The CSIP plan associated with this identifier was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
             "content": {
               "application/json": {
                 "schema": {
@@ -1350,8 +1350,8 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request",
+          "404": {
+            "description": "The CSIP plan associated with this identifier was not found.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1360,8 +1360,8 @@
               }
             }
           },
-          "404": {
-            "description": "The CSIP plan associated with this identifier was not found.",
+          "400": {
+            "description": "Bad request",
             "content": {
               "application/json": {
                 "schema": {
@@ -1424,12 +1424,12 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request",
+          "201": {
+            "description": "Identified need added to CSIP plan",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "$ref": "#/components/schemas/IdentifiedNeed"
                 }
               }
             }
@@ -1444,12 +1444,12 @@
               }
             }
           },
-          "201": {
-            "description": "Identified need added to CSIP plan",
+          "400": {
+            "description": "Bad request",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IdentifiedNeed"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1488,6 +1488,26 @@
           "required": true
         },
         "responses": {
+          "404": {
+            "description": "The review associated with this identifier was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Attendee added to review",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attendee"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
@@ -1508,28 +1528,8 @@
               }
             }
           },
-          "201": {
-            "description": "Attendee added to review",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Attendee"
-                }
-              }
-            }
-          },
           "400": {
             "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "The review associated with this identifier was not found.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1590,16 +1590,6 @@
           "required": true
         },
         "responses": {
-          "404": {
-            "description": "The reference data associated with this domain and code was not found.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "200": {
             "description": "Reference data code updated",
             "content": {
@@ -1622,6 +1612,16 @@
           },
           "403": {
             "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The reference data associated with this domain and code was not found.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1692,16 +1692,6 @@
               }
             }
           },
-          "404": {
-            "description": "The reference data associated with this domain and code was not found.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
@@ -1714,6 +1704,16 @@
           },
           "403": {
             "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The reference data associated with this domain and code was not found.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1764,16 +1764,6 @@
           }
         ],
         "responses": {
-          "404": {
-            "description": "The reference data associated with this domain and code was not found.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "200": {
             "description": "Reference data code deactivated",
             "content": {
@@ -1803,6 +1793,16 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "The reference data associated with this domain and code was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1813,7 +1813,7 @@
           "2. Referral Controller"
         ],
         "summary": "Update the CSIP referral",
-        "description": "Update the CSIP referral only. Cannot update contributory factors with this endpoint. Publishes prisoner-csip.csip-record-created event with referralAffected = true\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI",
+        "description": "Update the CSIP referral only. Cannot update contributory factors with this endpoint. Publishes person.csip.record.created event with referralAffected = true\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI",
         "operationId": "updateReferral",
         "parameters": [
           {
@@ -1838,6 +1838,16 @@
           "required": true
         },
         "responses": {
+          "200": {
+            "description": "CSIP referral updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Referral"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
@@ -1858,18 +1868,8 @@
               }
             }
           },
-          "200": {
-            "description": "CSIP referral updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Referral"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request",
+          "404": {
+            "description": "The CSIP referral associated with this identifier was not found.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1878,8 +1878,8 @@
               }
             }
           },
-          "404": {
-            "description": "The CSIP referral associated with this identifier was not found.",
+          "400": {
+            "description": "Bad request",
             "content": {
               "application/json": {
                 "schema": {
@@ -1896,8 +1896,8 @@
         "tags": [
           "1. CSIP Record Controller"
         ],
-        "summary": "Update the log number for a CSIP record.",
-        "description": "Update the log number for a CSIP record. Publishes prisoner-csip.csip-record-updated event with recordAffected = true\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI",
+        "summary": "Update the log code for a CSIP record.",
+        "description": "Update the log code for a CSIP record. Publishes person.csip.record.updated event with recordAffected = true\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI",
         "operationId": "updateCsipRecord",
         "parameters": [
           {
@@ -1922,6 +1922,16 @@
           "required": true
         },
         "responses": {
+          "404": {
+            "description": "The CSIP record associated with this identifier was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
@@ -1942,32 +1952,22 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "The CSIP record associated with this identifier was not found.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "200": {
             "description": "CSIP record updated",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CsipRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -2016,9 +2016,6 @@
               }
             }
           },
-          "204": {
-            "description": "Interview deleted"
-          },
           "404": {
             "description": "The interview associated with this identifier was not found.",
             "content": {
@@ -2028,6 +2025,9 @@
                 }
               }
             }
+          },
+          "204": {
+            "description": "Interview deleted"
           }
         }
       },
@@ -2081,16 +2081,6 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "200": {
             "description": "Interview updated",
             "content": {
@@ -2103,6 +2093,16 @@
           },
           "404": {
             "description": "The interview associated with this identifier was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
             "content": {
               "application/json": {
                 "schema": {
@@ -2138,16 +2138,6 @@
           "204": {
             "description": "Contributory factor deleted"
           },
-          "404": {
-            "description": "The contributory factor associated with this identifier was not found.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
@@ -2160,6 +2150,16 @@
           },
           "403": {
             "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The contributory factor associated with this identifier was not found.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2200,16 +2200,6 @@
           "required": true
         },
         "responses": {
-          "404": {
-            "description": "The contributory factor associated with this identifier was not found.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
@@ -2230,8 +2220,8 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request",
+          "404": {
+            "description": "The contributory factor associated with this identifier was not found.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2246,6 +2236,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ContributoryFactor"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -2284,6 +2284,16 @@
           "required": true
         },
         "responses": {
+          "404": {
+            "description": "The review associated with this identifier was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "200": {
             "description": "Review updated",
             "content": {
@@ -2323,16 +2333,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "The review associated with this identifier was not found.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -2358,6 +2358,19 @@
           }
         ],
         "responses": {
+          "404": {
+            "description": "The attendee associated with this identifier was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "Attendee deleted"
+          },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
@@ -2370,19 +2383,6 @@
           },
           "403": {
             "description": "Forbidden, requires an appropriate role",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "204": {
-            "description": "Attendee deleted"
-          },
-          "404": {
-            "description": "The attendee associated with this identifier was not found.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2423,6 +2423,16 @@
           "required": true
         },
         "responses": {
+          "404": {
+            "description": "The attendee associated with this identifier was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
@@ -2435,16 +2445,6 @@
           },
           "403": {
             "description": "Forbidden, requires an appropriate role",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "The attendee associated with this identifier was not found.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2500,16 +2500,6 @@
           "204": {
             "description": "Identified need deleted"
           },
-          "404": {
-            "description": "The identified need associated with this identifier was not found.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
@@ -2522,6 +2512,16 @@
           },
           "403": {
             "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The identified need associated with this identifier was not found.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2562,16 +2562,6 @@
           "required": true
         },
         "responses": {
-          "404": {
-            "description": "The identified need associated with this identifier was not found.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
@@ -2592,8 +2582,8 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request",
+          "404": {
+            "description": "The identified need associated with this identifier was not found.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2611,6 +2601,16 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2621,7 +2621,7 @@
           "1. CSIP Record Controller"
         ],
         "summary": "Retrieve and filter all CSIP records for prisoners resident in the prison.",
-        "description": "Returns the CSIP records for prisoners resident in the prison. Supports log number filtering.\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI",
+        "description": "Returns the CSIP records for prisoners resident in the prison. Supports log code filtering.\n\nRequires one of the following roles:\n* ROLE_CHALLENGE_SUPPORT_INTERVENTION_PLAN__CHALLENGE_SUPPORT_INTERVENTION_PLAN_UI",
         "operationId": "getCsipRecordsByPrisonCode",
         "parameters": [
           {
@@ -2634,9 +2634,9 @@
             }
           },
           {
-            "name": "logNumber",
+            "name": "logCode",
             "in": "query",
-            "description": "Filter CSIP records that contain the search text in their Log Number. The search is case insensitive.",
+            "description": "Filter CSIP records that contain the search text in their Log Code. The search is case insensitive.",
             "required": false,
             "schema": {
               "type": "string"
@@ -2758,6 +2758,16 @@
           }
         ],
         "responses": {
+          "404": {
+            "description": "The CSIP record associated with this identifier was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "200": {
             "description": "CSIP record found",
             "content": {
@@ -2780,16 +2790,6 @@
           },
           "403": {
             "description": "Forbidden, requires an appropriate role",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "The CSIP record associated with this identifier was not found.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2820,6 +2820,16 @@
           }
         ],
         "responses": {
+          "404": {
+            "description": "The CSIP record associated with this identifier was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
@@ -2840,21 +2850,11 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "204": {
             "description": "CSIP record deleted"
           },
-          "404": {
-            "description": "The CSIP record associated with this identifier was not found.",
+          "400": {
+            "description": "Bad request",
             "content": {
               "application/json": {
                 "schema": {
@@ -2946,12 +2946,12 @@
             "description": "The username of the user who created the code",
             "example": "USER1234"
           },
-          "modifiedAt": {
+          "lastModifiedAt": {
             "type": "string",
             "description": "The date and time the code was last modified",
             "format": "date-time"
           },
-          "modifiedBy": {
+          "lastModifiedBy": {
             "type": "string",
             "description": "The username of the user who last modified the code",
             "example": "USER1234"
@@ -2994,7 +2994,7 @@
         ],
         "type": "object",
         "properties": {
-          "logNumber": {
+          "logCode": {
             "maxLength": 10,
             "minLength": 0,
             "type": "string",
@@ -3100,8 +3100,6 @@
             "description": "Is the referral complete."
           },
           "contributoryFactors": {
-            "maxItems": 2147483647,
-            "minItems": 1,
             "type": "array",
             "description": "Contributory factors to the incident that motivated the referral.",
             "items": {
@@ -3256,7 +3254,7 @@
             "type": "string",
             "description": "The prison code where the person was resident at the time the CSIP record was created."
           },
-          "logNumber": {
+          "logCode": {
             "type": "string",
             "description": "User entered identifier for the CSIP record. Defaults to the prison code."
           },
@@ -4554,7 +4552,7 @@
       "UpdateCsipRecordRequest": {
         "type": "object",
         "properties": {
-          "logNumber": {
+          "logCode": {
             "maxLength": 10,
             "minLength": 0,
             "type": "string",
@@ -4769,13 +4767,13 @@
       "PageCsipRecord": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"

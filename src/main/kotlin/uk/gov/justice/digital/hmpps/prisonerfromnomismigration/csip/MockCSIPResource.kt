@@ -79,7 +79,7 @@ class MockCSIPResource {
         decisionAndActions = null,
       ),
       prisonCodeWhenRecorded = null,
-      logNumber = null,
+      logCode = null,
       lastModifiedAt = null,
       lastModifiedBy = null,
       lastModifiedByDisplayName = null,

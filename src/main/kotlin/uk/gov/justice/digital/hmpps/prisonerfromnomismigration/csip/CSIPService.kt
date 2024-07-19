@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Create
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CsipRecord
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SaferCustodyScreeningOutcome
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateContributoryFactorRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateReferralRequest
 
 @Service
 class CSIPService(@Qualifier("csipApiWebClient") private val webClient: WebClient) {
@@ -32,9 +33,18 @@ class CSIPService(@Qualifier("csipApiWebClient") private val webClient: WebClien
       .retrieve()
       .awaitBody()
 
+  suspend fun updateCSIPReferral(csipReportId: String, csipReport: UpdateReferralRequest, updatedByUsername: String): CsipRecord =
+    webClient.patch()
+      .uri("/csip-records/{csipReportId}/referral", csipReportId)
+      .header("Source", "NOMIS")
+      .header("Username", updatedByUsername)
+      .bodyValue(csipReport)
+      .retrieve()
+      .awaitBody()
+
   suspend fun deleteCSIP(csipReportId: String) {
     webClient.delete()
-      .uri("/csip-records/{cspReportId}", csipReportId)
+      .uri("/csip-records/{csipReportId}", csipReportId)
       .header("Source", "NOMIS")
       .retrieve()
       .awaitBodilessEntity()
@@ -42,7 +52,7 @@ class CSIPService(@Qualifier("csipApiWebClient") private val webClient: WebClien
 
   suspend fun createCSIPSaferCustodyScreening(csipReportId: String, csipSCS: CreateSaferCustodyScreeningOutcomeRequest, createdByUsername: String): SaferCustodyScreeningOutcome =
     webClient.post()
-      .uri("/csip-records/{cspReportId}/referral/safer-custody-screening", csipReportId)
+      .uri("/csip-records/{csipReportId}/referral/safer-custody-screening", csipReportId)
       .header("Source", "NOMIS")
       .header("Username", createdByUsername)
       .bodyValue(csipSCS)
@@ -51,7 +61,7 @@ class CSIPService(@Qualifier("csipApiWebClient") private val webClient: WebClien
 
   suspend fun createCSIPFactor(csipReportId: String, csipFactor: CreateContributoryFactorRequest, createdByUsername: String): ContributoryFactor =
     webClient.post()
-      .uri("/csip-records/{cspReportId}/referral/contributory-factors", csipReportId)
+      .uri("/csip-records/{csipReportId}/referral/contributory-factors", csipReportId)
       .header("Source", "NOMIS")
       .header("Username", createdByUsername)
       .bodyValue(csipFactor)

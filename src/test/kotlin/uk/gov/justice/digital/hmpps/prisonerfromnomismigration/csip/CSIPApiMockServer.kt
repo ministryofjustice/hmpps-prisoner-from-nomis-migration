@@ -17,6 +17,7 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.CREATED
+import org.springframework.http.HttpStatus.OK
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension.Companion.objectMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ContributoryFactor
@@ -60,7 +61,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
     fun dpsMigrateCsipRecordRequest() =
       CreateCsipRecordRequest(
-        logNumber = "ASI-001",
+        logCode = "ASI-001",
         referral =
         CreateReferralRequest(
           incidentDate = LocalDate.parse("2024-06-12"),
@@ -85,7 +86,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
     fun dpsCreateCsipRecordRequest() =
       CreateCsipRecordRequest(
-        logNumber = "ASI-001",
+        logCode = "ASI-001",
         referral =
         CreateReferralRequest(
           incidentDate = LocalDate.parse("2024-06-12"),
@@ -101,7 +102,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
       )
 
-    fun dpsCSIPReport(dpsCSIPReportId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") = CsipRecord(
+    fun dpsCSIPReport(dpsCSIPReportId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5", logNumber: String? = null) = CsipRecord(
       recordUuid = UUID.fromString(dpsCSIPReportId),
       prisonNumber = "1234",
       createdAt = LocalDateTime.parse("2024-03-29T11:32:15"),
@@ -147,7 +148,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
         decisionAndActions = null,
       ),
       prisonCodeWhenRecorded = null,
-      logNumber = null,
+      logCode = logNumber,
       lastModifiedAt = null,
       lastModifiedBy = null,
       lastModifiedByDisplayName = null,
@@ -236,6 +237,16 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubCSIPUpdate(dpsCSIPId: String) {
+    stubFor(
+      patch("/csip-records/$dpsCSIPId/referral").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(OK.value())
+          .withBody(dpsCSIPReport(dpsCSIPReportId = dpsCSIPId)),
+      ),
+    )
+  }
   fun stubCSIPDelete(dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
     stubFor(
       delete("/csip-records/$dpsCSIPId").willReturn(
