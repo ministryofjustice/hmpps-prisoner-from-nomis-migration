@@ -79,6 +79,7 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
           ),
           decisionOutcome = CodeDescription(code = "CUR", description = "Progress to CSIP"),
           recordedBy = "FRED_ADM",
+          recordedByDisplayName = "Fred Admin",
           recordedDate = LocalDate.parse("2024-04-08"),
         ),
         plans = listOf(
@@ -108,7 +109,7 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
             closeDate = LocalDate.parse("2024-04-16"),
             createDateTime = "2024-04-01T10:00:00",
             createdBy = "JSMITH",
-
+            createdByDisplayName = "JOHN SMITH",
           ),
         ),
         documents = listOf(),

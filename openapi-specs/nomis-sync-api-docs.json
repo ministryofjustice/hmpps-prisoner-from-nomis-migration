@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-07-16.8298.dadbd7e"
+    "version": "2024-07-17.8332.1a9d703"
   },
   "servers": [
     {
@@ -18412,7 +18412,7 @@
       },
       "Attendee": {
         "required": [
-          "If attended (otherwise contributor)",
+          "attended",
           "createDateTime",
           "createdBy",
           "id"
@@ -18428,14 +18428,17 @@
             "type": "string",
             "description": "Name of attendee/contributor"
           },
-          "Role of attendee/contributor": {
-            "type": "string"
+          "role": {
+            "type": "string",
+            "description": "Role of attendee/contributor"
           },
-          "If attended (otherwise contributor)": {
-            "type": "boolean"
+          "attended": {
+            "type": "boolean",
+            "description": "If attended (otherwise contributor)"
           },
-          "Contribution": {
-            "type": "string"
+          "contribution": {
+            "type": "string",
+            "description": "Contribution"
           },
           "createDateTime": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
@@ -18458,7 +18461,7 @@
             "description": "The username of the person who last updated the attendee"
           }
         },
-        "description": "Summary details"
+        "description": "Attendees to the review"
       },
       "CSIPFactorResponse": {
         "required": [
@@ -18676,7 +18679,11 @@
           },
           "recordedBy": {
             "type": "string",
-            "description": "Recorded By"
+            "description": "The username of the person who recorded the decision"
+          },
+          "recordedByDisplayName": {
+            "type": "string",
+            "description": "Real name of who recorded the decision"
           },
           "recordedDate": {
             "type": "string",
@@ -18936,30 +18943,30 @@
           },
           "attendees": {
             "type": "array",
-            "description": "Summary details",
+            "description": "Attendees to the review",
             "items": {
               "$ref": "#/components/schemas/Attendee"
             }
           },
           "remainOnCSIP": {
             "type": "boolean",
-            "description": "Summary details"
+            "description": "Whether to remain on CSIP"
           },
           "csipUpdated": {
             "type": "boolean",
-            "description": "Summary details"
+            "description": "If the csip has been updated"
           },
           "caseNote": {
             "type": "boolean",
-            "description": "Summary details"
+            "description": "If a case note was added"
           },
           "closeCSIP": {
             "type": "boolean",
-            "description": "Summary details"
+            "description": "If the csip is closed"
           },
           "peopleInformed": {
             "type": "boolean",
-            "description": "Summary details"
+            "description": "Whether people were informed"
           },
           "summary": {
             "type": "string",
@@ -18983,7 +18990,11 @@
           },
           "createdBy": {
             "type": "string",
-            "description": "The username of the person who created the review"
+            "description": "The username of the person who created/recorded the review"
+          },
+          "createdByDisplayName": {
+            "type": "string",
+            "description": "Real name of who created/recorded the review"
           },
           "lastModifiedDateTime": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",

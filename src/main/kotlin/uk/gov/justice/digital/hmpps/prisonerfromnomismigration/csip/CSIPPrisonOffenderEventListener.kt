@@ -82,8 +82,8 @@ class CSIPPrisonOffenderEventListener(
 
   private suspend fun csipReportUpdated(event: CSIPReportEvent) {
     when (event.auditModuleName) {
-      "OIDCSIPN" -> log.debug("Update CSIP Report - referral")
-      "OIDCSIPC" -> log.debug("Update CSIP Report - referral continued")
+      "OIDCSIPN" -> csipSynchronisationService.csipReportReferralUpdated(event)
+      "OIDCSIPC" -> csipSynchronisationService.csipReportReferralContUpdated(event)
       "OIDCSIPS" -> csipSynchronisationService.csipSaferCustodyScreeningInserted(event)
       "OIDCSIPD" -> log.debug("Update CSIP Report - decisions and actions")
       "OIDCSIPP" -> log.debug("Update CSIP Report - plan")
@@ -109,6 +109,15 @@ data class CSIPFactorEvent(
   val offenderIdDisplay: String,
   val auditModuleName: String?,
 )
+
+/*
+data class CSIPPlanEvent(
+  val csipPlanId: Long,
+  val csipReportId: Long,
+  val offenderIdDisplay: String,
+  val auditModuleName: String?,
+)
+*/
 
 private fun asCompletableFuture(
   process: suspend () -> Unit,
