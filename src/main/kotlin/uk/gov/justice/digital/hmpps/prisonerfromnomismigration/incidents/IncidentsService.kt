@@ -33,13 +33,13 @@ class IncidentsService(@Qualifier("incidentsApiWebClient") private val webClient
 
   suspend fun getIncidentByNomisId(nomisIncidentId: Long): ReportBasic =
     webClient.get()
-      .uri("/incident-reports/incident-number/{nomisIncidentId}", nomisIncidentId)
+      .uri("/incident-reports/reference/{nomisIncidentId}", nomisIncidentId)
       .retrieve()
       .awaitBody()
 
   suspend fun getIncidentDetailsByNomisId(nomisIncidentId: Long): ReportWithDetails =
     webClient.get()
-      .uri("/incident-reports/incident-number/{nomisIncidentId}/with-details", nomisIncidentId)
+      .uri("/incident-reports/reference/{nomisIncidentId}/with-details", nomisIncidentId)
       .retrieve()
       .awaitBody()
 

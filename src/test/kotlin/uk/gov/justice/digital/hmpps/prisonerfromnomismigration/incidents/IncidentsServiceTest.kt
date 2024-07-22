@@ -101,7 +101,7 @@ internal class IncidentsServiceTest {
   }
 
   @Nested
-  @DisplayName("GET /incident-reports/incident-number/{nomisIncidentId}/with-details")
+  @DisplayName("GET /incident-reports/reference/{nomisIncidentId}/with-details")
   inner class GetIncidentDetailsByNomisId {
     @BeforeEach
     internal fun setUp() {
@@ -115,7 +115,7 @@ internal class IncidentsServiceTest {
     @Test
     fun `should call api with OAuth2 token`() {
       incidentsApi.verify(
-        getRequestedFor(urlEqualTo("/incident-reports/incident-number/$NOMIS_INCIDENT_ID/with-details"))
+        getRequestedFor(urlEqualTo("/incident-reports/reference/$NOMIS_INCIDENT_ID/with-details"))
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
@@ -127,7 +127,7 @@ internal class IncidentsServiceTest {
 
         with(incident) {
           assertThat(id).isNotNull()
-          assertThat(incidentNumber).isEqualTo("$NOMIS_INCIDENT_ID")
+          assertThat(reportReference).isEqualTo("$NOMIS_INCIDENT_ID")
           assertThat(type).isEqualTo(ReportWithDetails.Type.ATTEMPTED_ESCAPE_FROM_ESCORT)
           assertThat(incidentDateAndTime).isEqualTo("2021-07-05T10:35:17")
           assertThat(prisonId).isEqualTo("ASI")
@@ -150,7 +150,7 @@ internal class IncidentsServiceTest {
   }
 
   @Nested
-  @DisplayName("GET /incident-reports/incident-number/{nomisIncidentId}")
+  @DisplayName("GET /incident-reports/reference/{nomisIncidentId}")
   inner class GetIncidentByNomisId {
     @BeforeEach
     internal fun setUp() {
@@ -164,7 +164,7 @@ internal class IncidentsServiceTest {
     @Test
     fun `should call api with OAuth2 token`() {
       incidentsApi.verify(
-        getRequestedFor(urlEqualTo("/incident-reports/incident-number/$NOMIS_INCIDENT_ID"))
+        getRequestedFor(urlEqualTo("/incident-reports/reference/$NOMIS_INCIDENT_ID"))
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
@@ -176,7 +176,7 @@ internal class IncidentsServiceTest {
 
         with(incident) {
           assertThat(id).isEqualTo(UUID.fromString("fb4b2e91-91e7-457b-aa17-797f8c5c2f42"))
-          assertThat(incidentNumber).isEqualTo("$NOMIS_INCIDENT_ID")
+          assertThat(reportReference).isEqualTo("$NOMIS_INCIDENT_ID")
           assertThat(type).isEqualTo(ReportBasic.Type.SELF_HARM)
           assertThat(incidentDateAndTime).isEqualTo("2021-07-05T10:35:17")
           assertThat(prisonId).isEqualTo("ASI")
