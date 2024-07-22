@@ -69,10 +69,11 @@ class CSIPSynchronisationService(
         "offenderNo" to event.offenderIdDisplay,
       )
 
+    // THIS COULD NEVER HAPPEN as filtering on audit module name to get here
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent(
         "csip-synchronisation-updated-skipped",
-        telemetry + ("reason" to "CSIP Report not mapped"),
+        telemetry + ("reason" to "CSIP Report for main screen not mapped"),
       )
     } else {
       val nomisCSIPResponse = nomisApiService.getCSIP(event.csipReportId)
@@ -107,7 +108,7 @@ class CSIPSynchronisationService(
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent(
         "csip-synchronisation-updated-skipped",
-        telemetry + ("reason" to "CSIP Report not mapped"),
+        telemetry + ("reason" to "CSIP Report for Referral cont not mapped"),
       )
     } else {
       val nomisCSIPResponse = nomisApiService.getCSIP(event.csipReportId)
@@ -169,6 +170,40 @@ class CSIPSynchronisationService(
         event.toTelemetryProperties() + ("reason" to "CSIP Report for CSIP SCS not mapped"),
       )
       throw IllegalStateException("Received CSIP_REPORTS_UPDATED for Safer Custody Screening that has never been created/mapped")
+    }
+  }
+
+  suspend fun csipReportInvestigationUpdated(event: CSIPReportEvent) {
+    val telemetry =
+      mutableMapOf(
+        "nomisCSIPId" to event.csipReportId,
+        "offenderNo" to event.offenderIdDisplay,
+      )
+
+    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      telemetryClient.trackEvent(
+        "csip-investigation-synchronisation-updated-skipped",
+        telemetry + ("reason" to "CSIP Report for Investigation not mapped"),
+      )
+    } else {
+      val nomisCSIPResponse = nomisApiService.getCSIP(event.csipReportId)
+
+      val mapping = mappingApiService.getCSIPReportByNomisId(event.csipReportId)
+      if (mapping == null) {
+        // Should never happen
+        telemetryClient.trackEvent("csip-synchronisation-updated-failed", telemetry)
+        throw IllegalStateException("Received CSIP_REPORTS-UPDATED - investigation - for csip that has never been created")
+      } else {
+        csipService.updateCSIPInvestigation(
+          csipReportId = mapping.dpsCSIPId,
+          nomisCSIPResponse.investigation.toDPSUpdateInvestigationRequest(),
+          updatedByUsername = nomisCSIPResponse.lastModifiedUser(),
+        )
+        telemetryClient.trackEvent(
+          "csip-investigation-synchronisation-updated-success",
+          telemetry + ("dpsCSIPId" to mapping.dpsCSIPId),
+        )
+      }
     }
   }
 

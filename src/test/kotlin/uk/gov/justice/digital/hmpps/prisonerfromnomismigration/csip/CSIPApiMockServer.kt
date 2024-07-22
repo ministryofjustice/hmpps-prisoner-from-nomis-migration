@@ -26,10 +26,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Create
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateSaferCustodyScreeningOutcomeRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CsipRecord
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Interview
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Investigation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ReferenceData
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Referral
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SaferCustodyScreeningOutcome
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateContributoryFactorRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateInvestigationRequest
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -178,6 +181,61 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
         reasonForDecision = "There is a reason for the decision - it goes here",
       )
 
+    fun dpsUpdateInvestigationRequest() =
+      UpdateInvestigationRequest(
+        staffInvolved = "some people",
+        evidenceSecured = "A piece of pipe",
+        occurrenceReason = "bad behaviour",
+        personsUsualBehaviour = "Good person",
+        personsTrigger = "missed meal",
+        protectiveFactors = "ensure taken to canteen",
+      )
+    fun dpsCSIPInvestigation() =
+      Investigation(
+        evidenceSecured = "A piece of pipe",
+        occurrenceReason = "bad behaviour",
+        personsUsualBehaviour = "Good person",
+        personsTrigger = "missed meal",
+        protectiveFactors = "ensure taken to canteen",
+        interviews = listOf(
+          Interview(
+            interviewUuid = UUID.randomUUID(),
+            interviewee = "Bill Black",
+            interviewDate = LocalDate.parse("2024-06-06"),
+            intervieweeRole = ReferenceData(
+              code = "WITNESS",
+              description = "Witness",
+              listSequence = 1,
+              createdAt = LocalDateTime.parse("2024-03-29T11:32:16"),
+              createdBy = "FRED_ADM",
+            ),
+            createdAt = LocalDateTime.parse("2024-04-04T15:12:32.00462"),
+            createdBy = "AA_ADM",
+            createdByDisplayName = "Albert Amber",
+            interviewText = "Saw a pipe in his hand",
+            // lastModifiedAt: LocalDateTime? = null,
+            // lastModifiedBy: String? = null,
+            // lastModifiedByDisplayName: String? = null
+          ),
+        ),
+
+      )
+
+/*
+  staffInvolved = "some people",
+
+
+          interviews = listOf(
+            InterviewDetails(
+              interviewee = "Bill Black",
+              date = LocalDate.parse("2024-06-06"),
+              role = CodeDescription(code = "WITNESS", description = "Witness"),
+              createDateTime = "2024-04-04T15:12:32.00462",
+              createdBy = "AA_ADM",
+              comments = "Saw a pipe in his hand",
+              lastModifiedDateTime = "2024-05-04T15:12:32.00767",
+              lastModifiedBy = "BB_ADM",
+ */
     fun dpsCreateContributoryFactorRequest() =
       CreateContributoryFactorRequest(
         factorTypeCode = "BUL",
@@ -313,6 +371,18 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withHeader("Content-Type", "application/json")
             .withStatus(status.value()),
         ),
+    )
+  }
+
+  // CSIP Investigation
+  fun stubCSIPInvestigationUpdate(dpsCSIPId: String) {
+    stubFor(
+      patch("/csip-records/$dpsCSIPId/referral/investigation").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(OK.value())
+          .withBody(dpsCSIPInvestigation()),
+      ),
     )
   }
 
