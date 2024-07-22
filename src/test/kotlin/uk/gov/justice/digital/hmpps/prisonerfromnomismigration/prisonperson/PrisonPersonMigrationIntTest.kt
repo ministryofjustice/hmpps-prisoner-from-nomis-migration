@@ -18,11 +18,16 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
+import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsMigrationFilter
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonPersonMigrationMappingRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.BookingPhysicalAttributesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PhysicalAttributesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerPhysicalAttributesResponse
@@ -32,6 +37,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.Migrat
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
+import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -124,6 +130,7 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
                 "offenderNo" to "A0001KT",
                 "migrationId" to migrationResult.migrationId,
                 "dpsIds" to "[1]",
+                "migrationType" to "PHYSICAL_ATTRIBUTES",
               ),
             )
           },
@@ -138,6 +145,7 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
                 "offenderNo" to "A0002KT",
                 "migrationId" to migrationResult.migrationId,
                 "dpsIds" to "[2]",
+                "migrationType" to "PHYSICAL_ATTRIBUTES",
               ),
             )
           },
@@ -215,6 +223,7 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
                 "offenderNo" to "A0001KT",
                 "migrationId" to migrationResult.migrationId,
                 "dpsIds" to "[1, 2, 3, 4]",
+                "migrationType" to "PHYSICAL_ATTRIBUTES",
               ),
             )
           },
@@ -234,6 +243,137 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
             .withRequestBody(matchingJsonPath("dpsIds[?(@ == 3)]"))
             .withRequestBody(matchingJsonPath("dpsIds[?(@ == 4)]")),
 
+        )
+      }
+    }
+
+    @Nested
+    inner class Errors {
+      @Test
+      fun `will put message on DLQ if call to NOMIS fails`() {
+        nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, offenderNo = "A0001KT")
+        prisonPersonNomisApi.stubGetPhysicalAttributes(INTERNAL_SERVER_ERROR)
+
+        migrationResult = webTestClient.performMigration()
+
+        await untilAsserted {
+          assertThat(prisonPersonMigrationDlqClient.countAllMessagesOnQueue(prisonPersonMigrationDlqUrl).get())
+            .isEqualTo(1)
+        }
+
+        verify(telemetryClient).trackEvent(
+          eq("prisonperson-migration-entity-failed"),
+          check {
+            assertThat(it).containsExactlyInAnyOrderEntriesOf(
+              mapOf(
+                "offenderNo" to "A0001KT",
+                "migrationId" to migrationResult.migrationId,
+                "migrationType" to "PHYSICAL_ATTRIBUTES",
+                "error" to "500 Internal Server Error from GET http://localhost:8081/prisoners/A0001KT/physical-attributes",
+              ),
+            )
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will put message on DLQ if call to DPS fails`() {
+        nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, offenderNo = "A0001KT")
+        prisonPersonNomisApi.stubGetPhysicalAttributes("A0001KT")
+        dpsPrisonPersonServer.stubMigratePhysicalAttributes(HttpStatus.BAD_REQUEST)
+
+        migrationResult = webTestClient.performMigration()
+
+        await untilAsserted {
+          assertThat(prisonPersonMigrationDlqClient.countAllMessagesOnQueue(prisonPersonMigrationDlqUrl).get())
+            .isEqualTo(1)
+        }
+
+        verify(telemetryClient).trackEvent(
+          eq("prisonperson-migration-entity-failed"),
+          check {
+            assertThat(it).containsExactlyInAnyOrderEntriesOf(
+              mapOf(
+                "offenderNo" to "A0001KT",
+                "migrationId" to migrationResult.migrationId,
+                "migrationType" to "PHYSICAL_ATTRIBUTES",
+                "error" to "400 Bad Request from PUT http://localhost:8095/migration/prisoners/A0001KT/physical-attributes",
+              ),
+            )
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will retry if call to mapping service fails`() {
+        nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, offenderNo = "A0001KT")
+        prisonPersonNomisApi.stubGetPhysicalAttributes("A0001KT")
+        dpsPrisonPersonServer.stubMigratePhysicalAttributes("A0001KT", PhysicalAttributesMigrationResponse(listOf(1L)))
+        prisonPersonMappingApi.stubPostMappingFailureFollowedBySuccess()
+
+        migrationResult = webTestClient.performMigration()
+
+        verify(telemetryClient).trackEvent(
+          eq("prisonperson-migration-entity-migrated"),
+          check {
+            assertThat(it).containsExactlyInAnyOrderEntriesOf(
+              mapOf(
+                "offenderNo" to "A0001KT",
+                "migrationId" to migrationResult.migrationId,
+                "migrationType" to "PHYSICAL_ATTRIBUTES",
+                "dpsIds" to "[1]",
+              ),
+            )
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will not retry if mapping is a duplicate`() {
+        nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, offenderNo = "A0001KT")
+        prisonPersonNomisApi.stubGetPhysicalAttributes("A0001KT")
+        dpsPrisonPersonServer.stubMigratePhysicalAttributes("A0001KT", PhysicalAttributesMigrationResponse(listOf(1L)))
+        prisonPersonMappingApi.stubPostMappingDuplicate(
+          DuplicateMappingErrorResponse(
+            moreInfo = DuplicateErrorContentObject(
+              duplicate = PrisonPersonMigrationMappingRequest(
+                nomisPrisonerNumber = "A0001KT",
+                dpsIds = listOf(1L),
+                migrationType = PrisonPersonMigrationMappingRequest.MigrationType.PHYSICAL_ATTRIBUTES,
+                label = "label",
+              ),
+              existing = PrisonPersonMigrationMappingRequest(
+                nomisPrisonerNumber = "A0001KT",
+                dpsIds = listOf(1L),
+                migrationType = PrisonPersonMigrationMappingRequest.MigrationType.PHYSICAL_ATTRIBUTES,
+                label = "label",
+              ),
+            ),
+            status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+            errorCode = 1409,
+            userMessage = "duplicate",
+          ),
+        )
+
+        migrationResult = webTestClient.performMigration()
+
+        verify(telemetryClient).trackEvent(
+          eq("prisonperson-nomis-migration-duplicate"),
+          check {
+            assertThat(it).containsExactlyInAnyOrderEntriesOf(
+              mapOf(
+                "existingNomisPrisonerNumber" to "A0001KT",
+                "existingDpsIds" to "[1]",
+                "duplicateNomisPrisonerNumber" to "A0001KT",
+                "duplicateDpsIds" to "[1]",
+                "migrationId" to migrationResult.migrationId,
+              ),
+            )
+          },
+          isNull(),
         )
       }
     }

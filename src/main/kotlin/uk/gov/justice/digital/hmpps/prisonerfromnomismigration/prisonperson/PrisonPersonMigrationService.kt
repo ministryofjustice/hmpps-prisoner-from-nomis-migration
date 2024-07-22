@@ -9,12 +9,15 @@ import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonPersonMigrationMappingRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonPersonMigrationMappingRequest.MigrationType.PHYSICAL_ATTRIBUTES
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PhysicalAttributesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerPhysicalAttributesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesMigrationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
@@ -59,46 +62,85 @@ class PrisonPersonMigrationService(
   override suspend fun migrateNomisEntity(context: MigrationContext<PrisonerId>) {
     log.info("attempting to migrate ${context.body}")
     val offenderNo = context.body.offenderNo
-    val telemetry = mutableMapOf("offenderNo" to offenderNo)
+    val telemetry = mutableMapOf(
+      "offenderNo" to offenderNo,
+      "migrationId" to context.migrationId,
+      "migrationType" to PHYSICAL_ATTRIBUTES,
+    )
 
-    // TODO wrap this in a try catch for negative telemetry
-    val physicalAttributes = prisonPersonNomisApiService.getPhysicalAttributes(offenderNo)
-    val dpsIds = physicalAttributes.bookings.flatMap { booking ->
-      booking.physicalAttributes.map { pa ->
-        val (lastModifiedAt, lastModifiedBy) = pa.lastModified()
-        prisonPersonDpsService.migratePhysicalAttributesRequest(
-          heightCentimetres = pa.heightCentimetres,
-          weightKilograms = pa.weightKilograms,
-          appliesFrom = booking.startDateTime.toLocalDateTime(),
-          appliesTo = booking.endDateTime?.toLocalDateTime(),
-          createdAt = lastModifiedAt,
-          createdBy = lastModifiedBy,
-        )
-      }
-    }.let { requests ->
-      prisonPersonDpsService.migratePhysicalAttributes(offenderNo, requests)
-    }.fieldHistoryInserted
-    telemetry["dpsIds"] = dpsIds.toString()
+    try {
+      val dpsIds = prisonPersonNomisApiService.getPhysicalAttributes(offenderNo)
+        .toDpsMigrationRequest()
+        .migrate(offenderNo)
+      telemetry["dpsIds"] = dpsIds.toString()
 
-    prisonPersonMappingService.createMapping(
       PrisonPersonMigrationMappingRequest(
         nomisPrisonerNumber = offenderNo,
         migrationType = PHYSICAL_ATTRIBUTES,
         label = context.migrationId,
         dpsIds = dpsIds,
-      ),
-      object : ParameterizedTypeReference<DuplicateErrorResponse<PrisonPersonMigrationMappingRequest>>() {},
-    )
+      ).createActivityMapping(context)
 
-    telemetryClient.trackEvent(
-      "prisonperson-migration-entity-migrated",
-      mapOf(
-        "offenderNo" to offenderNo,
-        "migrationId" to context.migrationId,
-        "dpsIds" to dpsIds,
-      ),
-    )
+      telemetryClient.trackEvent("prisonperson-migration-entity-migrated", telemetry)
+    } catch (e: Exception) {
+      telemetry["error"] = e.message ?: "unknown error"
+      telemetryClient.trackEvent("prisonperson-migration-entity-failed", telemetry)
+      throw e
+    }
   }
+
+  private suspend fun PrisonerPhysicalAttributesResponse.toDpsMigrationRequest() = bookings.flatMap { booking ->
+    booking.physicalAttributes.map { pa ->
+      val (lastModifiedAt, lastModifiedBy) = pa.lastModified()
+      prisonPersonDpsService.migratePhysicalAttributesRequest(
+        heightCentimetres = pa.heightCentimetres,
+        weightKilograms = pa.weightKilograms,
+        appliesFrom = booking.startDateTime.toLocalDateTime(),
+        appliesTo = booking.endDateTime?.toLocalDateTime(),
+        createdAt = lastModifiedAt,
+        createdBy = lastModifiedBy,
+      )
+    }
+  }
+
+  private suspend fun List<PhysicalAttributesMigrationRequest>.migrate(
+    offenderNo: String,
+  ) = prisonPersonDpsService.migratePhysicalAttributes(offenderNo, this).fieldHistoryInserted
+
+  private suspend fun PrisonPersonMigrationMappingRequest.createActivityMapping(context: MigrationContext<*>) =
+    try {
+      prisonPersonMappingService.createMapping(this, object : ParameterizedTypeReference<DuplicateErrorResponse<PrisonPersonMigrationMappingRequest>>() {})
+        .also { it.handleError(context) }
+    } catch (e: Exception) {
+      log.error(
+        "Failed to create activity mapping for nomisPrisonerNumber: $nomisPrisonerNumber, dpsIds $dpsIds for migration ${this.label}",
+        e,
+      )
+      queueService.sendMessage(
+        MigrationMessageType.RETRY_MIGRATION_MAPPING,
+        MigrationContext(
+          context = context,
+          body = this,
+        ),
+      )
+    }
+
+  private suspend fun CreateMappingResult<PrisonPersonMigrationMappingRequest>.handleError(context: MigrationContext<*>) =
+    takeIf { it.isError }
+      ?.let { it.errorResponse?.moreInfo }
+      ?.also {
+        telemetryClient.trackEvent(
+          "prisonperson-nomis-migration-duplicate",
+          mapOf(
+            "migrationId" to context.migrationId,
+            "duplicateNomisPrisonerNumber" to it.duplicate.nomisPrisonerNumber,
+            "duplicateDpsIds" to it.duplicate.dpsIds.toString(),
+            "existingNomisPrisonerNumber" to it.existing.nomisPrisonerNumber,
+            "existingDpsIds" to it.existing.dpsIds.toString(),
+          ),
+          null,
+        )
+      }
 
   private fun PhysicalAttributesResponse.lastModified(): Pair<LocalDateTime, String> =
     (modifiedDateTime ?: createDateTime).toLocalDateTime() to (modifiedBy ?: createdBy)

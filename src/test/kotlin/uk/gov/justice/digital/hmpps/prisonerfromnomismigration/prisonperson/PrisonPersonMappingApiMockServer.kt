@@ -6,7 +6,9 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
+import org.springframework.http.HttpStatus.CONFLICT
 import org.springframework.stereotype.Component
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 
@@ -28,6 +30,17 @@ class PrisonPersonMappingApiMockServer(private val objectMapper: ObjectMapper) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubPostMappingDuplicate(error: DuplicateMappingErrorResponse) {
+    mappingApi.stubFor(
+      post("/mapping/prisonperson/migration").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(CONFLICT.value())
           .withBody(objectMapper.writeValueAsString(error)),
       ),
     )
