@@ -39,6 +39,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
 
   private val now = LocalDateTime.now()
   private val yesterday = now.minusDays(1)
+  private val offenderNo = "A1234AA"
 
   @Nested
   @DisplayName("OFFENDER_PHYSICAL_ATTRIBUTES-CHANGED")
@@ -49,6 +50,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
       @Test
       fun `should sync new physical attributes`() {
         nomisMockServer.stubGetPhysicalAttributes(
+          offenderNo,
           aPrisonerPhysicalAttributesResponse(
             bookings = listOf(
               aBookingResponse(
@@ -85,6 +87,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
       @Test
       fun `should ignore a new empty booking (when a new prisoner is created)`() {
         nomisMockServer.stubGetPhysicalAttributes(
+          offenderNo,
           aPrisonerPhysicalAttributesResponse(
             bookings = listOf(
               aBookingResponse(
@@ -109,6 +112,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
       @Test
       fun `should sync last created physical attributes`() {
         nomisMockServer.stubGetPhysicalAttributes(
+          offenderNo,
           aPrisonerPhysicalAttributesResponse(
             bookings = listOf(
               aBookingResponse(
@@ -149,6 +153,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
       @Test
       fun `should sync last modified physical attributes`() {
         nomisMockServer.stubGetPhysicalAttributes(
+          offenderNo,
           aPrisonerPhysicalAttributesResponse(
             bookings = listOf(
               aBookingResponse(
@@ -192,6 +197,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
       @Test
       fun `should ignore physical attributes updated by the synchronisation service`() {
         nomisMockServer.stubGetPhysicalAttributes(
+          offenderNo,
           aPrisonerPhysicalAttributesResponse(
             bookings = listOf(
               aBookingResponse(
@@ -220,6 +226,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
       @Test
       fun `should sync the latest booking`() {
         nomisMockServer.stubGetPhysicalAttributes(
+          offenderNo,
           aPrisonerPhysicalAttributesResponse(
             bookings = listOf(
               aBookingResponse(
@@ -264,6 +271,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
       @Test
       fun `should sync a historical booking`() {
         nomisMockServer.stubGetPhysicalAttributes(
+          offenderNo,
           aPrisonerPhysicalAttributesResponse(
             bookings = listOf(
               aBookingResponse(
@@ -309,6 +317,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
       @Test
       fun `should sync a historical booking on and old attribute seq`() {
         nomisMockServer.stubGetPhysicalAttributes(
+          offenderNo,
           aPrisonerPhysicalAttributesResponse(
             bookings = listOf(
               aBookingResponse(
@@ -390,7 +399,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `should put message on DLQ if DPS returns error`() = runTest {
-        nomisMockServer.stubGetPhysicalAttributes(aPrisonerPhysicalAttributesResponse())
+        nomisMockServer.stubGetPhysicalAttributes(offenderNo, aPrisonerPhysicalAttributesResponse())
         dpsPrisonPersonServer.stubSyncPrisonPerson(BAD_REQUEST)
 
         sendPhysicalAttributesChangedEvent()
@@ -417,6 +426,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
       @Test
       fun `should put message on DLQ if booking has no physical attributes`() = runTest {
         nomisMockServer.stubGetPhysicalAttributes(
+          offenderNo,
           aPrisonerPhysicalAttributesResponse(bookings = listOf(aBookingResponse(bookingId = 12345))),
         )
 

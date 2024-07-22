@@ -113,7 +113,7 @@ class PrisonPersonDpsApiServiceTest {
 
     @Test
     fun `should pass auth token to the service`() = runTest {
-      dpsPrisonPersonServer.stubMigratePhysicalAttributes(aResponse())
+      dpsPrisonPersonServer.stubMigratePhysicalAttributes(prisonerNumber, aResponse())
 
       apiService.migratePhysicalAttributes(
         prisonerNumber,
@@ -129,7 +129,7 @@ class PrisonPersonDpsApiServiceTest {
 
     @Test
     fun `should pass data to the service`() = runTest {
-      dpsPrisonPersonServer.stubMigratePhysicalAttributes(aResponse())
+      dpsPrisonPersonServer.stubMigratePhysicalAttributes(prisonerNumber, aResponse())
 
       apiService.migratePhysicalAttributes(
         prisonerNumber,
@@ -151,7 +151,7 @@ class PrisonPersonDpsApiServiceTest {
 
     @Test
     fun `should not pass null data to the service`() = runTest {
-      dpsPrisonPersonServer.stubMigratePhysicalAttributes(aResponse())
+      dpsPrisonPersonServer.stubMigratePhysicalAttributes(prisonerNumber, aResponse())
 
       apiService.migratePhysicalAttributes(
         prisonerNumber,
@@ -170,7 +170,7 @@ class PrisonPersonDpsApiServiceTest {
 
     @Test
     fun `should parse the response`() = runTest {
-      dpsPrisonPersonServer.stubMigratePhysicalAttributes(aResponse())
+      dpsPrisonPersonServer.stubMigratePhysicalAttributes(prisonerNumber, aResponse())
 
       val response = apiService.migratePhysicalAttributes(
         prisonerNumber,
