@@ -1,7 +1,11 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson
 
+import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
+import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
@@ -9,33 +13,50 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.WebTestClient
+import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsMigrationFilter
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.BookingPhysicalAttributesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PhysicalAttributesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerPhysicalAttributesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonDpsApiExtension.Companion.dpsPrisonPersonServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesMigrationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.MigrationResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.Duration
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
 
   @Autowired
   private lateinit var prisonPersonNomisApi: PrisonPersonNomisApiMockServer
 
+  @Autowired
+  private lateinit var prisonPersonMappingApi: PrisonPersonMappingApiMockServer
+
   @Nested
   inner class MigratePhysicalAttributes {
+    private lateinit var migrationResult: MigrationResult
+
     private fun stubMigrationDependencies(entities: Int = 2) {
       nomisApi.stubGetPrisonIds(totalElements = entities.toLong(), pageSize = 10, offenderNo = "A0001KT")
-      (1L..entities).forEach {
-        prisonPersonNomisApi.stubGetPhysicalAttributes("A000${it}KT")
-        dpsPrisonPersonServer.stubMigratePhysicalAttributes(PhysicalAttributesMigrationResponse(listOf(it)))
-      }
+      (1L..entities)
+        .map { "A000${it}KT" }
+        .forEachIndexed { index, offenderNo ->
+          prisonPersonNomisApi.stubGetPhysicalAttributes(offenderNo)
+          dpsPrisonPersonServer.stubMigratePhysicalAttributes(offenderNo, PhysicalAttributesMigrationResponse(listOf(index + 1.toLong())))
+          prisonPersonMappingApi.stubPostMapping()
+        }
     }
 
     @Nested
@@ -70,13 +91,12 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
       }
     }
 
-    // TODO add tests for telemetry, multiple physical attributes, multiple bookings, mappings created, negative tests
     @Nested
     inner class HappyPath {
       @BeforeEach
       fun setUp() {
         stubMigrationDependencies(entities = 2)
-        webTestClient.performMigration()
+        migrationResult = webTestClient.performMigration()
       }
 
       @Test
@@ -86,10 +106,134 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
             .withRequestBodyJsonPath("$[0].height", 180)
             .withRequestBodyJsonPath("$[0].weight", 80)
             .withRequestBodyJsonPath("$[0].appliesFrom", "2024-02-03T12:34:56Z[Europe/London]")
-            .withRequestBodyJsonPath("$[0].appliesTo", "2024-10-21T12:34:56+01:00[Europe/London]"),
+            .withRequestBodyJsonPath("$[0].appliesTo", "2024-10-21T12:34:56+01:00[Europe/London]")
+            .withRequestBodyJsonPath("$[0].createdBy", "ANOTHER_USER"),
         )
         dpsPrisonPersonServer.verify(
           putRequestedFor(urlMatching("/migration/prisoners/A0002KT/physical-attributes")),
+        )
+      }
+
+      @Test
+      fun `will publish telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("prisonperson-migration-entity-migrated"),
+          check {
+            assertThat(it).containsExactlyInAnyOrderEntriesOf(
+              mapOf(
+                "offenderNo" to "A0001KT",
+                "migrationId" to migrationResult.migrationId,
+                "dpsIds" to "[1]",
+              ),
+            )
+          },
+          isNull(),
+        )
+
+        verify(telemetryClient).trackEvent(
+          eq("prisonperson-migration-entity-migrated"),
+          check {
+            assertThat(it).containsExactlyInAnyOrderEntriesOf(
+              mapOf(
+                "offenderNo" to "A0002KT",
+                "migrationId" to migrationResult.migrationId,
+                "dpsIds" to "[2]",
+              ),
+            )
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will create mappings`() {
+        mappingApi.verify(
+          postRequestedFor(urlEqualTo("/mapping/prisonperson/migration"))
+            .withRequestBodyJsonPath("nomisPrisonerNumber", "A0001KT")
+            .withRequestBodyJsonPath("migrationType", "PHYSICAL_ATTRIBUTES")
+            .withRequestBodyJsonPath("label", migrationResult.migrationId)
+            .withRequestBody(matchingJsonPath("dpsIds[?(@ == 1)]")),
+        )
+        mappingApi.verify(
+          postRequestedFor(urlEqualTo("/mapping/prisonperson/migration"))
+            .withRequestBodyJsonPath("nomisPrisonerNumber", "A0002KT")
+            .withRequestBodyJsonPath("migrationType", "PHYSICAL_ATTRIBUTES")
+            .withRequestBodyJsonPath("label", migrationResult.migrationId)
+            .withRequestBody(matchingJsonPath("dpsIds[?(@ == 2)]")),
+        )
+      }
+    }
+
+    @Nested
+    inner class MultipleEntities {
+      private lateinit var migrationResult: MigrationResult
+
+      @BeforeEach
+      fun setUp() {
+        nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, offenderNo = "A0001KT")
+        dpsPrisonPersonServer.stubMigratePhysicalAttributes("A0001KT", PhysicalAttributesMigrationResponse(listOf(1, 2, 3, 4)))
+        prisonPersonNomisApi.stubGetPhysicalAttributes("A0001KT", multiBookingMultiPhysicalAttributes("A0001KT"))
+        prisonPersonMappingApi.stubPostMapping()
+
+        migrationResult = webTestClient.performMigration()
+      }
+
+      @Test
+      fun `will migrate physical attributes`() {
+        dpsPrisonPersonServer.verify(
+          putRequestedFor(urlMatching("/migration/prisoners/A0001KT/physical-attributes"))
+            .withRequestBodyJsonPath("$[0].height", 180)
+            .withRequestBodyJsonPath("$[0].weight", 80)
+            .withRequestBodyJsonPath("$[0].appliesFrom", "2024-02-03T12:34:56Z[Europe/London]")
+            .withRequestBodyJsonPath("$[0].appliesTo", "2024-03-21T12:34:56Z[Europe/London]")
+            .withRequestBodyJsonPath("$[0].createdBy", "ANOTHER_USER")
+            .withRequestBodyJsonPath("$[1].height", 182)
+            .withRequestBodyJsonPath("$[1].weight", 82)
+            .withRequestBodyJsonPath("$[1].appliesFrom", "2024-02-03T12:34:56Z[Europe/London]")
+            .withRequestBodyJsonPath("$[1].appliesTo", "2024-03-21T12:34:56Z[Europe/London]")
+            .withRequestBodyJsonPath("$[1].createdBy", "ANOTHER_USER2")
+            .withRequestBodyJsonPath("$[2].height", 184)
+            .withRequestBodyJsonPath("$[2].weight", 84)
+            .withRequestBodyJsonPath("$[2].appliesFrom", "2024-04-03T12:34:56+01:00[Europe/London]")
+            .withRequestBodyJsonPath("$[2].appliesTo", "2024-10-21T12:34:56+01:00[Europe/London]")
+            .withRequestBodyJsonPath("$[2].createdBy", "ANOTHER_USER3")
+            .withRequestBodyJsonPath("$[3].height", 186)
+            .withRequestBodyJsonPath("$[3].weight", 86)
+            .withRequestBodyJsonPath("$[3].appliesFrom", "2024-04-03T12:34:56+01:00[Europe/London]")
+            .withRequestBodyJsonPath("$[3].appliesTo", "2024-10-21T12:34:56+01:00[Europe/London]")
+            .withRequestBodyJsonPath("$[3].createdBy", "ANOTHER_USER4"),
+        )
+      }
+
+      @Test
+      fun `will publish telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("prisonperson-migration-entity-migrated"),
+          check {
+            assertThat(it).containsExactlyInAnyOrderEntriesOf(
+              mapOf(
+                "offenderNo" to "A0001KT",
+                "migrationId" to migrationResult.migrationId,
+                "dpsIds" to "[1, 2, 3, 4]",
+              ),
+            )
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will create mappings`() {
+        mappingApi.verify(
+          postRequestedFor(urlEqualTo("/mapping/prisonperson/migration"))
+            .withRequestBodyJsonPath("nomisPrisonerNumber", "A0001KT")
+            .withRequestBodyJsonPath("migrationType", "PHYSICAL_ATTRIBUTES")
+            .withRequestBodyJsonPath("label", migrationResult.migrationId)
+            .withRequestBody(matchingJsonPath("dpsIds[?(@ == 1)]"))
+            .withRequestBody(matchingJsonPath("dpsIds[?(@ == 2)]"))
+            .withRequestBody(matchingJsonPath("dpsIds[?(@ == 3)]"))
+            .withRequestBody(matchingJsonPath("dpsIds[?(@ == 4)]")),
+
         )
       }
     }
@@ -100,6 +244,7 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isAccepted
+        .returnResult<MigrationResult>().responseBody.blockFirst()!!
         .also {
           waitUntilCompleted()
         }
@@ -112,5 +257,67 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
           isNull(),
         )
       }
+
+    private fun multiBookingMultiPhysicalAttributes(offenderNo: String) = PrisonerPhysicalAttributesResponse(
+      offenderNo = offenderNo,
+      bookings = listOf(
+        BookingPhysicalAttributesResponse(
+          bookingId = 1,
+          startDateTime = "2024-02-03T12:34:56",
+          endDateTime = "2024-03-21T12:34:56",
+          latestBooking = true,
+          physicalAttributes = listOf(
+            PhysicalAttributesResponse(
+              attributeSequence = 1,
+              heightCentimetres = 180,
+              weightKilograms = 80,
+              createdBy = "A_USER",
+              createDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+              modifiedBy = "ANOTHER_USER",
+              modifiedDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+              auditModuleName = "MODULE",
+            ),
+            PhysicalAttributesResponse(
+              attributeSequence = 2,
+              heightCentimetres = 182,
+              weightKilograms = 82,
+              createdBy = "A_USER",
+              createDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+              modifiedBy = "ANOTHER_USER2",
+              modifiedDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+              auditModuleName = "MODULE",
+            ),
+          ),
+        ),
+        BookingPhysicalAttributesResponse(
+          bookingId = 2,
+          startDateTime = "2024-04-03T12:34:56",
+          endDateTime = "2024-10-21T12:34:56",
+          latestBooking = true,
+          physicalAttributes = listOf(
+            PhysicalAttributesResponse(
+              attributeSequence = 1,
+              heightCentimetres = 184,
+              weightKilograms = 84,
+              createdBy = "A_USER",
+              createDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+              modifiedBy = "ANOTHER_USER3",
+              modifiedDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+              auditModuleName = "MODULE",
+            ),
+            PhysicalAttributesResponse(
+              attributeSequence = 2,
+              heightCentimetres = 186,
+              weightKilograms = 86,
+              createdBy = "A_USER",
+              createDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+              modifiedBy = "ANOTHER_USER4",
+              modifiedDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+              auditModuleName = "MODULE",
+            ),
+          ),
+        ),
+      ),
+    )
   }
 }

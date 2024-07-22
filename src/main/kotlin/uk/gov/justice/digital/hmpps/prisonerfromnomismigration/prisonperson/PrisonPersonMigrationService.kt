@@ -4,11 +4,14 @@ import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonPersonMigrationMappingRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonPersonMigrationMappingRequest.MigrationType.PHYSICAL_ATTRIBUTES
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PhysicalAttributesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerPhysicalAttributesResponse
@@ -56,6 +59,7 @@ class PrisonPersonMigrationService(
   override suspend fun migrateNomisEntity(context: MigrationContext<PrisonerId>) {
     log.info("attempting to migrate ${context.body}")
     val offenderNo = context.body.offenderNo
+    val telemetry = mutableMapOf("offenderNo" to offenderNo)
 
     // TODO wrap this in a try catch for negative telemetry
     val physicalAttributes = prisonPersonNomisApiService.getPhysicalAttributes(offenderNo)
@@ -74,8 +78,18 @@ class PrisonPersonMigrationService(
     }.let { requests ->
       prisonPersonDpsService.migratePhysicalAttributes(offenderNo, requests)
     }.fieldHistoryInserted
+    telemetry["dpsIds"] = dpsIds.toString()
 
-    // TODO create mappings
+    prisonPersonMappingService.createMapping(
+      PrisonPersonMigrationMappingRequest(
+        nomisPrisonerNumber = offenderNo,
+        migrationType = PHYSICAL_ATTRIBUTES,
+        label = context.migrationId,
+        dpsIds = dpsIds,
+      ),
+      object : ParameterizedTypeReference<DuplicateErrorResponse<PrisonPersonMigrationMappingRequest>>() {},
+    )
+
     telemetryClient.trackEvent(
       "prisonperson-migration-entity-migrated",
       mapOf(

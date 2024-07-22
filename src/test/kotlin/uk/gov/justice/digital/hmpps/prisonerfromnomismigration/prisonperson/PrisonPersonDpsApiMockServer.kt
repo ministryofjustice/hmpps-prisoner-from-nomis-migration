@@ -73,10 +73,11 @@ class PrisonPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubMigratePhysicalAttributes(
+    offenderNo: String,
     response: PhysicalAttributesMigrationResponse,
   ) {
     stubFor(
-      put(urlPathMatching("/migration/prisoners/.*/physical-attributes"))
+      put(urlPathMatching("/migration/prisoners/$offenderNo/physical-attributes"))
         .willReturn(
           aResponse()
             .withStatus(200)
