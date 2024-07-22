@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
@@ -54,10 +55,16 @@ class PrisonPersonMigrationService(
     migrationFilter: PrisonPersonMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
-  ): PageImpl<PrisonerId> = nomisService.getPrisonerIds(
-    pageNumber = pageNumber,
-    pageSize = pageSize,
-  )
+  ): PageImpl<PrisonerId> =
+    if (migrationFilter.prisonerNumber == null) {
+      nomisService.getPrisonerIds(
+        pageNumber = pageNumber,
+        pageSize = pageSize,
+      )
+    } else {
+      // If a single prisoner migration is requested then we must be testing. Pretend that we called nomis-prisoner-api which found a single prisoner.
+      PageImpl<PrisonerId>(mutableListOf(PrisonerId(migrationFilter.prisonerNumber)), Pageable.ofSize(1), 1)
+    }
 
   override suspend fun migrateNomisEntity(context: MigrationContext<PrisonerId>) {
     log.info("attempting to migrate ${context.body}")
