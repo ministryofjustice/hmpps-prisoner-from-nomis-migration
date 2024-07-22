@@ -85,6 +85,7 @@ class CSIPPrisonOffenderEventListener(
       "OIDCSIPN" -> csipSynchronisationService.csipReportReferralUpdated(event)
       "OIDCSIPC" -> csipSynchronisationService.csipReportReferralContUpdated(event)
       "OIDCSIPS" -> csipSynchronisationService.csipSaferCustodyScreeningInserted(event)
+      "OIDCSIPI" -> csipSynchronisationService.csipReportInvestigationUpdated(event)
       "OIDCSIPD" -> log.debug("Update CSIP Report - decisions and actions")
       "OIDCSIPP" -> log.debug("Update CSIP Report - plan")
       "OIDCSIPR" -> log.debug("Update CSIP Report - review")

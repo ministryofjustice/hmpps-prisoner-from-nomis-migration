@@ -17,6 +17,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Decision
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.InterviewDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.InvestigationDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Offender
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Plan
@@ -66,7 +67,26 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
           recordedDate = LocalDate.parse("2024-04-08"),
           reasonForDecision = "There is a reason for the decision - it goes here",
         ),
-        investigation = InvestigationDetails(),
+        investigation = InvestigationDetails(
+          staffInvolved = "some people",
+          evidenceSecured = "A piece of pipe",
+          reasonOccurred = "bad behaviour",
+          usualBehaviour = "Good person",
+          trigger = "missed meal",
+          protectiveFactors = "ensure taken to canteen",
+          interviews = listOf(
+            InterviewDetails(
+              interviewee = "Bill Black",
+              date = LocalDate.parse("2024-06-06"),
+              role = CodeDescription(code = "WITNESS", description = "Witness"),
+              createDateTime = "2024-04-04T15:12:32.00462",
+              createdBy = "AA_ADM",
+              comments = "Saw a pipe in his hand",
+              lastModifiedDateTime = "2024-05-04T15:12:32.00767",
+              lastModifiedBy = "BB_ADM",
+            ),
+          ),
+        ),
         decision = Decision(
           actions = Actions(
             openCSIPAlert = false,
