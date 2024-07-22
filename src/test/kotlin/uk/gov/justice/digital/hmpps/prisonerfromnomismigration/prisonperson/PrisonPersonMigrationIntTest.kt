@@ -20,6 +20,7 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
+import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.returnResult
@@ -378,10 +379,101 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
       }
     }
 
-    private fun WebTestClient.performMigration() =
+    @Nested
+    inner class SinglePrisoner {
+      private val offenderNo = "A1234AB"
+
+      @BeforeEach
+      fun setUp() {
+        prisonPersonNomisApi.stubGetPhysicalAttributes(offenderNo)
+        dpsPrisonPersonServer.stubMigratePhysicalAttributes(
+          offenderNo,
+          PhysicalAttributesMigrationResponse(listOf(1.toLong())),
+        )
+        prisonPersonMappingApi.stubPostMapping()
+
+        migrationResult = webTestClient.performMigration(offenderNo)
+      }
+
+      @Test
+      fun `will migrate physical attributes`() {
+        dpsPrisonPersonServer.verify(
+          putRequestedFor(urlMatching("/migration/prisoners/$offenderNo/physical-attributes"))
+            .withRequestBodyJsonPath("$[0].height", 180)
+            .withRequestBodyJsonPath("$[0].weight", 80)
+            .withRequestBodyJsonPath("$[0].appliesFrom", "2024-02-03T12:34:56Z[Europe/London]")
+            .withRequestBodyJsonPath("$[0].appliesTo", "2024-10-21T12:34:56+01:00[Europe/London]")
+            .withRequestBodyJsonPath("$[0].createdBy", "ANOTHER_USER"),
+        )
+      }
+
+      @Test
+      fun `will publish telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("prisonperson-migration-entity-migrated"),
+          check {
+            assertThat(it).containsExactlyInAnyOrderEntriesOf(
+              mapOf(
+                "offenderNo" to offenderNo,
+                "migrationId" to migrationResult.migrationId,
+                "dpsIds" to "[1]",
+                "migrationType" to "PHYSICAL_ATTRIBUTES",
+              ),
+            )
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will create mapping`() {
+        mappingApi.verify(
+          postRequestedFor(urlEqualTo("/mapping/prisonperson/migration"))
+            .withRequestBodyJsonPath("nomisPrisonerNumber", offenderNo)
+            .withRequestBodyJsonPath("migrationType", "PHYSICAL_ATTRIBUTES")
+            .withRequestBodyJsonPath("label", migrationResult.migrationId)
+            .withRequestBody(matchingJsonPath("dpsIds[?(@ == 1)]")),
+        )
+      }
+    }
+
+    @Nested
+    inner class SinglePrisonerNotFound {
+      private val offenderNo = "A1234AB"
+
+      @Test
+      fun `will put message on DLQ if prisoner doesn't exist in NOMIS`() {
+        prisonPersonNomisApi.stubGetPhysicalAttributes(NOT_FOUND)
+
+        migrationResult = webTestClient.performMigration(offenderNo)
+
+        await untilAsserted {
+          assertThat(prisonPersonMigrationDlqClient.countAllMessagesOnQueue(prisonPersonMigrationDlqUrl).get())
+            .isEqualTo(1)
+        }
+
+        verify(telemetryClient).trackEvent(
+          eq("prisonperson-migration-entity-failed"),
+          check {
+            assertThat(it).containsExactlyInAnyOrderEntriesOf(
+              mapOf(
+                "offenderNo" to offenderNo,
+                "migrationId" to migrationResult.migrationId,
+                "migrationType" to "PHYSICAL_ATTRIBUTES",
+                "error" to "404 Not Found from GET http://localhost:8081/prisoners/$offenderNo/physical-attributes",
+              ),
+            )
+          },
+          isNull(),
+        )
+      }
+    }
+
+    private fun WebTestClient.performMigration(offenderNo: String? = null) =
       post().uri("/migrate/prisonperson/physical-attributes")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_PRISONPERSON")))
         .header("Content-Type", "application/json")
+        .bodyValue(PrisonPersonMigrationFilter(prisonerNumber = offenderNo))
         .exchange()
         .expectStatus().isAccepted
         .returnResult<MigrationResult>().responseBody.blockFirst()!!
