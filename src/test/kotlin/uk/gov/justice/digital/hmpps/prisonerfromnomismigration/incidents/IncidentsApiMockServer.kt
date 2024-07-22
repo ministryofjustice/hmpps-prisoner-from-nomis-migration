@@ -76,14 +76,15 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     fun dpsIncidentReport(nomisIncidentId: String = "1234") =
       ReportWithDetails(
         id = UUID.randomUUID(),
-        incidentNumber = nomisIncidentId,
+        reportReference = nomisIncidentId,
         type = ReportWithDetails.Type.ATTEMPTED_ESCAPE_FROM_ESCORT,
         incidentDateAndTime = "2021-07-05T10:35:17",
         prisonId = "ASI",
         title = "There was an incident in the exercise yard",
         description = "Fred and Jimmy were fighting outside.",
         event = Event(
-          eventId = "123",
+          id = UUID.randomUUID(),
+          eventReference = nomisIncidentId,
           eventDateAndTime = "2021-07-05T10:35:17",
           prisonId = "ASI",
           title = "There was a problem",
@@ -181,7 +182,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     fun dpsBasicIncidentReport(dpsIncidentId: String = DPS_INCIDENT_ID, prisonId: String = "ASI") =
       ReportBasic(
         id = UUID.fromString(dpsIncidentId),
-        incidentNumber = "1234",
+        reportReference = "1234",
         type = ReportBasic.Type.SELF_HARM,
         incidentDateAndTime = "2021-07-05T10:35:17",
         prisonId = prisonId,
@@ -255,7 +256,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubGetBasicIncident() {
     stubFor(
-      get(urlMatching("/incident-reports/incident-number/[0-9]+")).willReturn(
+      get(urlMatching("/incident-reports/reference/[0-9]+")).willReturn(
         aResponse()
           .withStatus(HttpStatus.OK.value())
           .withHeader("Content-Type", APPLICATION_JSON_VALUE)
@@ -266,7 +267,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubGetIncident(nomisIncidentId: Long = 1234) {
     stubFor(
-      get(urlMatching("/incident-reports/incident-number/$nomisIncidentId/with-details")).willReturn(
+      get(urlMatching("/incident-reports/reference/$nomisIncidentId/with-details")).willReturn(
         aResponse()
           .withStatus(HttpStatus.OK.value())
           .withHeader("Content-Type", APPLICATION_JSON_VALUE)
@@ -318,13 +319,13 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun verifyMigrationGetBasicIncident() =
-    verify(getRequestedFor(urlMatching("/incident-reports/incident-number/[0-9]+")))
+    verify(getRequestedFor(urlMatching("/incident-reports/reference/[0-9]+")))
 
   fun verifyGetIncidentCounts(times: Int = 1) =
     verify(exactly(times), getRequestedFor(urlPathMatching("/incident-reports")))
 
   fun verifyGetIncidentDetail(times: Int = 1) =
-    verify(exactly(times), getRequestedFor(urlMatching("/incident-reports/incident-number/[0-9]+/with-details")))
+    verify(exactly(times), getRequestedFor(urlMatching("/incident-reports/reference/[0-9]+/with-details")))
 
   fun createIncidentUpsertCount() =
     findAll(postRequestedFor(urlEqualTo("/sync/upsert"))).count()
