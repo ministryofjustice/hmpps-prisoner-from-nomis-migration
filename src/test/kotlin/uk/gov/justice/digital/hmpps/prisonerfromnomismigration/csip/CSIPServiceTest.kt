@@ -23,6 +23,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsCreateSaferCustodyScreeningOutcomeRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsMigrateCsipRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsUpdateContributoryFactorRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsUpdateInvestigationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import java.util.UUID
 
@@ -162,6 +163,42 @@ internal class CSIPServiceTest {
             csipService.deleteCSIP(csipReportId = dpsCSIPId)
           }
         }
+      }
+    }
+
+    @Nested
+    @DisplayName("PATCH /csip-records/{recordUuid}/referral/investigation")
+    inner class UpdateCSIPInvestigation {
+      private val dpsCSIPId = UUID.randomUUID().toString()
+
+      @BeforeEach
+      internal fun setUp() {
+        csipApi.stubCSIPInvestigationUpdate(dpsCSIPId)
+
+        runBlocking {
+          csipService.updateCSIPInvestigation(dpsCSIPId, dpsUpdateInvestigationRequest(), "JIM_ADM")
+        }
+      }
+
+      @Test
+      fun `should call api with OAuth2 token`() {
+        csipApi.verify(
+          patchRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral/investigation"))
+            .withHeader("Authorization", equalTo("Bearer ABCDE")),
+        )
+      }
+
+      @Test
+      fun `will pass data to the api`() {
+        csipApi.verify(
+          patchRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral/investigation"))
+            .withRequestBody(matchingJsonPath("staffInvolved", equalTo("some people")))
+            .withRequestBody(matchingJsonPath("evidenceSecured", equalTo("A piece of pipe")))
+            .withRequestBody(matchingJsonPath("occurrenceReason", equalTo("bad behaviour")))
+            .withRequestBody(matchingJsonPath("personsUsualBehaviour", equalTo("Good person")))
+            .withRequestBody(matchingJsonPath("personsTrigger", equalTo("missed meal")))
+            .withRequestBody(matchingJsonPath("protectiveFactors", equalTo("ensure taken to canteen"))),
+        )
       }
     }
   }
