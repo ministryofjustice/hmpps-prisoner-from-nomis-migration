@@ -29,12 +29,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CsipRe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.DecisionAndActions
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Interview
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Investigation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Plan
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ReferenceData
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Referral
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SaferCustodyScreeningOutcome
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateContributoryFactorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateDecisionAndActionsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateInvestigationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdatePlanRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateReferralRequest
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -243,7 +245,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
       UpdateDecisionAndActionsRequest(
         outcomeTypeCode = "CUR",
         conclusion = null,
-        // WHAT IST SHIoutcomeSignedOffByRoleCode = null,
+        outcomeSignedOffByRoleCode = "CUSTMAN",
         outcomeRecordedBy = "FRED_ADM",
         outcomeRecordedByDisplayName = "Fred Admin",
         outcomeDate = LocalDate.parse("2024-04-08"),
@@ -279,6 +281,21 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
         outcomeDate = LocalDate.parse("2024-04-08"),
         nextSteps = null,
         actionOther = "Some other info here",
+      )
+
+    fun dpsUpdatePlanRequest() =
+      UpdatePlanRequest(
+        caseManager = "C Jones",
+        reasonForPlan = "helper",
+        firstCaseReviewDate = LocalDate.parse("2024-04-15"),
+      )
+    fun dpsCSIPPlan() =
+      Plan(
+        caseManager = "C Jones",
+        reasonForPlan = "helper",
+        firstCaseReviewDate = LocalDate.parse("2024-04-15"),
+        identifiedNeeds = listOf(),
+        reviews = listOf(),
       )
 
     fun dpsCreateContributoryFactorRequest() =
@@ -438,6 +455,17 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withHeader("Content-Type", "application/json")
           .withStatus(OK.value())
           .withBody(dpsCSIPDecision()),
+      ),
+    )
+  }
+
+  fun stubCSIPUpdatePlan(dpsCSIPId: String) {
+    stubFor(
+      patch("/csip-records/$dpsCSIPId/plan").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(OK.value())
+          .withBody(dpsCSIPPlan()),
       ),
     )
   }

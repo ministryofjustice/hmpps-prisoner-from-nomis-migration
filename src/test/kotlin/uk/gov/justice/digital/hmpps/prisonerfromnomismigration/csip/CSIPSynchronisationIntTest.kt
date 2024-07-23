@@ -886,7 +886,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
             patchRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral/decision-and-actions"))
               .withHeader("Username", equalTo("JSMITH"))
               .withHeader("Source", equalTo("NOMIS"))
-              .withRequestBody(matchingJsonPath("outcomeTypeCode", equalTo("CUR")))
+              .withRequestBody(matchingJsonPath("outcomeTypeCode", equalTo("OPE")))
               .withRequestBody(matchingJsonPath("conclusion", equalTo("Offender needs help")))
               .withRequestBody(matchingJsonPath("outcomeSignedOffByRoleCode", equalTo("CUSTMAN")))
               .withRequestBody(matchingJsonPath("outcomeRecordedBy", equalTo("FRED_ADM")))
@@ -907,6 +907,96 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will track a telemetry event for success`() {
           verify(telemetryClient).trackEvent(
             eq("csip-decision-synchronisation-updated-success"),
+            check {
+              assertThat(it["nomisCSIPId"]).isEqualTo(NOMIS_CSIP_ID.toString())
+              assertThat(it["dpsCSIPId"]).isEqualTo(dpsCSIPId)
+              assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            },
+            isNull(),
+          )
+        }
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("CSIP_REPORTS-UPDATED - Plan Screen (OIDCSIPP)")
+  inner class CSIPPlanUpdated {
+
+    @Nested
+    @DisplayName("When CSIP Plan was update in NOMIS")
+    inner class NomisUpdated {
+
+      @BeforeEach
+      fun setUp() {
+        csipNomisApi.stubGetCSIP()
+        awsSqsCSIPOffenderEventsClient.sendMessage(
+          csipQueueOffenderEventsUrl,
+          csipEvent(eventType = "CSIP_REPORTS-UPDATED", auditModuleName = "OIDCSIPP"),
+        )
+      }
+
+      @Nested
+      @DisplayName("When mapping doesn't exist")
+      inner class MappingDoesNotExist {
+        @BeforeEach
+        fun setUp() {
+          csipMappingApi.stubGetByNomisId(status = HttpStatus.NOT_FOUND)
+        }
+
+        @Test
+        fun `telemetry added to track the failure`() {
+          await untilAsserted {
+            verify(telemetryClient, Mockito.atLeastOnce()).trackEvent(
+              eq("csip-synchronisation-updated-failed"),
+              check {
+                assertThat(it["nomisCSIPId"]).isEqualTo(NOMIS_CSIP_ID.toString())
+                assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+              },
+              isNull(),
+            )
+          }
+        }
+
+        @Test
+        fun `the event is placed on dead letter queue`() {
+          await untilAsserted {
+            assertThat(
+              awsSqsCSIPOffenderEventDlqClient.countAllMessagesOnQueue(csipQueueOffenderEventsDlqUrl).get(),
+            ).isEqualTo(1)
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("When mapping does exist")
+      inner class MappingExists {
+        private val dpsCSIPId = "a4725216-892d-4325-bc18-f74d95f3bccc"
+
+        @BeforeEach
+        fun setUp() {
+          csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPId)
+          csipApi.stubCSIPUpdatePlan(dpsCSIPId = dpsCSIPId)
+          waitForAnyProcessingToComplete("csip-plan-synchronisation-updated-success")
+        }
+
+        @Test
+        fun `will update DPS with the changes specific to the OIDCSIPP screen`() {
+          csipApi.verify(
+            1,
+            patchRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/plan"))
+              .withHeader("Username", equalTo("JSMITH"))
+              .withHeader("Source", equalTo("NOMIS"))
+              .withRequestBody(matchingJsonPath("caseManager", equalTo("C Jones")))
+              .withRequestBody(matchingJsonPath("reasonForPlan", equalTo("helper")))
+              .withRequestBody(matchingJsonPath("firstCaseReviewDate", equalTo("2024-04-15"))),
+          )
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          verify(telemetryClient).trackEvent(
+            eq("csip-plan-synchronisation-updated-success"),
             check {
               assertThat(it["nomisCSIPId"]).isEqualTo(NOMIS_CSIP_ID.toString())
               assertThat(it["dpsCSIPId"]).isEqualTo(dpsCSIPId)

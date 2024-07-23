@@ -26,6 +26,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsUpdateCsipReferralRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsUpdateDecisionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsUpdateInvestigationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsUpdatePlanRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import java.util.UUID
 
@@ -283,6 +284,39 @@ internal class CSIPServiceTest {
             .withRequestBody(matchingJsonPath("isActionServiceReferral", equalTo("true")))
             .withRequestBody(matchingJsonPath("isActionSimReferral", equalTo("false")))
             .withRequestBody(matchingJsonPath("actionOther", equalTo("Some other info here"))),
+        )
+      }
+    }
+
+    @Nested
+    @DisplayName("PATCH /csip-records/{recordUuid}/plan")
+    inner class UpdateCSIPPlan {
+      private val dpsCSIPId = UUID.randomUUID().toString()
+
+      @BeforeEach
+      internal fun setUp() {
+        csipApi.stubCSIPUpdatePlan(dpsCSIPId)
+
+        runBlocking {
+          csipService.updateCSIPPlan(dpsCSIPId, dpsUpdatePlanRequest(), "JIM_ADM")
+        }
+      }
+
+      @Test
+      fun `should call api with OAuth2 token`() {
+        csipApi.verify(
+          patchRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/plan"))
+            .withHeader("Authorization", equalTo("Bearer ABCDE")),
+        )
+      }
+
+      @Test
+      fun `will pass data to the api`() {
+        csipApi.verify(
+          patchRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/plan"))
+            .withRequestBody(matchingJsonPath("caseManager", equalTo("C Jones")))
+            .withRequestBody(matchingJsonPath("reasonForPlan", equalTo("helper")))
+            .withRequestBody(matchingJsonPath("firstCaseReviewDate", equalTo("2024-04-15"))),
         )
       }
     }
