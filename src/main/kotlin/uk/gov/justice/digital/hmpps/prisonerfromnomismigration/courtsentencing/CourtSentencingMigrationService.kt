@@ -36,7 +36,7 @@ class CourtSentencingMigrationService(
     migrationHistoryService = migrationHistoryService,
     mappingService = courtSentencingMappingService,
     telemetryClient = telemetryClient,
-    migrationType = MigrationType.ADJUDICATIONS,
+    migrationType = MigrationType.COURT_SENTENCING,
     pageSize = pageSize,
     completeCheckDelaySeconds = completeCheckDelaySeconds,
     completeCheckCount = completeCheckCount,

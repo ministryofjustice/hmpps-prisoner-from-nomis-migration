@@ -9,13 +9,13 @@ import java.time.LocalDate
 data class CourtSentencingMigrationFilter(
 
   @Schema(
-    description = "Only include Alerts created on or after this date",
+    description = "Only include court cases created on or after this date",
     example = "2020-03-23",
   )
   val fromDate: LocalDate? = null,
 
   @Schema(
-    description = "Only include Alerts created before or on this date",
+    description = "Only include court cases created before or on this date",
     example = "2020-03-24",
   )
   val toDate: LocalDate? = null,
