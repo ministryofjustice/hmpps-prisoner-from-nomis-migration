@@ -511,7 +511,7 @@ class AlertsByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
   }
 
   @Nested
-  @DisplayName("POST /migrate/alerts/{migrationId}/terminate/")
+  @DisplayName("POST /migrate/alerts/{migrationId}/cancel/")
   inner class TerminateMigrationAlerts {
     @BeforeEach
     internal fun setUp() {

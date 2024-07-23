@@ -10,10 +10,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Create
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateCsipRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateSaferCustodyScreeningOutcomeRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CsipRecord
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.DecisionAndActions
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Investigation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Plan
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SaferCustodyScreeningOutcome
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateContributoryFactorRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateDecisionAndActionsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateInvestigationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdatePlanRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateReferralRequest
 
 @Service
@@ -67,6 +71,24 @@ class CSIPService(@Qualifier("csipApiWebClient") private val webClient: WebClien
       .header("Source", "NOMIS")
       .header("Username", updatedByUsername)
       .bodyValue(investigationRequest)
+      .retrieve()
+      .awaitBody()
+
+  suspend fun updateCSIPDecision(csipReportId: String, decisionRequest: UpdateDecisionAndActionsRequest, updatedByUsername: String): DecisionAndActions =
+    webClient.patch()
+      .uri("/csip-records/{csipReportId}/referral/decision-and-actions", csipReportId)
+      .header("Source", "NOMIS")
+      .header("Username", updatedByUsername)
+      .bodyValue(decisionRequest)
+      .retrieve()
+      .awaitBody()
+
+  suspend fun updateCSIPPlan(csipReportId: String, planRequest: UpdatePlanRequest, updatedByUsername: String): Plan =
+    webClient.patch()
+      .uri("/csip-records/{csipReportId}/plan", csipReportId)
+      .header("Source", "NOMIS")
+      .header("Username", updatedByUsername)
+      .bodyValue(planRequest)
       .retrieve()
       .awaitBody()
 

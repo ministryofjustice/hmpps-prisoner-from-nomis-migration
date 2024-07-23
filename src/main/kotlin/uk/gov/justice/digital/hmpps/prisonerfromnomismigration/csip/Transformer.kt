@@ -5,10 +5,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Create
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateSaferCustodyScreeningOutcomeRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateContributoryFactorRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateDecisionAndActionsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateInvestigationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdatePlanRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateReferralRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPFactorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Decision
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.InvestigationDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SaferCustodyScreening
 
@@ -32,7 +35,11 @@ fun CSIPResponse.toDPSMigrateCSIP() =
       knownReasons = reportDetails.knownReasons,
       contributoryFactors = listOf(),
       otherInformation = reportDetails.otherInformation,
-      isSaferCustodyTeamInformed = if (reportDetails.saferCustodyTeamInformed) CreateReferralRequest.IsSaferCustodyTeamInformed.yes else CreateReferralRequest.IsSaferCustodyTeamInformed.no,
+      isSaferCustodyTeamInformed = if (reportDetails.saferCustodyTeamInformed) {
+        CreateReferralRequest.IsSaferCustodyTeamInformed.YES
+      } else {
+        CreateReferralRequest.IsSaferCustodyTeamInformed.NO
+      },
       isReferralComplete = reportDetails.referralComplete,
 
     ),
@@ -53,7 +60,7 @@ fun CSIPResponse.toDPSCreateRequest() =
       isStaffAssaulted = staffAssaulted,
       assaultedStaffName = staffAssaultedName,
       contributoryFactors = listOf(),
-      isSaferCustodyTeamInformed = CreateReferralRequest.IsSaferCustodyTeamInformed.doMinusNotMinusKnow,
+      isSaferCustodyTeamInformed = CreateReferralRequest.IsSaferCustodyTeamInformed.DO_NOT_KNOW,
     ),
   )
 
@@ -71,11 +78,14 @@ fun CSIPResponse.toDPSUpdateReferralRequest() =
     isProactiveReferral = proActiveReferral,
     isStaffAssaulted = staffAssaulted,
     assaultedStaffName = staffAssaultedName,
-    isSaferCustodyTeamInformed = if (reportDetails.saferCustodyTeamInformed) UpdateReferralRequest.IsSaferCustodyTeamInformed.yes else UpdateReferralRequest.IsSaferCustodyTeamInformed.no,
+    isSaferCustodyTeamInformed = if (reportDetails.saferCustodyTeamInformed) {
+      UpdateReferralRequest.IsSaferCustodyTeamInformed.YES
+    } else {
+      UpdateReferralRequest.IsSaferCustodyTeamInformed.NO
+    },
   )
 
 // ////// OIDCSIPC ////////////////////////////
-// TODO we would never know when to do a create
 fun CSIPResponse.toDPSUpdateReferralContRequest() =
   UpdateReferralRequest(
     // needed but not changed here
@@ -92,7 +102,7 @@ fun CSIPResponse.toDPSUpdateReferralContRequest() =
     descriptionOfConcern = reportDetails.concern,
     knownReasons = reportDetails.knownReasons,
     otherInformation = reportDetails.otherInformation,
-    isSaferCustodyTeamInformed = if (reportDetails.saferCustodyTeamInformed) UpdateReferralRequest.IsSaferCustodyTeamInformed.yes else UpdateReferralRequest.IsSaferCustodyTeamInformed.no,
+    isSaferCustodyTeamInformed = if (reportDetails.saferCustodyTeamInformed) UpdateReferralRequest.IsSaferCustodyTeamInformed.YES else UpdateReferralRequest.IsSaferCustodyTeamInformed.NO,
     isReferralComplete = reportDetails.referralComplete,
   )
 
@@ -118,7 +128,6 @@ fun CSIPFactorResponse.toDPSUpdateFactorRequest() =
   )
 
 // ////// OIDCSIPI - Investigation ////////////////////////////
-// TODO we would never know when to do a create Investigation as it is from the CSIP_REPORTS-UPDATED event
 fun InvestigationDetails.toDPSUpdateInvestigationRequest() =
   UpdateInvestigationRequest(
     staffInvolved = staffInvolved,
@@ -145,7 +154,7 @@ fun InterviewDetails.toDPSUpdateInterviewRequest() =
     interviewText = comments,
   )
 
-
+*/
 // ////// OIDCSIPD - Decisions & Actions ////////////////////////////
 fun Decision.toDPSUpdateDecisionsAndActionsRequest() =
   UpdateDecisionAndActionsRequest(
@@ -167,23 +176,13 @@ fun Decision.toDPSUpdateDecisionsAndActionsRequest() =
   )
 
 // ////// OIDCSIPP - Plan ////////////////////////////
-// TODO we would never know when to do a create Decisions as it is from the CSIP_REPORTS-UPDATED event
- SO CREATE Not needed as don't know if create or update
-fun CSIPResponse.toDPSCreatePlanRequest() =
-CreatePlanRequest(
-caseManager = caseManager!!,
-reasonForPlan = planReason!!,
-firstCaseReviewDate = firstCaseReviewDate!!,
-identifiedNeeds = listOf()
-)
-
 fun CSIPResponse.toDPSUpdatePlanRequest() =
   UpdatePlanRequest(
     caseManager = caseManager!!,
     reasonForPlan = planReason!!,
     firstCaseReviewDate = firstCaseReviewDate!!,
   )
-
+/*
 fun Plan.toDPSCreateIdentifiedNeedsRequest() =
   CreateIdentifiedNeedRequest(
     identifiedNeed = identifiedNeed,
