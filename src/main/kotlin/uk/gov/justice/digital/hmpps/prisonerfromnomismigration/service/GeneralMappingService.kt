@@ -7,6 +7,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.Adj
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsByPrisonerMigrationMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.AppointmentsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesMappingApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.LocationsMappingService
@@ -28,6 +29,7 @@ class GeneralMappingService(
   private val caseNotesMappingService: CaseNotesMappingApiService,
   private val alertsByPrisonerMappingService: AlertsByPrisonerMigrationMappingApiService,
   private val prisonPersonMappingService: PrisonPersonMappingApiService,
+  private val courtSentencingMappingService: CourtSentencingMappingApiService,
 ) {
   suspend fun getMigrationCount(migrationId: String, migrationType: MigrationType): Long? =
     when (migrationType) {
@@ -43,5 +45,6 @@ class GeneralMappingService(
       MigrationType.CASENOTES -> caseNotesMappingService.getMigrationCount(migrationId)
       MigrationType.ALERTS -> alertsByPrisonerMappingService.getMigrationCount(migrationId)
       MigrationType.PRISONPERSON -> prisonPersonMappingService.getMigrationCount(migrationId)
+      MigrationType.COURT_SENTENCING -> courtSentencingMappingService.getMigrationCount(migrationId)
     }
 }

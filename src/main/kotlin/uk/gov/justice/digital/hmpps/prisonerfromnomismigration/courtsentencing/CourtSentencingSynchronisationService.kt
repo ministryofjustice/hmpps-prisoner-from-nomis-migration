@@ -61,7 +61,7 @@ class CourtSentencingSynchronisationService(
           telemetry + ("dpsCourtCaseId" to mapping.dpsCourtCaseId),
         )
       } ?: let {
-        dpsApiService.createCourtCase(nomisCourtCase.toDpsCourtCase(event.offenderIdDisplay)).run {
+        dpsApiService.createCourtCase(nomisCourtCase.toDpsCourtCase()).run {
           tryToCreateMapping(
             nomisCourtCase = nomisCourtCase,
             dpsCourtCaseResponse = this,
@@ -168,7 +168,7 @@ class CourtSentencingSynchronisationService(
           nomisApiService.getCourtCase(offenderNo = event.offenderIdDisplay, courtCaseId = event.courtCaseId)
         dpsApiService.updateCourtCase(
           courtCaseId = mapping.dpsCourtCaseId,
-          nomisCourtCase.toDpsCourtCase(offenderNo = event.offenderIdDisplay),
+          nomisCourtCase.toDpsCourtCase(),
         )
         telemetryClient.trackEvent(
           "court-case-synchronisation-updated-success",
@@ -622,51 +622,6 @@ class CourtSentencingSynchronisationService(
     }
   }
 
-  suspend fun nomisSentenceInserted(event: OffenderSentenceEvent) {
-    val telemetry =
-      mapOf(
-        "nomisSentenceSequence" to event.sentenceSequence.toString(),
-        "offenderNo" to event.offenderIdDisplay,
-        "nomisBookingId" to event.bookingId.toString(),
-      )
-    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
-      telemetryClient.trackEvent("sentence-synchronisation-created-skipped", telemetry)
-    } else {
-      val nomisSentence =
-        nomisApiService.getOffenderSentence(bookingId = event.bookingId, sentenceSequence = event.sentenceSequence)
-      mappingApiService.getSentenceOrNullByNomisId(event.bookingId, sentenceSequence = event.sentenceSequence)
-        ?.let { mapping ->
-          telemetryClient.trackEvent(
-            "sentence-synchronisation-created-ignored",
-            telemetry,
-          )
-        } ?: let {
-        // retrieve offence mappings (created as part of the court appearance flow)
-        dpsApiService.createSentence(
-          nomisSentence.toDpsSentence(
-            event.offenderIdDisplay,
-            getDpsChargeMappings(nomisSentence),
-          ),
-        ).run {
-          tryToCreateSentenceMapping(
-            nomisSentence = nomisSentence,
-            dpsSentenceResponse = this,
-            telemetry = telemetry + ("dpsSentenceId" to this.sentenceUuid),
-          ).also { mappingCreateResult ->
-            val mappingSuccessTelemetry =
-              (if (mappingCreateResult == MappingResponse.MAPPING_CREATED) mapOf() else mapOf("mapping" to "initial-failure"))
-            val additionalTelemetry = mappingSuccessTelemetry + ("dpsSentenceId" to this.sentenceUuid)
-
-            telemetryClient.trackEvent(
-              "sentence-synchronisation-created-success",
-              telemetry + additionalTelemetry,
-            )
-          }
-        }
-      }
-    }
-  }
-
   private suspend fun tryToDeleteCourtAppearanceMapping(dpsCourtAppearanceId: String) = runCatching {
     mappingApiService.deleteCourtAppearanceMappingByDpsId(dpsCourtAppearanceId)
   }.onFailure { e ->
@@ -732,6 +687,51 @@ class CourtSentencingSynchronisationService(
         "court-appearance-mapping-created-synchronisation-success",
         retryMessage.telemetryAttributes,
       )
+    }
+  }
+
+  suspend fun nomisSentenceInserted(event: OffenderSentenceEvent) {
+    val telemetry =
+      mapOf(
+        "nomisSentenceSequence" to event.sentenceSequence.toString(),
+        "offenderNo" to event.offenderIdDisplay,
+        "nomisBookingId" to event.bookingId.toString(),
+      )
+    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      telemetryClient.trackEvent("sentence-synchronisation-created-skipped", telemetry)
+    } else {
+      val nomisSentence =
+        nomisApiService.getOffenderSentence(bookingId = event.bookingId, sentenceSequence = event.sentenceSequence)
+      mappingApiService.getSentenceOrNullByNomisId(event.bookingId, sentenceSequence = event.sentenceSequence)
+        ?.let { mapping ->
+          telemetryClient.trackEvent(
+            "sentence-synchronisation-created-ignored",
+            telemetry,
+          )
+        } ?: let {
+        // retrieve offence mappings (created as part of the court appearance flow)
+        dpsApiService.createSentence(
+          nomisSentence.toDpsSentence(
+            event.offenderIdDisplay,
+            getDpsChargeMappings(nomisSentence),
+          ),
+        ).run {
+          tryToCreateSentenceMapping(
+            nomisSentence = nomisSentence,
+            dpsSentenceResponse = this,
+            telemetry = telemetry + ("dpsSentenceId" to this.sentenceUuid),
+          ).also { mappingCreateResult ->
+            val mappingSuccessTelemetry =
+              (if (mappingCreateResult == MappingResponse.MAPPING_CREATED) mapOf() else mapOf("mapping" to "initial-failure"))
+            val additionalTelemetry = mappingSuccessTelemetry + ("dpsSentenceId" to this.sentenceUuid)
+
+            telemetryClient.trackEvent(
+              "sentence-synchronisation-created-success",
+              telemetry + additionalTelemetry,
+            )
+          }
+        }
+      }
     }
   }
 
