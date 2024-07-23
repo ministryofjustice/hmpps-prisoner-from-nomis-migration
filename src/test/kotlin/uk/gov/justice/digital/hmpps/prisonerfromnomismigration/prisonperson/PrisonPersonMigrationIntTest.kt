@@ -481,6 +481,85 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
       }
     }
 
+    @Nested
+    @DisplayName("/migrate/prisonperson/{migrationid}/cancel")
+    inner class CancelMigration {
+      @BeforeEach
+      internal fun createHistoryRecords() = runTest {
+        migrationHistoryRepository.deleteAll()
+      }
+
+      @AfterEach
+      fun tearDown() = runTest {
+        migrationHistoryRepository.deleteAll()
+      }
+
+      @Test
+      fun `access forbidden when no role`() {
+        webTestClient.post().uri("/migrate/prisonperson/2020-01-01T00:00:00/cancel")
+          .headers(setAuthorisation(roles = listOf()))
+          .exchange()
+          .expectStatus().isForbidden
+      }
+
+      @Test
+      fun `access forbidden with wrong role`() {
+        webTestClient.post().uri("/migrate/prisonperson/2020-01-01T00:00:00/cancel")
+          .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
+          .exchange()
+          .expectStatus().isForbidden
+      }
+
+      @Test
+      fun `access unauthorised with no auth token`() {
+        webTestClient.post().uri("/migrate/prisonperson/2020-01-01T00:00:00/cancel")
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isUnauthorized
+      }
+
+      @Test
+      fun ` not found`() {
+        webTestClient.post().uri("/migrate/prisonperson/2020-01-01T00:00:00/cancel")
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_PRISONPERSON")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isNotFound
+      }
+
+      @Test
+      internal fun `should cancel a migration`() {
+        stubMigrationDependencies(entities = 2)
+        migrationResult = webTestClient.performMigration()
+
+        webTestClient.post().uri("/migrate/prisonperson/${migrationResult.migrationId}/cancel")
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_PRISONPERSON")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isAccepted
+
+        webTestClient.get().uri("/migrate/prisonperson/history/${migrationResult.migrationId}")
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_PRISONPERSON")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.migrationId").isEqualTo(migrationResult.migrationId)
+          .jsonPath("$.status").isEqualTo("CANCELLED_REQUESTED")
+
+        await atMost (Duration.ofSeconds(60)) untilAsserted {
+          webTestClient.get().uri("/migrate/prisonperson/history/${migrationResult.migrationId}")
+            .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_PRISONPERSON")))
+            .header("Content-Type", "application/json")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.migrationId").isEqualTo(migrationResult.migrationId)
+            .jsonPath("$.status").isEqualTo("CANCELLED")
+        }
+      }
+    }
+
     private fun WebTestClient.performMigration(offenderNo: String? = null) =
       post().uri("/migrate/prisonperson/physical-attributes")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_PRISONPERSON")))
@@ -713,6 +792,80 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
         .expectBody()
         .consumeWith { println(it) }
         .jsonPath("migrationId").isEqualTo("2020-01-01T00:00:00")
+    }
+  }
+
+  @Nested
+  @DisplayName("/migrate/prisonperson/active-migration")
+  inner class GetActiveMigration {
+    @BeforeEach
+    internal fun createHistoryRecords() = runTest {
+      migrationHistoryRepository.save(
+        MigrationHistory(
+          migrationId = "2020-01-01T00:00:00",
+          whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
+          whenEnded = null,
+          status = MigrationStatus.STARTED,
+          estimatedRecordCount = 123_567,
+          filter = "",
+          recordsMigrated = 123_560,
+          recordsFailed = 7,
+          migrationType = MigrationType.PRISONPERSON,
+        ),
+      )
+    }
+
+    @AfterEach
+    fun tearDown() = runTest {
+      migrationHistoryRepository.deleteAll()
+    }
+
+    @Test
+    fun `access forbidden when no role`() {
+      webTestClient.get().uri("/migrate/prisonperson/active-migration")
+        .headers(setAuthorisation(roles = listOf()))
+        .exchange()
+        .expectStatus().isForbidden
+    }
+
+    @Test
+    fun `access forbidden with wrong role`() {
+      webTestClient.get().uri("/migrate/prisonperson/active-migration")
+        .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
+        .exchange()
+        .expectStatus().isForbidden
+    }
+
+    @Test
+    fun `access unauthorised with no auth token`() {
+      webTestClient.get().uri("/migrate/prisonperson/active-migration")
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isUnauthorized
+    }
+
+    @Test
+    internal fun `should get the active migration record`() {
+      webTestClient.get().uri("/migrate/prisonperson/active-migration")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_PRISONPERSON")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("migrationId").isEqualTo("2020-01-01T00:00:00")
+    }
+
+    @Test
+    internal fun `should return nothing if no active migration`() = runTest {
+      migrationHistoryRepository.deleteAll()
+
+      webTestClient.get().uri("/migrate/prisonperson/active-migration")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_PRISONPERSON")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("migrationId").doesNotExist()
     }
   }
 }
