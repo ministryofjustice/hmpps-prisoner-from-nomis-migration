@@ -72,7 +72,7 @@ class MockCSIPResource {
         isStaffAssaulted = null,
         assaultedStaffName = null,
         otherInformation = null,
-        isSaferCustodyTeamInformed = Referral.IsSaferCustodyTeamInformed.yes,
+        isSaferCustodyTeamInformed = Referral.IsSaferCustodyTeamInformed.YES,
         isReferralComplete = null,
         investigation = null,
         saferCustodyScreeningOutcome = null,
