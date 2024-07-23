@@ -26,13 +26,16 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Create
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateSaferCustodyScreeningOutcomeRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CsipRecord
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.DecisionAndActions
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Interview
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Investigation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ReferenceData
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Referral
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SaferCustodyScreeningOutcome
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateContributoryFactorRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateDecisionAndActionsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateInvestigationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateReferralRequest
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -82,7 +85,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
           isStaffAssaulted = true,
           assaultedStaffName = "Fred Jones",
           otherInformation = "other information goes in here",
-          isSaferCustodyTeamInformed = CreateReferralRequest.IsSaferCustodyTeamInformed.no,
+          isSaferCustodyTeamInformed = CreateReferralRequest.IsSaferCustodyTeamInformed.NO,
           isReferralComplete = true,
         ),
       )
@@ -102,8 +105,24 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
           isProactiveReferral = true,
           isStaffAssaulted = true,
           assaultedStaffName = "Fred Jones",
-          isSaferCustodyTeamInformed = CreateReferralRequest.IsSaferCustodyTeamInformed.doMinusNotMinusKnow,
+          isSaferCustodyTeamInformed = CreateReferralRequest.IsSaferCustodyTeamInformed.DO_NOT_KNOW,
         ),
+      )
+
+    fun dpsUpdateCsipReferralRequest() =
+      UpdateReferralRequest(
+        // TODO add logCode in when csip-api updated
+        // logCode = "ASI-001",
+        incidentDate = LocalDate.parse("2024-06-12"),
+        incidentTypeCode = "INT",
+        incidentLocationCode = "LIB",
+        referredBy = "JIM_ADM",
+        refererAreaCode = "EDU",
+        incidentTime = "10:32:12",
+        isProactiveReferral = true,
+        isStaffAssaulted = true,
+        assaultedStaffName = "Fred Jones",
+        isSaferCustodyTeamInformed = UpdateReferralRequest.IsSaferCustodyTeamInformed.DO_NOT_KNOW,
       )
 
     fun dpsCSIPReport(dpsCSIPReportId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5", logNumber: String? = null) = CsipRecord(
@@ -145,7 +164,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
         isStaffAssaulted = null,
         assaultedStaffName = null,
         otherInformation = null,
-        isSaferCustodyTeamInformed = Referral.IsSaferCustodyTeamInformed.no,
+        isSaferCustodyTeamInformed = Referral.IsSaferCustodyTeamInformed.NO,
         isReferralComplete = null,
         investigation = null,
         saferCustodyScreeningOutcome = null,
@@ -213,29 +232,55 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
             createdBy = "AA_ADM",
             createdByDisplayName = "Albert Amber",
             interviewText = "Saw a pipe in his hand",
-            // lastModifiedAt: LocalDateTime? = null,
-            // lastModifiedBy: String? = null,
-            // lastModifiedByDisplayName: String? = null
+            lastModifiedAt = null,
+            lastModifiedBy = null,
+            lastModifiedByDisplayName = null,
           ),
         ),
-
       )
 
-/*
-  staffInvolved = "some people",
+    fun dpsUpdateDecisionRequest() =
+      UpdateDecisionAndActionsRequest(
+        outcomeTypeCode = "CUR",
+        conclusion = null,
+        // WHAT IST SHIoutcomeSignedOffByRoleCode = null,
+        outcomeRecordedBy = "FRED_ADM",
+        outcomeRecordedByDisplayName = "Fred Admin",
+        outcomeDate = LocalDate.parse("2024-04-08"),
+        nextSteps = null,
+        isActionOpenCsipAlert = false,
+        isActionNonAssociationsUpdated = true,
+        isActionObservationBook = true,
+        isActionUnitOrCellMove = false,
+        isActionCsraOrRsraReview = false,
+        isActionServiceReferral = true,
+        isActionSimReferral = false,
+        actionOther = "Some other info here",
+      )
+    fun dpsCSIPDecision() =
+      DecisionAndActions(
+        outcome = ReferenceData(
+          code = "CUR",
+          description = "Current",
+          listSequence = 1,
+          createdAt = LocalDateTime.parse("2024-03-29T11:32:16"),
+          createdBy = "FRED_ADM",
+        ),
+        isActionOpenCsipAlert = false,
+        isActionNonAssociationsUpdated = true,
+        isActionObservationBook = true,
+        isActionUnitOrCellMove = false,
+        isActionCsraOrRsraReview = false,
+        isActionServiceReferral = true,
+        isActionSimReferral = false,
+        conclusion = null,
+        outcomeRecordedBy = "FRED_ADM",
+        outcomeRecordedByDisplayName = "Fred Admin",
+        outcomeDate = LocalDate.parse("2024-04-08"),
+        nextSteps = null,
+        actionOther = "Some other info here",
+      )
 
-
-          interviews = listOf(
-            InterviewDetails(
-              interviewee = "Bill Black",
-              date = LocalDate.parse("2024-06-06"),
-              role = CodeDescription(code = "WITNESS", description = "Witness"),
-              createDateTime = "2024-04-04T15:12:32.00462",
-              createdBy = "AA_ADM",
-              comments = "Saw a pipe in his hand",
-              lastModifiedDateTime = "2024-05-04T15:12:32.00767",
-              lastModifiedBy = "BB_ADM",
- */
     fun dpsCreateContributoryFactorRequest() =
       CreateContributoryFactorRequest(
         factorTypeCode = "BUL",
@@ -382,6 +427,17 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withHeader("Content-Type", "application/json")
           .withStatus(OK.value())
           .withBody(dpsCSIPInvestigation()),
+      ),
+    )
+  }
+
+  fun stubCSIPUpdateDecision(dpsCSIPId: String) {
+    stubFor(
+      patch("/csip-records/$dpsCSIPId/referral/decision-and-actions").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(OK.value())
+          .withBody(dpsCSIPDecision()),
       ),
     )
   }
