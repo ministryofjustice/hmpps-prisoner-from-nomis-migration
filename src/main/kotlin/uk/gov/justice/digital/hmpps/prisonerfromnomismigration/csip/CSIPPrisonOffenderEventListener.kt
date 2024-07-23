@@ -87,7 +87,7 @@ class CSIPPrisonOffenderEventListener(
       "OIDCSIPS" -> csipSynchronisationService.csipSaferCustodyScreeningInserted(event)
       "OIDCSIPI" -> csipSynchronisationService.csipInvestigationUpdated(event)
       "OIDCSIPD" -> csipSynchronisationService.csipDecisionUpdated(event)
-      "OIDCSIPP" -> log.debug("Update CSIP Report - plan")
+      "OIDCSIPP" -> csipSynchronisationService.csipPlanUpdated(event)
       "OIDCSIPR" -> log.debug("Update CSIP Report - review")
       "DPS_SYNCHRONISATION" -> log.debug("TODO Ensure ignored")
       else -> log.debug("Update CSIP Report")

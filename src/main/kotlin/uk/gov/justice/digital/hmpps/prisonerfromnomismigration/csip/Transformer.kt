@@ -7,6 +7,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Create
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateContributoryFactorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateDecisionAndActionsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateInvestigationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdatePlanRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateReferralRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPFactorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPResponse
@@ -127,7 +128,6 @@ fun CSIPFactorResponse.toDPSUpdateFactorRequest() =
   )
 
 // ////// OIDCSIPI - Investigation ////////////////////////////
-// TODO we would never know when to do a create Investigation as it is from the CSIP_REPORTS-UPDATED event
 fun InvestigationDetails.toDPSUpdateInvestigationRequest() =
   UpdateInvestigationRequest(
     staffInvolved = staffInvolved,
@@ -174,25 +174,15 @@ fun Decision.toDPSUpdateDecisionsAndActionsRequest() =
     isActionSimReferral = actions.simReferral,
     actionOther = otherDetails,
   )
-/*
-// ////// OIDCSIPP - Plan ////////////////////////////
-// TODO we would never know when to do a create Decisions as it is from the CSIP_REPORTS-UPDATED event
- SO CREATE Not needed as don't know if create or update
-fun CSIPResponse.toDPSCreatePlanRequest() =
-CreatePlanRequest(
-caseManager = caseManager!!,
-reasonForPlan = planReason!!,
-firstCaseReviewDate = firstCaseReviewDate!!,
-identifiedNeeds = listOf()
-)
 
+// ////// OIDCSIPP - Plan ////////////////////////////
 fun CSIPResponse.toDPSUpdatePlanRequest() =
   UpdatePlanRequest(
     caseManager = caseManager!!,
     reasonForPlan = planReason!!,
     firstCaseReviewDate = firstCaseReviewDate!!,
   )
-
+/*
 fun Plan.toDPSCreateIdentifiedNeedsRequest() =
   CreateIdentifiedNeedRequest(
     identifiedNeed = identifiedNeed,

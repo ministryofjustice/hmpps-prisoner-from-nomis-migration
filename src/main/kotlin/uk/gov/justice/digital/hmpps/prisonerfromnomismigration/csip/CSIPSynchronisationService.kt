@@ -212,6 +212,32 @@ class CSIPSynchronisationService(
     }
   }
 
+  suspend fun csipPlanUpdated(event: CSIPReportEvent) {
+    val telemetry =
+      mutableMapOf(
+        "nomisCSIPId" to event.csipReportId,
+        "offenderNo" to event.offenderIdDisplay,
+      )
+
+    val nomisCSIPResponse = nomisApiService.getCSIP(event.csipReportId)
+    val mapping = mappingApiService.getCSIPReportByNomisId(event.csipReportId)
+    if (mapping == null) {
+      // Should never happen
+      telemetryClient.trackEvent("csip-synchronisation-updated-failed", telemetry)
+      throw IllegalStateException("Received CSIP_REPORTS-UPDATED - plan - for csip that has never been created")
+    } else {
+      csipService.updateCSIPPlan(
+        csipReportId = mapping.dpsCSIPId,
+        nomisCSIPResponse.toDPSUpdatePlanRequest(),
+        updatedByUsername = nomisCSIPResponse.lastModifiedUser(),
+      )
+      telemetryClient.trackEvent(
+        "csip-plan-synchronisation-updated-success",
+        telemetry + ("dpsCSIPId" to mapping.dpsCSIPId),
+      )
+    }
+  }
+
   private suspend fun tryToCreateCSIPReportMapping(
     event: CSIPReportEvent,
     dpsCSIPId: String,

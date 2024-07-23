@@ -97,7 +97,7 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
             serviceReferral = true,
             simReferral = false,
           ),
-          decisionOutcome = CodeDescription(code = "CUR", description = "Progress to CSIP"),
+          decisionOutcome = CodeDescription(code = "OPE", description = "Progress to Investigation"),
           recordedBy = "FRED_ADM",
           recordedByDisplayName = "Fred Admin",
           recordedDate = LocalDate.parse("2024-04-08"),
@@ -142,7 +142,7 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
         logNumber = "ASI-001",
         incidentDate = LocalDate.parse("2024-06-12"),
         incidentTime = "10:32:12",
-        caseManager = "Jim Smith",
+        caseManager = "C Jones",
         planReason = "helper",
         firstCaseReviewDate = LocalDate.parse("2024-04-15"),
       )
