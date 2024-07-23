@@ -107,4 +107,65 @@ class PrisonPersonMigrationResource(
   suspend fun get(
     @PathVariable @Schema(description = "Migration Id", example = "2020-03-24T12:00:00") migrationId: String,
   ) = migrationHistoryService.get(migrationId)
+
+  @PreAuthorize("hasRole('ROLE_MIGRATE_PRISONPERSON')")
+  @PostMapping("/{migrationId}/cancel")
+  @ResponseStatus(value = HttpStatus.ACCEPTED)
+  @Operation(
+    summary = "Cancels a running migration. The actual cancellation might take several minutes to complete",
+    description = "Requires role <b>MIGRATE_PRISONPERSON</b>",
+    responses = [
+      ApiResponse(
+        responseCode = "202",
+        description = "Cancellation request accepted",
+      ),
+      ApiResponse(
+        responseCode = "401",
+        description = "Unauthorized to access this endpoint",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+      ApiResponse(
+        responseCode = "403",
+        description = "Incorrect permissions to access this endpoint",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Migration not found",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+    ],
+  )
+  suspend fun cancel(
+    @PathVariable @Schema(description = "Migration Id", example = "2020-03-24T12:00:00") migrationId: String,
+  ) = prisonPersonMigrationService.cancel(migrationId)
+
+  @PreAuthorize("hasRole('ROLE_MIGRATE_PRISONPERSON')")
+  @GetMapping("/active-migration")
+  @Operation(
+    summary = "Gets active/currently running migration data, using migration record and migration queues",
+    description = "Requires role <b>MIGRATE_PRISONPERSON</b>",
+    responses = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Only called during an active migration from the UI - assumes latest migration is active",
+      ),
+      ApiResponse(
+        responseCode = "401",
+        description = "Unauthorized to access this endpoint",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+      ApiResponse(
+        responseCode = "403",
+        description = "Incorrect permissions to access this endpoint",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Migration not found",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+    ],
+  )
+  suspend fun activeMigration() = migrationHistoryService.getActiveMigrationDetails(MigrationType.PRISONPERSON)
 }
