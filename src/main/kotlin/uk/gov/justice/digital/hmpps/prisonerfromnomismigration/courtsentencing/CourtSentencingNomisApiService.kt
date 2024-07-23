@@ -1,16 +1,22 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
+import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SentenceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RestResponsePage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.typeReference
+import java.time.LocalDate
 
 @Service
 class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
@@ -18,6 +24,14 @@ class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val
     .uri(
       "/prisoners/{offenderNo}/sentencing/court-cases/{courtCaseId}",
       offenderNo,
+      courtCaseId,
+    )
+    .retrieve()
+    .awaitBody()
+
+  suspend fun getCourtCaseForMigration(courtCaseId: Long): CourtCaseResponse = webClient.get()
+    .uri(
+      "/court-cases/{courtCaseId}",
       courtCaseId,
     )
     .retrieve()
@@ -63,4 +77,23 @@ class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val
     )
     .retrieve()
     .awaitBody()
+
+  suspend fun getCourtCaseIds(
+    fromDate: LocalDate?,
+    toDate: LocalDate?,
+    pageNumber: Long,
+    pageSize: Long,
+  ): PageImpl<CourtCaseIdResponse> =
+    webClient.get()
+      .uri {
+        it.path("/court-cases/ids")
+          .queryParam("fromDate", fromDate)
+          .queryParam("toDate", toDate)
+          .queryParam("page", pageNumber)
+          .queryParam("size", pageSize)
+          .build()
+      }
+      .retrieve()
+      .bodyToMono(typeReference<RestResponsePage<CourtCaseIdResponse>>())
+      .awaitSingle()
 }

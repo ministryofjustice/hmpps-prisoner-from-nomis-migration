@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-07-17.8332.1a9d703"
+    "version": "2024-07-19.8356.7a4b09a"
   },
   "servers": [
     {
@@ -2332,6 +2332,73 @@
                 }
               }
             }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "case-notes-resource"
+        ],
+        "summary": "Deletes a case note",
+        "description": "Deletes the specified case note. Requires ROLE_NOMIS_CASENOTES",
+        "operationId": "deleteCaseNote",
+        "parameters": [
+          {
+            "name": "caseNoteId",
+            "in": "path",
+            "description": "Case note id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Case note id",
+              "example": 1234567
+            },
+            "example": 1234567
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "CaseNote Deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseNoteResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_CASENOTES",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CaseNote does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content"
           }
         }
       }
@@ -6720,6 +6787,80 @@
           },
           "403": {
             "description": "Forbidden, requires role SYNCHRONISATION_REPORTING",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sentencing/court-cases/ids": {
+      "get": {
+        "tags": [
+          "sentencing-resource"
+        ],
+        "summary": "get court case IDs by filter",
+        "description": "Retrieves a paged list of court case ids by filter. Requires ROLE_NOMIS_SENTENCING.",
+        "operationId": "getCourtCaseIdsByFilter",
+        "parameters": [
+          {
+            "name": "pageRequest",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          },
+          {
+            "name": "fromDate",
+            "in": "query",
+            "description": "Filter results by court cases that were created on or after the given date",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2021-11-03"
+          },
+          {
+            "name": "toDate",
+            "in": "query",
+            "description": "Filter results by court cases that were created on or before the given date",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2021-11-03"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pageable list of ids are returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageCourtCaseIdResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint when role ROLE_NOMIS_SENTENCING not present",
             "content": {
               "application/json": {
                 "schema": {
@@ -11712,7 +11853,8 @@
           "description": {
             "type": "string"
           }
-        }
+        },
+        "description": "The case note subtype"
       },
       "NomisAudit": {
         "required": [
@@ -15555,6 +15697,69 @@
           }
         },
         "description": "A prison"
+      },
+      "CourtCaseIdResponse": {
+        "required": [
+          "caseId"
+        ],
+        "type": "object",
+        "properties": {
+          "caseId": {
+            "type": "integer",
+            "description": "Court case Id",
+            "format": "int64"
+          }
+        },
+        "description": "court case id"
+      },
+      "PageCourtCaseIdResponse": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CourtCaseIdResponse"
+            }
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
       },
       "SentenceAdjustmentResponse": {
         "required": [

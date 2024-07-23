@@ -39,6 +39,9 @@ hmpps.sqs:
     migrationprisonperson:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    migrationcourtsentencing:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
     audit:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}

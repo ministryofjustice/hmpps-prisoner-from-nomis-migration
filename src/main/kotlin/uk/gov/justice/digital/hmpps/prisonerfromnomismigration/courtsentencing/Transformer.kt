@@ -10,8 +10,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.S
 import java.time.LocalDateTime
 import java.util.UUID
 
-fun CourtCaseResponse.toDpsCourtCase(offenderNo: String) = CreateCourtCase(
-  prisonerId = offenderNo,
+fun CourtCaseResponse.toDpsCourtCase() = CreateCourtCase(
+  prisonerId = this.offenderNo,
   appearances = emptyList(),
 )
 
