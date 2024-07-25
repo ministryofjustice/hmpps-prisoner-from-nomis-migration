@@ -24,7 +24,6 @@ generic-service:
     API_BASE_URL_ALERTS: https://alerts-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_COURT_SENTENCING: https://remand-and-sentencing-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_PRISON_PERSON: https://prison-person-api-dev.prison.service.justice.gov.uk
-    FEATURE_EVENT_OFFENDER_PHYSICAL_ATTRIBUTES-CHANGED: false
     FEATURE_EVENT_CSIP_REPORTS-UPDATED: false
     FEATURE_EVENT_CSIP_REPORTS-DELETED: false
     FEATURE_EVENT_CSIP_PLANS-UPDATED: false
