@@ -42,32 +42,15 @@ class MockCSIPResource {
       referral =
       Referral(
         incidentDate = LocalDate.parse("2024-03-27"),
-        incidentType = ReferenceData(
-          code = "incidentTypeCode",
-          createdAt = LocalDateTime.parse("2024-03-29T11:32:16"),
-          createdBy = "JIM_SMITH",
-        ),
-        incidentLocation = ReferenceData(
-          code = "incidentLocationCode",
-          createdAt = LocalDateTime.parse("2024-03-29T11:32:16"),
-          createdBy = "JIM_SMITH",
-        ),
+        incidentType = ReferenceData(code = "incidentTypeCode"),
+        incidentLocation = ReferenceData(code = "incidentLocationCode"),
         referredBy = "Jim Smith",
-        refererArea = ReferenceData(
-          code = "areaCode",
-          createdAt = LocalDateTime.parse("2024-03-29T11:32:16"),
-          createdBy = "JIM_SMITH",
-        ),
-        incidentInvolvement = ReferenceData(
-          code = "involvementCode",
-          createdAt = LocalDateTime.parse("2024-03-29T11:32:16"),
-          createdBy = "JIM_SMITH",
-        ),
+        refererArea = ReferenceData(code = "areaCode"),
+        incidentInvolvement = ReferenceData(code = "involvementCode"),
         descriptionOfConcern = "Needs guidance",
         knownReasons = "Fighting",
         contributoryFactors = listOf(),
         incidentTime = null,
-        referralSummary = null,
         isProactiveReferral = null,
         isStaffAssaulted = null,
         assaultedStaffName = null,
@@ -88,13 +71,7 @@ class MockCSIPResource {
 
     fun dpsSaferCustodyScreening() =
       SaferCustodyScreeningOutcome(
-        outcome = ReferenceData(
-          code = "CUR",
-          description	= "Progress to CSIP",
-          listSequence = 1,
-          createdAt = LocalDateTime.parse("2024-03-29T11:32:16"),
-          createdBy = "FRED_ADM",
-        ),
+        outcome = ReferenceData(code = "CUR"),
         recordedBy = "FRED_ADM",
         recordedByDisplayName = "FRED_ADM",
         date = LocalDate.parse("2024-04-08"),
@@ -104,12 +81,7 @@ class MockCSIPResource {
     fun dpsCsipFactor() =
       ContributoryFactor(
         factorUuid = UUID.randomUUID(),
-        factorType = ReferenceData(
-          code = "BUL",
-          description = "Bullying",
-          createdAt = LocalDateTime.parse("2024-03-29T11:32:16"),
-          createdBy = "JIM_ADM",
-        ),
+        factorType = ReferenceData(code = "BUL"),
         createdAt = LocalDateTime.parse("2024-03-29T11:32:16"),
         createdBy = "JIM_ADM",
         createdByDisplayName = "Jim Admin",

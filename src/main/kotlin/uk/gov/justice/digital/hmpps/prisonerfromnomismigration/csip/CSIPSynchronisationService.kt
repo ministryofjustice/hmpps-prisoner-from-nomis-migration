@@ -79,7 +79,7 @@ class CSIPSynchronisationService(
     } else {
       csipService.updateCSIPReferral(
         csipReportId = mapping.dpsCSIPId,
-        nomisCSIPResponse.toDPSUpdateReferralRequest(),
+        nomisCSIPResponse.toDPSUpdateCsipRecordRequest(),
         updatedByUsername = nomisCSIPResponse.lastModifiedUser(),
       )
 

@@ -195,17 +195,16 @@ internal class CSIPServiceTest {
       fun `will pass data to the api`() {
         csipApi.verify(
           patchRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral"))
-            // TODO Add in when added by csip api
-            // .withRequestBody(matchingJsonPath("logCode", equalTo("ASI-001")))
-            .withRequestBody(matchingJsonPath("incidentDate", equalTo("2024-06-12")))
-            .withRequestBody(matchingJsonPath("incidentTime", equalTo("10:32:12")))
-            .withRequestBody(matchingJsonPath("incidentTypeCode", equalTo("INT")))
-            .withRequestBody(matchingJsonPath("incidentLocationCode", equalTo("LIB")))
-            .withRequestBody(matchingJsonPath("referredBy", equalTo("JIM_ADM")))
-            .withRequestBody(matchingJsonPath("refererAreaCode", equalTo("EDU")))
-            .withRequestBody(matchingJsonPath("isProactiveReferral", equalTo("true")))
-            .withRequestBody(matchingJsonPath("isStaffAssaulted", equalTo("true")))
-            .withRequestBody(matchingJsonPath("assaultedStaffName", equalTo("Fred Jones"))),
+            .withRequestBody(matchingJsonPath("logCode", equalTo("ASI-001")))
+            .withRequestBody(matchingJsonPath("referral.incidentDate", equalTo("2024-06-12")))
+            .withRequestBody(matchingJsonPath("referral.incidentTime", equalTo("10:32:12")))
+            .withRequestBody(matchingJsonPath("referral.incidentTypeCode", equalTo("INT")))
+            .withRequestBody(matchingJsonPath("referral.incidentLocationCode", equalTo("LIB")))
+            .withRequestBody(matchingJsonPath("referral.referredBy", equalTo("JIM_ADM")))
+            .withRequestBody(matchingJsonPath("referral.refererAreaCode", equalTo("EDU")))
+            .withRequestBody(matchingJsonPath("referral.isProactiveReferral", equalTo("true")))
+            .withRequestBody(matchingJsonPath("referral.isStaffAssaulted", equalTo("true")))
+            .withRequestBody(matchingJsonPath("referral.assaultedStaffName", equalTo("Fred Jones"))),
         )
       }
     }
@@ -273,16 +272,13 @@ internal class CSIPServiceTest {
         csipApi.verify(
           patchRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral/decision-and-actions"))
             .withRequestBody(matchingJsonPath("outcomeTypeCode", equalTo("CUR")))
-            .withRequestBody(matchingJsonPath("outcomeRecordedBy", equalTo("FRED_ADM")))
-            .withRequestBody(matchingJsonPath("outcomeRecordedByDisplayName", equalTo("Fred Admin")))
-            .withRequestBody(matchingJsonPath("outcomeDate", equalTo("2024-04-08")))
-            .withRequestBody(matchingJsonPath("isActionOpenCsipAlert", equalTo("false")))
-            .withRequestBody(matchingJsonPath("isActionNonAssociationsUpdated", equalTo("true")))
-            .withRequestBody(matchingJsonPath("isActionObservationBook", equalTo("true")))
-            .withRequestBody(matchingJsonPath("isActionUnitOrCellMove", equalTo("false")))
-            .withRequestBody(matchingJsonPath("isActionCsraOrRsraReview", equalTo("false")))
-            .withRequestBody(matchingJsonPath("isActionServiceReferral", equalTo("true")))
-            .withRequestBody(matchingJsonPath("isActionSimReferral", equalTo("false")))
+            .withRequestBody(matchingJsonPath("signedOffByRoleCode", equalTo("CUSTMAN")))
+            .withRequestBody(matchingJsonPath("recordedBy", equalTo("FRED_ADM")))
+            .withRequestBody(matchingJsonPath("recordedByDisplayName", equalTo("Fred Admin")))
+            .withRequestBody(matchingJsonPath("date", equalTo("2024-04-08")))
+            .withRequestBody(matchingJsonPath("actions[0]", equalTo("NonAssociationsUpdated")))
+            .withRequestBody(matchingJsonPath("actions[1]", equalTo("ObservationBook")))
+            .withRequestBody(matchingJsonPath("actions[2]", equalTo("ServiceReferral")))
             .withRequestBody(matchingJsonPath("actionOther", equalTo("Some other info here"))),
         )
       }

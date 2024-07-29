@@ -15,10 +15,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Invest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Plan
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SaferCustodyScreeningOutcome
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateContributoryFactorRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateCsipRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateDecisionAndActionsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateInvestigationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdatePlanRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateReferralRequest
 
 @Service
 class CSIPService(@Qualifier("csipApiWebClient") private val webClient: WebClient) {
@@ -39,7 +39,7 @@ class CSIPService(@Qualifier("csipApiWebClient") private val webClient: WebClien
       .retrieve()
       .awaitBody()
 
-  suspend fun updateCSIPReferral(csipReportId: String, csipReport: UpdateReferralRequest, updatedByUsername: String): CsipRecord =
+  suspend fun updateCSIPReferral(csipReportId: String, csipReport: UpdateCsipRecordRequest, updatedByUsername: String): CsipRecord =
     webClient.patch()
       .uri("/csip-records/{csipReportId}/referral", csipReportId)
       .header("Source", "NOMIS")
