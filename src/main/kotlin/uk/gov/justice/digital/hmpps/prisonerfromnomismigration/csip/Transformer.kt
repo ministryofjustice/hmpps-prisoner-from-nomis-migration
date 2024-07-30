@@ -5,10 +5,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Create
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateSaferCustodyScreeningOutcomeRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateContributoryFactorRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateCsipRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateDecisionAndActionsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateInvestigationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdatePlanRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateReferralRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateReferral
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateReferral.IsSaferCustodyTeamInformed.NO
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateReferral.IsSaferCustodyTeamInformed.YES
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Actions
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPFactorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Decision
@@ -65,45 +69,53 @@ fun CSIPResponse.toDPSCreateRequest() =
   )
 
 // From OIDCSIPN - everything that's the same as the create request but also need lognumber update
-fun CSIPResponse.toDPSUpdateReferralRequest() =
-  UpdateReferralRequest(
-    // TODO Add in when csip api updated
-    // logCode= logNumber,
-    incidentDate = incidentDate,
-    incidentTypeCode = type.code,
-    incidentLocationCode = location.code,
-    referredBy = reportedBy,
-    refererAreaCode = areaOfWork.code,
-    incidentTime = incidentTime,
-    isProactiveReferral = proActiveReferral,
-    isStaffAssaulted = staffAssaulted,
-    assaultedStaffName = staffAssaultedName,
-    isSaferCustodyTeamInformed = if (reportDetails.saferCustodyTeamInformed) {
-      UpdateReferralRequest.IsSaferCustodyTeamInformed.YES
-    } else {
-      UpdateReferralRequest.IsSaferCustodyTeamInformed.NO
-    },
+fun CSIPResponse.toDPSUpdateCsipRecordRequest() =
+  UpdateCsipRecordRequest(
+    logCode = logNumber,
+    UpdateReferral(
+      incidentDate = incidentDate,
+      incidentTypeCode = type.code,
+      incidentLocationCode = location.code,
+      referredBy = reportedBy,
+      refererAreaCode = areaOfWork.code,
+      incidentTime = incidentTime,
+      isProactiveReferral = proActiveReferral,
+      isStaffAssaulted = staffAssaulted,
+      assaultedStaffName = staffAssaultedName,
+      isSaferCustodyTeamInformed = if (reportDetails.saferCustodyTeamInformed) {
+        YES
+      } else {
+        NO
+      },
+    ),
   )
 
 // ////// OIDCSIPC ////////////////////////////
 fun CSIPResponse.toDPSUpdateReferralContRequest() =
-  UpdateReferralRequest(
+  UpdateCsipRecordRequest(
     // needed but not changed here
-    incidentDate = incidentDate,
-    // needed but not changed here
-    incidentTypeCode = type.code,
-    // needed but not changed here
-    incidentLocationCode = location.code,
-    // needed but not changed here
-    referredBy = reportedBy,
-    // needed but not changed here
-    refererAreaCode = areaOfWork.code,
-    incidentInvolvementCode = reportDetails.involvement?.code,
-    descriptionOfConcern = reportDetails.concern,
-    knownReasons = reportDetails.knownReasons,
-    otherInformation = reportDetails.otherInformation,
-    isSaferCustodyTeamInformed = if (reportDetails.saferCustodyTeamInformed) UpdateReferralRequest.IsSaferCustodyTeamInformed.YES else UpdateReferralRequest.IsSaferCustodyTeamInformed.NO,
-    isReferralComplete = reportDetails.referralComplete,
+    referral = UpdateReferral(
+      incidentDate = incidentDate,
+      // needed but not changed here
+      incidentTypeCode = type.code,
+      // needed but not changed here
+      incidentLocationCode = location.code,
+      // needed but not changed here
+      referredBy = reportedBy,
+      // needed but not changed here
+      refererAreaCode = areaOfWork.code,
+
+      isSaferCustodyTeamInformed = if (reportDetails.saferCustodyTeamInformed) {
+        YES
+      } else {
+        NO
+      },
+      incidentInvolvementCode = reportDetails.involvement?.code,
+      descriptionOfConcern = reportDetails.concern,
+      knownReasons = reportDetails.knownReasons,
+      otherInformation = reportDetails.otherInformation,
+      isReferralComplete = reportDetails.referralComplete,
+    ),
   )
 
 // ////// From OIDCSIPS - Safer Custody Screening ////////////////////////////
@@ -160,20 +172,30 @@ fun Decision.toDPSUpdateDecisionsAndActionsRequest() =
   UpdateDecisionAndActionsRequest(
     outcomeTypeCode = decisionOutcome!!.code,
     conclusion = conclusion,
-    outcomeSignedOffByRoleCode = signedOffRole?.code,
-    outcomeRecordedBy = recordedBy,
-    outcomeRecordedByDisplayName = recordedByDisplayName,
-    outcomeDate = recordedDate,
+    signedOffByRoleCode = signedOffRole?.code,
+    recordedBy = recordedBy,
+    recordedByDisplayName = recordedByDisplayName,
+    date = recordedDate,
     nextSteps = nextSteps,
-    isActionOpenCsipAlert = actions.openCSIPAlert,
-    isActionNonAssociationsUpdated = actions.nonAssociationsUpdated,
-    isActionObservationBook = actions.observationBook,
-    isActionUnitOrCellMove = actions.unitOrCellMove,
-    isActionCsraOrRsraReview = actions.csraOrRsraReview,
-    isActionServiceReferral = actions.serviceReferral,
-    isActionSimReferral = actions.simReferral,
+    actions = actions.toDPSActions(),
     actionOther = otherDetails,
   )
+
+fun Actions.toDPSActions(): MutableSet<UpdateDecisionAndActionsRequest.Actions> {
+  val dpsActions: MutableSet<UpdateDecisionAndActionsRequest.Actions> = mutableSetOf()
+  dpsActions.addIfTrue(openCSIPAlert, UpdateDecisionAndActionsRequest.Actions.OpenCsipAlert)
+  dpsActions.addIfTrue(nonAssociationsUpdated, UpdateDecisionAndActionsRequest.Actions.NonAssociationsUpdated)
+  dpsActions.addIfTrue(observationBook, UpdateDecisionAndActionsRequest.Actions.ObservationBook)
+  dpsActions.addIfTrue(unitOrCellMove, UpdateDecisionAndActionsRequest.Actions.UnitOrCellMove)
+  dpsActions.addIfTrue(csraOrRsraReview, UpdateDecisionAndActionsRequest.Actions.CsraOrRsraReview)
+  dpsActions.addIfTrue(serviceReferral, UpdateDecisionAndActionsRequest.Actions.ServiceReferral)
+  dpsActions.addIfTrue(simReferral, UpdateDecisionAndActionsRequest.Actions.SimReferral)
+  return dpsActions
+}
+
+fun MutableSet<UpdateDecisionAndActionsRequest.Actions>.addIfTrue(actionSet: Boolean, action: UpdateDecisionAndActionsRequest.Actions) {
+  if (actionSet) this.add(action)
+}
 
 // ////// OIDCSIPP - Plan ////////////////////////////
 fun CSIPResponse.toDPSUpdatePlanRequest() =
@@ -207,9 +229,9 @@ fun Plan.toDPSUpdateIdentifiedNeedsRequest() =
 // ////// OIDCSIPR - Review ////////////////////////////
 fun Review.toDPSCreateReviewRequest() =
   CreateReviewRequest(
-    recordedBy = createdBy,
-    recordedByDisplayName = createdByDisplayName!!,
-    reviewDate = LocalDateTime.parse(createDateTime).toLocalDate(),
+    recordedBy = recordedBy,
+    recordedByDisplayName = recordedByDisplayName!!,
+    reviewDate = recordedDate,
     nextReviewDate = nextReviewDate,
     isActionResponsiblePeopleInformed = peopleInformed,
     isActionCsipUpdated = csipUpdated,
@@ -223,9 +245,9 @@ fun Review.toDPSCreateReviewRequest() =
 
 fun Review.toDPSUpdateReviewRequest() =
   UpdateReviewRequest(
-    recordedBy = createdBy,
-    recordedByDisplayName = createdByDisplayName!!,
-    reviewDate = LocalDateTime.parse(createDateTime).toLocalDate(),
+    recordedBy = recordedBy,
+    recordedByDisplayName = recordedByDisplayName!!,
+    reviewDate = recordedDate,
     nextReviewDate = nextReviewDate,
     isActionResponsiblePeopleInformed = peopleInformed,
     isActionCsipUpdated = csipUpdated,

@@ -597,17 +597,16 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
             1,
             patchRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral"))
               .withHeader("Username", equalTo("JSMITH"))
-              // TODO add in when csip api updated
-              // .withRequestBody(matchingJsonPath("logCode", equalTo("ASI-001")))
-              .withRequestBody(matchingJsonPath("incidentDate", equalTo("2024-06-12")))
-              .withRequestBody(matchingJsonPath("incidentTypeCode", equalTo("INT")))
-              .withRequestBody(matchingJsonPath("incidentLocationCode", equalTo("LIB")))
-              .withRequestBody(matchingJsonPath("referredBy", equalTo("JIM_ADM")))
-              .withRequestBody(matchingJsonPath("refererAreaCode", equalTo("EDU")))
-              .withRequestBody(matchingJsonPath("incidentTime", equalTo("10:32:12")))
-              .withRequestBody(matchingJsonPath("isProactiveReferral", equalTo("true")))
-              .withRequestBody(matchingJsonPath("isStaffAssaulted", equalTo("true")))
-              .withRequestBody(matchingJsonPath("assaultedStaffName", equalTo("Fred Jones"))),
+              .withRequestBody(matchingJsonPath("logCode", equalTo("ASI-001")))
+              .withRequestBody(matchingJsonPath("referral.incidentDate", equalTo("2024-06-12")))
+              .withRequestBody(matchingJsonPath("referral.incidentTypeCode", equalTo("INT")))
+              .withRequestBody(matchingJsonPath("referral.incidentLocationCode", equalTo("LIB")))
+              .withRequestBody(matchingJsonPath("referral.referredBy", equalTo("JIM_ADM")))
+              .withRequestBody(matchingJsonPath("referral.refererAreaCode", equalTo("EDU")))
+              .withRequestBody(matchingJsonPath("referral.incidentTime", equalTo("10:32:12")))
+              .withRequestBody(matchingJsonPath("referral.isProactiveReferral", equalTo("true")))
+              .withRequestBody(matchingJsonPath("referral.isStaffAssaulted", equalTo("true")))
+              .withRequestBody(matchingJsonPath("referral.assaultedStaffName", equalTo("Fred Jones"))),
           )
         }
 
@@ -695,17 +694,17 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
             patchRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral"))
               .withHeader("Username", equalTo("JSMITH"))
               // Whilst not part of the Referral Continue screen, these are mandatory to the update
-              .withRequestBody(matchingJsonPath("incidentDate", equalTo("2024-06-12")))
-              .withRequestBody(matchingJsonPath("incidentTypeCode", equalTo("INT")))
-              .withRequestBody(matchingJsonPath("incidentLocationCode", equalTo("LIB")))
-              .withRequestBody(matchingJsonPath("referredBy", equalTo("JIM_ADM")))
-              .withRequestBody(matchingJsonPath("refererAreaCode", equalTo("EDU")))
-              .withRequestBody(matchingJsonPath("incidentInvolvementCode", equalTo("PER")))
-              .withRequestBody(matchingJsonPath("descriptionOfConcern", equalTo("There was a worry about the offender")))
-              .withRequestBody(matchingJsonPath("knownReasons", equalTo("known reasons details go in here")))
-              .withRequestBody(matchingJsonPath("otherInformation", equalTo("other information goes in here")))
-              .withRequestBody(matchingJsonPath("isSaferCustodyTeamInformed", equalTo("NO")))
-              .withRequestBody(matchingJsonPath("isReferralComplete", equalTo("true"))),
+              .withRequestBody(matchingJsonPath("referral.incidentDate", equalTo("2024-06-12")))
+              .withRequestBody(matchingJsonPath("referral.incidentTypeCode", equalTo("INT")))
+              .withRequestBody(matchingJsonPath("referral.incidentLocationCode", equalTo("LIB")))
+              .withRequestBody(matchingJsonPath("referral.referredBy", equalTo("JIM_ADM")))
+              .withRequestBody(matchingJsonPath("referral.refererAreaCode", equalTo("EDU")))
+              .withRequestBody(matchingJsonPath("referral.incidentInvolvementCode", equalTo("PER")))
+              .withRequestBody(matchingJsonPath("referral.descriptionOfConcern", equalTo("There was a worry about the offender")))
+              .withRequestBody(matchingJsonPath("referral.knownReasons", equalTo("known reasons details go in here")))
+              .withRequestBody(matchingJsonPath("referral.otherInformation", equalTo("other information goes in here")))
+              .withRequestBody(matchingJsonPath("referral.isSaferCustodyTeamInformed", equalTo("NO")))
+              .withRequestBody(matchingJsonPath("referral.isReferralComplete", equalTo("true"))),
           )
         }
 
@@ -888,17 +887,13 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
               .withHeader("Source", equalTo("NOMIS"))
               .withRequestBody(matchingJsonPath("outcomeTypeCode", equalTo("OPE")))
               .withRequestBody(matchingJsonPath("conclusion", equalTo("Offender needs help")))
-              .withRequestBody(matchingJsonPath("outcomeSignedOffByRoleCode", equalTo("CUSTMAN")))
-              .withRequestBody(matchingJsonPath("outcomeRecordedBy", equalTo("FRED_ADM")))
-              .withRequestBody(matchingJsonPath("outcomeRecordedByDisplayName", equalTo("Fred Admin")))
-              .withRequestBody(matchingJsonPath("outcomeDate", equalTo("2024-04-08")))
-              .withRequestBody(matchingJsonPath("isActionOpenCsipAlert", equalTo("false")))
-              .withRequestBody(matchingJsonPath("isActionNonAssociationsUpdated", equalTo("true")))
-              .withRequestBody(matchingJsonPath("isActionObservationBook", equalTo("true")))
-              .withRequestBody(matchingJsonPath("isActionUnitOrCellMove", equalTo("false")))
-              .withRequestBody(matchingJsonPath("isActionCsraOrRsraReview", equalTo("false")))
-              .withRequestBody(matchingJsonPath("isActionServiceReferral", equalTo("true")))
-              .withRequestBody(matchingJsonPath("isActionSimReferral", equalTo("false")))
+              .withRequestBody(matchingJsonPath("signedOffByRoleCode", equalTo("CUSTMAN")))
+              .withRequestBody(matchingJsonPath("recordedBy", equalTo("FRED_ADM")))
+              .withRequestBody(matchingJsonPath("recordedByDisplayName", equalTo("Fred Admin")))
+              .withRequestBody(matchingJsonPath("date", equalTo("2024-04-08")))
+              .withRequestBody(matchingJsonPath("actions[0]", equalTo("NonAssociationsUpdated")))
+              .withRequestBody(matchingJsonPath("actions[1]", equalTo("ObservationBook")))
+              .withRequestBody(matchingJsonPath("actions[2]", equalTo("ServiceReferral")))
               .withRequestBody(matchingJsonPath("actionOther", equalTo("Some other info here"))),
           )
         }
