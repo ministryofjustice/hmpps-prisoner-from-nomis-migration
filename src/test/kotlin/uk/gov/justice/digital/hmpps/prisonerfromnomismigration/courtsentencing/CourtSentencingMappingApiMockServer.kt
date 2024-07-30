@@ -559,13 +559,13 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
 
   fun createCourtCaseMappingCount() =
     createMappingCount("/mapping/court-sentencing/court-cases")
+
   fun createMappingCount(url: String) =
     mappingApi.findAll(WireMock.postRequestedFor(WireMock.urlPathEqualTo(url))).count()
 
   fun verifyCreateMappingCourtCase(
-    adjudicationNumber: Long,
-    chargeSequence: Int,
-    chargeNumber: String,
+    dpsCourtCaseId: String,
+    nomisCourtCaseId: Long,
     times: Int = 1,
   ) {
     verify(
@@ -573,17 +573,16 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
       WireMock.postRequestedFor(WireMock.urlPathEqualTo("/mapping/court-sentencing/court-cases"))
         .withRequestBody(
           WireMock.matchingJsonPath(
-            "adjudicationId.adjudicationNumber",
-            WireMock.equalTo(adjudicationNumber.toString()),
+            "dpsCourtCaseId",
+            WireMock.equalTo(dpsCourtCaseId),
           ),
         )
         .withRequestBody(
           WireMock.matchingJsonPath(
-            "adjudicationId.chargeSequence",
-            WireMock.equalTo(chargeSequence.toString()),
+            "nomisCourtCaseId",
+            WireMock.equalTo(nomisCourtCaseId.toString()),
           ),
-        )
-        .withRequestBody(WireMock.matchingJsonPath("adjudicationId.chargeNumber", WireMock.equalTo(chargeNumber))),
+        ),
     )
   }
 
