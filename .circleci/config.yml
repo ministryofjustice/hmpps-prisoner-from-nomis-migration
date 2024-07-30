@@ -22,8 +22,6 @@ jobs:
     executor:
       name: hmpps/java
       tag: "21.0"
-    environment:
-      _JAVA_OPTIONS: -Xmx2048m
     steps:
       - checkout
       - restore_cache:
