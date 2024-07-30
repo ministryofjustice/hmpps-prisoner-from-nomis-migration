@@ -218,6 +218,7 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
         check {
           assertThat(it["existingNomisCSIPId"]).isEqualTo("$NOMIS_CSIP_ID")
           assertThat(it["duplicateNomisCSIPId"]).isEqualTo("$NOMIS_CSIP_ID")
+          assertThat(it["offenderNo"]).isEqualTo("A1234BC")
           assertThat(it["existingDPSCSIPId"]).isEqualTo(DPS_CSIP_ID)
           assertThat(it["duplicateDPSCSIPId"]).isEqualTo(duplicateDPSCSIPId)
           assertThat(it["migrationId"]).isNotNull()

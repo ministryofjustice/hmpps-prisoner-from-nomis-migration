@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-07-12.4665.3532f54"
+    "version": "2024-07-30.4722.8f10fbd"
   },
   "servers": [
     {
@@ -335,7 +335,7 @@
         ],
         "summary": "Gets all alert mappings for a prisoner",
         "description": "Gets all the mapping between nomis alert ids and dps alert id related to specific prisoner created either via migration or synchronisation. Requires ROLE_NOMIS_ALERTS",
-        "operationId": "getMappingsForPrisoner_1",
+        "operationId": "getMappingsForPrisoner_2",
         "parameters": [
           {
             "name": "offenderNo",
@@ -446,7 +446,7 @@
         ],
         "summary": "Creates a set of new alert mapping for a prisoner",
         "description": "Creates a mapping between all the nomis alert ids and dps alert id. Requires ROLE_NOMIS_ALERTS",
-        "operationId": "createMappingsForPrisoner_1",
+        "operationId": "createMappingsForPrisoner_2",
         "parameters": [
           {
             "name": "offenderNo",
@@ -1594,6 +1594,129 @@
         }
       }
     },
+    "/mapping/csip/{offenderNo}/all": {
+      "get": {
+        "tags": [
+          "csip-mapping-resource"
+        ],
+        "summary": "Gets all csip mappings for a prisoner",
+        "description": "Gets all the mapping between nomis csip ids and dps csip id related to specific prisoner created either via migration or synchronisation. Requires ROLE_NOMIS_CSIP",
+        "operationId": "getMappingsForPrisoner",
+        "parameters": [
+          {
+            "name": "offenderNo",
+            "in": "path",
+            "description": "NOMIS offender no",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "NOMIS offender no",
+              "example": "A1234KT"
+            },
+            "example": "A1234KT"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mappings for prisoner",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllPrisonerCSIPMappingsDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access forbidden for this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "csip-mapping-resource"
+        ],
+        "summary": "Creates a set of new csip mapping for a prisoner",
+        "description": "Creates a mapping between all the nomis csip ids and dps csip id. Requires ROLE_NOMIS_CSIP",
+        "operationId": "createMappingsForPrisoner",
+        "parameters": [
+          {
+            "name": "offenderNo",
+            "in": "path",
+            "description": "NOMIS offender no",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "NOMIS offender no",
+              "example": "A1234KT"
+            },
+            "example": "A1234KT"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrisonerCSIPMappingsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Mapping created"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access forbidden for this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Indicates a duplicate mapping has been rejected. If Error code = 1409 the body will return a DuplicateErrorResponse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateMappingErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/csip/factors": {
       "post": {
         "tags": [
@@ -1659,7 +1782,14 @@
         },
         "responses": {
           "201": {
-            "description": "Mapping entry created"
+            "description": "Mapping entry created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CSIPMapping"
+                }
+              }
+            }
           },
           "401": {
             "description": "Unauthorized to access this endpoint",
@@ -1920,7 +2050,7 @@
         ],
         "summary": "Gets all case note mappings for a prisoner",
         "description": "Gets all the mapping between nomis case note ids and dps case note id related to specific prisoner created either via migration or synchronisation. Requires ROLE_NOMIS_ALERTS",
-        "operationId": "getMappingsForPrisoner",
+        "operationId": "getMappingsForPrisoner_1",
         "parameters": [
           {
             "name": "offenderNo",
@@ -1974,7 +2104,7 @@
         ],
         "summary": "Creates a set of new case note mappings for a prisoner",
         "description": "Creates a mapping between all the nomis case note ids and dps case note ids. Requires ROLE_NOMIS_CASENOTES",
-        "operationId": "createMappingsForPrisoner",
+        "operationId": "createMappingsForPrisoner_1",
         "parameters": [
           {
             "name": "offenderNo",
@@ -4736,7 +4866,7 @@
         ],
         "summary": "get paged mappings by migration id",
         "description": "Retrieve all mappings of type 'MIGRATED' for the given migration id (identifies a single migration run). Results are paged.",
-        "operationId": "getMigratedMappingsByMigrationId_1",
+        "operationId": "getMappingsByMigrationId_1",
         "parameters": [
           {
             "name": "pageRequest",
@@ -4893,11 +5023,11 @@
           {
             "name": "dpsCSIPFactorId",
             "in": "path",
-            "description": "DPS alert id",
+            "description": "DPS CSIP factor id",
             "required": true,
             "schema": {
               "type": "string",
-              "description": "DPS alert id",
+              "description": "DPS CSIP factor id",
               "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
             },
             "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
@@ -6246,7 +6376,7 @@
         ],
         "summary": "Get paged mappings by migration id",
         "description": "Retrieve all mappings of type 'MIGRATED' for the given migration id (identifies a single migration run). Results are paged.",
-        "operationId": "getMappingsByMigrationId_1",
+        "operationId": "getMappingsByMigrationId_2",
         "parameters": [
           {
             "name": "pageRequest",
@@ -8638,6 +8768,61 @@
         },
         "description": "Adjudication mapping (same value for NOMIS and DPS)"
       },
+      "CSIPMappingIdDto": {
+        "required": [
+          "dpsCSIPId",
+          "nomisCSIPId"
+        ],
+        "type": "object",
+        "properties": {
+          "dpsCSIPId": {
+            "type": "string",
+            "description": "DPS CSIP id"
+          },
+          "nomisCSIPId": {
+            "type": "integer",
+            "description": "NOMIS CSIP id",
+            "format": "int64"
+          }
+        },
+        "description": "NOMIS to CSIP mapping IDs"
+      },
+      "PrisonerCSIPMappingsDto": {
+        "required": [
+          "mappingType",
+          "mappings"
+        ],
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Label (a timestamp for migrated ids)"
+          },
+          "mappingType": {
+            "type": "string",
+            "description": "Mapping type",
+            "enum": [
+              "MIGRATED",
+              "NOMIS_CREATED",
+              "DPS_CREATED"
+            ]
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "Date time the mapping was created",
+            "example": "2021-07-05T10:35:17"
+          },
+          "mappings": {
+            "type": "array",
+            "description": "Mapping IDs",
+            "items": {
+              "$ref": "#/components/schemas/CSIPMappingIdDto"
+            }
+          }
+        },
+        "description": "Mappings for a prisoner created during migration"
+      },
       "CSIPFactorMappingDto": {
         "required": [
           "dpsCSIPFactorId",
@@ -8683,10 +8868,15 @@
         "required": [
           "dpsCSIPId",
           "mappingType",
-          "nomisCSIPId"
+          "nomisCSIPId",
+          "offenderNo"
         ],
         "type": "object",
         "properties": {
+          "offenderNo": {
+            "type": "string",
+            "description": "Prisoner number"
+          },
           "nomisCSIPId": {
             "type": "integer",
             "description": "NOMIS CSIP id",
@@ -8703,8 +8893,6 @@
             "description": "Label (a timestamp for migrated ids)"
           },
           "mappingType": {
-            "maxLength": 20,
-            "minLength": 0,
             "type": "string",
             "description": "Mapping type",
             "enum": [
@@ -8721,6 +8909,55 @@
           }
         },
         "description": "CSIP mapping"
+      },
+      "CSIPMapping": {
+        "required": [
+          "dpsCSIPId",
+          "id",
+          "isNew",
+          "mappingType",
+          "new",
+          "nomisCSIPId",
+          "offenderNo"
+        ],
+        "type": "object",
+        "properties": {
+          "dpsCSIPId": {
+            "type": "string"
+          },
+          "nomisCSIPId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "offenderNo": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "mappingType": {
+            "type": "string",
+            "enum": [
+              "MIGRATED",
+              "NOMIS_CREATED",
+              "DPS_CREATED"
+            ]
+          },
+          "new": {
+            "type": "boolean"
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "example": "2021-07-05T10:35:17"
+          },
+          "id": {
+            "type": "string"
+          },
+          "isNew": {
+            "type": "boolean"
+          }
+        }
       },
       "SentenceMappingDto": {
         "required": [
@@ -9497,6 +9734,22 @@
             }
           }
         }
+      },
+      "AllPrisonerCSIPMappingsDto": {
+        "required": [
+          "mappings"
+        ],
+        "type": "object",
+        "properties": {
+          "mappings": {
+            "type": "array",
+            "description": "Mappings",
+            "items": {
+              "$ref": "#/components/schemas/CSIPMappingDto"
+            }
+          }
+        },
+        "description": "All csip mappings for a prisoner created either via migration or synchronisation"
       },
       "CourtCaseMappingDto": {
         "required": [
