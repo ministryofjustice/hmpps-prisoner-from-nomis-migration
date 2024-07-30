@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
@@ -45,6 +46,23 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubPostCourtCaseForCreate(
+    courtCaseId: String = UUID.randomUUID().toString(),
+    response: CreateCourtCaseResponse = CreateCourtCaseResponse(
+      courtCaseUuid = courtCaseId,
+    ),
+  ) {
+    stubFor(
+      post("/court-case")
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader("Content-Type", "application/json")
+            .withBody(CourtSentencingDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubPostCourtCaseForCreateMigration(
     courtCaseId: String = UUID.randomUUID().toString(),
     response: CreateCourtCaseResponse = CreateCourtCaseResponse(
       courtCaseUuid = courtCaseId,
@@ -261,4 +279,10 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       ),
     )
   }
+
+  fun createCourtCaseMigrationCount() =
+    findAll(WireMock.postRequestedFor(WireMock.urlMatching("/court-case"))).count()
+
+  fun createCourtCaseForSynchronisationCount() =
+    findAll(WireMock.postRequestedFor(WireMock.urlMatching("/court-case"))).count()
 }

@@ -59,8 +59,13 @@ alerts:
   page:
     size: 10
   has-migrated-data: true
-court.sentencing:
-  has-migrated-court-case-data: true
+courtsentencing:
+  complete-check:
+    delay-seconds: 1
+    count: 1
+  page:
+    size: 10
+  has-migrated-court-sentencing-data: true
 
 spring:
   r2dbc:
