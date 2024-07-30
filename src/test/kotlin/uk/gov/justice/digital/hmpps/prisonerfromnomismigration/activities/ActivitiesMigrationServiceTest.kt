@@ -29,6 +29,7 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
+import org.springframework.http.HttpStatus
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.ActivityMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.ActivityMigrateResponse
@@ -697,7 +698,7 @@ class ActivitiesMigrationServiceTest {
     @Test
     internal fun `will throw after an error retrieving the Nomis entity so the message is rejected and retried`(): Unit =
       runBlocking {
-        whenever(nomisApiService.getActivity(any())).thenThrow(WebClientResponseException.BadGateway::class.java)
+        whenever(nomisApiService.getActivity(any())).thenThrow(WebClientResponseException.create(HttpStatus.BAD_GATEWAY, "error", null, null, null, null))
 
         assertThrows<WebClientResponseException.BadGateway> {
           service.migrateNomisEntity(migrationContext())
@@ -718,7 +719,7 @@ class ActivitiesMigrationServiceTest {
     @Test
     internal fun `will throw after an error creating the Activities entity so the message is rejected and retried`(): Unit =
       runBlocking {
-        whenever(activitiesApiService.migrateActivity(any())).thenThrow(WebClientResponseException.BadGateway::class.java)
+        whenever(activitiesApiService.migrateActivity(any())).thenThrow(WebClientResponseException.create(HttpStatus.BAD_GATEWAY, "error", null, null, null, null))
 
         assertThrows<WebClientResponseException.BadGateway> {
           service.migrateNomisEntity(migrationContext())
@@ -739,7 +740,7 @@ class ActivitiesMigrationServiceTest {
     @Test
     internal fun `will NOT throw but will publish a retry mapping message after an error creating the new mapping`(): Unit =
       runBlocking {
-        whenever(mappingService.createMapping(any(), any())).thenThrow(WebClientResponseException.BadGateway::class.java)
+        whenever(mappingService.createMapping(any(), any())).thenThrow(WebClientResponseException(HttpStatus.BAD_GATEWAY, "error", null, null, null, null))
 
         assertDoesNotThrow {
           service.migrateNomisEntity(migrationContext())
