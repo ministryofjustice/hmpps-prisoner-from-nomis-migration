@@ -31,11 +31,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIS
 import java.util.UUID
 
 @SpringAPIServiceTest
-@Import(CSIPService::class, CSIPConfiguration::class)
-internal class CSIPServiceTest {
+@Import(CSIPDpsApiService::class, CSIPConfiguration::class)
+internal class CSIPDpsApiServiceTest {
 
   @Autowired
-  private lateinit var csipService: CSIPService
+  private lateinit var csipService: CSIPDpsApiService
 
   @Nested
   @DisplayName("CSIPReport")
@@ -352,7 +352,9 @@ internal class CSIPServiceTest {
           postRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral/safer-custody-screening"))
             .withRequestBody(matchingJsonPath("outcomeTypeCode", equalTo("CUR")))
             .withRequestBody(matchingJsonPath("date", equalTo("2024-04-08")))
-            .withRequestBody(matchingJsonPath("reasonForDecision", equalTo("There is a reason for the decision - it goes here"))),
+            .withRequestBody(matchingJsonPath("reasonForDecision", equalTo("There is a reason for the decision - it goes here")))
+            .withRequestBody(matchingJsonPath("recordedBy", equalTo("BOB_ADM")))
+            .withRequestBody(matchingJsonPath("recordedByDisplayName", equalTo("Bob Admin"))),
 
         )
       }

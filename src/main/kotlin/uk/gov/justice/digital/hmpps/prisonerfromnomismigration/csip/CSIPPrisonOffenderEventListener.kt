@@ -88,9 +88,9 @@ class CSIPPrisonOffenderEventListener(
       "OIDCSIPI" -> csipSynchronisationService.csipInvestigationUpdated(event)
       "OIDCSIPD" -> csipSynchronisationService.csipDecisionUpdated(event)
       "OIDCSIPP" -> csipSynchronisationService.csipPlanUpdated(event)
-      "OIDCSIPR" -> log.debug("Update CSIP Report - review")
-      "DPS_SYNCHRONISATION" -> log.debug("TODO Ensure ignored")
-      else -> log.debug("Update CSIP Report")
+      "OIDCSIPR" -> log.info("Received unexpected CSIP_REPORTS-UPDATED message for audit module OIDCSIPR")
+      "DPS_SYNCHRONISATION" -> log.info("Received CSIP_REPORTS-UPDATED message for DPS_SYNCHRONISATION - synchronization skipped")
+      else -> log.info("Received unexpected CSIP_REPORTS-UPDATED message for ${event.auditModuleName}")
     }
   }
 

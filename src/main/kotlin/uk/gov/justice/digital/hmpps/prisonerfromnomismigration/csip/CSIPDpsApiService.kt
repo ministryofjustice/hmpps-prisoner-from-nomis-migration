@@ -21,7 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Update
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdatePlanRequest
 
 @Service
-class CSIPService(@Qualifier("csipApiWebClient") private val webClient: WebClient) {
+class CSIPDpsApiService(@Qualifier("csipApiWebClient") private val webClient: WebClient) {
 
   suspend fun migrateCSIP(offenderNo: String, csipReport: CreateCsipRecordRequest): CsipRecord =
     webClient.post()
