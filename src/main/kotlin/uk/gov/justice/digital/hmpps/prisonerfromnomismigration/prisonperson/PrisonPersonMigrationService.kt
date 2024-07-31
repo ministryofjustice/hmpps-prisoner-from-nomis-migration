@@ -56,7 +56,7 @@ class PrisonPersonMigrationService(
     pageSize: Long,
     pageNumber: Long,
   ): PageImpl<PrisonerId> =
-    if (migrationFilter.prisonerNumber == null) {
+    if (migrationFilter.prisonerNumber.isNullOrEmpty()) {
       nomisService.getPrisonerIds(
         pageNumber = pageNumber,
         pageSize = pageSize,
