@@ -630,7 +630,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       postRequestedFor(urlEqualTo("/mapping/adjudications/all")).builder(),
     )
 
-  private fun pageContent(content: String, count: Int) = """
+  fun pageContent(content: String, count: Int) = """
   {
       "content": [
         $content

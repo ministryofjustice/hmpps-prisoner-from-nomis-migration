@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-07-29.8411.033bba5"
+    "version": "2024-07-30.8455.ae7d8f7"
   },
   "servers": [
     {
@@ -13750,7 +13750,6 @@
       },
       "CreateCourtCaseRequest": {
         "required": [
-          "courtAppearance",
           "courtId",
           "legalCaseType",
           "startDate",
