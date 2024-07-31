@@ -898,6 +898,7 @@ internal class CSIPMigrationServiceTest {
           CSIPMappingDto(
             dpsCSIPId = DPS_CSIP_ID,
             nomisCSIPId = NOMIS_CSIP_ID,
+            offenderNo = "A1234BC",
             label = "2020-05-23T11:30:00",
             mappingType = MappingType.MIGRATED,
           ),
@@ -948,6 +949,7 @@ internal class CSIPMigrationServiceTest {
           CSIPMappingDto(
             dpsCSIPId = DPS_CSIP_ID,
             nomisCSIPId = NOMIS_CSIP_ID,
+            offenderNo = "A1234BC",
             mappingType = MappingType.NOMIS_CREATED,
           ),
         )

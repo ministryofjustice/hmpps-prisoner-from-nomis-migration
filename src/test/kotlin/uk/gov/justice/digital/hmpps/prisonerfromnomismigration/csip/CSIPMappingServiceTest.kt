@@ -105,6 +105,7 @@ internal class CSIPMappingServiceTest {
           CSIPMappingDto(
             dpsCSIPId = DPS_CSIP_ID,
             nomisCSIPId = NOMIS_CSIP_ID,
+            offenderNo = "A1234BC",
             label = "some-migration-id",
             mappingType = MIGRATED,
           ),
@@ -126,6 +127,7 @@ internal class CSIPMappingServiceTest {
               dpsCSIPId = DPS_CSIP_ID,
               nomisCSIPId = NOMIS_CSIP_ID,
               mappingType = MIGRATED,
+              offenderNo = "A1234BC",
               label = "5678",
               whenCreated = "2020-01-01T00:00:00",
             ),
@@ -140,6 +142,7 @@ internal class CSIPMappingServiceTest {
                   {
                   "dpsCSIPId": "$DPS_CSIP_ID",
                   "nomisCSIPId": $NOMIS_CSIP_ID,                                       
+                  "offenderNo": "A1234BC",
                   "label": "5678",
                   "mappingType": "MIGRATED",
                   "whenCreated": "2020-01-01T00:00:00"
@@ -166,6 +169,7 @@ internal class CSIPMappingServiceTest {
             CSIPMappingDto(
               dpsCSIPId = DPS_CSIP_ID,
               nomisCSIPId = NOMIS_CSIP_ID,
+              offenderNo = "A1234BC",
               mappingType = MIGRATED,
               label = "5678",
               whenCreated = "2020-01-01T00:00:00",
@@ -268,6 +272,7 @@ internal class CSIPMappingServiceTest {
           CSIPMappingDto(
             dpsCSIPId = DPS_CSIP_ID,
             nomisCSIPId = NOMIS_CSIP_ID,
+            offenderNo = "A1234BC",
             label = "some-migration-id",
             mappingType = MIGRATED,
           ),
@@ -288,6 +293,7 @@ internal class CSIPMappingServiceTest {
             CSIPMappingDto(
               dpsCSIPId = DPS_CSIP_ID,
               nomisCSIPId = NOMIS_CSIP_ID,
+              offenderNo = "A1234BC",
               mappingType = MIGRATED,
               label = "5678",
               whenCreated = "2020-01-01T00:00:00",
@@ -303,6 +309,7 @@ internal class CSIPMappingServiceTest {
                   {
                   "dpsCSIPId": "$DPS_CSIP_ID",
                   "nomisCSIPId": $NOMIS_CSIP_ID,                                       
+                  "offenderNo": "A1234BC",
                   "label": "5678",
                   "mappingType": "MIGRATED",
                   "whenCreated": "2020-01-01T00:00:00"
@@ -329,6 +336,7 @@ internal class CSIPMappingServiceTest {
             CSIPMappingDto(
               dpsCSIPId = DPS_CSIP_ID,
               nomisCSIPId = NOMIS_CSIP_ID,
+              offenderNo = "A1234BC",
               mappingType = MIGRATED,
               label = "5678",
               whenCreated = "2020-01-01T00:00:00",
@@ -412,6 +420,7 @@ internal class CSIPMappingServiceTest {
                 {
                   "dpsCSIPId": "$DPS_CSIP_ID",
                   "nomisCSIPId": $NOMIS_CSIP_ID,                                                         
+                  "offenderNo": "A1234BC",
                   "label": "2022-02-16T14:20:15",
                   "mappingType": "MIGRATED",
                   "whenCreated": "2022-02-16T16:21:15.589091"
