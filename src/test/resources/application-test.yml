@@ -65,7 +65,7 @@ courtsentencing:
     count: 1
   page:
     size: 10
-  has-migrated-court-sentencing-data: true
+  has-migrated-data: true
 
 spring:
   r2dbc:
