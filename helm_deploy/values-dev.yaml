@@ -60,8 +60,6 @@ generic-prometheus-alerts:
       - "syscon-devs-dev-prisoner_from_nomis_courtsentencing_dl_queue"
       - "syscon-devs-dev-migration_sentencing_queue"
       - "syscon-devs-dev-migration_sentencing_dlq"
-      - "syscon-devs-dev-migration_courtsentencing_queue"
-      - "syscon-devs-dev-migration_courtsentencing_dlq"
     courtsentencing:
       - "syscon-devs-dev-prisoner_from_nomis_courtsentencing_queue"
       - "syscon-devs-dev-prisoner_from_nomis_courtsentencing_dl_queue"

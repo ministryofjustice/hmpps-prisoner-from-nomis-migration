@@ -35,6 +35,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ACTIVITIE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ADJUDICATIONS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ALLOCATIONS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.APPOINTMENTS_QUEUE_ID
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.COURT_SENTENCING_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CSIP_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.INCIDENTS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.LOCATIONS_QUEUE_ID
@@ -81,6 +82,7 @@ class SqsIntegrationTestBase : TestBase() {
 
   internal val visitsMigrationQueue by lazy { hmppsQueueService.findByQueueId(VISITS_QUEUE_ID) as HmppsQueue }
   internal val sentencingMigrationQueue by lazy { hmppsQueueService.findByQueueId(SENTENCING_ADJUSTMENTS_QUEUE_ID) as HmppsQueue }
+  internal val courtSentencingMigrationQueue by lazy { hmppsQueueService.findByQueueId(COURT_SENTENCING_QUEUE_ID) as HmppsQueue }
   internal val appointmentsMigrationQueue by lazy { hmppsQueueService.findByQueueId(APPOINTMENTS_QUEUE_ID) as HmppsQueue }
   internal val activitiesMigrationQueue by lazy { hmppsQueueService.findByQueueId(ACTIVITIES_QUEUE_ID) as HmppsQueue }
   internal val allocationsMigrationQueue by lazy { hmppsQueueService.findByQueueId(ALLOCATIONS_QUEUE_ID) as HmppsQueue }
@@ -164,6 +166,10 @@ class SqsIntegrationTestBase : TestBase() {
   internal val courtSentencingQueueOffenderEventsDlqUrl by lazy { courtSentencingOffenderEventsQueue.dlqUrl as String }
   internal val awsSqsCourtSentencingOffenderEventsClient by lazy { courtSentencingOffenderEventsQueue.sqsClient }
   internal val awsSqsCourtSentencingOffenderEventDlqClient by lazy { courtSentencingOffenderEventsQueue.sqsDlqClient as SqsAsyncClient }
+  internal val courtSentencingMigrationUrl by lazy { courtSentencingMigrationQueue.queueUrl }
+  internal val courtSentencingMigrationDlqUrl by lazy { courtSentencingMigrationQueue.dlqUrl as String }
+  internal val awsSqsCourtSentencingMigrationClient by lazy { courtSentencingMigrationQueue.sqsClient }
+  internal val awsSqsCourtSentencingMigrationDlqClient by lazy { courtSentencingMigrationQueue.sqsDlqClient }
 
   internal val prisonPersonOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId("eventprisonperson") as HmppsQueue }
   internal val prisonPersonQueueOffenderEventsUrl by lazy { prisonPersonOffenderEventsQueue.queueUrl }

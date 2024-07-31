@@ -32,7 +32,7 @@ class CourtSentencingMigrationMessageListener(
     maxMessagesPerPoll = "8",
   )
   @WithSpan(value = "dps-syscon-migration_courtsentencing_queue", kind = SpanKind.SERVER)
-  fun onAlertsMessage(message: String, rawMessage: Message): CompletableFuture<Void>? {
+  fun onCourtSentencingMessage(message: String, rawMessage: Message): CompletableFuture<Void>? {
     return onMessage(message, rawMessage)
   }
 
