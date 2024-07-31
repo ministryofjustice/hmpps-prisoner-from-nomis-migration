@@ -36,7 +36,7 @@ class CourtSentencingSynchronisationService(
   private val dpsApiService: CourtSentencingDpsApiService,
   private val queueService: SynchronisationQueueService,
   private val telemetryClient: TelemetryClient,
-  @Value("\${court.sentencing.has-migrated-court-case-data:false}")
+  @Value("\${court.sentencing.has-migrated-court-sentencing-data:false}")
   private val hasMigratedAllData: Boolean,
 ) {
   private companion object {
