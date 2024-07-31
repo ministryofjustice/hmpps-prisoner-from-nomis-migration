@@ -78,6 +78,7 @@ class CSIPMigrationService(
             createCSIPMapping(
               nomisCSIPId = nomisCSIPId,
               dpsCSIPId = it.recordUuid.toString(),
+              offenderNo = nomisCSIPResponse.offender.offenderNo,
               context = context,
             )
           }
@@ -95,12 +96,14 @@ class CSIPMigrationService(
   private suspend fun createCSIPMapping(
     nomisCSIPId: Long,
     dpsCSIPId: String,
+    offenderNo: String,
     context: MigrationContext<*>,
   ) = try {
     csipMappingService.createMapping(
       CSIPMappingDto(
         nomisCSIPId = nomisCSIPId,
         dpsCSIPId = dpsCSIPId,
+        offenderNo = offenderNo,
         label = context.migrationId,
         mappingType = CSIPMappingDto.MappingType.MIGRATED,
       ),
@@ -133,6 +136,7 @@ class CSIPMigrationService(
         body = CSIPMappingDto(
           nomisCSIPId = nomisCSIPId,
           dpsCSIPId = dpsCSIPId,
+          offenderNo = offenderNo,
           mappingType = CSIPMappingDto.MappingType.MIGRATED,
         ),
       ),
