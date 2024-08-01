@@ -49,8 +49,6 @@ jobs:
           key: gradle-{{ checksum "build.gradle.kts" }}
 
   tests:
-    requires:
-      - validate
     parallelism: << pipeline.parameters.test-executors-count >>
     resource_class: large
     executor:
@@ -175,6 +173,8 @@ workflows:
           filters:
             tags:
               ignore: /.*/
+          requires:
+            - validate
       - hmpps/helm_lint:
           name: helm_lint
       - hmpps/build_multiplatform_docker:
