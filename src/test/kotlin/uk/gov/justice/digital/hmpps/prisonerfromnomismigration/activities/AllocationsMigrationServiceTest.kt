@@ -626,7 +626,7 @@ class AllocationsMigrationServiceTest {
     @Test
     internal fun `will NOT throw but will publish a retry mapping message after an error creating the new mapping`(): Unit =
       runBlocking {
-        whenever(mappingService.createMapping(any(), any())).thenThrow(WebClientResponseException.BadGateway::class.java)
+        whenever(mappingService.createMapping(any(), any())).thenThrow(WebClientResponseException(HttpStatus.BAD_GATEWAY, "error", null, null, null, null))
 
         assertDoesNotThrow {
           service.migrateNomisEntity(
