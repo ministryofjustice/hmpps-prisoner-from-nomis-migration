@@ -173,6 +173,7 @@ tasks.register("buildIncidentsApiModel", GenerateTask::class) {
 
 tasks.register("buildCsipApiModel", GenerateTask::class) {
   generatorName.set("kotlin")
+  skipValidateSpec.set(true)
   inputSpec.set("openapi-specs/csip-api-docs.json")
   outputDir.set("$buildDirectory/generated/csip")
   modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model")
