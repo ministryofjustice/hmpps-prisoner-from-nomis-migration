@@ -43,6 +43,8 @@ jobs:
           paths:
             - build
             - src
+            - build.gradle.kts
+
       - save_cache:
           paths:
             - ~/.gradle
