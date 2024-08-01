@@ -19,7 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Synchroni
 class CSIPFactorSynchronisationService(
   private val nomisApiService: CSIPNomisApiService,
   private val mappingApiService: CSIPMappingService,
-  private val csipService: CSIPService,
+  private val csipService: CSIPDpsApiService,
   private val telemetryClient: TelemetryClient,
   private val queueService: SynchronisationQueueService,
 ) {

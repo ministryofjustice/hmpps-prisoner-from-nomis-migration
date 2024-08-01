@@ -507,8 +507,9 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withHeader("Username", equalTo("FRED_ADM"))
                 .withRequestBody(matchingJsonPath("outcomeTypeCode", equalTo("CUR")))
                 .withRequestBody(matchingJsonPath("date", equalTo("2024-04-08")))
-                .withRequestBody(matchingJsonPath("reasonForDecision", equalTo("There is a reason for the decision - it goes here"))),
-              // TODO check referred By and referred Date are passed in/needed
+                .withRequestBody(matchingJsonPath("reasonForDecision", equalTo("There is a reason for the decision - it goes here")))
+                .withRequestBody(matchingJsonPath("recordedBy", equalTo("FRED_ADM")))
+                .withRequestBody(matchingJsonPath("recordedByDisplayName", equalTo("Fred Admin"))),
             )
           }
         }

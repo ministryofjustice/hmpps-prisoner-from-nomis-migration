@@ -169,6 +169,8 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
         outcomeTypeCode = "CUR",
         date = LocalDate.parse("2024-04-08"),
         reasonForDecision = "There is a reason for the decision - it goes here",
+        recordedBy = "BOB_ADM",
+        recordedByDisplayName = "Bob Admin",
       )
 
     fun dpsSaferCustodyScreening() =

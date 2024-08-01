@@ -28,7 +28,7 @@ class CSIPMigrationService(
   migrationHistoryService: MigrationHistoryService,
   telemetryClient: TelemetryClient,
   auditService: AuditService,
-  private val csipService: CSIPService,
+  private val csipService: CSIPDpsApiService,
   private val csipMappingService: CSIPMappingService,
   @Value("\${csip.page.size:1000}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,

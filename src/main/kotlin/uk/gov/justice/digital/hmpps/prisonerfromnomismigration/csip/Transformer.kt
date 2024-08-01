@@ -125,6 +125,8 @@ fun SaferCustodyScreening.toDPSCreateCSIPSCS() =
     outcomeTypeCode = outcome!!.code,
     date = this.recordedDate!!,
     reasonForDecision = reasonForDecision!!,
+    recordedBy = recordedBy!!,
+    recordedByDisplayName = recordedByDisplayName!!,
   )
 
 // ////// From OIDCSIPC - but FACTORS-CREATED/UPDATED event ////////////////////////////

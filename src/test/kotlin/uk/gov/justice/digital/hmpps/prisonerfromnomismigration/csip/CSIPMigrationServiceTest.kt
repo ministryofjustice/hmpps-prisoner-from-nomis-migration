@@ -68,7 +68,7 @@ internal class CSIPMigrationServiceTest {
   private val migrationHistoryService: MigrationHistoryService = mock()
   private val telemetryClient: TelemetryClient = mock()
   private val auditService: AuditService = mock()
-  private val csipService: CSIPService = mock()
+  private val csipService: CSIPDpsApiService = mock()
   private val csipMappingService: CSIPMappingService = mock()
   val service = CSIPMigrationService(
     nomisApiService = nomisApiService,

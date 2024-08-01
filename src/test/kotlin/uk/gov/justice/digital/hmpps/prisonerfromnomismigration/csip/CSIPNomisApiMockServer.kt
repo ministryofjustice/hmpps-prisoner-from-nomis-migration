@@ -64,6 +64,7 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
             description = "Progress to CSIP",
           ),
           recordedBy = "FRED_ADM",
+          recordedByDisplayName = "Fred Admin",
           recordedDate = LocalDate.parse("2024-04-08"),
           reasonForDecision = "There is a reason for the decision - it goes here",
         ),
