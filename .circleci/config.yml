@@ -38,12 +38,6 @@ jobs:
             - gradle-
       - run:
           command: ./gradlew check -x test
-      - persist_to_workspace:
-          root: .
-          paths:
-            - build
-            - src
-            - build.gradle.kts
 
       - save_cache:
           paths:
@@ -69,8 +63,7 @@ jobs:
         -Dkotlin.compiler.execution.strategy=in-process -Dorg.gradle.workers.max=1
 
     steps:
-      - attach_workspace:
-          at: .
+      - checkout
       - hmpps/wait_till_ready
       - restore_cache:
           keys:
