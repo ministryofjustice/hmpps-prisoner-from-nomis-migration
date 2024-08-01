@@ -42,8 +42,6 @@ jobs:
           root: .
           paths:
             - build
-            - src
-            - build.gradle.kts
 
       - save_cache:
           paths:
@@ -51,6 +49,8 @@ jobs:
           key: gradle-{{ checksum "build.gradle.kts" }}
 
   tests:
+    requires:
+      - validate
     parallelism: << pipeline.parameters.test-executors-count >>
     resource_class: large
     executor:
@@ -69,7 +69,6 @@ jobs:
         -Dkotlin.compiler.execution.strategy=in-process -Dorg.gradle.workers.max=1
 
     steps:
-      - checkout
       - hmpps/wait_till_ready
       - attach_workspace:
           at: .
