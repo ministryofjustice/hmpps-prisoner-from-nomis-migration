@@ -22,6 +22,14 @@ jobs:
     executor:
       name: hmpps/java
       tag: "21.0"
+    environment:
+      # Setting max gradle workers to 1 (which means 1 running concurrently, not max 1!) - because although this doesn't stop the ktlint workers from starting it does seem to prevent the test executor from needing as much memory.
+      _JAVA_OPTIONS: -Xmx1g -XX:ParallelGCThreads=2 -XX:ConcGCThreads=2
+        -XX:ParallelGCThreads=2
+        -Djava.util.concurrent.ForkJoinPool.common.parallelism=2
+        -Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-XX:+UseContainerSupport
+        -Dkotlin.compiler.execution.strategy=in-process -Dorg.gradle.workers.max=1
+
     steps:
       - checkout
       - restore_cache:
@@ -30,6 +38,13 @@ jobs:
             - gradle-
       - run:
           command: ./gradlew check -x test
+      - persist_to_workspace:
+          root: .
+          paths:
+            - build
+            - src
+            - build.gradle.kts
+
       - save_cache:
           paths:
             - ~/.gradle
@@ -45,9 +60,19 @@ jobs:
       postgres_tag: "16"
       postgres_username: "migration"
       postgres_password: "migration"
+    environment:
+      # Setting max gradle workers to 1 (which means 1 running concurrently, not max 1!) - because although this doesn't stop the ktlint workers from starting it does seem to prevent the test executor from needing as much memory.
+      _JAVA_OPTIONS: -Xmx1g -XX:ParallelGCThreads=2 -XX:ConcGCThreads=2
+        -XX:ParallelGCThreads=2
+        -Djava.util.concurrent.ForkJoinPool.common.parallelism=2
+        -Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-XX:+UseContainerSupport
+        -Dkotlin.compiler.execution.strategy=in-process -Dorg.gradle.workers.max=1
+
     steps:
       - checkout
       - hmpps/wait_till_ready
+      - attach_workspace:
+          at: .
       - restore_cache:
           keys:
             - gradle-{{ checksum "build.gradle.kts" }}
