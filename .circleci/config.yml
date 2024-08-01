@@ -42,6 +42,7 @@ jobs:
           root: .
           paths:
             - build
+            - src
       - save_cache:
           paths:
             - ~/.gradle
@@ -66,7 +67,6 @@ jobs:
         -Dkotlin.compiler.execution.strategy=in-process -Dorg.gradle.workers.max=1
 
     steps:
-      - checkout
       - hmpps/wait_till_ready
       - attach_workspace:
           at: .
