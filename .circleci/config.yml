@@ -69,9 +69,9 @@ jobs:
         -Dkotlin.compiler.execution.strategy=in-process -Dorg.gradle.workers.max=1
 
     steps:
-      - hmpps/wait_till_ready
       - attach_workspace:
           at: .
+      - hmpps/wait_till_ready
       - restore_cache:
           keys:
             - gradle-{{ checksum "build.gradle.kts" }}
