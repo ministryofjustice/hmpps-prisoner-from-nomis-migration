@@ -66,7 +66,7 @@ class CSIPDpsApiService(@Qualifier("csipApiWebClient") private val webClient: We
       .awaitBody()
 
   suspend fun updateCSIPInvestigation(csipReportId: String, investigationRequest: UpdateInvestigationRequest, updatedByUsername: String): Investigation =
-    webClient.patch()
+    webClient.put()
       .uri("/csip-records/{csipReportId}/referral/investigation", csipReportId)
       .header("Source", "NOMIS")
       .header("Username", updatedByUsername)
@@ -75,7 +75,7 @@ class CSIPDpsApiService(@Qualifier("csipApiWebClient") private val webClient: We
       .awaitBody()
 
   suspend fun updateCSIPDecision(csipReportId: String, decisionRequest: UpdateDecisionAndActionsRequest, updatedByUsername: String): DecisionAndActions =
-    webClient.patch()
+    webClient.put()
       .uri("/csip-records/{csipReportId}/referral/decision-and-actions", csipReportId)
       .header("Source", "NOMIS")
       .header("Username", updatedByUsername)
@@ -84,7 +84,7 @@ class CSIPDpsApiService(@Qualifier("csipApiWebClient") private val webClient: We
       .awaitBody()
 
   suspend fun updateCSIPPlan(csipReportId: String, planRequest: UpdatePlanRequest, updatedByUsername: String): Plan =
-    webClient.patch()
+    webClient.put()
       .uri("/csip-records/{csipReportId}/plan", csipReportId)
       .header("Source", "NOMIS")
       .header("Username", updatedByUsername)

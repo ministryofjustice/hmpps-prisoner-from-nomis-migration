@@ -9,6 +9,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.patchRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
@@ -790,7 +791,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will update DPS with the changes specific to the OIDCSIPI screen`() {
           csipApi.verify(
             1,
-            patchRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral/investigation"))
+            putRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral/investigation"))
               .withHeader("Username", equalTo("JSMITH"))
               .withHeader("Source", equalTo("NOMIS"))
               .withRequestBody(matchingJsonPath("staffInvolved", equalTo("some people")))
@@ -883,7 +884,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will update DPS with the changes specific to the OIDCSIPD screen`() {
           csipApi.verify(
             1,
-            patchRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral/decision-and-actions"))
+            putRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral/decision-and-actions"))
               .withHeader("Username", equalTo("JSMITH"))
               .withHeader("Source", equalTo("NOMIS"))
               .withRequestBody(matchingJsonPath("outcomeTypeCode", equalTo("OPE")))
@@ -980,7 +981,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will update DPS with the changes specific to the OIDCSIPP screen`() {
           csipApi.verify(
             1,
-            patchRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/plan"))
+            putRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/plan"))
               .withHeader("Username", equalTo("JSMITH"))
               .withHeader("Source", equalTo("NOMIS"))
               .withRequestBody(matchingJsonPath("caseManager", equalTo("C Jones")))
