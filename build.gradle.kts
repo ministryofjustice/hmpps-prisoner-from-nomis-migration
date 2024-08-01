@@ -43,7 +43,7 @@ dependencies {
 
   testImplementation("org.wiremock:wiremock-standalone:3.7.0")
   testImplementation("org.testcontainers:localstack:1.19.8")
-  testImplementation("com.amazonaws:aws-java-sdk-core:1.12.748")
+  testImplementation("com.amazonaws:aws-java-sdk-core:1.12.766")
   testImplementation("org.awaitility:awaitility-kotlin:4.2.1")
   testImplementation("org.testcontainers:postgresql:1.20.0")
   testImplementation("io.mockk:mockk:1.13.12")
