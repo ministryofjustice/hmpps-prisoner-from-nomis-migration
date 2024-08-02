@@ -6,6 +6,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.notContaining
 import com.github.tomakehurst.wiremock.client.WireMock.patchRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -210,7 +211,7 @@ internal class CSIPDpsApiServiceTest {
     }
 
     @Nested
-    @DisplayName("PATCH /csip-records/{recordUuid}/referral/investigation")
+    @DisplayName("PUT /csip-records/{recordUuid}/referral/investigation")
     inner class UpdateCSIPInvestigation {
       private val dpsCSIPId = UUID.randomUUID().toString()
 
@@ -226,7 +227,7 @@ internal class CSIPDpsApiServiceTest {
       @Test
       fun `should call api with OAuth2 token`() {
         csipApi.verify(
-          patchRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral/investigation"))
+          putRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral/investigation"))
             .withHeader("Authorization", equalTo("Bearer ABCDE")),
         )
       }
@@ -234,7 +235,7 @@ internal class CSIPDpsApiServiceTest {
       @Test
       fun `will pass data to the api`() {
         csipApi.verify(
-          patchRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral/investigation"))
+          putRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral/investigation"))
             .withRequestBody(matchingJsonPath("staffInvolved", equalTo("some people")))
             .withRequestBody(matchingJsonPath("evidenceSecured", equalTo("A piece of pipe")))
             .withRequestBody(matchingJsonPath("occurrenceReason", equalTo("bad behaviour")))
@@ -246,7 +247,7 @@ internal class CSIPDpsApiServiceTest {
     }
 
     @Nested
-    @DisplayName("PATCH /csip-records/{recordUuid}/referral/decision-and-actions")
+    @DisplayName("PUT /csip-records/{recordUuid}/referral/decision-and-actions")
     inner class UpdateCSIPDecision {
       private val dpsCSIPId = UUID.randomUUID().toString()
 
@@ -262,7 +263,7 @@ internal class CSIPDpsApiServiceTest {
       @Test
       fun `should call api with OAuth2 token`() {
         csipApi.verify(
-          patchRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral/decision-and-actions"))
+          putRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral/decision-and-actions"))
             .withHeader("Authorization", equalTo("Bearer ABCDE")),
         )
       }
@@ -270,7 +271,7 @@ internal class CSIPDpsApiServiceTest {
       @Test
       fun `will pass data to the api`() {
         csipApi.verify(
-          patchRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral/decision-and-actions"))
+          putRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral/decision-and-actions"))
             .withRequestBody(matchingJsonPath("outcomeTypeCode", equalTo("CUR")))
             .withRequestBody(matchingJsonPath("signedOffByRoleCode", equalTo("CUSTMAN")))
             .withRequestBody(matchingJsonPath("recordedBy", equalTo("FRED_ADM")))
@@ -285,7 +286,7 @@ internal class CSIPDpsApiServiceTest {
     }
 
     @Nested
-    @DisplayName("PATCH /csip-records/{recordUuid}/plan")
+    @DisplayName("PUT /csip-records/{recordUuid}/plan")
     inner class UpdateCSIPPlan {
       private val dpsCSIPId = UUID.randomUUID().toString()
 
@@ -301,7 +302,7 @@ internal class CSIPDpsApiServiceTest {
       @Test
       fun `should call api with OAuth2 token`() {
         csipApi.verify(
-          patchRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/plan"))
+          putRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/plan"))
             .withHeader("Authorization", equalTo("Bearer ABCDE")),
         )
       }
@@ -309,7 +310,7 @@ internal class CSIPDpsApiServiceTest {
       @Test
       fun `will pass data to the api`() {
         csipApi.verify(
-          patchRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/plan"))
+          putRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/plan"))
             .withRequestBody(matchingJsonPath("caseManager", equalTo("C Jones")))
             .withRequestBody(matchingJsonPath("reasonForPlan", equalTo("helper")))
             .withRequestBody(matchingJsonPath("firstCaseReviewDate", equalTo("2024-04-15"))),

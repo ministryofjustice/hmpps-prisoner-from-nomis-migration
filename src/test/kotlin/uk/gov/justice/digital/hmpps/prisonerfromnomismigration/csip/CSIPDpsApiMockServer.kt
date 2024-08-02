@@ -10,6 +10,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.patch
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
@@ -410,7 +411,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
   // CSIP Investigation
   fun stubCSIPInvestigationUpdate(dpsCSIPId: String) {
     stubFor(
-      patch("/csip-records/$dpsCSIPId/referral/investigation").willReturn(
+      put("/csip-records/$dpsCSIPId/referral/investigation").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(OK.value())
@@ -421,7 +422,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubCSIPUpdateDecision(dpsCSIPId: String) {
     stubFor(
-      patch("/csip-records/$dpsCSIPId/referral/decision-and-actions").willReturn(
+      put("/csip-records/$dpsCSIPId/referral/decision-and-actions").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(OK.value())
@@ -432,7 +433,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubCSIPUpdatePlan(dpsCSIPId: String) {
     stubFor(
-      patch("/csip-records/$dpsCSIPId/plan").willReturn(
+      put("/csip-records/$dpsCSIPId/plan").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(OK.value())
