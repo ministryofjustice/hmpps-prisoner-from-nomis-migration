@@ -235,12 +235,48 @@ class AlertsSynchronisationService(
     val movedToNomsNumber = prisonerMergeEvent.additionalInformation.movedToNomsNumber
     val movedFromNomsNumber = prisonerMergeEvent.additionalInformation.movedFromNomsNumber
 
-    val alerts = nomisApiService.getAlertsToResynchronise(movedFromNomsNumber) ?: PrisonerAlertsResponse(emptyList())
+    synchronisePrisonerBookingMovedForPrisoner(
+      MoveBookingForPrisoner(
+        bookingId = bookingId,
+        offenderNo = movedFromNomsNumber,
+        whichPrisoner = WhichMoveBookingPrisoner.FROM,
+      ),
+    )
+
+    queueService.sendMessage(
+      messageType = SynchronisationMessageType.RESYNCHRONISE_MOVE_BOOKING_TARGET.name,
+      synchronisationType = SynchronisationType.ALERTS,
+      message = MoveBookingForPrisoner(
+        bookingId = bookingId,
+        offenderNo = movedToNomsNumber,
+        whichPrisoner = WhichMoveBookingPrisoner.FROM,
+      ),
+    )
+  }
+
+  suspend fun synchronisePrisonerBookingMovedForPrisonerIfNecessary(movePrisonerMessage: InternalMessage<MoveBookingForPrisoner>) {
+    log.debug("TODO: resynchronised target prisoner ${movePrisonerMessage.body.offenderNo} if inactive")
+  }
+
+  enum class WhichMoveBookingPrisoner {
+    FROM,
+    TO,
+  }
+  data class MoveBookingForPrisoner(
+    val bookingId: Long,
+    val offenderNo: String,
+    val whichPrisoner: WhichMoveBookingPrisoner,
+  )
+  suspend fun synchronisePrisonerBookingMovedForPrisoner(movePrisoner: MoveBookingForPrisoner) {
+    val bookingId = movePrisoner.bookingId
+    val offenderNo = movePrisoner.offenderNo
+
+    val alerts = nomisApiService.getAlertsToResynchronise(offenderNo) ?: PrisonerAlertsResponse(emptyList())
     val alertsToResynchronise = alerts.latestBookingAlerts.map { it.toDPSResyncAlert() }
     val telemetry = mapOf(
       "bookingId" to bookingId,
-      "movedToNomsNumber" to movedToNomsNumber,
-      "movedFromNomsNumber" to movedFromNomsNumber,
+      "whichPrisoner" to movePrisoner.whichPrisoner.name,
+      "offenderNo" to offenderNo,
       "alertsCount" to alertsToResynchronise.size,
       "alerts" to alertsToResynchronise.map { it.alertSeq }.joinToString(),
     )
@@ -249,7 +285,7 @@ class AlertsSynchronisationService(
     // receiving the booking would have already been updated via the
     // prisoner receive event
     dpsApiService.resynchroniseAlerts(
-      offenderNo = movedFromNomsNumber,
+      offenderNo = offenderNo,
       alerts = alertsToResynchronise,
     ).also {
       val prisonerMappings = PrisonerAlertMappingsDto(
@@ -263,7 +299,7 @@ class AlertsSynchronisationService(
         },
       )
 
-      tryToReplaceMappings(offenderNo = movedFromNomsNumber, prisonerMappings = prisonerMappings, telemetry)
+      tryToReplaceMappings(offenderNo = offenderNo, prisonerMappings = prisonerMappings, telemetry)
       telemetryClient.trackEvent(
         "from-nomis-synch-alerts-booking-moved",
         telemetry,

@@ -1170,7 +1170,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
             movedToNomsNumber = movedToNomsNumber,
           ),
         )
-        waitForAnyProcessingToComplete()
+        waitForAnyProcessingToComplete("from-nomis-synch-alerts-booking-moved")
       }
 
       @Test
@@ -1209,8 +1209,8 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
           eq("from-nomis-synch-alerts-booking-moved"),
           check {
             assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
-            assertThat(it["movedToNomsNumber"]).isEqualTo(movedToNomsNumber)
-            assertThat(it["movedFromNomsNumber"]).isEqualTo(movedFromNomsNumber)
+            assertThat(it["whichPrisoner"]).isEqualTo("FROM")
+            assertThat(it["offenderNo"]).isEqualTo(movedFromNomsNumber)
             assertThat(it["alertsCount"]).isEqualTo("2")
             assertThat(it["alerts"]).isEqualTo("1, 2")
           },
@@ -1287,8 +1287,8 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
           eq("from-nomis-synch-alerts-booking-moved"),
           check {
             assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
-            assertThat(it["movedToNomsNumber"]).isEqualTo(movedToNomsNumber)
-            assertThat(it["movedFromNomsNumber"]).isEqualTo(movedFromNomsNumber)
+            assertThat(it["whichPrisoner"]).isEqualTo("FROM")
+            assertThat(it["offenderNo"]).isEqualTo(movedFromNomsNumber)
             assertThat(it["alertsCount"]).isEqualTo("2")
             assertThat(it["alerts"]).isEqualTo("1, 2")
           },
@@ -1298,8 +1298,8 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
           eq("alert-mapping-replace-success"),
           check {
             assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
-            assertThat(it["movedToNomsNumber"]).isEqualTo(movedToNomsNumber)
-            assertThat(it["movedFromNomsNumber"]).isEqualTo(movedFromNomsNumber)
+            assertThat(it["whichPrisoner"]).isEqualTo("FROM")
+            assertThat(it["offenderNo"]).isEqualTo(movedFromNomsNumber)
             assertThat(it["alertsCount"]).isEqualTo("2")
             assertThat(it["alerts"]).isEqualTo("1, 2")
           },
