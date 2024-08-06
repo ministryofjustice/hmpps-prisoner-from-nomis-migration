@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RESYNCHRONISE_MOVE_BOOKING_TARGET
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_RESYNCHRONISATION_MAPPING_BATCH
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_RESYNCHRONISATION_MERGED_MAPPING_BATCH
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
@@ -68,6 +69,7 @@ class AlertsEventListener(
         RETRY_RESYNCHRONISATION_MERGED_MAPPING_BATCH.name -> alertsSynchronisationService.retryReplaceMergedMappingsBatch(
           sqsMessage.Message.fromJson(),
         )
+        RESYNCHRONISE_MOVE_BOOKING_TARGET.name -> alertsSynchronisationService.synchronisePrisonerBookingMovedForPrisonerIfNecessary(sqsMessage.Message.fromJson())
       }
     }
   }
