@@ -14,6 +14,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.B
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerAlertsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -182,6 +183,19 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
+  fun stubGetPrisonerDetails(offenderNo: String, prisonerDetails: PrisonerDetails = prisonerDetails()) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/prisoners/$offenderNo")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(objectMapper.writeValueAsString(prisonerDetails)),
+      ),
+    )
+  }
+
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
 }
+
+fun prisonerDetails(): PrisonerDetails = PrisonerDetails(offenderNo = "A1234KT", bookingId = 1234, location = "MDI", active = true)

@@ -12,6 +12,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.reset
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -231,8 +232,14 @@ class SqsIntegrationTestBase : TestBase() {
     await untilAsserted { verify(telemetryClient).trackEvent(any(), any(), isNull()) }
   }
 
-  internal fun waitForAnyProcessingToComplete(name: String) {
-    await untilAsserted { verify(telemetryClient).trackEvent(eq(name), any(), isNull()) }
+  internal fun waitForAnyProcessingToComplete(name: String, times: Int = 1) {
+    await untilAsserted { verify(telemetryClient, times(times)).trackEvent(eq(name), any(), isNull()) }
+  }
+
+  internal fun waitForAnyProcessingToComplete(vararg names: String) {
+    names.forEach {
+      await untilAsserted { verify(telemetryClient, times(1)).trackEvent(eq(it), any(), isNull()) }
+    }
   }
 
   companion object {
