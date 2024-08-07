@@ -245,4 +245,39 @@ class AlertsNomisApiServiceTest {
       assertThat(previousBookingIds.bookingSequence).isEqualTo(2)
     }
   }
+
+  @Nested
+  inner class GetPrisonerDetails {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      alertsNomisApiMockServer.stubGetPrisonerDetails(offenderNo = "A1234TT")
+
+      apiService.getPrisonerDetails("A1234TT")
+
+      alertsNomisApiMockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass NOMIS id to service`() = runTest {
+      alertsNomisApiMockServer.stubGetPrisonerDetails(offenderNo = "A1234TT")
+
+      apiService.getPrisonerDetails("A1234TT")
+
+      alertsNomisApiMockServer.verify(
+        getRequestedFor(urlPathEqualTo("/prisoners/A1234TT")),
+      )
+    }
+
+    @Test
+    fun `will return status`() = runTest {
+      alertsNomisApiMockServer.stubGetPrisonerDetails(offenderNo = "A1234TT", prisonerDetails = prisonerDetails().copy(active = false, location = "OUT"))
+
+      val details = apiService.getPrisonerDetails("A1234TT")
+
+      assertThat(details.active).isFalse()
+      assertThat(details.location).isEqualTo("OUT")
+    }
+  }
 }
