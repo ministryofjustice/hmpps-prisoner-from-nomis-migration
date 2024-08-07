@@ -19,7 +19,7 @@ configurations {
 dependencies {
   implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:1.0.3")
   implementation("org.springframework.boot:spring-boot-starter-webflux")
-  implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:4.1.0")
+  implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:4.2.0")
   implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
 
   implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.6.0")
@@ -44,7 +44,7 @@ dependencies {
   testImplementation("org.wiremock:wiremock-standalone:3.9.1")
   testImplementation("org.testcontainers:localstack:1.20.1")
   testImplementation("com.amazonaws:aws-java-sdk-core:1.12.767")
-  testImplementation("org.awaitility:awaitility-kotlin:4.2.1")
+  testImplementation("org.awaitility:awaitility-kotlin:4.2.2")
   testImplementation("org.testcontainers:postgresql:1.20.1")
   testImplementation("io.mockk:mockk:1.13.12")
   testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
