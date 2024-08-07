@@ -29,6 +29,7 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AllocationMigrateResponse
@@ -532,7 +533,7 @@ class AllocationsMigrationServiceTest {
     @Test
     internal fun `will throw after an error checking the mapping service so the message is rejected and retried`(): Unit =
       runBlocking {
-        whenever(mappingService.findNomisMapping(any())).thenThrow(WebClientResponseException.create(HttpStatus.BAD_GATEWAY, "error", null, null, null, null))
+        whenever(mappingService.findNomisMapping(any())).thenThrow(WebClientResponseException.create(HttpStatus.BAD_GATEWAY, "error", HttpHeaders.EMPTY, ByteArray(0), null, null))
 
         assertThrows<WebClientResponseException.BadGateway> {
           service.migrateNomisEntity(
@@ -551,7 +552,7 @@ class AllocationsMigrationServiceTest {
     @Test
     internal fun `will throw after an error retrieving the Nomis entity so the message is rejected and retried`(): Unit =
       runBlocking {
-        whenever(nomisApiService.getAllocation(any())).thenThrow(WebClientResponseException.create(HttpStatus.BAD_GATEWAY, "error", null, null, null, null))
+        whenever(nomisApiService.getAllocation(any())).thenThrow(WebClientResponseException.create(HttpStatus.BAD_GATEWAY, "error", HttpHeaders.EMPTY, ByteArray(0), null, null))
 
         assertThrows<WebClientResponseException.BadGateway> {
           service.migrateNomisEntity(
@@ -579,7 +580,7 @@ class AllocationsMigrationServiceTest {
     @Test
     internal fun `will throw after an error retrieving the activity mapping so the message is rejected and retried`(): Unit =
       runBlocking {
-        whenever(activityMappingService.findNomisMapping(any())).thenThrow(WebClientResponseException.create(HttpStatus.NOT_FOUND, "error", null, null, null, null))
+        whenever(activityMappingService.findNomisMapping(any())).thenThrow(WebClientResponseException.create(HttpStatus.NOT_FOUND, "error", HttpHeaders.EMPTY, ByteArray(0), null, null))
 
         assertThrows<WebClientResponseException.NotFound> {
           service.migrateNomisEntity(
@@ -607,7 +608,7 @@ class AllocationsMigrationServiceTest {
     @Test
     internal fun `will throw after an error creating the allocations entity so the message is rejected and retried`(): Unit =
       runBlocking {
-        whenever(activitiesApiService.migrateAllocation(any())).thenThrow(WebClientResponseException.create(HttpStatus.BAD_GATEWAY, "error", null, null, null, null))
+        whenever(activitiesApiService.migrateAllocation(any())).thenThrow(WebClientResponseException.create(HttpStatus.BAD_GATEWAY, "error", HttpHeaders.EMPTY, ByteArray(0), null, null))
 
         assertThrows<WebClientResponseException.BadGateway> {
           service.migrateNomisEntity(

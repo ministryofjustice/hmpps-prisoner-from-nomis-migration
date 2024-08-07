@@ -1162,6 +1162,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
           ),
         )
         alertsMappingApiMockServer.stubReplaceMappings(movedFromNomsNumber)
+        alertsNomisApiMockServer.stubGetPrisonerDetails(offenderNo = movedToNomsNumber, prisonerDetails().copy(location = "MDI", active = true))
         awsSqsSentencingOffenderEventsClient.sendMessage(
           alertsQueueOffenderEventsUrl,
           bookingMovedDomainEvent(
@@ -1170,7 +1171,7 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
             movedToNomsNumber = movedToNomsNumber,
           ),
         )
-        waitForAnyProcessingToComplete("from-nomis-synch-alerts-booking-moved")
+        waitForAnyProcessingToComplete("from-nomis-synch-alerts-booking-moved", "from-nomis-synch-alerts-booking-moved-ignored")
       }
 
       @Test
@@ -1204,6 +1205,11 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
+      fun `will check the to prisoner is active`() {
+        alertsNomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/prisoners/$movedToNomsNumber")))
+      }
+
+      @Test
       fun `will track telemetry for the booking move`() {
         verify(telemetryClient).trackEvent(
           eq("from-nomis-synch-alerts-booking-moved"),
@@ -1213,6 +1219,136 @@ class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
             assertThat(it["offenderNo"]).isEqualTo(movedFromNomsNumber)
             assertThat(it["alertsCount"]).isEqualTo("2")
             assertThat(it["alerts"]).isEqualTo("1, 2")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will track no further active require for the to prisoner`() {
+        verify(telemetryClient).trackEvent(
+          eq("from-nomis-synch-alerts-booking-moved-ignored"),
+          check {
+            assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["whichPrisoner"]).isEqualTo("TO")
+            assertThat(it["offenderNo"]).isEqualTo(movedToNomsNumber)
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class HappyPathWithInactiveBooking {
+      private val movedBookingId = BOOKING_ID
+      private val bookingIdForFromPrisoner = BOOKING_ID + 1
+      private val bookingIdForToPrisoner = movedBookingId
+      private val movedToNomsNumber = "A1234KT"
+      private val movedFromNomsNumber = "A1000KT"
+      private val dpsAlertId1 = UUID.fromString("956d4326-b0c3-47ac-ab12-f0165109a6c5")
+      private val dpsAlertId2 = UUID.fromString("f612a10f-4827-4022-be96-d882193dfabd")
+      private val dpsAlertId3 = UUID.fromString("ca1b4421-e463-42ac-b036-6df5aed308f7")
+
+      @BeforeEach
+      fun setUp() {
+        alertsNomisApiMockServer.stubGetAlertsToResynchronise(movedFromNomsNumber, bookingId = bookingIdForFromPrisoner, currentAlertCount = 2)
+        alertsNomisApiMockServer.stubGetAlertsToResynchronise(movedToNomsNumber, bookingId = bookingIdForToPrisoner, currentAlertCount = 1)
+        dpsAlertsServer.stubResynchroniseAlerts(
+          offenderNo = movedFromNomsNumber,
+          response = listOf(
+            resyncedAlert().copy(offenderBookId = bookingIdForFromPrisoner, alertSeq = 1, alertUuid = dpsAlertId1),
+            resyncedAlert().copy(offenderBookId = bookingIdForFromPrisoner, alertSeq = 2, alertUuid = dpsAlertId2),
+          ),
+        )
+        dpsAlertsServer.stubResynchroniseAlerts(
+          offenderNo = movedToNomsNumber,
+          response = listOf(
+            resyncedAlert().copy(offenderBookId = bookingIdForToPrisoner, alertSeq = 1, alertUuid = dpsAlertId3),
+          ),
+        )
+        alertsMappingApiMockServer.stubReplaceMappings(movedFromNomsNumber)
+        alertsMappingApiMockServer.stubReplaceMappings(movedToNomsNumber)
+        alertsNomisApiMockServer.stubGetPrisonerDetails(offenderNo = movedToNomsNumber, prisonerDetails().copy(location = "OUT", active = false))
+        awsSqsSentencingOffenderEventsClient.sendMessage(
+          alertsQueueOffenderEventsUrl,
+          bookingMovedDomainEvent(
+            bookingId = movedBookingId,
+            movedFromNomsNumber = movedFromNomsNumber,
+            movedToNomsNumber = movedToNomsNumber,
+          ),
+        )
+        waitForAnyProcessingToComplete("from-nomis-synch-alerts-booking-moved", times = 2)
+      }
+
+      @Test
+      fun `will retrieve alerts for both prisoners that has changed`() {
+        alertsNomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/prisoners/$movedFromNomsNumber/alerts/to-migrate")))
+        alertsNomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/prisoners/$movedToNomsNumber/alerts/to-migrate")))
+      }
+
+      @Test
+      fun `will send all alerts to DPS for both prisoners`() {
+        dpsAlertsServer.verify(
+          postRequestedFor(urlPathEqualTo("/resync/$movedFromNomsNumber/alerts"))
+            .withRequestBodyJsonPath("[0].offenderBookId", "$bookingIdForFromPrisoner")
+            .withRequestBodyJsonPath("[0].alertSeq", "1")
+            .withRequestBodyJsonPath("[1].offenderBookId", "$bookingIdForFromPrisoner")
+            .withRequestBodyJsonPath("[1].alertSeq", "2"),
+        )
+        dpsAlertsServer.verify(
+          postRequestedFor(urlPathEqualTo("/resync/$movedToNomsNumber/alerts"))
+            .withRequestBodyJsonPath("[0].offenderBookId", "$bookingIdForToPrisoner")
+            .withRequestBodyJsonPath("[0].alertSeq", "1"),
+        )
+      }
+
+      @Test
+      fun `will create a mapping between the DPS and NOMIS alerts for both prisoners`() {
+        alertsMappingApiMockServer.verify(
+          putRequestedFor(urlPathEqualTo("/mapping/alerts/$movedFromNomsNumber/all"))
+            .withRequestBodyJsonPath("mappings[0].nomisBookingId", "$bookingIdForFromPrisoner")
+            .withRequestBodyJsonPath("mappings[0].nomisAlertSequence", "1")
+            .withRequestBodyJsonPath("mappings[0].dpsAlertId", "$dpsAlertId1")
+            .withRequestBodyJsonPath("mappings[1].nomisBookingId", "$bookingIdForFromPrisoner")
+            .withRequestBodyJsonPath("mappings[1].nomisAlertSequence", "2")
+            .withRequestBodyJsonPath("mappings[1].dpsAlertId", "$dpsAlertId2")
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
+        )
+        alertsMappingApiMockServer.verify(
+          putRequestedFor(urlPathEqualTo("/mapping/alerts/$movedToNomsNumber/all"))
+            .withRequestBodyJsonPath("mappings[0].nomisBookingId", "$bookingIdForToPrisoner")
+            .withRequestBodyJsonPath("mappings[0].nomisAlertSequence", "1")
+            .withRequestBodyJsonPath("mappings[0].dpsAlertId", "$dpsAlertId3")
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
+        )
+      }
+
+      @Test
+      fun `will check the to prisoner is active`() {
+        alertsNomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/prisoners/$movedToNomsNumber")))
+      }
+
+      @Test
+      fun `will track telemetry for the booking move for both prisoners`() {
+        verify(telemetryClient).trackEvent(
+          eq("from-nomis-synch-alerts-booking-moved"),
+          check {
+            assertThat(it["bookingId"]).isEqualTo(movedBookingId.toString())
+            assertThat(it["whichPrisoner"]).isEqualTo("FROM")
+            assertThat(it["offenderNo"]).isEqualTo(movedFromNomsNumber)
+            assertThat(it["alertsCount"]).isEqualTo("2")
+            assertThat(it["alerts"]).isEqualTo("1, 2")
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("from-nomis-synch-alerts-booking-moved"),
+          check {
+            assertThat(it["bookingId"]).isEqualTo(movedBookingId.toString())
+            assertThat(it["whichPrisoner"]).isEqualTo("TO")
+            assertThat(it["offenderNo"]).isEqualTo(movedToNomsNumber)
+            assertThat(it["alertsCount"]).isEqualTo("1")
+            assertThat(it["alerts"]).isEqualTo("1")
           },
           isNull(),
         )

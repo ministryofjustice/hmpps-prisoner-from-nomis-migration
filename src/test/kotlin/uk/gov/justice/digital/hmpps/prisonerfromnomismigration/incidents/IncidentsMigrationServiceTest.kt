@@ -32,6 +32,7 @@ import org.mockito.kotlin.whenever
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
@@ -950,7 +951,7 @@ internal class IncidentsMigrationServiceTest {
     internal fun `will throw after an error from the incidents api service so the message is rejected and retried`(): Unit =
       runBlocking {
         whenever(nomisApiService.getIncident(any())).thenReturn(aNomisIncidentResponse())
-        whenever(incidentsService.upsertIncident(any())).thenThrow(WebClientResponseException.create(HttpStatus.BAD_GATEWAY, "error", null, null, null, null))
+        whenever(incidentsService.upsertIncident(any())).thenThrow(WebClientResponseException.create(HttpStatus.BAD_GATEWAY, "error", HttpHeaders.EMPTY, ByteArray(0), null, null))
 
         assertThrows<WebClientResponseException.BadGateway> {
           service.migrateNomisEntity(
@@ -979,7 +980,7 @@ internal class IncidentsMigrationServiceTest {
     @Test
     internal fun `will throw after an error retrieving the Nomis entity so the message is rejected and retried`(): Unit =
       runBlocking {
-        whenever(nomisApiService.getIncident(any())).thenThrow(WebClientResponseException.create(HttpStatus.BAD_GATEWAY, "error", null, null, null, null))
+        whenever(nomisApiService.getIncident(any())).thenThrow(WebClientResponseException.create(HttpStatus.BAD_GATEWAY, "error", HttpHeaders.EMPTY, ByteArray(0), null, null))
 
         assertThrows<WebClientResponseException.BadGateway> {
           service.migrateNomisEntity(

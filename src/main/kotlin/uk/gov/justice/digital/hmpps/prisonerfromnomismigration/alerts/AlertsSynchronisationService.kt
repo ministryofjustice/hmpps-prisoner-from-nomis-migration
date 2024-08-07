@@ -249,13 +249,35 @@ class AlertsSynchronisationService(
       message = MoveBookingForPrisoner(
         bookingId = bookingId,
         offenderNo = movedToNomsNumber,
-        whichPrisoner = WhichMoveBookingPrisoner.FROM,
+        whichPrisoner = WhichMoveBookingPrisoner.TO,
       ),
     )
   }
 
   suspend fun synchronisePrisonerBookingMovedForPrisonerIfNecessary(movePrisonerMessage: InternalMessage<MoveBookingForPrisoner>) {
-    log.debug("TODO: resynchronised target prisoner ${movePrisonerMessage.body.offenderNo} if inactive")
+    val movePrisoner = movePrisonerMessage.body
+    val bookingId = movePrisoner.bookingId
+    val offenderNo = movePrisoner.offenderNo
+
+    val prisonerDetails = nomisApiService.getPrisonerDetails(movePrisonerMessage.body.offenderNo)
+    if (prisonerDetails.active) {
+      telemetryClient.trackEvent(
+        "from-nomis-synch-alerts-booking-moved-ignored",
+        mapOf(
+          "bookingId" to bookingId,
+          "whichPrisoner" to movePrisoner.whichPrisoner.name,
+          "offenderNo" to offenderNo,
+        ),
+      )
+    } else {
+      synchronisePrisonerBookingMovedForPrisoner(
+        MoveBookingForPrisoner(
+          bookingId = bookingId,
+          offenderNo = offenderNo,
+          whichPrisoner = WhichMoveBookingPrisoner.TO,
+        ),
+      )
+    }
   }
 
   enum class WhichMoveBookingPrisoner {
