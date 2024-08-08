@@ -323,10 +323,17 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
         }
 
         @Test
-        fun `will repeatedly fail to retrieve mapping`() {
+        fun `will give up if it fails to retrieve mapping`() {
           await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("locations-synchronisation-skipped-usage"),
+              check {
+                assertThat(it["nomisLocationId"]).isEqualTo("$NOMIS_LOCATION_ID")
+              },
+              isNull(),
+            )
             mappingApi.verify(
-              moreThanOrExactly(2),
+              exactly(1),
               getRequestedFor(urlPathEqualTo(NOMIS_MAPPING_API_URL)),
             )
           }
