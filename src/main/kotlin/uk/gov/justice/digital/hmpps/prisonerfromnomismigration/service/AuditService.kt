@@ -5,6 +5,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
+import software.amazon.awssdk.services.sqs.model.MessageAttributeValue
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.hmpps.kotlin.auth.HmppsReactiveAuthenticationHolder
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
@@ -39,7 +40,11 @@ class AuditService(
     )
     log.debug("Audit queue name {} {} {}", queueUrl, auditEvent, awsSqsClient)
     awsSqsClient.sendMessage(
-      SendMessageRequest.builder().queueUrl(queueUrl).messageBody(mapper.writeValueAsString(auditEvent)).build(),
+      SendMessageRequest.builder()
+        .queueUrl(queueUrl)
+        .messageBody(mapper.writeValueAsString(auditEvent))
+        .messageAttributes(mapOf("eventType" to MessageAttributeValue.builder().dataType("String").stringValue("hmpps-audit-event").build()))
+        .build(),
     )
   }
 }

@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest
+import software.amazon.awssdk.services.sqs.model.MessageAttributeValue
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
@@ -41,6 +42,9 @@ class MigrationQueueService(
       SendMessageRequest.builder()
         .queueUrl(queue.queueUrl)
         .messageBody(MigrationMessage(message, context).toJson())
+        .messageAttributes(
+          mapOf("eventType" to MessageAttributeValue.builder().dataType("String").stringValue("prisoner-from-nomis-migration-${context.type.telemetryName}").build()),
+        )
         .delaySeconds(delaySeconds)
         .build(),
     ).thenAccept {
@@ -59,6 +63,9 @@ class MigrationQueueService(
       SendMessageRequest.builder()
         .queueUrl(queue.queueUrl)
         .messageBody(SynchronisationMessage(message, context).toJson())
+        .messageAttributes(
+          mapOf("eventType" to MessageAttributeValue.builder().dataType("String").stringValue("prisoner-from-nomis-synchronisation-${context.type.telemetryName}").build()),
+        )
         .build(),
     ).thenAccept {
       telemetryClient.trackEvent(
