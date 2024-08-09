@@ -11,10 +11,10 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest
+import software.amazon.awssdk.services.sqs.model.MessageAttributeValue
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.SynchronisationContext
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
 import uk.gov.justice.hmpps.sqs.PurgeQueueRequest
@@ -41,29 +41,15 @@ class MigrationQueueService(
       SendMessageRequest.builder()
         .queueUrl(queue.queueUrl)
         .messageBody(MigrationMessage(message, context).toJson())
+        .messageAttributes(
+          mapOf("eventType" to MessageAttributeValue.builder().dataType("String").stringValue("prisoner-from-nomis-migration-${context.type.telemetryName}").build()),
+        )
         .delaySeconds(delaySeconds)
         .build(),
     ).thenAccept {
       telemetryClient.trackEvent(
         message.name,
         mapOf("messageId" to it.messageId(), "migrationId" to context.migrationId),
-        null,
-      )
-    }
-  }
-
-  suspend fun <T : Enum<T>> sendMessage(message: T, context: SynchronisationContext<*>) {
-    val queue = hmppsQueueService.findByQueueId(context.type.queueId)
-      ?: throw IllegalStateException("Queue not found for ${context.type.queueId}")
-    queue.sqsClient.sendMessage(
-      SendMessageRequest.builder()
-        .queueUrl(queue.queueUrl)
-        .messageBody(SynchronisationMessage(message, context).toJson())
-        .build(),
-    ).thenAccept {
-      telemetryClient.trackEvent(
-        message.name,
-        mapOf("messageId" to it.messageId()),
         null,
       )
     }

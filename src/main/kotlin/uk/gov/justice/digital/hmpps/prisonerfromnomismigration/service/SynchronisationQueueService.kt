@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.stereotype.Service
+import software.amazon.awssdk.services.sqs.model.MessageAttributeValue
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
@@ -33,6 +34,9 @@ class SynchronisationQueueService(
       SendMessageRequest.builder()
         .queueUrl(queue.queueUrl)
         .messageBody(sqsMessage.toJson())
+        .messageAttributes(
+          mapOf("eventType" to MessageAttributeValue.builder().dataType("String").stringValue("prisoner-from-nomis-synchronisation-$messageType").build()),
+        )
         .build(),
     ).thenAccept {
       telemetryClient.trackEvent(
