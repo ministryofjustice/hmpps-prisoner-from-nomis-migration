@@ -3,8 +3,15 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.client.reactive.ReactorClientHttpConnector
+import org.springframework.security.oauth2.client.AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager
 import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientManager
+import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientProviderBuilder
+import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientService
+import org.springframework.security.oauth2.client.endpoint.WebClientReactiveClientCredentialsTokenResponseClient
+import org.springframework.security.oauth2.client.registration.ReactiveClientRegistrationRepository
 import org.springframework.web.reactive.function.client.WebClient
+import reactor.netty.http.client.HttpClient
 import uk.gov.justice.hmpps.kotlin.auth.reactiveAuthorisedWebClient
 import uk.gov.justice.hmpps.kotlin.auth.reactiveHealthWebClient
 import java.time.Duration
@@ -34,4 +41,31 @@ class WebClientConfiguration(
   @Bean
   fun mappingApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager, builder: WebClient.Builder): WebClient =
     builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "nomis-mapping-api", url = mappingApiBaseUri, timeout)
+
+  @Bean
+  fun reactiveOAuth2AuthorizedClientManagerWithTimeout(
+    reactiveClientRegistrationRepository: ReactiveClientRegistrationRepository,
+    reactiveOAuth2AuthorizedClientService: ReactiveOAuth2AuthorizedClientService,
+  ): ReactiveOAuth2AuthorizedClientManager = AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(
+    reactiveClientRegistrationRepository,
+    reactiveOAuth2AuthorizedClientService,
+  ).apply {
+    val accessTokenResponseClient =
+      WebClientReactiveClientCredentialsTokenResponseClient().apply {
+        this.setWebClient(
+          WebClient.builder().clientConnector(
+            ReactorClientHttpConnector(
+              HttpClient.create().responseTimeout(timeout),
+            ),
+          ).build(),
+        )
+      }
+
+    setAuthorizedClientProvider(
+      ReactiveOAuth2AuthorizedClientProviderBuilder
+        .builder()
+        .clientCredentials { it.accessTokenResponseClient(accessTokenResponseClient).build() }
+        .build(),
+    )
+  }
 }
