@@ -15,7 +15,6 @@ import software.amazon.awssdk.services.sqs.model.MessageAttributeValue
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.SynchronisationContext
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
 import uk.gov.justice.hmpps.sqs.PurgeQueueRequest
@@ -51,26 +50,6 @@ class MigrationQueueService(
       telemetryClient.trackEvent(
         message.name,
         mapOf("messageId" to it.messageId(), "migrationId" to context.migrationId),
-        null,
-      )
-    }
-  }
-
-  suspend fun <T : Enum<T>> sendMessage(message: T, context: SynchronisationContext<*>) {
-    val queue = hmppsQueueService.findByQueueId(context.type.queueId)
-      ?: throw IllegalStateException("Queue not found for ${context.type.queueId}")
-    queue.sqsClient.sendMessage(
-      SendMessageRequest.builder()
-        .queueUrl(queue.queueUrl)
-        .messageBody(SynchronisationMessage(message, context).toJson())
-        .messageAttributes(
-          mapOf("eventType" to MessageAttributeValue.builder().dataType("String").stringValue("prisoner-from-nomis-synchronisation-${context.type.telemetryName}").build()),
-        )
-        .build(),
-    ).thenAccept {
-      telemetryClient.trackEvent(
-        message.name,
-        mapOf("messageId" to it.messageId()),
         null,
       )
     }
