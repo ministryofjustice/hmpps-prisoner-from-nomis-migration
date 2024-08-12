@@ -26,11 +26,9 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension.Companion.objectMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.CorrectionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.Event
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.Evidence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.HistoricalQuestion
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.HistoricalResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.History
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.Location
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisSyncReportId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.PrisonerInvolvement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.Question
@@ -156,14 +154,6 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             comment = "There were issues",
           ),
         ),
-        locations = listOf(
-          Location(
-            locationId = "In the library",
-            type = "LIB",
-            description = "Books",
-          ),
-        ),
-        evidence = listOf(Evidence(type = "string", description = "string")),
 
         correctionRequests = listOf(
           CorrectionRequest(
