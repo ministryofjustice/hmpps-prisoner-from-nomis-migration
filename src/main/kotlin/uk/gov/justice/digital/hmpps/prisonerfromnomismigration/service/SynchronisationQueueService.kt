@@ -3,10 +3,10 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.stereotype.Service
-import software.amazon.awssdk.services.sqs.model.MessageAttributeValue
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
+import uk.gov.justice.hmpps.sqs.eventTypeMessageAttributes
 
 const val RETRY_COURT_CASE_SYNCHRONISATION_MAPPING = "court_case_synchronisation_retry"
 const val RETRY_COURT_APPEARANCE_SYNCHRONISATION_MAPPING = "court_appearance_synchronisation_retry"
@@ -34,9 +34,7 @@ class SynchronisationQueueService(
       SendMessageRequest.builder()
         .queueUrl(queue.queueUrl)
         .messageBody(sqsMessage.toJson())
-        .messageAttributes(
-          mapOf("eventType" to MessageAttributeValue.builder().dataType("String").stringValue("prisoner-from-nomis-synchronisation-$messageType").build()),
-        )
+        .eventTypeMessageAttributes("prisoner-from-nomis-synchronisation-$messageType")
         .build(),
     ).thenAccept {
       telemetryClient.trackEvent(
