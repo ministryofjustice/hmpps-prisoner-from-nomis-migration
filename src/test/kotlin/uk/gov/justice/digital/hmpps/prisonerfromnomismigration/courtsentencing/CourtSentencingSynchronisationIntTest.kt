@@ -196,7 +196,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             courtCaseEvent(
               eventType = "OFFENDER_CASES-INSERTED",
               bookingId = NOMIS_BOOKING_ID,
-              courtCaseId = NOMIS_COURT_CASE_ID,
+              caseId = NOMIS_COURT_CASE_ID,
               offenderNo = OFFENDER_ID_DISPLAY,
             ),
           ).also {
@@ -389,7 +389,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           courtSentencingQueueOffenderEventsUrl,
           courtCaseEvent(
             eventType = "OFFENDER_CASES-INSERTED",
-            courtCaseId = NOMIS_COURT_CASE_ID,
+            caseId = NOMIS_COURT_CASE_ID,
             bookingId = NOMIS_BOOKING_ID,
             offenderNo = OFFENDER_ID_DISPLAY,
           ),
@@ -486,7 +486,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             courtCaseEvent(
               eventType = "OFFENDER_CASES-DELETED",
               bookingId = NOMIS_BOOKING_ID,
-              courtCaseId = NOMIS_COURT_CASE_ID,
+              caseId = NOMIS_COURT_CASE_ID,
               offenderNo = OFFENDER_ID_DISPLAY,
             ),
           ).also {
@@ -553,7 +553,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             courtCaseEvent(
               eventType = "OFFENDER_CASES-DELETED",
               bookingId = NOMIS_BOOKING_ID,
-              courtCaseId = NOMIS_COURT_CASE_ID,
+              caseId = NOMIS_COURT_CASE_ID,
               offenderNo = OFFENDER_ID_DISPLAY,
             ),
           ).also {
@@ -2449,12 +2449,12 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 fun courtCaseEvent(
   eventType: String,
   bookingId: Long = NOMIS_BOOKING_ID,
-  courtCaseId: Long = NOMIS_COURT_CASE_ID,
+  caseId: Long = NOMIS_COURT_CASE_ID,
   offenderNo: String = OFFENDER_ID_DISPLAY,
   auditModule: String = "DPS",
 ) = """{
     "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
-    "Message": "{\"eventId\":\"5958295\",\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"bookingId\": \"$bookingId\",\"courtCaseId\": \"$courtCaseId\",\"offenderIdDisplay\": \"$offenderNo\",\"nomisEventType\":\"COURT_EVENT\",\"auditModuleName\":\"$auditModule\" }",
+    "Message": "{\"eventId\":\"5958295\",\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"bookingId\": \"$bookingId\",\"caseId\": \"$caseId\",\"offenderIdDisplay\": \"$offenderNo\",\"nomisEventType\":\"COURT_EVENT\",\"auditModuleName\":\"$auditModule\" }",
     "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
     "MessageAttributes": {
       "eventType": {"Type": "String", "Value": "$eventType"}, 

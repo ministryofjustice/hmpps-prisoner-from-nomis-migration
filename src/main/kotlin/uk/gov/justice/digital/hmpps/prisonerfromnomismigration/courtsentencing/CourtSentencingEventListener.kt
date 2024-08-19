@@ -89,7 +89,7 @@ class CourtSentencingEventListener(
 }
 
 data class CourtCaseEvent(
-  val courtCaseId: Long,
+  val caseId: Long,
   val offenderIdDisplay: String,
   val bookingId: Long,
   val auditModuleName: String?,
