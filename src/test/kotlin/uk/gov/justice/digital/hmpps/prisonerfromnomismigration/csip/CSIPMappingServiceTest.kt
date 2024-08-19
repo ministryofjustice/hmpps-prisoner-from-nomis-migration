@@ -105,7 +105,6 @@ internal class CSIPMappingServiceTest {
           CSIPMappingDto(
             dpsCSIPId = DPS_CSIP_ID,
             nomisCSIPId = NOMIS_CSIP_ID,
-            offenderNo = "A1234BC",
             label = "some-migration-id",
             mappingType = MIGRATED,
           ),
@@ -127,7 +126,6 @@ internal class CSIPMappingServiceTest {
               dpsCSIPId = DPS_CSIP_ID,
               nomisCSIPId = NOMIS_CSIP_ID,
               mappingType = MIGRATED,
-              offenderNo = "A1234BC",
               label = "5678",
               whenCreated = "2020-01-01T00:00:00",
             ),
@@ -142,7 +140,6 @@ internal class CSIPMappingServiceTest {
                   {
                   "dpsCSIPId": "$DPS_CSIP_ID",
                   "nomisCSIPId": $NOMIS_CSIP_ID,                                       
-                  "offenderNo": "A1234BC",
                   "label": "5678",
                   "mappingType": "MIGRATED",
                   "whenCreated": "2020-01-01T00:00:00"
@@ -169,7 +166,6 @@ internal class CSIPMappingServiceTest {
             CSIPMappingDto(
               dpsCSIPId = DPS_CSIP_ID,
               nomisCSIPId = NOMIS_CSIP_ID,
-              offenderNo = "A1234BC",
               mappingType = MIGRATED,
               label = "5678",
               whenCreated = "2020-01-01T00:00:00",
@@ -251,131 +247,6 @@ internal class CSIPMappingServiceTest {
     }
 
     @Nested
-    @DisplayName("createCSIPFactorMapping")
-    inner class CreateCSIPFactorMapping {
-      @BeforeEach
-      internal fun setUp() {
-        mappingApi.stubFor(
-          post(urlEqualTo(CSIP_CREATE_MAPPING_URL)).willReturn(
-            aResponse()
-              .withHeader("Content-Type", "application/json")
-              .withStatus(HttpStatus.CREATED.value()),
-          ),
-        )
-      }
-
-      @Test
-      fun `should provide oath2 token`() = runTest {
-        mappingApi.stubMappingCreate(CSIP_CREATE_MAPPING_URL)
-
-        csipMappingService.createMapping(
-          CSIPMappingDto(
-            dpsCSIPId = DPS_CSIP_ID,
-            nomisCSIPId = NOMIS_CSIP_ID,
-            offenderNo = "A1234BC",
-            label = "some-migration-id",
-            mappingType = MIGRATED,
-          ),
-          object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPMappingDto>>() {},
-        )
-
-        mappingApi.verify(
-          postRequestedFor(
-            urlPathEqualTo("/mapping/csip"),
-          ).withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
-        )
-      }
-
-      @Test
-      internal fun `will pass all parameters dps csip factor id, nomis csip factor id, migration Id and MIGRATED indicator to mapping service`(): Unit =
-        runTest {
-          csipMappingService.createMapping(
-            CSIPMappingDto(
-              dpsCSIPId = DPS_CSIP_ID,
-              nomisCSIPId = NOMIS_CSIP_ID,
-              offenderNo = "A1234BC",
-              mappingType = MIGRATED,
-              label = "5678",
-              whenCreated = "2020-01-01T00:00:00",
-            ),
-            errorJavaClass = object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPMappingDto>>() {},
-          )
-
-          mappingApi.verify(
-            postRequestedFor(urlEqualTo(CSIP_CREATE_MAPPING_URL))
-              .withRequestBody(
-                equalToJson(
-                  """
-                  {
-                  "dpsCSIPId": "$DPS_CSIP_ID",
-                  "nomisCSIPId": $NOMIS_CSIP_ID,                                       
-                  "offenderNo": "A1234BC",
-                  "label": "5678",
-                  "mappingType": "MIGRATED",
-                  "whenCreated": "2020-01-01T00:00:00"
-                  }
-                  """.trimIndent(),
-                ),
-              ),
-          )
-        }
-
-      @Test
-      fun `should throw exception for any error`() = runTest {
-        mappingApi.stubFor(
-          post(urlPathMatching(CSIP_CREATE_MAPPING_URL)).willReturn(
-            aResponse()
-              .withHeader("Content-Type", "application/json")
-              .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
-              .withBody("""{"message":"Tea"}"""),
-          ),
-        )
-
-        assertThrows<WebClientResponseException.InternalServerError> {
-          csipMappingService.createMapping(
-            CSIPMappingDto(
-              dpsCSIPId = DPS_CSIP_ID,
-              nomisCSIPId = NOMIS_CSIP_ID,
-              offenderNo = "A1234BC",
-              mappingType = MIGRATED,
-              label = "5678",
-              whenCreated = "2020-01-01T00:00:00",
-            ),
-            object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPMappingDto>>() {},
-          )
-        }
-      }
-    }
-
-    @Nested
-    inner class DeleteCSIPFactorMapping {
-      private val dpsCsipFactorId = UUID.randomUUID().toString()
-
-      @Test
-      internal fun `will pass oath2 token to service`() = runTest {
-        csipMappingApi.stubDeleteFactorMapping(dpsCsipFactorId)
-
-        csipMappingService.deleteCSIPFactorMappingByDPSId(dpsCsipFactorId)
-
-        csipMappingApi.verify(
-          deleteRequestedFor(WireMock.anyUrl()).withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
-        )
-      }
-
-      @Test
-      internal fun `will pass id to service`() = runTest {
-        val dpsCsipFactorId = "a04f7a8d-61aa-400c-9395-f4dc62f36ab0"
-        csipMappingApi.stubDeleteFactorMapping(dpsCsipFactorId)
-
-        csipMappingService.deleteCSIPFactorMappingByDPSId(dpsCsipFactorId)
-
-        csipMappingApi.verify(
-          deleteRequestedFor(urlPathEqualTo("/mapping/csip/factors/dps-csip-factor-id/$dpsCsipFactorId")),
-        )
-      }
-    }
-
-    @Nested
     @DisplayName("findLatestMigration")
     inner class FindLatestMigration {
       @BeforeEach
@@ -420,7 +291,6 @@ internal class CSIPMappingServiceTest {
                 {
                   "dpsCSIPId": "$DPS_CSIP_ID",
                   "nomisCSIPId": $NOMIS_CSIP_ID,                                                         
-                  "offenderNo": "A1234BC",
                   "label": "2022-02-16T14:20:15",
                   "mappingType": "MIGRATED",
                   "whenCreated": "2022-02-16T16:21:15.589091"

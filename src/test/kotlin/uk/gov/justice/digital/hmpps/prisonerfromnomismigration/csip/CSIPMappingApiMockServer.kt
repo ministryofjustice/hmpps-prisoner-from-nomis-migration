@@ -13,8 +13,12 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPAttendeeMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFactorMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPInterviewMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPPlanMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReviewMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
@@ -38,7 +42,6 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
                 CSIPMappingDto(
                   nomisCSIPId = 1234,
                   dpsCSIPId = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5",
-                  offenderNo = "A1234BC",
                   mappingType = CSIPMappingDto.MappingType.MIGRATED,
                   label = "2022-02-14T09:58:45",
                   whenCreated = whenCreated,
@@ -65,7 +68,6 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
               CSIPMappingDto(
                 nomisCSIPId = nomisCSIPId,
                 dpsCSIPId = dpsCSIPId,
-                offenderNo = "A1234BC",
                 mappingType = CSIPMappingDto.MappingType.NOMIS_CREATED,
                 label = "2022-02-14T09:58:45",
                 whenCreated = "2020-01-01T11:10:00",
@@ -89,7 +91,6 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
             CSIPMappingDto(
               nomisCSIPId = 1234,
               dpsCSIPId = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5",
-              offenderNo = "A1234BC",
               mappingType = CSIPMappingDto.MappingType.MIGRATED,
               label = migrationId,
               whenCreated = "2020-01-01T11:10:00",
@@ -136,7 +137,6 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
                 "existing" :  {
                   "nomisCSIPId": $nomisCSIPId,
                   "dpsCSIPId": "$existingDPSCSIPId",
-                  "offenderNo": "A1234BC",
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",
                   "mappingType": "NOMIS_CREATED"
@@ -144,7 +144,6 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
                 "duplicate" : {
                   "nomisCSIPId": $nomisCSIPId,
                   "dpsCSIPId": "$duplicateDPSCSIPId",
-                  "offenderNo": "A1234BC",
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",
                   "mappingType": "NOMIS_CREATED"
@@ -235,6 +234,328 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
         ),
       ),
     )
+
+  // /////// CSIP Plan
+  fun stubGetPlanByNomisId(nomisCSIPPlanId: Long, dpsCSIPPlanId: String) {
+    mappingApi.stubFor(
+      get(urlPathMatching("/mapping/csip/plans/nomis-csip-plan-id/$nomisCSIPPlanId"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(
+              CSIPPlanMappingDto(
+                nomisCSIPPlanId = nomisCSIPPlanId,
+                dpsCSIPPlanId = dpsCSIPPlanId,
+                mappingType = CSIPPlanMappingDto.MappingType.NOMIS_CREATED,
+                label = "2022-02-14T09:58:45",
+                whenCreated = "2020-01-01T11:10:00",
+              ),
+            ),
+        ),
+    )
+  }
+
+  fun stubGetPlanByNomisId(status: HttpStatus) =
+    stubGetErrorResponse(status = status, url = "/mapping/csip/plans/nomis-csip-plan-id/.*")
+
+  fun stubCSIPPlanMappingCreateConflict(
+    nomisCSIPPlanId: Long,
+    existingDPSCSIPPlanId: String,
+    duplicateDPSCSIPPlanId: String,
+  ) {
+    mappingApi.stubFor(
+      post(WireMock.urlPathEqualTo("/mapping/csip/plans"))
+        .willReturn(
+          aResponse()
+            .withStatus(409)
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
+              "moreInfo": 
+              {
+                "existing" :  {
+                  "nomisCSIPPlanId": $nomisCSIPPlanId,
+                  "dpsCSIPPlanId": "$existingDPSCSIPPlanId",
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "NOMIS_CREATED"
+                 },
+                 "duplicate" : {
+                  "nomisCSIPPlanId": $nomisCSIPPlanId,
+                  "dpsCSIPPlanId": "$duplicateDPSCSIPPlanId",
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "NOMIS_CREATED"
+                }
+              }
+              }""",
+            ),
+        ),
+    )
+  }
+
+  fun stubCreatePlanMapping(status: HttpStatus) {
+    stubPostErrorResponse(status = status, url = "/mapping/csip/plans")
+  }
+  fun stubDeletePlanMapping(dpsCSIPPlanId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
+    stubDeleteMapping(url = "/mapping/csip/plans/dps-csip-plan-id/$dpsCSIPPlanId")
+  }
+  fun stubDeletePlanMapping(status: HttpStatus) {
+    stubDeleteErrorResponse(status = status, url = "/mapping/csip/plans/dps-csip-plan-id/.*")
+  }
+  fun verifyCreateCSIPPlanMapping(dpsCSIPPlanId: String, times: Int = 1) =
+    verify(
+      times,
+      WireMock.postRequestedFor(WireMock.urlPathEqualTo("/mapping/csip/plans")).withRequestBody(
+        WireMock.matchingJsonPath(
+          "dpsCSIPPlanId",
+          WireMock.equalTo(dpsCSIPPlanId),
+        ),
+      ),
+    )
+
+  // /////// CSIP Review
+  fun stubGetReviewByNomisId(nomisCSIPReviewId: Long, dpsCSIPReviewId: String) {
+    mappingApi.stubFor(
+      get(urlPathMatching("/mapping/csip/reviews/nomis-csip-review-id/$nomisCSIPReviewId"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(
+              CSIPReviewMappingDto(
+                nomisCSIPReviewId = nomisCSIPReviewId,
+                dpsCSIPReviewId = dpsCSIPReviewId,
+                mappingType = CSIPReviewMappingDto.MappingType.NOMIS_CREATED,
+                label = "2022-02-14T09:58:45",
+                whenCreated = "2020-01-01T11:10:00",
+              ),
+            ),
+        ),
+    )
+  }
+
+  fun stubGetReviewByNomisId(status: HttpStatus) =
+    stubGetErrorResponse(status = status, url = "/mapping/csip/reviews/nomis-csip-review-id/.*")
+
+  fun stubCSIPReviewMappingCreateConflict(
+    nomisCSIPReviewId: Long,
+    existingDPSCSIPReviewId: String,
+    duplicateDPSCSIPReviewId: String,
+  ) {
+    mappingApi.stubFor(
+      post(WireMock.urlPathEqualTo("/mapping/csip/reviews"))
+        .willReturn(
+          aResponse()
+            .withStatus(409)
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
+              "moreInfo": 
+              {
+                "existing" :  {
+                  "nomisCSIPReviewId": $nomisCSIPReviewId,
+                  "dpsCSIPReviewId": "$existingDPSCSIPReviewId",
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "NOMIS_CREATED"
+                 },
+                 "duplicate" : {
+                  "nomisCSIPReviewId": $nomisCSIPReviewId,
+                  "dpsCSIPReviewId": "$duplicateDPSCSIPReviewId",
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "NOMIS_CREATED"
+                }
+              }
+              }""",
+            ),
+        ),
+    )
+  }
+
+  fun stubCreateReviewMapping(status: HttpStatus) {
+    stubPostErrorResponse(status = status, url = "/mapping/csip/reviews")
+  }
+  fun stubDeleteReviewMapping(dpsCSIPReviewId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
+    stubDeleteMapping(url = "/mapping/csip/reviews/dps-csip-review-id/$dpsCSIPReviewId")
+  }
+  fun stubDeleteReviewMapping(status: HttpStatus) {
+    stubDeleteErrorResponse(status = status, url = "/mapping/csip/reviews/dps-csip-review-id/.*")
+  }
+  fun verifyCreateCSIPReviewMapping(dpsCSIPReviewId: String, times: Int = 1) =
+    verify(
+      times,
+      WireMock.postRequestedFor(WireMock.urlPathEqualTo("/mapping/csip/reviews")).withRequestBody(
+        WireMock.matchingJsonPath(
+          "dpsCSIPReviewId",
+          WireMock.equalTo(dpsCSIPReviewId),
+        ),
+      ),
+    )
+
+  // /////// CSIP Attendee
+  fun stubGetAttendeeByNomisId(nomisCSIPAttendeeId: Long, dpsCSIPAttendeeId: String) {
+    mappingApi.stubFor(
+      get(urlPathMatching("/mapping/csip/attendees/nomis-csip-attendee-id/$nomisCSIPAttendeeId"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(
+              CSIPAttendeeMappingDto(
+                nomisCSIPAttendeeId = nomisCSIPAttendeeId,
+                dpsCSIPAttendeeId = dpsCSIPAttendeeId,
+                mappingType = CSIPAttendeeMappingDto.MappingType.NOMIS_CREATED,
+                label = "2022-02-14T09:58:45",
+                whenCreated = "2020-01-01T11:10:00",
+              ),
+            ),
+        ),
+    )
+  }
+
+  fun stubGetAttendeeByNomisId(status: HttpStatus) =
+    stubGetErrorResponse(status = status, url = "/mapping/csip/attendees/nomis-csip-attendee-id/.*")
+
+  fun stubCSIPAttendeeMappingCreateConflict(
+    nomisCSIPAttendeeId: Long,
+    existingDPSCSIPAttendeeId: String,
+    duplicateDPSCSIPAttendeeId: String,
+  ) {
+    mappingApi.stubFor(
+      post(WireMock.urlPathEqualTo("/mapping/csip/attendees"))
+        .willReturn(
+          aResponse()
+            .withStatus(409)
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
+              "moreInfo": 
+              {
+                "existing" :  {
+                  "nomisCSIPAttendeeId": $nomisCSIPAttendeeId,
+                  "dpsCSIPAttendeeId": "$existingDPSCSIPAttendeeId",
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "NOMIS_CREATED"
+                 },
+                 "duplicate" : {
+                  "nomisCSIPAttendeeId": $nomisCSIPAttendeeId,
+                  "dpsCSIPAttendeeId": "$duplicateDPSCSIPAttendeeId",
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "NOMIS_CREATED"
+                }
+              }
+              }""",
+            ),
+        ),
+    )
+  }
+
+  fun stubCreateAttendeeMapping(status: HttpStatus) {
+    stubPostErrorResponse(status = status, url = "/mapping/csip/attendees")
+  }
+  fun stubDeleteAttendeeMapping(dpsCSIPAttendeeId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
+    stubDeleteMapping(url = "/mapping/csip/attendees/dps-csip-attendee-id/$dpsCSIPAttendeeId")
+  }
+  fun stubDeleteAttendeeMapping(status: HttpStatus) {
+    stubDeleteErrorResponse(status = status, url = "/mapping/csip/attendees/dps-csip-attendee-id/.*")
+  }
+  fun verifyCreateCSIPAttendeeMapping(dpsCSIPAttendeeId: String, times: Int = 1) =
+    verify(
+      times,
+      WireMock.postRequestedFor(WireMock.urlPathEqualTo("/mapping/csip/attendees")).withRequestBody(
+        WireMock.matchingJsonPath(
+          "dpsCSIPAttendeeId",
+          WireMock.equalTo(dpsCSIPAttendeeId),
+        ),
+      ),
+    )
+
+  // /////// CSIP Interview
+  fun stubGetInterviewByNomisId(nomisCSIPInterviewId: Long, dpsCSIPInterviewId: String) {
+    mappingApi.stubFor(
+      get(urlPathMatching("/mapping/csip/interviews/nomis-csip-interview-id/$nomisCSIPInterviewId"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(
+              CSIPInterviewMappingDto(
+                nomisCSIPInterviewId = nomisCSIPInterviewId,
+                dpsCSIPInterviewId = dpsCSIPInterviewId,
+                mappingType = CSIPInterviewMappingDto.MappingType.NOMIS_CREATED,
+                label = "2022-02-14T09:58:45",
+                whenCreated = "2020-01-01T11:10:00",
+              ),
+            ),
+        ),
+    )
+  }
+
+  fun stubGetInterviewByNomisId(status: HttpStatus) =
+    stubGetErrorResponse(status = status, url = "/mapping/csip/interviews/nomis-csip-interview-id/.*")
+
+  fun stubCSIPInterviewMappingCreateConflict(
+    nomisCSIPInterviewId: Long,
+    existingDPSCSIPInterviewId: String,
+    duplicateDPSCSIPInterviewId: String,
+  ) {
+    mappingApi.stubFor(
+      post(WireMock.urlPathEqualTo("/mapping/csip/interviews"))
+        .willReturn(
+          aResponse()
+            .withStatus(409)
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
+              "moreInfo": 
+              {
+                "existing" :  {
+                  "nomisCSIPInterviewId": $nomisCSIPInterviewId,
+                  "dpsCSIPInterviewId": "$existingDPSCSIPInterviewId",
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "NOMIS_CREATED"
+                 },
+                 "duplicate" : {
+                  "nomisCSIPInterviewId": $nomisCSIPInterviewId,
+                  "dpsCSIPInterviewId": "$duplicateDPSCSIPInterviewId",
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "NOMIS_CREATED"
+                }
+              }
+              }""",
+            ),
+        ),
+    )
+  }
+
+  fun stubCreateInterviewMapping(status: HttpStatus) {
+    stubPostErrorResponse(status = status, url = "/mapping/csip/interviews")
+  }
+  fun stubDeleteInterviewMapping(dpsCSIPInterviewId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
+    stubDeleteMapping(url = "/mapping/csip/interviews/dps-csip-interview-id/$dpsCSIPInterviewId")
+  }
+  fun stubDeleteInterviewMapping(status: HttpStatus) {
+    stubDeleteErrorResponse(status = status, url = "/mapping/csip/interviews/dps-csip-interview-id/.*")
+  }
+  fun verifyCreateCSIPInterviewMapping(dpsCSIPInterviewId: String, times: Int = 1) =
+    verify(
+      times,
+      WireMock.postRequestedFor(WireMock.urlPathEqualTo("/mapping/csip/interviews")).withRequestBody(
+        WireMock.matchingJsonPath(
+          "dpsCSIPInterviewId",
+          WireMock.equalTo(dpsCSIPInterviewId),
+        ),
+      ),
+    )
+
+  // ////
 
   fun stubPostErrorResponse(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value()), url: String) {
     mappingApi.stubFor(

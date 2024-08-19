@@ -245,7 +245,6 @@ class CSIPSynchronisationService(
     val mapping = CSIPMappingDto(
       nomisCSIPId = event.csipReportId,
       dpsCSIPId = dpsCSIPId,
-      offenderNo = event.offenderIdDisplay,
       mappingType = CSIPMappingDto.MappingType.NOMIS_CREATED,
     )
     try {
