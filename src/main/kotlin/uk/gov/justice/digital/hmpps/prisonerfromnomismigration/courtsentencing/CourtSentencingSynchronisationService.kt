@@ -46,7 +46,7 @@ class CourtSentencingSynchronisationService(
   suspend fun nomisCourtCaseInserted(event: CourtCaseEvent) {
     val telemetry =
       mapOf(
-        "nomisCourtCaseId" to event.courtCaseId.toString(),
+        "nomisCourtCaseId" to event.caseId.toString(),
         "offenderNo" to event.offenderIdDisplay,
         "nomisBookingId" to event.bookingId.toString(),
       )
@@ -54,8 +54,8 @@ class CourtSentencingSynchronisationService(
       telemetryClient.trackEvent("court-case-synchronisation-created-skipped", telemetry)
     } else {
       val nomisCourtCase =
-        nomisApiService.getCourtCase(offenderNo = event.offenderIdDisplay, courtCaseId = event.courtCaseId)
-      mappingApiService.getCourtCaseOrNullByNomisId(event.courtCaseId)?.let { mapping ->
+        nomisApiService.getCourtCase(offenderNo = event.offenderIdDisplay, courtCaseId = event.caseId)
+      mappingApiService.getCourtCaseOrNullByNomisId(event.caseId)?.let { mapping ->
         telemetryClient.trackEvent(
           "court-case-synchronisation-created-ignored",
           telemetry + ("dpsCourtCaseId" to mapping.dpsCourtCaseId),
@@ -150,13 +150,13 @@ class CourtSentencingSynchronisationService(
     val telemetry =
       mapOf(
         "nomisBookingId" to event.bookingId.toString(),
-        "nomisCourtCaseId" to event.courtCaseId.toString(),
+        "nomisCourtCaseId" to event.caseId.toString(),
         "offenderNo" to event.offenderIdDisplay,
       )
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent("court-case-synchronisation-updated-skipped", telemetry)
     } else {
-      val mapping = mappingApiService.getCourtCaseOrNullByNomisId(event.courtCaseId)
+      val mapping = mappingApiService.getCourtCaseOrNullByNomisId(event.caseId)
       if (mapping == null) {
         telemetryClient.trackEvent(
           "court-case-synchronisation-updated-failed",
@@ -165,7 +165,7 @@ class CourtSentencingSynchronisationService(
         throw IllegalStateException("Received OFFENDER_CASES-UPDATED for court-case that has never been created")
       } else {
         val nomisCourtCase =
-          nomisApiService.getCourtCase(offenderNo = event.offenderIdDisplay, courtCaseId = event.courtCaseId)
+          nomisApiService.getCourtCase(offenderNo = event.offenderIdDisplay, courtCaseId = event.caseId)
         dpsApiService.updateCourtCase(
           courtCaseId = mapping.dpsCourtCaseId,
           nomisCourtCase.toDpsCourtCase(),
@@ -181,11 +181,11 @@ class CourtSentencingSynchronisationService(
   suspend fun nomisCourtCaseDeleted(event: CourtCaseEvent) {
     val telemetry =
       mapOf(
-        "nomisCourtCaseId" to event.courtCaseId,
+        "nomisCourtCaseId" to event.caseId,
         "offenderNo" to event.offenderIdDisplay,
         "nomisBookingId" to event.bookingId,
       )
-    val mapping = mappingApiService.getCourtCaseOrNullByNomisId(event.courtCaseId)
+    val mapping = mappingApiService.getCourtCaseOrNullByNomisId(event.caseId)
     if (mapping == null) {
       telemetryClient.trackEvent(
         "court-case-synchronisation-deleted-ignored",
