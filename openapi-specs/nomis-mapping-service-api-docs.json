@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-08-19.4831.7bc64e1"
+    "version": "2024-08-19.4839.8ffb20f"
   },
   "servers": [
     {
@@ -515,7 +515,7 @@
         ],
         "summary": "get mapping",
         "description": "Retrieves a mapping by NOMIS id. Requires role NOMIS_ALERTS",
-        "operationId": "getMappingByNomisId_4",
+        "operationId": "getMappingByNomisId_8",
         "parameters": [
           {
             "name": "bookingId",
@@ -1594,6 +1594,141 @@
         }
       }
     },
+    "/mapping/csip/reviews": {
+      "post": {
+        "tags": [
+          "csip-review-mapping-resource"
+        ],
+        "summary": "Creates a new CSIP Review mapping",
+        "description": "Creates a mapping between a Nomis CSIP review id and DPS CSIP review id. Requires role NOMIS_CSIP",
+        "operationId": "createReviewMapping",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CSIPReviewMappingDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Mapping entry created"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Indicates a duplicate csip has been rejected. If Error code = 409 the body will return a DuplicateErrorResponse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateMappingErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/csip/plans": {
+      "post": {
+        "tags": [
+          "csip-plan-mapping-resource"
+        ],
+        "summary": "Creates a new CSIP Plan mapping",
+        "description": "Creates a mapping between a Nomis CSIP plan id and DPS CSIP plan id. Requires role NOMIS_CSIP",
+        "operationId": "createPlanMapping",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CSIPPlanMappingDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Mapping entry created"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Indicates a duplicate csip has been rejected. If Error code = 409 the body will return a DuplicateErrorResponse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateMappingErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/csip/interviews": {
+      "post": {
+        "tags": [
+          "csip-interview-mapping-resource"
+        ],
+        "summary": "Creates a new CSIP Interview mapping",
+        "description": "Creates a mapping between a Nomis CSIP interview id and DPS CSIP interview id. Requires role NOMIS_CSIP",
+        "operationId": "createInterviewMapping",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CSIPInterviewMappingDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Mapping entry created"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Indicates a duplicate csip has been rejected. If Error code = 409 the body will return a DuplicateErrorResponse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateMappingErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/csip/factors": {
       "post": {
         "tags": [
@@ -1607,6 +1742,51 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CSIPFactorMappingDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Mapping entry created"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Indicates a duplicate csip has been rejected. If Error code = 409 the body will return a DuplicateErrorResponse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateMappingErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/csip/attendees": {
+      "post": {
+        "tags": [
+          "csip-attendee-mapping-resource"
+        ],
+        "summary": "Creates a new CSIP Attendee mapping",
+        "description": "Creates a mapping between a Nomis CSIP attendee id and DPS CSIP attendee id. Requires role NOMIS_CSIP",
+        "operationId": "createAttendeeMapping",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CSIPAttendeeMappingDto"
               }
             }
           },
@@ -4736,6 +4916,324 @@
         }
       }
     },
+    "/mapping/csip/reviews/nomis-csip-review-id/{nomisCSIPReviewId}": {
+      "get": {
+        "tags": [
+          "csip-review-mapping-resource"
+        ],
+        "summary": "get CSIP Review mapping",
+        "description": "Retrieves a CSIP Review mapping by NOMIS id. Requires role NOMIS_CSIP",
+        "operationId": "getMappingByNomisId_1",
+        "parameters": [
+          {
+            "name": "nomisCSIPReviewId",
+            "in": "path",
+            "description": "NOMIS CSIP Review id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "NOMIS CSIP Review id",
+              "example": 12345
+            },
+            "example": 12345
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CSIPReviewMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/csip/reviews/dps-csip-review-id/{dpsCSIPReviewId}": {
+      "get": {
+        "tags": [
+          "csip-review-mapping-resource"
+        ],
+        "summary": "get CSIP Review mapping",
+        "description": "Retrieves a csip review mapping by DPS id. Requires role NOMIS_CSIP",
+        "operationId": "getCSIPReviewMappingByDpsId",
+        "parameters": [
+          {
+            "name": "dpsCSIPReviewId",
+            "in": "path",
+            "description": "DPS CSIP review id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "DPS CSIP review id",
+              "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+            },
+            "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CSIPReviewMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "csip-review-mapping-resource"
+        ],
+        "summary": "Deletes CSIP Review mapping",
+        "description": "Deletes a CSIP Review mapping by DPS id. Requires role NOMIS_CSIP",
+        "operationId": "deleteCSIPReviewMappingByDpsId",
+        "parameters": [
+          {
+            "name": "dpsCSIPReviewId",
+            "in": "path",
+            "description": "DPS CSIP Review id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "DPS CSIP Review id",
+              "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+            },
+            "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Mapping Deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/csip/plans/nomis-csip-plan-id/{nomisCSIPPlanId}": {
+      "get": {
+        "tags": [
+          "csip-plan-mapping-resource"
+        ],
+        "summary": "get CSIP Plan mapping",
+        "description": "Retrieves a CSIP Plan mapping by NOMIS id. Requires role NOMIS_CSIP",
+        "operationId": "getMappingByNomisId_2",
+        "parameters": [
+          {
+            "name": "nomisCSIPPlanId",
+            "in": "path",
+            "description": "NOMIS CSIP Plan id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "NOMIS CSIP Plan id",
+              "example": 12345
+            },
+            "example": 12345
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CSIPPlanMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/csip/plans/dps-csip-plan-id/{dpsCSIPPlanId}": {
+      "get": {
+        "tags": [
+          "csip-plan-mapping-resource"
+        ],
+        "summary": "get CSIP Plan mapping",
+        "description": "Retrieves a csip plan mapping by DPS id. Requires role NOMIS_CSIP",
+        "operationId": "getCSIPPlanMappingByDpsId",
+        "parameters": [
+          {
+            "name": "dpsCSIPPlanId",
+            "in": "path",
+            "description": "DPS CSIP plan id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "DPS CSIP plan id",
+              "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+            },
+            "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CSIPPlanMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "csip-plan-mapping-resource"
+        ],
+        "summary": "Deletes CSIP Plan mapping",
+        "description": "Deletes a CSIP Plan mapping by DPS id. Requires role NOMIS_CSIP",
+        "operationId": "deleteCSIPPlanMappingByDpsId",
+        "parameters": [
+          {
+            "name": "dpsCSIPPlanId",
+            "in": "path",
+            "description": "DPS CSIP Plan id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "DPS CSIP Plan id",
+              "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+            },
+            "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Mapping Deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/csip/nomis-csip-id/{nomisCSIPId}": {
       "get": {
         "tags": [
@@ -4886,6 +5384,165 @@
         }
       }
     },
+    "/mapping/csip/interviews/nomis-csip-interview-id/{nomisCSIPInterviewId}": {
+      "get": {
+        "tags": [
+          "csip-interview-mapping-resource"
+        ],
+        "summary": "get CSIP Interview mapping",
+        "description": "Retrieves a CSIP Interview mapping by NOMIS id. Requires role NOMIS_CSIP",
+        "operationId": "getMappingByNomisId_3",
+        "parameters": [
+          {
+            "name": "nomisCSIPInterviewId",
+            "in": "path",
+            "description": "NOMIS CSIP Interview id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "NOMIS CSIP Interview id",
+              "example": 12345
+            },
+            "example": 12345
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CSIPInterviewMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/csip/interviews/dps-csip-interview-id/{dpsCSIPInterviewId}": {
+      "get": {
+        "tags": [
+          "csip-interview-mapping-resource"
+        ],
+        "summary": "get CSIP Interview mapping",
+        "description": "Retrieves a csip interview mapping by DPS id. Requires role NOMIS_CSIP",
+        "operationId": "getCSIPInterviewMappingByDpsId",
+        "parameters": [
+          {
+            "name": "dpsCSIPInterviewId",
+            "in": "path",
+            "description": "DPS CSIP interview id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "DPS CSIP interview id",
+              "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+            },
+            "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CSIPInterviewMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "csip-interview-mapping-resource"
+        ],
+        "summary": "Deletes CSIP Interview mapping",
+        "description": "Deletes a CSIP Interview mapping by DPS id. Requires role NOMIS_CSIP",
+        "operationId": "deleteCSIPInterviewMappingByDpsId",
+        "parameters": [
+          {
+            "name": "dpsCSIPInterviewId",
+            "in": "path",
+            "description": "DPS CSIP Interview id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "DPS CSIP Interview id",
+              "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+            },
+            "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Mapping Deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/csip/factors/nomis-csip-factor-id/{nomisCSIPFactorId}": {
       "get": {
         "tags": [
@@ -4893,7 +5550,7 @@
         ],
         "summary": "get CSIP Factor mapping",
         "description": "Retrieves a CSIP Factor mapping by NOMIS id. Requires role NOMIS_CSIP",
-        "operationId": "getMappingByNomisId_1",
+        "operationId": "getMappingByNomisId_4",
         "parameters": [
           {
             "name": "nomisCSIPFactorId",
@@ -5090,6 +5747,165 @@
           },
           "404": {
             "description": "CSIP id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/csip/attendees/nomis-csip-attendee-id/{nomisCSIPAttendeeId}": {
+      "get": {
+        "tags": [
+          "csip-attendee-mapping-resource"
+        ],
+        "summary": "get CSIP Attendee mapping",
+        "description": "Retrieves a CSIP Attendee mapping by NOMIS id. Requires role NOMIS_CSIP",
+        "operationId": "getMappingByNomisId_5",
+        "parameters": [
+          {
+            "name": "nomisCSIPAttendeeId",
+            "in": "path",
+            "description": "NOMIS CSIP Attendee id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "NOMIS CSIP Attendee id",
+              "example": 12345
+            },
+            "example": 12345
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CSIPAttendeeMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/csip/attendees/dps-csip-attendee-id/{dpsCSIPAttendeeId}": {
+      "get": {
+        "tags": [
+          "csip-attendee-mapping-resource"
+        ],
+        "summary": "get CSIP Attendee mapping",
+        "description": "Retrieves a csip attendee mapping by DPS id. Requires role NOMIS_CSIP",
+        "operationId": "getCSIPAttendeeMappingByDpsId",
+        "parameters": [
+          {
+            "name": "dpsCSIPAttendeeId",
+            "in": "path",
+            "description": "DPS CSIP attendee id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "DPS CSIP attendee id",
+              "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+            },
+            "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CSIPAttendeeMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "csip-attendee-mapping-resource"
+        ],
+        "summary": "Deletes CSIP Attendee mapping",
+        "description": "Deletes a CSIP Attendee mapping by DPS id. Requires role NOMIS_CSIP",
+        "operationId": "deleteCSIPAttendeeMappingByDpsId",
+        "parameters": [
+          {
+            "name": "dpsCSIPAttendeeId",
+            "in": "path",
+            "description": "DPS CSIP Attendee id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "DPS CSIP Attendee id",
+              "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+            },
+            "example": "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Mapping Deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint",
             "content": {
               "application/json": {
                 "schema": {
@@ -5403,7 +6219,7 @@
         ],
         "summary": "get court case mapping",
         "description": "Retrieves a mapping by DPS id. Requires role NOMIS_COURT_SENTENCING",
-        "operationId": "getMappingByNomisId_2",
+        "operationId": "getMappingByNomisId_6",
         "parameters": [
           {
             "name": "courtCaseId",
@@ -5571,7 +6387,7 @@
         ],
         "summary": "get mapping",
         "description": "Retrieves a mapping by NOMIS id. Requires role NOMIS_CASENOTES",
-        "operationId": "getMappingByNomisId_3",
+        "operationId": "getMappingByNomisId_7",
         "parameters": [
           {
             "name": "caseNoteId",
@@ -8699,6 +9515,129 @@
         },
         "description": "Adjudication mapping (same value for NOMIS and DPS)"
       },
+      "CSIPReviewMappingDto": {
+        "required": [
+          "dpsCSIPReviewId",
+          "mappingType",
+          "nomisCSIPReviewId"
+        ],
+        "type": "object",
+        "properties": {
+          "nomisCSIPReviewId": {
+            "type": "integer",
+            "description": "NOMIS CSIP Review id",
+            "format": "int64"
+          },
+          "dpsCSIPReviewId": {
+            "type": "string",
+            "description": "DPS CSIP Review id"
+          },
+          "label": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": "string",
+            "description": "Label (a timestamp for migrated ids)"
+          },
+          "mappingType": {
+            "type": "string",
+            "description": "Mapping type",
+            "enum": [
+              "MIGRATED",
+              "NOMIS_CREATED",
+              "DPS_CREATED"
+            ]
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "Date-time the mapping was created",
+            "example": "2021-07-05T10:35:17"
+          }
+        },
+        "description": "CSIP Review mapping"
+      },
+      "CSIPPlanMappingDto": {
+        "required": [
+          "dpsCSIPPlanId",
+          "mappingType",
+          "nomisCSIPPlanId"
+        ],
+        "type": "object",
+        "properties": {
+          "nomisCSIPPlanId": {
+            "type": "integer",
+            "description": "NOMIS CSIP Plan id",
+            "format": "int64"
+          },
+          "dpsCSIPPlanId": {
+            "type": "string",
+            "description": "DPS CSIP Plan id"
+          },
+          "label": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": "string",
+            "description": "Label (a timestamp for migrated ids)"
+          },
+          "mappingType": {
+            "type": "string",
+            "description": "Mapping type",
+            "enum": [
+              "MIGRATED",
+              "NOMIS_CREATED",
+              "DPS_CREATED"
+            ]
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "Date-time the mapping was created",
+            "example": "2021-07-05T10:35:17"
+          }
+        },
+        "description": "CSIP Plan mapping"
+      },
+      "CSIPInterviewMappingDto": {
+        "required": [
+          "dpsCSIPInterviewId",
+          "mappingType",
+          "nomisCSIPInterviewId"
+        ],
+        "type": "object",
+        "properties": {
+          "nomisCSIPInterviewId": {
+            "type": "integer",
+            "description": "NOMIS CSIP Interview id",
+            "format": "int64"
+          },
+          "dpsCSIPInterviewId": {
+            "type": "string",
+            "description": "DPS CSIP Interview id"
+          },
+          "label": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": "string",
+            "description": "Label (a timestamp for migrated ids)"
+          },
+          "mappingType": {
+            "type": "string",
+            "description": "Mapping type",
+            "enum": [
+              "MIGRATED",
+              "NOMIS_CREATED",
+              "DPS_CREATED"
+            ]
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "Date-time the mapping was created",
+            "example": "2021-07-05T10:35:17"
+          }
+        },
+        "description": "CSIP Interview mapping"
+      },
       "CSIPFactorMappingDto": {
         "required": [
           "dpsCSIPFactorId",
@@ -8739,6 +9678,47 @@
           }
         },
         "description": "CSIP Factor mapping"
+      },
+      "CSIPAttendeeMappingDto": {
+        "required": [
+          "dpsCSIPAttendeeId",
+          "mappingType",
+          "nomisCSIPAttendeeId"
+        ],
+        "type": "object",
+        "properties": {
+          "nomisCSIPAttendeeId": {
+            "type": "integer",
+            "description": "NOMIS CSIP Attendee id",
+            "format": "int64"
+          },
+          "dpsCSIPAttendeeId": {
+            "type": "string",
+            "description": "DPS CSIP Attendee id"
+          },
+          "label": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": "string",
+            "description": "Label (a timestamp for migrated ids)"
+          },
+          "mappingType": {
+            "type": "string",
+            "description": "Mapping type",
+            "enum": [
+              "MIGRATED",
+              "NOMIS_CREATED",
+              "DPS_CREATED"
+            ]
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "Date-time the mapping was created",
+            "example": "2021-07-05T10:35:17"
+          }
+        },
+        "description": "CSIP Attendee mapping"
       },
       "CSIPMappingDto": {
         "required": [
