@@ -38,7 +38,6 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
                 CSIPMappingDto(
                   nomisCSIPId = 1234,
                   dpsCSIPId = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5",
-                  offenderNo = "A1234BC",
                   mappingType = CSIPMappingDto.MappingType.MIGRATED,
                   label = "2022-02-14T09:58:45",
                   whenCreated = whenCreated,
@@ -65,7 +64,6 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
               CSIPMappingDto(
                 nomisCSIPId = nomisCSIPId,
                 dpsCSIPId = dpsCSIPId,
-                offenderNo = "A1234BC",
                 mappingType = CSIPMappingDto.MappingType.NOMIS_CREATED,
                 label = "2022-02-14T09:58:45",
                 whenCreated = "2020-01-01T11:10:00",
@@ -89,7 +87,6 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
             CSIPMappingDto(
               nomisCSIPId = 1234,
               dpsCSIPId = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5",
-              offenderNo = "A1234BC",
               mappingType = CSIPMappingDto.MappingType.MIGRATED,
               label = migrationId,
               whenCreated = "2020-01-01T11:10:00",
@@ -136,7 +133,6 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
                 "existing" :  {
                   "nomisCSIPId": $nomisCSIPId,
                   "dpsCSIPId": "$existingDPSCSIPId",
-                  "offenderNo": "A1234BC",
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",
                   "mappingType": "NOMIS_CREATED"
@@ -144,7 +140,6 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
                 "duplicate" : {
                   "nomisCSIPId": $nomisCSIPId,
                   "dpsCSIPId": "$duplicateDPSCSIPId",
-                  "offenderNo": "A1234BC",
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",
                   "mappingType": "NOMIS_CREATED"
