@@ -64,7 +64,7 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
 
     private fun WebTestClient.performMigration(body: String = "{ }"): MigrationResult =
       post().uri("/migrate/court-sentencing")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_COURT_SENTENCING")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .body(BodyInserters.fromValue(body))
         .exchange()
@@ -155,7 +155,7 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
 
       await untilAsserted {
         webTestClient.get().uri("/migrate/court-sentencing/history")
-          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_COURT_SENTENCING")))
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
           .header("Content-Type", "application/json")
           .exchange()
           .expectStatus().isOk
@@ -318,7 +318,7 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     internal fun `can read all records with no filter`() {
       webTestClient.get().uri("/migrate/court-sentencing/history")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_COURT_SENTENCING")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -337,7 +337,7 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
           .queryParam("fromDateTime", "2020-01-02T02:00:00")
           .build()
       }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_COURT_SENTENCING")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -354,7 +354,7 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
           .queryParam("toDateTime", "2020-01-02T00:00:00")
           .build()
       }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_COURT_SENTENCING")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -372,7 +372,7 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
           .queryParam("toDateTime", "2020-01-03T02:00:01")
           .build()
       }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_COURT_SENTENCING")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -388,7 +388,7 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
           .queryParam("includeOnlyFailures", "true")
           .build()
       }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_COURT_SENTENCING")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -449,7 +449,7 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     internal fun `can read record`() {
       webTestClient.get().uri("/migrate/court-sentencing/history/2020-01-01T00:00:00")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_COURT_SENTENCING")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -523,7 +523,7 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
     internal fun `will return dto with null contents if no migrations are found`() {
       deleteHistoryRecords()
       webTestClient.get().uri("/migrate/court-sentencing/active-migration")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_COURT_SENTENCING")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -540,7 +540,7 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
     internal fun `can read active migration data`() {
       courtSentencingMappingApiMockServer.stubCourtCaseMappingByMigrationId(count = 123456)
       webTestClient.get().uri("/migrate/court-sentencing/active-migration")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_COURT_SENTENCING")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -589,7 +589,7 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     internal fun `will return a not found if no running migration found`() {
       webTestClient.post().uri("/migrate/court-sentencing/{migrationId}/cancel", "some id")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_COURT_SENTENCING")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isNotFound
@@ -604,7 +604,7 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
       courtSentencingMappingApiMockServer.stubGetByNomisId(HttpStatus.NOT_FOUND)
 
       val migrationId = webTestClient.post().uri("/migrate/court-sentencing")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_COURT_SENTENCING")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .body(
           BodyInserters.fromValue(
@@ -622,13 +622,13 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
         .responseBody.blockFirst()!!.migrationId
 
       webTestClient.post().uri("/migrate/court-sentencing/{migrationId}/cancel", migrationId)
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_COURT_SENTENCING")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isAccepted
 
       webTestClient.get().uri("/migrate/court-sentencing/history/{migrationId}", migrationId)
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_COURT_SENTENCING")))
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -638,7 +638,7 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
 
       await atMost Duration.ofSeconds(60) untilAsserted {
         webTestClient.get().uri("/migrate/court-sentencing/history/{migrationId}", migrationId)
-          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_COURT_SENTENCING")))
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
           .header("Content-Type", "application/json")
           .exchange()
           .expectStatus().isOk
