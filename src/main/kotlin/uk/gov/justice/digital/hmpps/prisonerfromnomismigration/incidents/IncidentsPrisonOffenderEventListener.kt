@@ -53,8 +53,6 @@ class IncidentsPrisonOffenderEventListener(
               "INCIDENT-DELETED-REQUIREMENTS",
               -> incidentsSynchronisationService.synchroniseIncidentUpdate(sqsMessage.Message.fromJson())
 
-              // TODO do we need to check for this event
-              // "prison-offender-events.prisoner.merged" -> incidentsSynchronisationService.synchronisePrisonerMerge(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {

@@ -171,7 +171,7 @@ class IncidentsReconciliationService(
     dps: ReportWithDetails,
   ): String? {
     val nomisLastModified = nomis.lastModifiedDateTime?.let { nomis.lastModifiedDateTime } ?: nomis.createDateTime
-    if (nomisLastModified.dateWithoutMillis() != dps.modifiedAt.dateWithoutMillis()) return "Modified mismatch"
+    if (nomisLastModified.dateWithoutMillis() != dps.event.modifiedAt.dateWithoutMillis()) return "Modified mismatch"
     if (nomis.reportingStaff.username != dps.reportedBy) return "Reporting Staff mismatch"
     if (nomis.offenderParties.size != dps.prisonersInvolved.size) return "Offender parties mismatch"
     val offendersDifference = nomis.offenderParties.map { it.offender.offenderNo }.compare(dps.prisonersInvolved.map { it.prisonerNumber })
@@ -214,7 +214,7 @@ data class IncidentReportDetail(
 fun IncidentResponse.toReportDetail() =
   IncidentReportDetail(
     type,
-    lastModifiedDateTime,
+    lastModifiedDateTime?.let { lastModifiedDateTime } ?: createDateTime,
     reportingStaff.username,
     offenderParties.map { it.offender.offenderNo },
   )
@@ -222,7 +222,7 @@ fun IncidentResponse.toReportDetail() =
 fun ReportWithDetails.toReportDetail() =
   IncidentReportDetail(
     type.toString(),
-    modifiedAt,
+    event.modifiedAt,
     reportedBy,
     prisonersInvolved.map { it.prisonerNumber },
   )

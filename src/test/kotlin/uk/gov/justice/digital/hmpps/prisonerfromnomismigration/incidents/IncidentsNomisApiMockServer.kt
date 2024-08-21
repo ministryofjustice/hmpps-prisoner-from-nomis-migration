@@ -67,7 +67,7 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
 
   fun stubGetIncident(
     nomisIncidentId: Long = 1234,
-    lastModifiedDateTime: String = "2021-07-23T10:35:17",
+    lastModifiedDateTime: String? = "2021-07-23T10:35:17",
     offenderParty: String = "A1234BC",
   ) {
     nomisApi.stubFor(
@@ -200,7 +200,7 @@ private fun incidentAgencyCount(agencyId: String, open: Long, closed: Long) =
 
 private fun incidentResponse(
   nomisIncidentId: Long = 1234,
-  lastModifiedDateTime: String = "2021-07-23T10:35:17",
+  lastModifiedDateTime: String? = "2021-07-23T10:35:17",
   offenderParty: String = "A1234BC",
 ): IncidentResponse =
   IncidentResponse(
