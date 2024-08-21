@@ -161,6 +161,15 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         }
 
         @Test
+        fun `will retrieve the court case from nomis`() {
+          await untilAsserted {
+            courtSentencingNomisApiMockServer.verify(
+              getRequestedFor(urlPathEqualTo("/prisoners/$OFFENDER_ID_DISPLAY/sentencing/court-cases/$NOMIS_COURT_CASE_ID")),
+            )
+          }
+        }
+
+        @Test
         fun `will track a telemetry event for success`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(

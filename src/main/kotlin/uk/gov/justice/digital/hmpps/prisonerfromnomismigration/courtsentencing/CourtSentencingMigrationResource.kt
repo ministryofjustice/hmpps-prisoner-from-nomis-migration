@@ -30,12 +30,12 @@ class CourtSentencingMigrationResource(
   private val courtSentencingMigrationService: CourtSentencingMigrationService,
   private val migrationHistoryService: MigrationHistoryService,
 ) {
-  @PreAuthorize("hasRole('ROLE_MIGRATE_COURT_SENTENCING')")
+  @PreAuthorize("hasRole('ROLE_MIGRATE_SENTENCING')")
   @PostMapping("/court-sentencing")
   @ResponseStatus(value = ACCEPTED)
   @Operation(
     summary = "Starts a court case migration",
-    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>MIGRATE_COURT_SENTENCING</b>",
+    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>MIGRATE_SENTENCING</b>",
     requestBody = io.swagger.v3.oas.annotations.parameters.RequestBody(
       content = [
         Content(
@@ -66,11 +66,11 @@ class CourtSentencingMigrationResource(
     migrationFilter: CourtSentencingMigrationFilter,
   ) = courtSentencingMigrationService.startMigration(migrationFilter)
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_COURT_SENTENCING')")
+  @PreAuthorize("hasRole('ROLE_MIGRATE_SENTENCING')")
   @GetMapping("/court-sentencing/history")
   @Operation(
     summary = "Lists all filtered migration history records un-paged for court sentencing",
-    description = "The records are un-paged and requires role <b>MIGRATE_COURT_SENTENCING</b>",
+    description = "The records are un-paged and requires role <b>MIGRATE_SENTENCING</b>",
     responses = [
       ApiResponse(
         responseCode = "200",
@@ -116,11 +116,11 @@ class CourtSentencingMigrationResource(
     ),
   )
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_COURT_SENTENCING')")
+  @PreAuthorize("hasRole('ROLE_MIGRATE_SENTENCING')")
   @GetMapping("/court-sentencing/history/{migrationId}")
   @Operation(
     summary = "Gets a specific migration history record",
-    description = "Requires role <b>MIGRATE_COURT_SENTENCING</b>",
+    description = "Requires role <b>MIGRATE_SENTENCING</b>",
     responses = [
       ApiResponse(
         responseCode = "200",
@@ -149,12 +149,12 @@ class CourtSentencingMigrationResource(
     migrationId: String,
   ) = migrationHistoryService.get(migrationId)
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_COURT_SENTENCING')")
+  @PreAuthorize("hasRole('ROLE_MIGRATE_SENTENCING')")
   @PostMapping("/court-sentencing/{migrationId}/cancel")
   @ResponseStatus(value = ACCEPTED)
   @Operation(
     summary = "Cancels a running migration. The actual cancellation might take several minutes to complete",
-    description = "Requires role <b>MIGRATE_COURT_SENTENCING</b>",
+    description = "Requires role <b>MIGRATE_SENTENCING</b>",
     responses = [
       ApiResponse(
         responseCode = "202",
@@ -183,11 +183,11 @@ class CourtSentencingMigrationResource(
     migrationId: String,
   ) = courtSentencingMigrationService.cancel(migrationId)
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_COURT_SENTENCING')")
+  @PreAuthorize("hasRole('ROLE_MIGRATE_SENTENCING')")
   @GetMapping("/court-sentencing/active-migration")
   @Operation(
     summary = "Gets active/currently running migration data, using migration record and migration queues",
-    description = "Requires role <b>MIGRATE_COURT_SENTENCING</b>",
+    description = "Requires role <b>MIGRATE_SENTENCING</b>",
     responses = [
       ApiResponse(
         responseCode = "200",
