@@ -288,6 +288,47 @@ class IncidentsReconciliationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
+      fun `will show mismatch differences in report when using createDate`() {
+        incidentsNomisApi.stubGetIncident(33, offenderParty = "Z4321YX", lastModifiedDateTime = null)
+
+        webTestClient.put().uri("/incidents/reports/reconciliation")
+          .exchange()
+          .expectStatus().isAccepted
+
+        awaitReportFinished()
+
+        verify(telemetryClient).trackEvent(
+          eq("incidents-reports-reconciliation-report"),
+          check {
+            assertThat(it).containsEntry("mismatch-count", "2")
+            assertThat(it).containsEntry("success", "true")
+            assertThat(it).containsEntry("ASI", "open-dps=3:open-nomis=2; closed-dps=3:closed-nomis=3")
+            assertThat(it).containsEntry("BFI", "open-dps=3:open-nomis=1; closed-dps=3:closed-nomis=4")
+            assertThat(it).doesNotContainKeys("WWI")
+          },
+          isNull(),
+        )
+
+        verify(telemetryClient, times(2)).trackEvent(
+          eq("incidents-reports-reconciliation-mismatch"),
+          any(),
+          isNull(),
+        )
+
+        verify(telemetryClient).trackEvent(
+          eq("incidents-reports-reconciliation-detail-mismatch"),
+          check {
+            assertThat(it).containsEntry("nomisId", "33")
+            assertThat(it).containsKey("dpsId")
+            assertThat(it).containsEntry("verdict", "Modified mismatch")
+            assertThat(it).containsEntry("nomis", "IncidentReportDetail(type=ATT_ESC_E, lastModifiedDateTime=2021-02-06T12:36:00, reportedBy=FSTAFF_GEN, offenderParties=[Z4321YX])")
+            assertThat(it).containsEntry("dps", "IncidentReportDetail(type=ATTEMPTED_ESCAPE_FROM_ESCORT, lastModifiedDateTime=2021-07-23T10:35:17, reportedBy=FSTAFF_GEN, offenderParties=[A1234BC])")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
       fun `will complete a report even if some of the checks fail`() {
         incidentsApi.stubGetIncidentsWithError(HttpStatus.INTERNAL_SERVER_ERROR)
 
