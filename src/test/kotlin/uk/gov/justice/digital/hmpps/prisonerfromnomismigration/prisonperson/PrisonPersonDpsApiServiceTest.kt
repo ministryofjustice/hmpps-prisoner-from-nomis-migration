@@ -34,6 +34,7 @@ class PrisonPersonDpsApiServiceTest {
     private val weight = 80
     private val appliesFrom = LocalDateTime.now().minusDays(1L)
     private val appliesTo = LocalDateTime.now()
+    private val latestBooking = true
     private val createdAt = LocalDateTime.now()
     private val createdBy = "A_USER"
 
@@ -41,7 +42,7 @@ class PrisonPersonDpsApiServiceTest {
     fun `should pass auth token to the service`() = runTest {
       dpsPrisonPersonServer.stubSyncPrisonPerson(aResponse())
 
-      apiService.syncPhysicalAttributes(prisonerNumber, height, weight, appliesFrom, appliesTo, createdAt, createdBy)
+      apiService.syncPhysicalAttributes(prisonerNumber, height, weight, appliesFrom, appliesTo, latestBooking, createdAt, createdBy)
 
       dpsPrisonPersonServer.verify(
         putRequestedFor(urlPathMatching("/sync/prisoners/$prisonerNumber/physical-attributes"))
@@ -53,7 +54,7 @@ class PrisonPersonDpsApiServiceTest {
     fun `should pass data to the service`() = runTest {
       dpsPrisonPersonServer.stubSyncPrisonPerson(aResponse())
 
-      apiService.syncPhysicalAttributes(prisonerNumber, height, weight, appliesFrom, appliesTo, createdAt, createdBy)
+      apiService.syncPhysicalAttributes(prisonerNumber, height, weight, appliesFrom, appliesTo, latestBooking, createdAt, createdBy)
 
       dpsPrisonPersonServer.verify(
         putRequestedFor(urlPathMatching("/sync/prisoners/$prisonerNumber/physical-attributes"))
@@ -70,7 +71,7 @@ class PrisonPersonDpsApiServiceTest {
     fun `should not pass null data to the service`() = runTest {
       dpsPrisonPersonServer.stubSyncPrisonPerson(aResponse())
 
-      apiService.syncPhysicalAttributes(prisonerNumber, null, null, appliesFrom, null, createdAt, createdBy)
+      apiService.syncPhysicalAttributes(prisonerNumber, null, null, appliesFrom, null, latestBooking, createdAt, createdBy)
 
       dpsPrisonPersonServer.verify(
         putRequestedFor(urlPathMatching("/sync/prisoners/$prisonerNumber/physical-attributes"))
@@ -84,7 +85,7 @@ class PrisonPersonDpsApiServiceTest {
     fun `should parse the response`() = runTest {
       dpsPrisonPersonServer.stubSyncPrisonPerson(aResponse(ids = listOf(321)))
 
-      val response = apiService.syncPhysicalAttributes(prisonerNumber, height, weight, appliesFrom, appliesTo, createdAt, createdBy)
+      val response = apiService.syncPhysicalAttributes(prisonerNumber, height, weight, appliesFrom, appliesTo, latestBooking, createdAt, createdBy)
 
       assertThat(response.fieldHistoryInserted).containsExactly(321L)
     }
@@ -94,7 +95,7 @@ class PrisonPersonDpsApiServiceTest {
       dpsPrisonPersonServer.stubSyncPrisonPerson(INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.syncPhysicalAttributes(prisonerNumber, height, weight, appliesFrom, appliesTo, createdAt, createdBy)
+        apiService.syncPhysicalAttributes(prisonerNumber, height, weight, appliesFrom, appliesTo, latestBooking, createdAt, createdBy)
       }
     }
 

@@ -78,6 +78,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
             "weight" to equalTo("80"),
             "appliesFrom" to equalTo("${yesterday.toZoned()}"),
             "appliesTo" to absent(),
+            "latestBooking" to equalTo("true"),
             "createdAt" to equalTo("${now.toZoned()}"),
             "createdBy" to equalTo("A_USER"),
           ),
@@ -232,6 +233,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
               aBookingResponse(
                 bookingId = 12344,
                 endDateTime = "$yesterday",
+                latestBooking = false,
                 physicalAttributes = listOf(
                   aPhysicalAttributesResponse(
                     heightCentimetres = 180,
@@ -243,6 +245,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
                 bookingId = 12345,
                 startDateTime = "$now",
                 endDateTime = null,
+                latestBooking = true,
                 physicalAttributes = listOf(
                   aPhysicalAttributesResponse(
                     heightCentimetres = 170,
@@ -264,6 +267,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
             "weight" to equalTo("70"),
             "appliesFrom" to equalTo("${now.toZoned()}"),
             "appliesTo" to absent(),
+            "latestBooking" to equalTo("true"),
           ),
         )
       }
@@ -278,6 +282,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
                 bookingId = 12344,
                 startDateTime = "${now.minusDays(3)}",
                 endDateTime = "${now.minusDays(2)}",
+                latestBooking = false,
                 physicalAttributes = listOf(
                   aPhysicalAttributesResponse(
                     heightCentimetres = 180,
@@ -289,6 +294,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
                 bookingId = 12345,
                 startDateTime = "$now",
                 endDateTime = null,
+                latestBooking = true,
                 physicalAttributes = listOf(
                   aPhysicalAttributesResponse(
                     heightCentimetres = 170,
@@ -310,6 +316,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
             "weight" to equalTo("80"),
             "appliesFrom" to equalTo("${now.minusDays(3).toZoned()}"),
             "appliesTo" to equalTo("${now.minusDays(2).toZoned()}"),
+            "latestBooking" to equalTo("false"),
           ),
         )
       }
@@ -324,6 +331,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
                 bookingId = 12344,
                 startDateTime = "${now.minusDays(3)}",
                 endDateTime = "${now.minusDays(2)}",
+                latestBooking = false,
                 physicalAttributes = listOf(
                   aPhysicalAttributesResponse(
                     attributeSequence = 1,
@@ -343,6 +351,7 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
                 bookingId = 12345,
                 startDateTime = "$now",
                 endDateTime = null,
+                latestBooking = true,
                 physicalAttributes = listOf(
                   aPhysicalAttributesResponse(
                     heightCentimetres = 170,
@@ -365,6 +374,47 @@ class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
             "weight" to equalTo("80"),
             "appliesFrom" to equalTo("${now.minusDays(3).toZoned()}"),
             "appliesTo" to equalTo("${now.minusDays(2).toZoned()}"),
+            "latestBooking" to equalTo("false"),
+          ),
+        )
+      }
+
+      @Test
+      fun `should sync a historical booking which is the latest booking`() {
+        nomisMockServer.stubGetPhysicalAttributes(
+          offenderNo,
+          aPrisonerPhysicalAttributesResponse(
+            bookings = listOf(
+              aBookingResponse(
+                bookingId = 12344,
+                startDateTime = "${now.minusDays(3)}",
+                endDateTime = "${now.minusDays(2)}",
+                latestBooking = true,
+                physicalAttributes = listOf(
+                  aPhysicalAttributesResponse(
+                    attributeSequence = 1,
+                    heightCentimetres = 180,
+                    weightKilograms = 80,
+                    modifiedDateTime = "$now",
+                  ),
+                ),
+              ),
+            ),
+          ),
+        )
+        dpsPrisonPersonServer.stubSyncPrisonPerson(aResponse())
+
+        sendPhysicalAttributesChangedEvent(bookingId = 12344)
+
+        verifyResults(
+          bookingId = 12344,
+          attributeSequence = 1,
+          dpsUpdates = mapOf(
+            "height" to equalTo("180"),
+            "weight" to equalTo("80"),
+            "appliesFrom" to equalTo("${now.minusDays(3).toZoned()}"),
+            "appliesTo" to equalTo("${now.minusDays(2).toZoned()}"),
+            "latestBooking" to equalTo("true"),
           ),
         )
       }
