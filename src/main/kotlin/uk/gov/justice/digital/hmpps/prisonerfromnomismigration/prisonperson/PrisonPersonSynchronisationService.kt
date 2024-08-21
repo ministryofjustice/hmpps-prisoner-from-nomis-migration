@@ -45,6 +45,7 @@ class PrisonPersonSynchronisationService(
         physicalAttributes.weightKilograms,
         booking.startDateTime.toLocalDateTime(),
         booking.endDateTime?.toLocalDateTime(),
+        booking.latestBooking,
         (physicalAttributes.modifiedDateTime ?: physicalAttributes.createDateTime).toLocalDateTime(),
         physicalAttributes.modifiedDateTime?.let { physicalAttributes.modifiedBy } ?: physicalAttributes.createdBy,
       )

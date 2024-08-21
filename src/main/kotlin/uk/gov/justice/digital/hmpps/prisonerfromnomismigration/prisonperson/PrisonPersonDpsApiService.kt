@@ -21,13 +21,14 @@ class PrisonPersonDpsApiService(@Qualifier("prisonPersonApiWebClient") private v
     weightKilograms: Int?,
     appliesFrom: LocalDateTime,
     appliesTo: LocalDateTime?,
+    latestBooking: Boolean,
     createdAt: LocalDateTime,
     createdBy: String,
   ): PhysicalAttributesSyncResponse =
     webClient
       .put()
       .uri("/sync/prisoners/{prisonerNumber}/physical-attributes", prisonerNumber)
-      .bodyValue(syncPhysicalAttributesRequest(heightCentimetres, weightKilograms, appliesFrom, appliesTo, createdAt, createdBy))
+      .bodyValue(syncPhysicalAttributesRequest(heightCentimetres, weightKilograms, appliesFrom, appliesTo, latestBooking, createdAt, createdBy))
       .retrieve()
       .awaitBody()
 
@@ -36,6 +37,7 @@ class PrisonPersonDpsApiService(@Qualifier("prisonPersonApiWebClient") private v
     weightKilograms: Int?,
     appliesFrom: LocalDateTime,
     appliesTo: LocalDateTime?,
+    latestBooking: Boolean,
     createdAt: LocalDateTime,
     createdBy: String,
   ) =
@@ -44,6 +46,7 @@ class PrisonPersonDpsApiService(@Qualifier("prisonPersonApiWebClient") private v
       weight = weightKilograms,
       appliesFrom = appliesFrom.atZone(zone).toString(),
       appliesTo = appliesTo?.atZone(zone)?.toString(),
+      latestBooking = latestBooking,
       createdAt = createdAt.atZone(zone).toString(),
       createdBy = createdBy,
     )
