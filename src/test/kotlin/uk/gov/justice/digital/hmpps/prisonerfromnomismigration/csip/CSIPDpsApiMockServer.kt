@@ -310,7 +310,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubMigrteCSIPReport(dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5", offenderNo: String = "A1234BC") {
+  fun stubMigrateCSIPReport(dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5", offenderNo: String = "A1234BC") {
     stubFor(
       post("/migrate/prisoners/$offenderNo/csip-records").willReturn(
         aResponse()

@@ -111,7 +111,7 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
       csipMappingApi.stubGetByNomisId(status = HttpStatus.NOT_FOUND)
       mappingApi.stubMappingCreate(CSIP_CREATE_MAPPING_URL)
 
-      csipApi.stubMigrteCSIPReport()
+      csipApi.stubMigrateCSIPReport()
       csipMappingApi.stubCSIPMappingByMigrationId(count = 86)
 
       webTestClient.performMigration(
@@ -141,7 +141,7 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
       csipNomisApi.stubGetInitialCount(CSIP_ID_URL, 26) { csipIdsPagedResponse(it) }
       csipNomisApi.stubGetPagedCSIPIds(totalElements = 26, pageSize = 10)
       csipNomisApi.stubMultipleGetCSIP(1..26)
-      csipApi.stubMigrteCSIPReport()
+      csipApi.stubMigrateCSIPReport()
       csipMappingApi.stubGetByNomisId(status = HttpStatus.NOT_FOUND)
       mappingApi.stubMappingCreate(CSIP_CREATE_MAPPING_URL)
 
@@ -182,7 +182,7 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
       csipNomisApi.stubMultipleGetCSIP(1..1)
       csipMappingApi.stubGetByNomisId(status = HttpStatus.NOT_FOUND)
       csipMappingApi.stubCSIPMappingByMigrationId()
-      csipApi.stubMigrteCSIPReport()
+      csipApi.stubMigrateCSIPReport()
       mappingApi.stubMappingCreateFailureFollowedBySuccess(CSIP_CREATE_MAPPING_URL)
 
       webTestClient.performMigration()
@@ -203,7 +203,7 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
       csipNomisApi.stubMultipleGetCSIP(1..1)
       csipMappingApi.stubGetByNomisId(status = HttpStatus.NOT_FOUND)
       csipMappingApi.stubCSIPMappingByMigrationId()
-      csipApi.stubMigrteCSIPReport(duplicateDPSCSIPId)
+      csipApi.stubMigrateCSIPReport(duplicateDPSCSIPId)
       csipMappingApi.stubCSIPMappingCreateConflict()
       webTestClient.performMigration()
 

@@ -48,7 +48,7 @@ internal class CSIPDpsApiServiceTest {
 
       @BeforeEach
       internal fun setUp() {
-        csipApi.stubMigrteCSIPReport()
+        csipApi.stubMigrateCSIPReport()
 
         runBlocking {
           csipService.migrateCSIP("A1234BC", dpsMigrateCsipRecordRequest())
