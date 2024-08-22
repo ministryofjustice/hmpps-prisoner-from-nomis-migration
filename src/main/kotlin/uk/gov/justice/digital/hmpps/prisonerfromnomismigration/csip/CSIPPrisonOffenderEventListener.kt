@@ -60,7 +60,7 @@ class CSIPPrisonOffenderEventListener(
               "CSIP_REVIEWS-DELETED" -> log.debug("Delete CSIP Review")
               "CSIP_ATTENDEES-DELETED" -> log.debug("Delete CSIP Attendee")
               "CSIP_FACTORS-DELETED" -> csipFactorSynchronisationService.csipFactorDeleted(sqsMessage.Message.fromJson())
-              "CSIP_INTVW-DELETED" -> log.debug("Delete CSIP Interview")
+              "CSIP_INTVW-DELETED" -> csipSynchronisationService.csipInterviewDeleted(sqsMessage.Message.fromJson())
 
               // TODO check if needed
               // "prison-offender-events.prisoner.merged"
@@ -116,6 +116,13 @@ data class CSIPFactorEvent(
 
 data class CSIPPlanEvent(
   val csipPlanId: Long,
+  val csipReportId: Long,
+  val offenderIdDisplay: String,
+  val auditModuleName: String?,
+)
+
+data class CSIPInterviewEvent(
+  val csipInterviewId: Long,
   val csipReportId: Long,
   val offenderIdDisplay: String,
   val auditModuleName: String?,
