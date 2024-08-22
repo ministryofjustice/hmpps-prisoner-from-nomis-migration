@@ -41,24 +41,27 @@ class CSIPPrisonOffenderEventListener(
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
           if (eventFeatureSwitch.isEnabled(eventType, "csip")) {
             when (eventType) {
+              // The first grouping will all (eventually) call the same method
               "CSIP_REPORTS-INSERTED" -> csipSynchronisationService.csipReportInserted(sqsMessage.Message.fromJson())
               "CSIP_REPORTS-UPDATED" -> csipReportUpdated(sqsMessage.Message.fromJson())
-              "CSIP_REPORTS-DELETED" -> csipSynchronisationService.csipReportDeleted(sqsMessage.Message.fromJson())
               "CSIP_PLANS-INSERTED" -> log.debug("Insert CSIP Plan")
               "CSIP_PLANS-UPDATED" -> log.debug("Update CSIP Plan")
-              "CSIP_PLANS-DELETED" -> log.debug("Delete CSIP Plan")
               "CSIP_REVIEWS-INSERTED" -> log.debug("Insert CSIP Review")
               "CSIP_REVIEWS-UPDATED" -> log.debug("Update CSIP Review")
-              "CSIP_REVIEWS-DELETED" -> log.debug("Delete CSIP Review")
               "CSIP_ATTENDEES-INSERTED" -> log.debug("Insert CSIP Attendee")
               "CSIP_ATTENDEES-UPDATED" -> log.debug("Update CSIP Attendee")
-              "CSIP_ATTENDEES-DELETED" -> log.debug("Delete CSIP Attendee")
               "CSIP_FACTORS-INSERTED" -> csipFactorSynchronisationService.csipFactorInserted(sqsMessage.Message.fromJson())
               "CSIP_FACTORS-UPDATED" -> csipFactorSynchronisationService.csipFactorUpdated(sqsMessage.Message.fromJson())
-              "CSIP_FACTORS-DELETED" -> csipFactorSynchronisationService.csipFactorDeleted(sqsMessage.Message.fromJson())
               "CSIP_INTVW-INSERTED" -> log.debug("Insert CSIP Interview")
               "CSIP_INTVW-UPDATED" -> log.debug("Update CSIP Interview")
+
+              "CSIP_REPORTS-DELETED" -> csipSynchronisationService.csipReportDeleted(sqsMessage.Message.fromJson())
+              "CSIP_PLANS-DELETED" -> csipSynchronisationService.csipPlanDeleted(sqsMessage.Message.fromJson())
+              "CSIP_REVIEWS-DELETED" -> log.debug("Delete CSIP Review")
+              "CSIP_ATTENDEES-DELETED" -> log.debug("Delete CSIP Attendee")
+              "CSIP_FACTORS-DELETED" -> csipFactorSynchronisationService.csipFactorDeleted(sqsMessage.Message.fromJson())
               "CSIP_INTVW-DELETED" -> log.debug("Delete CSIP Interview")
+
               // TODO check if needed
               // "prison-offender-events.prisoner.merged"
 
@@ -111,14 +114,12 @@ data class CSIPFactorEvent(
   val auditModuleName: String?,
 )
 
-/*
 data class CSIPPlanEvent(
   val csipPlanId: Long,
   val csipReportId: Long,
   val offenderIdDisplay: String,
   val auditModuleName: String?,
 )
-*/
 
 private fun asCompletableFuture(
   process: suspend () -> Unit,

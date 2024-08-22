@@ -477,5 +477,45 @@ internal class CSIPDpsApiServiceTest {
         }
       }
     }
+
+    @Nested
+    @DisplayName("DELETE /csip-records/plan/identified-needs/{dpsCSIPPlanId}")
+    inner class DeleteCSIPPlan {
+      private val dpsCSIPPlanId = UUID.randomUUID().toString()
+
+      @Nested
+      inner class CSIPPlanExists {
+        @BeforeEach
+        internal fun setUp() {
+          csipApi.stubCSIPPlanDelete(dpsCSIPPlanId)
+          runBlocking {
+            csipService.deleteCSIPPlan(csipPlanId = dpsCSIPPlanId)
+          }
+        }
+
+        @Test
+        fun `should call api with OAuth2 token`() {
+          csipApi.verify(
+            deleteRequestedFor(urlEqualTo("/csip-records/plan/identified-needs/$dpsCSIPPlanId"))
+              .withHeader("Authorization", equalTo("Bearer ABCDE")),
+          )
+        }
+      }
+
+      @Nested
+      inner class CSIPPlanAlreadyDeleted {
+        @BeforeEach
+        internal fun setUp() {
+          csipApi.stubCSIPPlanDeleteNotFound()
+        }
+
+        @Test
+        fun `should throw error when not found`() = runTest {
+          assertThrows<WebClientResponseException.NotFound> {
+            csipService.deleteCSIPPlan(csipPlanId = dpsCSIPPlanId)
+          }
+        }
+      }
+    }
   }
 }
