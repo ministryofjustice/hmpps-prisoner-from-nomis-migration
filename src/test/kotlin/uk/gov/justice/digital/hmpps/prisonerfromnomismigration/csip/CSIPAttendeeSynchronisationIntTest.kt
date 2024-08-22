@@ -21,9 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExten
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 
-private const val NOMIS_CSIP_ID = 1234L
-
-class CSIPPlanSynchronisationIntTest : SqsIntegrationTestBase() {
+class CSIPAttendeeSynchronisationIntTest : SqsIntegrationTestBase() {
   @Autowired
   private lateinit var csipNomisApi: CSIPNomisApiMockServer
 
@@ -31,12 +29,12 @@ class CSIPPlanSynchronisationIntTest : SqsIntegrationTestBase() {
   private lateinit var csipMappingApi: CSIPMappingApiMockServer
 
   @Nested
-  @DisplayName("CSIP_PLANS-DELETED")
-  inner class CSIPPlanDeleted {
-    private val nomisCSIPPlanId = 343L
+  @DisplayName("CSIP_ATTENDEES-DELETED")
+  inner class CSIPAttendeeDeleted {
+    private val nomisCSIPAttendeeId = 343L
 
     @Nested
-    @DisplayName("When csip plan was deleted")
+    @DisplayName("When csip attendee was deleted")
     inner class DeletedInEitherNOMISOrDPS {
 
       @Nested
@@ -44,10 +42,10 @@ class CSIPPlanSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class MappingDoesNotExist {
         @BeforeEach
         fun setUp() {
-          csipMappingApi.stubGetPlanByNomisId(HttpStatus.NOT_FOUND)
+          csipMappingApi.stubGetAttendeeByNomisId(HttpStatus.NOT_FOUND)
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
-            csipPlanEvent(eventType = "CSIP_PLANS-DELETED", csipPlanId = nomisCSIPPlanId.toString()),
+            csipAttendeeEvent(eventType = "CSIP_ATTENDEES-DELETED", csipAttendeeId = nomisCSIPAttendeeId.toString()),
           )
         }
 
@@ -55,9 +53,9 @@ class CSIPPlanSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `telemetry added to track that the delete was ignored`() {
           await untilAsserted {
             verify(telemetryClient, Mockito.atLeastOnce()).trackEvent(
-              eq("csip-plan-synchronisation-deleted-ignored"),
+              eq("csip-attendee-synchronisation-deleted-ignored"),
               check {
-                assertThat(it["nomisCSIPPlanId"]).isEqualTo(nomisCSIPPlanId.toString())
+                assertThat(it["nomisCSIPAttendeeId"]).isEqualTo(nomisCSIPAttendeeId.toString())
               },
               isNull(),
             )
@@ -68,48 +66,53 @@ class CSIPPlanSynchronisationIntTest : SqsIntegrationTestBase() {
       @Nested
       @DisplayName("Happy Path")
       inner class HappyPath {
-        private val dpsCSIPPlanId = "c4d6fb09-fd27-42bc-a33e-5ca74ac510be"
-        private val nomisCSIPPlanId = 987L
+        private val dpsCSIPAttendeeId = "c4d6fb09-fd27-42bc-a33e-5ca74ac510be"
+        private val nomisCSIPAttendeeId = 987L
+        private val nomisCSIPReportId = 1234L
 
         @BeforeEach
         fun setUp() {
-          csipMappingApi.stubGetPlanByNomisId(nomisCSIPPlanId = nomisCSIPPlanId, dpsCSIPPlanId = dpsCSIPPlanId)
+          csipMappingApi.stubGetAttendeeByNomisId(nomisCSIPAttendeeId = nomisCSIPAttendeeId, dpsCSIPAttendeeId = dpsCSIPAttendeeId)
 
-          csipApi.stubDeleteCSIPPlan(dpsCSIPPlanId = dpsCSIPPlanId)
-          csipMappingApi.stubDeletePlanMapping(dpsCSIPPlanId = dpsCSIPPlanId)
+          csipApi.stubDeleteCSIPAttendee(dpsCSIPAttendeeId = dpsCSIPAttendeeId)
+          csipMappingApi.stubDeleteAttendeeMapping(dpsCSIPAttendeeId = dpsCSIPAttendeeId)
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
-            csipPlanEvent(eventType = "CSIP_PLANS-DELETED", csipPlanId = nomisCSIPPlanId.toString()),
+            csipAttendeeEvent(
+              eventType = "CSIP_ATTENDEES-DELETED",
+              csipAttendeeId = nomisCSIPAttendeeId.toString(),
+              csipReportId = nomisCSIPReportId.toString(),
+            ),
           )
 
-          waitForAnyProcessingToComplete("csip-plan-synchronisation-deleted-success")
+          waitForAnyProcessingToComplete("csip-attendee-synchronisation-deleted-success")
         }
 
         @Test
         fun `will delete CSIP in DPS`() {
           csipApi.verify(
             1,
-            WireMock.deleteRequestedFor(urlPathEqualTo("/csip-records/plan/identified-needs/$dpsCSIPPlanId")),
+            WireMock.deleteRequestedFor(urlPathEqualTo("/csip-records/plan/reviews/attendees/$dpsCSIPAttendeeId")),
           )
         }
 
         @Test
-        fun `will delete CSIP Plan mapping`() {
+        fun `will delete CSIP Attendee mapping`() {
           csipMappingApi.verify(
             1,
-            WireMock.deleteRequestedFor(urlPathEqualTo("/mapping/csip/plans/dps-csip-plan-id/$dpsCSIPPlanId")),
+            WireMock.deleteRequestedFor(urlPathEqualTo("/mapping/csip/attendees/dps-csip-attendee-id/$dpsCSIPAttendeeId")),
           )
         }
 
         @Test
         fun `will track a telemetry event for success`() {
           verify(telemetryClient).trackEvent(
-            eq("csip-plan-synchronisation-deleted-success"),
+            eq("csip-attendee-synchronisation-deleted-success"),
             check {
-              assertThat(it["nomisCSIPPlanId"]).isEqualTo(nomisCSIPPlanId.toString())
-              assertThat(it["dpsCSIPPlanId"]).isEqualTo(dpsCSIPPlanId)
+              assertThat(it["nomisCSIPAttendeeId"]).isEqualTo(nomisCSIPAttendeeId.toString())
+              assertThat(it["dpsCSIPAttendeeId"]).isEqualTo(dpsCSIPAttendeeId)
               assertThat(it["offenderNo"]).isEqualTo("A1234BC")
-              assertThat(it["nomisCSIPReportId"]).isEqualTo("$NOMIS_CSIP_ID")
+              assertThat(it["nomisCSIPReportId"]).isEqualTo("$nomisCSIPReportId")
             },
             isNull(),
           )
@@ -119,37 +122,37 @@ class CSIPPlanSynchronisationIntTest : SqsIntegrationTestBase() {
       @Nested
       @DisplayName("When mapping fails to be deleted")
       inner class MappingDeleteFails {
-        private val nomisCSIPPlanId = 121L
-        private val dpsCSIPPlanId = "a4725216-892d-4325-bc18-f74d95f3bca2"
+        private val nomisCSIPAttendeeId = 121L
+        private val dpsCSIPAttendeeId = "a4725216-892d-4325-bc18-f74d95f3bca2"
 
         @BeforeEach
         fun setUp() {
-          csipMappingApi.stubGetPlanByNomisId(nomisCSIPPlanId = nomisCSIPPlanId, dpsCSIPPlanId = dpsCSIPPlanId)
-          csipApi.stubDeleteCSIPPlan(dpsCSIPPlanId = dpsCSIPPlanId)
-          csipMappingApi.stubDeletePlanMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
+          csipMappingApi.stubGetAttendeeByNomisId(nomisCSIPAttendeeId = nomisCSIPAttendeeId, dpsCSIPAttendeeId = dpsCSIPAttendeeId)
+          csipApi.stubDeleteCSIPAttendee(dpsCSIPAttendeeId = dpsCSIPAttendeeId)
+          csipMappingApi.stubDeleteAttendeeMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
-            csipPlanEvent(eventType = "CSIP_PLANS-DELETED", csipPlanId = nomisCSIPPlanId.toString()),
+            csipAttendeeEvent(eventType = "CSIP_ATTENDEES-DELETED", csipAttendeeId = nomisCSIPAttendeeId.toString()),
           )
-          waitForAnyProcessingToComplete("csip-plan-mapping-deleted-failed")
+          waitForAnyProcessingToComplete("csip-attendee-mapping-deleted-failed")
         }
 
         @Test
         fun `will delete csip in DPS`() {
-          csipApi.verify(1, WireMock.deleteRequestedFor(urlPathEqualTo("/csip-records/plan/identified-needs/$dpsCSIPPlanId")))
+          csipApi.verify(1, WireMock.deleteRequestedFor(urlPathEqualTo("/csip-records/plan/reviews/attendees/$dpsCSIPAttendeeId")))
         }
 
         @Test
         fun `will try to delete CSIP mapping once and record failure`() {
           verify(telemetryClient).trackEvent(
-            eq("csip-plan-mapping-deleted-failed"),
+            eq("csip-attendee-mapping-deleted-failed"),
             any(),
             isNull(),
           )
 
           csipMappingApi.verify(
             1,
-            WireMock.deleteRequestedFor(urlPathEqualTo("/mapping/csip/plans/dps-csip-plan-id/$dpsCSIPPlanId")),
+            WireMock.deleteRequestedFor(urlPathEqualTo("/mapping/csip/attendees/dps-csip-attendee-id/$dpsCSIPAttendeeId")),
           )
         }
 
@@ -157,10 +160,10 @@ class CSIPPlanSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will eventually track a telemetry event for success`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("csip-plan-synchronisation-deleted-success"),
+              eq("csip-attendee-synchronisation-deleted-success"),
               check {
-                assertThat(it["nomisCSIPPlanId"]).isEqualTo(nomisCSIPPlanId.toString())
-                assertThat(it["dpsCSIPPlanId"]).isEqualTo(dpsCSIPPlanId)
+                assertThat(it["nomisCSIPAttendeeId"]).isEqualTo(nomisCSIPAttendeeId.toString())
+                assertThat(it["dpsCSIPAttendeeId"]).isEqualTo(dpsCSIPAttendeeId)
               },
               isNull(),
             )
@@ -171,17 +174,17 @@ class CSIPPlanSynchronisationIntTest : SqsIntegrationTestBase() {
   }
 }
 
-fun csipPlanEvent(
-  eventType: String = "CSIP_PLANS-INSERTED",
-  csipPlanId: String,
-  csipReportId: String = "$NOMIS_CSIP_ID",
+fun csipAttendeeEvent(
+  eventType: String = "CSIP_ATTENDEES-INSERTED",
+  csipAttendeeId: String,
+  csipReportId: String = "1234",
   auditModuleName: String = "OIDCSIPC",
 ) = """
   {
     "Type" : "Notification",
     "MessageId" : "7bdec840-69e5-5163-8013-967eb63d3d26",
     "TopicArn" : "arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-f221e27fcfcf78f6ab4f4c3cc165eee7",
-    "Message" : "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2024-06-11T10:39:17\",\"bookingId\":1215724,\"offenderIdDisplay\":\"A1234BC\",\"nomisEventType\":\"$eventType\",\"rootOffenderId\":2581911,\"csipPlanId\":\"$csipPlanId\",\"csipReportId\":\"$csipReportId\",\"auditModuleName\":\"$auditModuleName\"}",
+    "Message" : "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2024-06-11T10:39:17\",\"bookingId\":1215724,\"offenderIdDisplay\":\"A1234BC\",\"nomisEventType\":\"$eventType\",\"rootOffenderId\":2581911,\"csipAttendeeId\":\"$csipAttendeeId\",\"csipReportId\":\"$csipReportId\",\"auditModuleName\":\"$auditModuleName\"}",
     "Timestamp" : "2024-02-08T13:56:40.981Z",
     "SignatureVersion" : "1",
     "Signature" : "ZUU+9m0kLuVMVE0KCwk5LN1bhQQ6VTOP7djMUaJFYB/+s8kKpAh4Hm5XbIrqbAIoDJmf2MF+GxGRe1sypAn7z61GqqotcXI6r5CjiCvQVsrcwQqO0qoUkb5NoXWyBCG4MOaasFYfjleDnthQS/+rnNWT9Ndl09QtAhjfztHnD279GbrVhywj9O1xcDpnIkx/zGsZUbQsPZDOTOcfeV0M8mbrJhWMWefg9fZ05LeLljD4B8DjMfkmMAn3nBszWlZQcQPDReV7xoMPA+dXJpYXXx6PRLPRtfs7BFGA1hsuYI0mXZb3V3QBvG4Jt5IEYPkfKGZDEmf/hK9V7WkfBiDu2A==",

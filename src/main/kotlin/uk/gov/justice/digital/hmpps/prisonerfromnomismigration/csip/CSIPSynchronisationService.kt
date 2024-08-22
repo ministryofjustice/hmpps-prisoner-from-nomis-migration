@@ -179,6 +179,27 @@ class CSIPSynchronisationService(
     }
   }
 
+  suspend fun csipAttendeeDeleted(event: CSIPAttendeeEvent) {
+    val telemetry =
+      mutableMapOf(
+        "nomisCSIPReportId" to event.csipReportId,
+        "offenderNo" to event.offenderIdDisplay,
+        "nomisCSIPAttendeeId" to event.csipAttendeeId,
+      )
+    mappingApiService.getCSIPAttendeeByNomisId(nomisCSIPAttendeeId = event.csipAttendeeId)
+      ?.let { mapping ->
+        log.debug("Found csip attendee mapping: {}", mapping)
+        csipService.deleteCSIPAttendee(mapping.dpsCSIPAttendeeId)
+        tryToDeleteCSIPAttendeeMapping(mapping.dpsCSIPAttendeeId)
+        telemetryClient.trackEvent(
+          "csip-attendee-synchronisation-deleted-success",
+          telemetry + ("dpsCSIPAttendeeId" to mapping.dpsCSIPAttendeeId),
+        )
+      } ?: let {
+      telemetryClient.trackEvent("csip-attendee-synchronisation-deleted-ignored", telemetry)
+    }
+  }
+
   suspend fun csipSaferCustodyScreeningInserted(event: CSIPReportEvent) {
     val nomisCSIP = nomisApiService.getCSIP(event.csipReportId)
     mappingApiService.getCSIPReportByNomisId(nomisCSIPReportId = event.csipReportId)?.let {
@@ -355,6 +376,13 @@ class CSIPSynchronisationService(
   }.onFailure { e ->
     telemetryClient.trackEvent("csip-interview-mapping-deleted-failed", mapOf("dpsCSIPInterviewId" to dpsCSIPInterviewId))
     log.warn("Unable to delete mapping for csip interview $dpsCSIPInterviewId. Please delete manually", e)
+  }
+
+  private suspend fun tryToDeleteCSIPAttendeeMapping(dpsCSIPAttendeeId: String) = runCatching {
+    mappingApiService.deleteCSIPAttendeeMappingByDPSId(dpsCSIPAttendeeId)
+  }.onFailure { e ->
+    telemetryClient.trackEvent("csip-attendee-mapping-deleted-failed", mapOf("dpsCSIPAttendeeId" to dpsCSIPAttendeeId))
+    log.warn("Unable to delete mapping for csip attendee $dpsCSIPAttendeeId. Please delete manually", e)
   }
 }
 

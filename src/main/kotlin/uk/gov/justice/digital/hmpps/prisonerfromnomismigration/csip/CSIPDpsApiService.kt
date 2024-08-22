@@ -72,6 +72,14 @@ class CSIPDpsApiService(@Qualifier("csipApiWebClient") private val webClient: We
       .awaitBodilessEntity()
   }
 
+  suspend fun deleteCSIPAttendee(csipAttendeeId: String) {
+    webClient.delete()
+      .uri("/csip-records/plan/reviews/attendees/{csipAttendeeId}", csipAttendeeId)
+      .header("Source", "NOMIS")
+      .retrieve()
+      .awaitBodilessEntity()
+  }
+
   suspend fun createCSIPSaferCustodyScreening(csipReportId: String, csipSCS: CreateSaferCustodyScreeningOutcomeRequest, createdByUsername: String): SaferCustodyScreeningOutcome =
     webClient.post()
       .uri("/csip-records/{csipReportId}/referral/safer-custody-screening", csipReportId)

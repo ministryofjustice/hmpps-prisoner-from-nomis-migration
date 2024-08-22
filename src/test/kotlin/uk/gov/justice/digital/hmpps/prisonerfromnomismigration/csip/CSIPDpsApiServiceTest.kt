@@ -48,7 +48,7 @@ internal class CSIPDpsApiServiceTest {
 
       @BeforeEach
       internal fun setUp() {
-        csipApi.stubCSIPMigrate()
+        csipApi.stubMigrteCSIPReport()
 
         runBlocking {
           csipService.migrateCSIP("A1234BC", dpsMigrateCsipRecordRequest())
@@ -93,7 +93,7 @@ internal class CSIPDpsApiServiceTest {
     inner class CreateCSIP {
       @BeforeEach
       internal fun setUp() {
-        csipApi.stubCSIPInsert()
+        csipApi.stubInsertCSIPReport()
 
         runBlocking {
           csipService.createCSIPReport("A1234BC", dpsCreateCsipRecordRequest(), "JIM_ADM")
@@ -177,7 +177,7 @@ internal class CSIPDpsApiServiceTest {
 
       @BeforeEach
       internal fun setUp() {
-        csipApi.stubCSIPUpdate(dpsCSIPId)
+        csipApi.stubUpdateCSIPReport(dpsCSIPId)
 
         runBlocking {
           csipService.updateCSIPReferral(dpsCSIPId, dpsUpdateCsipReferralRequest(), "JIM_ADM")
@@ -217,7 +217,7 @@ internal class CSIPDpsApiServiceTest {
 
       @BeforeEach
       internal fun setUp() {
-        csipApi.stubCSIPInvestigationUpdate(dpsCSIPId)
+        csipApi.stubUpdateCSIPInvestigation(dpsCSIPId)
 
         runBlocking {
           csipService.updateCSIPInvestigation(dpsCSIPId, dpsUpdateInvestigationRequest(), "JIM_ADM")
@@ -253,7 +253,7 @@ internal class CSIPDpsApiServiceTest {
 
       @BeforeEach
       internal fun setUp() {
-        csipApi.stubCSIPUpdateDecision(dpsCSIPId)
+        csipApi.stubUpdateCSIPDecision(dpsCSIPId)
 
         runBlocking {
           csipService.updateCSIPDecision(dpsCSIPId, dpsUpdateDecisionRequest(), "JIM_ADM")
@@ -292,7 +292,7 @@ internal class CSIPDpsApiServiceTest {
 
       @BeforeEach
       internal fun setUp() {
-        csipApi.stubCSIPUpdatePlan(dpsCSIPId)
+        csipApi.stubUpdateCSIPPlan(dpsCSIPId)
 
         runBlocking {
           csipService.updateCSIPPlan(dpsCSIPId, dpsUpdatePlanRequest(), "JIM_ADM")
@@ -328,7 +328,7 @@ internal class CSIPDpsApiServiceTest {
 
       @BeforeEach
       internal fun setUp() {
-        csipApi.stubCSIPSCSInsert(dpsCSIPId = dpsCSIPId)
+        csipApi.stubInsertCSIPSCS(dpsCSIPId = dpsCSIPId)
 
         runBlocking {
           csipService.createCSIPSaferCustodyScreening(
@@ -373,7 +373,7 @@ internal class CSIPDpsApiServiceTest {
 
       @BeforeEach
       internal fun setUp() {
-        csipApi.stubCSIPFactorInsert(dpsCSIPReportId = dpsCSIPReportId, dpsCSIPFactorId = dpsCSIPFactorId)
+        csipApi.stubInsertCSIPFactor(dpsCSIPReportId = dpsCSIPReportId, dpsCSIPFactorId = dpsCSIPFactorId)
 
         runBlocking {
           csipService.createCSIPFactor(
@@ -409,7 +409,7 @@ internal class CSIPDpsApiServiceTest {
 
       @BeforeEach
       internal fun setUp() {
-        csipApi.stubCSIPFactorUpdate(dpsCSIPFactorId = dpsCSIPFactorId)
+        csipApi.stubUpdateCSIPFactor(dpsCSIPFactorId = dpsCSIPFactorId)
 
         runBlocking {
           csipService.updateCSIPFactor(
@@ -447,7 +447,7 @@ internal class CSIPDpsApiServiceTest {
       inner class CSIPFactorExists {
         @BeforeEach
         internal fun setUp() {
-          csipApi.stubCSIPFactorDelete(dpsCSIPFactorId)
+          csipApi.stubDeleteCSIPFactor(dpsCSIPFactorId)
           runBlocking {
             csipService.deleteCSIPFactor(csipFactorId = dpsCSIPFactorId)
           }
@@ -466,7 +466,7 @@ internal class CSIPDpsApiServiceTest {
       inner class CSIPFactorAlreadyDeleted {
         @BeforeEach
         internal fun setUp() {
-          csipApi.stubCSIPFactorDeleteNotFound()
+          csipApi.stubDeleteCSIPFactorNotFound()
         }
 
         @Test
@@ -487,7 +487,7 @@ internal class CSIPDpsApiServiceTest {
       inner class CSIPPlanExists {
         @BeforeEach
         internal fun setUp() {
-          csipApi.stubCSIPPlanDelete(dpsCSIPPlanId)
+          csipApi.stubDeleteCSIPPlan(dpsCSIPPlanId)
           runBlocking {
             csipService.deleteCSIPPlan(csipPlanId = dpsCSIPPlanId)
           }
@@ -506,7 +506,7 @@ internal class CSIPDpsApiServiceTest {
       inner class CSIPPlanAlreadyDeleted {
         @BeforeEach
         internal fun setUp() {
-          csipApi.stubCSIPPlanDeleteNotFound()
+          csipApi.stubDeleteCSIPPlanNotFound()
         }
 
         @Test
@@ -553,6 +553,46 @@ internal class CSIPDpsApiServiceTest {
         fun `should throw error when not found`() = runTest {
           assertThrows<WebClientResponseException.NotFound> {
             csipService.deleteCSIPInterview(csipInterviewId = dpsCSIPInterviewId)
+          }
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName("DELETE /csip-records/plan/reviews/attendees/{dpsCSIPAttendeeId}")
+    inner class DeleteCSIPAttendee {
+      private val dpsCSIPAttendeeId = UUID.randomUUID().toString()
+
+      @Nested
+      inner class CSIPAttendeeExists {
+        @BeforeEach
+        internal fun setUp() {
+          csipApi.stubDeleteCSIPAttendee(dpsCSIPAttendeeId)
+          runBlocking {
+            csipService.deleteCSIPAttendee(csipAttendeeId = dpsCSIPAttendeeId)
+          }
+        }
+
+        @Test
+        fun `should call api with OAuth2 token`() {
+          csipApi.verify(
+            deleteRequestedFor(urlEqualTo("/csip-records/plan/reviews/attendees/$dpsCSIPAttendeeId"))
+              .withHeader("Authorization", equalTo("Bearer ABCDE")),
+          )
+        }
+      }
+
+      @Nested
+      inner class CSIPAttendeeAlreadyDeleted {
+        @BeforeEach
+        internal fun setUp() {
+          csipApi.stubDeleteCSIPAttendeeNotFound()
+        }
+
+        @Test
+        fun `should throw error when not found`() = runTest {
+          assertThrows<WebClientResponseException.NotFound> {
+            csipService.deleteCSIPAttendee(csipAttendeeId = dpsCSIPAttendeeId)
           }
         }
       }
