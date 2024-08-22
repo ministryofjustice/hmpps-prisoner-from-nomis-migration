@@ -165,10 +165,10 @@ hmpps.sqs:
     # and there needs to be a significant delay before they are retried which is long enough for the parent to be created.
     migrationlocations:
       errorVisibilityTimeout: 60
-    # The csip sync can have multiple events relating to the same incident (e.g. INCIDENT-DELETED-RESPONSES) this can cause
+    # The incidents sync can have multiple events relating to the same incident (e.g. INCIDENT-DELETED-RESPONSES) this can cause
     # OptimisticLockExceptions in the incident-reporting-api service as it tries to process the same incident (it clears and
-    # recreates the incident on each upsert). Stagger csip messages every 5 seconds.
-    eventcsip:
+    # recreates the incident on each upsert). Stagger incident messages every 5 seconds.
+    eventincidents:
       errorVisibilityTimeout: 5
 
 reports:
