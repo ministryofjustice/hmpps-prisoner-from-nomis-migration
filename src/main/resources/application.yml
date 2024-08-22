@@ -169,7 +169,7 @@ hmpps.sqs:
     # OptimisticLockExceptions in the incident-reporting-api service as it tries to process the same incident (it clears and
     # recreates the incident on each upsert). Stagger incident messages every 5 seconds.
     eventincidents:
-      errorVisibilityTimeout: 5
+      errorVisibilityTimeout: 10
 
 reports:
   incidents:
