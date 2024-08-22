@@ -408,7 +408,23 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  // CSIP Investigation
+  // /////////////// CSIP Plan
+  fun stubCSIPPlanDelete(dpsCSIPPlanId: String) {
+    stubDelete("/csip-records/plan/identified-needs/$dpsCSIPPlanId")
+  }
+
+  fun stubCSIPPlanDeleteNotFound(status: HttpStatus = HttpStatus.NOT_FOUND) {
+    stubFor(
+      delete(WireMock.urlPathMatching("/csip-records/plan/identified-needs/\\S+"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value()),
+        ),
+    )
+  }
+
+  // /////////////// CSIP Investigation
   fun stubCSIPInvestigationUpdate(dpsCSIPId: String) {
     stubFor(
       put("/csip-records/$dpsCSIPId/referral/investigation").willReturn(
