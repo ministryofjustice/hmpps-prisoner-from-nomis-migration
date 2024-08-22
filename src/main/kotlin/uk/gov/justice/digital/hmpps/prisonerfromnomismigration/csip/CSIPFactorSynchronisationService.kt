@@ -188,6 +188,6 @@ class CSIPFactorSynchronisationService(
     mappingApiService.deleteCSIPFactorMappingByDPSId(dpsCSIPFactorId)
   }.onFailure { e ->
     telemetryClient.trackEvent("csip-factor-mapping-deleted-failed", mapOf("dpsCSIPFactorId" to dpsCSIPFactorId))
-    log.warn("Unable to delete mapping for csip report $dpsCSIPFactorId. Please delete manually", e)
+    log.warn("Unable to delete mapping for csip factor $dpsCSIPFactorId. Please delete manually", e)
   }
 }

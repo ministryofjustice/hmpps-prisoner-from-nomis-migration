@@ -517,5 +517,45 @@ internal class CSIPDpsApiServiceTest {
         }
       }
     }
+
+    @Nested
+    @DisplayName("DELETE /csip-records/referral/investigation/interviews/{dpsCSIPInterviewId}")
+    inner class DeleteCSIPInterview {
+      private val dpsCSIPInterviewId = UUID.randomUUID().toString()
+
+      @Nested
+      inner class CSIPInterviewExists {
+        @BeforeEach
+        internal fun setUp() {
+          csipApi.stubDeleteCSIPInterview(dpsCSIPInterviewId)
+          runBlocking {
+            csipService.deleteCSIPInterview(csipInterviewId = dpsCSIPInterviewId)
+          }
+        }
+
+        @Test
+        fun `should call api with OAuth2 token`() {
+          csipApi.verify(
+            deleteRequestedFor(urlEqualTo("/csip-records/referral/investigation/interviews/$dpsCSIPInterviewId"))
+              .withHeader("Authorization", equalTo("Bearer ABCDE")),
+          )
+        }
+      }
+
+      @Nested
+      inner class CSIPInterviewAlreadyDeleted {
+        @BeforeEach
+        internal fun setUp() {
+          csipApi.stubDeleteCSIPInterviewNotFound()
+        }
+
+        @Test
+        fun `should throw error when not found`() = runTest {
+          assertThrows<WebClientResponseException.NotFound> {
+            csipService.deleteCSIPInterview(csipInterviewId = dpsCSIPInterviewId)
+          }
+        }
+      }
+    }
   }
 }

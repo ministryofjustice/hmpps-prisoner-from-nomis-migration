@@ -12,6 +12,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
@@ -40,6 +41,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Update
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateInvestigationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdatePlanRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateReferral
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -350,14 +353,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubCSIPDeleteNotFound(status: HttpStatus = HttpStatus.NOT_FOUND) {
-    stubFor(
-      delete(WireMock.urlPathMatching("/csip-records/\\S+"))
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(status.value()),
-        ),
-    )
+    stubDeleteErrorResponse(status = status, url = "/csip-records/\\S+")
   }
 
   // /////////////// CSIP Safer Custody Screening
@@ -398,14 +394,16 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubCSIPFactorDeleteNotFound(status: HttpStatus = HttpStatus.NOT_FOUND) {
-    stubFor(
-      delete(WireMock.urlPathMatching("/csip-records/referral/contributory-factors/\\S+"))
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(status.value()),
-        ),
-    )
+    stubDeleteErrorResponse(status = status, url = "/csip-records/referral/contributory-factors/\\S+")
+  }
+
+  // /////////////// CSIP Interview
+  fun stubDeleteCSIPInterview(dpsCSIPInterviewId: String) {
+    stubDelete("/csip-records/referral/investigation/interviews/$dpsCSIPInterviewId")
+  }
+
+  fun stubDeleteCSIPInterviewNotFound(status: HttpStatus = HttpStatus.NOT_FOUND) {
+    stubDeleteErrorResponse(status = status, url = "/csip-records/referral/investigation/interviews/\\S+")
   }
 
   // /////////////// CSIP Plan
@@ -460,10 +458,22 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   private fun stubDelete(url: String) {
     stubFor(
-      delete(WireMock.urlPathMatching(url)).willReturn(
+      delete(urlPathMatching(url)).willReturn(
         aResponse()
           .withStatus(HttpStatus.NO_CONTENT.value()),
       ),
+    )
+  }
+
+  private fun stubDeleteErrorResponse(status: HttpStatus, url: String, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      delete(urlPathMatching(url))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody(objectMapper.writeValueAsString(error)),
+        ),
     )
   }
 
