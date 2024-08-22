@@ -95,7 +95,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
           csipNomisApi.stubGetCSIPFactor(nomisCSIPFactorId)
           csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPReportId) // Needed to ensure we have the uuid for dps
           csipMappingApi.stubGetFactorByNomisId(HttpStatus.NOT_FOUND)
-          csipApi.stubCSIPFactorInsert(dpsCSIPReportId, dpsCSIPFactorId)
+          csipApi.stubInsertCSIPFactor(dpsCSIPReportId, dpsCSIPFactorId)
           mappingApi.stubMappingCreate("/mapping/csip/factors")
 
           awsSqsCSIPOffenderEventsClient.sendMessage(
@@ -191,7 +191,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
           csipNomisApi.stubGetCSIPFactor(nomisCSIPFactorId)
           csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPReportId) // Needed to ensure we have the uuid for dps
           csipMappingApi.stubGetFactorByNomisId(HttpStatus.NOT_FOUND)
-          csipApi.stubCSIPFactorInsert(dpsCSIPReportId, duplicateDPSCSIPFactorId)
+          csipApi.stubInsertCSIPFactor(dpsCSIPReportId, duplicateDPSCSIPFactorId)
           csipMappingApi.stubCSIPFactorMappingCreateConflict(
             nomisCSIPFactorId = nomisCSIPFactorId,
             duplicateDPSCSIPFactorId = duplicateDPSCSIPFactorId,
@@ -313,7 +313,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
           csipNomisApi.stubGetCSIPFactor(nomisCSIPFactorId)
           csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPReportId) // Needed to ensure we have the uuid for dps
           csipMappingApi.stubGetFactorByNomisId(HttpStatus.NOT_FOUND)
-          csipApi.stubCSIPFactorInsert(dpsCSIPReportId, dpsCSIPFactorId)
+          csipApi.stubInsertCSIPFactor(dpsCSIPReportId, dpsCSIPFactorId)
         }
 
         @Nested
@@ -548,7 +548,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
             nomisCSIPFactorId = nomisCSIPFactorId,
             dpsCSIPFactorId = dpsCSIPFactorId,
           )
-          csipApi.stubCSIPFactorUpdate(dpsCSIPFactorId = dpsCSIPFactorId)
+          csipApi.stubUpdateCSIPFactor(dpsCSIPFactorId = dpsCSIPFactorId)
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
             csipFactorEvent(
@@ -635,7 +635,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
         fun setUp() {
           csipMappingApi.stubGetFactorByNomisId(nomisCSIPFactorId = nomisCSIPFactorId, dpsCSIPFactorId = dpsCSIPFactorId)
 
-          csipApi.stubCSIPFactorDelete(dpsCSIPFactorId = dpsCSIPFactorId)
+          csipApi.stubDeleteCSIPFactor(dpsCSIPFactorId = dpsCSIPFactorId)
           csipMappingApi.stubDeleteFactorMapping(dpsCSIPFactorId = dpsCSIPFactorId)
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
@@ -685,7 +685,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           csipMappingApi.stubGetFactorByNomisId(nomisCSIPFactorId = nomisCSIPFactorId, dpsCSIPFactorId = dpsCSIPFactorId)
-          csipApi.stubCSIPFactorDelete(dpsCSIPFactorId = dpsCSIPFactorId)
+          csipApi.stubDeleteCSIPFactor(dpsCSIPFactorId = dpsCSIPFactorId)
           csipMappingApi.stubDeleteFactorMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,

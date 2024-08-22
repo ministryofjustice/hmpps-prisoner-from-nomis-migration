@@ -94,7 +94,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         fun setUp() {
           csipNomisApi.stubGetCSIP()
           csipMappingApi.stubGetByNomisId(HttpStatus.NOT_FOUND)
-          csipApi.stubCSIPInsert()
+          csipApi.stubInsertCSIPReport()
           mappingApi.stubMappingCreate(CSIP_CREATE_MAPPING_URL)
 
           awsSqsCSIPOffenderEventsClient.sendMessage(
@@ -193,7 +193,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         internal fun `it will not retry after a 409 (duplicate csip written to CSIP API)`() {
           csipNomisApi.stubGetCSIP()
           csipMappingApi.stubGetByNomisId(HttpStatus.NOT_FOUND)
-          csipApi.stubCSIPInsert(duplicateDPSCSIPId)
+          csipApi.stubInsertCSIPReport(duplicateDPSCSIPId)
           csipMappingApi.stubCSIPMappingCreateConflict()
 
           awsSqsCSIPOffenderEventsClient.sendMessage(
@@ -496,7 +496,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPId)
-          csipApi.stubCSIPSCSInsert(dpsCSIPId = dpsCSIPId)
+          csipApi.stubInsertCSIPSCS(dpsCSIPId = dpsCSIPId)
         }
 
         @Test
@@ -589,7 +589,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPId)
-          csipApi.stubCSIPUpdate(dpsCSIPId = dpsCSIPId)
+          csipApi.stubUpdateCSIPReport(dpsCSIPId = dpsCSIPId)
           waitForAnyProcessingToComplete("csip-synchronisation-updated-success")
         }
 
@@ -685,7 +685,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPId)
-          csipApi.stubCSIPUpdate(dpsCSIPId = dpsCSIPId)
+          csipApi.stubUpdateCSIPReport(dpsCSIPId = dpsCSIPId)
           waitForAnyProcessingToComplete("csip-synchronisation-updated-success")
         }
 
@@ -783,7 +783,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPId)
-          csipApi.stubCSIPInvestigationUpdate(dpsCSIPId = dpsCSIPId)
+          csipApi.stubUpdateCSIPInvestigation(dpsCSIPId = dpsCSIPId)
           waitForAnyProcessingToComplete("csip-investigation-synchronisation-updated-success")
         }
 
@@ -876,7 +876,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPId)
-          csipApi.stubCSIPUpdateDecision(dpsCSIPId = dpsCSIPId)
+          csipApi.stubUpdateCSIPDecision(dpsCSIPId = dpsCSIPId)
           waitForAnyProcessingToComplete("csip-decision-synchronisation-updated-success")
         }
 
@@ -973,7 +973,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPId)
-          csipApi.stubCSIPUpdatePlan(dpsCSIPId = dpsCSIPId)
+          csipApi.stubUpdateCSIPPlan(dpsCSIPId = dpsCSIPId)
           waitForAnyProcessingToComplete("csip-plan-synchronisation-updated-success")
         }
 

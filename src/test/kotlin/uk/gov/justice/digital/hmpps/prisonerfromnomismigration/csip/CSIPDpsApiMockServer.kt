@@ -3,7 +3,6 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder
-import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
@@ -311,7 +310,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubCSIPMigrate(dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5", offenderNo: String = "A1234BC") {
+  fun stubMigrateCSIPReport(dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5", offenderNo: String = "A1234BC") {
     stubFor(
       post("/migrate/prisoners/$offenderNo/csip-records").willReturn(
         aResponse()
@@ -322,7 +321,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubCSIPInsert(dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5", offenderNo: String = "A1234BC") {
+  fun stubInsertCSIPReport(dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5", offenderNo: String = "A1234BC") {
     stubFor(
       post("/prisoners/$offenderNo/csip-records").willReturn(
         aResponse()
@@ -333,7 +332,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubCSIPUpdate(dpsCSIPId: String) {
+  fun stubUpdateCSIPReport(dpsCSIPId: String) {
     stubFor(
       patch("/csip-records/$dpsCSIPId/referral").willReturn(
         aResponse()
@@ -357,7 +356,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   // /////////////// CSIP Safer Custody Screening
-  fun stubCSIPSCSInsert(dpsCSIPId: String) {
+  fun stubInsertCSIPSCS(dpsCSIPId: String) {
     stubFor(
       post("/csip-records/$dpsCSIPId/referral/safer-custody-screening").willReturn(
         aResponse()
@@ -369,7 +368,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   // /////////////// CSIP Factor
-  fun stubCSIPFactorInsert(dpsCSIPReportId: String, dpsCSIPFactorId: String) {
+  fun stubInsertCSIPFactor(dpsCSIPReportId: String, dpsCSIPFactorId: String) {
     stubFor(
       post("/csip-records/$dpsCSIPReportId/referral/contributory-factors").willReturn(
         aResponse()
@@ -379,7 +378,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
       ),
     )
   }
-  fun stubCSIPFactorUpdate(dpsCSIPFactorId: String) {
+  fun stubUpdateCSIPFactor(dpsCSIPFactorId: String) {
     stubFor(
       patch("/csip-records/referral/contributory-factors/$dpsCSIPFactorId").willReturn(
         aResponse()
@@ -389,11 +388,11 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
       ),
     )
   }
-  fun stubCSIPFactorDelete(dpsCSIPFactorId: String) {
+  fun stubDeleteCSIPFactor(dpsCSIPFactorId: String) {
     stubDelete("/csip-records/referral/contributory-factors/$dpsCSIPFactorId")
   }
 
-  fun stubCSIPFactorDeleteNotFound(status: HttpStatus = HttpStatus.NOT_FOUND) {
+  fun stubDeleteCSIPFactorNotFound(status: HttpStatus = HttpStatus.NOT_FOUND) {
     stubDeleteErrorResponse(status = status, url = "/csip-records/referral/contributory-factors/\\S+")
   }
 
@@ -406,24 +405,26 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
     stubDeleteErrorResponse(status = status, url = "/csip-records/referral/investigation/interviews/\\S+")
   }
 
+  // /////////////// CSIP Attendee
+  fun stubDeleteCSIPAttendee(dpsCSIPAttendeeId: String) {
+    stubDelete("/csip-records/plan/reviews/attendees/$dpsCSIPAttendeeId")
+  }
+
+  fun stubDeleteCSIPAttendeeNotFound(status: HttpStatus = HttpStatus.NOT_FOUND) {
+    stubDeleteErrorResponse(status = status, url = "/csip-records/plan/reviews/attendees/\\S+")
+  }
+
   // /////////////// CSIP Plan
-  fun stubCSIPPlanDelete(dpsCSIPPlanId: String) {
+  fun stubDeleteCSIPPlan(dpsCSIPPlanId: String) {
     stubDelete("/csip-records/plan/identified-needs/$dpsCSIPPlanId")
   }
 
-  fun stubCSIPPlanDeleteNotFound(status: HttpStatus = HttpStatus.NOT_FOUND) {
-    stubFor(
-      delete(WireMock.urlPathMatching("/csip-records/plan/identified-needs/\\S+"))
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(status.value()),
-        ),
-    )
+  fun stubDeleteCSIPPlanNotFound(status: HttpStatus = HttpStatus.NOT_FOUND) {
+    stubDeleteErrorResponse(status = status, url = "/csip-records/plan/identified-needs/\\S+")
   }
 
   // /////////////// CSIP Investigation
-  fun stubCSIPInvestigationUpdate(dpsCSIPId: String) {
+  fun stubUpdateCSIPInvestigation(dpsCSIPId: String) {
     stubFor(
       put("/csip-records/$dpsCSIPId/referral/investigation").willReturn(
         aResponse()
@@ -434,7 +435,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubCSIPUpdateDecision(dpsCSIPId: String) {
+  fun stubUpdateCSIPDecision(dpsCSIPId: String) {
     stubFor(
       put("/csip-records/$dpsCSIPId/referral/decision-and-actions").willReturn(
         aResponse()
@@ -445,7 +446,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubCSIPUpdatePlan(dpsCSIPId: String) {
+  fun stubUpdateCSIPPlan(dpsCSIPId: String) {
     stubFor(
       put("/csip-records/$dpsCSIPId/plan").willReturn(
         aResponse()
