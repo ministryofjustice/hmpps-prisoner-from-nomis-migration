@@ -87,7 +87,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           prisonId = "ASI",
           title = "There was a problem",
           description = "Fighting was happening",
-          createdAt = "2021-07-04T10:35:17",
+          createdAt = "2021-07-23T10:35:17",
           modifiedAt = "2021-07-23T10:35:17",
           modifiedBy = "JSMITH",
         ),
