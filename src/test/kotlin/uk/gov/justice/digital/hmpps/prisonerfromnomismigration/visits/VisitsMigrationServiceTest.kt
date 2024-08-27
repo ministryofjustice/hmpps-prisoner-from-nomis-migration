@@ -53,6 +53,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisLead
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisVisit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisVisitor
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VisitId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsService.VisitCreated
 import java.time.LocalDateTime
 
 @ExtendWith(MockitoExtension::class)
@@ -900,7 +901,7 @@ internal class VisitsMigrationServiceTest {
       )
 
       whenever(visitsService.createVisit(any())).thenReturn(
-        "654321",
+        VisitCreated("654321"),
       )
     }
 
@@ -999,7 +1000,7 @@ internal class VisitsMigrationServiceTest {
       )
 
       whenever(visitsService.createVisit(any())).thenReturn(
-        "654321",
+        VisitCreated("654321"),
       )
 
       service.migrateNomisEntity(
@@ -1042,7 +1043,7 @@ internal class VisitsMigrationServiceTest {
         )
 
         whenever(visitsService.createVisit(any())).thenReturn(
-          "654321",
+          VisitCreated("654321"),
         )
 
         service.migrateNomisEntity(
@@ -1106,7 +1107,7 @@ internal class VisitsMigrationServiceTest {
         )
 
         whenever(visitsService.createVisit(any())).thenReturn(
-          "654321",
+          VisitCreated("654321"),
         )
 
         service.migrateNomisEntity(
@@ -1862,7 +1863,7 @@ internal class VisitsMigrationServiceTest {
         ),
       )
       whenever(visitsService.createVisit(any())).thenReturn(
-        "654321",
+        VisitCreated("654321"),
       )
 
       service.migrateNomisEntity(
@@ -1894,7 +1895,7 @@ internal class VisitsMigrationServiceTest {
           ),
         )
         whenever(visitsService.createVisit(any())).thenReturn(
-          "654321",
+          VisitCreated("654321"),
         )
 
         whenever(visitMappingService.createMapping(any(), any())).thenThrow(
@@ -1943,7 +1944,7 @@ internal class VisitsMigrationServiceTest {
         )
 
         whenever(visitsService.createVisit(any())).thenReturn(
-          "654321",
+          VisitCreated("654321"),
         )
 
         service.migrateNomisEntity(

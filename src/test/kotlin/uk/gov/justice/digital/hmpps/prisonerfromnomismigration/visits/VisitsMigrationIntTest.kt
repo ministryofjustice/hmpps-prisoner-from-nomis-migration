@@ -17,6 +17,7 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
 import org.springframework.http.ReactiveHttpOutputMessage
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.returnResult
@@ -242,6 +243,31 @@ class VisitsMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(it["duplicateVsipId"]).isEqualTo("654321")
           assertThat(it["existingNomisId"]).isEqualTo("1")
           assertThat(it["duplicateNomisId"]).isEqualTo("1")
+        },
+        isNull(),
+      )
+    }
+
+    @Test
+    internal fun `it will not retry after a 422 (DPS refuses to migrate visit due, eg too far in the future)`() {
+      nomisApi.stubGetInitialCount(NomisApiExtension.VISITS_ID_URL, 1) { visitPagedResponse(it) }
+      nomisApi.stubMultipleGetVisitsCounts(totalElements = 1, pageSize = 10)
+      nomisApi.stubMultipleGetVisits(totalElements = 1)
+      visitsApi.stubCreateVisit(httpResponse = HttpStatus.UNPROCESSABLE_ENTITY)
+
+      webTestClient.performMigration()
+
+      // check that one attempt at creating a visit is made
+      assertThat(visitsApi.createVisitCount()).isEqualTo(1)
+
+      // doesn't try to create mapping
+      mappingApi.verifyCreateMappingVisitIds(arrayOf(1), times = 0)
+
+      verify(telemetryClient).trackEvent(
+        eq("nomis-migration-visit-rejected"),
+        org.mockito.kotlin.check {
+          assertThat(it["migrationId"]).isNotNull
+          assertThat(it["nomisId"]).isEqualTo("1")
         },
         isNull(),
       )
