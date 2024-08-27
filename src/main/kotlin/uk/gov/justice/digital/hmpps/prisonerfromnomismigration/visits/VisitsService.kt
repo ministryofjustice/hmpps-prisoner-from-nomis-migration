@@ -12,7 +12,7 @@ import java.time.LocalDateTime
 @Service
 class VisitsService(@Qualifier("visitsApiWebClient") private val webClient: WebClient) {
   sealed interface VisitCreateResponse
-  class VisitCreated(val dpsVisitId: String) : VisitCreateResponse
+  data class VisitCreated(val dpsVisitId: String) : VisitCreateResponse
   data object VisitCreateAborted : VisitCreateResponse
 
   suspend fun createVisit(createVisitRequest: CreateVsipVisit): VisitCreateResponse =
