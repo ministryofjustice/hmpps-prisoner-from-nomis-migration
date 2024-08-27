@@ -2,23 +2,25 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits
 
 import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.annotation.JsonInclude
-import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenUnprocessableEntity
 import java.time.LocalDateTime
 
 @Service
 class VisitsService(@Qualifier("visitsApiWebClient") private val webClient: WebClient) {
+  sealed interface VisitCreateResponse
+  class VisitCreated(val dpsVisitId: String) : VisitCreateResponse
+  data object VisitCreateAborted : VisitCreateResponse
 
-  suspend fun createVisit(createVisitRequest: CreateVsipVisit): String =
+  suspend fun createVisit(createVisitRequest: CreateVsipVisit): VisitCreateResponse =
     webClient.post()
       .uri("/migrate-visits")
       .bodyValue(createVisitRequest)
       .retrieve()
-      .bodyToMono(String::class.java)
-      .awaitSingle()!!
+      .awaitBodyOrNullWhenUnprocessableEntity<String>()?.let { VisitCreated(it) } ?: VisitCreateAborted
 
   suspend fun cancelVisit(visitReference: String, outcome: VsipOutcomeDto) =
     webClient.put()

@@ -16,12 +16,10 @@ suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitBodyOrNullWhenN
     .onErrorResume(WebClientResponseException.NotAcceptable::class.java) { Mono.empty() }
     .awaitSingleOrNull()
 
-suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitBodyOrNullWhenConflict(): T? =
+suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitBodyOrNullWhenUnprocessableEntity(): T? =
   this.bodyToMono<T>()
-    .onErrorResume(WebClientResponseException.Conflict::class.java) { Mono.empty() }
+    .onErrorResume(WebClientResponseException.UnprocessableEntity::class.java) { Mono.empty() }
     .awaitSingleOrNull()
-
-class DuplicateMappingException(val error: DuplicateErrorResponse) : RuntimeException("message")
 
 class DuplicateErrorResponse(
   val moreInfo: DuplicateErrorContent,
