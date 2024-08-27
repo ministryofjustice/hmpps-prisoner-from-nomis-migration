@@ -55,17 +55,15 @@ class VisitsMigrationService(
     migrationFilter: VisitsMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
-  ): PageImpl<VisitId> {
-    return nomisApiService.getVisits(
-      prisonIds = migrationFilter.prisonIds,
-      visitTypes = migrationFilter.visitTypes,
-      fromDateTime = migrationFilter.fromDateTime,
-      toDateTime = migrationFilter.toDateTime,
-      ignoreMissingRoom = migrationFilter.ignoreMissingRoom,
-      pageNumber = pageNumber,
-      pageSize = pageSize,
-    )
-  }
+  ): PageImpl<VisitId> = nomisApiService.getVisits(
+    prisonIds = migrationFilter.prisonIds,
+    visitTypes = migrationFilter.visitTypes,
+    fromDateTime = migrationFilter.fromDateTime,
+    toDateTime = migrationFilter.toDateTime,
+    ignoreMissingRoom = migrationFilter.ignoreMissingRoom,
+    pageNumber = pageNumber,
+    pageSize = pageSize,
+  )
 
   override suspend fun migrateNomisEntity(context: MigrationContext<VisitId>) {
     visitMappingService.findNomisVisitMapping(context.body.visitId)
@@ -74,37 +72,54 @@ class VisitsMigrationService(
       }
       ?: run {
         val nomisVisit = nomisApiService.getVisit(context.body.visitId)
-        determineRoomMapping(nomisVisit)
-          ?.run {
-            visitsService.createVisit(mapNomisVisit(nomisVisit, this))
-              .also {
-                createNomisVisitMapping(
-                  nomisVisitId = nomisVisit.visitId,
-                  vsipVisitId = it,
-                  context = context,
-                )
-              }.also {
+        when (val roomMapping = determineRoomMapping(nomisVisit)) {
+          is DateAwareRoomMapping -> {
+            when (val visitResponse = visitsService.createVisit(mapNomisVisit(nomisVisit, roomMapping))) {
+              is VisitsService.VisitCreateAborted -> {
                 telemetryClient.trackEvent(
-                  "visits-migration-entity-migrated",
+                  "nomis-migration-visit-rejected",
                   mapOf(
                     "migrationId" to context.migrationId,
                     "prisonId" to nomisVisit.prisonId,
                     "offenderNo" to nomisVisit.offenderNo,
-                    "visitId" to nomisVisit.visitId.toString(),
-                    "vsipVisitId" to it,
+                    "nomisId" to nomisVisit.visitId.toString(),
                     "startDateTime" to nomisVisit.startDateTime.asStringOrBlank(),
-                    "room" to this.room,
+                    "room" to roomMapping.room,
                   ),
                   null,
                 )
               }
-          } ?: run { handleNoRoomMappingFound(context.migrationId, nomisVisit) }
+              is VisitsService.VisitCreated -> {
+                createNomisVisitMapping(
+                  nomisVisitId = nomisVisit.visitId,
+                  vsipVisitId = visitResponse.dpsVisitId,
+                  context = context,
+                ).also {
+                  telemetryClient.trackEvent(
+                    "visits-migration-entity-migrated",
+                    mapOf(
+                      "migrationId" to context.migrationId,
+                      "prisonId" to nomisVisit.prisonId,
+                      "offenderNo" to nomisVisit.offenderNo,
+                      "visitId" to nomisVisit.visitId.toString(),
+                      "vsipVisitId" to visitResponse.dpsVisitId,
+                      "startDateTime" to nomisVisit.startDateTime.asStringOrBlank(),
+                      "room" to roomMapping.room,
+                    ),
+                    null,
+                  )
+                }
+              }
+            }
+          }
+          is NoRoomMapping -> handleNoRoomMappingFound(context.migrationId, nomisVisit)
+        }
       }
   }
 
   private suspend fun determineRoomMapping(
     nomisVisit: NomisVisit,
-  ): DateAwareRoomMapping? = if (isFutureVisit(nomisVisit) && !isErroneousFutureVisit(nomisVisit)) {
+  ): RoomMappingResponse = if (isFutureVisit(nomisVisit) && !isErroneousFutureVisit(nomisVisit)) {
     nomisVisit.agencyInternalLocation?.let {
       visitMappingService.findRoomMapping(
         agencyInternalLocationCode = nomisVisit.agencyInternalLocation.description,
@@ -115,7 +130,7 @@ class VisitsMigrationService(
           restriction = if (it.isOpen) VisitRestriction.OPEN else VisitRestriction.CLOSED,
         )
       }
-    }
+    } ?: NoRoomMapping
   } else {
     DateAwareRoomMapping(
       room = nomisVisit.agencyInternalLocation?.let { nomisVisit.agencyInternalLocation.description } ?: "UNKNOWN",
@@ -288,7 +303,9 @@ class VisitsMigrationService(
     }
 }
 
-data class DateAwareRoomMapping(val room: String?, val restriction: VisitRestriction)
+sealed interface RoomMappingResponse
+data class DateAwareRoomMapping(val room: String?, val restriction: VisitRestriction) : RoomMappingResponse
+data object NoRoomMapping : RoomMappingResponse
 
 private fun NomisCodeDescription.toVisitType() = when (this.code) {
   "SCON" -> "SOCIAL"
@@ -296,5 +313,4 @@ private fun NomisCodeDescription.toVisitType() = when (this.code) {
   else -> throw IllegalArgumentException("Unknown visit type ${this.code}")
 }
 
-class NoRoomMappingFoundException(val prisonId: String, val agencyInternalLocationDescription: String) :
-  RuntimeException("No room mapping found for prisonId $prisonId and agencyInternalLocationDescription $agencyInternalLocationDescription")
+class NoRoomMappingFoundException(val prisonId: String, val agencyInternalLocationDescription: String) : RuntimeException("No room mapping found for prisonId $prisonId and agencyInternalLocationDescription $agencyInternalLocationDescription")

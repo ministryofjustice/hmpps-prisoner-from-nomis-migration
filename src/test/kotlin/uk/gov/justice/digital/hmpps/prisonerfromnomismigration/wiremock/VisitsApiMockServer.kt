@@ -15,7 +15,10 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
 
-class VisitsApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
+class VisitsApiExtension :
+  BeforeAllCallback,
+  AfterAllCallback,
+  BeforeEachCallback {
   companion object {
     @JvmField
     val visitsApi = VisitsApiMockServer()
@@ -50,12 +53,12 @@ class VisitsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubCreateVisit() {
+  fun stubCreateVisit(httpResponse: HttpStatus = HttpStatus.CREATED) {
     stubFor(
       post(urlEqualTo("/migrate-visits")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.CREATED.value())
+          .withStatus(httpResponse.value())
           .withBody("654321"),
       ),
     )

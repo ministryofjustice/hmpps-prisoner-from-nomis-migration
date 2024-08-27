@@ -16,6 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsService.VisitCreateAborted
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsService.VisitCreated
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsApiExtension.Companion.visitsApi
 import java.time.LocalDateTime
 
@@ -133,7 +135,7 @@ internal class VisitsServiceTest {
 
     @Test
     internal fun `will return newly created VSIP visitId`(): Unit = runBlocking {
-      val visitId = visitsService.createVisit(
+      val response = visitsService.createVisit(
         CreateVsipVisit(
           prisonId = "BXI",
           prisonerId = "A1234AA",
@@ -151,7 +153,38 @@ internal class VisitsServiceTest {
           createDateTime = LocalDateTime.parse("2020-01-01T08:00:00"),
         ),
       )
-      assertThat(visitId).isEqualTo("654321")
+      assertThat(response).isEqualTo(VisitCreated("654321"))
+    }
+
+    @Test
+    internal fun `will return abort visit for a 422 response`(): Unit = runBlocking {
+      visitsApi.stubFor(
+        post(urlEqualTo("/migrate-visits")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.UNPROCESSABLE_ENTITY.value()),
+        ),
+      )
+
+      val response = visitsService.createVisit(
+        CreateVsipVisit(
+          prisonId = "BXI",
+          prisonerId = "A1234AA",
+          startTimestamp = LocalDateTime.parse("2020-01-01T09:00:00"),
+          endTimestamp = LocalDateTime.parse("2020-01-01T11:45:00"),
+          visitType = "SOCIAL",
+          visitStatus = VsipStatus.BOOKED,
+          visitRoom = "SOCIAL_CENTRE_1",
+          contactList = listOf(
+            VsipVisitor(nomisPersonId = 5668),
+            VsipVisitor(nomisPersonId = 5678),
+          ),
+          visitRestriction = VisitRestriction.OPEN,
+          actionedBy = "user1",
+          createDateTime = LocalDateTime.parse("2020-01-01T08:00:00"),
+        ),
+      )
+      assertThat(response).isEqualTo(VisitCreateAborted)
     }
   }
 }
