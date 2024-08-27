@@ -67,14 +67,14 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
 
   fun stubGetIncident(
     nomisIncidentId: Long = 1234,
-    lastModifiedDateTime: String? = "2021-07-23T10:35:17",
+    createDateTime: String = "2021-07-23T10:35:17",
     offenderParty: String = "A1234BC",
   ) {
     nomisApi.stubFor(
       get(urlPathEqualTo("/incidents/$nomisIncidentId"))
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(incidentResponse(nomisIncidentId, lastModifiedDateTime, offenderParty)),
+            .withBody(incidentResponse(nomisIncidentId, createDateTime, offenderParty)),
         ),
     )
   }
@@ -200,7 +200,7 @@ private fun incidentAgencyCount(agencyId: String, open: Long, closed: Long) =
 
 private fun incidentResponse(
   nomisIncidentId: Long = 1234,
-  lastModifiedDateTime: String? = "2021-07-23T10:35:17",
+  createDateTime: String = "2021-07-23T10:35:17",
   offenderParty: String = "A1234BC",
 ): IncidentResponse =
   IncidentResponse(
@@ -229,10 +229,10 @@ private fun incidentResponse(
       lastName = "STAFF",
     ),
     followUpDate = LocalDate.parse("2017-04-12"),
-    createDateTime = "2021-02-06T12:36:00",
+    createDateTime = createDateTime,
     createdBy = "JIM SMITH",
     lastModifiedBy = "JIM_ADM",
-    lastModifiedDateTime = lastModifiedDateTime,
+    lastModifiedDateTime = "2021-07-23T10:35:17",
     reportedDateTime = "2024-02-06T12:36:00",
     staffParties = listOf(),
     offenderParties = listOf(

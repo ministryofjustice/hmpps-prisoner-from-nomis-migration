@@ -33,7 +33,7 @@ class IncidentsReconciliationIntTest : SqsIntegrationTestBase() {
       incidentsNomisApi.stubGetReconciliationOpenIncidentIds("ASI", 33, 35)
       incidentsNomisApi.stubGetReconciliationOpenIncidentIds("BFI", 36, 38)
       incidentsNomisApi.stubGetReconciliationOpenIncidentIds("WWI", 39, 41)
-      incidentsNomisApi.stubGetIncident(33, lastModifiedDateTime = "2021-07-23T10:35:17.12345")
+      incidentsNomisApi.stubGetIncident(33, createDateTime = "2021-07-23T10:35:17.12345")
       incidentsNomisApi.stubGetIncidents(34, 41)
       incidentsApi.stubGetIncidents(33, 41)
     }
@@ -248,7 +248,7 @@ class IncidentsReconciliationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will show mismatch differences in report`() {
-        incidentsNomisApi.stubGetIncident(33, offenderParty = "Z4321YX", lastModifiedDateTime = "2022-08-23T12:46:33")
+        incidentsNomisApi.stubGetIncident(33, offenderParty = "Z4321YX", createDateTime = "2022-08-23T12:46:33")
 
         webTestClient.put().uri("/incidents/reports/reconciliation")
           .exchange()
@@ -279,50 +279,9 @@ class IncidentsReconciliationIntTest : SqsIntegrationTestBase() {
           check {
             assertThat(it).containsEntry("nomisId", "33")
             assertThat(it).containsKey("dpsId")
-            assertThat(it).containsEntry("verdict", "Modified mismatch")
-            assertThat(it).containsEntry("nomis", "IncidentReportDetail(type=ATT_ESC_E, lastModifiedDateTime=2022-08-23T12:46:33, reportedBy=FSTAFF_GEN, offenderParties=[Z4321YX])")
-            assertThat(it).containsEntry("dps", "IncidentReportDetail(type=ATTEMPTED_ESCAPE_FROM_ESCORT, lastModifiedDateTime=2021-07-23T10:35:17, reportedBy=FSTAFF_GEN, offenderParties=[A1234BC])")
-          },
-          isNull(),
-        )
-      }
-
-      @Test
-      fun `will show mismatch differences in report when using createDate`() {
-        incidentsNomisApi.stubGetIncident(33, offenderParty = "Z4321YX", lastModifiedDateTime = null)
-
-        webTestClient.put().uri("/incidents/reports/reconciliation")
-          .exchange()
-          .expectStatus().isAccepted
-
-        awaitReportFinished()
-
-        verify(telemetryClient).trackEvent(
-          eq("incidents-reports-reconciliation-report"),
-          check {
-            assertThat(it).containsEntry("mismatch-count", "2")
-            assertThat(it).containsEntry("success", "true")
-            assertThat(it).containsEntry("ASI", "open-dps=3:open-nomis=2; closed-dps=3:closed-nomis=3")
-            assertThat(it).containsEntry("BFI", "open-dps=3:open-nomis=1; closed-dps=3:closed-nomis=4")
-            assertThat(it).doesNotContainKeys("WWI")
-          },
-          isNull(),
-        )
-
-        verify(telemetryClient, times(2)).trackEvent(
-          eq("incidents-reports-reconciliation-mismatch"),
-          any(),
-          isNull(),
-        )
-
-        verify(telemetryClient).trackEvent(
-          eq("incidents-reports-reconciliation-detail-mismatch"),
-          check {
-            assertThat(it).containsEntry("nomisId", "33")
-            assertThat(it).containsKey("dpsId")
-            assertThat(it).containsEntry("verdict", "Modified mismatch")
-            assertThat(it).containsEntry("nomis", "IncidentReportDetail(type=ATT_ESC_E, lastModifiedDateTime=2021-02-06T12:36:00, reportedBy=FSTAFF_GEN, offenderParties=[Z4321YX])")
-            assertThat(it).containsEntry("dps", "IncidentReportDetail(type=ATTEMPTED_ESCAPE_FROM_ESCORT, lastModifiedDateTime=2021-07-23T10:35:17, reportedBy=FSTAFF_GEN, offenderParties=[A1234BC])")
+            assertThat(it).containsEntry("verdict", "Create date mismatch")
+            assertThat(it).containsEntry("nomis", "IncidentReportDetail(type=ATT_ESC_E, createDateTime=2022-08-23T12:46:33, reportedBy=FSTAFF_GEN, offenderParties=[Z4321YX])")
+            assertThat(it).containsEntry("dps", "IncidentReportDetail(type=ATTEMPTED_ESCAPE_FROM_ESCORT, createDateTime=2021-07-23T10:35:17, reportedBy=FSTAFF_GEN, offenderParties=[A1234BC])")
           },
           isNull(),
         )
