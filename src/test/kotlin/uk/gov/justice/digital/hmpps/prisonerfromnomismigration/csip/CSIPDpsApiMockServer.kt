@@ -36,10 +36,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Referr
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SaferCustodyScreeningOutcome
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateContributoryFactorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateCsipRecordRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateDecisionAndActionsRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateInvestigationRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdatePlanRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateReferral
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpsertDecisionAndActionsRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpsertInvestigationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpsertPlanRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import java.time.LocalDate
@@ -165,6 +165,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
       lastModifiedBy = null,
       lastModifiedByDisplayName = null,
       plan = null,
+      status = CsipRecord.Status.CSIP_OPEN,
     )
 
     fun dpsCreateSaferCustodyScreeningOutcomeRequest() =
@@ -186,7 +187,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
       )
 
     fun dpsUpdateInvestigationRequest() =
-      UpdateInvestigationRequest(
+      UpsertInvestigationRequest(
         staffInvolved = "some people",
         evidenceSecured = "A piece of pipe",
         occurrenceReason = "bad behaviour",
@@ -223,7 +224,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
       )
 
     fun dpsUpdateDecisionRequest() =
-      UpdateDecisionAndActionsRequest(
+      UpsertDecisionAndActionsRequest(
         outcomeTypeCode = "CUR",
         conclusion = null,
         signedOffByRoleCode = "CUSTMAN",
@@ -233,9 +234,9 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
         nextSteps = null,
         actions =
         setOf(
-          UpdateDecisionAndActionsRequest.Actions.NonAssociationsUpdated,
-          UpdateDecisionAndActionsRequest.Actions.ObservationBook,
-          UpdateDecisionAndActionsRequest.Actions.ServiceReferral,
+          UpsertDecisionAndActionsRequest.Actions.NON_ASSOCIATIONS_UPDATED,
+          UpsertDecisionAndActionsRequest.Actions.OBSERVATION_BOOK,
+          UpsertDecisionAndActionsRequest.Actions.SERVICE_REFERRAL,
         ),
         actionOther = "Some other info here",
       )
@@ -249,9 +250,9 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
         actions =
         setOf(
-          DecisionAndActions.Actions.NonAssociationsUpdated,
-          DecisionAndActions.Actions.ObservationBook,
-          DecisionAndActions.Actions.ServiceReferral,
+          DecisionAndActions.Actions.NON_ASSOCIATIONS_UPDATED,
+          DecisionAndActions.Actions.OBSERVATION_BOOK,
+          DecisionAndActions.Actions.SERVICE_REFERRAL,
         ),
 
         conclusion = null,
@@ -263,7 +264,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
       )
 
     fun dpsUpdatePlanRequest() =
-      UpdatePlanRequest(
+      UpsertPlanRequest(
         caseManager = "C Jones",
         reasonForPlan = "helper",
         firstCaseReviewDate = LocalDate.parse("2024-04-15"),

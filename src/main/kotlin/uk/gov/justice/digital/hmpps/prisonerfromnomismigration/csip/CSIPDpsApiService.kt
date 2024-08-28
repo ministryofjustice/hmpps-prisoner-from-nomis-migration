@@ -16,9 +16,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Plan
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SaferCustodyScreeningOutcome
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateContributoryFactorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateCsipRecordRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateDecisionAndActionsRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateInvestigationRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdatePlanRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpsertDecisionAndActionsRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpsertInvestigationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpsertPlanRequest
 
 @Service
 class CSIPDpsApiService(@Qualifier("csipApiWebClient") private val webClient: WebClient) {
@@ -89,7 +89,7 @@ class CSIPDpsApiService(@Qualifier("csipApiWebClient") private val webClient: We
       .retrieve()
       .awaitBody()
 
-  suspend fun updateCSIPInvestigation(csipReportId: String, investigationRequest: UpdateInvestigationRequest, updatedByUsername: String): Investigation =
+  suspend fun updateCSIPInvestigation(csipReportId: String, investigationRequest: UpsertInvestigationRequest, updatedByUsername: String): Investigation =
     webClient.put()
       .uri("/csip-records/{csipReportId}/referral/investigation", csipReportId)
       .header("Source", "NOMIS")
@@ -98,7 +98,7 @@ class CSIPDpsApiService(@Qualifier("csipApiWebClient") private val webClient: We
       .retrieve()
       .awaitBody()
 
-  suspend fun updateCSIPDecision(csipReportId: String, decisionRequest: UpdateDecisionAndActionsRequest, updatedByUsername: String): DecisionAndActions =
+  suspend fun updateCSIPDecision(csipReportId: String, decisionRequest: UpsertDecisionAndActionsRequest, updatedByUsername: String): DecisionAndActions =
     webClient.put()
       .uri("/csip-records/{csipReportId}/referral/decision-and-actions", csipReportId)
       .header("Source", "NOMIS")
@@ -107,7 +107,7 @@ class CSIPDpsApiService(@Qualifier("csipApiWebClient") private val webClient: We
       .retrieve()
       .awaitBody()
 
-  suspend fun updateCSIPPlan(csipReportId: String, planRequest: UpdatePlanRequest, updatedByUsername: String): Plan =
+  suspend fun updateCSIPPlan(csipReportId: String, planRequest: UpsertPlanRequest, updatedByUsername: String): Plan =
     webClient.put()
       .uri("/csip-records/{csipReportId}/plan", csipReportId)
       .header("Source", "NOMIS")
@@ -141,45 +141,4 @@ class CSIPDpsApiService(@Qualifier("csipApiWebClient") private val webClient: We
       .retrieve()
       .awaitBodilessEntity()
   }
-
-  /*
-// No create plan - do we ever know - should be upsert
-
-  suspend fun updateCSIPPlan(csipReportId: String, csipPlan: UpdatePlanRequest, updatedByUsername: String): ContributoryFactor =
-    webClient.patch()
-      .uri("/csip-records/{csipReportId}/plan", csipReportId)
-      .bodyValue(csipPlan)
-      .header("Source", "NOMIS")
-      .header("Username", updatedByUsername)
-      .retrieve()
-      .awaitBody()
-
-  // No delete Plan - as part of report?
-
-  suspend fun createCSIPPlanIdentifiedNeed(csipReportId: String, csipIdentifiedNeed: CreateIdentifiedNeedRequest, createdByUsername: String): ContributoryFactor =
-    webClient.post()
-      .uri("/csip-records/{csipReportId}/plan/identified-needs", csipReportId)
-      .header("Source", "NOMIS")
-      .header("Username", createdByUsername)
-      .bodyValue(csipIdentifiedNeed)
-      .retrieve()
-      .awaitBody()
-
-  suspend fun updateCSIPIdentifiedNeed(csipIdentifiedNeedId: String, csipIdentifiedNeed: UpdateIdentifiedNeedRequest, updatedByUsername: String): ContributoryFactor =
-    webClient.patch()
-      .uri("/csip-records/plan/identified-needs/{csipIdentifiedNeedId}", csipIdentifiedNeedId)
-      .bodyValue(csipIdentifiedNeed)
-      .header("Source", "NOMIS")
-      .header("Username", updatedByUsername)
-      .retrieve()
-      .awaitBody()
-
-  suspend fun deleteCSIPIdentifiedNeed(csipIdentifiedNeedId: String) {
-    webClient.delete()
-      .uri("/csip-records/plan/identified-needs/{csipIdentifiedNeedId}", csipIdentifiedNeedId)
-      .header("Source", "NOMIS")
-      .retrieve()
-      .awaitBodilessEntity()
-  }
-   */
 }
