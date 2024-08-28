@@ -6,12 +6,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Create
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateSaferCustodyScreeningOutcomeRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateContributoryFactorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateCsipRecordRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateDecisionAndActionsRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateInvestigationRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdatePlanRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateReferral
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateReferral.IsSaferCustodyTeamInformed.NO
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateReferral.IsSaferCustodyTeamInformed.YES
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpsertDecisionAndActionsRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpsertInvestigationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpsertPlanRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Actions
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPFactorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPResponse
@@ -63,7 +63,7 @@ fun CSIPResponse.toDPSCreateRequest() =
       isProactiveReferral = proActiveReferral,
       isStaffAssaulted = staffAssaulted,
       assaultedStaffName = staffAssaultedName,
-      contributoryFactors = listOf(),
+      contributoryFactors = reportDetails.factors.map { it.toDPSCreateFactorRequest() },
       isSaferCustodyTeamInformed = CreateReferralRequest.IsSaferCustodyTeamInformed.DO_NOT_KNOW,
     ),
   )
@@ -123,7 +123,7 @@ fun CSIPResponse.toDPSUpdateReferralContRequest() =
 fun SaferCustodyScreening.toDPSCreateCSIPSCS() =
   CreateSaferCustodyScreeningOutcomeRequest(
     outcomeTypeCode = outcome!!.code,
-    date = this.recordedDate!!,
+    date = recordedDate!!,
     reasonForDecision = reasonForDecision!!,
     recordedBy = recordedBy!!,
     recordedByDisplayName = recordedByDisplayName!!,
@@ -141,9 +141,8 @@ fun CSIPFactorResponse.toDPSUpdateFactorRequest() =
     comment = comment,
   )
 
-// ////// OIDCSIPI - Investigation ////////////////////////////
 fun InvestigationDetails.toDPSUpdateInvestigationRequest() =
-  UpdateInvestigationRequest(
+  UpsertInvestigationRequest(
     staffInvolved = staffInvolved,
     evidenceSecured = evidenceSecured,
     occurrenceReason = reasonOccurred,
@@ -152,119 +151,40 @@ fun InvestigationDetails.toDPSUpdateInvestigationRequest() =
     protectiveFactors = protectiveFactors,
   )
 
-/*
-fun InterviewDetails.toDPSCreateInterviewRequest() =
-  CreateInterviewRequest(
-    interviewee = interviewee,
-    interviewDate = date,
-    intervieweeRoleCode = role.code,
-    interviewText = comments,
-  )
-fun InterviewDetails.toDPSUpdateInterviewRequest() =
-  UpdateInterviewRequest(
-    interviewee = interviewee,
-    interviewDate = date,
-    intervieweeRoleCode = role.code,
-    interviewText = comments,
-  )
-
-*/
 // ////// OIDCSIPD - Decisions & Actions ////////////////////////////
-fun Decision.toDPSUpdateDecisionsAndActionsRequest() =
-  UpdateDecisionAndActionsRequest(
+fun Decision.toDPSUpsertDecisionsAndActionsRequest() =
+  UpsertDecisionAndActionsRequest(
     outcomeTypeCode = decisionOutcome!!.code,
     conclusion = conclusion,
-    signedOffByRoleCode = signedOffRole?.code,
+    signedOffByRoleCode = signedOffRole?.code ?: "OTHER",
     recordedBy = recordedBy,
     recordedByDisplayName = recordedByDisplayName,
     date = recordedDate,
     nextSteps = nextSteps,
-    actions = actions.toDPSActions(),
+    actions = actions.toUpsertDPSActions(),
     actionOther = otherDetails,
   )
 
-fun Actions.toDPSActions(): MutableSet<UpdateDecisionAndActionsRequest.Actions> {
-  val dpsActions: MutableSet<UpdateDecisionAndActionsRequest.Actions> = mutableSetOf()
-  dpsActions.addIfTrue(openCSIPAlert, UpdateDecisionAndActionsRequest.Actions.OpenCsipAlert)
-  dpsActions.addIfTrue(nonAssociationsUpdated, UpdateDecisionAndActionsRequest.Actions.NonAssociationsUpdated)
-  dpsActions.addIfTrue(observationBook, UpdateDecisionAndActionsRequest.Actions.ObservationBook)
-  dpsActions.addIfTrue(unitOrCellMove, UpdateDecisionAndActionsRequest.Actions.UnitOrCellMove)
-  dpsActions.addIfTrue(csraOrRsraReview, UpdateDecisionAndActionsRequest.Actions.CsraOrRsraReview)
-  dpsActions.addIfTrue(serviceReferral, UpdateDecisionAndActionsRequest.Actions.ServiceReferral)
-  dpsActions.addIfTrue(simReferral, UpdateDecisionAndActionsRequest.Actions.SimReferral)
+fun Actions.toUpsertDPSActions(): MutableSet<UpsertDecisionAndActionsRequest.Actions> {
+  val dpsActions: MutableSet<UpsertDecisionAndActionsRequest.Actions> = mutableSetOf()
+  dpsActions.addIfTrue(openCSIPAlert, UpsertDecisionAndActionsRequest.Actions.OPEN_CSIP_ALERT)
+  dpsActions.addIfTrue(nonAssociationsUpdated, UpsertDecisionAndActionsRequest.Actions.NON_ASSOCIATIONS_UPDATED)
+  dpsActions.addIfTrue(observationBook, UpsertDecisionAndActionsRequest.Actions.OBSERVATION_BOOK)
+  dpsActions.addIfTrue(unitOrCellMove, UpsertDecisionAndActionsRequest.Actions.UNIT_OR_CELL_MOVE)
+  dpsActions.addIfTrue(csraOrRsraReview, UpsertDecisionAndActionsRequest.Actions.CSRA_OR_RSRA_REVIEW)
+  dpsActions.addIfTrue(serviceReferral, UpsertDecisionAndActionsRequest.Actions.SERVICE_REFERRAL)
+  dpsActions.addIfTrue(simReferral, UpsertDecisionAndActionsRequest.Actions.SIM_REFERRAL)
   return dpsActions
 }
 
-fun MutableSet<UpdateDecisionAndActionsRequest.Actions>.addIfTrue(actionSet: Boolean, action: UpdateDecisionAndActionsRequest.Actions) {
+fun MutableSet<UpsertDecisionAndActionsRequest.Actions>.addIfTrue(actionSet: Boolean, action: UpsertDecisionAndActionsRequest.Actions) {
   if (actionSet) this.add(action)
 }
 
 // ////// OIDCSIPP - Plan ////////////////////////////
-fun CSIPResponse.toDPSUpdatePlanRequest() =
-  UpdatePlanRequest(
+fun CSIPResponse.toDPSUpsertPlanRequest() =
+  UpsertPlanRequest(
     caseManager = caseManager!!,
     reasonForPlan = planReason!!,
     firstCaseReviewDate = firstCaseReviewDate!!,
   )
-/*
-fun Plan.toDPSCreateIdentifiedNeedsRequest() =
-  CreateIdentifiedNeedRequest(
-    identifiedNeed = identifiedNeed,
-    needIdentifiedBy = referredBy!!,
-    createdDate = createdDate,
-    targetDate = targetDate,
-    intervention = intervention,
-    closedDate = closedDate,
-    progression = progression,
-  )
-fun Plan.toDPSUpdateIdentifiedNeedsRequest() =
-  UpdateIdentifiedNeedRequest(
-    identifiedNeed = identifiedNeed,
-    needIdentifiedBy = referredBy!!,
-    createdDate = createdDate,
-    targetDate = targetDate,
-    intervention = intervention,
-    closedDate = closedDate,
-    progression = progression,
-  )
-
-// ////// OIDCSIPR - Review ////////////////////////////
-fun Review.toDPSCreateReviewRequest() =
-  CreateReviewRequest(
-    recordedBy = recordedBy,
-    recordedByDisplayName = recordedByDisplayName!!,
-    reviewDate = recordedDate,
-    nextReviewDate = nextReviewDate,
-    isActionResponsiblePeopleInformed = peopleInformed,
-    isActionCsipUpdated = csipUpdated,
-    isActionRemainOnCsip = remainOnCSIP,
-    isActionCaseNote = caseNote,
-    isActionCloseCsip = closeCSIP,
-    csipClosedDate = closeDate,
-    // Note - no attendee information
-    summary = summary,
-  )
-
-fun Review.toDPSUpdateReviewRequest() =
-  UpdateReviewRequest(
-    recordedBy = recordedBy,
-    recordedByDisplayName = recordedByDisplayName!!,
-    reviewDate = recordedDate,
-    nextReviewDate = nextReviewDate,
-    isActionResponsiblePeopleInformed = peopleInformed,
-    isActionCsipUpdated = csipUpdated,
-    isActionRemainOnCsip = remainOnCSIP,
-    isActionCaseNote = caseNote,
-    isActionCloseCsip = closeCSIP,
-    csipClosedDate = closeDate,
-    summary = summary,
-  )
-
-fun Attendee.toCreateAttendeeRequest() =
-  CreateAttendeeRequest(
-    name = name,
-    role = this.role,
-    isAttended = attended,
-    contribution = contribution,
-  )
-*/

@@ -67,6 +67,7 @@ class MockCSIPResource {
       lastModifiedBy = null,
       lastModifiedByDisplayName = null,
       plan = null,
+      status = CsipRecord.Status.CSIP_CLOSED,
     )
 
     fun dpsSaferCustodyScreening() =
