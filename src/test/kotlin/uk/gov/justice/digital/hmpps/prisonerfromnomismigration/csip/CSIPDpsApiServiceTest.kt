@@ -277,9 +277,9 @@ internal class CSIPDpsApiServiceTest {
             .withRequestBody(matchingJsonPath("recordedBy", equalTo("FRED_ADM")))
             .withRequestBody(matchingJsonPath("recordedByDisplayName", equalTo("Fred Admin")))
             .withRequestBody(matchingJsonPath("date", equalTo("2024-04-08")))
-            .withRequestBody(matchingJsonPath("actions[0]", equalTo("NonAssociationsUpdated")))
-            .withRequestBody(matchingJsonPath("actions[1]", equalTo("ObservationBook")))
-            .withRequestBody(matchingJsonPath("actions[2]", equalTo("ServiceReferral")))
+            .withRequestBody(matchingJsonPath("actions[0]", equalTo("NON_ASSOCIATIONS_UPDATED")))
+            .withRequestBody(matchingJsonPath("actions[1]", equalTo("OBSERVATION_BOOK")))
+            .withRequestBody(matchingJsonPath("actions[2]", equalTo("SERVICE_REFERRAL")))
             .withRequestBody(matchingJsonPath("actionOther", equalTo("Some other info here"))),
         )
       }
