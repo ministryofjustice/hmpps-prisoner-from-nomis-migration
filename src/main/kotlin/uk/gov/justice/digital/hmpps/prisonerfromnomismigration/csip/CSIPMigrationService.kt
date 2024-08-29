@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ResponseMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -73,26 +74,27 @@ class CSIPMigrationService(
       }
       ?: run {
         val nomisCSIPResponse = nomisApiService.getCSIP(nomisCSIPId)
-        val migratedCSIP = csipService.migrateCSIP(nomisCSIPResponse.offender.offenderNo, nomisCSIPResponse.toDPSMigrateCSIP())
-          .also {
-            createCSIPMapping(
-              nomisCSIPId = nomisCSIPId,
-              dpsCSIPId = it.recordUuid.toString(),
-              context = context,
+        csipService.migrateCSIP(nomisCSIPResponse.toDPSSyncRequest())
+          .also { migratedCSIP ->
+            // At this point we need to determine all mappings and call the appropriate mapping endpoint
+            // TODO **** MAP ALL CHILD TABLES ****
+            // For now, just map top level report
+            val dpsCSIPReportId = migratedCSIP.mappings.first { it.component == ResponseMapping.Component.RECORD }.uuid.toString()
+            createCSIPReportMapping(nomisCSIPId = nomisCSIPId, dpsCSIPId = dpsCSIPReportId, context = context)
+
+            telemetryClient.trackEvent(
+              "${MigrationType.CSIP.telemetryName}-migration-entity-migrated",
+              mapOf(
+                "nomisCSIPId" to nomisCSIPId,
+                "dpsCSIPId" to dpsCSIPReportId,
+                "migrationId" to migrationId,
+              ),
             )
           }
-        telemetryClient.trackEvent(
-          "${MigrationType.CSIP.telemetryName}-migration-entity-migrated",
-          mapOf(
-            "nomisCSIPId" to nomisCSIPId,
-            "dpsCSIPId" to migratedCSIP.recordUuid,
-            "migrationId" to migrationId,
-          ),
-        )
       }
   }
 
-  private suspend fun createCSIPMapping(
+  private suspend fun createCSIPReportMapping(
     nomisCSIPId: Long,
     dpsCSIPId: String,
     context: MigrationContext<*>,

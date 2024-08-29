@@ -31,7 +31,7 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension.Companion.csipApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension.Companion.csipDpsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingApiMockServer.Companion.CSIP_CREATE_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingApiMockServer.Companion.CSIP_GET_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
@@ -80,7 +80,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         }
         csipNomisApi.verify(exactly(0), getRequestedFor(anyUrl()))
         csipMappingApi.verify(exactly(0), getRequestedFor(anyUrl()))
-        csipApi.verify(exactly(0), anyRequestedFor(anyUrl()))
+        csipDpsApi.verify(exactly(0), anyRequestedFor(anyUrl()))
       }
     }
 
@@ -94,7 +94,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         fun setUp() {
           csipNomisApi.stubGetCSIP()
           csipMappingApi.stubGetByNomisId(HttpStatus.NOT_FOUND)
-          csipApi.stubInsertCSIPReport()
+          csipDpsApi.stubInsertCSIPReport()
           mappingApi.stubMappingCreate(CSIP_CREATE_MAPPING_URL)
 
           awsSqsCSIPOffenderEventsClient.sendMessage(
@@ -120,7 +120,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will create the csip in the csip service`() {
           await untilAsserted {
-            csipApi.verify(
+            csipDpsApi.verify(
               postRequestedFor(urlPathEqualTo("/prisoners/A1234BC/csip-records"))
                 .withHeader("Username", equalTo("JSMITH"))
                 .withRequestBody(matchingJsonPath("referral.incidentDate", equalTo("2024-06-12")))
@@ -171,7 +171,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will not create the csip in the csip service`() {
-          csipApi.verify(exactly(0), anyRequestedFor(anyUrl()))
+          csipDpsApi.verify(exactly(0), anyRequestedFor(anyUrl()))
         }
 
         @Test
@@ -193,7 +193,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         internal fun `it will not retry after a 409 (duplicate csip written to CSIP API)`() {
           csipNomisApi.stubGetCSIP()
           csipMappingApi.stubGetByNomisId(HttpStatus.NOT_FOUND)
-          csipApi.stubInsertCSIPReport(duplicateDPSCSIPId)
+          csipDpsApi.stubInsertCSIPReport(duplicateDPSCSIPId)
           csipMappingApi.stubCSIPMappingCreateConflict()
 
           awsSqsCSIPOffenderEventsClient.sendMessage(
@@ -205,7 +205,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilCallTo { mappingApi.createMappingCount(CSIP_CREATE_MAPPING_URL) } matches { it == 1 }
 
           // check that one csip is created
-          assertThat(csipApi.createCSIPSyncCount()).isEqualTo(1)
+          assertThat(csipDpsApi.createCSIPSyncCount()).isEqualTo(1)
 
           // doesn't retry
           csipMappingApi.verifyCreateCSIPReportMapping(dpsCSIPId = duplicateDPSCSIPId)
@@ -240,8 +240,8 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
           )
 
           // check that no CSIPs are created
-          assertThat(csipApi.createCSIPSyncCount()).isEqualTo(0)
-          csipApi.verify(0, postRequestedFor(anyUrl()))
+          assertThat(csipDpsApi.createCSIPSyncCount()).isEqualTo(0)
+          csipDpsApi.verify(0, postRequestedFor(anyUrl()))
 
           // doesn't try to create a new mapping
           mappingApi.verify(0, postRequestedFor(anyUrl()))
@@ -304,7 +304,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         fun setUp() {
           csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPId)
 
-          csipApi.stubCSIPDelete(dpsCSIPId = dpsCSIPId)
+          csipDpsApi.stubCSIPDelete(dpsCSIPId = dpsCSIPId)
           csipMappingApi.stubDeleteCSIPReportMapping(dpsCSIPId = dpsCSIPId)
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
@@ -315,7 +315,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will delete CSIP in DPS`() {
           await untilAsserted {
-            csipApi.verify(
+            csipDpsApi.verify(
               1,
               WireMock.deleteRequestedFor(urlPathEqualTo("/csip-records/$dpsCSIPId")),
             )
@@ -355,7 +355,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPId)
-          csipApi.stubCSIPDelete(dpsCSIPId = dpsCSIPId)
+          csipDpsApi.stubCSIPDelete(dpsCSIPId = dpsCSIPId)
           csipMappingApi.stubDeleteCSIPReportMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
@@ -366,7 +366,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will delete csip in DPS`() {
           await untilAsserted {
-            csipApi.verify(
+            csipDpsApi.verify(
               1,
               WireMock.deleteRequestedFor(urlPathEqualTo("/csip-records/$dpsCSIPId")),
             )
@@ -436,7 +436,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
 
       csipNomisApi.verify(exactly(0), getRequestedFor(anyUrl()))
       csipMappingApi.verify(exactly(0), getRequestedFor(anyUrl()))
-      csipApi.verify(exactly(0), anyRequestedFor(anyUrl()))
+      csipDpsApi.verify(exactly(0), anyRequestedFor(anyUrl()))
     }
   }
 
@@ -496,13 +496,13 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPId)
-          csipApi.stubInsertCSIPSCS(dpsCSIPId = dpsCSIPId)
+          csipDpsApi.stubInsertCSIPSCS(dpsCSIPId = dpsCSIPId)
         }
 
         @Test
         fun `will update DPS with the changes`() {
           await untilAsserted {
-            csipApi.verify(
+            csipDpsApi.verify(
               1,
               postRequestedFor(urlPathEqualTo("/csip-records/$dpsCSIPId/referral/safer-custody-screening"))
                 .withHeader("Username", equalTo("FRED_ADM"))
@@ -589,13 +589,13 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPId)
-          csipApi.stubUpdateCSIPReport(dpsCSIPId = dpsCSIPId)
+          csipDpsApi.stubUpdateCSIPReport(dpsCSIPId = dpsCSIPId)
           waitForAnyProcessingToComplete("csip-synchronisation-updated-success")
         }
 
         @Test
         fun `will update DPS with the changes specific to the OIDCSIPN screen`() {
-          csipApi.verify(
+          csipDpsApi.verify(
             1,
             patchRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral"))
               .withHeader("Username", equalTo("JSMITH"))
@@ -685,13 +685,13 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPId)
-          csipApi.stubUpdateCSIPReport(dpsCSIPId = dpsCSIPId)
+          csipDpsApi.stubUpdateCSIPReport(dpsCSIPId = dpsCSIPId)
           waitForAnyProcessingToComplete("csip-synchronisation-updated-success")
         }
 
         @Test
         fun `will update DPS with the changes specific to the OIDCSIPC screen`() {
-          csipApi.verify(
+          csipDpsApi.verify(
             1,
             patchRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral"))
               .withHeader("Username", equalTo("JSMITH"))
@@ -783,13 +783,13 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPId)
-          csipApi.stubUpdateCSIPInvestigation(dpsCSIPId = dpsCSIPId)
+          csipDpsApi.stubUpdateCSIPInvestigation(dpsCSIPId = dpsCSIPId)
           waitForAnyProcessingToComplete("csip-investigation-synchronisation-updated-success")
         }
 
         @Test
         fun `will update DPS with the changes specific to the OIDCSIPI screen`() {
-          csipApi.verify(
+          csipDpsApi.verify(
             1,
             putRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral/investigation"))
               .withHeader("Username", equalTo("JSMITH"))
@@ -876,13 +876,13 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPId)
-          csipApi.stubUpdateCSIPDecision(dpsCSIPId = dpsCSIPId)
+          csipDpsApi.stubUpdateCSIPDecision(dpsCSIPId = dpsCSIPId)
           waitForAnyProcessingToComplete("csip-decision-synchronisation-updated-success")
         }
 
         @Test
         fun `will update DPS with the changes specific to the OIDCSIPD screen`() {
-          csipApi.verify(
+          csipDpsApi.verify(
             1,
             putRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral/decision-and-actions"))
               .withHeader("Username", equalTo("JSMITH"))
@@ -973,13 +973,13 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPId)
-          csipApi.stubUpdateCSIPPlan(dpsCSIPId = dpsCSIPId)
+          csipDpsApi.stubUpdateCSIPPlan(dpsCSIPId = dpsCSIPId)
           waitForAnyProcessingToComplete("csip-plan-synchronisation-updated-success")
         }
 
         @Test
         fun `will update DPS with the changes specific to the OIDCSIPP screen`() {
-          csipApi.verify(
+          csipDpsApi.verify(
             1,
             putRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/plan"))
               .withHeader("Username", equalTo("JSMITH"))
