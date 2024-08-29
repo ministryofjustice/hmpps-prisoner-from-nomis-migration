@@ -22,7 +22,7 @@ import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.returnResult
 import org.springframework.web.reactive.function.BodyInserters
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension.Companion.csipApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension.Companion.csipDpsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingApiMockServer.Companion.CSIP_CREATE_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPNomisApiMockServer.Companion.CSIP_ID_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
@@ -111,7 +111,7 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
       csipMappingApi.stubGetByNomisId(status = HttpStatus.NOT_FOUND)
       mappingApi.stubMappingCreate(CSIP_CREATE_MAPPING_URL)
 
-      csipApi.stubMigrateCSIPReport()
+      csipDpsApi.stubSyncCSIPReport()
       csipMappingApi.stubCSIPMappingByMigrationId(count = 86)
 
       webTestClient.performMigration(
@@ -131,7 +131,7 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
       )
 
       await untilAsserted {
-        assertThat(csipApi.createCSIPMigrationCount()).isEqualTo(86)
+        assertThat(csipDpsApi.syncCSIPCount()).isEqualTo(86)
       }
     }
 
@@ -141,7 +141,7 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
       csipNomisApi.stubGetInitialCount(CSIP_ID_URL, 26) { csipIdsPagedResponse(it) }
       csipNomisApi.stubGetPagedCSIPIds(totalElements = 26, pageSize = 10)
       csipNomisApi.stubMultipleGetCSIP(1..26)
-      csipApi.stubMigrateCSIPReport()
+      csipDpsApi.stubSyncCSIPReport()
       csipMappingApi.stubGetByNomisId(status = HttpStatus.NOT_FOUND)
       mappingApi.stubMappingCreate(CSIP_CREATE_MAPPING_URL)
 
@@ -182,13 +182,13 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
       csipNomisApi.stubMultipleGetCSIP(1..1)
       csipMappingApi.stubGetByNomisId(status = HttpStatus.NOT_FOUND)
       csipMappingApi.stubCSIPMappingByMigrationId()
-      csipApi.stubMigrateCSIPReport()
+      csipDpsApi.stubSyncCSIPReport()
       mappingApi.stubMappingCreateFailureFollowedBySuccess(CSIP_CREATE_MAPPING_URL)
 
       webTestClient.performMigration()
 
       // check that one csip is created
-      assertThat(csipApi.createCSIPMigrationCount()).isEqualTo(1)
+      assertThat(csipDpsApi.syncCSIPCount()).isEqualTo(1)
 
       // should retry to create mapping twice
       csipMappingApi.verifyCreateCSIPReportMapping(DPS_CSIP_ID, times = 2)
@@ -203,12 +203,14 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
       csipNomisApi.stubMultipleGetCSIP(1..1)
       csipMappingApi.stubGetByNomisId(status = HttpStatus.NOT_FOUND)
       csipMappingApi.stubCSIPMappingByMigrationId()
-      csipApi.stubMigrateCSIPReport(duplicateDPSCSIPId)
+
+      csipDpsApi.stubSyncCSIPReport(duplicateDPSCSIPId)
+
       csipMappingApi.stubCSIPMappingCreateConflict()
       webTestClient.performMigration()
 
       // check that one csip is created
-      assertThat(csipApi.createCSIPMigrationCount()).isEqualTo(1)
+      assertThat(csipDpsApi.syncCSIPCount()).isEqualTo(1)
 
       // doesn't retry
       csipMappingApi.verifyCreateCSIPReportMapping(duplicateDPSCSIPId)
