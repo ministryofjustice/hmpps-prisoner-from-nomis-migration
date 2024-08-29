@@ -51,7 +51,7 @@ import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
+class MigrationIntTest : SqsIntegrationTestBase() {
 
   @Autowired
   private lateinit var prisonPersonNomisApi: PrisonPersonNomisApiMockServer
@@ -572,7 +572,7 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
       post().uri("/migrate/prisonperson/physical-attributes")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_PRISONPERSON")))
         .header("Content-Type", "application/json")
-        .bodyValue(PrisonPersonMigrationFilter(prisonerNumber = offenderNo))
+        .bodyValue(MigrationFilter(prisonerNumber = offenderNo))
         .exchange()
         .expectStatus().isAccepted
         .returnResult<MigrationResult>().responseBody.blockFirst()!!

@@ -1,17 +1,19 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.physicalattributes
 
 import com.microsoft.applicationinsights.TelemetryClient
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.BookingPhysicalAttributesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PhysicalAttributesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerPhysicalAttributesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PhysicalAttributesChangedEvent
 import java.time.LocalDateTime
 
-@Service
-class PrisonPersonSynchronisationService(
-  private val nomisApiService: PrisonPersonNomisApiService,
-  private val dpsApiService: PrisonPersonDpsApiService,
+@Service("physicalAttributesSynchronisationService")
+class SynchronisationService(
+  @Qualifier("physicalAttributesNomisApiService") private val nomisApiService: NomisApiService,
+  @Qualifier("physicalAttributesDpsApiService") private val dpsApiService: DpsApiService,
   private val telemetryClient: TelemetryClient,
 ) {
 

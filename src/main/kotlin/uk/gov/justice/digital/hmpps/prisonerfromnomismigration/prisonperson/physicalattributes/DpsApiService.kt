@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.physicalattributes
 
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
@@ -11,8 +11,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.mode
 import java.time.LocalDateTime
 import java.time.ZoneId
 
-@Service
-class PrisonPersonDpsApiService(@Qualifier("prisonPersonApiWebClient") private val webClient: WebClient) {
+@Service("physicalAttributesDpsApiService")
+class DpsApiService(@Qualifier("prisonPersonApiWebClient") private val webClient: WebClient) {
   private val zone = ZoneId.of("Europe/London")
 
   suspend fun syncPhysicalAttributes(
