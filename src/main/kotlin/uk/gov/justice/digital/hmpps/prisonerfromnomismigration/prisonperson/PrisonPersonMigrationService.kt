@@ -7,40 +7,31 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
-import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonPersonMigrationMappingRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonPersonMigrationMappingRequest.MigrationType.PHYSICAL_ATTRIBUTES
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PhysicalAttributesResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerPhysicalAttributesResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesMigrationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
-import java.time.LocalDateTime
 
-@Service
-class PrisonPersonMigrationService(
+abstract class PrisonPersonMigrationService(
   queueService: MigrationQueueService,
-  private val prisonPersonNomisApiService: PrisonPersonNomisApiService,
   private val nomisService: NomisApiService,
   private val prisonPersonMappingService: PrisonPersonMappingApiService,
-  private val prisonPersonDpsService: PrisonPersonDpsApiService,
   migrationHistoryService: MigrationHistoryService,
   telemetryClient: TelemetryClient,
   auditService: AuditService,
   @Value("\${page.size:1000}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
-) : MigrationService<PrisonPersonMigrationFilter, PrisonerId, PrisonerPhysicalAttributesResponse, PrisonPersonMigrationMappingRequest>(
+) : MigrationService<PrisonPersonMigrationFilter, PrisonPersonMigrationRequest, PrisonerPhysicalAttributesResponse, PrisonPersonMigrationMappingRequest>(
   queueService = queueService,
   auditService = auditService,
   migrationHistoryService = migrationHistoryService,
@@ -51,39 +42,46 @@ class PrisonPersonMigrationService(
   completeCheckDelaySeconds = completeCheckDelaySeconds,
   completeCheckCount = completeCheckCount,
 ) {
+  abstract suspend fun migrateEntity(offenderNo: String): List<Long>
+
   override suspend fun getIds(
     migrationFilter: PrisonPersonMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
-  ): PageImpl<PrisonerId> =
+  ): PageImpl<PrisonPersonMigrationRequest> =
     if (migrationFilter.prisonerNumber.isNullOrEmpty()) {
       nomisService.getPrisonerIds(
         pageNumber = pageNumber,
         pageSize = pageSize,
-      )
+      ).let {
+        PageImpl<PrisonPersonMigrationRequest>(
+          it.content.map { PrisonPersonMigrationRequest(it.offenderNo, migrationFilter.migrationType) },
+          it.pageable,
+          it.totalElements,
+        )
+      }
     } else {
       // If a single prisoner migration is requested then we must be testing. Pretend that we called nomis-prisoner-api which found a single prisoner.
-      PageImpl<PrisonerId>(mutableListOf(PrisonerId(migrationFilter.prisonerNumber)), Pageable.ofSize(1), 1)
+      PageImpl<PrisonPersonMigrationRequest>(mutableListOf(PrisonPersonMigrationRequest(migrationFilter.prisonerNumber, migrationFilter.migrationType)), Pageable.ofSize(1), 1)
     }
 
-  override suspend fun migrateNomisEntity(context: MigrationContext<PrisonerId>) {
+  override suspend fun migrateNomisEntity(context: MigrationContext<PrisonPersonMigrationRequest>) {
     log.info("attempting to migrate ${context.body}")
-    val offenderNo = context.body.offenderNo
+    val offenderNo = context.body.prisonerNumber
     val telemetry = mutableMapOf(
       "offenderNo" to offenderNo,
       "migrationId" to context.migrationId,
-      "migrationType" to PHYSICAL_ATTRIBUTES,
+      "migrationType" to "PRISON_PERSON",
+      "prisonPersonMigrationType" to context.body.migrationType,
     )
 
     try {
-      val dpsIds = prisonPersonNomisApiService.getPhysicalAttributes(offenderNo)
-        .toDpsMigrationRequest()
-        .migrate(offenderNo)
+      val dpsIds = migrateEntity(offenderNo)
       telemetry["dpsIds"] = dpsIds.toString()
 
       PrisonPersonMigrationMappingRequest(
         nomisPrisonerNumber = offenderNo,
-        migrationType = PHYSICAL_ATTRIBUTES,
+        migrationType = context.body.migrationType,
         label = context.migrationId,
         dpsIds = dpsIds,
       ).createActivityMapping(context)
@@ -95,24 +93,6 @@ class PrisonPersonMigrationService(
       throw e
     }
   }
-
-  private suspend fun PrisonerPhysicalAttributesResponse.toDpsMigrationRequest() = bookings.flatMap { booking ->
-    booking.physicalAttributes.map { pa ->
-      val (lastModifiedAt, lastModifiedBy) = pa.lastModified()
-      prisonPersonDpsService.migratePhysicalAttributesRequest(
-        heightCentimetres = pa.heightCentimetres,
-        weightKilograms = pa.weightKilograms,
-        appliesFrom = booking.startDateTime.toLocalDateTime(),
-        appliesTo = booking.endDateTime?.toLocalDateTime(),
-        createdAt = lastModifiedAt,
-        createdBy = lastModifiedBy,
-      )
-    }
-  }
-
-  private suspend fun List<PhysicalAttributesMigrationRequest>.migrate(
-    offenderNo: String,
-  ) = prisonPersonDpsService.migratePhysicalAttributes(offenderNo, this).fieldHistoryInserted
 
   private suspend fun PrisonPersonMigrationMappingRequest.createActivityMapping(context: MigrationContext<*>) =
     try {
@@ -132,7 +112,7 @@ class PrisonPersonMigrationService(
       )
     }
 
-  private suspend fun CreateMappingResult<PrisonPersonMigrationMappingRequest>.handleError(context: MigrationContext<*>) =
+  private fun CreateMappingResult<PrisonPersonMigrationMappingRequest>.handleError(context: MigrationContext<*>) =
     takeIf { it.isError }
       ?.let { it.errorResponse?.moreInfo }
       ?.also {
@@ -149,12 +129,9 @@ class PrisonPersonMigrationService(
         )
       }
 
-  private fun PhysicalAttributesResponse.lastModified(): Pair<LocalDateTime, String> =
-    (modifiedDateTime ?: createDateTime).toLocalDateTime() to (modifiedBy ?: createdBy)
-
-  private fun String.toLocalDateTime() = LocalDateTime.parse(this)
-
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 }
+
+class PrisonPersonMigrationRequest(val prisonerNumber: String, val migrationType: PrisonPersonMigrationMappingRequest.MigrationType)

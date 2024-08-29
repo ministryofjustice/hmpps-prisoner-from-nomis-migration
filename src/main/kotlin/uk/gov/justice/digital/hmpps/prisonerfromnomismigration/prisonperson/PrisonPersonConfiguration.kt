@@ -1,12 +1,15 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson
 
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientManager
+import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
 import uk.gov.justice.hmpps.kotlin.auth.reactiveAuthorisedWebClient
 import uk.gov.justice.hmpps.kotlin.auth.reactiveHealthWebClient
+import uk.gov.justice.hmpps.kotlin.health.ReactiveHealthPingCheck
 import java.time.Duration
 
 @Configuration
@@ -26,7 +29,6 @@ class PrisonPersonConfiguration(
   ): WebClient =
     builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "prison-person-api", url = apiBaseUri, timeout)
 
-// TODO SDIT-1811 - Re-enable when prison person API is available in preprod and prod
-//  @Component("prisonPersonApi")
-//  class PrisonPersonApiHealth(@Qualifier("prisonPersonApiHealthWebClient") webClient: WebClient) : ReactiveHealthPingCheck(webClient)
+  @Component("prisonPersonApi")
+  class PrisonPersonApiHealth(@Qualifier("prisonPersonApiHealthWebClient") webClient: WebClient) : ReactiveHealthPingCheck(webClient)
 }

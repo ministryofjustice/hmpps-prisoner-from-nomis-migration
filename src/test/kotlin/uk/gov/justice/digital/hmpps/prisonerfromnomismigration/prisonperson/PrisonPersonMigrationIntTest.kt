@@ -143,7 +143,8 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
                 "offenderNo" to "A0001KT",
                 "migrationId" to migrationResult.migrationId,
                 "dpsIds" to "[1]",
-                "migrationType" to "PHYSICAL_ATTRIBUTES",
+                "migrationType" to "PRISON_PERSON",
+                "prisonPersonMigrationType" to "PHYSICAL_ATTRIBUTES",
               ),
             )
           },
@@ -158,7 +159,8 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
                 "offenderNo" to "A0002KT",
                 "migrationId" to migrationResult.migrationId,
                 "dpsIds" to "[2]",
-                "migrationType" to "PHYSICAL_ATTRIBUTES",
+                "migrationType" to "PRISON_PERSON",
+                "prisonPersonMigrationType" to "PHYSICAL_ATTRIBUTES",
               ),
             )
           },
@@ -236,7 +238,8 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
                 "offenderNo" to "A0001KT",
                 "migrationId" to migrationResult.migrationId,
                 "dpsIds" to "[1, 2, 3, 4]",
-                "migrationType" to "PHYSICAL_ATTRIBUTES",
+                "migrationType" to "PRISON_PERSON",
+                "prisonPersonMigrationType" to "PHYSICAL_ATTRIBUTES",
               ),
             )
           },
@@ -281,7 +284,8 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
               mapOf(
                 "offenderNo" to "A0001KT",
                 "migrationId" to migrationResult.migrationId,
-                "migrationType" to "PHYSICAL_ATTRIBUTES",
+                "migrationType" to "PRISON_PERSON",
+                "prisonPersonMigrationType" to "PHYSICAL_ATTRIBUTES",
                 "error" to "500 Internal Server Error from GET http://localhost:8081/prisoners/A0001KT/physical-attributes",
               ),
             )
@@ -310,7 +314,8 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
               mapOf(
                 "offenderNo" to "A0001KT",
                 "migrationId" to migrationResult.migrationId,
-                "migrationType" to "PHYSICAL_ATTRIBUTES",
+                "migrationType" to "PRISON_PERSON",
+                "prisonPersonMigrationType" to "PHYSICAL_ATTRIBUTES",
                 "error" to "400 Bad Request from PUT http://localhost:8095/migration/prisoners/A0001KT/physical-attributes",
               ),
             )
@@ -335,7 +340,8 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
               mapOf(
                 "offenderNo" to "A0001KT",
                 "migrationId" to migrationResult.migrationId,
-                "migrationType" to "PHYSICAL_ATTRIBUTES",
+                "migrationType" to "PRISON_PERSON",
+                "prisonPersonMigrationType" to "PHYSICAL_ATTRIBUTES",
                 "dpsIds" to "[1]",
               ),
             )
@@ -429,7 +435,8 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
                 "offenderNo" to offenderNo,
                 "migrationId" to migrationResult.migrationId,
                 "dpsIds" to "[1]",
-                "migrationType" to "PHYSICAL_ATTRIBUTES",
+                "migrationType" to "PRISON_PERSON",
+                "prisonPersonMigrationType" to "PHYSICAL_ATTRIBUTES",
               ),
             )
           },
@@ -471,7 +478,8 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
               mapOf(
                 "offenderNo" to offenderNo,
                 "migrationId" to migrationResult.migrationId,
-                "migrationType" to "PHYSICAL_ATTRIBUTES",
+                "migrationType" to "PRISON_PERSON",
+                "prisonPersonMigrationType" to "PHYSICAL_ATTRIBUTES",
                 "error" to "404 Not Found from GET http://localhost:8081/prisoners/$offenderNo/physical-attributes",
               ),
             )
