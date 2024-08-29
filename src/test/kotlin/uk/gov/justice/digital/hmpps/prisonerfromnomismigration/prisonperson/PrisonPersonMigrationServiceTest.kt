@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson
 
+import com.fasterxml.jackson.databind.node.TextNode
 import com.microsoft.applicationinsights.TelemetryClient
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Nested
@@ -8,33 +9,34 @@ import org.mockito.ArgumentMatchers.anyLong
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RestResponsePage
 
 class PrisonPersonMigrationServiceTest {
   private val queueService = mock<MigrationQueueService>()
-  private val prisonPersonNomisApiService = mock<PrisonPersonNomisApiService>()
   private val nomisService = mock<NomisApiService>()
   private val prisonPersonMappingService = mock<PrisonPersonMappingApiService>()
-  private val prisonPersonDpsService = mock<PrisonPersonDpsApiService>()
   private val migrationHistoryService = mock<MigrationHistoryService>()
   private val telemetryClient = mock<TelemetryClient>()
   private val auditService = mock<AuditService>()
-  private val service = PrisonPersonMigrationService(
+  private val service = object : PrisonPersonMigrationService(
     queueService,
-    prisonPersonNomisApiService,
     nomisService,
     prisonPersonMappingService,
-    prisonPersonDpsService,
     migrationHistoryService,
     telemetryClient,
     auditService,
     1000,
     1,
     1,
-  )
+  ) {
+    override suspend fun migrateEntity(offenderNo: String): List<Long> = emptyList()
+  }
 
   @Nested
   inner class GetIds {
@@ -47,6 +49,9 @@ class PrisonPersonMigrationServiceTest {
 
     @Test
     fun `will get all IDs when there is no prisoner number`() = runTest {
+      whenever(nomisService.getPrisonerIds(anyLong(), anyLong()))
+        .thenReturn(RestResponsePage(emptyList<PrisonerId>(), 0, 1, 0, TextNode("")))
+
       service.getIds(PrisonPersonMigrationFilter(null), 1000, 0)
 
       verify(nomisService).getPrisonerIds(anyLong(), anyLong())
@@ -54,6 +59,9 @@ class PrisonPersonMigrationServiceTest {
 
     @Test
     fun `will get all IDs when the prisoner number is empty`() = runTest {
+      whenever(nomisService.getPrisonerIds(anyLong(), anyLong()))
+        .thenReturn(RestResponsePage(emptyList<PrisonerId>(), 0, 1, 0, TextNode("")))
+
       service.getIds(PrisonPersonMigrationFilter(""), 1000, 0)
 
       verify(nomisService).getPrisonerIds(anyLong(), anyLong())

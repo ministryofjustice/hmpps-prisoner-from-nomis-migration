@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.Message
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonPersonMigrationMappingRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerPhysicalAttributesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
@@ -20,7 +19,7 @@ import java.util.concurrent.CompletableFuture
 class PrisonPersonMigrationMessageListener(
   objectMapper: ObjectMapper,
   prisonPersonMigrationService: PrisonPersonMigrationService,
-) : MigrationMessageListener<PrisonPersonMigrationFilter, PrisonerId, PrisonerPhysicalAttributesResponse, PrisonPersonMigrationMappingRequest>(
+) : MigrationMessageListener<PrisonPersonMigrationFilter, PrisonPersonMigrationRequest, PrisonerPhysicalAttributesResponse, PrisonPersonMigrationMappingRequest>(
   objectMapper,
   prisonPersonMigrationService,
 ) {
@@ -38,7 +37,7 @@ class PrisonPersonMigrationMessageListener(
 
   override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<PrisonPersonMigrationFilter>> = objectMapper.readValue(json)
 
-  override fun parseContextNomisId(json: String): MigrationMessage<*, PrisonerId> = objectMapper.readValue(json)
+  override fun parseContextNomisId(json: String): MigrationMessage<*, PrisonPersonMigrationRequest> = objectMapper.readValue(json)
 
   override fun parseContextMapping(json: String): MigrationMessage<*, PrisonPersonMigrationMappingRequest> = objectMapper.readValue(json)
 }
