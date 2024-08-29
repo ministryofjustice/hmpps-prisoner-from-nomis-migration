@@ -14,6 +14,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Decisi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Investigation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Plan
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SaferCustodyScreeningOutcome
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncCsipRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateContributoryFactorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateCsipRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpsertDecisionAndActionsRequest
@@ -23,7 +25,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Upsert
 @Service
 class CSIPDpsApiService(@Qualifier("csipApiWebClient") private val webClient: WebClient) {
 
-  suspend fun migrateCSIP(offenderNo: String, csipReport: CreateCsipRecordRequest): CsipRecord =
+  suspend fun migrateCSIP(syncRequest: SyncCsipRequest): SyncResponse =
+    webClient.put()
+      .uri("/sync/csip-records")
+      .bodyValue(syncRequest)
+      .retrieve()
+      .awaitBody()
+
+  suspend fun migrateCSIPOld(offenderNo: String, csipReport: SyncCsipRequest): CsipRecord =
     webClient.post()
       .uri("/migrate/prisoners/{offenderNo}/csip-records", offenderNo)
       .bodyValue(csipReport)

@@ -17,7 +17,7 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension.Companion.csipApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension.Companion.csipDpsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 
@@ -74,7 +74,7 @@ class CSIPAttendeeSynchronisationIntTest : SqsIntegrationTestBase() {
         fun setUp() {
           csipMappingApi.stubGetAttendeeByNomisId(nomisCSIPAttendeeId = nomisCSIPAttendeeId, dpsCSIPAttendeeId = dpsCSIPAttendeeId)
 
-          csipApi.stubDeleteCSIPAttendee(dpsCSIPAttendeeId = dpsCSIPAttendeeId)
+          csipDpsApi.stubDeleteCSIPAttendee(dpsCSIPAttendeeId = dpsCSIPAttendeeId)
           csipMappingApi.stubDeleteAttendeeMapping(dpsCSIPAttendeeId = dpsCSIPAttendeeId)
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
@@ -90,7 +90,7 @@ class CSIPAttendeeSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will delete CSIP in DPS`() {
-          csipApi.verify(
+          csipDpsApi.verify(
             1,
             WireMock.deleteRequestedFor(urlPathEqualTo("/csip-records/plan/reviews/attendees/$dpsCSIPAttendeeId")),
           )
@@ -128,7 +128,7 @@ class CSIPAttendeeSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           csipMappingApi.stubGetAttendeeByNomisId(nomisCSIPAttendeeId = nomisCSIPAttendeeId, dpsCSIPAttendeeId = dpsCSIPAttendeeId)
-          csipApi.stubDeleteCSIPAttendee(dpsCSIPAttendeeId = dpsCSIPAttendeeId)
+          csipDpsApi.stubDeleteCSIPAttendee(dpsCSIPAttendeeId = dpsCSIPAttendeeId)
           csipMappingApi.stubDeleteAttendeeMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
@@ -139,7 +139,7 @@ class CSIPAttendeeSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will delete csip in DPS`() {
-          csipApi.verify(1, WireMock.deleteRequestedFor(urlPathEqualTo("/csip-records/plan/reviews/attendees/$dpsCSIPAttendeeId")))
+          csipDpsApi.verify(1, WireMock.deleteRequestedFor(urlPathEqualTo("/csip-records/plan/reviews/attendees/$dpsCSIPAttendeeId")))
         }
 
         @Test

@@ -15,7 +15,6 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.ArgumentMatchers.anyString
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
@@ -32,8 +31,8 @@ import org.mockito.kotlin.whenever
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsCSIPReport
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsMigrateCsipRecordRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsCsipReportSyncResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsSyncCsipRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPNomisApiMockServer.Companion.nomisCSIPReport
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
@@ -68,7 +67,7 @@ internal class CSIPMigrationServiceTest {
   private val migrationHistoryService: MigrationHistoryService = mock()
   private val telemetryClient: TelemetryClient = mock()
   private val auditService: AuditService = mock()
-  private val csipService: CSIPDpsApiService = mock()
+  private val csipDpsService: CSIPDpsApiService = mock()
   private val csipMappingService: CSIPMappingService = mock()
   val service = CSIPMigrationService(
     nomisApiService = nomisApiService,
@@ -76,7 +75,7 @@ internal class CSIPMigrationServiceTest {
     migrationHistoryService = migrationHistoryService,
     telemetryClient = telemetryClient,
     auditService = auditService,
-    csipService = csipService,
+    csipService = csipDpsService,
     csipMappingService = csipMappingService,
     pageSize = 200,
     completeCheckDelaySeconds = 10,
@@ -99,7 +98,7 @@ internal class CSIPMigrationServiceTest {
       migrationHistoryService = migrationHistoryService,
       telemetryClient = telemetryClient,
       auditService = auditService,
-      csipService = csipService,
+      csipService = csipDpsService,
       csipMappingService = csipMappingService,
       pageSize = 200,
       completeCheckDelaySeconds = 10,
@@ -818,7 +817,7 @@ internal class CSIPMigrationServiceTest {
     internal fun setUp(): Unit = runTest {
       whenever(csipMappingService.getCSIPReportByNomisId(any())).thenReturn(null)
       whenever(nomisApiService.getCSIP(any())).thenReturn(nomisCSIPReport())
-      whenever(csipService.migrateCSIP(any(), any())).thenReturn(dpsCSIPReport())
+      whenever(csipDpsService.migrateCSIP(any())).thenReturn(dpsCsipReportSyncResponse())
       whenever(csipMappingService.createMapping(any(), any())).thenReturn(CreateMappingResult())
     }
 
@@ -849,9 +848,8 @@ internal class CSIPMigrationServiceTest {
         ),
       )
 
-      verify(csipService).migrateCSIP(
-        anyString(),
-        eq(dpsMigrateCsipRecordRequest()),
+      verify(csipDpsService).migrateCSIP(
+        eq(dpsSyncCsipRequest()),
       )
     }
 
@@ -883,7 +881,7 @@ internal class CSIPMigrationServiceTest {
     internal fun `will create a mapping between a new csip and a NOMIS csip`(): Unit =
       runTest {
         whenever(nomisApiService.getCSIP(any())).thenReturn(nomisCSIPReport())
-        whenever(csipService.migrateCSIP(any(), any())).thenReturn(dpsCSIPReport())
+        whenever(csipDpsService.migrateCSIP(any())).thenReturn(dpsCsipReportSyncResponse())
 
         service.migrateNomisEntity(
           MigrationContext(
@@ -909,7 +907,7 @@ internal class CSIPMigrationServiceTest {
     internal fun `will not throw an exception (and place message back on queue) but create a new retry message`(): Unit =
       runTest {
         whenever(nomisApiService.getCSIP(any())).thenReturn(nomisCSIPReport())
-        whenever(csipService.migrateCSIP(any(), any())).thenReturn(dpsCSIPReport())
+        whenever(csipDpsService.migrateCSIP(any())).thenReturn(dpsCsipReportSyncResponse())
 
         whenever(
           csipMappingService.createMapping(
@@ -964,7 +962,7 @@ internal class CSIPMigrationServiceTest {
           ),
         )
 
-        verifyNoInteractions(csipService)
+        verifyNoInteractions(csipDpsService)
       }
     }
   }
