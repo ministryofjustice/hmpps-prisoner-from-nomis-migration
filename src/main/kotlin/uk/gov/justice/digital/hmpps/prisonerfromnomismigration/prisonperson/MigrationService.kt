@@ -31,10 +31,10 @@ class MigrationService(
   migrationHistoryService: MigrationHistoryService,
   telemetryClient: TelemetryClient,
   auditService: AuditService,
+  private val entityMigratorService: EntityMigratorService,
   @Value("\${page.size:1000}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
-  private val entityMigrators: List<EntityMigrator<*, *>>,
 ) : MigrationService<MigrationFilter, MigrationRequest, PrisonerPhysicalAttributesResponse, PrisonPersonMigrationMappingRequest>(
   queueService = queueService,
   auditService = auditService,
@@ -49,8 +49,7 @@ class MigrationService(
   private suspend fun migrateEntity(
     offenderNo: String,
     migrationType: PrisonPersonMigrationMappingRequest.MigrationType,
-  ): List<Long> = entityMigrators.find { it.supportsType(migrationType.javaClass) }?.migrateEntity(offenderNo)
-    ?: throw IllegalArgumentException("No entity migrator found for migration type $migrationType")
+  ): DpsResponse = entityMigratorService.migrator(migrationType).migrate(offenderNo)
 
   override suspend fun getIds(
     migrationFilter: MigrationFilter,
@@ -84,7 +83,7 @@ class MigrationService(
     )
 
     try {
-      val dpsIds = migrateEntity(offenderNo, context.body.migrationType)
+      val dpsIds = migrateEntity(context.body.prisonerNumber, context.body.migrationType).ids
       telemetry["dpsIds"] = dpsIds.toString()
 
       PrisonPersonMigrationMappingRequest(
@@ -143,3 +142,4 @@ class MigrationService(
 }
 
 class MigrationRequest(val prisonerNumber: String, val migrationType: PrisonPersonMigrationMappingRequest.MigrationType)
+class DpsResponse(val ids: List<Long>)

@@ -1,13 +1,21 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson
 
-interface EntityMigrator<NOMIS_RESPONSE, DPS_REQUEST> {
-  suspend fun migrateEntity(offenderNo: String): List<Long> =
-    getNomisEntity(offenderNo)
-      .toDpsMigrationRequests()
-      .migrate(offenderNo)
+import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonPersonMigrationMappingRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonPersonMigrationMappingRequest.MigrationType.PHYSICAL_ATTRIBUTES
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.physicalattributes.EntityMigrator as PhysicalAttributesMigrator
 
-  suspend fun supportsType(klass: Class<*>): Boolean
-  suspend fun getNomisEntity(offenderNo: String): NOMIS_RESPONSE
-  suspend fun NOMIS_RESPONSE.toDpsMigrationRequests(): List<DPS_REQUEST>
-  suspend fun List<DPS_REQUEST>.migrate(offenderNo: String): List<Long>
+interface EntityMigrator {
+  suspend fun migrate(offenderNo: String): DpsResponse
+}
+
+@Service
+class EntityMigratorService(
+  private val entityMigrators: List<EntityMigrator>,
+) {
+  fun migrator(migrationType: PrisonPersonMigrationMappingRequest.MigrationType): EntityMigrator =
+    when (migrationType) {
+      PHYSICAL_ATTRIBUTES -> entityMigrators.find { it is PhysicalAttributesMigrator }
+    }
+      ?: error("No Entity Migrator found for migrationType=$migrationType")
 }

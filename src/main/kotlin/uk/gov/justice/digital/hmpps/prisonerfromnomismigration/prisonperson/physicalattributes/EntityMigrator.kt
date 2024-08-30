@@ -2,9 +2,9 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.phy
 
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonPersonMigrationMappingRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PhysicalAttributesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerPhysicalAttributesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.DpsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.EntityMigrator
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesMigrationRequest
 import java.time.LocalDateTime
@@ -13,13 +13,17 @@ import java.time.LocalDateTime
 class EntityMigrator(
   @Qualifier("physicalAttributesNomisApiService") private val nomisApiService: NomisApiService,
   @Qualifier("physicalAttributesDpsApiService") private val dpsApiService: DpsApiService,
-) : EntityMigrator<PrisonerPhysicalAttributesResponse, PhysicalAttributesMigrationRequest> {
+) : EntityMigrator {
 
-  override suspend fun supportsType(klass: Class<out Any>) = klass == PrisonPersonMigrationMappingRequest.MigrationType.PHYSICAL_ATTRIBUTES.javaClass
+  override suspend fun migrate(offenderNo: String): DpsResponse =
+    getNomisEntity(offenderNo)
+      .toDpsMigrationRequests()
+      .migrate(offenderNo)
+      .let { DpsResponse(it) }
 
-  override suspend fun getNomisEntity(offenderNo: String) = nomisApiService.getPhysicalAttributes(offenderNo)
+  private suspend fun getNomisEntity(offenderNo: String) = nomisApiService.getPhysicalAttributes(offenderNo)
 
-  override suspend fun PrisonerPhysicalAttributesResponse.toDpsMigrationRequests() =
+  private suspend fun PrisonerPhysicalAttributesResponse.toDpsMigrationRequests() =
     bookings.flatMap { booking ->
       booking.physicalAttributes.map { pa ->
         val (lastModifiedAt, lastModifiedBy) = pa.lastModified()
@@ -34,7 +38,7 @@ class EntityMigrator(
       }
     }
 
-  override suspend fun List<PhysicalAttributesMigrationRequest>.migrate(offenderNo: String) =
+  private suspend fun List<PhysicalAttributesMigrationRequest>.migrate(offenderNo: String) =
     dpsApiService.migratePhysicalAttributes(offenderNo, this).fieldHistoryInserted
 
   private fun PhysicalAttributesResponse.lastModified(): Pair<LocalDateTime, String> =

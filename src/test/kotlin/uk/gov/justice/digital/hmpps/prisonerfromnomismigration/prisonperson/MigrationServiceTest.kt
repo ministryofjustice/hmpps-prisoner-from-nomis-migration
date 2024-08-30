@@ -24,6 +24,7 @@ class MigrationServiceTest {
   private val migrationHistoryService = mock<MigrationHistoryService>()
   private val telemetryClient = mock<TelemetryClient>()
   private val auditService = mock<AuditService>()
+  private val entityMigratorService = mock<EntityMigratorService>()
   private val service = MigrationService(
     queueService,
     nomisService,
@@ -31,10 +32,10 @@ class MigrationServiceTest {
     migrationHistoryService,
     telemetryClient,
     auditService,
+    entityMigratorService,
     1000,
     1,
     1,
-    emptyList(),
   )
 
   @Nested
