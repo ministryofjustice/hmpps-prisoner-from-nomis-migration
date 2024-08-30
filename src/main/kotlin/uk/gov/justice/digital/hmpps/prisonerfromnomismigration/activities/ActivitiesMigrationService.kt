@@ -33,7 +33,7 @@ class ActivitiesMigrationService(
   @Value("\${activities.page.size:20}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
-) : MigrationService<ActivitiesMigrationFilter, FindActiveActivityIdsResponse, GetActivityResponse, ActivityMigrationMappingDto>(
+) : MigrationService<ActivitiesMigrationFilter, FindActiveActivityIdsResponse, ActivityMigrationMappingDto>(
   mappingService = activitiesMappingService,
   migrationType = ACTIVITIES,
   pageSize = pageSize,

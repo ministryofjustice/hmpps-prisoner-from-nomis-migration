@@ -30,7 +30,7 @@ class CaseNotesByPrisonerMigrationService(
   @Value("\${casenotes.page.size:1000}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
-) : MigrationService<CaseNotesMigrationFilter, PrisonerId, CaseNotesForPrisonerResponse, CaseNoteMigrationMapping>(
+) : MigrationService<CaseNotesMigrationFilter, PrisonerId, CaseNoteMigrationMapping>(
   mappingService = caseNotesMappingService,
   migrationType = MigrationType.CASENOTES,
   pageSize = pageSize,

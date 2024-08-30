@@ -33,7 +33,7 @@ class LocationsMigrationService(
   @Value("\${locations.page.size:1000}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
-) : MigrationService<LocationsMigrationFilter, LocationIdResponse, LocationResponse, LocationMappingDto>(
+) : MigrationService<LocationsMigrationFilter, LocationIdResponse, LocationMappingDto>(
   mappingService = locationsMappingService,
   migrationType = LOCATIONS,
   pageSize = pageSize,

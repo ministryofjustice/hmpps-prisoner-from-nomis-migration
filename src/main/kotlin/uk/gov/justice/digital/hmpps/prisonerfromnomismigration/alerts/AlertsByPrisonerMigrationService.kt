@@ -29,7 +29,7 @@ class AlertsByPrisonerMigrationService(
   @Value("\${alerts.page.size:1000}") pageSize: Long,
   @Value("\${alerts.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${alerts.complete-check.count}") completeCheckCount: Int,
-) : MigrationService<AlertsMigrationFilter, PrisonerId, AlertsForPrisonerResponse, AlertMigrationMapping>(
+) : MigrationService<AlertsMigrationFilter, PrisonerId, AlertMigrationMapping>(
   mappingService = alertsMappingService,
   migrationType = MigrationType.ALERTS,
   pageSize = pageSize,

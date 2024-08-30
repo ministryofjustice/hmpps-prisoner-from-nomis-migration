@@ -14,7 +14,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonPersonMigrationMappingRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerPhysicalAttributesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
@@ -27,7 +26,7 @@ class MigrationService(
   @Value("\${page.size:1000}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
-) : MigrationService<MigrationFilter, MigrationRequest, PrisonerPhysicalAttributesResponse, PrisonPersonMigrationMappingRequest>(
+) : MigrationService<MigrationFilter, MigrationRequest, PrisonPersonMigrationMappingRequest>(
   mappingService = mappingApiService,
   migrationType = MigrationType.PRISONPERSON,
   pageSize = pageSize,

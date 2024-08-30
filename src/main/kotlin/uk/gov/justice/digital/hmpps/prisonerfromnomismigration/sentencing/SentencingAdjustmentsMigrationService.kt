@@ -11,7 +11,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.SENTENCING_ADJUSTMENTS
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisAdjustmentId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationMinutes
@@ -24,7 +23,7 @@ class SentencingAdjustmentsMigrationService(
   @Value("\${sentencing.page.size:1000}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
-) : MigrationService<SentencingMigrationFilter, NomisAdjustmentId, NomisAdjustment, SentencingAdjustmentNomisMapping>(
+) : MigrationService<SentencingMigrationFilter, NomisAdjustmentId, SentencingAdjustmentNomisMapping>(
   mappingService = sentencingAdjustmentsMappingService,
   migrationType = SENTENCING_ADJUSTMENTS,
   pageSize = pageSize,
