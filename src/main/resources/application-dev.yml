@@ -14,6 +14,8 @@ api.base.url:
   casenotes: http://localhost:8096
   mapping: http://localhost:8083
   court.sentencing: http://localhost:8090
+  alerts: http://localhost:8092
+  prison.person: http://localhost:8095
 
 spring:
   r2dbc:

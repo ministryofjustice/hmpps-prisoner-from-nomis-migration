@@ -19,10 +19,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonPersonMigrationMappingRequest.MigrationType.PHYSICAL_ATTRIBUTES
 
 @SpringAPIServiceTest
-@Import(PrisonPersonMappingApiService::class, PrisonPersonConfiguration::class, PrisonPersonMappingApiMockServer::class)
-class PrisonPersonMappingApiServiceTest {
+@Import(MappingApiService::class, Configuration::class, PrisonPersonMappingApiMockServer::class)
+class MappingApiServiceTest {
   @Autowired
-  private lateinit var apiService: PrisonPersonMappingApiService
+  private lateinit var apiService: MappingApiService
 
   @Autowired
   private lateinit var mappingApiMockServer: PrisonPersonMappingApiMockServer

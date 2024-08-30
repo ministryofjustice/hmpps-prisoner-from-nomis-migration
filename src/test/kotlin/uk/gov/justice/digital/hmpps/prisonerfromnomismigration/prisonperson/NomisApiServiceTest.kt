@@ -16,14 +16,15 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.physicalattributes.NomisApiService
 import java.time.LocalDate
 import java.time.LocalDateTime
 
 @SpringAPIServiceTest
-@Import(PrisonPersonNomisApiService::class, PrisonPersonNomisApiMockServer::class)
-class PrisonPersonNomisApiServiceTest {
+@Import(NomisApiService::class, PrisonPersonNomisApiMockServer::class)
+class NomisApiServiceTest {
   @Autowired
-  private lateinit var apiService: PrisonPersonNomisApiService
+  private lateinit var apiService: NomisApiService
 
   @Autowired
   private lateinit var prisonPersonNomisApiMockServer: PrisonPersonNomisApiMockServer
