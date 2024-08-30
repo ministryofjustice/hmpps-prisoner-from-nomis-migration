@@ -17,32 +17,35 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RestResponsePage
 
-class PrisonPersonMigrationServiceTest {
+class MigrationServiceTest {
   private val queueService = mock<MigrationQueueService>()
   private val nomisService = mock<NomisApiService>()
-  private val prisonPersonMappingService = mock<PrisonPersonMappingApiService>()
+  private val prisonPersonMappingService = mock<MappingApiService>()
   private val migrationHistoryService = mock<MigrationHistoryService>()
   private val telemetryClient = mock<TelemetryClient>()
   private val auditService = mock<AuditService>()
-  private val service = object : PrisonPersonMigrationService(
-    queueService,
+  private val entityMigratorService = mock<EntityMigratorService>()
+  private val service = object : MigrationService(
     nomisService,
     prisonPersonMappingService,
-    migrationHistoryService,
-    telemetryClient,
-    auditService,
+    entityMigratorService,
     1000,
     1,
     1,
   ) {
-    override suspend fun migrateEntity(offenderNo: String): List<Long> = emptyList()
+    init {
+      queueService = this@MigrationServiceTest.queueService
+      migrationHistoryService = this@MigrationServiceTest.migrationHistoryService
+      telemetryClient = this@MigrationServiceTest.telemetryClient
+      auditService = this@MigrationServiceTest.auditService
+    }
   }
 
   @Nested
   inner class GetIds {
     @Test
     fun `will not call prison API for a filter on prisoner number`() = runTest {
-      service.getIds(PrisonPersonMigrationFilter("A1234BC"), 1000, 0)
+      service.getIds(MigrationFilter("A1234BC"), 1000, 0)
 
       verify(nomisService, never()).getPrisonerIds(anyLong(), anyLong())
     }
@@ -52,7 +55,7 @@ class PrisonPersonMigrationServiceTest {
       whenever(nomisService.getPrisonerIds(anyLong(), anyLong()))
         .thenReturn(RestResponsePage(emptyList<PrisonerId>(), 0, 1, 0, TextNode("")))
 
-      service.getIds(PrisonPersonMigrationFilter(null), 1000, 0)
+      service.getIds(MigrationFilter(null), 1000, 0)
 
       verify(nomisService).getPrisonerIds(anyLong(), anyLong())
     }
@@ -62,7 +65,7 @@ class PrisonPersonMigrationServiceTest {
       whenever(nomisService.getPrisonerIds(anyLong(), anyLong()))
         .thenReturn(RestResponsePage(emptyList<PrisonerId>(), 0, 1, 0, TextNode("")))
 
-      service.getIds(PrisonPersonMigrationFilter(""), 1000, 0)
+      service.getIds(MigrationFilter(""), 1000, 0)
 
       verify(nomisService).getPrisonerIds(anyLong(), anyLong())
     }

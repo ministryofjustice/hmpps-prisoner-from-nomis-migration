@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities
 
-import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
@@ -26,9 +25,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.A
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveAllocationIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetAllocationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ScheduleRulesResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
@@ -36,23 +32,15 @@ import java.time.LocalTime
 
 @Service
 class AllocationsMigrationService(
-  queueService: MigrationQueueService,
   private val nomisApiService: NomisApiService,
-  migrationHistoryService: MigrationHistoryService,
-  telemetryClient: TelemetryClient,
-  auditService: AuditService,
   private val activitiesApiService: ActivitiesApiService,
   private val allocationsMappingService: AllocationsMappingService,
   private val activityMappingService: ActivitiesMappingService,
   @Value("\${allocations.page.size:50}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
-) : MigrationService<AllocationsMigrationFilter, FindActiveAllocationIdsResponse, GetAllocationResponse, AllocationMigrationMappingDto>(
-  queueService = queueService,
-  auditService = auditService,
-  migrationHistoryService = migrationHistoryService,
+) : MigrationService<AllocationsMigrationFilter, FindActiveAllocationIdsResponse, AllocationMigrationMappingDto>(
   mappingService = allocationsMappingService,
-  telemetryClient = telemetryClient,
   migrationType = MigrationType.ALLOCATIONS,
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,

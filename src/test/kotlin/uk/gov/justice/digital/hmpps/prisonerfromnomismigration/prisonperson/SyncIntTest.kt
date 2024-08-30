@@ -32,7 +32,7 @@ import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.time.LocalDateTime
 import java.time.ZoneId
 
-class PrisonPersonSyncIntTest : SqsIntegrationTestBase() {
+class SyncIntTest : SqsIntegrationTestBase() {
 
   @Autowired
   private lateinit var nomisMockServer: PrisonPersonNomisApiMockServer

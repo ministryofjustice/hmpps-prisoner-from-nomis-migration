@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes
 
-import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -17,9 +16,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerCaseNoteMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerCaseNotesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
@@ -27,23 +23,15 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationM
 
 @Service
 class CaseNotesByPrisonerMigrationService(
-  queueService: MigrationQueueService,
   private val nomisService: NomisApiService,
   private val caseNotesNomisService: CaseNotesNomisApiService,
   private val caseNotesMappingService: CaseNotesByPrisonerMigrationMappingApiService,
   private val caseNotesDpsService: CaseNotesApiService,
-  migrationHistoryService: MigrationHistoryService,
-  telemetryClient: TelemetryClient,
-  auditService: AuditService,
   @Value("\${casenotes.page.size:1000}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
-) : MigrationService<CaseNotesMigrationFilter, PrisonerId, CaseNotesForPrisonerResponse, CaseNoteMigrationMapping>(
-  queueService = queueService,
-  auditService = auditService,
-  migrationHistoryService = migrationHistoryService,
+) : MigrationService<CaseNotesMigrationFilter, PrisonerId, CaseNoteMigrationMapping>(
   mappingService = caseNotesMappingService,
-  telemetryClient = telemetryClient,
   migrationType = MigrationType.CASENOTES,
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,

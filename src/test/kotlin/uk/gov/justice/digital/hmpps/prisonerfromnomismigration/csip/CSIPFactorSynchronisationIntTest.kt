@@ -28,7 +28,7 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension.Companion.csipApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension.Companion.csipDpsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
@@ -75,7 +75,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
         }
         csipNomisApi.verify(exactly(0), getRequestedFor(anyUrl()))
         csipMappingApi.verify(exactly(0), getRequestedFor(anyUrl()))
-        csipApi.verify(exactly(0), anyRequestedFor(anyUrl()))
+        csipDpsApi.verify(exactly(0), anyRequestedFor(anyUrl()))
       }
     }
 
@@ -95,7 +95,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
           csipNomisApi.stubGetCSIPFactor(nomisCSIPFactorId)
           csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPReportId) // Needed to ensure we have the uuid for dps
           csipMappingApi.stubGetFactorByNomisId(HttpStatus.NOT_FOUND)
-          csipApi.stubInsertCSIPFactor(dpsCSIPReportId, dpsCSIPFactorId)
+          csipDpsApi.stubInsertCSIPFactor(dpsCSIPReportId, dpsCSIPFactorId)
           mappingApi.stubMappingCreate("/mapping/csip/factors")
 
           awsSqsCSIPOffenderEventsClient.sendMessage(
@@ -122,7 +122,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will create the csip factor in the csip service`() {
-          csipApi.verify(
+          csipDpsApi.verify(
             postRequestedFor(urlPathEqualTo("/csip-records/$dpsCSIPReportId/referral/contributory-factors"))
               .withHeader("Username", equalTo("JSMITH")),
           )
@@ -168,7 +168,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will not create the csip in the csip service`() {
-          csipApi.verify(exactly(0), anyRequestedFor(anyUrl()))
+          csipDpsApi.verify(exactly(0), anyRequestedFor(anyUrl()))
         }
 
         @Test
@@ -191,7 +191,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
           csipNomisApi.stubGetCSIPFactor(nomisCSIPFactorId)
           csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPReportId) // Needed to ensure we have the uuid for dps
           csipMappingApi.stubGetFactorByNomisId(HttpStatus.NOT_FOUND)
-          csipApi.stubInsertCSIPFactor(dpsCSIPReportId, duplicateDPSCSIPFactorId)
+          csipDpsApi.stubInsertCSIPFactor(dpsCSIPReportId, duplicateDPSCSIPFactorId)
           csipMappingApi.stubCSIPFactorMappingCreateConflict(
             nomisCSIPFactorId = nomisCSIPFactorId,
             duplicateDPSCSIPFactorId = duplicateDPSCSIPFactorId,
@@ -208,7 +208,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilCallTo { mappingApi.createMappingCount("/mapping/csip/factors") } matches { it == 1 }
 
           // check that one csip is created
-          assertThat(csipApi.createCSIPFactorSyncCount()).isEqualTo(1)
+          assertThat(csipDpsApi.createCSIPFactorSyncCount()).isEqualTo(1)
 
           // doesn't retry
           csipMappingApi.verifyCreateCSIPFactorMapping(dpsCSIPFactorId = duplicateDPSCSIPFactorId)
@@ -244,8 +244,8 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
           )
 
           // check that no CSIPs are created
-          assertThat(csipApi.createCSIPFactorSyncCount()).isEqualTo(0)
-          csipApi.verify(0, postRequestedFor(anyUrl()))
+          assertThat(csipDpsApi.createCSIPFactorSyncCount()).isEqualTo(0)
+          csipDpsApi.verify(0, postRequestedFor(anyUrl()))
 
           // doesn't try to create a new mapping
           csipMappingApi.verify(0, postRequestedFor(anyUrl()))
@@ -282,8 +282,8 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
           awsSqsCSIPOffenderEventDlqClient.waitForMessageCountOnQueue(csipQueueOffenderEventsDlqUrl, 1)
 
           // check that no CSIPs are created and no posts of any kind are sent
-          assertThat(csipApi.createCSIPFactorSyncCount()).isEqualTo(0)
-          csipApi.verify(0, postRequestedFor(anyUrl()))
+          assertThat(csipDpsApi.createCSIPFactorSyncCount()).isEqualTo(0)
+          csipDpsApi.verify(0, postRequestedFor(anyUrl()))
 
           // doesn't try to create a new mapping
           csipMappingApi.verify(0, postRequestedFor(anyUrl()))
@@ -314,7 +314,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
           csipNomisApi.stubGetCSIPFactor(nomisCSIPFactorId)
           csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPReportId) // Needed to ensure we have the uuid for dps
           csipMappingApi.stubGetFactorByNomisId(HttpStatus.NOT_FOUND)
-          csipApi.stubInsertCSIPFactor(dpsCSIPReportId, dpsCSIPFactorId)
+          csipDpsApi.stubInsertCSIPFactor(dpsCSIPReportId, dpsCSIPFactorId)
         }
 
         @Nested
@@ -332,7 +332,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
 
           @Test
           fun `will create csip factor in DPS`() {
-            csipApi.verify(
+            csipDpsApi.verify(
               postRequestedFor(urlPathEqualTo("/csip-records/$dpsCSIPReportId/referral/contributory-factors"))
                 .withRequestBody(matchingJsonPath("factorTypeCode", equalTo("BUL")))
                 .withRequestBody(matchingJsonPath("comment", equalTo("Offender causes trouble"))),
@@ -398,7 +398,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
           @Test
           fun `will create csip factor in DPS`() {
             await untilAsserted {
-              csipApi.verify(
+              csipDpsApi.verify(
                 1,
                 postRequestedFor(urlPathEqualTo("/csip-records/$dpsCSIPReportId/referral/contributory-factors"))
                   .withRequestBody(matchingJsonPath("factorTypeCode", equalTo("BUL")))
@@ -479,7 +479,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
           getRequestedFor(WireMock.urlPathMatching("/mapping/csip/factors/nomis-factor-id/\\d+")),
         )
         // will not update the csip factor  in DPS
-        csipApi.verify(
+        csipDpsApi.verify(
           0,
           WireMock.putRequestedFor(anyUrl()),
         )
@@ -551,7 +551,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
             dpsCSIPFactorId = dpsCSIPFactorId,
             dpsCSIPReportId = dpsCSIPReportId,
           )
-          csipApi.stubUpdateCSIPFactor(dpsCSIPFactorId = dpsCSIPFactorId)
+          csipDpsApi.stubUpdateCSIPFactor(dpsCSIPFactorId = dpsCSIPFactorId)
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
             csipFactorEvent(
@@ -565,7 +565,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will update (patch) DPS with the changes`() {
           await untilAsserted {
-            csipApi.verify(
+            csipDpsApi.verify(
               1,
               WireMock.patchRequestedFor(urlPathEqualTo("/csip-records/referral/contributory-factors/$dpsCSIPFactorId"))
                 .withRequestBody(matchingJsonPath("factorTypeCode", equalTo("BUL")))
@@ -639,7 +639,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
         fun setUp() {
           csipMappingApi.stubGetFactorByNomisId(nomisCSIPFactorId = nomisCSIPFactorId, dpsCSIPFactorId = dpsCSIPFactorId, dpsCSIPReportId = dpsCSIPReportId)
 
-          csipApi.stubDeleteCSIPFactor(dpsCSIPFactorId = dpsCSIPFactorId)
+          csipDpsApi.stubDeleteCSIPFactor(dpsCSIPFactorId = dpsCSIPFactorId)
           csipMappingApi.stubDeleteFactorMapping(dpsCSIPFactorId = dpsCSIPFactorId)
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
@@ -651,7 +651,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will delete CSIP in DPS`() {
-          csipApi.verify(
+          csipDpsApi.verify(
             1,
             WireMock.deleteRequestedFor(urlPathEqualTo("/csip-records/referral/contributory-factors/$dpsCSIPFactorId")),
           )
@@ -701,7 +701,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will delete csip in DPS`() {
-          csipApi.verify(1, WireMock.deleteRequestedFor(urlPathEqualTo("/csip-records/referral/contributory-factors/$dpsCSIPFactorId")))
+          csipDpsApi.verify(1, WireMock.deleteRequestedFor(urlPathEqualTo("/csip-records/referral/contributory-factors/$dpsCSIPFactorId")))
         }
 
         @Test

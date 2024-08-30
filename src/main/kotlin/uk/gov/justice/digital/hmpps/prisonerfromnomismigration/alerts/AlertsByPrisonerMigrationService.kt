@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts
 
-import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -16,9 +15,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerAlertMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerAlertsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
@@ -26,23 +22,15 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationM
 
 @Service
 class AlertsByPrisonerMigrationService(
-  queueService: MigrationQueueService,
   private val alertsNomisService: AlertsNomisApiService,
   private val nomisService: NomisApiService,
   private val alertsMappingService: AlertsByPrisonerMigrationMappingApiService,
   private val alertsDpsService: AlertsDpsApiService,
-  migrationHistoryService: MigrationHistoryService,
-  telemetryClient: TelemetryClient,
-  auditService: AuditService,
   @Value("\${alerts.page.size:1000}") pageSize: Long,
   @Value("\${alerts.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${alerts.complete-check.count}") completeCheckCount: Int,
-) : MigrationService<AlertsMigrationFilter, PrisonerId, AlertsForPrisonerResponse, AlertMigrationMapping> (
-  queueService = queueService,
-  auditService = auditService,
-  migrationHistoryService = migrationHistoryService,
+) : MigrationService<AlertsMigrationFilter, PrisonerId, AlertMigrationMapping>(
   mappingService = alertsMappingService,
-  telemetryClient = telemetryClient,
   migrationType = MigrationType.ALERTS,
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
@@ -56,12 +44,10 @@ class AlertsByPrisonerMigrationService(
     migrationFilter: AlertsMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
-  ): PageImpl<PrisonerId> {
-    return nomisService.getPrisonerIds(
-      pageNumber = pageNumber,
-      pageSize = pageSize,
-    )
-  }
+  ): PageImpl<PrisonerId> = nomisService.getPrisonerIds(
+    pageNumber = pageNumber,
+    pageSize = pageSize,
+  )
 
   override suspend fun migrateNomisEntity(context: MigrationContext<PrisonerId>) {
     log.info("attempting to migrate ${context.body}")

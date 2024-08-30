@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing
 
-import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -10,34 +9,22 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.SENTENCING_ADJUSTMENTS
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisAdjustmentId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationMinutes
 
 @Service
 class SentencingAdjustmentsMigrationService(
-  queueService: MigrationQueueService,
   private val nomisApiService: NomisApiService,
-  migrationHistoryService: MigrationHistoryService,
-  telemetryClient: TelemetryClient,
-  auditService: AuditService,
   private val sentencingService: SentencingService,
   private val sentencingAdjustmentsMappingService: SentencingAdjustmentsMappingService,
   @Value("\${sentencing.page.size:1000}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
-) : MigrationService<SentencingMigrationFilter, NomisAdjustmentId, NomisAdjustment, SentencingAdjustmentNomisMapping>(
-  queueService = queueService,
-  auditService = auditService,
-  migrationHistoryService = migrationHistoryService,
+) : MigrationService<SentencingMigrationFilter, NomisAdjustmentId, SentencingAdjustmentNomisMapping>(
   mappingService = sentencingAdjustmentsMappingService,
-  telemetryClient = telemetryClient,
   migrationType = SENTENCING_ADJUSTMENTS,
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
@@ -51,14 +38,12 @@ class SentencingAdjustmentsMigrationService(
     migrationFilter: SentencingMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
-  ): PageImpl<NomisAdjustmentId> {
-    return nomisApiService.getSentencingAdjustmentIds(
-      fromDate = migrationFilter.fromDate,
-      toDate = migrationFilter.toDate,
-      pageNumber = pageNumber,
-      pageSize = pageSize,
-    )
-  }
+  ): PageImpl<NomisAdjustmentId> = nomisApiService.getSentencingAdjustmentIds(
+    fromDate = migrationFilter.fromDate,
+    toDate = migrationFilter.toDate,
+    pageNumber = pageNumber,
+    pageSize = pageSize,
+  )
 
   override suspend fun migrateNomisEntity(context: MigrationContext<NomisAdjustmentId>) {
     log.info("attempting to migrate ${context.body}")

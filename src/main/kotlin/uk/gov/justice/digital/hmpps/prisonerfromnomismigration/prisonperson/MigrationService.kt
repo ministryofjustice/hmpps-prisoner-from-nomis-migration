@@ -1,71 +1,65 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson
 
-import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
+import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonPersonMigrationMappingRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerPhysicalAttributesResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 
-abstract class PrisonPersonMigrationService(
-  queueService: MigrationQueueService,
+@Service("prisonPersonMigrationService")
+class MigrationService(
   private val nomisService: NomisApiService,
-  private val prisonPersonMappingService: PrisonPersonMappingApiService,
-  migrationHistoryService: MigrationHistoryService,
-  telemetryClient: TelemetryClient,
-  auditService: AuditService,
+  @Qualifier("prisonPersonMappingApiService") private val mappingApiService: MappingApiService,
+  private val entityMigratorService: EntityMigratorService,
   @Value("\${page.size:1000}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
-) : MigrationService<PrisonPersonMigrationFilter, PrisonPersonMigrationRequest, PrisonerPhysicalAttributesResponse, PrisonPersonMigrationMappingRequest>(
-  queueService = queueService,
-  auditService = auditService,
-  migrationHistoryService = migrationHistoryService,
-  mappingService = prisonPersonMappingService,
-  telemetryClient = telemetryClient,
+) : MigrationService<MigrationFilter, MigrationRequest, PrisonPersonMigrationMappingRequest>(
+  mappingService = mappingApiService,
   migrationType = MigrationType.PRISONPERSON,
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
   completeCheckCount = completeCheckCount,
 ) {
-  abstract suspend fun migrateEntity(offenderNo: String): List<Long>
+  private suspend fun migrateEntity(
+    offenderNo: String,
+    migrationType: PrisonPersonMigrationMappingRequest.MigrationType,
+  ): DpsResponse = entityMigratorService.migrator(migrationType).migrate(offenderNo)
 
   override suspend fun getIds(
-    migrationFilter: PrisonPersonMigrationFilter,
+    migrationFilter: MigrationFilter,
     pageSize: Long,
     pageNumber: Long,
-  ): PageImpl<PrisonPersonMigrationRequest> =
+  ): PageImpl<MigrationRequest> =
     if (migrationFilter.prisonerNumber.isNullOrEmpty()) {
       nomisService.getPrisonerIds(
         pageNumber = pageNumber,
         pageSize = pageSize,
       ).let {
-        PageImpl<PrisonPersonMigrationRequest>(
-          it.content.map { PrisonPersonMigrationRequest(it.offenderNo, migrationFilter.migrationType) },
+        PageImpl<MigrationRequest>(
+          it.content.map { MigrationRequest(it.offenderNo, migrationFilter.migrationType) },
           it.pageable,
           it.totalElements,
         )
       }
     } else {
       // If a single prisoner migration is requested then we must be testing. Pretend that we called nomis-prisoner-api which found a single prisoner.
-      PageImpl<PrisonPersonMigrationRequest>(mutableListOf(PrisonPersonMigrationRequest(migrationFilter.prisonerNumber, migrationFilter.migrationType)), Pageable.ofSize(1), 1)
+      PageImpl<MigrationRequest>(mutableListOf(MigrationRequest(migrationFilter.prisonerNumber, migrationFilter.migrationType)), Pageable.ofSize(1), 1)
     }
 
-  override suspend fun migrateNomisEntity(context: MigrationContext<PrisonPersonMigrationRequest>) {
+  override suspend fun migrateNomisEntity(context: MigrationContext<MigrationRequest>) {
     log.info("attempting to migrate ${context.body}")
     val offenderNo = context.body.prisonerNumber
     val telemetry = mutableMapOf(
@@ -76,7 +70,7 @@ abstract class PrisonPersonMigrationService(
     )
 
     try {
-      val dpsIds = migrateEntity(offenderNo)
+      val dpsIds = migrateEntity(offenderNo, context.body.migrationType).ids
       telemetry["dpsIds"] = dpsIds.toString()
 
       PrisonPersonMigrationMappingRequest(
@@ -96,7 +90,7 @@ abstract class PrisonPersonMigrationService(
 
   private suspend fun PrisonPersonMigrationMappingRequest.createActivityMapping(context: MigrationContext<*>) =
     try {
-      prisonPersonMappingService.createMapping(this, object : ParameterizedTypeReference<DuplicateErrorResponse<PrisonPersonMigrationMappingRequest>>() {})
+      mappingApiService.createMapping(this, object : ParameterizedTypeReference<DuplicateErrorResponse<PrisonPersonMigrationMappingRequest>>() {})
         .also { it.handleError(context) }
     } catch (e: Exception) {
       log.error(
@@ -134,4 +128,5 @@ abstract class PrisonPersonMigrationService(
   }
 }
 
-class PrisonPersonMigrationRequest(val prisonerNumber: String, val migrationType: PrisonPersonMigrationMappingRequest.MigrationType)
+class MigrationRequest(val prisonerNumber: String, val migrationType: PrisonPersonMigrationMappingRequest.MigrationType)
+class DpsResponse(val ids: List<Long>)

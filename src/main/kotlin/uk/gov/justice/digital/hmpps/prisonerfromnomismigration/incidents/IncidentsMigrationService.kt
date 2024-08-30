@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents
 
-import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -14,33 +13,21 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.IncidentMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentIdResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationMinutes
 
 @Service
 class IncidentsMigrationService(
-  queueService: MigrationQueueService,
   private val nomisApiService: IncidentsNomisApiService,
-  migrationHistoryService: MigrationHistoryService,
-  telemetryClient: TelemetryClient,
-  auditService: AuditService,
   private val incidentsService: IncidentsService,
   private val incidentsMappingService: IncidentsMappingService,
   @Value("\${incidents.page.size:1000}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
 
-) : MigrationService<IncidentsMigrationFilter, IncidentIdResponse, IncidentResponse, IncidentMappingDto>(
-  queueService = queueService,
-  auditService = auditService,
-  migrationHistoryService = migrationHistoryService,
+) : MigrationService<IncidentsMigrationFilter, IncidentIdResponse, IncidentMappingDto>(
   mappingService = incidentsMappingService,
-  telemetryClient = telemetryClient,
   migrationType = MigrationType.INCIDENTS,
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
@@ -54,14 +41,12 @@ class IncidentsMigrationService(
     migrationFilter: IncidentsMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
-  ): PageImpl<IncidentIdResponse> {
-    return nomisApiService.getIncidentIds(
-      fromDate = migrationFilter.fromDate,
-      toDate = migrationFilter.toDate,
-      pageNumber = pageNumber,
-      pageSize = pageSize,
-    )
-  }
+  ): PageImpl<IncidentIdResponse> = nomisApiService.getIncidentIds(
+    fromDate = migrationFilter.fromDate,
+    toDate = migrationFilter.toDate,
+    pageNumber = pageNumber,
+    pageSize = pageSize,
+  )
 
   override suspend fun migrateNomisEntity(context: MigrationContext<IncidentIdResponse>) {
     log.info("attempting to migrate $this")

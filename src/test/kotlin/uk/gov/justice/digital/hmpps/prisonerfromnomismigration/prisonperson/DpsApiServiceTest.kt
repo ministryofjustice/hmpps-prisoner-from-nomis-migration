@@ -18,14 +18,15 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonDpsApiExtension.Companion.dpsPrisonPersonServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesMigrationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesSyncResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.physicalattributes.DpsApiService
 import java.time.LocalDateTime
 import java.time.ZoneId
 
 @SpringAPIServiceTest
-@Import(PrisonPersonDpsApiService::class, PrisonPersonConfiguration::class)
-class PrisonPersonDpsApiServiceTest {
+@Import(DpsApiService::class, Configuration::class)
+class DpsApiServiceTest {
   @Autowired
-  private lateinit var apiService: PrisonPersonDpsApiService
+  private lateinit var apiService: DpsApiService
 
   @Nested
   inner class SyncPhysicalAttributes {

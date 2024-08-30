@@ -17,7 +17,7 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension.Companion.csipApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension.Companion.csipDpsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 
@@ -76,7 +76,7 @@ class CSIPInterviewSynchronisationIntTest : SqsIntegrationTestBase() {
         fun setUp() {
           csipMappingApi.stubGetInterviewByNomisId(nomisCSIPInterviewId = nomisCSIPInterviewId, dpsCSIPInterviewId = dpsCSIPInterviewId, dpsCSIPReportId = dpsCSIPReportId)
 
-          csipApi.stubDeleteCSIPInterview(dpsCSIPInterviewId = dpsCSIPInterviewId)
+          csipDpsApi.stubDeleteCSIPInterview(dpsCSIPInterviewId = dpsCSIPInterviewId)
           csipMappingApi.stubDeleteInterviewMapping(dpsCSIPInterviewId = dpsCSIPInterviewId)
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
@@ -88,7 +88,7 @@ class CSIPInterviewSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will delete CSIP in DPS`() {
-          csipApi.verify(
+          csipDpsApi.verify(
             1,
             WireMock.deleteRequestedFor(urlPathEqualTo("/csip-records/referral/investigation/interviews/$dpsCSIPInterviewId")),
           )
@@ -138,7 +138,7 @@ class CSIPInterviewSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will delete csip in DPS`() {
-          csipApi.verify(1, WireMock.deleteRequestedFor(urlPathEqualTo("/csip-records/referral/investigation/interviews/$dpsCSIPInterviewId")))
+          csipDpsApi.verify(1, WireMock.deleteRequestedFor(urlPathEqualTo("/csip-records/referral/investigation/interviews/$dpsCSIPInterviewId")))
         }
 
         @Test
