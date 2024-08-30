@@ -156,7 +156,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
   }
 
   // /////// CSIP Factor
-  fun stubGetFactorByNomisId(nomisCSIPFactorId: Long, dpsCSIPFactorId: String) {
+  fun stubGetFactorByNomisId(nomisCSIPFactorId: Long, dpsCSIPFactorId: String, dpsCSIPReportId: String) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/csip/factors/nomis-csip-factor-id/$nomisCSIPFactorId"))
         .willReturn(
@@ -167,6 +167,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
               CSIPFactorMappingDto(
                 nomisCSIPFactorId = nomisCSIPFactorId,
                 dpsCSIPFactorId = dpsCSIPFactorId,
+                dpsCSIPReportId = dpsCSIPReportId,
                 mappingType = CSIPFactorMappingDto.MappingType.NOMIS_CREATED,
                 label = "2022-02-14T09:58:45",
                 whenCreated = "2020-01-01T11:10:00",
@@ -181,6 +182,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
 
   fun stubCSIPFactorMappingCreateConflict(
     nomisCSIPFactorId: Long,
+    dpsCSIPReportId: String,
     existingDPSCSIPFactorId: String,
     duplicateDPSCSIPFactorId: String,
   ) {
@@ -197,6 +199,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
                 "existing" :  {
                   "nomisCSIPFactorId": $nomisCSIPFactorId,
                   "dpsCSIPFactorId": "$existingDPSCSIPFactorId",
+                  "dpsCSIPReportId": "$dpsCSIPReportId",
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",
                   "mappingType": "NOMIS_CREATED"
@@ -204,6 +207,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
                  "duplicate" : {
                   "nomisCSIPFactorId": $nomisCSIPFactorId,
                   "dpsCSIPFactorId": "$duplicateDPSCSIPFactorId",
+                  "dpsCSIPReportId": "$dpsCSIPReportId",
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",
                   "mappingType": "NOMIS_CREATED"
@@ -236,7 +240,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
 
   // /////// CSIP Plan
-  fun stubGetPlanByNomisId(nomisCSIPPlanId: Long, dpsCSIPPlanId: String) {
+  fun stubGetPlanByNomisId(nomisCSIPPlanId: Long, dpsCSIPPlanId: String, dpsCSIPReportId: String) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/csip/plans/nomis-csip-plan-id/$nomisCSIPPlanId"))
         .willReturn(
@@ -247,6 +251,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
               CSIPPlanMappingDto(
                 nomisCSIPPlanId = nomisCSIPPlanId,
                 dpsCSIPPlanId = dpsCSIPPlanId,
+                dpsCSIPReportId = dpsCSIPReportId,
                 mappingType = CSIPPlanMappingDto.MappingType.NOMIS_CREATED,
                 label = "2022-02-14T09:58:45",
                 whenCreated = "2020-01-01T11:10:00",
@@ -316,7 +321,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
 
   // /////// CSIP Review
-  fun stubGetReviewByNomisId(nomisCSIPReviewId: Long, dpsCSIPReviewId: String) {
+  fun stubGetReviewByNomisId(nomisCSIPReviewId: Long, dpsCSIPReviewId: String, dpsCSIPReportId: String) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/csip/reviews/nomis-csip-review-id/$nomisCSIPReviewId"))
         .willReturn(
@@ -327,6 +332,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
               CSIPReviewMappingDto(
                 nomisCSIPReviewId = nomisCSIPReviewId,
                 dpsCSIPReviewId = dpsCSIPReviewId,
+                dpsCSIPReportId = dpsCSIPReportId,
                 mappingType = CSIPReviewMappingDto.MappingType.NOMIS_CREATED,
                 label = "2022-02-14T09:58:45",
                 whenCreated = "2020-01-01T11:10:00",
@@ -396,7 +402,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
 
   // /////// CSIP Attendee
-  fun stubGetAttendeeByNomisId(nomisCSIPAttendeeId: Long, dpsCSIPAttendeeId: String) {
+  fun stubGetAttendeeByNomisId(nomisCSIPAttendeeId: Long, dpsCSIPAttendeeId: String, dpsCSIPReportId: String) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/csip/attendees/nomis-csip-attendee-id/$nomisCSIPAttendeeId"))
         .willReturn(
@@ -407,6 +413,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
               CSIPAttendeeMappingDto(
                 nomisCSIPAttendeeId = nomisCSIPAttendeeId,
                 dpsCSIPAttendeeId = dpsCSIPAttendeeId,
+                dpsCSIPReportId = dpsCSIPReportId,
                 mappingType = CSIPAttendeeMappingDto.MappingType.NOMIS_CREATED,
                 label = "2022-02-14T09:58:45",
                 whenCreated = "2020-01-01T11:10:00",
@@ -476,7 +483,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
 
   // /////// CSIP Interview
-  fun stubGetInterviewByNomisId(nomisCSIPInterviewId: Long, dpsCSIPInterviewId: String) {
+  fun stubGetInterviewByNomisId(nomisCSIPInterviewId: Long, dpsCSIPInterviewId: String, dpsCSIPReportId: String) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/csip/interviews/nomis-csip-interview-id/$nomisCSIPInterviewId"))
         .willReturn(
@@ -487,6 +494,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
               CSIPInterviewMappingDto(
                 nomisCSIPInterviewId = nomisCSIPInterviewId,
                 dpsCSIPInterviewId = dpsCSIPInterviewId,
+                dpsCSIPReportId = dpsCSIPReportId,
                 mappingType = CSIPInterviewMappingDto.MappingType.NOMIS_CREATED,
                 label = "2022-02-14T09:58:45",
                 whenCreated = "2020-01-01T11:10:00",

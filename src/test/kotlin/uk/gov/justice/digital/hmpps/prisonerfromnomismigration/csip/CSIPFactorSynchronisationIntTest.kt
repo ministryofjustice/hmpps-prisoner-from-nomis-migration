@@ -196,6 +196,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
             nomisCSIPFactorId = nomisCSIPFactorId,
             duplicateDPSCSIPFactorId = duplicateDPSCSIPFactorId,
             existingDPSCSIPFactorId = dpsCSIPFactorId,
+            dpsCSIPReportId = dpsCSIPReportId,
           )
 
           awsSqsCSIPOffenderEventsClient.sendMessage(
@@ -235,7 +236,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
         internal fun `it will not retry after a 409 (duplicate csip written to CSIP API)`() {
           csipNomisApi.stubGetCSIPFactor(nomisCSIPFactorId)
           csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPReportId) // Needed to ensure we have the uuid for dps
-          csipMappingApi.stubGetFactorByNomisId(nomisCSIPFactorId = nomisCSIPFactorId, dpsCSIPFactorId = dpsCSIPFactorId)
+          csipMappingApi.stubGetFactorByNomisId(nomisCSIPFactorId, dpsCSIPFactorId, dpsCSIPReportId)
 
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
@@ -541,12 +542,14 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
       @DisplayName("When mapping does exist")
       inner class HappyPath {
         private val dpsCSIPFactorId = "a04f7a8d-61aa-400c-9395-f4dc62f36ab0"
+        private val dpsCSIPReportId = "a04f7a8d-61aa-400c-9395-f4dc62f36ab0"
 
         @BeforeEach
         fun setUp() {
           csipMappingApi.stubGetFactorByNomisId(
             nomisCSIPFactorId = nomisCSIPFactorId,
             dpsCSIPFactorId = dpsCSIPFactorId,
+            dpsCSIPReportId = dpsCSIPReportId,
           )
           csipApi.stubUpdateCSIPFactor(dpsCSIPFactorId = dpsCSIPFactorId)
           awsSqsCSIPOffenderEventsClient.sendMessage(
@@ -630,10 +633,11 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class HappyPath {
         private val dpsCSIPFactorId = "c4d6fb09-fd27-42bc-a33e-5ca74ac510be"
         private val nomisCSIPFactorId = 987L
+        private val dpsCSIPReportId = "c4d6fb09-fd27-42bc-a33e-5ca74ac510be"
 
         @BeforeEach
         fun setUp() {
-          csipMappingApi.stubGetFactorByNomisId(nomisCSIPFactorId = nomisCSIPFactorId, dpsCSIPFactorId = dpsCSIPFactorId)
+          csipMappingApi.stubGetFactorByNomisId(nomisCSIPFactorId = nomisCSIPFactorId, dpsCSIPFactorId = dpsCSIPFactorId, dpsCSIPReportId = dpsCSIPReportId)
 
           csipApi.stubDeleteCSIPFactor(dpsCSIPFactorId = dpsCSIPFactorId)
           csipMappingApi.stubDeleteFactorMapping(dpsCSIPFactorId = dpsCSIPFactorId)
@@ -681,10 +685,11 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class MappingDeleteFails {
         private val nomisCSIPFactorId = 121L
         private val dpsCSIPFactorId = "a4725216-892d-4325-bc18-f74d95f3bca2"
+        private val dpsCSIPReportId = "a4725216-892d-4325-bc18-f74d95f3bca2"
 
         @BeforeEach
         fun setUp() {
-          csipMappingApi.stubGetFactorByNomisId(nomisCSIPFactorId = nomisCSIPFactorId, dpsCSIPFactorId = dpsCSIPFactorId)
+          csipMappingApi.stubGetFactorByNomisId(nomisCSIPFactorId = nomisCSIPFactorId, dpsCSIPFactorId = dpsCSIPFactorId, dpsCSIPReportId = dpsCSIPReportId)
           csipApi.stubDeleteCSIPFactor(dpsCSIPFactorId = dpsCSIPFactorId)
           csipMappingApi.stubDeleteFactorMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
           awsSqsCSIPOffenderEventsClient.sendMessage(

@@ -61,7 +61,7 @@ class CSIPFactorSynchronisationService(
             ).also {
               telemetry.put("dpsCSIPFactorId", it.factorUuid.toString())
 
-              tryToCreateCSIPFactorMapping(nomisFactorResponse, it, telemetry)
+              tryToCreateCSIPFactorMapping(nomisFactorResponse, it, reportMapping.dpsCSIPId, telemetry)
                 .also { mappingCreateResult ->
                   if (mappingCreateResult == MappingResponse.MAPPING_FAILED) telemetry.put("mapping", "initial-failure")
                   telemetryClient.trackEvent(
@@ -137,11 +137,13 @@ class CSIPFactorSynchronisationService(
   private suspend fun tryToCreateCSIPFactorMapping(
     nomisCSIPFactor: CSIPFactorResponse,
     dpsCSIPFactor: ContributoryFactor,
+    dpsCSIPReportId: String,
     telemetry: Map<String, Any>,
   ): MappingResponse {
     val mapping = CSIPFactorMappingDto(
       nomisCSIPFactorId = nomisCSIPFactor.id,
       dpsCSIPFactorId = dpsCSIPFactor.factorUuid.toString(),
+      dpsCSIPReportId = dpsCSIPReportId,
       mappingType = CSIPFactorMappingDto.MappingType.NOMIS_CREATED,
     )
     try {

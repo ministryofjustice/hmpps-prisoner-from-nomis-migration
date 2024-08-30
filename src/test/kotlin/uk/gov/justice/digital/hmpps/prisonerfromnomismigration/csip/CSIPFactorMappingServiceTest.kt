@@ -52,7 +52,8 @@ internal class CSIPFactorMappingServiceTest {
       internal fun `will return the factor mapping when found`(): Unit = runTest {
         val nomisCsipFactorId = 6543L
         val dpsCsipFactorId = UUID.randomUUID().toString()
-        csipMappingApi.stubGetFactorByNomisId(nomisCsipFactorId, dpsCsipFactorId)
+        val dpsCsipReportId = UUID.randomUUID().toString()
+        csipMappingApi.stubGetFactorByNomisId(nomisCsipFactorId, dpsCsipFactorId, dpsCsipReportId)
 
         val mapping = csipMappingService.getCSIPFactorByNomisId(nomisCSIPFactorId = nomisCsipFactorId)
 
@@ -81,6 +82,7 @@ internal class CSIPFactorMappingServiceTest {
 
       private val nomisCsipFactorId = 7654L
       private val dpsCsipFactorId = UUID.randomUUID().toString()
+      private val dpsCsipReportId = UUID.randomUUID().toString()
 
       @BeforeEach
       internal fun setUp() {
@@ -99,6 +101,7 @@ internal class CSIPFactorMappingServiceTest {
           CSIPFactorMappingDto(
             dpsCSIPFactorId = dpsCsipFactorId,
             nomisCSIPFactorId = nomisCsipFactorId,
+            dpsCSIPReportId = dpsCsipReportId,
             label = "some-migration-id",
             mappingType = CSIPFactorMappingDto.MappingType.MIGRATED,
           ),
@@ -120,6 +123,7 @@ internal class CSIPFactorMappingServiceTest {
               dpsCSIPFactorId = dpsCsipFactorId,
               nomisCSIPFactorId = nomisCsipFactorId,
               mappingType = CSIPFactorMappingDto.MappingType.MIGRATED,
+              dpsCSIPReportId = dpsCsipReportId,
               label = "5678",
               whenCreated = "2020-01-01T00:00:00",
             ),
@@ -133,6 +137,7 @@ internal class CSIPFactorMappingServiceTest {
                   {
                   "dpsCSIPFactorId": "$dpsCsipFactorId",
                   "nomisCSIPFactorId": $nomisCsipFactorId,                                       
+                  "dpsCSIPReportId": "$dpsCsipReportId",                                       
                   "label": "5678",
                   "mappingType": "MIGRATED",
                   "whenCreated": "2020-01-01T00:00:00"
@@ -160,6 +165,7 @@ internal class CSIPFactorMappingServiceTest {
               dpsCSIPFactorId = dpsCsipFactorId,
               nomisCSIPFactorId = nomisCsipFactorId,
               mappingType = CSIPFactorMappingDto.MappingType.MIGRATED,
+              dpsCSIPReportId = dpsCsipReportId,
               label = "5678",
               whenCreated = "2020-01-01T00:00:00",
             ),

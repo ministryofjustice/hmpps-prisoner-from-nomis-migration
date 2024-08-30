@@ -70,10 +70,11 @@ class CSIPPlanSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class HappyPath {
         private val dpsCSIPPlanId = "c4d6fb09-fd27-42bc-a33e-5ca74ac510be"
         private val nomisCSIPPlanId = 987L
+        private val dpsCSIPReportId = "c4d6fb09-fd27-42bc-a33e-5ca74ac510be"
 
         @BeforeEach
         fun setUp() {
-          csipMappingApi.stubGetPlanByNomisId(nomisCSIPPlanId = nomisCSIPPlanId, dpsCSIPPlanId = dpsCSIPPlanId)
+          csipMappingApi.stubGetPlanByNomisId(nomisCSIPPlanId = nomisCSIPPlanId, dpsCSIPPlanId = dpsCSIPPlanId, dpsCSIPReportId = dpsCSIPReportId)
 
           csipApi.stubDeleteCSIPPlan(dpsCSIPPlanId = dpsCSIPPlanId)
           csipMappingApi.stubDeletePlanMapping(dpsCSIPPlanId = dpsCSIPPlanId)
@@ -121,10 +122,11 @@ class CSIPPlanSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class MappingDeleteFails {
         private val nomisCSIPPlanId = 121L
         private val dpsCSIPPlanId = "a4725216-892d-4325-bc18-f74d95f3bca2"
+        private val dpsCSIPReportId = "a4725216-892d-4325-bc18-f74d95f3bca2"
 
         @BeforeEach
         fun setUp() {
-          csipMappingApi.stubGetPlanByNomisId(nomisCSIPPlanId = nomisCSIPPlanId, dpsCSIPPlanId = dpsCSIPPlanId)
+          csipMappingApi.stubGetPlanByNomisId(nomisCSIPPlanId = nomisCSIPPlanId, dpsCSIPPlanId = dpsCSIPPlanId, dpsCSIPReportId = dpsCSIPReportId)
           csipApi.stubDeleteCSIPPlan(dpsCSIPPlanId = dpsCSIPPlanId)
           csipMappingApi.stubDeletePlanMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
           awsSqsCSIPOffenderEventsClient.sendMessage(
