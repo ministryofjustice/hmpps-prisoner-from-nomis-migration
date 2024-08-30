@@ -48,7 +48,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.A
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationIncident
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Evidence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Hearing
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.HearingNotification
@@ -257,7 +256,7 @@ class AdjudicationsMigrationService(
   @Value("\${complete-check.count}") completeCheckCount: Int,
   @Value("\${feature.adjudications.report.mode:false}")
   private val reportMode: Boolean,
-) : MigrationService<AdjudicationsMigrationFilter, AdjudicationChargeIdResponse, AdjudicationResponse, AdjudicationAllMappingDto>(
+) : MigrationService<AdjudicationsMigrationFilter, AdjudicationChargeIdResponse, AdjudicationAllMappingDto>(
   mappingService = adjudicationsMappingService,
   migrationType = MigrationType.ADJUDICATIONS,
   pageSize = pageSize,

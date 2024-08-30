@@ -13,7 +13,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPIdResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationMinutes
@@ -27,7 +26,7 @@ class CSIPMigrationService(
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
 
-) : MigrationService<CSIPMigrationFilter, CSIPIdResponse, CSIPResponse, CSIPMappingDto>(
+) : MigrationService<CSIPMigrationFilter, CSIPIdResponse, CSIPMappingDto>(
   mappingService = csipMappingService,
   migrationType = MigrationType.CSIP,
   pageSize = pageSize,

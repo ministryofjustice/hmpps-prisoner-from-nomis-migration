@@ -28,7 +28,7 @@ class VisitsMigrationService(
   @Value("\${visits.page.size:1000}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
-) : MigrationService<VisitsMigrationFilter, VisitId, NomisVisit, VisitNomisMapping>(
+) : MigrationService<VisitsMigrationFilter, VisitId, VisitNomisMapping>(
   mappingService = visitMappingService,
   migrationType = VISITS,
   pageSize = pageSize,

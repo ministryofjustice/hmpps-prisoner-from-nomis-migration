@@ -12,7 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Migrati
 import java.time.Duration
 import java.time.LocalDateTime
 
-abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, NOMIS_ENTITY : Any, MAPPING : Any>(
+abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any>(
   internal val mappingService: MigrationMapping<MAPPING>,
   internal val migrationType: MigrationType,
   private val pageSize: Long,

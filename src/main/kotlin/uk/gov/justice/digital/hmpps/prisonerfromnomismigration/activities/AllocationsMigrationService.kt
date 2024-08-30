@@ -39,7 +39,7 @@ class AllocationsMigrationService(
   @Value("\${allocations.page.size:50}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
-) : MigrationService<AllocationsMigrationFilter, FindActiveAllocationIdsResponse, GetAllocationResponse, AllocationMigrationMappingDto>(
+) : MigrationService<AllocationsMigrationFilter, FindActiveAllocationIdsResponse, AllocationMigrationMappingDto>(
   mappingService = allocationsMappingService,
   migrationType = MigrationType.ALLOCATIONS,
   pageSize = pageSize,
