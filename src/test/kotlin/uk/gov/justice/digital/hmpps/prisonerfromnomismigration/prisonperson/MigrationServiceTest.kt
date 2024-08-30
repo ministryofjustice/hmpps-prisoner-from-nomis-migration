@@ -25,18 +25,21 @@ class MigrationServiceTest {
   private val telemetryClient = mock<TelemetryClient>()
   private val auditService = mock<AuditService>()
   private val entityMigratorService = mock<EntityMigratorService>()
-  private val service = MigrationService(
-    queueService,
+  private val service = object : MigrationService(
     nomisService,
     prisonPersonMappingService,
-    migrationHistoryService,
-    telemetryClient,
-    auditService,
     entityMigratorService,
     1000,
     1,
     1,
-  )
+  ) {
+    init {
+      queueService = this@MigrationServiceTest.queueService
+      migrationHistoryService = this@MigrationServiceTest.migrationHistoryService
+      telemetryClient = this@MigrationServiceTest.telemetryClient
+      auditService = this@MigrationServiceTest.auditService
+    }
+  }
 
   @Nested
   inner class GetIds {

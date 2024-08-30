@@ -69,18 +69,21 @@ internal class CSIPMigrationServiceTest {
   private val auditService: AuditService = mock()
   private val csipDpsService: CSIPDpsApiService = mock()
   private val csipMappingService: CSIPMappingService = mock()
-  val service = CSIPMigrationService(
+  val service = object : CSIPMigrationService(
     nomisApiService = nomisApiService,
-    queueService = queueService,
-    migrationHistoryService = migrationHistoryService,
-    telemetryClient = telemetryClient,
-    auditService = auditService,
     csipService = csipDpsService,
     csipMappingService = csipMappingService,
     pageSize = 200,
     completeCheckDelaySeconds = 10,
     completeCheckCount = 9,
-  )
+  ) {
+    init {
+      queueService = this@CSIPMigrationServiceTest.queueService
+      migrationHistoryService = this@CSIPMigrationServiceTest.migrationHistoryService
+      telemetryClient = this@CSIPMigrationServiceTest.telemetryClient
+      auditService = this@CSIPMigrationServiceTest.auditService
+    }
+  }
 
   @Nested
   @DisplayName("migrateCSIPs")
@@ -92,18 +95,21 @@ internal class CSIPMigrationServiceTest {
     private val auditWhatParam = slot<String>()
     private val auditDetailsParam = slot<Map<*, *>>()
 
-    val service = CSIPMigrationService(
+    val service = object : CSIPMigrationService(
       nomisApiService = nomisApiService,
-      queueService = queueService,
-      migrationHistoryService = migrationHistoryService,
-      telemetryClient = telemetryClient,
-      auditService = auditService,
       csipService = csipDpsService,
       csipMappingService = csipMappingService,
       pageSize = 200,
       completeCheckDelaySeconds = 10,
       completeCheckCount = 9,
-    )
+    ) {
+      init {
+        queueService = this@CSIPMigrationServiceTest.queueService
+        migrationHistoryService = this@MigrateCSIPs.migrationHistoryService
+        telemetryClient = this@CSIPMigrationServiceTest.telemetryClient
+        auditService = this@MigrateCSIPs.auditService
+      }
+    }
 
     @BeforeEach
     internal fun setUp() {

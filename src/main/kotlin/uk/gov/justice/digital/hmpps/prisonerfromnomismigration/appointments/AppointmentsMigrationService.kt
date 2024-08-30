@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments
 
-import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -12,9 +11,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AppointmentIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AppointmentResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.APPOINTMENTS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
@@ -22,22 +18,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationM
 
 @Service
 class AppointmentsMigrationService(
-  queueService: MigrationQueueService,
   private val nomisApiService: NomisApiService,
-  migrationHistoryService: MigrationHistoryService,
-  telemetryClient: TelemetryClient,
-  auditService: AuditService,
   private val appointmentsService: AppointmentsService,
   private val appointmentsMappingService: AppointmentsMappingService,
   @Value("\${appointments.page.size:1000}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
 ) : MigrationService<AppointmentsMigrationFilter, AppointmentIdResponse, AppointmentResponse, AppointmentMapping>(
-  queueService = queueService,
-  auditService = auditService,
-  migrationHistoryService = migrationHistoryService,
   mappingService = appointmentsMappingService,
-  telemetryClient = telemetryClient,
   migrationType = APPOINTMENTS,
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
@@ -51,15 +39,13 @@ class AppointmentsMigrationService(
     migrationFilter: AppointmentsMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
-  ): PageImpl<AppointmentIdResponse> {
-    return nomisApiService.getAppointmentIds(
-      fromDate = migrationFilter.fromDate,
-      toDate = migrationFilter.toDate,
-      pageNumber = pageNumber,
-      pageSize = pageSize,
-      prisonIds = migrationFilter.prisonIds,
-    )
-  }
+  ): PageImpl<AppointmentIdResponse> = nomisApiService.getAppointmentIds(
+    fromDate = migrationFilter.fromDate,
+    toDate = migrationFilter.toDate,
+    pageNumber = pageNumber,
+    pageSize = pageSize,
+    prisonIds = migrationFilter.prisonIds,
+  )
 
   override suspend fun migrateNomisEntity(context: MigrationContext<AppointmentIdResponse>) {
     log.info("attempting to migrate ${context.body}")

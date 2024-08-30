@@ -79,18 +79,21 @@ internal class IncidentsMigrationServiceTest {
   private val auditService: AuditService = mock()
   private val incidentsService: IncidentsService = mock()
   private val incidentsMappingService: IncidentsMappingService = mock()
-  val service = IncidentsMigrationService(
+  val service = object : IncidentsMigrationService(
     nomisApiService = nomisApiService,
-    queueService = queueService,
-    migrationHistoryService = migrationHistoryService,
-    telemetryClient = telemetryClient,
-    auditService = auditService,
     incidentsService = incidentsService,
     incidentsMappingService = incidentsMappingService,
     pageSize = 200,
     completeCheckDelaySeconds = 10,
     completeCheckCount = 9,
-  )
+  ) {
+    init {
+      queueService = this@IncidentsMigrationServiceTest.queueService
+      migrationHistoryService = this@IncidentsMigrationServiceTest.migrationHistoryService
+      telemetryClient = this@IncidentsMigrationServiceTest.telemetryClient
+      auditService = this@IncidentsMigrationServiceTest.auditService
+    }
+  }
 
   @Nested
   @DisplayName("migrateIncidents")
@@ -102,18 +105,21 @@ internal class IncidentsMigrationServiceTest {
     private val auditWhatParam = slot<String>()
     private val auditDetailsParam = slot<Map<*, *>>()
 
-    val service = IncidentsMigrationService(
+    val service = object : IncidentsMigrationService(
       nomisApiService = nomisApiService,
-      queueService = queueService,
-      migrationHistoryService = migrationHistoryService,
-      telemetryClient = telemetryClient,
-      auditService = auditService,
       incidentsService = incidentsService,
       incidentsMappingService = incidentsMappingService,
       pageSize = 200,
       completeCheckDelaySeconds = 10,
       completeCheckCount = 9,
-    )
+    ) {
+      init {
+        queueService = this@IncidentsMigrationServiceTest.queueService
+        migrationHistoryService = this@MigrateIncidents.migrationHistoryService
+        telemetryClient = this@IncidentsMigrationServiceTest.telemetryClient
+        auditService = this@MigrateIncidents.auditService
+      }
+    }
 
     @BeforeEach
     internal fun setUp() {

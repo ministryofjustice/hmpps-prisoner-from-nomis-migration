@@ -65,18 +65,21 @@ internal class VisitsMigrationServiceTest {
   private val migrationHistoryService: MigrationHistoryService = mock()
   private val telemetryClient: TelemetryClient = mock()
   private val auditService: AuditService = mock()
-  val service = VisitsMigrationService(
+  val service = object : VisitsMigrationService(
     nomisApiService = nomisApiService,
-    queueService = queueService,
     visitMappingService = visitMappingService,
     visitsService = visitsService,
-    migrationHistoryService = migrationHistoryService,
-    telemetryClient = telemetryClient,
-    auditService = auditService,
     pageSize = 200,
     completeCheckDelaySeconds = 10,
     completeCheckCount = 9,
-  )
+  ) {
+    init {
+      queueService = this@VisitsMigrationServiceTest.queueService
+      migrationHistoryService = this@VisitsMigrationServiceTest.migrationHistoryService
+      telemetryClient = this@VisitsMigrationServiceTest.telemetryClient
+      auditService = this@VisitsMigrationServiceTest.auditService
+    }
+  }
 
   @Nested
   @DisplayName("migrateVisits")
@@ -86,18 +89,21 @@ internal class VisitsMigrationServiceTest {
     private val migrationHistoryService = mockk<MigrationHistoryService>(relaxed = true)
 
     /* coroutine version of service required for this route */
-    private val service = VisitsMigrationService(
+    private val service = object : VisitsMigrationService(
       nomisApiService = nomisApiService,
-      queueService = queueService,
       visitMappingService = visitMappingService,
       visitsService = visitsService,
-      migrationHistoryService = migrationHistoryService,
-      telemetryClient = telemetryClient,
-      auditService = auditService,
       pageSize = 200,
       completeCheckDelaySeconds = 10,
       completeCheckCount = 9,
-    )
+    ) {
+      init {
+        queueService = this@VisitsMigrationServiceTest.queueService
+        migrationHistoryService = this@MigrateVisits.migrationHistoryService
+        telemetryClient = this@VisitsMigrationServiceTest.telemetryClient
+        auditService = this@MigrateVisits.auditService
+      }
+    }
     private val auditWhatParam = slot<String>()
     private val auditDetailsParam = slot<Map<*, *>>()
 

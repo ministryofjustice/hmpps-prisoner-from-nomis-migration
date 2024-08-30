@@ -63,18 +63,21 @@ internal class AppointmentsMigrationServiceTest {
   private val auditService: AuditService = mock()
   private val appointmentsService: AppointmentsService = mock()
   private val appointmentsMappingService: AppointmentsMappingService = mock()
-  val service = AppointmentsMigrationService(
+  val service = object : AppointmentsMigrationService(
     nomisApiService = nomisApiService,
-    queueService = queueService,
-    migrationHistoryService = migrationHistoryService,
-    telemetryClient = telemetryClient,
-    auditService = auditService,
     appointmentsService = appointmentsService,
     appointmentsMappingService = appointmentsMappingService,
     pageSize = 200,
     completeCheckDelaySeconds = 10,
     completeCheckCount = 9,
-  )
+  ) {
+    init {
+      queueService = this@AppointmentsMigrationServiceTest.queueService
+      migrationHistoryService = this@AppointmentsMigrationServiceTest.migrationHistoryService
+      telemetryClient = this@AppointmentsMigrationServiceTest.telemetryClient
+      auditService = this@AppointmentsMigrationServiceTest.auditService
+    }
+  }
 
   @Nested
   inner class MigrateAppointments {
@@ -85,18 +88,21 @@ internal class AppointmentsMigrationServiceTest {
     private val auditWhatParam = slot<String>()
     private val auditDetailsParam = slot<Map<*, *>>()
 
-    val service = AppointmentsMigrationService(
+    val service = object : AppointmentsMigrationService(
       nomisApiService = nomisApiService,
-      queueService = queueService,
-      migrationHistoryService = migrationHistoryService,
-      telemetryClient = telemetryClient,
-      auditService = auditService,
       appointmentsService = appointmentsService,
       appointmentsMappingService = appointmentsMappingService,
       pageSize = 200,
       completeCheckDelaySeconds = 10,
       completeCheckCount = 9,
-    )
+    ) {
+      init {
+        queueService = this@AppointmentsMigrationServiceTest.queueService
+        migrationHistoryService = this@MigrateAppointments.migrationHistoryService
+        telemetryClient = this@AppointmentsMigrationServiceTest.telemetryClient
+        auditService = this@MigrateAppointments.auditService
+      }
+    }
 
     @BeforeEach
     fun setUp() {

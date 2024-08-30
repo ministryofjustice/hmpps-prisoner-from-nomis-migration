@@ -78,18 +78,21 @@ class LocationsMigrationServiceTest {
   private val auditService: AuditService = mock()
   private val locationsService: LocationsService = mock()
   private val locationsMappingService: LocationsMappingService = mock()
-  val service = LocationsMigrationService(
+  val service = object : LocationsMigrationService(
     nomisApiService = nomisApiService,
-    queueService = queueService,
-    migrationHistoryService = migrationHistoryService,
-    telemetryClient = telemetryClient,
-    auditService = auditService,
     locationsService = locationsService,
     locationsMappingService = locationsMappingService,
     pageSize = 200,
     completeCheckDelaySeconds = 10,
     completeCheckCount = 9,
-  )
+  ) {
+    init {
+      queueService = this@LocationsMigrationServiceTest.queueService
+      migrationHistoryService = this@LocationsMigrationServiceTest.migrationHistoryService
+      telemetryClient = this@LocationsMigrationServiceTest.telemetryClient
+      auditService = this@LocationsMigrationServiceTest.auditService
+    }
+  }
 
   @Nested
   @DisplayName("migrateLocations")
@@ -101,18 +104,21 @@ class LocationsMigrationServiceTest {
     private val auditWhatParam = slot<String>()
     private val auditDetailsParam = slot<Map<*, *>>()
 
-    val service = LocationsMigrationService(
+    val service = object : LocationsMigrationService(
       nomisApiService = nomisApiService,
-      queueService = queueService,
-      migrationHistoryService = migrationHistoryService,
-      telemetryClient = telemetryClient,
-      auditService = auditService,
       locationsService = locationsService,
       locationsMappingService = locationsMappingService,
       pageSize = 200,
       completeCheckDelaySeconds = 10,
       completeCheckCount = 9,
-    )
+    ) {
+      init {
+        queueService = this@LocationsMigrationServiceTest.queueService
+        migrationHistoryService = this@MigrateLocations.migrationHistoryService
+        telemetryClient = this@LocationsMigrationServiceTest.telemetryClient
+        auditService = this@MigrateLocations.auditService
+      }
+    }
 
     @BeforeEach
     fun setUp() {

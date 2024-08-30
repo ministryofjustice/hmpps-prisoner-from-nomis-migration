@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 
 import com.microsoft.applicationinsights.TelemetryClient
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
@@ -12,24 +13,30 @@ import java.time.Duration
 import java.time.LocalDateTime
 
 abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, NOMIS_ENTITY : Any, MAPPING : Any>(
-  internal val queueService: MigrationQueueService,
-  internal val migrationHistoryService: MigrationHistoryService,
   internal val mappingService: MigrationMapping<MAPPING>,
-  internal val telemetryClient: TelemetryClient,
-  internal val auditService: AuditService,
   internal val migrationType: MigrationType,
   private val pageSize: Long,
   private val completeCheckDelaySeconds: Int,
   private val completeCheckCount: Int,
 ) {
 
+  @Autowired
+  protected lateinit var queueService: MigrationQueueService
+
+  @Autowired
+  protected lateinit var migrationHistoryService: MigrationHistoryService
+
+  @Autowired
+  protected lateinit var telemetryClient: TelemetryClient
+
+  @Autowired
+  protected lateinit var auditService: AuditService
+
   abstract suspend fun getIds(migrationFilter: FILTER, pageSize: Long, pageNumber: Long): PageImpl<NOMIS_ID>
 
   abstract suspend fun migrateNomisEntity(context: MigrationContext<NOMIS_ID>)
 
-  suspend fun getMigrationCount(migrationId: String): Long {
-    return mappingService.getMigrationCount(migrationId)
-  }
+  suspend fun getMigrationCount(migrationId: String): Long = mappingService.getMigrationCount(migrationId)
 
   suspend fun startMigration(migrationFilter: FILTER): MigrationContext<FILTER> {
     val count = getIds(
