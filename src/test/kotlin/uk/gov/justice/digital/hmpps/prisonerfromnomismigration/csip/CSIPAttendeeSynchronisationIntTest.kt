@@ -129,7 +129,7 @@ class CSIPAttendeeSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @BeforeEach
         fun setUp() {
-          csipMappingApi.stubGetAttendeeByNomisId(nomisCSIPAttendeeId = nomisCSIPAttendeeId, dpsCSIPAttendeeId = dpsCSIPAttendeeId)
+          csipMappingApi.stubGetAttendeeByNomisId(nomisCSIPAttendeeId = nomisCSIPAttendeeId, dpsCSIPAttendeeId = dpsCSIPAttendeeId, dpsCSIPReportId = dpsCSIPReportId)
           csipDpsApi.stubDeleteCSIPAttendee(dpsCSIPAttendeeId = dpsCSIPAttendeeId)
           csipMappingApi.stubDeleteAttendeeMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
           awsSqsCSIPOffenderEventsClient.sendMessage(

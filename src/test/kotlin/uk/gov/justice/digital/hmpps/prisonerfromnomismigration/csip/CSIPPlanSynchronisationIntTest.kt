@@ -127,7 +127,7 @@ class CSIPPlanSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           csipMappingApi.stubGetPlanByNomisId(nomisCSIPPlanId = nomisCSIPPlanId, dpsCSIPPlanId = dpsCSIPPlanId, dpsCSIPReportId = dpsCSIPReportId)
-          csipApi.stubDeleteCSIPPlan(dpsCSIPPlanId = dpsCSIPPlanId)
+          csipDpsApi.stubDeleteCSIPPlan(dpsCSIPPlanId = dpsCSIPPlanId)
           csipMappingApi.stubDeletePlanMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,

@@ -690,7 +690,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           csipMappingApi.stubGetFactorByNomisId(nomisCSIPFactorId = nomisCSIPFactorId, dpsCSIPFactorId = dpsCSIPFactorId, dpsCSIPReportId = dpsCSIPReportId)
-          csipApi.stubDeleteCSIPFactor(dpsCSIPFactorId = dpsCSIPFactorId)
+          csipDpsApi.stubDeleteCSIPFactor(dpsCSIPFactorId = dpsCSIPFactorId)
           csipMappingApi.stubDeleteFactorMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,

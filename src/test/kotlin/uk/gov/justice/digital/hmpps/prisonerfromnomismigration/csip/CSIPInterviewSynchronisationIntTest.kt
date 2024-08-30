@@ -127,7 +127,7 @@ class CSIPInterviewSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           csipMappingApi.stubGetInterviewByNomisId(nomisCSIPInterviewId = nomisCSIPInterviewId, dpsCSIPInterviewId = dpsCSIPInterviewId, dpsCSIPReportId = dpsCSIPReportId)
-          csipApi.stubDeleteCSIPInterview(dpsCSIPInterviewId = dpsCSIPInterviewId)
+          csipDpsApi.stubDeleteCSIPInterview(dpsCSIPInterviewId = dpsCSIPInterviewId)
           csipMappingApi.stubDeleteInterviewMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
