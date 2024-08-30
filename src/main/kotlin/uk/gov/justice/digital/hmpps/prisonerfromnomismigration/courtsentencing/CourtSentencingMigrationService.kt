@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
-import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -13,37 +12,25 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Migrati
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationMinutes
 
 @Service
 class CourtSentencingMigrationService(
-  queueService: MigrationQueueService,
   private val nomisApiService: CourtSentencingNomisApiService,
-  migrationHistoryService: MigrationHistoryService,
-  telemetryClient: TelemetryClient,
-  auditService: AuditService,
   private val courtSentencingMappingService: CourtSentencingMappingApiService,
   private val courtSentencingDpsService: CourtSentencingDpsApiService,
   @Value("\${courtsentencing.page.size:1000}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
-) :
-  MigrationService<CourtSentencingMigrationFilter, CourtCaseIdResponse, CourtCaseResponse, CourtCaseAllMappingDto>(
-    queueService = queueService,
-    auditService = auditService,
-    migrationHistoryService = migrationHistoryService,
-    mappingService = courtSentencingMappingService,
-    telemetryClient = telemetryClient,
-    migrationType = MigrationType.COURT_SENTENCING,
-    pageSize = pageSize,
-    completeCheckDelaySeconds = completeCheckDelaySeconds,
-    completeCheckCount = completeCheckCount,
-  ) {
+) : MigrationService<CourtSentencingMigrationFilter, CourtCaseIdResponse, CourtCaseResponse, CourtCaseAllMappingDto>(
+  mappingService = courtSentencingMappingService,
+  migrationType = MigrationType.COURT_SENTENCING,
+  pageSize = pageSize,
+  completeCheckDelaySeconds = completeCheckDelaySeconds,
+  completeCheckCount = completeCheckCount,
+) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
@@ -52,14 +39,12 @@ class CourtSentencingMigrationService(
     migrationFilter: CourtSentencingMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
-  ): PageImpl<CourtCaseIdResponse> {
-    return nomisApiService.getCourtCaseIds(
-      fromDate = migrationFilter.fromDate,
-      toDate = migrationFilter.toDate,
-      pageNumber = pageNumber,
-      pageSize = pageSize,
-    )
-  }
+  ): PageImpl<CourtCaseIdResponse> = nomisApiService.getCourtCaseIds(
+    fromDate = migrationFilter.fromDate,
+    toDate = migrationFilter.toDate,
+    pageNumber = pageNumber,
+    pageSize = pageSize,
+  )
 
   override suspend fun migrateNomisEntity(context: MigrationContext<CourtCaseIdResponse>) {
     log.info("attempting to migrate ${context.body}")

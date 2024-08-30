@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications
 
-import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -58,9 +57,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.H
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Prisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Repair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Staff
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
@@ -252,11 +248,7 @@ private fun Repair.toDamage() = MigrateDamage(
 
 @Service
 class AdjudicationsMigrationService(
-  queueService: MigrationQueueService,
   private val nomisApiService: NomisApiService,
-  migrationHistoryService: MigrationHistoryService,
-  telemetryClient: TelemetryClient,
-  auditService: AuditService,
   private val adjudicationsMappingService: AdjudicationsMappingService,
   private val adjudicationsService: AdjudicationsService,
   private val mappingCreator: AdjudicationMappingCreator,
@@ -265,18 +257,13 @@ class AdjudicationsMigrationService(
   @Value("\${complete-check.count}") completeCheckCount: Int,
   @Value("\${feature.adjudications.report.mode:false}")
   private val reportMode: Boolean,
-) :
-  MigrationService<AdjudicationsMigrationFilter, AdjudicationChargeIdResponse, AdjudicationResponse, AdjudicationAllMappingDto>(
-    queueService = queueService,
-    auditService = auditService,
-    migrationHistoryService = migrationHistoryService,
-    mappingService = adjudicationsMappingService,
-    telemetryClient = telemetryClient,
-    migrationType = MigrationType.ADJUDICATIONS,
-    pageSize = pageSize,
-    completeCheckDelaySeconds = completeCheckDelaySeconds,
-    completeCheckCount = completeCheckCount,
-  ) {
+) : MigrationService<AdjudicationsMigrationFilter, AdjudicationChargeIdResponse, AdjudicationResponse, AdjudicationAllMappingDto>(
+  mappingService = adjudicationsMappingService,
+  migrationType = MigrationType.ADJUDICATIONS,
+  pageSize = pageSize,
+  completeCheckDelaySeconds = completeCheckDelaySeconds,
+  completeCheckCount = completeCheckCount,
+) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
@@ -285,15 +272,13 @@ class AdjudicationsMigrationService(
     migrationFilter: AdjudicationsMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
-  ): PageImpl<AdjudicationChargeIdResponse> {
-    return nomisApiService.getAdjudicationIds(
-      fromDate = migrationFilter.fromDate,
-      toDate = migrationFilter.toDate,
-      pageNumber = pageNumber,
-      pageSize = pageSize,
-      prisonIds = migrationFilter.prisonIds,
-    )
-  }
+  ): PageImpl<AdjudicationChargeIdResponse> = nomisApiService.getAdjudicationIds(
+    fromDate = migrationFilter.fromDate,
+    toDate = migrationFilter.toDate,
+    pageNumber = pageNumber,
+    pageSize = pageSize,
+    prisonIds = migrationFilter.prisonIds,
+  )
 
   override suspend fun migrateNomisEntity(context: MigrationContext<AdjudicationChargeIdResponse>) {
     log.info("attempting to migrate ${context.body}")

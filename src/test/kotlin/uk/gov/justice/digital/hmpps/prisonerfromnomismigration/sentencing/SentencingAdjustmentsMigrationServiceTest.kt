@@ -65,18 +65,21 @@ internal class SentencingAdjustmentsMigrationServiceTest {
   private val auditService: AuditService = mock()
   private val sentencingService: SentencingService = mock()
   private val sentencingAdjustmentsMappingService: SentencingAdjustmentsMappingService = mock()
-  val service = SentencingAdjustmentsMigrationService(
+  val service = object : SentencingAdjustmentsMigrationService(
     nomisApiService = nomisApiService,
-    queueService = queueService,
-    migrationHistoryService = migrationHistoryService,
-    telemetryClient = telemetryClient,
-    auditService = auditService,
     sentencingService = sentencingService,
     sentencingAdjustmentsMappingService = sentencingAdjustmentsMappingService,
     pageSize = 200,
     completeCheckDelaySeconds = 10,
     completeCheckCount = 9,
-  )
+  ) {
+    init {
+      queueService = this@SentencingAdjustmentsMigrationServiceTest.queueService
+      migrationHistoryService = this@SentencingAdjustmentsMigrationServiceTest.migrationHistoryService
+      telemetryClient = this@SentencingAdjustmentsMigrationServiceTest.telemetryClient
+      auditService = this@SentencingAdjustmentsMigrationServiceTest.auditService
+    }
+  }
 
   @Nested
   @DisplayName("migrateSentenceAdjustments")
@@ -88,18 +91,21 @@ internal class SentencingAdjustmentsMigrationServiceTest {
     private val auditWhatParam = slot<String>()
     private val auditDetailsParam = slot<Map<*, *>>()
 
-    val service = SentencingAdjustmentsMigrationService(
+    val service = object : SentencingAdjustmentsMigrationService(
       nomisApiService = nomisApiService,
-      queueService = queueService,
-      migrationHistoryService = migrationHistoryService,
-      telemetryClient = telemetryClient,
-      auditService = auditService,
       sentencingService = sentencingService,
       sentencingAdjustmentsMappingService = sentencingAdjustmentsMappingService,
       pageSize = 200,
       completeCheckDelaySeconds = 10,
       completeCheckCount = 9,
-    )
+    ) {
+      init {
+        queueService = this@SentencingAdjustmentsMigrationServiceTest.queueService
+        migrationHistoryService = this@MigrateSentenceAdjustments.migrationHistoryService
+        telemetryClient = this@SentencingAdjustmentsMigrationServiceTest.telemetryClient
+        auditService = this@MigrateSentenceAdjustments.auditService
+      }
+    }
 
     @BeforeEach
     internal fun setUp() {

@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities
 
-import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
@@ -20,9 +19,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.F
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetActivityResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PayRatesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ScheduleRulesResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.ACTIVITIES
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
@@ -31,22 +27,14 @@ import java.math.BigDecimal
 
 @Service
 class ActivitiesMigrationService(
-  queueService: MigrationQueueService,
   private val nomisApiService: NomisApiService,
-  migrationHistoryService: MigrationHistoryService,
-  telemetryClient: TelemetryClient,
-  auditService: AuditService,
   private val activitiesApiService: ActivitiesApiService,
   private val activitiesMappingService: ActivitiesMappingService,
   @Value("\${activities.page.size:20}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
 ) : MigrationService<ActivitiesMigrationFilter, FindActiveActivityIdsResponse, GetActivityResponse, ActivityMigrationMappingDto>(
-  queueService = queueService,
-  auditService = auditService,
-  migrationHistoryService = migrationHistoryService,
   mappingService = activitiesMappingService,
-  telemetryClient = telemetryClient,
   migrationType = ACTIVITIES,
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
