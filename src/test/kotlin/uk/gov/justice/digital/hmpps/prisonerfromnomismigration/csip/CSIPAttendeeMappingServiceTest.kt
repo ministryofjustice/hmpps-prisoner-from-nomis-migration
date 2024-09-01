@@ -52,13 +52,15 @@ internal class CSIPAttendeeMappingServiceTest {
       internal fun `will return the attendee mapping when found`(): Unit = runTest {
         val nomisCsipAttendeeId = 6543L
         val dpsCsipAttendeeId = UUID.randomUUID().toString()
-        csipMappingApi.stubGetAttendeeByNomisId(nomisCsipAttendeeId, dpsCsipAttendeeId)
+        val dpsCsipReportId = UUID.randomUUID().toString()
+        csipMappingApi.stubGetAttendeeByNomisId(nomisCsipAttendeeId, dpsCsipAttendeeId, dpsCsipReportId)
 
         val mapping = csipMappingService.getCSIPAttendeeByNomisId(nomisCSIPAttendeeId = nomisCsipAttendeeId)
 
         Assertions.assertThat(mapping).isNotNull
         Assertions.assertThat(mapping!!.dpsCSIPAttendeeId).isEqualTo(dpsCsipAttendeeId)
         Assertions.assertThat(mapping.nomisCSIPAttendeeId).isEqualTo(nomisCsipAttendeeId)
+        Assertions.assertThat(mapping.dpsCSIPReportId).isEqualTo(dpsCsipReportId)
         Assertions.assertThat(mapping.label).isEqualTo("2022-02-14T09:58:45")
         Assertions.assertThat(mapping.mappingType).isEqualTo(CSIPAttendeeMappingDto.MappingType.NOMIS_CREATED)
         Assertions.assertThat(mapping.whenCreated).isEqualTo("2020-01-01T11:10:00")
@@ -81,6 +83,7 @@ internal class CSIPAttendeeMappingServiceTest {
 
       private val nomisCsipAttendeeId = 7654L
       private val dpsCsipAttendeeId = UUID.randomUUID().toString()
+      private val dpsCsipReportId = UUID.randomUUID().toString()
 
       @BeforeEach
       internal fun setUp() {
@@ -99,6 +102,7 @@ internal class CSIPAttendeeMappingServiceTest {
           CSIPAttendeeMappingDto(
             dpsCSIPAttendeeId = dpsCsipAttendeeId,
             nomisCSIPAttendeeId = nomisCsipAttendeeId,
+            dpsCSIPReportId = dpsCsipReportId,
             label = "some-migration-id",
             mappingType = CSIPAttendeeMappingDto.MappingType.MIGRATED,
           ),
@@ -118,6 +122,7 @@ internal class CSIPAttendeeMappingServiceTest {
             CSIPAttendeeMappingDto(
               dpsCSIPAttendeeId = dpsCsipAttendeeId,
               nomisCSIPAttendeeId = nomisCsipAttendeeId,
+              dpsCSIPReportId = dpsCsipReportId,
               mappingType = CSIPAttendeeMappingDto.MappingType.MIGRATED,
               label = "5678",
               whenCreated = "2020-01-01T00:00:00",
@@ -130,11 +135,12 @@ internal class CSIPAttendeeMappingServiceTest {
                 equalToJson(
                   """
                   {
-                  "dpsCSIPAttendeeId": "$dpsCsipAttendeeId",
-                  "nomisCSIPAttendeeId": $nomisCsipAttendeeId,                                       
-                  "label": "5678",
-                  "mappingType": "MIGRATED",
-                  "whenCreated": "2020-01-01T00:00:00"
+                    "dpsCSIPAttendeeId": "$dpsCsipAttendeeId",
+                    "nomisCSIPAttendeeId": $nomisCsipAttendeeId,                                       
+                    "dpsCSIPReportId": "$dpsCsipReportId",                                       
+                    "label": "5678",
+                    "mappingType": "MIGRATED",
+                    "whenCreated": "2020-01-01T00:00:00"
                   }
                   """.trimIndent(),
                 ),
@@ -158,6 +164,7 @@ internal class CSIPAttendeeMappingServiceTest {
             CSIPAttendeeMappingDto(
               dpsCSIPAttendeeId = dpsCsipAttendeeId,
               nomisCSIPAttendeeId = nomisCsipAttendeeId,
+              dpsCSIPReportId = dpsCsipReportId,
               mappingType = CSIPAttendeeMappingDto.MappingType.MIGRATED,
               label = "5678",
               whenCreated = "2020-01-01T00:00:00",

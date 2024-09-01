@@ -69,10 +69,11 @@ class CSIPAttendeeSynchronisationIntTest : SqsIntegrationTestBase() {
         private val dpsCSIPAttendeeId = "c4d6fb09-fd27-42bc-a33e-5ca74ac510be"
         private val nomisCSIPAttendeeId = 987L
         private val nomisCSIPReportId = 1234L
+        private val dpsCSIPReportId = "c4d6fb09-fd27-42bc-a33e-5ca74ac510be"
 
         @BeforeEach
         fun setUp() {
-          csipMappingApi.stubGetAttendeeByNomisId(nomisCSIPAttendeeId = nomisCSIPAttendeeId, dpsCSIPAttendeeId = dpsCSIPAttendeeId)
+          csipMappingApi.stubGetAttendeeByNomisId(nomisCSIPAttendeeId, dpsCSIPAttendeeId, dpsCSIPReportId)
 
           csipDpsApi.stubDeleteCSIPAttendee(dpsCSIPAttendeeId = dpsCSIPAttendeeId)
           csipMappingApi.stubDeleteAttendeeMapping(dpsCSIPAttendeeId = dpsCSIPAttendeeId)
@@ -124,10 +125,11 @@ class CSIPAttendeeSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class MappingDeleteFails {
         private val nomisCSIPAttendeeId = 121L
         private val dpsCSIPAttendeeId = "a4725216-892d-4325-bc18-f74d95f3bca2"
+        private val dpsCSIPReportId = "a4725216-892d-4325-bc18-f74d95f3bca2"
 
         @BeforeEach
         fun setUp() {
-          csipMappingApi.stubGetAttendeeByNomisId(nomisCSIPAttendeeId = nomisCSIPAttendeeId, dpsCSIPAttendeeId = dpsCSIPAttendeeId)
+          csipMappingApi.stubGetAttendeeByNomisId(nomisCSIPAttendeeId = nomisCSIPAttendeeId, dpsCSIPAttendeeId = dpsCSIPAttendeeId, dpsCSIPReportId = dpsCSIPReportId)
           csipDpsApi.stubDeleteCSIPAttendee(dpsCSIPAttendeeId = dpsCSIPAttendeeId)
           csipMappingApi.stubDeleteAttendeeMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
           awsSqsCSIPOffenderEventsClient.sendMessage(

@@ -52,13 +52,15 @@ internal class CSIPInterviewMappingServiceTest {
       internal fun `will return the interview mapping when found`(): Unit = runTest {
         val nomisCsipInterviewId = 6543L
         val dpsCsipInterviewId = UUID.randomUUID().toString()
-        csipMappingApi.stubGetInterviewByNomisId(nomisCsipInterviewId, dpsCsipInterviewId)
+        val dpsCsipReportId = UUID.randomUUID().toString()
+        csipMappingApi.stubGetInterviewByNomisId(nomisCsipInterviewId, dpsCsipInterviewId, dpsCsipReportId)
 
         val mapping = csipMappingService.getCSIPInterviewByNomisId(nomisCSIPInterviewId = nomisCsipInterviewId)
 
         Assertions.assertThat(mapping).isNotNull
         Assertions.assertThat(mapping!!.dpsCSIPInterviewId).isEqualTo(dpsCsipInterviewId)
         Assertions.assertThat(mapping.nomisCSIPInterviewId).isEqualTo(nomisCsipInterviewId)
+        Assertions.assertThat(mapping.dpsCSIPReportId).isEqualTo(dpsCsipReportId)
         Assertions.assertThat(mapping.label).isEqualTo("2022-02-14T09:58:45")
         Assertions.assertThat(mapping.mappingType).isEqualTo(CSIPInterviewMappingDto.MappingType.NOMIS_CREATED)
         Assertions.assertThat(mapping.whenCreated).isEqualTo("2020-01-01T11:10:00")
@@ -81,6 +83,7 @@ internal class CSIPInterviewMappingServiceTest {
 
       private val nomisCsipInterviewId = 7654L
       private val dpsCsipInterviewId = UUID.randomUUID().toString()
+      private val dpsCsipReportId = UUID.randomUUID().toString()
 
       @BeforeEach
       internal fun setUp() {
@@ -99,6 +102,7 @@ internal class CSIPInterviewMappingServiceTest {
           CSIPInterviewMappingDto(
             dpsCSIPInterviewId = dpsCsipInterviewId,
             nomisCSIPInterviewId = nomisCsipInterviewId,
+            dpsCSIPReportId = dpsCsipReportId,
             label = "some-migration-id",
             mappingType = CSIPInterviewMappingDto.MappingType.MIGRATED,
           ),
@@ -118,6 +122,7 @@ internal class CSIPInterviewMappingServiceTest {
             CSIPInterviewMappingDto(
               dpsCSIPInterviewId = dpsCsipInterviewId,
               nomisCSIPInterviewId = nomisCsipInterviewId,
+              dpsCSIPReportId = dpsCsipReportId,
               mappingType = CSIPInterviewMappingDto.MappingType.MIGRATED,
               label = "5678",
               whenCreated = "2020-01-01T00:00:00",
@@ -130,11 +135,12 @@ internal class CSIPInterviewMappingServiceTest {
                 equalToJson(
                   """
                   {
-                  "dpsCSIPInterviewId": "$dpsCsipInterviewId",
-                  "nomisCSIPInterviewId": $nomisCsipInterviewId,                                       
-                  "label": "5678",
-                  "mappingType": "MIGRATED",
-                  "whenCreated": "2020-01-01T00:00:00"
+                    "dpsCSIPInterviewId": "$dpsCsipInterviewId",
+                    "nomisCSIPInterviewId": $nomisCsipInterviewId,                                       
+                    "dpsCSIPReportId": "$dpsCsipReportId",                                       
+                    "label": "5678",
+                    "mappingType": "MIGRATED",
+                    "whenCreated": "2020-01-01T00:00:00"
                   }
                   """.trimIndent(),
                 ),
@@ -158,6 +164,7 @@ internal class CSIPInterviewMappingServiceTest {
             CSIPInterviewMappingDto(
               dpsCSIPInterviewId = dpsCsipInterviewId,
               nomisCSIPInterviewId = nomisCsipInterviewId,
+              dpsCSIPReportId = dpsCsipReportId,
               mappingType = CSIPInterviewMappingDto.MappingType.MIGRATED,
               label = "5678",
               whenCreated = "2020-01-01T00:00:00",

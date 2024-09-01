@@ -52,13 +52,16 @@ internal class CSIPReviewMappingServiceTest {
       internal fun `will return the review mapping when found`(): Unit = runTest {
         val nomisCsipReviewId = 6543L
         val dpsCsipReviewId = UUID.randomUUID().toString()
-        csipMappingApi.stubGetReviewByNomisId(nomisCsipReviewId, dpsCsipReviewId)
+        val dpsCsipReportId = UUID.randomUUID().toString()
+
+        csipMappingApi.stubGetReviewByNomisId(nomisCsipReviewId, dpsCsipReviewId, dpsCsipReportId)
 
         val mapping = csipMappingService.getCSIPReviewByNomisId(nomisCSIPReviewId = nomisCsipReviewId)
 
         Assertions.assertThat(mapping).isNotNull
         Assertions.assertThat(mapping!!.dpsCSIPReviewId).isEqualTo(dpsCsipReviewId)
         Assertions.assertThat(mapping.nomisCSIPReviewId).isEqualTo(nomisCsipReviewId)
+        Assertions.assertThat(mapping.dpsCSIPReportId).isEqualTo(dpsCsipReportId)
         Assertions.assertThat(mapping.label).isEqualTo("2022-02-14T09:58:45")
         Assertions.assertThat(mapping.mappingType).isEqualTo(CSIPReviewMappingDto.MappingType.NOMIS_CREATED)
         Assertions.assertThat(mapping.whenCreated).isEqualTo("2020-01-01T11:10:00")
@@ -81,6 +84,7 @@ internal class CSIPReviewMappingServiceTest {
 
       val nomisCsipReviewId = 7654L
       val dpsCsipReviewId = UUID.randomUUID().toString()
+      val dpsCsipReportId = UUID.randomUUID().toString()
 
       @BeforeEach
       internal fun setUp() {
@@ -99,6 +103,7 @@ internal class CSIPReviewMappingServiceTest {
           CSIPReviewMappingDto(
             dpsCSIPReviewId = dpsCsipReviewId,
             nomisCSIPReviewId = nomisCsipReviewId,
+            dpsCSIPReportId = dpsCsipReportId,
             label = "some-migration-id",
             mappingType = CSIPReviewMappingDto.MappingType.MIGRATED,
           ),
@@ -118,6 +123,7 @@ internal class CSIPReviewMappingServiceTest {
             CSIPReviewMappingDto(
               dpsCSIPReviewId = dpsCsipReviewId,
               nomisCSIPReviewId = nomisCsipReviewId,
+              dpsCSIPReportId = dpsCsipReportId,
               mappingType = CSIPReviewMappingDto.MappingType.MIGRATED,
               label = "5678",
               whenCreated = "2020-01-01T00:00:00",
@@ -130,11 +136,12 @@ internal class CSIPReviewMappingServiceTest {
                 equalToJson(
                   """
                   {
-                  "dpsCSIPReviewId": "$dpsCsipReviewId",
-                  "nomisCSIPReviewId": $nomisCsipReviewId,                                       
-                  "label": "5678",
-                  "mappingType": "MIGRATED",
-                  "whenCreated": "2020-01-01T00:00:00"
+                    "dpsCSIPReviewId": "$dpsCsipReviewId",
+                    "nomisCSIPReviewId": $nomisCsipReviewId,                                       
+                    "dpsCSIPReportId": "$dpsCsipReportId",                                       
+                    "label": "5678",
+                    "mappingType": "MIGRATED",
+                    "whenCreated": "2020-01-01T00:00:00"
                   }
                   """.trimIndent(),
                 ),
@@ -158,6 +165,7 @@ internal class CSIPReviewMappingServiceTest {
             CSIPReviewMappingDto(
               dpsCSIPReviewId = dpsCsipReviewId,
               nomisCSIPReviewId = nomisCsipReviewId,
+              dpsCSIPReportId = dpsCsipReportId,
               mappingType = CSIPReviewMappingDto.MappingType.MIGRATED,
               label = "5678",
               whenCreated = "2020-01-01T00:00:00",

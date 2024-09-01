@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-08-19.4839.8ffb20f"
+    "version": "2024-08-30.4940.9820c81"
   },
   "servers": [
     {
@@ -1864,49 +1864,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DuplicateMappingErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "csip-mapping-resource"
-        ],
-        "summary": "Deletes CSIP mappings.",
-        "description": "Deletes all rows from the csip mapping table. Requires role NOMIS_CSIP",
-        "operationId": "deleteAllMappings",
-        "parameters": [
-          {
-            "name": "onlyMigrated",
-            "in": "query",
-            "description": "if true delete mapping entries created by the migration process only (synchronisation records are unaffected)",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "default": false
-            },
-            "example": true
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "CSIP mappings deleted",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized to access this endpoint",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -6212,6 +6169,126 @@
         }
       }
     },
+    "/mapping/court-sentencing/court-cases/nomis-court-case-id/{courtCaseId}": {
+      "get": {
+        "tags": [
+          "court-sentencing-mapping-resource"
+        ],
+        "summary": "get court case mapping",
+        "description": "Retrieves a mapping by NOMIS id. Requires role NOMIS_COURT_SENTENCING",
+        "operationId": "getMappingByNomisId_6",
+        "parameters": [
+          {
+            "name": "courtCaseId",
+            "in": "path",
+            "description": "NOMIS court case id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "NOMIS court case id",
+              "example": 123
+            },
+            "example": 123
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourtCaseMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/court-sentencing/court-cases/migration-id/{migrationId}": {
+      "get": {
+        "tags": [
+          "court-sentencing-mapping-resource"
+        ],
+        "summary": "Get paged mappings by migration id",
+        "description": "Retrieve all mappings of type 'MIGRATED' for the given migration id (identifies a single migration run). Results are paged.",
+        "operationId": "getMappingsByMigrationId_2",
+        "parameters": [
+          {
+            "name": "pageRequest",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          },
+          {
+            "name": "migrationId",
+            "in": "path",
+            "description": "Migration Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Migration Id",
+              "example": "2020-03-24T12:00:00"
+            },
+            "example": "2020-03-24T12:00:00"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping page returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageCourtCaseMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/court-sentencing/court-cases/dps-court-case-id/{courtCaseId}": {
       "get": {
         "tags": [
@@ -6219,7 +6296,7 @@
         ],
         "summary": "get court case mapping",
         "description": "Retrieves a mapping by DPS id. Requires role NOMIS_COURT_SENTENCING",
-        "operationId": "getMappingByNomisId_6",
+        "operationId": "getMappingByDpsId",
         "parameters": [
           {
             "name": "courtCaseId",
@@ -6549,7 +6626,7 @@
         ],
         "summary": "get mapping",
         "description": "Retrieves a mapping by DPS id. Requires role NOMIS_CASENOTES",
-        "operationId": "getMappingByDpsId",
+        "operationId": "getMappingByDpsId_1",
         "parameters": [
           {
             "name": "dpsCaseNoteId",
@@ -7123,7 +7200,7 @@
         ],
         "summary": "Get paged mappings by migration id",
         "description": "Retrieve all mappings of type 'MIGRATED' for the given migration id (identifies a single migration run). Results are paged.",
-        "operationId": "getMappingsByMigrationId_2",
+        "operationId": "getMappingsByMigrationId_3",
         "parameters": [
           {
             "name": "pageRequest",
@@ -7187,7 +7264,7 @@
         ],
         "summary": "get mapping",
         "description": "Retrieves a mapping by DPS id. Requires role NOMIS_ALERTS",
-        "operationId": "getMappingByDpsId_1",
+        "operationId": "getMappingByDpsId_2",
         "parameters": [
           {
             "name": "dpsAlertId",
@@ -8052,7 +8129,7 @@
         }
       }
     },
-    "/mapping/csip/dps-csip-id/{dpsCSIPId}": {
+    "/mapping/csip/dps-csip-id/{dpsCSIPId}/all": {
       "delete": {
         "tags": [
           "csip-mapping-resource"
@@ -8077,6 +8154,51 @@
         "responses": {
           "204": {
             "description": "CSIP mapping deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/csip/all": {
+      "delete": {
+        "tags": [
+          "csip-mapping-resource"
+        ],
+        "summary": "Deletes CSIP mappings.",
+        "description": "Deletes all rows from the csip mapping table. Requires role NOMIS_CSIP",
+        "operationId": "deleteAllMappings",
+        "parameters": [
+          {
+            "name": "onlyMigrated",
+            "in": "query",
+            "description": "if true delete mapping entries created by the migration process only (synchronisation records are unaffected)",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "example": true
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "CSIP mappings deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
           },
           "401": {
             "description": "Unauthorized to access this endpoint",
@@ -9517,6 +9639,7 @@
       },
       "CSIPReviewMappingDto": {
         "required": [
+          "dpsCSIPReportId",
           "dpsCSIPReviewId",
           "mappingType",
           "nomisCSIPReviewId"
@@ -9531,6 +9654,10 @@
           "dpsCSIPReviewId": {
             "type": "string",
             "description": "DPS CSIP Review id"
+          },
+          "dpsCSIPReportId": {
+            "type": "string",
+            "description": "DPS CSIP Report id"
           },
           "label": {
             "maxLength": 20,
@@ -9559,6 +9686,7 @@
       "CSIPPlanMappingDto": {
         "required": [
           "dpsCSIPPlanId",
+          "dpsCSIPReportId",
           "mappingType",
           "nomisCSIPPlanId"
         ],
@@ -9572,6 +9700,10 @@
           "dpsCSIPPlanId": {
             "type": "string",
             "description": "DPS CSIP Plan id"
+          },
+          "dpsCSIPReportId": {
+            "type": "string",
+            "description": "DPS CSIP Report id"
           },
           "label": {
             "maxLength": 20,
@@ -9600,6 +9732,7 @@
       "CSIPInterviewMappingDto": {
         "required": [
           "dpsCSIPInterviewId",
+          "dpsCSIPReportId",
           "mappingType",
           "nomisCSIPInterviewId"
         ],
@@ -9613,6 +9746,10 @@
           "dpsCSIPInterviewId": {
             "type": "string",
             "description": "DPS CSIP Interview id"
+          },
+          "dpsCSIPReportId": {
+            "type": "string",
+            "description": "DPS CSIP Report id"
           },
           "label": {
             "maxLength": 20,
@@ -9641,6 +9778,7 @@
       "CSIPFactorMappingDto": {
         "required": [
           "dpsCSIPFactorId",
+          "dpsCSIPReportId",
           "mappingType",
           "nomisCSIPFactorId"
         ],
@@ -9654,6 +9792,10 @@
           "dpsCSIPFactorId": {
             "type": "string",
             "description": "DPS CSIP Factor id"
+          },
+          "dpsCSIPReportId": {
+            "type": "string",
+            "description": "DPS CSIP Report id"
           },
           "label": {
             "maxLength": 20,
@@ -9682,6 +9824,7 @@
       "CSIPAttendeeMappingDto": {
         "required": [
           "dpsCSIPAttendeeId",
+          "dpsCSIPReportId",
           "mappingType",
           "nomisCSIPAttendeeId"
         ],
@@ -9695,6 +9838,10 @@
           "dpsCSIPAttendeeId": {
             "type": "string",
             "description": "DPS CSIP Attendee id"
+          },
+          "dpsCSIPReportId": {
+            "type": "string",
+            "description": "DPS CSIP Report id"
           },
           "label": {
             "maxLength": 20,
@@ -10625,6 +10772,104 @@
         },
         "description": "Court case mapping"
       },
+      "PageCourtCaseMappingDto": {
+        "type": "object",
+        "properties": {
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CourtCaseMappingDto"
+            }
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PageableObject": {
+        "type": "object",
+        "properties": {
+          "offset": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sort": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "paged": {
+            "type": "boolean"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unpaged": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SortObject": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string"
+          },
+          "nullHandling": {
+            "type": "string"
+          },
+          "ascending": {
+            "type": "boolean"
+          },
+          "property": {
+            "type": "string"
+          },
+          "ignoreCase": {
+            "type": "boolean"
+          }
+        }
+      },
       "AllPrisonerAlertMappingsDto": {
         "required": [
           "mappings"
@@ -10690,35 +10935,6 @@
           }
         }
       },
-      "PageableObject": {
-        "type": "object",
-        "properties": {
-          "offset": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "sort": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SortObject"
-            }
-          },
-          "pageSize": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "paged": {
-            "type": "boolean"
-          },
-          "pageNumber": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "unpaged": {
-            "type": "boolean"
-          }
-        }
-      },
       "PrisonerAlertMappingsSummaryDto": {
         "required": [
           "mappingsCount",
@@ -10743,26 +10959,6 @@
           }
         },
         "description": "Summary of mappings for a prisoner created during migration"
-      },
-      "SortObject": {
-        "type": "object",
-        "properties": {
-          "direction": {
-            "type": "string"
-          },
-          "nullHandling": {
-            "type": "string"
-          },
-          "ascending": {
-            "type": "boolean"
-          },
-          "property": {
-            "type": "string"
-          },
-          "ignoreCase": {
-            "type": "boolean"
-          }
-        }
       },
       "PageAlertMappingDto": {
         "type": "object",

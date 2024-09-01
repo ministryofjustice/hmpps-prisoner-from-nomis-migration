@@ -139,7 +139,7 @@ internal class CSIPMappingServiceTest {
                   """
                   {
                   "dpsCSIPId": "$DPS_CSIP_ID",
-                  "nomisCSIPId": $NOMIS_CSIP_ID,                                       
+                  "nomisCSIPId": $NOMIS_CSIP_ID,                                                                            
                   "label": "5678",
                   "mappingType": "MIGRATED",
                   "whenCreated": "2020-01-01T00:00:00"
@@ -223,13 +223,15 @@ internal class CSIPMappingServiceTest {
       internal fun `will return the factor mapping when found`(): Unit = runTest {
         val nomisCsipFactorId = 6543L
         val dpsCsipFactorId = UUID.randomUUID().toString()
-        csipMappingApi.stubGetFactorByNomisId(nomisCsipFactorId, dpsCsipFactorId)
+        val dpsCSIPReportId = UUID.randomUUID().toString()
+        csipMappingApi.stubGetFactorByNomisId(nomisCsipFactorId, dpsCsipFactorId, dpsCSIPReportId)
 
         val mapping = csipMappingService.getCSIPFactorByNomisId(nomisCSIPFactorId = nomisCsipFactorId)
 
         assertThat(mapping).isNotNull
         assertThat(mapping!!.dpsCSIPFactorId).isEqualTo(dpsCsipFactorId)
         assertThat(mapping.nomisCSIPFactorId).isEqualTo(nomisCsipFactorId)
+        assertThat(mapping.dpsCSIPReportId).isEqualTo(dpsCSIPReportId)
         assertThat(mapping.label).isEqualTo("2022-02-14T09:58:45")
         assertThat(mapping.mappingType).isEqualTo(CSIPFactorMappingDto.MappingType.NOMIS_CREATED)
         assertThat(mapping.whenCreated).isEqualTo("2020-01-01T11:10:00")

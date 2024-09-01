@@ -52,13 +52,15 @@ internal class CSIPPlanMappingServiceTest {
       internal fun `will return the plan mapping when found`(): Unit = runTest {
         val nomisCsipPlanId = 6543L
         val dpsCsipPlanId = UUID.randomUUID().toString()
-        csipMappingApi.stubGetPlanByNomisId(nomisCsipPlanId, dpsCsipPlanId)
+        val dpsCsipReportId = UUID.randomUUID().toString()
+        csipMappingApi.stubGetPlanByNomisId(nomisCsipPlanId, dpsCsipPlanId, dpsCsipReportId)
 
         val mapping = csipMappingService.getCSIPPlanByNomisId(nomisCSIPPlanId = nomisCsipPlanId)
 
         Assertions.assertThat(mapping).isNotNull
         Assertions.assertThat(mapping!!.dpsCSIPPlanId).isEqualTo(dpsCsipPlanId)
         Assertions.assertThat(mapping.nomisCSIPPlanId).isEqualTo(nomisCsipPlanId)
+        Assertions.assertThat(mapping.dpsCSIPReportId).isEqualTo(dpsCsipReportId)
         Assertions.assertThat(mapping.label).isEqualTo("2022-02-14T09:58:45")
         Assertions.assertThat(mapping.mappingType).isEqualTo(CSIPPlanMappingDto.MappingType.NOMIS_CREATED)
         Assertions.assertThat(mapping.whenCreated).isEqualTo("2020-01-01T11:10:00")
@@ -80,6 +82,7 @@ internal class CSIPPlanMappingServiceTest {
     inner class CreateCSIPPlanMapping {
 
       private val nomisCsipPlanId = 7654L
+      private val dpsCsipReportId = UUID.randomUUID().toString()
       private val dpsCsipPlanId = UUID.randomUUID().toString()
 
       @BeforeEach
@@ -99,6 +102,7 @@ internal class CSIPPlanMappingServiceTest {
           CSIPPlanMappingDto(
             dpsCSIPPlanId = dpsCsipPlanId,
             nomisCSIPPlanId = nomisCsipPlanId,
+            dpsCSIPReportId = dpsCsipReportId,
             label = "some-migration-id",
             mappingType = CSIPPlanMappingDto.MappingType.MIGRATED,
           ),
@@ -118,6 +122,7 @@ internal class CSIPPlanMappingServiceTest {
             CSIPPlanMappingDto(
               dpsCSIPPlanId = dpsCsipPlanId,
               nomisCSIPPlanId = nomisCsipPlanId,
+              dpsCSIPReportId = dpsCsipReportId,
               mappingType = CSIPPlanMappingDto.MappingType.MIGRATED,
               label = "5678",
               whenCreated = "2020-01-01T00:00:00",
@@ -130,11 +135,12 @@ internal class CSIPPlanMappingServiceTest {
                 equalToJson(
                   """
                   {
-                  "dpsCSIPPlanId": "$dpsCsipPlanId",
-                  "nomisCSIPPlanId": $nomisCsipPlanId,                                       
-                  "label": "5678",
-                  "mappingType": "MIGRATED",
-                  "whenCreated": "2020-01-01T00:00:00"
+                    "dpsCSIPPlanId": "$dpsCsipPlanId",
+                    "nomisCSIPPlanId": $nomisCsipPlanId,                                       
+                    "dpsCSIPReportId": "$dpsCsipReportId",                                       
+                    "label": "5678",
+                    "mappingType": "MIGRATED",
+                    "whenCreated": "2020-01-01T00:00:00"
                   }
                   """.trimIndent(),
                 ),
@@ -158,6 +164,7 @@ internal class CSIPPlanMappingServiceTest {
             CSIPPlanMappingDto(
               dpsCSIPPlanId = dpsCsipPlanId,
               nomisCSIPPlanId = nomisCsipPlanId,
+              dpsCSIPReportId = dpsCsipReportId,
               mappingType = CSIPPlanMappingDto.MappingType.MIGRATED,
               label = "5678",
               whenCreated = "2020-01-01T00:00:00",
