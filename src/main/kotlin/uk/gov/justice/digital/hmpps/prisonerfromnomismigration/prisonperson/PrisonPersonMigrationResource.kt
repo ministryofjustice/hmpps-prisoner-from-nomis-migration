@@ -19,11 +19,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.HistoryFi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 
-@RestController("prisonPersonMigrationResource")
+@RestController
 @RequestMapping("/migrate/prisonperson", produces = [MediaType.APPLICATION_JSON_VALUE])
 @Tag(name = "prison-person-migration-resource")
-class MigrationResource(
-  private val migrationService: MigrationService,
+class PrisonPersonMigrationResource(
+  private val migrationService: PrisonPersonMigrationService,
   private val migrationHistoryService: MigrationHistoryService,
 ) {
 

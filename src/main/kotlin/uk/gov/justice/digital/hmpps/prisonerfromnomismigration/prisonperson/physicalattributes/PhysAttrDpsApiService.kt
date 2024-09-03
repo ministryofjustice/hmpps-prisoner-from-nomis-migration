@@ -11,8 +11,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.mode
 import java.time.LocalDateTime
 import java.time.ZoneId
 
-@Service("physicalAttributesDpsApiService")
-class DpsApiService(@Qualifier("prisonPersonApiWebClient") private val webClient: WebClient) {
+@Service
+class PhysAttrDpsApiService(@Qualifier("prisonPersonApiWebClient") private val webClient: WebClient) {
   private val zone = ZoneId.of("Europe/London")
 
   suspend fun syncPhysicalAttributes(

@@ -2,7 +2,6 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
@@ -18,15 +17,15 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 
-@Service("prisonPersonMigrationService")
-class MigrationService(
+@Service
+class PrisonPersonMigrationService(
   private val nomisService: NomisApiService,
-  @Qualifier("prisonPersonMappingApiService") private val mappingApiService: MappingApiService,
-  private val entityMigratorService: EntityMigratorService,
+  private val mappingApiService: PrisonPersonMappingApiService,
+  private val entityMigratorService: PrisonPersonEntityMigratorService,
   @Value("\${page.size:1000}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
-) : MigrationService<MigrationFilter, MigrationRequest, PrisonPersonMigrationMappingRequest>(
+) : MigrationService<PrisonPersonMigrationFilter, MigrationRequest, PrisonPersonMigrationMappingRequest>(
   mappingService = mappingApiService,
   migrationType = MigrationType.PRISONPERSON,
   pageSize = pageSize,
@@ -39,7 +38,7 @@ class MigrationService(
   ): DpsResponse = entityMigratorService.migrator(migrationType).migrate(offenderNo)
 
   override suspend fun getIds(
-    migrationFilter: MigrationFilter,
+    migrationFilter: PrisonPersonMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
   ): PageImpl<MigrationRequest> =

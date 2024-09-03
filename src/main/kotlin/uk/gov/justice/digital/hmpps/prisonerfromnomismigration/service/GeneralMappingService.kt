@@ -11,9 +11,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.LocationsMappingService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustmentsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMappingService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.MappingApiService as PrisonPersonMappingService
 
 @Service
 class GeneralMappingService(
@@ -28,7 +28,7 @@ class GeneralMappingService(
   private val locationsMappingService: LocationsMappingService,
   private val caseNotesMappingService: CaseNotesMappingApiService,
   private val alertsByPrisonerMappingService: AlertsByPrisonerMigrationMappingApiService,
-  private val prisonPersonMappingService: PrisonPersonMappingService,
+  private val prisonPersonMappingService: PrisonPersonMappingApiService,
   private val courtSentencingMappingService: CourtSentencingMappingApiService,
 ) {
   suspend fun getMigrationCount(migrationId: String, migrationType: MigrationType): Long? =

@@ -6,7 +6,6 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.security.access.prepost.PreAuthorize
@@ -16,14 +15,14 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.MigrationFilter
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.MigrationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonMigrationFilter
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonMigrationService
 
-@RestController("physicalAttributesMigrationResource")
+@RestController
 @RequestMapping("/migrate/prisonperson/physical-attributes", produces = [MediaType.APPLICATION_JSON_VALUE])
 @Tag(name = "prison-person-migration-resource")
-class MigrationResource(
-  @Qualifier("prisonPersonMigrationService") private val migrationService: MigrationService,
+class PhysAttrMigrationResource(
+  private val migrationService: PrisonPersonMigrationService,
 ) {
   @PreAuthorize("hasRole('ROLE_MIGRATE_PRISONPERSON')")
   @PostMapping
@@ -49,6 +48,6 @@ class MigrationResource(
     ],
   )
   suspend fun migratePhysicalAttributes(
-    @RequestBody @Valid migrationFilter: MigrationFilter,
+    @RequestBody @Valid migrationFilter: PrisonPersonMigrationFilter,
   ) = migrationService.startMigration(migrationFilter)
 }

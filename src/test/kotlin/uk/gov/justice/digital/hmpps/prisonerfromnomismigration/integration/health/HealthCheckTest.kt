@@ -92,6 +92,6 @@ class HealthCheckTest : SqsIntegrationTestBase() {
     AlertsDpsApiExtension.dpsAlertsServer.stubHealthPing(status)
     CaseNotesApiExtension.caseNotesApi.stubHealthPing(status)
     CourtSentencingDpsApiExtension.dpsCourtSentencingServer.stubHealthPing(status)
-    PrisonPersonDpsApiExtension.dpsPrisonPersonServer.stubHealthPing(status)
+    PrisonPersonDpsApiExtension.dpsPrisonPersonApi.stubHealthPing(status)
   }
 }

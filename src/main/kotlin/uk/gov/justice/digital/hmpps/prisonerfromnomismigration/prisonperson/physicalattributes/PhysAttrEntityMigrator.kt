@@ -1,19 +1,18 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.physicalattributes
 
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PhysicalAttributesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerPhysicalAttributesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.DpsResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.EntityMigrator
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonEntityMigrator
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesMigrationRequest
 import java.time.LocalDateTime
 
-@Service("physicalAttributesEntityMigrator")
-class EntityMigrator(
-  @Qualifier("physicalAttributesNomisApiService") private val nomisApiService: NomisApiService,
-  @Qualifier("physicalAttributesDpsApiService") private val dpsApiService: DpsApiService,
-) : EntityMigrator {
+@Service
+class PhysAttrEntityMigrator(
+  private val nomisApiService: PhysAttrNomisApiService,
+  private val dpsApiService: PhysAttrDpsApiService,
+) : PrisonPersonEntityMigrator {
 
   override suspend fun migrate(offenderNo: String): DpsResponse =
     getNomisEntity(offenderNo)
