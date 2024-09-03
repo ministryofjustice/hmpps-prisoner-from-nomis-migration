@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.physicalattributes
 
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
@@ -38,7 +38,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.P
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerPhysicalAttributesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonDpsApiExtension.Companion.dpsPrisonPersonServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonMappingApiMockServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonMigrationFilter
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesMigrationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
@@ -51,13 +52,16 @@ import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-class MigrationIntTest : SqsIntegrationTestBase() {
+class PhysAttrMigrationIntTest : SqsIntegrationTestBase() {
 
   @Autowired
-  private lateinit var prisonPersonNomisApi: PrisonPersonNomisApiMockServer
+  private lateinit var physAttrNomisApi: PhysAttrNomisApiMockServer
 
   @Autowired
   private lateinit var prisonPersonMappingApi: PrisonPersonMappingApiMockServer
+
+  @Autowired
+  private lateinit var physAttrDpsApi: PhysAttrDpsApiMockServer
 
   @Autowired
   private lateinit var migrationHistoryRepository: MigrationHistoryRepository
@@ -72,8 +76,8 @@ class MigrationIntTest : SqsIntegrationTestBase() {
       (1L..entities)
         .map { "A000${it}KT" }
         .forEachIndexed { index, offenderNo ->
-          prisonPersonNomisApi.stubGetPhysicalAttributes(offenderNo)
-          dpsPrisonPersonServer.stubMigratePhysicalAttributes(offenderNo, PhysicalAttributesMigrationResponse(listOf(index + 1.toLong())))
+          physAttrNomisApi.stubGetPhysicalAttributes(offenderNo)
+          physAttrDpsApi.stubMigratePhysicalAttributes(offenderNo, PhysicalAttributesMigrationResponse(listOf(index + 1.toLong())))
           prisonPersonMappingApi.stubPostMapping()
         }
     }
@@ -120,7 +124,7 @@ class MigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will migrate physical attributes`() {
-        dpsPrisonPersonServer.verify(
+        physAttrDpsApi.verify(
           putRequestedFor(urlMatching("/migration/prisoners/A0001KT/physical-attributes"))
             .withRequestBodyJsonPath("$[0].height", 180)
             .withRequestBodyJsonPath("$[0].weight", 80)
@@ -128,7 +132,7 @@ class MigrationIntTest : SqsIntegrationTestBase() {
             .withRequestBodyJsonPath("$[0].appliesTo", "2024-10-21T12:34:56+01:00[Europe/London]")
             .withRequestBodyJsonPath("$[0].createdBy", "ANOTHER_USER"),
         )
-        dpsPrisonPersonServer.verify(
+        physAttrDpsApi.verify(
           putRequestedFor(urlMatching("/migration/prisoners/A0002KT/physical-attributes")),
         )
       }
@@ -194,8 +198,8 @@ class MigrationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, offenderNo = "A0001KT")
-        dpsPrisonPersonServer.stubMigratePhysicalAttributes("A0001KT", PhysicalAttributesMigrationResponse(listOf(1, 2, 3, 4)))
-        prisonPersonNomisApi.stubGetPhysicalAttributes("A0001KT", multiBookingMultiPhysicalAttributes("A0001KT"))
+        physAttrDpsApi.stubMigratePhysicalAttributes("A0001KT", PhysicalAttributesMigrationResponse(listOf(1, 2, 3, 4)))
+        physAttrNomisApi.stubGetPhysicalAttributes("A0001KT", multiBookingMultiPhysicalAttributes("A0001KT"))
         prisonPersonMappingApi.stubPostMapping()
 
         migrationResult = webTestClient.performMigration()
@@ -203,7 +207,7 @@ class MigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will migrate physical attributes`() {
-        dpsPrisonPersonServer.verify(
+        physAttrDpsApi.verify(
           putRequestedFor(urlMatching("/migration/prisoners/A0001KT/physical-attributes"))
             .withRequestBodyJsonPath("$[0].height", 180)
             .withRequestBodyJsonPath("$[0].weight", 80)
@@ -268,7 +272,7 @@ class MigrationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will put message on DLQ if call to NOMIS fails`() {
         nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, offenderNo = "A0001KT")
-        prisonPersonNomisApi.stubGetPhysicalAttributes(INTERNAL_SERVER_ERROR)
+        physAttrNomisApi.stubGetPhysicalAttributes(INTERNAL_SERVER_ERROR)
 
         migrationResult = webTestClient.performMigration()
 
@@ -297,8 +301,8 @@ class MigrationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will put message on DLQ if call to DPS fails`() {
         nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, offenderNo = "A0001KT")
-        prisonPersonNomisApi.stubGetPhysicalAttributes("A0001KT")
-        dpsPrisonPersonServer.stubMigratePhysicalAttributes(HttpStatus.BAD_REQUEST)
+        physAttrNomisApi.stubGetPhysicalAttributes("A0001KT")
+        physAttrDpsApi.stubMigratePhysicalAttributes(HttpStatus.BAD_REQUEST)
 
         migrationResult = webTestClient.performMigration()
 
@@ -327,8 +331,8 @@ class MigrationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will retry if call to mapping service fails`() {
         nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, offenderNo = "A0001KT")
-        prisonPersonNomisApi.stubGetPhysicalAttributes("A0001KT")
-        dpsPrisonPersonServer.stubMigratePhysicalAttributes("A0001KT", PhysicalAttributesMigrationResponse(listOf(1L)))
+        physAttrNomisApi.stubGetPhysicalAttributes("A0001KT")
+        physAttrDpsApi.stubMigratePhysicalAttributes("A0001KT", PhysicalAttributesMigrationResponse(listOf(1L)))
         prisonPersonMappingApi.stubPostMappingFailureFollowedBySuccess()
 
         migrationResult = webTestClient.performMigration()
@@ -353,8 +357,8 @@ class MigrationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will not retry if mapping is a duplicate`() {
         nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, offenderNo = "A0001KT")
-        prisonPersonNomisApi.stubGetPhysicalAttributes("A0001KT")
-        dpsPrisonPersonServer.stubMigratePhysicalAttributes("A0001KT", PhysicalAttributesMigrationResponse(listOf(1L)))
+        physAttrNomisApi.stubGetPhysicalAttributes("A0001KT")
+        physAttrDpsApi.stubMigratePhysicalAttributes("A0001KT", PhysicalAttributesMigrationResponse(listOf(1L)))
         prisonPersonMappingApi.stubPostMappingDuplicate(
           DuplicateMappingErrorResponse(
             moreInfo = DuplicateErrorContentObject(
@@ -403,8 +407,8 @@ class MigrationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
-        prisonPersonNomisApi.stubGetPhysicalAttributes(offenderNo)
-        dpsPrisonPersonServer.stubMigratePhysicalAttributes(
+        physAttrNomisApi.stubGetPhysicalAttributes(offenderNo)
+        physAttrDpsApi.stubMigratePhysicalAttributes(
           offenderNo,
           PhysicalAttributesMigrationResponse(listOf(1.toLong())),
         )
@@ -415,7 +419,7 @@ class MigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will migrate physical attributes`() {
-        dpsPrisonPersonServer.verify(
+        physAttrDpsApi.verify(
           putRequestedFor(urlMatching("/migration/prisoners/$offenderNo/physical-attributes"))
             .withRequestBodyJsonPath("$[0].height", 180)
             .withRequestBodyJsonPath("$[0].weight", 80)
@@ -462,7 +466,7 @@ class MigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will put message on DLQ if prisoner doesn't exist in NOMIS`() {
-        prisonPersonNomisApi.stubGetPhysicalAttributes(NOT_FOUND)
+        physAttrNomisApi.stubGetPhysicalAttributes(NOT_FOUND)
 
         migrationResult = webTestClient.performMigration(offenderNo)
 
@@ -572,7 +576,7 @@ class MigrationIntTest : SqsIntegrationTestBase() {
       post().uri("/migrate/prisonperson/physical-attributes")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_PRISONPERSON")))
         .header("Content-Type", "application/json")
-        .bodyValue(MigrationFilter(prisonerNumber = offenderNo))
+        .bodyValue(PrisonPersonMigrationFilter(prisonerNumber = offenderNo))
         .exchange()
         .expectStatus().isAccepted
         .returnResult<MigrationResult>().responseBody.blockFirst()!!

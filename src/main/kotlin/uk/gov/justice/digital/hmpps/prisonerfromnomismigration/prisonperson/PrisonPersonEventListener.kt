@@ -10,16 +10,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.future.future
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.physicalattributes.SynchronisationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.physicalattributes.PhysAttrSyncService
 import java.util.concurrent.CompletableFuture
 
-@Service("prisonPersonEventListener")
-class EventListener(
-  @Qualifier("physicalAttributesSynchronisationService") private val physicalAttributesSyncService: SynchronisationService,
+@Service
+class PrisonPersonEventListener(
+  private val physAttrSyncService: PhysAttrSyncService,
   private val objectMapper: ObjectMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
 ) {
@@ -39,7 +38,7 @@ class EventListener(
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
           if (eventFeatureSwitch.isEnabled(eventType, "prisonperson")) {
             when (eventType) {
-              "OFFENDER_PHYSICAL_ATTRIBUTES-CHANGED" -> physicalAttributesSyncService.physicalAttributesChanged(sqsMessage.Message.fromJson())
+              "OFFENDER_PHYSICAL_ATTRIBUTES-CHANGED" -> physAttrSyncService.physicalAttributesChanged(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {

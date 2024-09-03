@@ -5,8 +5,8 @@ import io.swagger.v3.oas.annotations.media.Schema
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonPersonMigrationMappingRequest
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@Schema(description = "Filter specifying what should be migrated from NOMIS to DPS", name = "PrisonPersonMigrationFilter")
-class MigrationFilter(
+@Schema(description = "Filter specifying what should be migrated from NOMIS to DPS")
+class PrisonPersonMigrationFilter(
   @Schema(
     description = "Only migrate a single prisoner - used for testing",
     example = "A1234BC",

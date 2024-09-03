@@ -19,19 +19,19 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonPersonMigrationMappingRequest.MigrationType.PHYSICAL_ATTRIBUTES
 
 @SpringAPIServiceTest
-@Import(MappingApiService::class, Configuration::class, PrisonPersonMappingApiMockServer::class)
-class MappingApiServiceTest {
+@Import(PrisonPersonMappingApiService::class, PrisonPersonConfiguration::class, PrisonPersonMappingApiMockServer::class)
+class PrisonPersonMappingApiServiceTest {
   @Autowired
-  private lateinit var apiService: MappingApiService
+  private lateinit var apiService: PrisonPersonMappingApiService
 
   @Autowired
-  private lateinit var mappingApiMockServer: PrisonPersonMappingApiMockServer
+  private lateinit var mappingApi: PrisonPersonMappingApiMockServer
 
   @Nested
   inner class PostMappings {
     @Test
     internal fun `should pass oath2 token to service`() = runTest {
-      mappingApiMockServer.stubPostMapping()
+      mappingApi.stubPostMapping()
 
       apiService.createMapping(
         PrisonPersonMigrationMappingRequest(
@@ -43,14 +43,14 @@ class MappingApiServiceTest {
         object : ParameterizedTypeReference<DuplicateErrorResponse<PrisonPersonMigrationMappingRequest>>() {},
       )
 
-      mappingApiMockServer.verify(
+      mappingApi.verify(
         postRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
     @Test
     internal fun `should pass data to service`() = runTest {
-      mappingApiMockServer.stubPostMapping()
+      mappingApi.stubPostMapping()
 
       apiService.createMapping(
         PrisonPersonMigrationMappingRequest(
@@ -62,7 +62,7 @@ class MappingApiServiceTest {
         object : ParameterizedTypeReference<DuplicateErrorResponse<PrisonPersonMigrationMappingRequest>>() {},
       )
 
-      mappingApiMockServer.verify(
+      mappingApi.verify(
         postRequestedFor(anyUrl())
           .withRequestBody(matchingJsonPath("nomisPrisonerNumber", equalTo("A1234AA")))
           .withRequestBody(matchingJsonPath("migrationType", equalTo("PHYSICAL_ATTRIBUTES")))
@@ -74,7 +74,7 @@ class MappingApiServiceTest {
 
     @Test
     fun `should throw if API calls fail`() = runTest {
-      mappingApiMockServer.stubPostMapping(INTERNAL_SERVER_ERROR)
+      mappingApi.stubPostMapping(INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.createMapping(
