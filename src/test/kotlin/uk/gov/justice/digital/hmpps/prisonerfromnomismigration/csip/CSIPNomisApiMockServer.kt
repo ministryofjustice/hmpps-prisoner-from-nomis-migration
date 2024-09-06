@@ -158,6 +158,49 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
         firstCaseReviewDate = LocalDate.parse("2024-04-15"),
       )
 
+    fun nomisCSIPReportMinimalData(nomisCSIPId: Long = 1234) =
+      CSIPResponse(
+        id = nomisCSIPId,
+        offender = Offender("A1234BC", firstName = "Fred", lastName = "Smith"),
+        bookingId = 1214478L,
+        originalAgencyId = "MDI",
+        logNumber = "ASI-001",
+        incidentDate = LocalDate.parse("2024-06-12"),
+        incidentTime = "10:32:12",
+        type = CodeDescription(code = "INT", description = "Intimidation"),
+        location = CodeDescription(code = "LIB", description = "Library"),
+        areaOfWork = CodeDescription(code = "EDU", description = "Education"),
+        reportedDate = LocalDate.parse("2024-04-04"),
+        reportedBy = "JIM_ADM",
+        proActiveReferral = false,
+        staffAssaulted = false,
+        reportDetails = ReportDetails(
+          factors = listOf(),
+          saferCustodyTeamInformed = false,
+          referralComplete = false,
+        ),
+        saferCustodyScreening = SaferCustodyScreening(),
+        investigation = InvestigationDetails(
+          interviews = listOf(),
+        ),
+        decision = Decision(
+          actions = Actions(
+            openCSIPAlert = false,
+            nonAssociationsUpdated = false,
+            observationBook = false,
+            unitOrCellMove = false,
+            csraOrRsraReview = false,
+            serviceReferral = false,
+            simReferral = false,
+          ),
+        ),
+        plans = listOf(),
+        reviews = listOf(),
+        createDateTime = "2024-04-01T10:32:12.867081",
+        createdBy = "JSMITH",
+        createdByDisplayName = "JSMITH",
+      )
+
     fun nomisCSIPFactor(nomisCSIPFactorId: Long = 43) =
       CSIPFactorResponse(
         id = nomisCSIPFactorId,
@@ -224,6 +267,16 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
             .withBody(nomisCSIPReport(nomisCSIPId)),
+        ),
+    )
+  }
+
+  fun stubGetCSIPWithMinimalData(nomisCSIPId: Long = 1234) {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/csip/$nomisCSIPId"))
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+            .withBody(nomisCSIPReportMinimalData(nomisCSIPId)),
         ),
     )
   }
