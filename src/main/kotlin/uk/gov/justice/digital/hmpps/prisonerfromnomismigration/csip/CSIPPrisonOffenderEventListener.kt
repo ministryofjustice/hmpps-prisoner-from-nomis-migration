@@ -42,7 +42,7 @@ class CSIPPrisonOffenderEventListener(
           if (eventFeatureSwitch.isEnabled(eventType, "csip")) {
             when (eventType) {
               // The first grouping will all (eventually) call the same method
-              "CSIP_REPORTS-INSERTED" -> csipSynchronisationService.csipReportInserted(sqsMessage.Message.fromJson())
+              "CSIP_REPORTS-INSERTED" -> csipSynchronisationService.csipReportSynchronise(sqsMessage.Message.fromJson())
               "CSIP_REPORTS-UPDATED" -> csipReportUpdated(sqsMessage.Message.fromJson())
               "CSIP_PLANS-INSERTED" -> log.debug("Insert CSIP Plan")
               "CSIP_PLANS-UPDATED" -> log.debug("Update CSIP Plan")
@@ -56,6 +56,9 @@ class CSIPPrisonOffenderEventListener(
               "CSIP_INTVW-UPDATED" -> log.debug("Update CSIP Interview")
 
               "CSIP_REPORTS-DELETED" -> csipSynchronisationService.csipReportDeleted(sqsMessage.Message.fromJson())
+
+              // TODO - we no longer listen for child delete events (only top level report deleted via ui)
+              // - REMOVE from cloud platform and remove from here
               "CSIP_PLANS-DELETED" -> csipSynchronisationService.csipPlanDeleted(sqsMessage.Message.fromJson())
               "CSIP_REVIEWS-DELETED" -> log.debug("Delete CSIP Review")
               "CSIP_ATTENDEES-DELETED" -> csipSynchronisationService.csipAttendeeDeleted(sqsMessage.Message.fromJson())
