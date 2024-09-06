@@ -32,10 +32,12 @@ class CSIPDpsApiService(@Qualifier("csipApiWebClient") private val webClient: We
       .retrieve()
       .awaitBody()
 
-  suspend fun migrateCSIPOld(offenderNo: String, csipReport: SyncCsipRequest): CsipRecord =
-    webClient.post()
-      .uri("/migrate/prisoners/{offenderNo}/csip-records", offenderNo)
-      .bodyValue(csipReport)
+  suspend fun syncCSIP(syncRequest: SyncCsipRequest, createdByUsername: String): SyncResponse =
+    webClient.put()
+      .uri("/sync/csip-records")
+      .bodyValue(syncRequest)
+      .header("Source", "NOMIS")
+      .header("Username", createdByUsername)
       .retrieve()
       .awaitBody()
 

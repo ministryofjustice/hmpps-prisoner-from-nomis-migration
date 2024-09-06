@@ -7,6 +7,7 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.MappingResponse.MAPPING_FAILED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ResponseMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
@@ -28,7 +29,7 @@ class CSIPSynchronisationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  suspend fun csipReportInserted(event: CSIPReportEvent) {
+  suspend fun csipReportSynchronise(event: CSIPReportEvent) {
     // Avoid duplicate sync if originated from DPS
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent(
@@ -38,59 +39,43 @@ class CSIPSynchronisationService(
       return
     }
 
+    val telemetry = mutableMapOf(
+      "nomisCSIPId" to event.csipReportId,
+      "offenderNo" to event.offenderIdDisplay,
+    )
+
     val nomisCSIP = nomisApiService.getCSIP(event.csipReportId)
-    mappingApiService.getCSIPReportByNomisId(
-      nomisCSIPReportId = event.csipReportId,
-    )?.let {
-      telemetryClient.trackEvent(
-        "csip-synchronisation-created-ignored",
-        event.toTelemetryProperties(it.dpsCSIPId),
-      )
-    } ?: let {
-      csipService.createCSIPReport(event.offenderIdDisplay, nomisCSIP.toDPSCreateRequest(), nomisCSIP.createdBy)
-        .also { dpsCsip ->
-          tryToCreateCSIPReportMapping(event, dpsCsip.recordUuid.toString()).also { result ->
-            telemetryClient.trackEvent(
-              "csip-synchronisation-created-success",
-              event.toTelemetryProperties(
-                dpsCsip.recordUuid.toString(),
-                result == MappingResponse.MAPPING_FAILED,
-              ),
-            )
+    mappingApiService.getCSIPReportByNomisId(nomisCSIPReportId = event.csipReportId)
+      ?.let {
+        // TODO CSIP Report mapping exists so we just want to update
+        //  csipService.syncCSIP(nomisCSIP.toDPSSyncRequest(it.dpsCSIPId), nomisCSIP.createdBy)
+        telemetryClient.trackEvent(
+          "csip-synchronisation-created-ignored",
+          event.toTelemetryProperties(it.dpsCSIPId),
+        )
+      }
+      ?: let {
+        // CSIP Report mapping doesn't exist
+        csipService.syncCSIP(nomisCSIP.toDPSSyncRequest(), nomisCSIP.createdBy)
+          .also { syncResponse ->
+            // At this point we need to determine all mappings and call the appropriate mapping endpoints
+            // For now, just map top level report
+            val csipReport = syncResponse.mappings.first { it.component == ResponseMapping.Component.RECORD }
+            val dpsCSIPReportId = csipReport.uuid.toString()
+
+            tryToCreateCSIPReportMapping(event, dpsCSIPReportId).also { result ->
+              val mappingSuccessTelemetry =
+                (if (result == MappingResponse.MAPPING_CREATED) mapOf() else mapOf("mapping" to "initial-failure"))
+              telemetryClient.trackEvent(
+                "csip-synchronisation-created-success",
+                telemetry + ("dpsCSIPId" to dpsCSIPReportId) + mappingSuccessTelemetry,
+              )
+            }
+            // TODO **** CHECK IF CHILD TABLES NEED MAPPING  ****
           }
-        }
-    }
+      }
   }
 
-  /* WIP
-  suspend fun csipReportUpdated(event: CSIPReportEvent) {
-    val telemetry =
-      mutableMapOf(
-        "nomisCSIPId" to event.csipReportId,
-        "offenderNo" to event.offenderIdDisplay,
-      )
-
-    val nomisCSIPResponse = nomisApiService.getCSIP(event.csipReportId)
-
-    val mapping = mappingApiService.getCSIPReportByNomisId(event.csipReportId)
-    if (mapping == null) {
-      // Should never happen
-      telemetryClient.trackEvent("csip-synchronisation-updated-failed", telemetry)
-      throw IllegalStateException("Received CSIP_REPORTS-UPDATED - main screen - for csip that has never been created")
-    } else {
-      csipService.updateCSIPReferral(
-        csipReportId = mapping.dpsCSIPId,
-        nomisCSIPResponse.toDPSUpdateCsipRecordRequest(),
-        updatedByUsername = nomisCSIPResponse.lastModifiedUser(),
-      )
-
-      telemetryClient.trackEvent(
-        "csip-synchronisation-updated-success",
-        telemetry + ("dpsCSIPId" to mapping.dpsCSIPId),
-      )
-    }
-  }
-   */
   suspend fun csipReportReferralUpdated(event: CSIPReportEvent) {
     val telemetry =
       mutableMapOf(
@@ -153,6 +138,7 @@ class CSIPSynchronisationService(
       ?.let {
         log.debug("Found csip mapping: {}", it)
         csipService.deleteCSIP(it.dpsCSIPId)
+        // This will remove all child mappings
         tryToDeleteCSIPReportMapping(it.dpsCSIPId)
         telemetryClient.trackEvent(
           "csip-synchronisation-deleted-success",

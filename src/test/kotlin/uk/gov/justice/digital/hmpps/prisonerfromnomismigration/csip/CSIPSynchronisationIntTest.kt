@@ -94,7 +94,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         fun setUp() {
           csipNomisApi.stubGetCSIP()
           csipMappingApi.stubGetByNomisId(HttpStatus.NOT_FOUND)
-          csipDpsApi.stubInsertCSIPReport()
+          csipDpsApi.stubSyncCSIPReport()
           mappingApi.stubMappingCreate(CSIP_CREATE_MAPPING_URL)
 
           awsSqsCSIPOffenderEventsClient.sendMessage(
@@ -121,7 +121,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create the csip in the csip service`() {
           await untilAsserted {
             csipDpsApi.verify(
-              postRequestedFor(urlPathEqualTo("/prisoners/A1234BC/csip-records"))
+              putRequestedFor(urlPathEqualTo("/sync/csip-records"))
                 .withHeader("Username", equalTo("JSMITH"))
                 .withRequestBody(matchingJsonPath("referral.incidentDate", equalTo("2024-06-12")))
                 .withRequestBody(matchingJsonPath("referral.incidentTime", equalTo("10:32:12"))),
@@ -193,7 +193,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         internal fun `it will not retry after a 409 (duplicate csip written to CSIP API)`() {
           csipNomisApi.stubGetCSIP()
           csipMappingApi.stubGetByNomisId(HttpStatus.NOT_FOUND)
-          csipDpsApi.stubInsertCSIPReport(duplicateDPSCSIPId)
+          csipDpsApi.stubSyncCSIPReport(duplicateDPSCSIPId)
           csipMappingApi.stubCSIPMappingCreateConflict()
 
           awsSqsCSIPOffenderEventsClient.sendMessage(
@@ -205,7 +205,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilCallTo { mappingApi.createMappingCount(CSIP_CREATE_MAPPING_URL) } matches { it == 1 }
 
           // check that one csip is created
-          assertThat(csipDpsApi.createCSIPSyncCount()).isEqualTo(1)
+          assertThat(csipDpsApi.syncCSIPCount()).isEqualTo(1)
 
           // doesn't retry
           csipMappingApi.verifyCreateCSIPReportMapping(dpsCSIPId = duplicateDPSCSIPId)
@@ -240,8 +240,8 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
           )
 
           // check that no CSIPs are created
-          assertThat(csipDpsApi.createCSIPSyncCount()).isEqualTo(0)
-          csipDpsApi.verify(0, postRequestedFor(anyUrl()))
+          assertThat(csipDpsApi.syncCSIPCount()).isEqualTo(0)
+          csipDpsApi.verify(0, putRequestedFor(anyUrl()))
 
           // doesn't try to create a new mapping
           mappingApi.verify(0, postRequestedFor(anyUrl()))
@@ -250,8 +250,8 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
             verify(telemetryClient).trackEvent(
               eq("csip-synchronisation-created-ignored"),
               check {
-                assertThat(it["dpsCSIPId"]).isEqualTo(DPS_CSIP_ID)
                 assertThat(it["nomisCSIPId"]).isEqualTo("$NOMIS_CSIP_ID")
+                assertThat(it["dpsCSIPId"]).isEqualTo(DPS_CSIP_ID)
                 assertThat(it["migrationId"]).isNull()
               },
               isNull(),

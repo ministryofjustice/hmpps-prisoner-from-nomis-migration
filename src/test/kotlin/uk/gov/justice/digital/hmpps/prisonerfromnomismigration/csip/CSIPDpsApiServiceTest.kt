@@ -3,7 +3,6 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip
 import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
-import com.github.tomakehurst.wiremock.client.WireMock.notContaining
 import com.github.tomakehurst.wiremock.client.WireMock.patchRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
@@ -20,7 +19,6 @@ import org.springframework.context.annotation.Import
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension.Companion.csipDpsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsCreateContributoryFactorRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsCreateCsipRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsCreateSaferCustodyScreeningOutcomeRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsSyncCsipRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsUpdateContributoryFactorRequest
@@ -83,48 +81,6 @@ internal class CSIPDpsApiServiceTest {
             .withRequestBody(matchingJsonPath("referral.assaultedStaffName", equalTo("Fred Jones")))
             .withRequestBody(matchingJsonPath("referral.otherInformation", equalTo("other information goes in here")))
             .withRequestBody(matchingJsonPath("referral.isSaferCustodyTeamInformed", equalTo("NO"))),
-        )
-      }
-    }
-
-    @Nested
-    @DisplayName("POST /prisoners/{offenderNo}/csip-records")
-    inner class CreateCSIP {
-      @BeforeEach
-      internal fun setUp() {
-        csipDpsApi.stubInsertCSIPReport()
-
-        runBlocking {
-          csipService.createCSIPReport("A1234BC", dpsCreateCsipRecordRequest(), "JIM_ADM")
-        }
-      }
-
-      @Test
-      fun `should call api with OAuth2 token`() {
-        csipDpsApi.verify(
-          postRequestedFor(urlEqualTo("/prisoners/A1234BC/csip-records"))
-            .withHeader("Authorization", equalTo("Bearer ABCDE")),
-        )
-      }
-
-      @Test
-      fun `will pass data to the api`() {
-        csipDpsApi.verify(
-          postRequestedFor(urlEqualTo("/prisoners/A1234BC/csip-records"))
-            .withRequestBody(matchingJsonPath("logCode", equalTo("ASI-001")))
-            .withRequestBody(matchingJsonPath("referral.incidentDate", equalTo("2024-06-12")))
-            .withRequestBody(matchingJsonPath("referral.incidentTime", equalTo("10:32:12")))
-            .withRequestBody(matchingJsonPath("referral.incidentTypeCode", equalTo("INT")))
-            .withRequestBody(matchingJsonPath("referral.incidentLocationCode", equalTo("LIB")))
-            .withRequestBody(matchingJsonPath("referral.referredBy", equalTo("JIM_ADM")))
-            .withRequestBody(matchingJsonPath("referral.refererAreaCode", equalTo("EDU")))
-            .withRequestBody(notContaining("referral.contributoryFactors"))
-            .withRequestBody(notContaining("referral.referralSummary"))
-            .withRequestBody(matchingJsonPath("referral.isProactiveReferral", equalTo("true")))
-            .withRequestBody(matchingJsonPath("referral.isStaffAssaulted", equalTo("true")))
-            .withRequestBody(matchingJsonPath("referral.assaultedStaffName", equalTo("Fred Jones")))
-            .withRequestBody(notContaining("referral.otherInformation"))
-            .withRequestBody(notContaining("referral.isSaferCustodyTeamInformed")),
         )
       }
     }

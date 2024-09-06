@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip
 
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncAttendeeRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncContributoryFactorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncCsipRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncDecisionAndActionsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncInterviewRequest
@@ -12,6 +13,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncRe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncScreeningOutcomeRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Actions
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Attendee
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPFactorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Decision
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.InterviewDetails
@@ -20,11 +22,16 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.P
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Review
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SaferCustodyScreening
 import java.time.LocalDateTime
+import java.util.UUID
 
-fun CSIPResponse.toDPSSyncRequest() =
+fun CSIPResponse.toDPSSyncRequest(dpsReportId: String? = null) =
   SyncCsipRequest(
+    id = dpsReportId ?.let { UUID.fromString(dpsReportId) },
+    legacyId = id,
     prisonNumber = originalAgencyId!!,
     logCode = logNumber,
+    activeCaseloadId = originalAgencyId,
+
     referral =
     SyncReferralRequest(
       incidentDate = incidentDate,
@@ -50,17 +57,12 @@ fun CSIPResponse.toDPSSyncRequest() =
       completedDate = reportDetails.referralCompletedDate,
       completedBy = reportDetails.referralCompletedBy,
       completedByDisplayName = reportDetails.referralCompletedByDisplayName,
-      contributoryFactors = listOf(),
+      contributoryFactors = reportDetails.factors.map { it.toDPSSyncContributoryFactorRequest() },
       saferCustodyScreeningOutcome = saferCustodyScreening.toDPSSyncCSIPSCS(),
       investigation = investigation.toDPSSyncInvestigationRequest(),
       decisionAndActions = decision.toDPSSyncDecisionsAndActionsRequest(),
     ),
     plan = this.toDPSSyncPlanRequest(),
-
-    // TODO for Update
-    id = null,
-    legacyId = id,
-    activeCaseloadId = originalAgencyId,
 
     createdAt = LocalDateTime.parse(createDateTime),
     createdBy = createdBy,
@@ -88,7 +90,23 @@ fun SaferCustodyScreening.toDPSSyncCSIPSCS() =
     recordedByDisplayName = recordedByDisplayName!!,
   )
 
-// ////// OIDCSIPI - Investigation ////////////////////////////
+fun CSIPFactorResponse.toDPSSyncContributoryFactorRequest() =
+  SyncContributoryFactorRequest(
+    // TODO Add in id for update
+    id = null,
+    legacyId = id,
+    factorTypeCode = type.code,
+    comment = comment,
+    createdAt = LocalDateTime.parse(createDateTime),
+    createdBy = createdBy,
+    // createdByDisplayName = createdByDisplayName ?: createdBy,
+    createdByDisplayName = createdBy,
+    lastModifiedAt = lastModifiedDateTime?.let { LocalDateTime.parse(lastModifiedDateTime) },
+    lastModifiedBy = lastModifiedBy,
+    // lastModifiedByDisplayName = lastModifiedByDisplayName ?: lastModifiedBy
+    lastModifiedByDisplayName = lastModifiedBy,
+  )
+
 fun InvestigationDetails.toDPSSyncInvestigationRequest() =
   SyncInvestigationRequest(
     staffInvolved = staffInvolved,
@@ -109,6 +127,7 @@ fun InterviewDetails.toDPSSyncInterviewRequest() =
     interviewDate = date,
     intervieweeRoleCode = role.code,
     interviewText = comments,
+
     createdAt = LocalDateTime.parse(createDateTime),
     createdBy = createdBy,
     createdByDisplayName = createdByDisplayName ?: createdBy,
@@ -146,7 +165,6 @@ fun MutableSet<SyncDecisionAndActionsRequest.Actions>.addIfTrue(actionSet: Boole
   if (actionSet) this.add(action)
 }
 
-// ////// OIDCSIPP - Plan ////////////////////////////
 fun CSIPResponse.toDPSSyncPlanRequest() =
   SyncPlanRequest(
     caseManager = caseManager!!,
