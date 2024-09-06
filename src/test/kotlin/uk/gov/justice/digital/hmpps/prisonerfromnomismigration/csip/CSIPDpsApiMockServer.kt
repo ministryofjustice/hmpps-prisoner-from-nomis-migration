@@ -37,6 +37,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Referr
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ResponseMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SaferCustodyScreeningOutcome
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncAttendeeRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncContributoryFactorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncCsipRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncDecisionAndActionsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncInterviewRequest
@@ -109,7 +110,20 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
           referralDate = LocalDate.parse("2024-04-04"),
           refererAreaCode = "EDU",
           isSaferCustodyTeamInformed = SyncReferralRequest.IsSaferCustodyTeamInformed.NO,
-          contributoryFactors = listOf(),
+          contributoryFactors = listOf(
+            SyncContributoryFactorRequest(
+              factorTypeCode = "BUL",
+              legacyId = 43,
+              createdAt = LocalDateTime.parse("2024-04-01T10:00:00"),
+              createdBy = "JSMITH",
+              createdByDisplayName = "JSMITH",
+              comment = "Offender causes trouble",
+              id = null,
+              lastModifiedAt = null,
+              lastModifiedBy = null,
+              lastModifiedByDisplayName = null,
+            ),
+          ),
           incidentTime = "10:32:12",
           isProactiveReferral = true,
           isStaffAssaulted = true,
