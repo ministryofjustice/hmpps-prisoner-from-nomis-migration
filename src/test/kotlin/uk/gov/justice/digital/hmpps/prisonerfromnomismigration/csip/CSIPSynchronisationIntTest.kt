@@ -157,6 +157,37 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Nested
+      inner class WhenCreateByNomisSuccessWithMinimalData {
+        @BeforeEach
+        fun setUp() {
+          csipNomisApi.stubGetCSIPWithMinimalData()
+          csipMappingApi.stubGetByNomisId(HttpStatus.NOT_FOUND)
+          csipDpsApi.stubSyncCSIPReport()
+          mappingApi.stubMappingCreate(CSIP_CREATE_MAPPING_URL)
+
+          awsSqsCSIPOffenderEventsClient.sendMessage(
+            csipQueueOffenderEventsUrl,
+            csipEvent(eventType = "CSIP_REPORTS-INSERTED"),
+          )
+        }
+
+        @Test
+        fun `will create telemetry tracking the create`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("csip-synchronisation-created-success"),
+              check {
+                assertThat(it["dpsCSIPId"]).isEqualTo(DPS_CSIP_ID)
+                assertThat(it["nomisCSIPId"]).isEqualTo("$NOMIS_CSIP_ID")
+                assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
       inner class WhenNomisHasNoCSIP {
         @BeforeEach
         fun setUp() {

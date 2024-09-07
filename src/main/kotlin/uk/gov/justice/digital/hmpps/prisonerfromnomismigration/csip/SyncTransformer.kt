@@ -58,11 +58,11 @@ fun CSIPResponse.toDPSSyncRequest(dpsReportId: String? = null) =
       completedBy = reportDetails.referralCompletedBy,
       completedByDisplayName = reportDetails.referralCompletedByDisplayName,
       contributoryFactors = reportDetails.factors.map { it.toDPSSyncContributoryFactorRequest() },
-      saferCustodyScreeningOutcome = saferCustodyScreening.toDPSSyncCSIPSCS(),
+      saferCustodyScreeningOutcome = saferCustodyScreening.outcome ?.let { saferCustodyScreening.toDPSSyncCSIPSCS() },
       investigation = investigation.toDPSSyncInvestigationRequest(),
-      decisionAndActions = decision.toDPSSyncDecisionsAndActionsRequest(),
+      decisionAndActions = decision.decisionOutcome ?.let { decision.toDPSSyncDecisionsAndActionsRequest() },
     ),
-    plan = this.toDPSSyncPlanRequest(),
+    plan = caseManager?.let { this.toDPSSyncPlanRequest() },
 
     createdAt = LocalDateTime.parse(createDateTime),
     createdBy = createdBy,
@@ -140,7 +140,7 @@ fun Decision.toDPSSyncDecisionsAndActionsRequest() =
   SyncDecisionAndActionsRequest(
     outcomeTypeCode = decisionOutcome!!.code,
     conclusion = conclusion,
-    signedOffByRoleCode = signedOffRole?.code,
+    signedOffByRoleCode = signedOffRole?.code ?: "OTHER",
     recordedBy = recordedBy,
     recordedByDisplayName = recordedByDisplayName,
     date = recordedDate,
