@@ -166,7 +166,6 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
         originalAgencyId = "MDI",
         logNumber = "ASI-001",
         incidentDate = LocalDate.parse("2024-06-12"),
-        incidentTime = "10:32:12",
         type = CodeDescription(code = "INT", description = "Intimidation"),
         location = CodeDescription(code = "LIB", description = "Library"),
         areaOfWork = CodeDescription(code = "EDU", description = "Education"),
