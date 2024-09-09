@@ -55,7 +55,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Upsert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpsertInvestigationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpsertPlanRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -633,6 +632,13 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubSyncCSIPReport(status: HttpStatus) = stubPutErrorResponse(
+    status = status,
+    url = "/sync/csip-records",
+    error =
+    ErrorResponse(status.value(), userMessage = "There was an Error"),
+  )
+
   fun stubMigrateCSIPReportForOffender(dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5", offenderNo: String = "A1234BC") {
     stubFor(
       post("/migrate/prisoners/$offenderNo/csip-records").willReturn(
@@ -790,8 +796,20 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   private fun stubDeleteErrorResponse(status: HttpStatus, url: String, error: ErrorResponse = ErrorResponse(status = status.value())) {
-    mappingApi.stubFor(
+    stubFor(
       delete(urlPathMatching(url))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody(objectMapper.writeValueAsString(error)),
+        ),
+    )
+  }
+
+  private fun stubPutErrorResponse(status: HttpStatus, url: String, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    stubFor(
+      put(urlPathMatching(url))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")

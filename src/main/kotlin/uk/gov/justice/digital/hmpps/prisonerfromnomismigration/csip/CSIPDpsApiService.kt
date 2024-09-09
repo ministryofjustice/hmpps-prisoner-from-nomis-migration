@@ -1,13 +1,16 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip
 
+import kotlinx.coroutines.reactor.awaitSingle
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ContributoryFactor
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateContributoryFactorRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateCsipRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateSaferCustodyScreeningOutcomeRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CsipRecord
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.DecisionAndActions
@@ -25,12 +28,21 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Upsert
 @Service
 class CSIPDpsApiService(@Qualifier("csipApiWebClient") private val webClient: WebClient) {
 
+  private companion object {
+    val log: Logger = LoggerFactory.getLogger(this::class.java)
+  }
+
   suspend fun migrateCSIP(syncRequest: SyncCsipRequest): SyncResponse =
     webClient.put()
       .uri("/sync/csip-records")
       .bodyValue(syncRequest)
       .retrieve()
-      .awaitBody()
+      .bodyToMono(SyncResponse::class.java)
+      .onErrorResume(WebClientResponseException.BadRequest::class.java) {
+        log.error("Received Bad Request (400) with body " + it.responseBodyAsString)
+        throw it
+      }
+      .awaitSingle()
 
   suspend fun syncCSIP(syncRequest: SyncCsipRequest, createdByUsername: String): SyncResponse =
     webClient.put()
@@ -39,16 +51,12 @@ class CSIPDpsApiService(@Qualifier("csipApiWebClient") private val webClient: We
       .header("Source", "NOMIS")
       .header("Username", createdByUsername)
       .retrieve()
-      .awaitBody()
-
-  suspend fun createCSIPReport(offenderNo: String, csipReport: CreateCsipRecordRequest, createdByUsername: String): CsipRecord =
-    webClient.post()
-      .uri("/prisoners/{offenderNo}/csip-records", offenderNo)
-      .bodyValue(csipReport)
-      .header("Source", "NOMIS")
-      .header("Username", createdByUsername)
-      .retrieve()
-      .awaitBody()
+      .bodyToMono(SyncResponse::class.java)
+      .onErrorResume(WebClientResponseException.BadRequest::class.java) {
+        log.error("Received Bad Request (400) with body " + it.responseBodyAsString)
+        throw it
+      }
+      .awaitSingle()
 
   suspend fun updateCSIPReferral(csipReportId: String, csipReport: UpdateCsipRecordRequest, updatedByUsername: String): CsipRecord =
     webClient.patch()
