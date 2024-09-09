@@ -10,8 +10,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIn
 @TestPropertySource(
   properties = [
     "feature.event.IEP_UPSERTED=true",
-    "feature.event.OTHER_EVENT=false",
     "feature.event.casenote.GENERIC_EVENT=false",
+    "feature.event.OTHER_EVENT=false",
   ],
 )
 internal class EventFeatureSwitchTest : SqsIntegrationTestBase() {
@@ -61,7 +61,7 @@ internal class EventFeatureSwitchTest : SqsIntegrationTestBase() {
         .expectStatus().isOk
         .expectBody()
         .jsonPath("event-feature-switches").value<Map<String, Boolean>> {
-          assertThat(it).containsExactlyInAnyOrderEntriesOf(
+          assertThat(it).containsExactlyEntriesOf(
             mapOf(
               "IEP_UPSERTED" to true,
               "OTHER_EVENT" to false,
