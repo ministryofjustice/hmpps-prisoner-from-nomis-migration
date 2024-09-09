@@ -27,8 +27,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingA
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFactorMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPMappingDto.MappingType.MIGRATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReportMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReportMappingDto.MappingType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import java.util.UUID
 
@@ -66,10 +66,10 @@ internal class CSIPMappingServiceTest {
           nomisCSIPReportId = NOMIS_CSIP_ID,
         )
         assertThat(mapping).isNotNull
-        assertThat(mapping!!.dpsCSIPId).isEqualTo(DPS_CSIP_ID)
-        assertThat(mapping.nomisCSIPId).isEqualTo(NOMIS_CSIP_ID)
+        assertThat(mapping!!.dpsCSIPReportId).isEqualTo(DPS_CSIP_ID)
+        assertThat(mapping.nomisCSIPReportId).isEqualTo(NOMIS_CSIP_ID)
         assertThat(mapping.label).isEqualTo("2022-02-14T09:58:45")
-        assertThat(mapping.mappingType).isEqualTo(CSIPMappingDto.MappingType.NOMIS_CREATED)
+        assertThat(mapping.mappingType).isEqualTo(CSIPReportMappingDto.MappingType.NOMIS_CREATED)
         assertThat(mapping.whenCreated).isEqualTo("2020-01-01T11:10:00")
       }
 
@@ -102,13 +102,13 @@ internal class CSIPMappingServiceTest {
         mappingApi.stubMappingCreate(CSIP_CREATE_MAPPING_URL)
 
         csipMappingService.createMapping(
-          CSIPMappingDto(
-            dpsCSIPId = DPS_CSIP_ID,
-            nomisCSIPId = NOMIS_CSIP_ID,
+          CSIPReportMappingDto(
+            dpsCSIPReportId = DPS_CSIP_ID,
+            nomisCSIPReportId = NOMIS_CSIP_ID,
             label = "some-migration-id",
             mappingType = MIGRATED,
           ),
-          object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPMappingDto>>() {},
+          object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPReportMappingDto>>() {},
         )
 
         mappingApi.verify(
@@ -122,14 +122,14 @@ internal class CSIPMappingServiceTest {
       internal fun `will pass all parameters dps csip id, nomis csip id, migration Id and MIGRATED indicator to mapping service`(): Unit =
         runTest {
           csipMappingService.createMapping(
-            CSIPMappingDto(
-              dpsCSIPId = DPS_CSIP_ID,
-              nomisCSIPId = NOMIS_CSIP_ID,
+            CSIPReportMappingDto(
+              dpsCSIPReportId = DPS_CSIP_ID,
+              nomisCSIPReportId = NOMIS_CSIP_ID,
               mappingType = MIGRATED,
               label = "5678",
               whenCreated = "2020-01-01T00:00:00",
             ),
-            errorJavaClass = object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPMappingDto>>() {},
+            errorJavaClass = object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPReportMappingDto>>() {},
           )
 
           mappingApi.verify(
@@ -163,14 +163,14 @@ internal class CSIPMappingServiceTest {
 
         assertThrows<WebClientResponseException.InternalServerError> {
           csipMappingService.createMapping(
-            CSIPMappingDto(
-              dpsCSIPId = DPS_CSIP_ID,
-              nomisCSIPId = NOMIS_CSIP_ID,
+            CSIPReportMappingDto(
+              dpsCSIPReportId = DPS_CSIP_ID,
+              nomisCSIPReportId = NOMIS_CSIP_ID,
               mappingType = MIGRATED,
               label = "5678",
               whenCreated = "2020-01-01T00:00:00",
             ),
-            object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPMappingDto>>() {},
+            object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPReportMappingDto>>() {},
           )
         }
       }

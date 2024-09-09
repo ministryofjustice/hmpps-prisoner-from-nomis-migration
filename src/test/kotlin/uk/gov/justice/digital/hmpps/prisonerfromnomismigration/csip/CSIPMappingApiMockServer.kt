@@ -16,8 +16,8 @@ import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPAttendeeMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFactorMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPInterviewMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPPlanMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReportMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReviewMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
@@ -39,10 +39,10 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
             pageContent(
               objectMapper = objectMapper,
               content = listOf(
-                CSIPMappingDto(
-                  nomisCSIPId = 1234,
-                  dpsCSIPId = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5",
-                  mappingType = CSIPMappingDto.MappingType.MIGRATED,
+                CSIPReportMappingDto(
+                  nomisCSIPReportId = 1234,
+                  dpsCSIPReportId = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5",
+                  mappingType = CSIPReportMappingDto.MappingType.MIGRATED,
                   label = "2022-02-14T09:58:45",
                   whenCreated = whenCreated,
                 ),
@@ -65,10 +65,10 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
             .withBody(
-              CSIPMappingDto(
-                nomisCSIPId = nomisCSIPId,
-                dpsCSIPId = dpsCSIPId,
-                mappingType = CSIPMappingDto.MappingType.NOMIS_CREATED,
+              CSIPReportMappingDto(
+                nomisCSIPReportId = nomisCSIPId,
+                dpsCSIPReportId = dpsCSIPId,
+                mappingType = CSIPReportMappingDto.MappingType.NOMIS_CREATED,
                 label = "2022-02-14T09:58:45",
                 whenCreated = "2020-01-01T11:10:00",
               ),
@@ -88,10 +88,10 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
           .withBody(
-            CSIPMappingDto(
-              nomisCSIPId = 1234,
-              dpsCSIPId = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5",
-              mappingType = CSIPMappingDto.MappingType.MIGRATED,
+            CSIPReportMappingDto(
+              nomisCSIPReportId = 1234,
+              dpsCSIPReportId = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5",
+              mappingType = CSIPReportMappingDto.MappingType.MIGRATED,
               label = migrationId,
               whenCreated = "2020-01-01T11:10:00",
             ),

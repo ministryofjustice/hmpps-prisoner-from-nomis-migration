@@ -55,13 +55,13 @@ class CSIPFactorSynchronisationService(
           ?: run {
             // HAPPY PATH
             csipService.createCSIPFactor(
-              reportMapping.dpsCSIPId,
+              reportMapping.dpsCSIPReportId,
               nomisFactorResponse.toDPSCreateFactorRequest(),
               nomisFactorResponse.createdBy,
             ).also {
               telemetry.put("dpsCSIPFactorId", it.factorUuid.toString())
 
-              tryToCreateCSIPFactorMapping(nomisFactorResponse, it, reportMapping.dpsCSIPId, telemetry)
+              tryToCreateCSIPFactorMapping(nomisFactorResponse, it, reportMapping.dpsCSIPReportId, telemetry)
                 .also { mappingCreateResult ->
                   if (mappingCreateResult == MappingResponse.MAPPING_FAILED) telemetry.put("mapping", "initial-failure")
                   telemetryClient.trackEvent(

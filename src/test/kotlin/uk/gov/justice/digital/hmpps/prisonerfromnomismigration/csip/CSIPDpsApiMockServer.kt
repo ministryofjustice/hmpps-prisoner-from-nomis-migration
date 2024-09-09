@@ -597,7 +597,6 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
       )
     fun dpsUpdateContributoryFactorRequest() =
       UpdateContributoryFactorRequest(
-        factorTypeCode = "BUL",
         comment = "Offender causes trouble",
       )
 

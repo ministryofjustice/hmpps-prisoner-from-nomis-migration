@@ -11,7 +11,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationCon
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReportMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
@@ -26,7 +26,7 @@ class CSIPMigrationService(
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
 
-) : MigrationService<CSIPMigrationFilter, CSIPIdResponse, CSIPMappingDto>(
+) : MigrationService<CSIPMigrationFilter, CSIPIdResponse, CSIPReportMappingDto>(
   mappingService = csipMappingService,
   migrationType = MigrationType.CSIP,
   pageSize = pageSize,
@@ -55,7 +55,7 @@ class CSIPMigrationService(
 
     csipMappingService.getCSIPReportByNomisId(nomisCSIPId)
       ?.run {
-        log.info("Will not migrate the CSIP $nomisCSIPId since it was already mapped to DPS CSIP ${this.dpsCSIPId} during migration ${this.label}")
+        log.info("Will not migrate the CSIP $nomisCSIPId since it was already mapped to DPS CSIP ${this.dpsCSIPReportId} during migration ${this.label}")
       }
       ?: run {
         val nomisCSIPResponse = nomisApiService.getCSIP(nomisCSIPId)
@@ -85,13 +85,13 @@ class CSIPMigrationService(
     context: MigrationContext<*>,
   ) = try {
     csipMappingService.createMapping(
-      CSIPMappingDto(
-        nomisCSIPId = nomisCSIPId,
-        dpsCSIPId = dpsCSIPId,
+      CSIPReportMappingDto(
+        nomisCSIPReportId = nomisCSIPId,
+        dpsCSIPReportId = dpsCSIPId,
         label = context.migrationId,
-        mappingType = CSIPMappingDto.MappingType.MIGRATED,
+        mappingType = CSIPReportMappingDto.MappingType.MIGRATED,
       ),
-      object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPMappingDto>>() {},
+      object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPReportMappingDto>>() {},
     ).also {
       if (it.isError) {
         val duplicateErrorDetails = (it.errorResponse!!).moreInfo
@@ -99,10 +99,10 @@ class CSIPMigrationService(
           "${MigrationType.CSIP.telemetryName}-nomis-migration-duplicate",
           mapOf(
             "migrationId" to context.migrationId,
-            "existingNomisCSIPId" to duplicateErrorDetails.existing.nomisCSIPId,
-            "duplicateNomisCSIPId" to duplicateErrorDetails.duplicate.nomisCSIPId,
-            "existingDPSCSIPId" to duplicateErrorDetails.existing.dpsCSIPId,
-            "duplicateDPSCSIPId" to duplicateErrorDetails.duplicate.dpsCSIPId,
+            "existingNomisCSIPId" to duplicateErrorDetails.existing.nomisCSIPReportId,
+            "duplicateNomisCSIPId" to duplicateErrorDetails.duplicate.nomisCSIPReportId,
+            "existingDPSCSIPId" to duplicateErrorDetails.existing.dpsCSIPReportId,
+            "duplicateDPSCSIPId" to duplicateErrorDetails.duplicate.dpsCSIPReportId,
             "durationMinutes" to context.durationMinutes(),
           ),
         )
@@ -117,10 +117,10 @@ class CSIPMigrationService(
       MigrationMessageType.RETRY_MIGRATION_MAPPING,
       MigrationContext(
         context = context,
-        body = CSIPMappingDto(
-          nomisCSIPId = nomisCSIPId,
-          dpsCSIPId = dpsCSIPId,
-          mappingType = CSIPMappingDto.MappingType.MIGRATED,
+        body = CSIPReportMappingDto(
+          nomisCSIPReportId = nomisCSIPId,
+          dpsCSIPReportId = dpsCSIPId,
+          mappingType = CSIPReportMappingDto.MappingType.MIGRATED,
         ),
       ),
     )

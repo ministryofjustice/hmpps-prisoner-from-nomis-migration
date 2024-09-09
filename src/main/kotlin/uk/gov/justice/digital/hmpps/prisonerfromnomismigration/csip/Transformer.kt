@@ -137,7 +137,6 @@ fun CSIPFactorResponse.toDPSCreateFactorRequest() =
   )
 fun CSIPFactorResponse.toDPSUpdateFactorRequest() =
   UpdateContributoryFactorRequest(
-    factorTypeCode = type.code,
     comment = comment,
   )
 
