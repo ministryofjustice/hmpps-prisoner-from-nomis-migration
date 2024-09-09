@@ -234,6 +234,33 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
       )
 
+    fun dpsSyncCsipRequestMinimal() =
+      SyncCsipRequest(
+        legacyId = 1234,
+        logCode = "ASI-001",
+        prisonNumber = "MDI",
+        activeCaseloadId = "MDI",
+        actionedAt = LocalDateTime.parse("2024-04-01T10:32:12.867081"),
+        actionedBy = "",
+        actionedByDisplayName = "",
+        createdAt = LocalDateTime.parse("2024-04-01T10:32:12.867081"),
+        createdBy = "JSMITH",
+        createdByDisplayName = "JSMITH",
+        referral = SyncReferralRequest(
+          incidentDate = LocalDate.parse("2024-06-12"),
+          incidentTypeCode = "INT",
+          incidentLocationCode = "LIB",
+          referredBy = "JIM_ADM",
+          referralDate = LocalDate.parse("2024-04-04"),
+          refererAreaCode = "EDU",
+          isSaferCustodyTeamInformed = SyncReferralRequest.IsSaferCustodyTeamInformed.NO,
+          contributoryFactors = listOf(),
+          isProactiveReferral = false,
+          isStaffAssaulted = false,
+          isReferralComplete = false,
+        ),
+      )
+
     fun dpsSyncCsipRequestFull() =
       SyncCsipRequest(
         legacyId = 1234,

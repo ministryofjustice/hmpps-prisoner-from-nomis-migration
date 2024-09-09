@@ -116,7 +116,12 @@ fun InvestigationDetails.toDPSSyncInvestigationRequest() =
     personsTrigger = trigger,
     protectiveFactors = protectiveFactors,
     interviews = interviews?.map { it.toDPSSyncInterviewRequest() } ?: listOf(),
-  )
+  ).takeUnless { isEmpty() }
+
+fun InvestigationDetails.isEmpty() =
+  staffInvolved.isNullOrEmpty() || evidenceSecured.isNullOrEmpty() || reasonOccurred.isNullOrEmpty() ||
+    usualBehaviour.isNullOrEmpty() || trigger.isNullOrEmpty() || protectiveFactors.isNullOrEmpty() ||
+    interviews.isNullOrEmpty()
 
 fun InterviewDetails.toDPSSyncInterviewRequest() =
   SyncInterviewRequest(

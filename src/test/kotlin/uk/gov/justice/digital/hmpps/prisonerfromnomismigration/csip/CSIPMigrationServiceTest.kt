@@ -33,7 +33,9 @@ import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsCsipReportSyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsSyncCsipRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsSyncCsipRequestMinimal
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPNomisApiMockServer.Companion.nomisCSIPReport
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPNomisApiMockServer.Companion.nomisCSIPReportMinimalData
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -99,6 +101,7 @@ internal class CSIPMigrationServiceTest {
       nomisApiService = nomisApiService,
       csipService = csipDpsService,
       csipMappingService = csipMappingService,
+      // csipFactorSyncService = csipFactorService,
       pageSize = 200,
       completeCheckDelaySeconds = 10,
       completeCheckCount = 9,
@@ -943,6 +946,43 @@ internal class CSIPMigrationServiceTest {
           delaySeconds = eq(0),
         )
       }
+
+    @Nested
+    @DisplayName("migrateCSIPWithMinimalData")
+    inner class MigrateCSIPMinimalData {
+
+      @BeforeEach
+      internal fun setUp(): Unit = runTest {
+        whenever(csipMappingService.getCSIPReportByNomisId(any())).thenReturn(null)
+        whenever(nomisApiService.getCSIP(any())).thenReturn(nomisCSIPReportMinimalData())
+        whenever(csipDpsService.migrateCSIP(any())).thenReturn(dpsCsipReportSyncResponse())
+        whenever(csipMappingService.createMapping(any(), any())).thenReturn(CreateMappingResult())
+      }
+
+      @Test
+      internal fun `will transform and send that csip to the csip api service`(): Unit = runTest {
+        service.migrateNomisEntity(
+          MigrationContext(
+            type = CSIP,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = CSIPIdResponse(NOMIS_CSIP_ID),
+          ),
+        )
+
+        verify(csipDpsService).migrateCSIP(eq(dpsSyncCsipRequestMinimal()))
+
+        verify(telemetryClient, times(1)).trackEvent(
+          eq("csip-migration-entity-migrated"),
+          check {
+            assertThat(it["migrationId"]).isNotNull
+            assertThat(it["nomisCSIPId"]).isNotNull
+            assertThat(it["dpsCSIPId"]).isNotNull
+          },
+          isNull(),
+        )
+      }
+    }
 
     @Nested
     inner class WhenMigratedAlready {
