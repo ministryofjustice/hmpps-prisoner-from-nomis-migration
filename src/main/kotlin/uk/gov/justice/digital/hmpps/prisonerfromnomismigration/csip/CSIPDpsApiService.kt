@@ -39,7 +39,7 @@ class CSIPDpsApiService(@Qualifier("csipApiWebClient") private val webClient: We
       .retrieve()
       .bodyToMono(SyncResponse::class.java)
       .onErrorResume(WebClientResponseException.BadRequest::class.java) {
-        log.error("Received Bad Request (400) with body " + it.responseBodyAsString)
+        log.error("Received Bad Request (400) with body {}", it.responseBodyAsString)
         throw it
       }
       .awaitSingle()
@@ -53,7 +53,7 @@ class CSIPDpsApiService(@Qualifier("csipApiWebClient") private val webClient: We
       .retrieve()
       .bodyToMono(SyncResponse::class.java)
       .onErrorResume(WebClientResponseException.BadRequest::class.java) {
-        log.error("Received Bad Request (400) with body " + it.responseBodyAsString)
+        log.error("Received Bad Request (400) with body {}", it.responseBodyAsString)
         throw it
       }
       .awaitSingle()
