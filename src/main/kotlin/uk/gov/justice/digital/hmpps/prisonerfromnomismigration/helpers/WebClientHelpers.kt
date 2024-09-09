@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers
 
+import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
@@ -20,6 +21,14 @@ suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitBodyOrNullWhenU
   this.bodyToMono<T>()
     .onErrorResume(WebClientResponseException.UnprocessableEntity::class.java) { Mono.empty() }
     .awaitSingleOrNull()
+
+suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitBodyOrLogAndRethrowBadRequest(): T =
+  this.bodyToMono<T>()
+    .onErrorResume(WebClientResponseException.BadRequest::class.java) {
+      log.error("Received Bad Request (400) with body {}", it.responseBodyAsString)
+      throw it
+    }
+    .awaitSingle()
 
 class DuplicateErrorResponse(
   val moreInfo: DuplicateErrorContent,
