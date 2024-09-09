@@ -22,6 +22,6 @@ class FeatureSwitchInfo(
 ) : InfoContributor {
 
   override fun contribute(builder: Info.Builder) {
-    builder.withDetail("event-feature-switches", eventFeatureSwitchProperties)
+    builder.withDetail("event-feature-switches", eventFeatureSwitchProperties.toSortedMap())
   }
 }
