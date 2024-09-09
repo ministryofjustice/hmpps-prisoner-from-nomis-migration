@@ -51,4 +51,24 @@ internal class EventFeatureSwitchTest : SqsIntegrationTestBase() {
       assertThat(featureSwitch.isEnabled("GENERIC_EVENT", domain = "casenote")).isFalse()
     }
   }
+
+  @Nested
+  inner class Info {
+    @Test
+    fun `should report feature switches in info endpoint`() {
+      webTestClient.get().uri("/info")
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("event-feature-switches").value<Map<String, Boolean>> {
+          assertThat(it).containsExactlyInAnyOrderEntriesOf(
+            mapOf(
+              "IEP_UPSERTED" to true,
+              "OTHER_EVENT" to false,
+              "casenote.GENERIC_EVENT" to false,
+            ),
+          )
+        }
+    }
+  }
 }
