@@ -568,7 +568,6 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
             csipDpsApi.verify(
               1,
               WireMock.patchRequestedFor(urlPathEqualTo("/csip-records/referral/contributory-factors/$dpsCSIPFactorId"))
-                .withRequestBody(matchingJsonPath("factorTypeCode", equalTo("BUL")))
                 .withRequestBody(matchingJsonPath("comment", equalTo("Offender causes trouble"))),
             )
           }

@@ -387,7 +387,6 @@ internal class CSIPDpsApiServiceTest {
       fun `will pass data to the api`() {
         csipDpsApi.verify(
           patchRequestedFor(urlEqualTo("/csip-records/referral/contributory-factors/$dpsCSIPFactorId"))
-            .withRequestBody(matchingJsonPath("factorTypeCode", equalTo("BUL")))
             .withRequestBody(matchingJsonPath("comment", equalTo("Offender causes trouble"))),
         )
       }
