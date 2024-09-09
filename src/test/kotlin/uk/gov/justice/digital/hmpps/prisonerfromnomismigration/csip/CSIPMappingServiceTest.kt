@@ -138,8 +138,8 @@ internal class CSIPMappingServiceTest {
                 equalToJson(
                   """
                   {
-                  "dpsCSIPId": "$DPS_CSIP_ID",
-                  "nomisCSIPId": $NOMIS_CSIP_ID,                                                                            
+                  "dpsCSIPReportId": "$DPS_CSIP_ID",
+                  "nomisCSIPReportId": $NOMIS_CSIP_ID,                                                                            
                   "label": "5678",
                   "mappingType": "MIGRATED",
                   "whenCreated": "2020-01-01T00:00:00"

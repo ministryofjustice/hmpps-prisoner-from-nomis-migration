@@ -105,7 +105,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
       times,
       WireMock.postRequestedFor(WireMock.urlPathEqualTo("/mapping/csip")).withRequestBody(
         WireMock.matchingJsonPath(
-          "dpsCSIPId",
+          "dpsCSIPReportId",
           WireMock.equalTo(dpsCSIPId),
         ),
       ),
@@ -135,15 +135,15 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
               "moreInfo": 
               {
                 "existing" :  {
-                  "nomisCSIPId": $nomisCSIPId,
-                  "dpsCSIPId": "$existingDPSCSIPId",
+                  "nomisCSIPReportId": $nomisCSIPId,
+                  "dpsCSIPReportId": "$existingDPSCSIPId",
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",
                   "mappingType": "NOMIS_CREATED"
                 },
                 "duplicate" : {
-                  "nomisCSIPId": $nomisCSIPId,
-                  "dpsCSIPId": "$duplicateDPSCSIPId",
+                  "nomisCSIPReportId": $nomisCSIPId,
+                  "dpsCSIPReportId": "$duplicateDPSCSIPId",
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",
                   "mappingType": "NOMIS_CREATED"
