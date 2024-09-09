@@ -134,8 +134,8 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             mappingApi.verify(
               postRequestedFor(urlPathEqualTo("/mapping/csip"))
-                .withRequestBody(matchingJsonPath("dpsCSIPId", equalTo(DPS_CSIP_ID)))
-                .withRequestBody(matchingJsonPath("nomisCSIPId", equalTo("$NOMIS_CSIP_ID"))),
+                .withRequestBody(matchingJsonPath("dpsCSIPReportId", equalTo(DPS_CSIP_ID)))
+                .withRequestBody(matchingJsonPath("nomisCSIPReportId", equalTo("$NOMIS_CSIP_ID"))),
             )
           }
         }
