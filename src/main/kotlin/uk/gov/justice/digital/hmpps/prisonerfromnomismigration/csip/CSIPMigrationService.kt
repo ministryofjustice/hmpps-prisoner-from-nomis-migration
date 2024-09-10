@@ -59,13 +59,17 @@ class CSIPMigrationService(
       }
       ?: run {
         val nomisCSIPResponse = nomisApiService.getCSIP(nomisCSIPId)
-        csipService.migrateCSIP(nomisCSIPResponse.toDPSSyncRequest())
+        csipService.migrateCSIP(nomisCSIPResponse.toDPSSyncRequest(actioned = nomisCSIPResponse.toActionDetails()))
           .also { migratedCSIP ->
             // At this point we need to determine all mappings and call the appropriate mapping endpoint
-            // TODO **** MAP ALL CHILD TABLES ****
-            // For now, just map top level report
             val dpsCSIPReportId = migratedCSIP.mappings.first { it.component == ResponseMapping.Component.RECORD }.uuid.toString()
             createCSIPReportMapping(nomisCSIPId = nomisCSIPId, dpsCSIPId = dpsCSIPReportId, context = context)
+
+            // TODO **** MAP FACTORS ****
+            // TODO **** MAP ATTENDEES ****
+            // TODO **** MAP INTERVIEWS ****
+            // TODO **** MAP PLANS ****
+            // TODO **** MAP REVIEWS ****
 
             telemetryClient.trackEvent(
               "${MigrationType.CSIP.telemetryName}-migration-entity-migrated",
