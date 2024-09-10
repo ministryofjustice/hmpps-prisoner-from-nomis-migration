@@ -24,7 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.S
 import java.time.LocalDateTime
 import java.util.UUID
 
-fun CSIPResponse.toDPSSyncRequest(dpsReportId: String? = null) =
+fun CSIPResponse.toDPSSyncRequest(dpsReportId: String? = null, actioned: ActionDetails) =
   SyncCsipRequest(
     id = dpsReportId ?.let { UUID.fromString(dpsReportId) },
     legacyId = id,
@@ -71,14 +71,22 @@ fun CSIPResponse.toDPSSyncRequest(dpsReportId: String? = null) =
     lastModifiedBy = lastModifiedBy,
     lastModifiedByDisplayName = lastModifiedByDisplayName ?: lastModifiedBy,
 
-    // TODO Add in correct value - from DW - use createDateTime - for now
-    // Assumption is it can be determined using the XTAG event that indicates which table was changed. Then it would be
-    // the values from the MODIFY_ audit columns from that table if set or the CREATE_ columns if not
-    actionedAt = LocalDateTime.parse(createDateTime),
-    // TODO Add in correct value
-    actionedBy = "",
-    // TODO Add in correct value
-    actionedByDisplayName = "",
+    actionedAt = actioned.actionedAt,
+    actionedBy = actioned.actionedBy,
+    actionedByDisplayName = actioned.actionedByDisplayName,
+  )
+
+data class ActionDetails(
+  val actionedAt: LocalDateTime,
+  val actionedBy: String,
+  val actionedByDisplayName: String,
+)
+
+fun CSIPResponse.toActionDetails() =
+  ActionDetails(
+    actionedAt = lastModifiedDateTime?.let { LocalDateTime.parse(lastModifiedDateTime) } ?: LocalDateTime.parse(createDateTime),
+    actionedBy = lastModifiedBy ?: createdBy,
+    actionedByDisplayName = lastModifiedByDisplayName ?: lastModifiedBy ?: createdByDisplayName ?: createdBy,
   )
 
 fun SaferCustodyScreening.toDPSSyncCSIPSCS() =

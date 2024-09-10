@@ -56,9 +56,9 @@ class CSIPSynchronisationService(
       }
       ?: let {
         // CSIP Report mapping doesn't exist
-        csipService.syncCSIP(nomisCSIP.toDPSSyncRequest(), nomisCSIP.createdBy)
+        csipService.syncCSIP(nomisCSIP.toDPSSyncRequest(actioned = nomisCSIP.toActionDetails()), nomisCSIP.createdBy)
           .also { syncResponse ->
-            // At this point we need to determine all mappings and call the appropriate mapping endpoints
+            // At this point we need to determine all children and call the appropriate mapping endpoints
             // For now, just map top level report
             val csipReport = syncResponse.mappings.first { it.component == ResponseMapping.Component.RECORD }
             val dpsCSIPReportId = csipReport.uuid.toString()
