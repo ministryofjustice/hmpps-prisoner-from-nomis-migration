@@ -27,8 +27,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingA
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFactorMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFullMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFullMappingDto.MappingType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReportMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReportMappingDto.MappingType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import java.util.UUID
 
@@ -102,13 +103,19 @@ internal class CSIPMappingServiceTest {
         mappingApi.stubMappingCreate(CSIP_CREATE_MAPPING_URL)
 
         csipMappingService.createMapping(
-          CSIPReportMappingDto(
+          CSIPFullMappingDto(
             dpsCSIPReportId = DPS_CSIP_ID,
             nomisCSIPReportId = NOMIS_CSIP_ID,
             label = "some-migration-id",
             mappingType = MIGRATED,
+            attendeeMappings = listOf(),
+            factorMappings = listOf(),
+            interviewMappings = listOf(),
+            planMappings = listOf(),
+            reviewMappings = listOf(),
           ),
-          object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPReportMappingDto>>() {},
+
+          object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPFullMappingDto>>() {},
         )
 
         mappingApi.verify(
@@ -119,17 +126,30 @@ internal class CSIPMappingServiceTest {
       }
 
       @Test
-      internal fun `will pass all parameters dps csip id, nomis csip id, migration Id and MIGRATED indicator to mapping service`(): Unit =
+      internal fun `will pass all parameters dps csip id, nomis csip id, migration Id, factors and MIGRATED indicator to mapping service`(): Unit =
         runTest {
+          val dpsCSIPFactorId = "081b743a-1b23-4621-90d5-111f55003c11"
           csipMappingService.createMapping(
-            CSIPReportMappingDto(
+            CSIPFullMappingDto(
               dpsCSIPReportId = DPS_CSIP_ID,
               nomisCSIPReportId = NOMIS_CSIP_ID,
               mappingType = MIGRATED,
               label = "5678",
               whenCreated = "2020-01-01T00:00:00",
+              attendeeMappings = listOf(),
+              factorMappings = listOf(
+                CSIPFactorMappingDto(
+                  nomisCSIPFactorId = 123,
+                  dpsCSIPFactorId = dpsCSIPFactorId,
+                  dpsCSIPReportId = DPS_CSIP_ID,
+                  mappingType = CSIPFactorMappingDto.MappingType.MIGRATED,
+                ),
+              ),
+              interviewMappings = listOf(),
+              planMappings = listOf(),
+              reviewMappings = listOf(),
             ),
-            errorJavaClass = object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPReportMappingDto>>() {},
+            errorJavaClass = object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPFullMappingDto>>() {},
           )
 
           mappingApi.verify(
@@ -138,11 +158,25 @@ internal class CSIPMappingServiceTest {
                 equalToJson(
                   """
                   {
-                  "dpsCSIPReportId": "$DPS_CSIP_ID",
-                  "nomisCSIPReportId": $NOMIS_CSIP_ID,                                                                            
-                  "label": "5678",
-                  "mappingType": "MIGRATED",
-                  "whenCreated": "2020-01-01T00:00:00"
+                    "dpsCSIPReportId": "$DPS_CSIP_ID",
+                    "nomisCSIPReportId": $NOMIS_CSIP_ID,                                                                            
+                    "label": "5678",
+                    "mappingType": "MIGRATED",
+                    "whenCreated": "2020-01-01T00:00:00",
+                    "attendeeMappings": [],
+                    "factorMappings": [
+                      {
+                        "nomisCSIPFactorId" : 123,
+                        "dpsCSIPFactorId" : "081b743a-1b23-4621-90d5-111f55003c11",
+                        "dpsCSIPReportId" : "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5",
+                        "mappingType" : "MIGRATED",
+                        "label" : null,
+                        "whenCreated" : null
+                      }
+                    ],
+                    "interviewMappings": [],
+                    "planMappings": [],
+                    "reviewMappings": []
                   }
                   """.trimIndent(),
                 ),
@@ -163,14 +197,19 @@ internal class CSIPMappingServiceTest {
 
         assertThrows<WebClientResponseException.InternalServerError> {
           csipMappingService.createMapping(
-            CSIPReportMappingDto(
+            CSIPFullMappingDto(
               dpsCSIPReportId = DPS_CSIP_ID,
               nomisCSIPReportId = NOMIS_CSIP_ID,
               mappingType = MIGRATED,
               label = "5678",
               whenCreated = "2020-01-01T00:00:00",
+              attendeeMappings = listOf(),
+              factorMappings = listOf(),
+              interviewMappings = listOf(),
+              planMappings = listOf(),
+              reviewMappings = listOf(),
             ),
-            object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPReportMappingDto>>() {},
+            object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPFullMappingDto>>() {},
           )
         }
       }

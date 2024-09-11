@@ -14,6 +14,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPAttendeeMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFactorMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFullMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPInterviewMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPPlanMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReportMappingDto
@@ -21,13 +22,21 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 
 @Service
 class CSIPMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) :
-  MigrationMapping<CSIPReportMappingDto>(domainUrl = "/mapping/csip", webClient) {
+  MigrationMapping<CSIPFullMappingDto>(domainUrl = "/mapping/csip", webClient) {
 
   suspend fun getCSIPReportByNomisId(nomisCSIPReportId: Long): CSIPReportMappingDto? =
     webClient.get()
       .uri("/mapping/csip/nomis-csip-id/{nomisCSIPReportId}", nomisCSIPReportId)
       .retrieve()
       .awaitBodyOrNullWhenNotFound()
+
+/** WIP
+   suspend fun getFullMappingByDPSReportId(dpsCSIPReportId: String): CSIPFullMappingDto? =
+   webClient.get()
+   .uri("/mapping/csip/dps-csip-id/{dpsCSIPReportId}/all", dpsCSIPReportId)
+   .retrieve()
+   .awaitBodyOrNullWhenNotFound()
+*/
 
   suspend fun deleteCSIPReportMappingByDPSId(dpsCSIPReportId: String) {
     webClient.delete()

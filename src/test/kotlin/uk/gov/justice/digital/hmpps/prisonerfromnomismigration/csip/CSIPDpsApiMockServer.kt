@@ -414,15 +414,30 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
       )
 
-    private fun dpsCSIPReportMapping(dpsCSIPReportId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") =
+    private fun dpsCSIPReportResponseMapping(dpsCSIPReportId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") =
       ResponseMapping(
         ResponseMapping.Component.RECORD,
         id = 1234L,
         uuid = UUID.fromString(dpsCSIPReportId),
       )
 
+    private fun dpsCSIPFactorResponseMapping(dpsCSIPFactorId: String) =
+      ResponseMapping(
+        ResponseMapping.Component.CONTRIBUTORY_FACTOR,
+        id = 1234L,
+        uuid = UUID.fromString(dpsCSIPFactorId),
+      )
+
     fun dpsCsipReportSyncResponse(dpsCSIPReportId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") =
-      SyncResponse(mappings = setOf(dpsCSIPReportMapping(dpsCSIPReportId)))
+      SyncResponse(mappings = setOf(dpsCSIPReportResponseMapping(dpsCSIPReportId)))
+
+    fun dpsCsipReportSyncResponseWithFactor(dpsCSIPFactorId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e6") =
+      SyncResponse(
+        mappings = setOf(
+          dpsCSIPReportResponseMapping(),
+          dpsCSIPFactorResponseMapping(dpsCSIPFactorId),
+        ),
+      )
 
     fun dpsCSIPReport(dpsCSIPReportId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5", logNumber: String? = null) = CsipRecord(
       recordUuid = UUID.fromString(dpsCSIPReportId),
@@ -655,6 +670,17 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withHeader("Content-Type", "application/json")
           .withStatus(CREATED.value())
           .withBody(dpsCsipReportSyncResponse(dpsCSIPReportId = dpsCSIPId)),
+      ),
+    )
+  }
+
+  fun stubSyncCSIPReportWithFactor(dpsCSIPFactorId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e6") {
+    stubFor(
+      put("/sync/csip-records").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(CREATED.value())
+          .withBody(dpsCsipReportSyncResponseWithFactor(dpsCSIPFactorId = dpsCSIPFactorId)),
       ),
     )
   }

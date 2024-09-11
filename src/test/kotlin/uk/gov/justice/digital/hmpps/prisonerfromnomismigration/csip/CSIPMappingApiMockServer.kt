@@ -15,9 +15,9 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPAttendeeMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFactorMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFullMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPInterviewMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPPlanMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReportMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReviewMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
@@ -39,12 +39,17 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
             pageContent(
               objectMapper = objectMapper,
               content = listOf(
-                CSIPReportMappingDto(
+                CSIPFullMappingDto(
                   nomisCSIPReportId = 1234,
                   dpsCSIPReportId = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5",
-                  mappingType = CSIPReportMappingDto.MappingType.MIGRATED,
+                  mappingType = CSIPFullMappingDto.MappingType.MIGRATED,
                   label = "2022-02-14T09:58:45",
                   whenCreated = whenCreated,
+                  attendeeMappings = listOf(),
+                  factorMappings = listOf(),
+                  interviewMappings = listOf(),
+                  planMappings = listOf(),
+                  reviewMappings = listOf(),
                 ),
               ),
               pageSize = 1L,
@@ -65,12 +70,17 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
             .withBody(
-              CSIPReportMappingDto(
+              CSIPFullMappingDto(
                 nomisCSIPReportId = nomisCSIPId,
                 dpsCSIPReportId = dpsCSIPId,
-                mappingType = CSIPReportMappingDto.MappingType.NOMIS_CREATED,
+                mappingType = CSIPFullMappingDto.MappingType.NOMIS_CREATED,
                 label = "2022-02-14T09:58:45",
                 whenCreated = "2020-01-01T11:10:00",
+                attendeeMappings = listOf(),
+                factorMappings = listOf(),
+                interviewMappings = listOf(),
+                planMappings = listOf(),
+                reviewMappings = listOf(),
               ),
             ),
         ),
@@ -81,6 +91,28 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
     stubGetErrorResponse(status = status, url = "/mapping/csip/nomis-csip-id/.*")
   }
 
+  fun stubGetFullMappingByDpsId(nomisCSIPId: Long = 1234, dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
+    mappingApi.stubFor(
+      get(urlPathMatching("/mapping/csip/dps-csip-id/$dpsCSIPId/all"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(
+              CSIPFullMappingDto(
+                nomisCSIPReportId = nomisCSIPId,
+                dpsCSIPReportId = dpsCSIPId,
+                mappingType = CSIPFullMappingDto.MappingType.NOMIS_CREATED,
+                attendeeMappings = listOf(),
+                factorMappings = listOf(),
+                interviewMappings = listOf(),
+                planMappings = listOf(),
+                reviewMappings = listOf(),
+              ),
+            ),
+        ),
+    )
+  }
   fun stubCSIPLatestMigration(migrationId: String) {
     mappingApi.stubFor(
       get(urlEqualTo("/mapping/csip/migrated/latest")).willReturn(
@@ -88,17 +120,37 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
           .withBody(
-            CSIPReportMappingDto(
+            CSIPFullMappingDto(
               nomisCSIPReportId = 1234,
               dpsCSIPReportId = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5",
-              mappingType = CSIPReportMappingDto.MappingType.MIGRATED,
+              mappingType = CSIPFullMappingDto.MappingType.MIGRATED,
               label = migrationId,
               whenCreated = "2020-01-01T11:10:00",
+              attendeeMappings = listOf(),
+              factorMappings = listOf(),
+              interviewMappings = listOf(),
+              planMappings = listOf(),
+              reviewMappings = listOf(),
             ),
           ),
       ),
     )
   }
+
+  fun verifyCreateCSIPFullMapping(dpsCSIPId: String, dpsCSIPFactorId: String, times: Int = 1) =
+    verify(
+      times,
+      WireMock.postRequestedFor(WireMock.urlPathEqualTo("/mapping/csip"))
+        .withRequestBody(
+          WireMock.matchingJsonPath("dpsCSIPReportId", WireMock.equalTo(dpsCSIPId)),
+        )
+        .withRequestBody(
+          WireMock.matchingJsonPath(
+            "factorMappings[0].dpsCSIPFactorId",
+            WireMock.equalTo(dpsCSIPFactorId),
+          ),
+        ),
+    )
 
   fun verifyCreateCSIPReportMapping(dpsCSIPId: String, times: Int = 1) =
     verify(
@@ -139,14 +191,24 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
                   "dpsCSIPReportId": "$existingDPSCSIPId",
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",
-                  "mappingType": "NOMIS_CREATED"
+                  "mappingType": "NOMIS_CREATED",
+                  "attendeeMappings": [],
+                  "factorMappings": [],
+                  "interviewMappings": [],
+                  "planMappings": [],
+                  "reviewMappings": []
                 },
                 "duplicate" : {
                   "nomisCSIPReportId": $nomisCSIPId,
                   "dpsCSIPReportId": "$duplicateDPSCSIPId",
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",
-                  "mappingType": "NOMIS_CREATED"
+                  "mappingType": "NOMIS_CREATED",
+                  "attendeeMappings": [],
+                  "factorMappings": [],
+                  "interviewMappings": [],
+                  "planMappings": [],
+                  "reviewMappings": []
                 }
               }
               }""",
@@ -228,6 +290,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubDeleteFactorMapping(status: HttpStatus) {
     stubDeleteErrorResponse(status = status, url = "/mapping/csip/factors/dps-csip-factor-id/.*")
   }
+
   fun verifyCreateCSIPFactorMapping(dpsCSIPFactorId: String, times: Int = 1) =
     verify(
       times,

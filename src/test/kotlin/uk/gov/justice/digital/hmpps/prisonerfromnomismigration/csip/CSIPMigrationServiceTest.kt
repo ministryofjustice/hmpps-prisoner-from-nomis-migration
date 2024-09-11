@@ -45,8 +45,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Migrati
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_ENTITY
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_STATUS_CHECK
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.RETRY_MIGRATION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFullMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFullMappingDto.MappingType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReportMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReportMappingDto.MappingType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
@@ -101,7 +102,6 @@ internal class CSIPMigrationServiceTest {
       nomisApiService = nomisApiService,
       csipService = csipDpsService,
       csipMappingService = csipMappingService,
-      // csipFactorSyncService = csipFactorService,
       pageSize = 200,
       completeCheckDelaySeconds = 10,
       completeCheckCount = 9,
@@ -902,13 +902,18 @@ internal class CSIPMigrationServiceTest {
         )
 
         verify(csipMappingService).createMapping(
-          CSIPReportMappingDto(
+          CSIPFullMappingDto(
             dpsCSIPReportId = DPS_CSIP_ID,
             nomisCSIPReportId = NOMIS_CSIP_ID,
             label = "2020-05-23T11:30:00",
             mappingType = MappingType.MIGRATED,
+            attendeeMappings = listOf(),
+            factorMappings = listOf(),
+            interviewMappings = listOf(),
+            planMappings = listOf(),
+            reviewMappings = listOf(),
           ),
-          object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPReportMappingDto>>() {},
+          object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPFullMappingDto>>() {},
         )
       }
 
@@ -921,7 +926,7 @@ internal class CSIPMigrationServiceTest {
         whenever(
           csipMappingService.createMapping(
             any(),
-            eq(object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPReportMappingDto>>() {}),
+            eq(object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPFullMappingDto>>() {}),
           ),
         ).thenThrow(
           RuntimeException("something went wrong"),
@@ -938,7 +943,7 @@ internal class CSIPMigrationServiceTest {
 
         verify(queueService).sendMessage(
           message = eq(RETRY_MIGRATION_MAPPING),
-          context = check<MigrationContext<CSIPReportMappingDto>> {
+          context = check<MigrationContext<CSIPFullMappingDto>> {
             assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
             assertThat(it.body.nomisCSIPReportId).isEqualTo(NOMIS_CSIP_ID)
             assertThat(it.body.dpsCSIPReportId).isEqualTo(DPS_CSIP_ID)
@@ -992,7 +997,7 @@ internal class CSIPMigrationServiceTest {
           CSIPReportMappingDto(
             dpsCSIPReportId = DPS_CSIP_ID,
             nomisCSIPReportId = NOMIS_CSIP_ID,
-            mappingType = MappingType.NOMIS_CREATED,
+            mappingType = CSIPReportMappingDto.MappingType.NOMIS_CREATED,
           ),
         )
       }
