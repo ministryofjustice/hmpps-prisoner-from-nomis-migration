@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-08-29.8707.6c5600d"
+    "version": "2024-09-12.8828.de1d682"
   },
   "servers": [
     {
@@ -639,7 +639,7 @@
     "/prisoners/{offenderNo}/physical-attributes": {
       "get": {
         "tags": [
-          "prison-person-resource"
+          "physical-attributes-resource"
         ],
         "summary": "Get physical attributes for a prisoner",
         "description": "Retrieves physical attributes for a prisoner and all of their aliases and bookings. Requires ROLE_NOMIS_PRISON_PERSON",
@@ -703,7 +703,7 @@
       },
       "put": {
         "tags": [
-          "prison-person-resource"
+          "physical-attributes-resource"
         ],
         "summary": "Upsert physical attributes for a prisoner",
         "description": "Upserts physical attributes on the latest booking for a prisoner, if it exists. Requires ROLE_NOMIS_PRISON_PERSON",
@@ -4628,6 +4628,16 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "visit already exists exist. The moreInfo contains the NOMIS visitId for the existing visit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -7527,10 +7537,76 @@
         }
       }
     },
+    "/prisoners/{offenderNo}/profile-details": {
+      "get": {
+        "tags": [
+          "profile-details-resource"
+        ],
+        "summary": "Get profile details for a prisoner",
+        "description": "Retrieves profile details for a prisoner and all of their aliases and bookings. Requires ROLE_NOMIS_PRISON_PERSON",
+        "operationId": "getProfileDetails",
+        "parameters": [
+          {
+            "name": "offenderNo",
+            "in": "path",
+            "description": "Offender number",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Offender number",
+              "example": "A1234AA"
+            },
+            "example": "A1234AA"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile Details Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrisonerProfileDetailsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_PRISON_PERSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Prisoner does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/prisoners/{offenderNo}/prison-person/reconciliation": {
       "get": {
         "tags": [
-          "prison-person-resource"
+          "prison-person-recon-resource"
         ],
         "summary": "Get prison person reconciliation details for a prisoner",
         "description": "Retrieves reconciliation details used to check NOMIS and DPS are aligned. Requires ROLE_NOMIS_PRISON_PERSON",
@@ -11658,7 +11734,8 @@
             "type": "string"
           },
           "moreInfo": {
-            "type": "string"
+            "type": "string",
+            "description": "For 409 errors this may contain the entity Id for the existing record that causes the duplicate"
           }
         }
       },
@@ -14024,6 +14101,9 @@
           },
           "courtAppearance": {
             "$ref": "#/components/schemas/CourtAppearanceRequest"
+          },
+          "caseReference": {
+            "type": "string"
           }
         },
         "description": "Court case create request"
@@ -16913,6 +16993,119 @@
           }
         },
         "description": "Sentence Purpose"
+      },
+      "BookingProfileDetailsResponse": {
+        "required": [
+          "bookingId",
+          "latestBooking",
+          "profileDetails",
+          "startDateTime"
+        ],
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "integer",
+            "description": "The booking's unique identifier",
+            "format": "int64",
+            "example": 1234567
+          },
+          "startDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The start date of the booking",
+            "example": "2021-07-05T10:35:17"
+          },
+          "endDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The end date of the booking, or null if the booking is still active",
+            "example": "2021-07-05T10:35:17"
+          },
+          "profileDetails": {
+            "type": "array",
+            "description": "A list of profile details for this booking",
+            "items": {
+              "$ref": "#/components/schemas/ProfileDetailsResponse"
+            }
+          },
+          "latestBooking": {
+            "type": "boolean",
+            "description": "Whether this is the latest booking or not. Note that latest does not imply active.",
+            "example": true
+          }
+        },
+        "description": "Profile details held against a booking"
+      },
+      "PrisonerProfileDetailsResponse": {
+        "required": [
+          "bookings",
+          "offenderNo"
+        ],
+        "type": "object",
+        "properties": {
+          "offenderNo": {
+            "type": "string",
+            "description": "The prisoner's unique identifier",
+            "example": "A1234AA"
+          },
+          "bookings": {
+            "type": "array",
+            "description": "A list of bookings and their profile details",
+            "items": {
+              "$ref": "#/components/schemas/BookingProfileDetailsResponse"
+            }
+          }
+        },
+        "description": "Profile details held against a prisoner"
+      },
+      "ProfileDetailsResponse": {
+        "required": [
+          "code",
+          "createDateTime",
+          "createdBy",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "The type of profile info",
+            "example": "BUILD"
+          },
+          "code": {
+            "type": "string",
+            "description": "The value of the profile info",
+            "example": "SLIM"
+          },
+          "createDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The time the profile info was created",
+            "example": "2021-07-05T10:35:17"
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "The user who created the profile info",
+            "example": "AQ425D"
+          },
+          "modifiedDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The time the profile info was last changed",
+            "example": "2021-07-05T10:35:17"
+          },
+          "modifiedBy": {
+            "type": "string",
+            "description": "The user who modified the profile info",
+            "example": "AQ425D"
+          },
+          "auditModuleName": {
+            "type": "string",
+            "description": "The name of the module that last changed the profile info, indicates if this was NOMIS or the synchronisation service",
+            "example": "DPS_SYNCHRONISATION"
+          }
+        },
+        "description": "Profile details recorded against a prisoner"
       },
       "PrisonPersonReconciliationResponse": {
         "required": [
