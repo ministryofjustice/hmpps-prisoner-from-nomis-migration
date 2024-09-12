@@ -238,7 +238,7 @@ internal class CSIPMappingServiceTest {
         csipMappingService.deleteCSIPReportMappingByDPSId(dpsCsipId)
 
         csipMappingApi.verify(
-          deleteRequestedFor(urlPathEqualTo("/mapping/csip/dps-csip-id/$dpsCsipId")),
+          deleteRequestedFor(urlPathEqualTo("/mapping/csip/dps-csip-id/$dpsCsipId/all")),
         )
       }
     }

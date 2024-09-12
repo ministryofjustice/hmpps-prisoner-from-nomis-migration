@@ -44,6 +44,7 @@ class CSIPPrisonOffenderEventListener(
               // The first grouping will all (eventually) call the same method
               "CSIP_REPORTS-INSERTED" -> csipSynchronisationService.csipReportSynchronise(sqsMessage.Message.fromJson())
               "CSIP_REPORTS-UPDATED" -> csipReportUpdated(sqsMessage.Message.fromJson())
+              "CSIP_REPORTS-DELETED" -> csipSynchronisationService.csipReportDeleted(sqsMessage.Message.fromJson())
               "CSIP_PLANS-INSERTED" -> log.debug("Insert CSIP Plan")
               "CSIP_PLANS-UPDATED" -> log.debug("Update CSIP Plan")
               "CSIP_REVIEWS-INSERTED" -> log.debug("Insert CSIP Review")
@@ -54,8 +55,6 @@ class CSIPPrisonOffenderEventListener(
               "CSIP_FACTORS-UPDATED" -> csipFactorSynchronisationService.csipFactorUpdated(sqsMessage.Message.fromJson())
               "CSIP_INTVW-INSERTED" -> log.debug("Insert CSIP Interview")
               "CSIP_INTVW-UPDATED" -> log.debug("Update CSIP Interview")
-
-              "CSIP_REPORTS-DELETED" -> csipSynchronisationService.csipReportDeleted(sqsMessage.Message.fromJson())
 
               // TODO check if needed
               // "prison-offender-events.prisoner.merged"

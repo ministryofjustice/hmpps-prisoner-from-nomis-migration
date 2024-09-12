@@ -165,7 +165,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
 
   fun stubDeleteCSIPReportMapping(dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
     mappingApi.stubFor(
-      delete(urlEqualTo("/mapping/csip/dps-csip-id/$dpsCSIPId"))
+      delete(urlEqualTo("/mapping/csip/dps-csip-id/$dpsCSIPId/all"))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -176,7 +176,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
 
   fun stubDeleteCSIPReportMapping(status: HttpStatus) {
     mappingApi.stubFor(
-      delete(urlPathMatching("/mapping/csip/dps-csip-id/.*"))
+      delete(urlPathMatching("/mapping/csip/dps-csip-id/\\S+/all"))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")

@@ -359,7 +359,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             csipMappingApi.verify(
               1,
-              WireMock.deleteRequestedFor(urlPathEqualTo("/mapping/csip/dps-csip-id/$dpsCSIPId")),
+              WireMock.deleteRequestedFor(urlPathEqualTo("/mapping/csip/dps-csip-id/$dpsCSIPId/all")),
             )
           }
         }
@@ -416,7 +416,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
 
             csipMappingApi.verify(
               1,
-              WireMock.deleteRequestedFor(urlPathEqualTo("/mapping/csip/dps-csip-id/$dpsCSIPId")),
+              WireMock.deleteRequestedFor(urlPathEqualTo("/mapping/csip/dps-csip-id/$dpsCSIPId/all")),
             )
           }
         }
