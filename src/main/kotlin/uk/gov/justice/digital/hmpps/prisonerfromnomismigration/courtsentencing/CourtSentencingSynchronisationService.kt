@@ -84,7 +84,7 @@ class CourtSentencingSynchronisationService(
   suspend fun nomisCourtAppearanceInserted(event: CourtAppearanceEvent) {
     val telemetry =
       mutableMapOf(
-        "nomisCourtAppearanceId" to event.courtAppearanceId.toString(),
+        "nomisCourtAppearanceId" to event.eventId.toString(),
         "offenderNo" to event.offenderIdDisplay,
         "nomisBookingId" to event.bookingId.toString(),
       )
@@ -94,9 +94,9 @@ class CourtSentencingSynchronisationService(
       val nomisCourtAppearance =
         nomisApiService.getCourtAppearance(
           offenderNo = event.offenderIdDisplay,
-          courtAppearanceId = event.courtAppearanceId,
+          courtAppearanceId = event.eventId,
         )
-      mappingApiService.getCourtAppearanceOrNullByNomisId(event.courtAppearanceId)?.let { mapping ->
+      mappingApiService.getCourtAppearanceOrNullByNomisId(event.eventId)?.let { mapping ->
         telemetryClient.trackEvent(
           "court-appearance-synchronisation-created-ignored",
           telemetry + ("dpsCourtAppearanceId" to mapping.dpsCourtAppearanceId) + ("reason" to "appearance already mapped"),
@@ -383,13 +383,13 @@ class CourtSentencingSynchronisationService(
     val telemetry =
       mapOf(
         "nomisBookingId" to event.bookingId.toString(),
-        "nomisCourtAppearanceId" to event.courtAppearanceId.toString(),
+        "nomisCourtAppearanceId" to event.eventId.toString(),
         "offenderNo" to event.offenderIdDisplay,
       )
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent("court-appearance-synchronisation-updated-skipped", telemetry)
     } else {
-      val mapping = mappingApiService.getCourtAppearanceOrNullByNomisId(event.courtAppearanceId)
+      val mapping = mappingApiService.getCourtAppearanceOrNullByNomisId(event.eventId)
       if (mapping == null) {
         telemetryClient.trackEvent(
           "court-appearance-synchronisation-updated-failed",
@@ -399,7 +399,7 @@ class CourtSentencingSynchronisationService(
       } else {
         val nomisCourtAppearance = nomisApiService.getCourtAppearance(
           offenderNo = event.offenderIdDisplay,
-          courtAppearanceId = event.courtAppearanceId,
+          courtAppearanceId = event.eventId,
         )
         // only dealing with appearances associated with a court case, COURT_EVENTS are created by movements also
         if (isAppearancePartOfACourtCase(nomisCourtAppearance)) {
@@ -433,11 +433,11 @@ class CourtSentencingSynchronisationService(
   suspend fun nomisCourtAppearanceDeleted(event: CourtAppearanceEvent) {
     val telemetry =
       mapOf(
-        "nomisCourtAppearanceId" to event.courtAppearanceId,
+        "nomisCourtAppearanceId" to event.eventId,
         "offenderNo" to event.offenderIdDisplay,
         "nomisBookingId" to event.bookingId,
       )
-    val mapping = mappingApiService.getCourtAppearanceOrNullByNomisId(event.courtAppearanceId)
+    val mapping = mappingApiService.getCourtAppearanceOrNullByNomisId(event.eventId)
     if (mapping == null) {
       telemetryClient.trackEvent(
         "court-appearance-synchronisation-deleted-ignored",

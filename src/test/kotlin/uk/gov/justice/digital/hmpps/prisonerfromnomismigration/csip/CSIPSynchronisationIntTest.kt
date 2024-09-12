@@ -123,6 +123,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
             csipDpsApi.verify(
               putRequestedFor(urlPathEqualTo("/sync/csip-records"))
                 .withHeader("Username", equalTo("JSMITH"))
+                .withRequestBody(matchingJsonPath("prisonNumber", equalTo("A1234BC")))
                 .withRequestBody(matchingJsonPath("referral.incidentDate", equalTo("2024-06-12")))
                 .withRequestBody(matchingJsonPath("referral.incidentTime", equalTo("10:32:12"))),
             )
