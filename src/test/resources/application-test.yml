@@ -36,11 +36,13 @@ activities:
     size: 3
   complete-check:
     delay-seconds: 1
+    count: 1
 allocations:
   page:
     size: 3
   complete-check:
     delay-seconds: 1
+    count: 1
 adjudications:
   page:
     size: 10
