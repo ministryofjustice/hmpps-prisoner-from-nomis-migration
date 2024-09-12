@@ -173,34 +173,5 @@ internal class CSIPInterviewMappingServiceTest {
         }
       }
     }
-
-    @Nested
-    inner class DeleteCSIPInterviewMapping {
-      private val dpsCsipInterviewId = UUID.randomUUID().toString()
-
-      @Test
-      internal fun `will pass oath2 token to service`() = runTest {
-        csipMappingApi.stubDeleteInterviewMapping(dpsCsipInterviewId)
-
-        csipMappingService.deleteCSIPInterviewMappingByDPSId(dpsCsipInterviewId)
-
-        csipMappingApi.verify(
-          WireMock.deleteRequestedFor(WireMock.anyUrl())
-            .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
-        )
-      }
-
-      @Test
-      internal fun `will pass id to service`() = runTest {
-        val dpsCsipInterviewId = "a04f7a8d-61aa-400c-9395-f4dc62f36ab0"
-        csipMappingApi.stubDeleteInterviewMapping(dpsCsipInterviewId)
-
-        csipMappingService.deleteCSIPInterviewMappingByDPSId(dpsCsipInterviewId)
-
-        csipMappingApi.verify(
-          WireMock.deleteRequestedFor(WireMock.urlPathEqualTo("/mapping/csip/interviews/dps-csip-interview-id/$dpsCsipInterviewId")),
-        )
-      }
-    }
   }
 }

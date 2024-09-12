@@ -51,13 +51,6 @@ class CSIPMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient)
       .retrieve()
       .awaitBodyOrNullWhenNotFound()
 
-  suspend fun deleteCSIPFactorMappingByDPSId(dpsCSIPFactorId: String) {
-    webClient.delete()
-      .uri("/mapping/csip/factors/dps-csip-factor-id/{dpsCSIPFactorId}", dpsCSIPFactorId)
-      .retrieve()
-      .awaitBodilessEntity()
-  }
-
   suspend fun createCSIPFactorMapping(
     mapping: CSIPFactorMappingDto,
   ): CreateMappingResult<CSIPFactorMappingDto> {
@@ -80,13 +73,6 @@ class CSIPMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient)
       .uri("/mapping/csip/plans/nomis-csip-plan-id/{nomisCSIPPlanId}", nomisCSIPPlanId)
       .retrieve()
       .awaitBodyOrNullWhenNotFound()
-
-  suspend fun deleteCSIPPlanMappingByDPSId(dpsCSIPPlanId: String) {
-    webClient.delete()
-      .uri("/mapping/csip/plans/dps-csip-plan-id/{dpsCSIPPlanId}", dpsCSIPPlanId)
-      .retrieve()
-      .awaitBodilessEntity()
-  }
 
   suspend fun createCSIPPlanMapping(
     mapping: CSIPPlanMappingDto,
@@ -111,13 +97,6 @@ class CSIPMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient)
       .retrieve()
       .awaitBodyOrNullWhenNotFound()
 
-  suspend fun deleteCSIPReviewMappingByDPSId(dpsCSIPReviewId: String) {
-    webClient.delete()
-      .uri("/mapping/csip/reviews/dps-csip-review-id/{dpsCSIPReviewId}", dpsCSIPReviewId)
-      .retrieve()
-      .awaitBodilessEntity()
-  }
-
   suspend fun createCSIPReviewMapping(
     mapping: CSIPReviewMappingDto,
   ): CreateMappingResult<CSIPReviewMappingDto> {
@@ -141,13 +120,6 @@ class CSIPMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient)
       .retrieve()
       .awaitBodyOrNullWhenNotFound()
 
-  suspend fun deleteCSIPAttendeeMappingByDPSId(dpsCSIPAttendeeId: String) {
-    webClient.delete()
-      .uri("/mapping/csip/attendees/dps-csip-attendee-id/{dpsCSIPAttendeeId}", dpsCSIPAttendeeId)
-      .retrieve()
-      .awaitBodilessEntity()
-  }
-
   suspend fun createCSIPAttendeeMapping(
     mapping: CSIPAttendeeMappingDto,
   ): CreateMappingResult<CSIPAttendeeMappingDto> {
@@ -170,13 +142,6 @@ class CSIPMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient)
       .uri("/mapping/csip/interviews/nomis-csip-interview-id/{nomisCSIPInterviewId}", nomisCSIPInterviewId)
       .retrieve()
       .awaitBodyOrNullWhenNotFound()
-
-  suspend fun deleteCSIPInterviewMappingByDPSId(dpsCSIPInterviewId: String) {
-    webClient.delete()
-      .uri("/mapping/csip/interviews/dps-csip-interview-id/{dpsCSIPInterviewId}", dpsCSIPInterviewId)
-      .retrieve()
-      .awaitBodilessEntity()
-  }
 
   suspend fun createCSIPInterviewMapping(
     mapping: CSIPInterviewMappingDto,
