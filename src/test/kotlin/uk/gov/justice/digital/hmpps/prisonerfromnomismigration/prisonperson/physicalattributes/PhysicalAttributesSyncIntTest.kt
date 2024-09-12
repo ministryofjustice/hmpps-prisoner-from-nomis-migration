@@ -31,13 +31,13 @@ import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.time.LocalDateTime
 import java.time.ZoneId
 
-class PhysAttrSyncIntTest : SqsIntegrationTestBase() {
+class PhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
 
   @Autowired
-  private lateinit var physAttrNomisApi: PhysAttrNomisApiMockServer
+  private lateinit var nomisApi: PhysicalAttributesNomisApiMockServer
 
   @Autowired
-  private lateinit var physAttrDpsApi: PhysAttrDpsApiMockServer
+  private lateinit var dpsApi: PhysicalAttributesDpsApiMockServer
 
   private val now = LocalDateTime.now()
   private val yesterday = now.minusDays(1)
@@ -51,7 +51,7 @@ class PhysAttrSyncIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `should sync new physical attributes`() {
-        physAttrNomisApi.stubGetPhysicalAttributes(
+        nomisApi.stubGetPhysicalAttributes(
           offenderNo,
           aPrisonerPhysicalAttributesResponse(
             bookings = listOf(
@@ -70,7 +70,7 @@ class PhysAttrSyncIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
-        physAttrDpsApi.stubSyncPhysicalAttributes(aResponse())
+        dpsApi.stubSyncPhysicalAttributes(aResponse())
 
         sendPhysicalAttributesChangedEvent()
 
@@ -89,7 +89,7 @@ class PhysAttrSyncIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `should ignore a new empty booking (when a new prisoner is created)`() {
-        physAttrNomisApi.stubGetPhysicalAttributes(
+        nomisApi.stubGetPhysicalAttributes(
           offenderNo,
           aPrisonerPhysicalAttributesResponse(
             bookings = listOf(
@@ -114,7 +114,7 @@ class PhysAttrSyncIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `should sync last created physical attributes`() {
-        physAttrNomisApi.stubGetPhysicalAttributes(
+        nomisApi.stubGetPhysicalAttributes(
           offenderNo,
           aPrisonerPhysicalAttributesResponse(
             bookings = listOf(
@@ -140,7 +140,7 @@ class PhysAttrSyncIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
-        physAttrDpsApi.stubSyncPhysicalAttributes(aResponse())
+        dpsApi.stubSyncPhysicalAttributes(aResponse())
 
         sendPhysicalAttributesChangedEvent()
 
@@ -155,7 +155,7 @@ class PhysAttrSyncIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `should sync last modified physical attributes`() {
-        physAttrNomisApi.stubGetPhysicalAttributes(
+        nomisApi.stubGetPhysicalAttributes(
           offenderNo,
           aPrisonerPhysicalAttributesResponse(
             bookings = listOf(
@@ -182,7 +182,7 @@ class PhysAttrSyncIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
-        physAttrDpsApi.stubSyncPhysicalAttributes(aResponse())
+        dpsApi.stubSyncPhysicalAttributes(aResponse())
 
         sendPhysicalAttributesChangedEvent()
 
@@ -199,7 +199,7 @@ class PhysAttrSyncIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `should ignore physical attributes updated by the synchronisation service`() {
-        physAttrNomisApi.stubGetPhysicalAttributes(
+        nomisApi.stubGetPhysicalAttributes(
           offenderNo,
           aPrisonerPhysicalAttributesResponse(
             bookings = listOf(
@@ -228,7 +228,7 @@ class PhysAttrSyncIntTest : SqsIntegrationTestBase() {
     inner class MultipleBookings {
       @Test
       fun `should sync the latest booking`() {
-        physAttrNomisApi.stubGetPhysicalAttributes(
+        nomisApi.stubGetPhysicalAttributes(
           offenderNo,
           aPrisonerPhysicalAttributesResponse(
             bookings = listOf(
@@ -258,7 +258,7 @@ class PhysAttrSyncIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
-        physAttrDpsApi.stubSyncPhysicalAttributes(aResponse())
+        dpsApi.stubSyncPhysicalAttributes(aResponse())
 
         sendPhysicalAttributesChangedEvent(bookingId = 12345)
 
@@ -276,7 +276,7 @@ class PhysAttrSyncIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `should sync a historical booking`() {
-        physAttrNomisApi.stubGetPhysicalAttributes(
+        nomisApi.stubGetPhysicalAttributes(
           offenderNo,
           aPrisonerPhysicalAttributesResponse(
             bookings = listOf(
@@ -307,7 +307,7 @@ class PhysAttrSyncIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
-        physAttrDpsApi.stubSyncPhysicalAttributes(aResponse())
+        dpsApi.stubSyncPhysicalAttributes(aResponse())
 
         sendPhysicalAttributesChangedEvent(bookingId = 12344)
 
@@ -325,7 +325,7 @@ class PhysAttrSyncIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `should sync a historical booking on and old attribute seq`() {
-        physAttrNomisApi.stubGetPhysicalAttributes(
+        nomisApi.stubGetPhysicalAttributes(
           offenderNo,
           aPrisonerPhysicalAttributesResponse(
             bookings = listOf(
@@ -364,7 +364,7 @@ class PhysAttrSyncIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
-        physAttrDpsApi.stubSyncPhysicalAttributes(aResponse())
+        dpsApi.stubSyncPhysicalAttributes(aResponse())
 
         sendPhysicalAttributesChangedEvent(bookingId = 12344)
 
@@ -383,7 +383,7 @@ class PhysAttrSyncIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `should sync a historical booking which is the latest booking`() {
-        physAttrNomisApi.stubGetPhysicalAttributes(
+        nomisApi.stubGetPhysicalAttributes(
           offenderNo,
           aPrisonerPhysicalAttributesResponse(
             bookings = listOf(
@@ -404,7 +404,7 @@ class PhysAttrSyncIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
-        physAttrDpsApi.stubSyncPhysicalAttributes(aResponse())
+        dpsApi.stubSyncPhysicalAttributes(aResponse())
 
         sendPhysicalAttributesChangedEvent(bookingId = 12344)
 
@@ -427,7 +427,7 @@ class PhysAttrSyncIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `should put message on DLQ if NOMIS returns error`() = runTest {
-        physAttrNomisApi.stubGetPhysicalAttributes(NOT_FOUND)
+        nomisApi.stubGetPhysicalAttributes(NOT_FOUND)
 
         sendPhysicalAttributesChangedEvent()
 
@@ -436,8 +436,8 @@ class PhysAttrSyncIntTest : SqsIntegrationTestBase() {
             awsSqsPrisonPersonOffenderEventDlqClient.countAllMessagesOnQueue(prisonPersonQueueOffenderEventsDlqUrl).get(),
           ).isEqualTo(1)
         }
-        physAttrNomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/physical-attributes")))
-        physAttrDpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/prisoners/A1234AA/physical-attributes")))
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/physical-attributes")))
+        dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/prisoners/A1234AA/physical-attributes")))
         verify(telemetryClient).trackEvent(
           eq("physical-attributes-synchronisation-error"),
           check {
@@ -451,8 +451,8 @@ class PhysAttrSyncIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `should put message on DLQ if DPS returns error`() = runTest {
-        physAttrNomisApi.stubGetPhysicalAttributes(offenderNo, aPrisonerPhysicalAttributesResponse())
-        physAttrDpsApi.stubSyncPhysicalAttributes(BAD_REQUEST)
+        nomisApi.stubGetPhysicalAttributes(offenderNo, aPrisonerPhysicalAttributesResponse())
+        dpsApi.stubSyncPhysicalAttributes(BAD_REQUEST)
 
         sendPhysicalAttributesChangedEvent()
 
@@ -461,8 +461,8 @@ class PhysAttrSyncIntTest : SqsIntegrationTestBase() {
             awsSqsPrisonPersonOffenderEventDlqClient.countAllMessagesOnQueue(prisonPersonQueueOffenderEventsDlqUrl).get(),
           ).isEqualTo(1)
         }
-        physAttrNomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/physical-attributes")))
-        physAttrDpsApi.verify(putRequestedFor(urlPathEqualTo("/sync/prisoners/A1234AA/physical-attributes")))
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/physical-attributes")))
+        dpsApi.verify(putRequestedFor(urlPathEqualTo("/sync/prisoners/A1234AA/physical-attributes")))
         verify(telemetryClient).trackEvent(
           eq("physical-attributes-synchronisation-error"),
           check {
@@ -477,7 +477,7 @@ class PhysAttrSyncIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `should put message on DLQ if booking has no physical attributes`() = runTest {
-        physAttrNomisApi.stubGetPhysicalAttributes(
+        nomisApi.stubGetPhysicalAttributes(
           offenderNo,
           aPrisonerPhysicalAttributesResponse(bookings = listOf(aBookingResponse(bookingId = 12345))),
         )
@@ -489,8 +489,8 @@ class PhysAttrSyncIntTest : SqsIntegrationTestBase() {
             awsSqsPrisonPersonOffenderEventDlqClient.countAllMessagesOnQueue(prisonPersonQueueOffenderEventsDlqUrl).get(),
           ).isEqualTo(1)
         }
-        physAttrNomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/physical-attributes")))
-        physAttrDpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/prisoners/A1234AA/physical-attributes")))
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/physical-attributes")))
+        dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/prisoners/A1234AA/physical-attributes")))
         verify(telemetryClient).trackEvent(
           eq("physical-attributes-synchronisation-error"),
           check {
@@ -584,11 +584,11 @@ class PhysAttrSyncIntTest : SqsIntegrationTestBase() {
       dpsUpdates: Map<String, StringValuePattern> = mapOf(),
     ) {
       // We should always call the NOMIS API
-      physAttrNomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/physical-attributes")))
+      nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/physical-attributes")))
 
       // For updates verify we sent the correct details to the DPS API
       if (type == "updated") {
-        physAttrDpsApi.verify(
+        dpsApi.verify(
           putRequestedFor(urlPathEqualTo("/sync/prisoners/A1234AA/physical-attributes"))
             .apply {
               dpsUpdates.forEach { (jsonPath, pattern) ->
@@ -598,7 +598,7 @@ class PhysAttrSyncIntTest : SqsIntegrationTestBase() {
         )
       } else {
         // If not updated we shouldn't call the DPS API
-        physAttrDpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/prisoners/A1234AA/physical-attributes")))
+        dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/prisoners/A1234AA/physical-attributes")))
       }
 
       verify(telemetryClient).trackEvent(

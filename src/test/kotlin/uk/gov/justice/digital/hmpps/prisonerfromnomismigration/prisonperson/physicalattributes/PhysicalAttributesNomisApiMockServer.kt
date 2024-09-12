@@ -17,7 +17,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Component
-class PhysAttrNomisApiMockServer(private val objectMapper: ObjectMapper) {
+class PhysicalAttributesNomisApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubGetPhysicalAttributes(
     offenderNo: String = "A1234AA",
     response: PrisonerPhysicalAttributesResponse = PrisonerPhysicalAttributesResponse(

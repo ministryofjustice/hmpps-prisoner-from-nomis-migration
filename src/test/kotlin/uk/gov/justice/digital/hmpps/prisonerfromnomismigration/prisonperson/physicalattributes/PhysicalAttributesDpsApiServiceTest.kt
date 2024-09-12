@@ -22,13 +22,13 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 
 @SpringAPIServiceTest
-@Import(PhysAttrDpsApiService::class, PrisonPersonConfiguration::class, PhysAttrDpsApiMockServer::class)
-class PhysAttrDpsApiServiceTest {
+@Import(PhysicalAttributesDpsApiService::class, PrisonPersonConfiguration::class, PhysicalAttributesDpsApiMockServer::class)
+class PhysicalAttributesDpsApiServiceTest {
   @Autowired
-  private lateinit var apiService: PhysAttrDpsApiService
+  private lateinit var apiService: PhysicalAttributesDpsApiService
 
   @Autowired
-  private lateinit var physAttrDpsApi: PhysAttrDpsApiMockServer
+  private lateinit var dpsApi: PhysicalAttributesDpsApiMockServer
 
   @Nested
   inner class SyncPhysicalAttributes {
@@ -43,11 +43,11 @@ class PhysAttrDpsApiServiceTest {
 
     @Test
     fun `should pass auth token to the service`() = runTest {
-      physAttrDpsApi.stubSyncPhysicalAttributes(aResponse())
+      dpsApi.stubSyncPhysicalAttributes(aResponse())
 
       apiService.syncPhysicalAttributes(prisonerNumber, height, weight, appliesFrom, appliesTo, latestBooking, createdAt, createdBy)
 
-      physAttrDpsApi.verify(
+      dpsApi.verify(
         putRequestedFor(urlPathMatching("/sync/prisoners/$prisonerNumber/physical-attributes"))
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
@@ -55,11 +55,11 @@ class PhysAttrDpsApiServiceTest {
 
     @Test
     fun `should pass data to the service`() = runTest {
-      physAttrDpsApi.stubSyncPhysicalAttributes(aResponse())
+      dpsApi.stubSyncPhysicalAttributes(aResponse())
 
       apiService.syncPhysicalAttributes(prisonerNumber, height, weight, appliesFrom, appliesTo, latestBooking, createdAt, createdBy)
 
-      physAttrDpsApi.verify(
+      dpsApi.verify(
         putRequestedFor(urlPathMatching("/sync/prisoners/$prisonerNumber/physical-attributes"))
           .withRequestBody(matchingJsonPath("height", equalTo(height.toString())))
           .withRequestBody(matchingJsonPath("weight", equalTo(weight.toString())))
@@ -72,11 +72,11 @@ class PhysAttrDpsApiServiceTest {
 
     @Test
     fun `should not pass null data to the service`() = runTest {
-      physAttrDpsApi.stubSyncPhysicalAttributes(aResponse())
+      dpsApi.stubSyncPhysicalAttributes(aResponse())
 
       apiService.syncPhysicalAttributes(prisonerNumber, null, null, appliesFrom, null, latestBooking, createdAt, createdBy)
 
-      physAttrDpsApi.verify(
+      dpsApi.verify(
         putRequestedFor(urlPathMatching("/sync/prisoners/$prisonerNumber/physical-attributes"))
           .withRequestBody(matchingJsonPath("height", absent()))
           .withRequestBody(matchingJsonPath("weight", absent()))
@@ -86,7 +86,7 @@ class PhysAttrDpsApiServiceTest {
 
     @Test
     fun `should parse the response`() = runTest {
-      physAttrDpsApi.stubSyncPhysicalAttributes(aResponse(ids = listOf(321)))
+      dpsApi.stubSyncPhysicalAttributes(aResponse(ids = listOf(321)))
 
       val response = apiService.syncPhysicalAttributes(prisonerNumber, height, weight, appliesFrom, appliesTo, latestBooking, createdAt, createdBy)
 
@@ -95,7 +95,7 @@ class PhysAttrDpsApiServiceTest {
 
     @Test
     fun `should throw when API returns an error`() = runTest {
-      physAttrDpsApi.stubSyncPhysicalAttributes(INTERNAL_SERVER_ERROR)
+      dpsApi.stubSyncPhysicalAttributes(INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.syncPhysicalAttributes(prisonerNumber, height, weight, appliesFrom, appliesTo, latestBooking, createdAt, createdBy)
@@ -117,7 +117,7 @@ class PhysAttrDpsApiServiceTest {
 
     @Test
     fun `should pass auth token to the service`() = runTest {
-      physAttrDpsApi.stubMigratePhysicalAttributes(prisonerNumber, aResponse())
+      dpsApi.stubMigratePhysicalAttributes(prisonerNumber, aResponse())
 
       apiService.migratePhysicalAttributes(
         prisonerNumber,
@@ -125,7 +125,7 @@ class PhysAttrDpsApiServiceTest {
           apiService.migratePhysicalAttributesRequest(height, weight, appliesFrom, appliesTo, createdAt, createdBy),
         ),
       )
-      physAttrDpsApi.verify(
+      dpsApi.verify(
         putRequestedFor(urlPathMatching("/migration/prisoners/$prisonerNumber/physical-attributes"))
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
@@ -133,7 +133,7 @@ class PhysAttrDpsApiServiceTest {
 
     @Test
     fun `should pass data to the service`() = runTest {
-      physAttrDpsApi.stubMigratePhysicalAttributes(prisonerNumber, aResponse())
+      dpsApi.stubMigratePhysicalAttributes(prisonerNumber, aResponse())
 
       apiService.migratePhysicalAttributes(
         prisonerNumber,
@@ -142,7 +142,7 @@ class PhysAttrDpsApiServiceTest {
         ),
       )
 
-      physAttrDpsApi.verify(
+      dpsApi.verify(
         putRequestedFor(urlPathMatching("/migration/prisoners/$prisonerNumber/physical-attributes"))
           .withRequestBody(matchingJsonPath("$[0].height", equalTo(height.toString())))
           .withRequestBody(matchingJsonPath("$[0].weight", equalTo(weight.toString())))
@@ -155,7 +155,7 @@ class PhysAttrDpsApiServiceTest {
 
     @Test
     fun `should not pass null data to the service`() = runTest {
-      physAttrDpsApi.stubMigratePhysicalAttributes(prisonerNumber, aResponse())
+      dpsApi.stubMigratePhysicalAttributes(prisonerNumber, aResponse())
 
       apiService.migratePhysicalAttributes(
         prisonerNumber,
@@ -164,7 +164,7 @@ class PhysAttrDpsApiServiceTest {
         ),
       )
 
-      physAttrDpsApi.verify(
+      dpsApi.verify(
         putRequestedFor(urlPathMatching("/migration/prisoners/$prisonerNumber/physical-attributes"))
           .withRequestBody(matchingJsonPath("$[0].height", absent()))
           .withRequestBody(matchingJsonPath("$[0].weight", absent()))
@@ -174,7 +174,7 @@ class PhysAttrDpsApiServiceTest {
 
     @Test
     fun `should parse the response`() = runTest {
-      physAttrDpsApi.stubMigratePhysicalAttributes(prisonerNumber, aResponse())
+      dpsApi.stubMigratePhysicalAttributes(prisonerNumber, aResponse())
 
       val response = apiService.migratePhysicalAttributes(
         prisonerNumber,
@@ -188,7 +188,7 @@ class PhysAttrDpsApiServiceTest {
 
     @Test
     fun `should throw when API returns an error`() = runTest {
-      physAttrDpsApi.stubMigratePhysicalAttributes(INTERNAL_SERVER_ERROR)
+      dpsApi.stubMigratePhysicalAttributes(INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.migratePhysicalAttributes(

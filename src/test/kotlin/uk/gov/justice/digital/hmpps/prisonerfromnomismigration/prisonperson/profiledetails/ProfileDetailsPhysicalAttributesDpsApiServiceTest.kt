@@ -23,13 +23,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.mode
 import java.time.LocalDateTime
 
 @SpringAPIServiceTest
-@Import(ProfDetPhysAttrDpsApiService::class, PrisonPersonConfiguration::class, ProfDetPhysAttrDpsApiMockServer::class)
-class ProfDetPhysAttrDpsApiServiceTest {
+@Import(ProfileDetailPhysicalAttributesDpsApiService::class, PrisonPersonConfiguration::class, ProfileDetailsPhysicalAttributesDpsApiMockServer::class)
+class ProfileDetailsPhysicalAttributesDpsApiServiceTest {
   @Autowired
-  private lateinit var apiService: ProfDetPhysAttrDpsApiService
+  private lateinit var apiService: ProfileDetailPhysicalAttributesDpsApiService
 
   @Autowired
-  private lateinit var profDetPhysAttrDpsApi: ProfDetPhysAttrDpsApiMockServer
+  private lateinit var dpsApi: ProfileDetailsPhysicalAttributesDpsApiMockServer
 
   @Nested
   inner class MigratePhysicalAttributes {
@@ -45,11 +45,11 @@ class ProfDetPhysAttrDpsApiServiceTest {
 
     @Test
     fun `should pass auth token to the service`() = runTest {
-      profDetPhysAttrDpsApi.stubMigrateProfDetPhysAttrs(prisonerNumber, aResponse())
+      dpsApi.stubMigrateProfileDetailsPhysicalAttributes(prisonerNumber, aResponse())
 
-      apiService.migrateProfDetPhysAttr(prisonerNumber, aRequest())
+      apiService.migrateProfileDetailsPhysicalAttributes(prisonerNumber, aRequest())
 
-      profDetPhysAttrDpsApi.verify(
+      dpsApi.verify(
         putRequestedFor(urlPathMatching("/migration/prisoners/$prisonerNumber/profile-details-physical-attributes"))
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
@@ -57,11 +57,11 @@ class ProfDetPhysAttrDpsApiServiceTest {
 
     @Test
     fun `should pass data to the service`() = runTest {
-      profDetPhysAttrDpsApi.stubMigrateProfDetPhysAttrs(prisonerNumber, aResponse())
+      dpsApi.stubMigrateProfileDetailsPhysicalAttributes(prisonerNumber, aResponse())
 
-      apiService.migrateProfDetPhysAttr(prisonerNumber, aRequest())
+      apiService.migrateProfileDetailsPhysicalAttributes(prisonerNumber, aRequest())
 
-      profDetPhysAttrDpsApi.verify(
+      dpsApi.verify(
         putRequestedFor(urlPathMatching("/migration/prisoners/$prisonerNumber/profile-details-physical-attributes"))
           .withRequestBody(matchingJsonPath("[0].appliesFrom", equalTo(appliesFrom.atPrisonPersonZone())))
           .withRequestBody(matchingJsonPath("[0].appliesTo", equalTo(appliesTo.atPrisonPersonZone())))
@@ -76,11 +76,11 @@ class ProfDetPhysAttrDpsApiServiceTest {
 
     @Test
     fun `should not pass null data to the service`() = runTest {
-      profDetPhysAttrDpsApi.stubMigrateProfDetPhysAttrs(prisonerNumber, aResponse())
+      dpsApi.stubMigrateProfileDetailsPhysicalAttributes(prisonerNumber, aResponse())
 
-      apiService.migrateProfDetPhysAttr(prisonerNumber, aRequest())
+      apiService.migrateProfileDetailsPhysicalAttributes(prisonerNumber, aRequest())
 
-      profDetPhysAttrDpsApi.verify(
+      dpsApi.verify(
         putRequestedFor(urlPathMatching("/migration/prisoners/$prisonerNumber/profile-details-physical-attributes"))
           .withRequestBody(matchingJsonPath("[0].hair", absent()))
           .withRequestBody(matchingJsonPath("[0].facialHair", absent()))
@@ -92,19 +92,19 @@ class ProfDetPhysAttrDpsApiServiceTest {
 
     @Test
     fun `should parse the response`() = runTest {
-      profDetPhysAttrDpsApi.stubMigrateProfDetPhysAttrs(prisonerNumber, aResponse())
+      dpsApi.stubMigrateProfileDetailsPhysicalAttributes(prisonerNumber, aResponse())
 
-      val response = apiService.migrateProfDetPhysAttr(prisonerNumber, aRequest())
+      val response = apiService.migrateProfileDetailsPhysicalAttributes(prisonerNumber, aRequest())
 
       assertThat(response.fieldHistoryInserted).containsExactly(321)
     }
 
     @Test
     fun `should throw when API returns an error`() = runTest {
-      profDetPhysAttrDpsApi.stubMigrateProfDetPhysAttrs(INTERNAL_SERVER_ERROR)
+      dpsApi.stubMigrateProfileDetailsPhysicalAttributes(INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.migrateProfDetPhysAttr(prisonerNumber, aRequest())
+        apiService.migrateProfileDetailsPhysicalAttributes(prisonerNumber, aRequest())
       }
     }
 

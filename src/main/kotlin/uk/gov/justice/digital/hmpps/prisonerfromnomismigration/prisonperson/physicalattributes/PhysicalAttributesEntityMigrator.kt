@@ -9,9 +9,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.mode
 import java.time.LocalDateTime
 
 @Service
-class PhysAttrEntityMigrator(
-  private val nomisApiService: PhysAttrNomisApiService,
-  private val dpsApiService: PhysAttrDpsApiService,
+class PhysicalAttributesEntityMigrator(
+  private val nomisApiService: PhysicalAttributesNomisApiService,
+  private val dpsApiService: PhysicalAttributesDpsApiService,
 ) : PrisonPersonEntityMigrator {
 
   override suspend fun migrate(offenderNo: String): DpsResponse =

@@ -21,7 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.Pris
 @RestController
 @RequestMapping("/migrate/prisonperson/physical-attributes", produces = [MediaType.APPLICATION_JSON_VALUE])
 @Tag(name = "prison-person-migration-resource")
-class PhysAttrMigrationResource(
+class PhysicalAttributesMigrationResource(
   private val migrationService: PrisonPersonMigrationService,
 ) {
   @PreAuthorize("hasRole('ROLE_MIGRATE_PRISONPERSON')")

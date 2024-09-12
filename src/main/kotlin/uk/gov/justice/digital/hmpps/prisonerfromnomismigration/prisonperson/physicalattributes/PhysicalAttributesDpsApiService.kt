@@ -12,7 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.mode
 import java.time.LocalDateTime
 
 @Service
-class PhysAttrDpsApiService(@Qualifier("prisonPersonApiWebClient") private val webClient: WebClient) {
+class PhysicalAttributesDpsApiService(@Qualifier("prisonPersonApiWebClient") private val webClient: WebClient) {
 
   suspend fun syncPhysicalAttributes(
     prisonerNumber: String,
