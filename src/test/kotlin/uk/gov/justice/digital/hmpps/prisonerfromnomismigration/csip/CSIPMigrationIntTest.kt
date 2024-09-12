@@ -35,6 +35,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import java.time.Duration
 import java.time.LocalDateTime
+import java.util.UUID
 
 class CSIPMigrationIntTest : SqsIntegrationTestBase() {
   companion object {
@@ -135,7 +136,6 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
       }
     }
 
-    // / TODO Add test for minimal nomis prisoner api data
     @Test
     internal fun `will add analytical events for starting, ending and each migrated record`() {
       csipNomisApi.stubGetInitialCount(CSIP_ID_URL, 26) { csipIdsPagedResponse(it) }
@@ -226,6 +226,52 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
         },
         isNull(),
       )
+    }
+
+    @DisplayName("POST /migrate/csip with Contributory Factors")
+    @Nested
+    inner class MigrateWithFactors {
+      @Test
+      internal fun `will map contributor factors`() {
+        val dpsCSIPFactorId = UUID.randomUUID().toString()
+        csipNomisApi.stubGetInitialCount(CSIP_ID_URL, 2) { csipIdsPagedResponse(it) }
+        csipNomisApi.stubGetPagedCSIPIds(totalElements = 2, pageSize = 10)
+        csipNomisApi.stubMultipleGetCSIP(1..2)
+
+        csipMappingApi.stubGetByNomisId(status = HttpStatus.NOT_FOUND)
+        mappingApi.stubMappingCreate(CSIP_CREATE_MAPPING_URL)
+
+        csipDpsApi.stubSyncCSIPReportWithFactor(dpsCSIPFactorId)
+
+        csipMappingApi.stubCSIPMappingByMigrationId(count = 2)
+
+        webTestClient.performMigration(
+          """
+          {
+            "fromDate": "2020-01-01",
+            "toDate": "2020-01-02"
+          }
+          """.trimIndent(),
+        )
+
+        // check filter matches what is passed in
+        csipNomisApi.verifyGetIdsCount(
+          url = "/csip/ids",
+          fromDate = "2020-01-01",
+          toDate = "2020-01-02",
+        )
+
+        await untilAsserted {
+          assertThat(csipDpsApi.syncCSIPCount()).isEqualTo(2)
+        }
+        assertThat(
+          csipMappingApi.verifyCreateCSIPFullMapping(
+            dpsCSIPId = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5",
+            dpsCSIPFactorId = dpsCSIPFactorId,
+            times = 2,
+          ),
+        )
+      }
     }
   }
 

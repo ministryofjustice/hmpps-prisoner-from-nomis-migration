@@ -7,11 +7,10 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.MappingResponse.MAPPING_FAILED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ResponseMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReportMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFullMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
@@ -60,8 +59,7 @@ class CSIPSynchronisationService(
           .also { syncResponse ->
             // At this point we need to determine all children and call the appropriate mapping endpoints
             // For now, just map top level report
-            val csipReport = syncResponse.mappings.first { it.component == ResponseMapping.Component.RECORD }
-            val dpsCSIPReportId = csipReport.uuid.toString()
+            val dpsCSIPReportId = syncResponse.filterReport().uuid.toString()
 
             tryToCreateCSIPReportMapping(event, dpsCSIPReportId).also { result ->
               val mappingSuccessTelemetry =
@@ -320,15 +318,20 @@ class CSIPSynchronisationService(
     event: CSIPReportEvent,
     dpsCSIPId: String,
   ): MappingResponse {
-    val mapping = CSIPReportMappingDto(
+    val mapping = CSIPFullMappingDto(
       nomisCSIPReportId = event.csipReportId,
       dpsCSIPReportId = dpsCSIPId,
-      mappingType = CSIPReportMappingDto.MappingType.NOMIS_CREATED,
+      mappingType = CSIPFullMappingDto.MappingType.NOMIS_CREATED,
+      attendeeMappings = listOf(),
+      factorMappings = listOf(),
+      interviewMappings = listOf(),
+      planMappings = listOf(),
+      reviewMappings = listOf(),
     )
     try {
       mappingApiService.createMapping(
         mapping,
-        object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPReportMappingDto>>() {},
+        object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPFullMappingDto>>() {},
       ).also {
         if (it.isError) {
           val duplicateErrorDetails = (it.errorResponse!!).moreInfo
@@ -360,10 +363,10 @@ class CSIPSynchronisationService(
     }
   }
 
-  suspend fun retryCreateCSIPReportMapping(retryMessage: InternalMessage<CSIPReportMappingDto>) {
+  suspend fun retryCreateCSIPReportMapping(retryMessage: InternalMessage<CSIPFullMappingDto>) {
     mappingApiService.createMapping(
       retryMessage.body,
-      object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPReportMappingDto>>() {},
+      object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPFullMappingDto>>() {},
     ).also {
       telemetryClient.trackEvent(
         "csip-synchronisation-mapping-created-success",

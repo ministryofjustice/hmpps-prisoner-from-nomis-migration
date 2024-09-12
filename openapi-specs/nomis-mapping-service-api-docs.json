@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-09-06.4991.44d38e5"
+    "version": "2024-09-11.5027.937f319"
   },
   "servers": [
     {
@@ -1620,7 +1620,14 @@
         },
         "responses": {
           "201": {
-            "description": "Mapping entry created"
+            "description": "Mapping entry created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CSIPReviewMapping"
+                }
+              }
+            }
           },
           "401": {
             "description": "Unauthorized to access this endpoint",
@@ -1665,7 +1672,14 @@
         },
         "responses": {
           "201": {
-            "description": "Mapping entry created"
+            "description": "Mapping entry created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CSIPPlanMapping"
+                }
+              }
+            }
           },
           "401": {
             "description": "Unauthorized to access this endpoint",
@@ -1710,7 +1724,14 @@
         },
         "responses": {
           "201": {
-            "description": "Mapping entry created"
+            "description": "Mapping entry created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CSIPInterviewMapping"
+                }
+              }
+            }
           },
           "401": {
             "description": "Unauthorized to access this endpoint",
@@ -1755,7 +1776,14 @@
         },
         "responses": {
           "201": {
-            "description": "Mapping entry created"
+            "description": "Mapping entry created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CSIPFactorMapping"
+                }
+              }
+            }
           },
           "401": {
             "description": "Unauthorized to access this endpoint",
@@ -1800,6 +1828,58 @@
         },
         "responses": {
           "201": {
+            "description": "Mapping entry created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CSIPAttendeeMapping"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Indicates a duplicate csip has been rejected. If Error code = 409 the body will return a DuplicateErrorResponse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateMappingErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/csip/all": {
+      "post": {
+        "tags": [
+          "csip-mapping-resource"
+        ],
+        "summary": "Creates a new CSIP Report mapping along with any associated children",
+        "description": "Creates a mapping between a Nomis CSIP report id and DPS CSIP report id and all its children. Requires role NOMIS_CSIP",
+        "operationId": "createMappingWithChildren",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CSIPReportMappingDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
             "description": "Mapping entry created"
           },
           "401": {
@@ -1818,6 +1898,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DuplicateMappingErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "csip-mapping-resource"
+        ],
+        "summary": "Deletes CSIP mappings.",
+        "description": "Deletes all rows from the csip mapping table. Requires role NOMIS_CSIP",
+        "operationId": "deleteAllMappings",
+        "parameters": [
+          {
+            "name": "onlyMigrated",
+            "in": "query",
+            "description": "if true delete mapping entries created by the migration process only (synchronisation records are unaffected)",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "example": true
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "CSIP mappings deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -5287,7 +5410,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CSIPReportMappingDto"
+                  "$ref": "#/components/schemas/CSIPFullMappingDto"
                 }
               }
             }
@@ -5319,7 +5442,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CSIPReportMappingDto"
+                  "$ref": "#/components/schemas/CSIPFullMappingDto"
                 }
               }
             }
@@ -8262,8 +8385,8 @@
         "tags": [
           "csip-mapping-resource"
         ],
-        "summary": "Deletes a specific CSIP mapping by DPS CSIP id",
-        "description": "Deletes a mapping by DPS id. Requires role NOMIS_CSIP",
+        "summary": "Deletes a specific CSIP report mapping by DPS CSIP id and its associated children",
+        "description": "Deletes a mapping by DPS id and any children. Requires role NOMIS_CSIP",
         "operationId": "deleteMapping_2",
         "parameters": [
           {
@@ -8281,52 +8404,7 @@
         ],
         "responses": {
           "204": {
-            "description": "CSIP mapping deleted"
-          },
-          "401": {
-            "description": "Unauthorized to access this endpoint",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/mapping/csip/all": {
-      "delete": {
-        "tags": [
-          "csip-mapping-resource"
-        ],
-        "summary": "Deletes CSIP mappings.",
-        "description": "Deletes all rows from the csip mapping table. Requires role NOMIS_CSIP",
-        "operationId": "deleteAllMappings",
-        "parameters": [
-          {
-            "name": "onlyMigrated",
-            "in": "query",
-            "description": "if true delete mapping entries created by the migration process only (synchronisation records are unaffected)",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "default": false
-            },
-            "example": true
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "CSIP mappings deleted",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
+            "description": "CSIP mappings deleted"
           },
           "401": {
             "description": "Unauthorized to access this endpoint",
@@ -9811,6 +9889,55 @@
         },
         "description": "CSIP Review mapping"
       },
+      "CSIPReviewMapping": {
+        "required": [
+          "dpsCSIPReportId",
+          "dpsCSIPReviewId",
+          "id",
+          "isNew",
+          "mappingType",
+          "new",
+          "nomisCSIPReviewId"
+        ],
+        "type": "object",
+        "properties": {
+          "dpsCSIPReviewId": {
+            "type": "string"
+          },
+          "dpsCSIPReportId": {
+            "type": "string"
+          },
+          "nomisCSIPReviewId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "label": {
+            "type": "string"
+          },
+          "mappingType": {
+            "type": "string",
+            "enum": [
+              "MIGRATED",
+              "NOMIS_CREATED",
+              "DPS_CREATED"
+            ]
+          },
+          "new": {
+            "type": "boolean"
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "example": "2021-07-05T10:35:17"
+          },
+          "id": {
+            "type": "string"
+          },
+          "isNew": {
+            "type": "boolean"
+          }
+        }
+      },
       "CSIPPlanMappingDto": {
         "required": [
           "dpsCSIPPlanId",
@@ -9856,6 +9983,55 @@
           }
         },
         "description": "CSIP Plan mapping"
+      },
+      "CSIPPlanMapping": {
+        "required": [
+          "dpsCSIPPlanId",
+          "dpsCSIPReportId",
+          "id",
+          "isNew",
+          "mappingType",
+          "new",
+          "nomisCSIPPlanId"
+        ],
+        "type": "object",
+        "properties": {
+          "dpsCSIPPlanId": {
+            "type": "string"
+          },
+          "dpsCSIPReportId": {
+            "type": "string"
+          },
+          "nomisCSIPPlanId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "label": {
+            "type": "string"
+          },
+          "mappingType": {
+            "type": "string",
+            "enum": [
+              "MIGRATED",
+              "NOMIS_CREATED",
+              "DPS_CREATED"
+            ]
+          },
+          "new": {
+            "type": "boolean"
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "example": "2021-07-05T10:35:17"
+          },
+          "id": {
+            "type": "string"
+          },
+          "isNew": {
+            "type": "boolean"
+          }
+        }
       },
       "CSIPInterviewMappingDto": {
         "required": [
@@ -9903,6 +10079,55 @@
         },
         "description": "CSIP Interview mapping"
       },
+      "CSIPInterviewMapping": {
+        "required": [
+          "dpsCSIPInterviewId",
+          "dpsCSIPReportId",
+          "id",
+          "isNew",
+          "mappingType",
+          "new",
+          "nomisCSIPInterviewId"
+        ],
+        "type": "object",
+        "properties": {
+          "dpsCSIPInterviewId": {
+            "type": "string"
+          },
+          "dpsCSIPReportId": {
+            "type": "string"
+          },
+          "nomisCSIPInterviewId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "label": {
+            "type": "string"
+          },
+          "mappingType": {
+            "type": "string",
+            "enum": [
+              "MIGRATED",
+              "NOMIS_CREATED",
+              "DPS_CREATED"
+            ]
+          },
+          "new": {
+            "type": "boolean"
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "example": "2021-07-05T10:35:17"
+          },
+          "id": {
+            "type": "string"
+          },
+          "isNew": {
+            "type": "boolean"
+          }
+        }
+      },
       "CSIPFactorMappingDto": {
         "required": [
           "dpsCSIPFactorId",
@@ -9949,6 +10174,55 @@
         },
         "description": "CSIP Factor mapping"
       },
+      "CSIPFactorMapping": {
+        "required": [
+          "dpsCSIPFactorId",
+          "dpsCSIPReportId",
+          "id",
+          "isNew",
+          "mappingType",
+          "new",
+          "nomisCSIPFactorId"
+        ],
+        "type": "object",
+        "properties": {
+          "dpsCSIPFactorId": {
+            "type": "string"
+          },
+          "dpsCSIPReportId": {
+            "type": "string"
+          },
+          "nomisCSIPFactorId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "label": {
+            "type": "string"
+          },
+          "mappingType": {
+            "type": "string",
+            "enum": [
+              "MIGRATED",
+              "NOMIS_CREATED",
+              "DPS_CREATED"
+            ]
+          },
+          "new": {
+            "type": "boolean"
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "example": "2021-07-05T10:35:17"
+          },
+          "id": {
+            "type": "string"
+          },
+          "isNew": {
+            "type": "boolean"
+          }
+        }
+      },
       "CSIPAttendeeMappingDto": {
         "required": [
           "dpsCSIPAttendeeId",
@@ -9994,6 +10268,55 @@
           }
         },
         "description": "CSIP Attendee mapping"
+      },
+      "CSIPAttendeeMapping": {
+        "required": [
+          "dpsCSIPAttendeeId",
+          "dpsCSIPReportId",
+          "id",
+          "isNew",
+          "mappingType",
+          "new",
+          "nomisCSIPAttendeeId"
+        ],
+        "type": "object",
+        "properties": {
+          "dpsCSIPAttendeeId": {
+            "type": "string"
+          },
+          "dpsCSIPReportId": {
+            "type": "string"
+          },
+          "nomisCSIPAttendeeId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "label": {
+            "type": "string"
+          },
+          "mappingType": {
+            "type": "string",
+            "enum": [
+              "MIGRATED",
+              "NOMIS_CREATED",
+              "DPS_CREATED"
+            ]
+          },
+          "new": {
+            "type": "boolean"
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "example": "2021-07-05T10:35:17"
+          },
+          "id": {
+            "type": "string"
+          },
+          "isNew": {
+            "type": "boolean"
+          }
+        }
       },
       "CSIPReportMappingDto": {
         "required": [
@@ -10863,6 +11186,7 @@
           "dpsCSIPReportId",
           "factorMappings",
           "interviewMappings",
+          "mappingType",
           "nomisCSIPReportId",
           "planMappings",
           "reviewMappings"
@@ -10871,12 +11195,33 @@
         "properties": {
           "nomisCSIPReportId": {
             "type": "integer",
-            "description": "NOMIS CSIP Report Id",
+            "description": "NOMIS CSIP Report id",
             "format": "int64"
           },
           "dpsCSIPReportId": {
             "type": "string",
             "description": "CSIP Report id from DPS CSIP service"
+          },
+          "label": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": "string",
+            "description": "Label (a timestamp for migrated ids)"
+          },
+          "mappingType": {
+            "type": "string",
+            "description": "Mapping type",
+            "enum": [
+              "MIGRATED",
+              "NOMIS_CREATED",
+              "DPS_CREATED"
+            ]
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "Date-time the mapping was created",
+            "example": "2021-07-05T10:35:17"
           },
           "attendeeMappings": {
             "type": "array",
@@ -10913,7 +11258,8 @@
               "$ref": "#/components/schemas/CSIPReviewMappingDto"
             }
           }
-        }
+        },
+        "description": "Full CSIP mapping"
       },
       "CourtCaseMappingDto": {
         "required": [
