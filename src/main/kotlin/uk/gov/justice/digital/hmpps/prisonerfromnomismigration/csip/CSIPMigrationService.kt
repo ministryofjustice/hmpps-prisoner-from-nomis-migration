@@ -6,12 +6,11 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ResponseMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReportMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFullMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
@@ -26,7 +25,7 @@ class CSIPMigrationService(
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
 
-) : MigrationService<CSIPMigrationFilter, CSIPIdResponse, CSIPReportMappingDto>(
+) : MigrationService<CSIPMigrationFilter, CSIPIdResponse, CSIPFullMappingDto>(
   mappingService = csipMappingService,
   migrationType = MigrationType.CSIP,
   pageSize = pageSize,
@@ -50,31 +49,37 @@ class CSIPMigrationService(
 
   override suspend fun migrateNomisEntity(context: MigrationContext<CSIPIdResponse>) {
     log.info("attempting to migrate $this")
-    val nomisCSIPId = context.body.csipId
+    val nomisCSIPReportId = context.body.csipId
     val migrationId = context.migrationId
 
-    csipMappingService.getCSIPReportByNomisId(nomisCSIPId)
+    csipMappingService.getCSIPReportByNomisId(nomisCSIPReportId)
       ?.run {
-        log.info("Will not migrate the CSIP $nomisCSIPId since it was already mapped to DPS CSIP ${this.dpsCSIPReportId} during migration ${this.label}")
+        log.info("Will not migrate the CSIP $nomisCSIPReportId since it was already mapped to DPS CSIP ${this.dpsCSIPReportId} during migration ${this.label}")
       }
       ?: run {
-        val nomisCSIPResponse = nomisApiService.getCSIP(nomisCSIPId)
+        val nomisCSIPResponse = nomisApiService.getCSIP(nomisCSIPReportId)
         csipService.migrateCSIP(nomisCSIPResponse.toDPSSyncRequest(actioned = nomisCSIPResponse.toActionDetails()))
-          .also { migratedCSIP ->
+          .also { syncResponse ->
             // At this point we need to determine all mappings and call the appropriate mapping endpoint
-            val dpsCSIPReportId = migratedCSIP.mappings.first { it.component == ResponseMapping.Component.RECORD }.uuid.toString()
-            createCSIPReportMapping(nomisCSIPId = nomisCSIPId, dpsCSIPId = dpsCSIPReportId, context = context)
-
-            // TODO **** MAP FACTORS ****
-            // TODO **** MAP ATTENDEES ****
-            // TODO **** MAP INTERVIEWS ****
-            // TODO **** MAP PLANS ****
-            // TODO **** MAP REVIEWS ****
-
+            val dpsCSIPReportId = syncResponse.filterReport().uuid.toString()
+            createMapping(
+              context,
+              CSIPFullMappingDto(
+                nomisCSIPReportId = nomisCSIPReportId,
+                dpsCSIPReportId = dpsCSIPReportId,
+                label = migrationId,
+                mappingType = CSIPFullMappingDto.MappingType.MIGRATED,
+                attendeeMappings = syncResponse.filterAttendees(dpsCSIPReportId = dpsCSIPReportId, label = migrationId),
+                factorMappings = syncResponse.filterFactors(dpsCSIPReportId = dpsCSIPReportId, label = migrationId),
+                interviewMappings = syncResponse.filterInterviews(dpsCSIPReportId = dpsCSIPReportId, label = migrationId),
+                planMappings = syncResponse.filterPlans(dpsCSIPReportId = dpsCSIPReportId, label = migrationId),
+                reviewMappings = syncResponse.filterReviews(dpsCSIPReportId = dpsCSIPReportId, label = migrationId),
+              ),
+            )
             telemetryClient.trackEvent(
               "${MigrationType.CSIP.telemetryName}-migration-entity-migrated",
               mapOf(
-                "nomisCSIPId" to nomisCSIPId,
+                "nomisCSIPId" to nomisCSIPReportId,
                 "dpsCSIPId" to dpsCSIPReportId,
                 "migrationId" to migrationId,
               ),
@@ -83,50 +88,46 @@ class CSIPMigrationService(
       }
   }
 
-  private suspend fun createCSIPReportMapping(
-    nomisCSIPId: Long,
-    dpsCSIPId: String,
-    context: MigrationContext<*>,
-  ) = try {
-    csipMappingService.createMapping(
-      CSIPReportMappingDto(
-        nomisCSIPReportId = nomisCSIPId,
-        dpsCSIPReportId = dpsCSIPId,
-        label = context.migrationId,
-        mappingType = CSIPReportMappingDto.MappingType.MIGRATED,
-      ),
-      object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPReportMappingDto>>() {},
-    ).also {
-      if (it.isError) {
-        val duplicateErrorDetails = (it.errorResponse!!).moreInfo
-        telemetryClient.trackEvent(
-          "${MigrationType.CSIP.telemetryName}-nomis-migration-duplicate",
-          mapOf(
-            "migrationId" to context.migrationId,
-            "existingNomisCSIPId" to duplicateErrorDetails.existing.nomisCSIPReportId,
-            "duplicateNomisCSIPId" to duplicateErrorDetails.duplicate.nomisCSIPReportId,
-            "existingDPSCSIPId" to duplicateErrorDetails.existing.dpsCSIPReportId,
-            "duplicateDPSCSIPId" to duplicateErrorDetails.duplicate.dpsCSIPReportId,
-            "durationMinutes" to context.durationMinutes(),
+  private suspend fun createMapping(context: MigrationContext<CSIPIdResponse>, fullMappingDto: CSIPFullMappingDto) =
+    try {
+      csipMappingService.createMapping(fullMappingDto, object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPFullMappingDto>>() {})
+        .also {
+          if (it.isError) {
+            val duplicateErrorDetails = (it.errorResponse!!).moreInfo
+            telemetryClient.trackEvent(
+              "${MigrationType.CSIP.telemetryName}-nomis-migration-duplicate",
+              mapOf(
+                "migrationId" to context.migrationId,
+                "existingNomisCSIPId" to duplicateErrorDetails.existing.nomisCSIPReportId,
+                "duplicateNomisCSIPId" to duplicateErrorDetails.duplicate.nomisCSIPReportId,
+                "existingDPSCSIPId" to duplicateErrorDetails.existing.dpsCSIPReportId,
+                "duplicateDPSCSIPId" to duplicateErrorDetails.duplicate.dpsCSIPReportId,
+                "durationMinutes" to context.durationMinutes(),
+              ),
+            )
+          }
+        }
+    } catch (e: Exception) {
+      log.error(
+        "Failed to create mapping for nomisCSIPId: ${fullMappingDto.nomisCSIPReportId}, dpsCSIPId ${fullMappingDto.dpsCSIPReportId}" +
+          " or one of its children",
+        e,
+      )
+      queueService.sendMessage(
+        MigrationMessageType.RETRY_MIGRATION_MAPPING,
+        MigrationContext(
+          context = context,
+          body = CSIPFullMappingDto(
+            nomisCSIPReportId = fullMappingDto.nomisCSIPReportId,
+            dpsCSIPReportId = fullMappingDto.dpsCSIPReportId,
+            mappingType = CSIPFullMappingDto.MappingType.MIGRATED,
+            attendeeMappings = listOf(),
+            factorMappings = listOf(),
+            interviewMappings = listOf(),
+            planMappings = listOf(),
+            reviewMappings = listOf(),
           ),
-        )
-      }
-    }
-  } catch (e: Exception) {
-    log.error(
-      "Failed to create mapping for nomisCSIPId: $nomisCSIPId, dpsCSIPId $dpsCSIPId",
-      e,
-    )
-    queueService.sendMessage(
-      MigrationMessageType.RETRY_MIGRATION_MAPPING,
-      MigrationContext(
-        context = context,
-        body = CSIPReportMappingDto(
-          nomisCSIPReportId = nomisCSIPId,
-          dpsCSIPReportId = dpsCSIPId,
-          mappingType = CSIPReportMappingDto.MappingType.MIGRATED,
         ),
-      ),
-    )
-  }
+      )
+    }
 }

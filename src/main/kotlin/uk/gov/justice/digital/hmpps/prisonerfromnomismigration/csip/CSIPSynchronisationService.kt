@@ -7,11 +7,10 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.MappingResponse.MAPPING_FAILED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ResponseMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReportMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFullMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
@@ -60,8 +59,7 @@ class CSIPSynchronisationService(
           .also { syncResponse ->
             // At this point we need to determine all children and call the appropriate mapping endpoints
             // For now, just map top level report
-            val csipReport = syncResponse.mappings.first { it.component == ResponseMapping.Component.RECORD }
-            val dpsCSIPReportId = csipReport.uuid.toString()
+            val dpsCSIPReportId = syncResponse.filterReport().uuid.toString()
 
             tryToCreateCSIPReportMapping(event, dpsCSIPReportId).also { result ->
               val mappingSuccessTelemetry =
@@ -149,69 +147,6 @@ class CSIPSynchronisationService(
         "csip-synchronisation-deleted-ignored",
         event.toTelemetryProperties(),
       )
-    }
-  }
-
-  suspend fun csipPlanDeleted(event: CSIPPlanEvent) {
-    val telemetry =
-      mutableMapOf(
-        "nomisCSIPReportId" to event.csipReportId,
-        "offenderNo" to event.offenderIdDisplay,
-        "nomisCSIPPlanId" to event.csipPlanId,
-      )
-    mappingApiService.getCSIPPlanByNomisId(nomisCSIPPlanId = event.csipPlanId)
-      ?.let { mapping ->
-        log.debug("Found csip plan mapping: {}", mapping)
-        csipService.deleteCSIPPlan(mapping.dpsCSIPPlanId)
-        tryToDeleteCSIPPlanMapping(mapping.dpsCSIPPlanId)
-        telemetryClient.trackEvent(
-          "csip-plan-synchronisation-deleted-success",
-          telemetry + ("dpsCSIPPlanId" to mapping.dpsCSIPPlanId),
-        )
-      } ?: let {
-      telemetryClient.trackEvent("csip-plan-synchronisation-deleted-ignored", telemetry)
-    }
-  }
-
-  suspend fun csipInterviewDeleted(event: CSIPInterviewEvent) {
-    val telemetry =
-      mutableMapOf(
-        "nomisCSIPReportId" to event.csipReportId,
-        "offenderNo" to event.offenderIdDisplay,
-        "nomisCSIPInterviewId" to event.csipInterviewId,
-      )
-    mappingApiService.getCSIPInterviewByNomisId(nomisCSIPInterviewId = event.csipInterviewId)
-      ?.let { mapping ->
-        log.debug("Found csip interview mapping: {}", mapping)
-        csipService.deleteCSIPInterview(mapping.dpsCSIPInterviewId)
-        tryToDeleteCSIPInterviewMapping(mapping.dpsCSIPInterviewId)
-        telemetryClient.trackEvent(
-          "csip-interview-synchronisation-deleted-success",
-          telemetry + ("dpsCSIPInterviewId" to mapping.dpsCSIPInterviewId),
-        )
-      } ?: let {
-      telemetryClient.trackEvent("csip-interview-synchronisation-deleted-ignored", telemetry)
-    }
-  }
-
-  suspend fun csipAttendeeDeleted(event: CSIPAttendeeEvent) {
-    val telemetry =
-      mutableMapOf(
-        "nomisCSIPReportId" to event.csipReportId,
-        "offenderNo" to event.offenderIdDisplay,
-        "nomisCSIPAttendeeId" to event.csipAttendeeId,
-      )
-    mappingApiService.getCSIPAttendeeByNomisId(nomisCSIPAttendeeId = event.csipAttendeeId)
-      ?.let { mapping ->
-        log.debug("Found csip attendee mapping: {}", mapping)
-        csipService.deleteCSIPAttendee(mapping.dpsCSIPAttendeeId)
-        tryToDeleteCSIPAttendeeMapping(mapping.dpsCSIPAttendeeId)
-        telemetryClient.trackEvent(
-          "csip-attendee-synchronisation-deleted-success",
-          telemetry + ("dpsCSIPAttendeeId" to mapping.dpsCSIPAttendeeId),
-        )
-      } ?: let {
-      telemetryClient.trackEvent("csip-attendee-synchronisation-deleted-ignored", telemetry)
     }
   }
 
@@ -320,15 +255,20 @@ class CSIPSynchronisationService(
     event: CSIPReportEvent,
     dpsCSIPId: String,
   ): MappingResponse {
-    val mapping = CSIPReportMappingDto(
+    val mapping = CSIPFullMappingDto(
       nomisCSIPReportId = event.csipReportId,
       dpsCSIPReportId = dpsCSIPId,
-      mappingType = CSIPReportMappingDto.MappingType.NOMIS_CREATED,
+      mappingType = CSIPFullMappingDto.MappingType.NOMIS_CREATED,
+      attendeeMappings = listOf(),
+      factorMappings = listOf(),
+      interviewMappings = listOf(),
+      planMappings = listOf(),
+      reviewMappings = listOf(),
     )
     try {
       mappingApiService.createMapping(
         mapping,
-        object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPReportMappingDto>>() {},
+        object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPFullMappingDto>>() {},
       ).also {
         if (it.isError) {
           val duplicateErrorDetails = (it.errorResponse!!).moreInfo
@@ -360,10 +300,10 @@ class CSIPSynchronisationService(
     }
   }
 
-  suspend fun retryCreateCSIPReportMapping(retryMessage: InternalMessage<CSIPReportMappingDto>) {
+  suspend fun retryCreateCSIPReportMapping(retryMessage: InternalMessage<CSIPFullMappingDto>) {
     mappingApiService.createMapping(
       retryMessage.body,
-      object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPReportMappingDto>>() {},
+      object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPFullMappingDto>>() {},
     ).also {
       telemetryClient.trackEvent(
         "csip-synchronisation-mapping-created-success",
@@ -377,27 +317,6 @@ class CSIPSynchronisationService(
   }.onFailure { e ->
     telemetryClient.trackEvent("csip-mapping-deleted-failed", mapOf("dpsCSIPId" to dpsCSIPId))
     log.warn("Unable to delete mapping for csip report $dpsCSIPId. Please delete manually", e)
-  }
-
-  private suspend fun tryToDeleteCSIPPlanMapping(dpsCSIPPlanId: String) = runCatching {
-    mappingApiService.deleteCSIPPlanMappingByDPSId(dpsCSIPPlanId)
-  }.onFailure { e ->
-    telemetryClient.trackEvent("csip-plan-mapping-deleted-failed", mapOf("dpsCSIPPlanId" to dpsCSIPPlanId))
-    log.warn("Unable to delete mapping for csip plan $dpsCSIPPlanId. Please delete manually", e)
-  }
-
-  private suspend fun tryToDeleteCSIPInterviewMapping(dpsCSIPInterviewId: String) = runCatching {
-    mappingApiService.deleteCSIPInterviewMappingByDPSId(dpsCSIPInterviewId)
-  }.onFailure { e ->
-    telemetryClient.trackEvent("csip-interview-mapping-deleted-failed", mapOf("dpsCSIPInterviewId" to dpsCSIPInterviewId))
-    log.warn("Unable to delete mapping for csip interview $dpsCSIPInterviewId. Please delete manually", e)
-  }
-
-  private suspend fun tryToDeleteCSIPAttendeeMapping(dpsCSIPAttendeeId: String) = runCatching {
-    mappingApiService.deleteCSIPAttendeeMappingByDPSId(dpsCSIPAttendeeId)
-  }.onFailure { e ->
-    telemetryClient.trackEvent("csip-attendee-mapping-deleted-failed", mapOf("dpsCSIPAttendeeId" to dpsCSIPAttendeeId))
-    log.warn("Unable to delete mapping for csip attendee $dpsCSIPAttendeeId. Please delete manually", e)
   }
 }
 

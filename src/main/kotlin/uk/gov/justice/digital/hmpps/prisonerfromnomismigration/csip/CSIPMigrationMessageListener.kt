@@ -8,7 +8,7 @@ import io.opentelemetry.instrumentation.annotations.WithSpan
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.Message
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReportMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFullMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CSIP_QUEUE_ID
@@ -20,7 +20,7 @@ import java.util.concurrent.CompletableFuture
 class CSIPMigrationMessageListener(
   objectMapper: ObjectMapper,
   csipMigrationService: CSIPMigrationService,
-) : MigrationMessageListener<CSIPMigrationFilter, CSIPIdResponse, CSIPResponse, CSIPReportMappingDto>(
+) : MigrationMessageListener<CSIPMigrationFilter, CSIPIdResponse, CSIPResponse, CSIPFullMappingDto>(
   objectMapper,
   csipMigrationService,
 ) {
@@ -43,7 +43,7 @@ class CSIPMigrationMessageListener(
     return objectMapper.readValue(json)
   }
 
-  override fun parseContextMapping(json: String): MigrationMessage<*, CSIPReportMappingDto> {
+  override fun parseContextMapping(json: String): MigrationMessage<*, CSIPFullMappingDto> {
     return objectMapper.readValue(json)
   }
 }
