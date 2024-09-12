@@ -28,7 +28,7 @@ fun CSIPResponse.toDPSSyncRequest(dpsReportId: String? = null, actioned: ActionD
   SyncCsipRequest(
     id = dpsReportId ?.let { UUID.fromString(dpsReportId) },
     legacyId = id,
-    prisonNumber = originalAgencyId!!,
+    prisonNumber = offender.offenderNo,
     logCode = logNumber,
     activeCaseloadId = originalAgencyId,
 

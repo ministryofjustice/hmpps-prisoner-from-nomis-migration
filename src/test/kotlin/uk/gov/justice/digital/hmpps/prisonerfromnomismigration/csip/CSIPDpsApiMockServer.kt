@@ -89,7 +89,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
         legacyId = 1234,
         id = null,
         logCode = "ASI-001",
-        prisonNumber = "MDI",
+        prisonNumber = "A1234BC",
         prisonCodeWhenRecorded = null,
         activeCaseloadId = "MDI",
         actionedAt = LocalDateTime.parse("2024-04-01T10:32:12.867081"),
@@ -238,7 +238,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
       SyncCsipRequest(
         legacyId = 1234,
         logCode = "ASI-001",
-        prisonNumber = "MDI",
+        prisonNumber = "A1234BC",
         activeCaseloadId = "MDI",
         actionedAt = LocalDateTime.parse("2024-04-01T10:32:12.867081"),
         actionedBy = "JSMITH",
