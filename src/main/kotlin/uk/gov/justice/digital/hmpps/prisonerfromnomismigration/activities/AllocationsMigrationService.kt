@@ -37,8 +37,8 @@ class AllocationsMigrationService(
   private val allocationsMappingService: AllocationsMappingService,
   private val activityMappingService: ActivitiesMappingService,
   @Value("\${allocations.page.size:50}") pageSize: Long,
-  @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
-  @Value("\${complete-check.count}") completeCheckCount: Int,
+  @Value("\${allocations.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
+  @Value("\${allocations.complete-check.count}") completeCheckCount: Int,
 ) : MigrationService<AllocationsMigrationFilter, FindActiveAllocationIdsResponse, AllocationMigrationMappingDto>(
   mappingService = allocationsMappingService,
   migrationType = MigrationType.ALLOCATIONS,

@@ -31,8 +31,8 @@ class ActivitiesMigrationService(
   private val activitiesApiService: ActivitiesApiService,
   private val activitiesMappingService: ActivitiesMappingService,
   @Value("\${activities.page.size:20}") pageSize: Long,
-  @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
-  @Value("\${complete-check.count}") completeCheckCount: Int,
+  @Value("\${activities.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
+  @Value("\${activities.complete-check.count}") completeCheckCount: Int,
 ) : MigrationService<ActivitiesMigrationFilter, FindActiveActivityIdsResponse, ActivityMigrationMappingDto>(
   mappingService = activitiesMappingService,
   migrationType = ACTIVITIES,
