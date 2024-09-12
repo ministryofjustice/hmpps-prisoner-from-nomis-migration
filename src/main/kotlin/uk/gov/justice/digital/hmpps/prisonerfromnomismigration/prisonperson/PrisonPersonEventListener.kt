@@ -13,12 +13,12 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.physicalattributes.PhysAttrSyncService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.physicalattributes.PhysicalAttributesSyncService
 import java.util.concurrent.CompletableFuture
 
 @Service
 class PrisonPersonEventListener(
-  private val physAttrSyncService: PhysAttrSyncService,
+  private val physicalAttributesSyncService: PhysicalAttributesSyncService,
   private val objectMapper: ObjectMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
 ) {
@@ -38,7 +38,7 @@ class PrisonPersonEventListener(
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
           if (eventFeatureSwitch.isEnabled(eventType, "prisonperson")) {
             when (eventType) {
-              "OFFENDER_PHYSICAL_ATTRIBUTES-CHANGED" -> physAttrSyncService.physicalAttributesChanged(sqsMessage.Message.fromJson())
+              "OFFENDER_PHYSICAL_ATTRIBUTES-CHANGED" -> physicalAttributesSyncService.physicalAttributesChanged(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {

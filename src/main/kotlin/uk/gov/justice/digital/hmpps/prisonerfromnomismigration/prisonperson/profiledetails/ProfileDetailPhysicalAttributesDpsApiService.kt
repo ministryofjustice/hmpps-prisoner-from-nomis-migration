@@ -8,8 +8,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.mode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.ProfileDetailsPhysicalAttributesMigrationResponse
 
 @Service
-class ProfDetPhysAttrDpsApiService(@Qualifier("prisonPersonApiWebClient") private val webClient: WebClient) {
-  suspend fun migrateProfDetPhysAttr(
+class ProfileDetailPhysicalAttributesDpsApiService(@Qualifier("prisonPersonApiWebClient") private val webClient: WebClient) {
+  suspend fun migrateProfileDetailsPhysicalAttributes(
     prisonerNumber: String,
     requests: List<ProfileDetailsPhysicalAttributesMigrationRequest>,
   ): ProfileDetailsPhysicalAttributesMigrationResponse =

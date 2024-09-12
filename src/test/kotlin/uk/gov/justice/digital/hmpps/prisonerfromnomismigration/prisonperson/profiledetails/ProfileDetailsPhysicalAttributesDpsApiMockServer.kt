@@ -12,9 +12,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.Pris
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.ProfileDetailsPhysicalAttributesMigrationResponse
 
 @Component
-class ProfDetPhysAttrDpsApiMockServer {
+class ProfileDetailsPhysicalAttributesDpsApiMockServer {
 
-  fun stubMigrateProfDetPhysAttrs(
+  fun stubMigrateProfileDetailsPhysicalAttributes(
     offenderNo: String,
     response: ProfileDetailsPhysicalAttributesMigrationResponse,
   ) {
@@ -29,7 +29,7 @@ class ProfDetPhysAttrDpsApiMockServer {
     )
   }
 
-  fun stubMigrateProfDetPhysAttrs(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+  fun stubMigrateProfileDetailsPhysicalAttributes(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     dpsPrisonPersonApi.stubFor(
       put(urlPathMatching("/migration/prisoners/.*/profile-details-physical-attributes"))
         .willReturn(

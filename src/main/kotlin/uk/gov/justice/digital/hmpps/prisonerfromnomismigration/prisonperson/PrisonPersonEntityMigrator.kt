@@ -3,7 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonPersonMigrationMappingRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonPersonMigrationMappingRequest.MigrationType.PHYSICAL_ATTRIBUTES
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.physicalattributes.PhysAttrEntityMigrator as PhysicalAttributesMigrator
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.physicalattributes.PhysicalAttributesEntityMigrator as PhysicalAttributesMigrator
 
 interface PrisonPersonEntityMigrator {
   suspend fun migrate(offenderNo: String): DpsResponse

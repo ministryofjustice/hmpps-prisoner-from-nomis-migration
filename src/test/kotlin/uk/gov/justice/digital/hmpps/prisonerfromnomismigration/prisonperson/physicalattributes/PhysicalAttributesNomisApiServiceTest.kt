@@ -20,41 +20,41 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 @SpringAPIServiceTest
-@Import(PhysAttrNomisApiService::class, PhysAttrNomisApiMockServer::class)
-class PhysAttrNomisApiServiceTest {
+@Import(PhysicalAttributesNomisApiService::class, PhysicalAttributesNomisApiMockServer::class)
+class PhysicalAttributesNomisApiServiceTest {
   @Autowired
-  private lateinit var apiService: PhysAttrNomisApiService
+  private lateinit var apiService: PhysicalAttributesNomisApiService
 
   @Autowired
-  private lateinit var physAttrNomisApi: PhysAttrNomisApiMockServer
+  private lateinit var nomisApi: PhysicalAttributesNomisApiMockServer
 
   @Nested
   inner class GetPhysicalAttributes {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
-      physAttrNomisApi.stubGetPhysicalAttributes(offenderNo = "A1234AA")
+      nomisApi.stubGetPhysicalAttributes(offenderNo = "A1234AA")
 
       apiService.getPhysicalAttributes(offenderNo = "A1234AA")
 
-      physAttrNomisApi.verify(
+      nomisApi.verify(
         getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
     @Test
     internal fun `will pass NOMIS ids to service`() = runTest {
-      physAttrNomisApi.stubGetPhysicalAttributes(offenderNo = "A1234AA")
+      nomisApi.stubGetPhysicalAttributes(offenderNo = "A1234AA")
 
       apiService.getPhysicalAttributes(offenderNo = "A1234AA")
 
-      physAttrNomisApi.verify(
+      nomisApi.verify(
         getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/physical-attributes")),
       )
     }
 
     @Test
     fun `will return physical attributes`() = runTest {
-      physAttrNomisApi.stubGetPhysicalAttributes(offenderNo = "A1234AA")
+      nomisApi.stubGetPhysicalAttributes(offenderNo = "A1234AA")
 
       val physicalAttributesResponse = apiService.getPhysicalAttributes("A1234AA")
 
@@ -73,7 +73,7 @@ class PhysAttrNomisApiServiceTest {
 
     @Test
     fun `will throw error when bookings do not exist`() = runTest {
-      physAttrNomisApi.stubGetPhysicalAttributes(NOT_FOUND)
+      nomisApi.stubGetPhysicalAttributes(NOT_FOUND)
 
       assertThrows<WebClientResponseException.NotFound> {
         apiService.getPhysicalAttributes("A1234AA")
@@ -82,7 +82,7 @@ class PhysAttrNomisApiServiceTest {
 
     @Test
     fun `will throw error when API returns an error`() = runTest {
-      physAttrNomisApi.stubGetPhysicalAttributes(INTERNAL_SERVER_ERROR)
+      nomisApi.stubGetPhysicalAttributes(INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.getPhysicalAttributes("A1234AA")

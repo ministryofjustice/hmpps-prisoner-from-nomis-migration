@@ -13,7 +13,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.mode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesSyncResponse
 
 @Component
-class PhysAttrDpsApiMockServer {
+class PhysicalAttributesDpsApiMockServer {
 
   fun stubSyncPhysicalAttributes(
     response: PhysicalAttributesSyncResponse,

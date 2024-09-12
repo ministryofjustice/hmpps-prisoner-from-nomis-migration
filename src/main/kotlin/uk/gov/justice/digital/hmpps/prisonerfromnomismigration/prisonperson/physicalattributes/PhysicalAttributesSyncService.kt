@@ -10,9 +10,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.Phys
 import java.time.LocalDateTime
 
 @Service
-class PhysAttrSyncService(
-  private val nomisApiService: PhysAttrNomisApiService,
-  private val dpsApiService: PhysAttrDpsApiService,
+class PhysicalAttributesSyncService(
+  private val nomisApiService: PhysicalAttributesNomisApiService,
+  private val dpsApiService: PhysicalAttributesDpsApiService,
   private val telemetryClient: TelemetryClient,
 ) {
 
