@@ -10,7 +10,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationCon
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPAttendeeMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFactorMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFullMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPInterviewMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPPlanMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReviewMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
@@ -58,7 +63,9 @@ class CSIPMigrationService(
       }
       ?: run {
         val nomisCSIPResponse = nomisApiService.getCSIP(nomisCSIPReportId)
-        csipService.migrateCSIP(nomisCSIPResponse.toDPSSyncRequest(actioned = nomisCSIPResponse.toActionDetails()))
+        val syncCsipRequest = nomisCSIPResponse.toDPSSyncRequest(actioned = nomisCSIPResponse.toActionDetails())
+        log.debug("Sync Request for {}", syncCsipRequest)
+        csipService.migrateCSIP(syncCsipRequest)
           .also { syncResponse ->
             // At this point we need to determine all mappings and call the appropriate mapping endpoint
             val dpsCSIPReportId = syncResponse.filterReport().uuid.toString()
@@ -69,11 +76,11 @@ class CSIPMigrationService(
                 dpsCSIPReportId = dpsCSIPReportId,
                 label = migrationId,
                 mappingType = CSIPFullMappingDto.MappingType.MIGRATED,
-                attendeeMappings = syncResponse.filterAttendees(dpsCSIPReportId = dpsCSIPReportId, label = migrationId),
-                factorMappings = syncResponse.filterFactors(dpsCSIPReportId = dpsCSIPReportId, label = migrationId),
-                interviewMappings = syncResponse.filterInterviews(dpsCSIPReportId = dpsCSIPReportId, label = migrationId),
-                planMappings = syncResponse.filterPlans(dpsCSIPReportId = dpsCSIPReportId, label = migrationId),
-                reviewMappings = syncResponse.filterReviews(dpsCSIPReportId = dpsCSIPReportId, label = migrationId),
+                attendeeMappings = syncResponse.filterAttendees(dpsCSIPReportId = dpsCSIPReportId, mappingType = CSIPAttendeeMappingDto.MappingType.MIGRATED, label = migrationId),
+                factorMappings = syncResponse.filterFactors(dpsCSIPReportId = dpsCSIPReportId, mappingType = CSIPFactorMappingDto.MappingType.MIGRATED, label = migrationId),
+                interviewMappings = syncResponse.filterInterviews(dpsCSIPReportId = dpsCSIPReportId, mappingType = CSIPInterviewMappingDto.MappingType.MIGRATED, label = migrationId),
+                planMappings = syncResponse.filterPlans(dpsCSIPReportId = dpsCSIPReportId, mappingType = CSIPPlanMappingDto.MappingType.MIGRATED, label = migrationId),
+                reviewMappings = syncResponse.filterReviews(dpsCSIPReportId = dpsCSIPReportId, mappingType = CSIPReviewMappingDto.MappingType.MIGRATED, label = migrationId),
               ),
             )
             telemetryClient.trackEvent(

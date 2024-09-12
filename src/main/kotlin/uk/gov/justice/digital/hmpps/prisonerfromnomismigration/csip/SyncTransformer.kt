@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip
 
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ResponseMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncAttendeeRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncContributoryFactorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncCsipRequest
@@ -9,8 +10,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncIn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncNeedRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncPlanRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncReferralRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncReviewRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncScreeningOutcomeRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPAttendeeMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFactorMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPInterviewMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPPlanMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReviewMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Actions
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Attendee
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPFactorResponse
@@ -265,3 +272,65 @@ fun Attendee.toSyncAttendeeRequest() =
     lastModifiedBy = lastModifiedBy,
     lastModifiedByDisplayName = lastModifiedByDisplayName ?: lastModifiedBy,
   )
+
+fun SyncResponse.filterReport() = mappings.first { it.component == ResponseMapping.Component.RECORD }
+
+fun SyncResponse.filterAttendees(dpsCSIPReportId: String, mappingType: CSIPAttendeeMappingDto.MappingType = CSIPAttendeeMappingDto.MappingType.NOMIS_CREATED, label: String? = null) =
+  mappings.filter { it.component == ResponseMapping.Component.ATTENDEE }
+    .map {
+      CSIPAttendeeMappingDto(
+        dpsCSIPReportId = dpsCSIPReportId,
+        nomisCSIPAttendeeId = it.id,
+        dpsCSIPAttendeeId = it.uuid.toString(),
+        label = label,
+        mappingType = mappingType,
+      )
+    }
+
+fun SyncResponse.filterFactors(dpsCSIPReportId: String, mappingType: CSIPFactorMappingDto.MappingType = CSIPFactorMappingDto.MappingType.NOMIS_CREATED, label: String? = null) =
+  mappings.filter { it.component == ResponseMapping.Component.CONTRIBUTORY_FACTOR }
+    .map {
+      CSIPFactorMappingDto(
+        dpsCSIPReportId = dpsCSIPReportId,
+        nomisCSIPFactorId = it.id,
+        dpsCSIPFactorId = it.uuid.toString(),
+        label = label,
+        mappingType = mappingType,
+      )
+    }
+
+fun SyncResponse.filterInterviews(dpsCSIPReportId: String, mappingType: CSIPInterviewMappingDto.MappingType = CSIPInterviewMappingDto.MappingType.NOMIS_CREATED, label: String? = null) =
+  mappings.filter { it.component == ResponseMapping.Component.INTERVIEW }
+    .map {
+      CSIPInterviewMappingDto(
+        dpsCSIPReportId = dpsCSIPReportId,
+        nomisCSIPInterviewId = it.id,
+        dpsCSIPInterviewId = it.uuid.toString(),
+        label = label,
+        mappingType = mappingType,
+      )
+    }
+
+fun SyncResponse.filterPlans(dpsCSIPReportId: String, mappingType: CSIPPlanMappingDto.MappingType = CSIPPlanMappingDto.MappingType.NOMIS_CREATED, label: String? = null) =
+  mappings.filter { it.component == ResponseMapping.Component.PLAN }
+    .map {
+      CSIPPlanMappingDto(
+        dpsCSIPReportId = dpsCSIPReportId,
+        nomisCSIPPlanId = it.id,
+        dpsCSIPPlanId = it.uuid.toString(),
+        label = label,
+        mappingType = mappingType,
+      )
+    }
+
+fun SyncResponse.filterReviews(dpsCSIPReportId: String, mappingType: CSIPReviewMappingDto.MappingType = CSIPReviewMappingDto.MappingType.NOMIS_CREATED, label: String? = null) =
+  mappings.filter { it.component == ResponseMapping.Component.REVIEW }
+    .map {
+      CSIPReviewMappingDto(
+        dpsCSIPReportId = dpsCSIPReportId,
+        nomisCSIPReviewId = it.id,
+        dpsCSIPReviewId = it.uuid.toString(),
+        label = label,
+        mappingType = mappingType,
+      )
+    }

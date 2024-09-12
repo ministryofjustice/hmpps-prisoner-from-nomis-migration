@@ -24,6 +24,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 class CSIPMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) :
   MigrationMapping<CSIPFullMappingDto>(domainUrl = "/mapping/csip", webClient) {
 
+  override fun createMappingUrl(): String {
+    return super.createMappingUrl() + "/all"
+  }
+
   suspend fun getCSIPReportByNomisId(nomisCSIPReportId: Long): CSIPReportMappingDto? =
     webClient.get()
       .uri("/mapping/csip/nomis-csip-id/{nomisCSIPReportId}", nomisCSIPReportId)
