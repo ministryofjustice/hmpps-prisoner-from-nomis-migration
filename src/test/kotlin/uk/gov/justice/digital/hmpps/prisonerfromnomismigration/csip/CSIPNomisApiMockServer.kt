@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Actions
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Attendee
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPFactorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
@@ -130,7 +131,18 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
           Review(
             id = 67,
             reviewSequence = 1,
-            attendees = listOf(),
+            attendees = listOf(
+              Attendee(
+                id = 221,
+                name = "same jones",
+                role = "person",
+                attended = true,
+                contribution = "talked about things",
+                createDateTime = "2024-08-20T10:33:48.946787",
+                createdBy = "DBULL_ADM",
+                createdByDisplayName = "DOM BULL",
+              ),
+            ),
             remainOnCSIP = true,
             csipUpdated = false,
             caseNote = false,

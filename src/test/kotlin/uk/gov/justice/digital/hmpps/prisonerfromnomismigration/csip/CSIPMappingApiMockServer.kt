@@ -26,7 +26,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageCont
 @Component
 class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
   companion object {
-    const val CSIP_CREATE_MAPPING_URL = "/mapping/csip"
+    const val CSIP_CREATE_MAPPING_URL = "/mapping/csip/all"
     const val CSIP_GET_MAPPING_URL = "/mapping/csip/nomis-csip-id"
   }
 
@@ -140,7 +140,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
   fun verifyCreateCSIPFullMapping(dpsCSIPId: String, dpsCSIPFactorId: String, times: Int = 1) =
     verify(
       times,
-      WireMock.postRequestedFor(WireMock.urlPathEqualTo("/mapping/csip"))
+      WireMock.postRequestedFor(WireMock.urlPathEqualTo(CSIP_CREATE_MAPPING_URL))
         .withRequestBody(
           WireMock.matchingJsonPath("dpsCSIPReportId", WireMock.equalTo(dpsCSIPId)),
         )
@@ -155,7 +155,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
   fun verifyCreateCSIPReportMapping(dpsCSIPId: String, times: Int = 1) =
     verify(
       times,
-      WireMock.postRequestedFor(WireMock.urlPathEqualTo("/mapping/csip")).withRequestBody(
+      WireMock.postRequestedFor(WireMock.urlPathEqualTo(CSIP_CREATE_MAPPING_URL)).withRequestBody(
         WireMock.matchingJsonPath(
           "dpsCSIPReportId",
           WireMock.equalTo(dpsCSIPId),
@@ -192,7 +192,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
     duplicateDPSCSIPId: String = "ddd596da-8eab-4d2a-a026-bc5afb8acda0",
   ) {
     mappingApi.stubFor(
-      post(WireMock.urlPathEqualTo("/mapping/csip"))
+      post(WireMock.urlPathEqualTo(CSIP_CREATE_MAPPING_URL))
         .willReturn(
           aResponse()
             .withStatus(409)

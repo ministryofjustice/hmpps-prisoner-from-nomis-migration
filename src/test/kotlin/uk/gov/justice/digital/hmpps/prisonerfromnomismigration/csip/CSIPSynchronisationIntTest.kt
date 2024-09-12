@@ -134,7 +134,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create a mapping between the two records`() {
           await untilAsserted {
             mappingApi.verify(
-              postRequestedFor(urlPathEqualTo("/mapping/csip"))
+              postRequestedFor(urlPathEqualTo("/mapping/csip/all"))
                 .withRequestBody(matchingJsonPath("dpsCSIPReportId", equalTo(DPS_CSIP_ID)))
                 .withRequestBody(matchingJsonPath("nomisCSIPReportId", equalTo("$NOMIS_CSIP_ID"))),
             )

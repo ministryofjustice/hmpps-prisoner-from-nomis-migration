@@ -4,8 +4,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Create
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateCsipRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateSaferCustodyScreeningOutcomeRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ResponseMapping
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateContributoryFactorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateCsipRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateReferral
@@ -14,11 +12,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Update
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpsertDecisionAndActionsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpsertInvestigationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpsertPlanRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPAttendeeMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFactorMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPInterviewMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPPlanMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReviewMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Actions
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPFactorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPResponse
@@ -194,65 +187,3 @@ fun CSIPResponse.toDPSUpsertPlanRequest() =
     reasonForPlan = planReason!!,
     firstCaseReviewDate = firstCaseReviewDate!!,
   )
-
-fun SyncResponse.filterReport() = mappings.first { it.component == ResponseMapping.Component.RECORD }
-
-fun SyncResponse.filterFactors(dpsCSIPReportId: String, label: String) =
-  mappings.filter { it.component == ResponseMapping.Component.CONTRIBUTORY_FACTOR }
-    .map {
-      CSIPFactorMappingDto(
-        dpsCSIPReportId = dpsCSIPReportId,
-        nomisCSIPFactorId = it.id,
-        dpsCSIPFactorId = it.uuid.toString(),
-        label = label,
-        mappingType = CSIPFactorMappingDto.MappingType.MIGRATED,
-      )
-    }
-
-fun SyncResponse.filterAttendees(dpsCSIPReportId: String, label: String) =
-  mappings.filter { it.component == ResponseMapping.Component.ATTENDEE }
-    .map {
-      CSIPAttendeeMappingDto(
-        dpsCSIPReportId = dpsCSIPReportId,
-        nomisCSIPAttendeeId = it.id,
-        dpsCSIPAttendeeId = it.uuid.toString(),
-        label = label,
-        mappingType = CSIPAttendeeMappingDto.MappingType.MIGRATED,
-      )
-    }
-
-fun SyncResponse.filterInterviews(dpsCSIPReportId: String, label: String) =
-  mappings.filter { it.component == ResponseMapping.Component.INTERVIEW }
-    .map {
-      CSIPInterviewMappingDto(
-        dpsCSIPReportId = dpsCSIPReportId,
-        nomisCSIPInterviewId = it.id,
-        dpsCSIPInterviewId = it.uuid.toString(),
-        label = label,
-        mappingType = CSIPInterviewMappingDto.MappingType.MIGRATED,
-      )
-    }
-
-fun SyncResponse.filterPlans(dpsCSIPReportId: String, label: String) =
-  mappings.filter { it.component == ResponseMapping.Component.PLAN }
-    .map {
-      CSIPPlanMappingDto(
-        dpsCSIPReportId = dpsCSIPReportId,
-        nomisCSIPPlanId = it.id,
-        dpsCSIPPlanId = it.uuid.toString(),
-        label = label,
-        mappingType = CSIPPlanMappingDto.MappingType.MIGRATED,
-      )
-    }
-
-fun SyncResponse.filterReviews(dpsCSIPReportId: String, label: String) =
-  mappings.filter { it.component == ResponseMapping.Component.REVIEW }
-    .map {
-      CSIPReviewMappingDto(
-        dpsCSIPReportId = dpsCSIPReportId,
-        nomisCSIPReviewId = it.id,
-        dpsCSIPReviewId = it.uuid.toString(),
-        label = label,
-        mappingType = CSIPReviewMappingDto.MappingType.MIGRATED,
-      )
-    }
