@@ -164,11 +164,26 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
 
   fun stubDeleteCSIPReportMapping(dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
-    stubDeleteMapping("/mapping/csip/dps-csip-id/$dpsCSIPId")
+    mappingApi.stubFor(
+      delete(urlEqualTo("/mapping/csip/dps-csip-id/$dpsCSIPId"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NO_CONTENT.value()),
+        ),
+    )
   }
 
   fun stubDeleteCSIPReportMapping(status: HttpStatus) {
-    stubDeleteErrorResponse(status = status, url = "/mapping/csip/dps-csip-id/.*")
+    mappingApi.stubFor(
+      delete(urlPathMatching("/mapping/csip/dps-csip-id/.*"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody(objectMapper.writeValueAsString(status.value())),
+        ),
+    )
   }
 
   fun stubCSIPMappingCreateConflict(
@@ -284,12 +299,6 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubCreateFactorMapping(status: HttpStatus) {
     stubPostErrorResponse(status = status, url = "/mapping/csip/factors")
   }
-  fun stubDeleteFactorMapping(dpsCSIPFactorId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
-    stubDeleteMapping(url = "/mapping/csip/factors/dps-csip-factor-id/$dpsCSIPFactorId")
-  }
-  fun stubDeleteFactorMapping(status: HttpStatus) {
-    stubDeleteErrorResponse(status = status, url = "/mapping/csip/factors/dps-csip-factor-id/.*")
-  }
 
   fun verifyCreateCSIPFactorMapping(dpsCSIPFactorId: String, times: Int = 1) =
     verify(
@@ -366,12 +375,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubCreatePlanMapping(status: HttpStatus) {
     stubPostErrorResponse(status = status, url = "/mapping/csip/plans")
   }
-  fun stubDeletePlanMapping(dpsCSIPPlanId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
-    stubDeleteMapping(url = "/mapping/csip/plans/dps-csip-plan-id/$dpsCSIPPlanId")
-  }
-  fun stubDeletePlanMapping(status: HttpStatus) {
-    stubDeleteErrorResponse(status = status, url = "/mapping/csip/plans/dps-csip-plan-id/.*")
-  }
+
   fun verifyCreateCSIPPlanMapping(dpsCSIPPlanId: String, times: Int = 1) =
     verify(
       times,
@@ -447,12 +451,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubCreateReviewMapping(status: HttpStatus) {
     stubPostErrorResponse(status = status, url = "/mapping/csip/reviews")
   }
-  fun stubDeleteReviewMapping(dpsCSIPReviewId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
-    stubDeleteMapping(url = "/mapping/csip/reviews/dps-csip-review-id/$dpsCSIPReviewId")
-  }
-  fun stubDeleteReviewMapping(status: HttpStatus) {
-    stubDeleteErrorResponse(status = status, url = "/mapping/csip/reviews/dps-csip-review-id/.*")
-  }
+
   fun verifyCreateCSIPReviewMapping(dpsCSIPReviewId: String, times: Int = 1) =
     verify(
       times,
@@ -528,12 +527,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubCreateAttendeeMapping(status: HttpStatus) {
     stubPostErrorResponse(status = status, url = "/mapping/csip/attendees")
   }
-  fun stubDeleteAttendeeMapping(dpsCSIPAttendeeId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
-    stubDeleteMapping(url = "/mapping/csip/attendees/dps-csip-attendee-id/$dpsCSIPAttendeeId")
-  }
-  fun stubDeleteAttendeeMapping(status: HttpStatus) {
-    stubDeleteErrorResponse(status = status, url = "/mapping/csip/attendees/dps-csip-attendee-id/.*")
-  }
+
   fun verifyCreateCSIPAttendeeMapping(dpsCSIPAttendeeId: String, times: Int = 1) =
     verify(
       times,
@@ -609,12 +603,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubCreateInterviewMapping(status: HttpStatus) {
     stubPostErrorResponse(status = status, url = "/mapping/csip/interviews")
   }
-  fun stubDeleteInterviewMapping(dpsCSIPInterviewId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
-    stubDeleteMapping(url = "/mapping/csip/interviews/dps-csip-interview-id/$dpsCSIPInterviewId")
-  }
-  fun stubDeleteInterviewMapping(status: HttpStatus) {
-    stubDeleteErrorResponse(status = status, url = "/mapping/csip/interviews/dps-csip-interview-id/.*")
-  }
+
   fun verifyCreateCSIPInterviewMapping(dpsCSIPInterviewId: String, times: Int = 1) =
     verify(
       times,
@@ -639,31 +628,9 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubDeleteMapping(url: String) {
-    mappingApi.stubFor(
-      delete(urlEqualTo(url))
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.NO_CONTENT.value()),
-        ),
-    )
-  }
-
   fun stubGetErrorResponse(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value()), url: String) {
     mappingApi.stubFor(
       get(urlPathMatching(url))
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(status.value())
-            .withBody(objectMapper.writeValueAsString(error)),
-        ),
-    )
-  }
-  fun stubDeleteErrorResponse(status: HttpStatus, url: String, error: ErrorResponse = ErrorResponse(status = status.value())) {
-    mappingApi.stubFor(
-      delete(urlPathMatching(url))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")

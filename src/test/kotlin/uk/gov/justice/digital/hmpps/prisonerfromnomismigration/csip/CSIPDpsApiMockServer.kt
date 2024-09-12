@@ -770,40 +770,12 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
       ),
     )
   }
-  fun stubDeleteCSIPFactor(dpsCSIPFactorId: String) {
-    stubDelete("/csip-records/referral/contributory-factors/$dpsCSIPFactorId")
-  }
-
-  fun stubDeleteCSIPFactorNotFound(status: HttpStatus = HttpStatus.NOT_FOUND) {
-    stubDeleteErrorResponse(status = status, url = "/csip-records/referral/contributory-factors/\\S+")
-  }
 
   // /////////////// CSIP Interview
-  fun stubDeleteCSIPInterview(dpsCSIPInterviewId: String) {
-    stubDelete("/csip-records/referral/investigation/interviews/$dpsCSIPInterviewId")
-  }
-
-  fun stubDeleteCSIPInterviewNotFound(status: HttpStatus = HttpStatus.NOT_FOUND) {
-    stubDeleteErrorResponse(status = status, url = "/csip-records/referral/investigation/interviews/\\S+")
-  }
 
   // /////////////// CSIP Attendee
-  fun stubDeleteCSIPAttendee(dpsCSIPAttendeeId: String) {
-    stubDelete("/csip-records/plan/reviews/attendees/$dpsCSIPAttendeeId")
-  }
-
-  fun stubDeleteCSIPAttendeeNotFound(status: HttpStatus = HttpStatus.NOT_FOUND) {
-    stubDeleteErrorResponse(status = status, url = "/csip-records/plan/reviews/attendees/\\S+")
-  }
 
   // /////////////// CSIP Plan
-  fun stubDeleteCSIPPlan(dpsCSIPPlanId: String) {
-    stubDelete("/csip-records/plan/identified-needs/$dpsCSIPPlanId")
-  }
-
-  fun stubDeleteCSIPPlanNotFound(status: HttpStatus = HttpStatus.NOT_FOUND) {
-    stubDeleteErrorResponse(status = status, url = "/csip-records/plan/identified-needs/\\S+")
-  }
 
   // /////////////// CSIP Investigation
   fun stubUpdateCSIPInvestigation(dpsCSIPId: String) {

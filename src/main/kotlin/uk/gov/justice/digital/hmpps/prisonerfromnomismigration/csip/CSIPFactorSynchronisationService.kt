@@ -112,28 +112,6 @@ class CSIPFactorSynchronisationService(
     }
   }
 
-  suspend fun csipFactorDeleted(event: CSIPFactorEvent) {
-    val telemetry =
-      mutableMapOf(
-        "nomisCSIPReportId" to event.csipReportId,
-        "offenderNo" to event.offenderIdDisplay,
-        "nomisCSIPFactorId" to event.csipFactorId,
-      )
-
-    mappingApiService.getCSIPFactorByNomisId(nomisCSIPFactorId = event.csipFactorId)
-      ?.let { mapping ->
-        log.debug("Found csip factor mapping: {}", mapping)
-        csipService.deleteCSIPFactor(mapping.dpsCSIPFactorId)
-        tryToDeleteCSIPFactorMapping(mapping.dpsCSIPFactorId)
-        telemetryClient.trackEvent(
-          "csip-factor-synchronisation-deleted-success",
-          telemetry + ("dpsCSIPFactorId" to mapping.dpsCSIPFactorId),
-        )
-      } ?: let {
-      telemetryClient.trackEvent("csip-factor-synchronisation-deleted-ignored", telemetry)
-    }
-  }
-
   private suspend fun tryToCreateCSIPFactorMapping(
     nomisCSIPFactor: CSIPFactorResponse,
     dpsCSIPFactor: ContributoryFactor,
@@ -175,6 +153,7 @@ class CSIPFactorSynchronisationService(
       return MappingResponse.MAPPING_FAILED
     }
   }
+
   suspend fun retryCreateCSIPFactorMapping(retryMessage: InternalMessage<CSIPFactorMappingDto>) {
     log.debug("CSIP - Retrying CSIP Factor Mapping after failure")
     mappingApiService.createCSIPFactorMapping(
@@ -185,11 +164,5 @@ class CSIPFactorSynchronisationService(
         retryMessage.telemetryAttributes,
       )
     }
-  }
-  private suspend fun tryToDeleteCSIPFactorMapping(dpsCSIPFactorId: String) = runCatching {
-    mappingApiService.deleteCSIPFactorMappingByDPSId(dpsCSIPFactorId)
-  }.onFailure { e ->
-    telemetryClient.trackEvent("csip-factor-mapping-deleted-failed", mapOf("dpsCSIPFactorId" to dpsCSIPFactorId))
-    log.warn("Unable to delete mapping for csip factor $dpsCSIPFactorId. Please delete manually", e)
   }
 }

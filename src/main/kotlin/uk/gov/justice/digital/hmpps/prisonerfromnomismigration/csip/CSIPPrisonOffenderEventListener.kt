@@ -57,14 +57,6 @@ class CSIPPrisonOffenderEventListener(
 
               "CSIP_REPORTS-DELETED" -> csipSynchronisationService.csipReportDeleted(sqsMessage.Message.fromJson())
 
-              // TODO - we no longer listen for child delete events (only top level report deleted via ui)
-              // - REMOVE from cloud platform and remove from here
-              "CSIP_PLANS-DELETED" -> csipSynchronisationService.csipPlanDeleted(sqsMessage.Message.fromJson())
-              "CSIP_REVIEWS-DELETED" -> log.debug("Delete CSIP Review")
-              "CSIP_ATTENDEES-DELETED" -> csipSynchronisationService.csipAttendeeDeleted(sqsMessage.Message.fromJson())
-              "CSIP_FACTORS-DELETED" -> csipFactorSynchronisationService.csipFactorDeleted(sqsMessage.Message.fromJson())
-              "CSIP_INTVW-DELETED" -> csipSynchronisationService.csipInterviewDeleted(sqsMessage.Message.fromJson())
-
               // TODO check if needed
               // "prison-offender-events.prisoner.merged"
 

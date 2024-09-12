@@ -64,30 +64,6 @@ class CSIPDpsApiService(@Qualifier("csipApiWebClient") private val webClient: We
       .awaitBodilessEntity()
   }
 
-  suspend fun deleteCSIPPlan(csipPlanId: String) {
-    webClient.delete()
-      .uri("/csip-records/plan/identified-needs/{csipPlanId}", csipPlanId)
-      .header("Source", "NOMIS")
-      .retrieve()
-      .awaitBodilessEntity()
-  }
-
-  suspend fun deleteCSIPInterview(csipInterviewId: String) {
-    webClient.delete()
-      .uri("/csip-records/referral/investigation/interviews/{csipInterviewId}", csipInterviewId)
-      .header("Source", "NOMIS")
-      .retrieve()
-      .awaitBodilessEntity()
-  }
-
-  suspend fun deleteCSIPAttendee(csipAttendeeId: String) {
-    webClient.delete()
-      .uri("/csip-records/plan/reviews/attendees/{csipAttendeeId}", csipAttendeeId)
-      .header("Source", "NOMIS")
-      .retrieve()
-      .awaitBodilessEntity()
-  }
-
   suspend fun createCSIPSaferCustodyScreening(csipReportId: String, csipSCS: CreateSaferCustodyScreeningOutcomeRequest, createdByUsername: String): SaferCustodyScreeningOutcome =
     webClient.post()
       .uri("/csip-records/{csipReportId}/referral/safer-custody-screening", csipReportId)
@@ -141,12 +117,4 @@ class CSIPDpsApiService(@Qualifier("csipApiWebClient") private val webClient: We
       .header("Username", updatedByUsername)
       .retrieve()
       .awaitBody()
-
-  suspend fun deleteCSIPFactor(csipFactorId: String) {
-    webClient.delete()
-      .uri("/csip-records/referral/contributory-factors/{csipFactorId}", csipFactorId)
-      .header("Source", "NOMIS")
-      .retrieve()
-      .awaitBodilessEntity()
-  }
 }

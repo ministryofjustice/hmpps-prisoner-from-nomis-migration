@@ -173,34 +173,5 @@ internal class CSIPFactorMappingServiceTest {
         }
       }
     }
-
-    @Nested
-    inner class DeleteCSIPFactorMapping {
-      private val dpsCsipFactorId = UUID.randomUUID().toString()
-
-      @Test
-      internal fun `will pass oath2 token to service`() = runTest {
-        csipMappingApi.stubDeleteFactorMapping(dpsCsipFactorId)
-
-        csipMappingService.deleteCSIPFactorMappingByDPSId(dpsCsipFactorId)
-
-        csipMappingApi.verify(
-          WireMock.deleteRequestedFor(WireMock.anyUrl())
-            .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
-        )
-      }
-
-      @Test
-      internal fun `will pass id to service`() = runTest {
-        val dpsCsipFactorId = "a04f7a8d-61aa-400c-9395-f4dc62f36ab0"
-        csipMappingApi.stubDeleteFactorMapping(dpsCsipFactorId)
-
-        csipMappingService.deleteCSIPFactorMappingByDPSId(dpsCsipFactorId)
-
-        csipMappingApi.verify(
-          WireMock.deleteRequestedFor(urlPathEqualTo("/mapping/csip/factors/dps-csip-factor-id/$dpsCsipFactorId")),
-        )
-      }
-    }
   }
 }
