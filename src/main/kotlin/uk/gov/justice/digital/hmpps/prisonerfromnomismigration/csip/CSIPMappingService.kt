@@ -40,7 +40,7 @@ class CSIPMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient)
 
   suspend fun deleteCSIPReportMappingByDPSId(dpsCSIPReportId: String) {
     webClient.delete()
-      .uri("/mapping/csip/dps-csip-id/{dpsCSIPReportId}", dpsCSIPReportId)
+      .uri("/mapping/csip/dps-csip-id/{dpsCSIPReportId}/all", dpsCSIPReportId)
       .retrieve()
       .awaitBodilessEntity()
   }
