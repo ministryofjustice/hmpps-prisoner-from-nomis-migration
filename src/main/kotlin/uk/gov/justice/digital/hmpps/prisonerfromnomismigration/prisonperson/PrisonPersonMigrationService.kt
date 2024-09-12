@@ -16,6 +16,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
+import java.time.LocalDateTime
+import java.time.ZoneId
+
+fun LocalDateTime.atPrisonPersonZone(): String = atZone(ZoneId.of("Europe/London")).toString()
 
 @Service
 class PrisonPersonMigrationService(

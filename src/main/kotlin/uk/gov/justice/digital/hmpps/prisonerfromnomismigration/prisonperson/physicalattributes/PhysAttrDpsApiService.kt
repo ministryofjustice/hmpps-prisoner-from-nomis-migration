@@ -4,16 +4,15 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.atPrisonPersonZone
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesMigrationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesMigrationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesSyncResponse
 import java.time.LocalDateTime
-import java.time.ZoneId
 
 @Service
 class PhysAttrDpsApiService(@Qualifier("prisonPersonApiWebClient") private val webClient: WebClient) {
-  private val zone = ZoneId.of("Europe/London")
 
   suspend fun syncPhysicalAttributes(
     prisonerNumber: String,
@@ -44,10 +43,10 @@ class PhysAttrDpsApiService(@Qualifier("prisonPersonApiWebClient") private val w
     PhysicalAttributesSyncRequest(
       height = heightCentimetres,
       weight = weightKilograms,
-      appliesFrom = appliesFrom.atZone(zone).toString(),
-      appliesTo = appliesTo?.atZone(zone)?.toString(),
+      appliesFrom = appliesFrom.atPrisonPersonZone(),
+      appliesTo = appliesTo?.atPrisonPersonZone(),
       latestBooking = latestBooking,
-      createdAt = createdAt.atZone(zone).toString(),
+      createdAt = createdAt.atPrisonPersonZone(),
       createdBy = createdBy,
     )
 
@@ -73,9 +72,9 @@ class PhysAttrDpsApiService(@Qualifier("prisonPersonApiWebClient") private val w
     PhysicalAttributesMigrationRequest(
       height = heightCentimetres,
       weight = weightKilograms,
-      appliesFrom = appliesFrom.atZone(zone).toString(),
-      appliesTo = appliesTo?.atZone(zone)?.toString(),
-      createdAt = createdAt.atZone(zone).toString(),
+      appliesFrom = appliesFrom.atPrisonPersonZone(),
+      appliesTo = appliesTo?.atPrisonPersonZone(),
+      createdAt = createdAt.atPrisonPersonZone(),
       createdBy = createdBy,
     )
 }
