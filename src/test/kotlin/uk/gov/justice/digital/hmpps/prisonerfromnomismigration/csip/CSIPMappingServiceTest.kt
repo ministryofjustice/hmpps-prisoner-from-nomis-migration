@@ -120,7 +120,7 @@ internal class CSIPMappingServiceTest {
 
         mappingApi.verify(
           postRequestedFor(
-            urlPathEqualTo("/mapping/csip"),
+            urlPathEqualTo("/mapping/csip/all"),
           ).withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
         )
       }
