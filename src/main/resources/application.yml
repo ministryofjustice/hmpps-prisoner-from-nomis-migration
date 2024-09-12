@@ -149,6 +149,13 @@ complete-check:
   delay-seconds: 10
   count: 9
 
+activities:
+  complete-check:
+    delay-seconds: 180
+allocations:
+  complete-check:
+    delay-seconds: 180
+
 alerts:
   complete-check:
     delay-seconds: 180
