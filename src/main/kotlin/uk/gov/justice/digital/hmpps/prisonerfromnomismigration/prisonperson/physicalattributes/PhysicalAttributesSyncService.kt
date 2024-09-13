@@ -82,12 +82,7 @@ class PhysicalAttributesSyncService(
       bookings.first().physicalAttributes.first().heightCentimetres == null &&
       bookings.first().physicalAttributes.first().weightKilograms == null
 
-  private fun PhysicalAttributesResponse.updatedBySync() =
-    if (modifiedDateTime != null) {
-      modifiedBy == synchronisationUser
-    } else {
-      createdBy == synchronisationUser
-    }
+  private fun PhysicalAttributesResponse.updatedBySync() = auditModuleName == synchronisationUser
 
   private fun BookingPhysicalAttributesResponse.findLastModifiedPhysicalAttributes() =
     physicalAttributes

@@ -209,8 +209,7 @@ class PhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
                   aPhysicalAttributesResponse(
                     heightCentimetres = 180,
                     weightKilograms = 80,
-                    modifiedBy = "DPS_SYNCHRONISATION",
-                    modifiedDateTime = "$now",
+                    auditModuleName = "DPS_SYNCHRONISATION",
                   ),
                 ),
               ),
