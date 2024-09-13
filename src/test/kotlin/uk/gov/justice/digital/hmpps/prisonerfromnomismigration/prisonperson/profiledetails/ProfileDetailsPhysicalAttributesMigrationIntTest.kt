@@ -13,7 +13,6 @@ import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -21,21 +20,20 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.test.web.reactive.server.WebTestClient
+import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonPersonMigrationMappingRequest.MigrationType.PROFILE_DETAILS_PHYSICAL_ATTRIBUTES
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonMigrationFilter
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.ProfileDetailsPhysicalAttributesMigrationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
-import uk.gov.justice.hmpps.test.kotlin.auth.WithMockAuthUser
 import java.time.Duration
 import java.time.LocalDate
 
-// TODO SDIT-2019 can remove this when calling the API to start a migration
-@WithMockAuthUser
 class ProfileDetailsPhysicalAttributesMigrationIntTest : SqsIntegrationTestBase() {
 
   @Autowired
@@ -47,11 +45,7 @@ class ProfileDetailsPhysicalAttributesMigrationIntTest : SqsIntegrationTestBase(
   @Autowired
   private lateinit var dpsApi: ProfileDetailsPhysicalAttributesDpsApiMockServer
 
-  @Autowired
-  private lateinit var migrationService: PrisonPersonMigrationService
-
   @Nested
-  @DisplayName("/migrate/prisonperson/profile-detail-physical-attributes")
   inner class MigrateProfileDetailPhysicalAttributes {
     private lateinit var migrationId: String
     private fun stubMigrationDependencies(entities: Int = 2) {
@@ -70,9 +64,7 @@ class ProfileDetailsPhysicalAttributesMigrationIntTest : SqsIntegrationTestBase(
       @BeforeEach
       fun setUp() = runTest {
         stubMigrationDependencies(entities = 2)
-        // TODO SDIT-2019 replace with a call to the start migration endpoint when it's done
-        migrationId = migrationService.startMigration(PrisonPersonMigrationFilter(migrationType = PROFILE_DETAILS_PHYSICAL_ATTRIBUTES)).migrationId
-          .also { waitUntilCompleted() }
+        migrationId = webTestClient.performMigration().migrationId
       }
 
       @Test
@@ -147,6 +139,18 @@ class ProfileDetailsPhysicalAttributesMigrationIntTest : SqsIntegrationTestBase(
         )
       }
     }
+
+    private fun WebTestClient.performMigration(offenderNo: String? = null) =
+      post().uri("/migrate/prisonperson")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_PRISONPERSON")))
+        .header("Content-Type", "application/json")
+        .bodyValue(PrisonPersonMigrationFilter(prisonerNumber = offenderNo, migrationType = PROFILE_DETAILS_PHYSICAL_ATTRIBUTES))
+        .exchange()
+        .expectStatus().isAccepted
+        .returnResult<MigrationResult>().responseBody.blockFirst()!!
+        .also {
+          waitUntilCompleted()
+        }
 
     private fun waitUntilCompleted() =
       await atMost Duration.ofSeconds(60) untilAsserted {
