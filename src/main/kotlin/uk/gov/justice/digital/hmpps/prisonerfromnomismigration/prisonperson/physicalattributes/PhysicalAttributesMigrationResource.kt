@@ -18,6 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorRespo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonMigrationFilter
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonMigrationService
 
+// TODO SDIT-2021 remove this once the UI has been moved over to the generic endpoint /migrate/prisonperson
 @RestController
 @RequestMapping("/migrate/prisonperson/physical-attributes", produces = [MediaType.APPLICATION_JSON_VALUE])
 @Tag(name = "prison-person-migration-resource")
