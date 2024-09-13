@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.profiledetails
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
