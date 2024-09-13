@@ -142,8 +142,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create a court case in DPS`() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
-              postRequestedFor(urlPathEqualTo("/court-case")),
-              // TODO assert once DPS team have defined their dto
+              postRequestedFor(urlPathEqualTo("/court-case"))
+                .withRequestBody(matchingJsonPath("prisonerId", equalTo(OFFENDER_ID_DISPLAY))),
             )
           }
         }
@@ -821,6 +821,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           courtCaseId = NOMIS_COURT_CASE_ID,
           offenderNo = OFFENDER_ID_DISPLAY,
           courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+          eventDateTime = "2020-01-02T00:00:00",
+          courtId = "MDI",
         )
       }
 
@@ -852,8 +854,13 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create a court appearance in DPS`() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
-              postRequestedFor(urlPathEqualTo("/court-appearance")),
-              // TODO assert once DPS team have defined their dto
+              postRequestedFor(urlPathEqualTo("/court-appearance"))
+                .withRequestBody(matchingJsonPath("outcome", equalTo("4506")))
+                .withRequestBody(matchingJsonPath("courtCode", equalTo("MDI")))
+                .withRequestBody(matchingJsonPath("courtCaseUuid", equalTo(DPS_COURT_CASE_ID)))
+                .withRequestBody(matchingJsonPath("courtCaseReference", equalTo("TBC")))
+                .withRequestBody(matchingJsonPath("appearanceDate", equalTo("2020-01-02")))
+                .withRequestBody(matchingJsonPath("warrantType", equalTo("REMAND"))),
             )
           }
         }

@@ -15,15 +15,19 @@ fun CourtCaseResponse.toDpsCourtCase() = CreateCourtCase(
   appearances = emptyList(),
 )
 
-// TODO transformations nomis-dps
+private const val WARRANT_TYPE_DEFAULT = "REMAND"
+private const val OUTCOME_DEFAULT = "3034"
+
 fun CourtEventResponse.toDpsCourtAppearance(offenderNo: String, dpsCaseId: String?) = CreateCourtAppearance(
-  outcome = "outcome",
+  // TODO determine what happens when no result in NOMIS (approx 10% of CAs associated with a case)
+  outcome = this.outcomeReasonCode?.code ?: OUTCOME_DEFAULT,
   courtCode = this.courtId,
-  // TODO court_events caseId is optional in nomis  - determine how to handle this
+  // Only handling appearances associated with a case
   courtCaseUuid = dpsCaseId!!,
-  courtCaseReference = "caseRef",
+  // case references are not associated with an appearance on NOMIS
+  courtCaseReference = "TBC",
   appearanceDate = LocalDateTime.parse(this.eventDateTime).toLocalDate(),
-  warrantType = "warrantType",
+  warrantType = WARRANT_TYPE_DEFAULT,
   charges = emptyList(),
 )
 
