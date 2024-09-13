@@ -42,7 +42,7 @@ class CSIPPrisonOffenderEventListener(
           if (eventFeatureSwitch.isEnabled(eventType, "csip")) {
             when (eventType) {
               // The first grouping will all (eventually) call the same method
-              "CSIP_REPORTS-INSERTED" -> csipSynchronisationService.csipReportSynchronise(sqsMessage.Message.fromJson())
+              "CSIP_REPORTS-INSERTED" -> csipSynchronisationService.csipReportInserted(sqsMessage.Message.fromJson())
               "CSIP_REPORTS-UPDATED" -> csipReportUpdated(sqsMessage.Message.fromJson())
               "CSIP_REPORTS-DELETED" -> csipSynchronisationService.csipReportDeleted(sqsMessage.Message.fromJson())
               "CSIP_PLANS-INSERTED" -> log.debug("Insert CSIP Plan")

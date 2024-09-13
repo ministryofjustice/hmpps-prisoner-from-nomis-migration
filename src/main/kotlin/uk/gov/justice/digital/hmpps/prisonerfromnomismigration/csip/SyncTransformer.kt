@@ -37,6 +37,7 @@ fun CSIPResponse.toDPSSyncRequest(dpsReportId: String? = null, actioned: ActionD
     legacyId = id,
     prisonNumber = offender.offenderNo,
     logCode = logNumber,
+    prisonCodeWhenRecorded = originalAgencyId,
     activeCaseloadId = originalAgencyId,
 
     referral =
@@ -312,7 +313,7 @@ fun SyncResponse.filterInterviews(dpsCSIPReportId: String, mappingType: CSIPInte
     }
 
 fun SyncResponse.filterPlans(dpsCSIPReportId: String, mappingType: CSIPPlanMappingDto.MappingType = CSIPPlanMappingDto.MappingType.NOMIS_CREATED, label: String? = null) =
-  mappings.filter { it.component == ResponseMapping.Component.PLAN }
+  mappings.filter { it.component == ResponseMapping.Component.IDENTIFIED_NEED }
     .map {
       CSIPPlanMappingDto(
         dpsCSIPReportId = dpsCSIPReportId,

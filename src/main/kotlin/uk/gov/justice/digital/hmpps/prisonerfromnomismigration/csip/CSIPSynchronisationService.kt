@@ -28,7 +28,7 @@ class CSIPSynchronisationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  suspend fun csipReportSynchronise(event: CSIPReportEvent) {
+  suspend fun csipReportInserted(event: CSIPReportEvent) {
     // Avoid duplicate sync if originated from DPS
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent(
@@ -46,8 +46,6 @@ class CSIPSynchronisationService(
     val nomisCSIP = nomisApiService.getCSIP(event.csipReportId)
     mappingApiService.getCSIPReportByNomisId(nomisCSIPReportId = event.csipReportId)
       ?.let {
-        // TODO CSIP Report mapping exists so we just want to update
-        //  csipService.syncCSIP(nomisCSIP.toDPSSyncRequest(it.dpsCSIPId), nomisCSIP.createdBy)
         telemetryClient.trackEvent(
           "csip-synchronisation-created-ignored",
           event.toTelemetryProperties(it.dpsCSIPReportId),
@@ -55,21 +53,34 @@ class CSIPSynchronisationService(
       }
       ?: let {
         // CSIP Report mapping doesn't exist
-        csipService.syncCSIP(nomisCSIP.toDPSSyncRequest(actioned = nomisCSIP.toActionDetails()), nomisCSIP.createdBy)
-          .also { syncResponse ->
-            // At this point we need to determine all children and call the appropriate mapping endpoints
-            // For now, just map top level report
-            val dpsCSIPReportId = syncResponse.filterReport().uuid.toString()
+        val syncCsipRequest = nomisCSIP.toDPSSyncRequest(actioned = nomisCSIP.toActionDetails())
+        log.debug("Sync Request for {}", syncCsipRequest)
 
-            tryToCreateCSIPReportMapping(event, dpsCSIPReportId).also { result ->
-              val mappingSuccessTelemetry =
-                (if (result == MappingResponse.MAPPING_CREATED) mapOf() else mapOf("mapping" to "initial-failure"))
-              telemetryClient.trackEvent(
-                "csip-synchronisation-created-success",
-                telemetry + ("dpsCSIPId" to dpsCSIPReportId) + mappingSuccessTelemetry,
-              )
-            }
-            // TODO **** CHECK IF CHILD TABLES NEED MAPPING  ****
+        csipService.syncCSIP(syncCsipRequest, nomisCSIP.createdBy)
+          .also { syncResponse ->
+            val dpsCSIPReportId = syncResponse.filterReport().uuid.toString()
+            tryToCreateCSIPReportMapping(
+              event,
+              CSIPFullMappingDto(
+                nomisCSIPReportId = event.csipReportId,
+                dpsCSIPReportId = dpsCSIPReportId,
+                mappingType = CSIPFullMappingDto.MappingType.NOMIS_CREATED,
+                attendeeMappings = syncResponse.filterAttendees(dpsCSIPReportId = dpsCSIPReportId),
+                factorMappings = syncResponse.filterFactors(dpsCSIPReportId = dpsCSIPReportId),
+                interviewMappings = syncResponse.filterInterviews(dpsCSIPReportId = dpsCSIPReportId),
+                planMappings = syncResponse.filterPlans(dpsCSIPReportId = dpsCSIPReportId),
+                reviewMappings = syncResponse.filterReviews(dpsCSIPReportId = dpsCSIPReportId),
+
+              ),
+            )
+              .also { result ->
+                val mappingSuccessTelemetry =
+                  (if (result == MappingResponse.MAPPING_CREATED) mapOf() else mapOf("mapping" to "initial-failure"))
+                telemetryClient.trackEvent(
+                  "csip-synchronisation-created-success",
+                  telemetry + ("dpsCSIPId" to dpsCSIPReportId) + mappingSuccessTelemetry,
+                )
+              }
           }
       }
   }
@@ -253,21 +264,11 @@ class CSIPSynchronisationService(
 
   private suspend fun tryToCreateCSIPReportMapping(
     event: CSIPReportEvent,
-    dpsCSIPId: String,
+    fullMappingDto: CSIPFullMappingDto,
   ): MappingResponse {
-    val mapping = CSIPFullMappingDto(
-      nomisCSIPReportId = event.csipReportId,
-      dpsCSIPReportId = dpsCSIPId,
-      mappingType = CSIPFullMappingDto.MappingType.NOMIS_CREATED,
-      attendeeMappings = listOf(),
-      factorMappings = listOf(),
-      interviewMappings = listOf(),
-      planMappings = listOf(),
-      reviewMappings = listOf(),
-    )
     try {
       mappingApiService.createMapping(
-        mapping,
+        fullMappingDto,
         object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPFullMappingDto>>() {},
       ).also {
         if (it.isError) {
@@ -287,14 +288,14 @@ class CSIPSynchronisationService(
       return MappingResponse.MAPPING_CREATED
     } catch (e: Exception) {
       log.error(
-        "Failed to create mapping for csip report dpsCSIPId id $dpsCSIPId, nomisCSIPId ${event.csipReportId}",
+        "Failed to create mapping for csip report dpsCSIPId id ${fullMappingDto.dpsCSIPReportId}, nomisCSIPId ${event.csipReportId}",
         e,
       )
       queueService.sendMessage(
         messageType = SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING.name,
         synchronisationType = SynchronisationType.CSIP,
-        message = mapping,
-        telemetryAttributes = event.toTelemetryProperties(dpsCSIPId),
+        message = fullMappingDto,
+        telemetryAttributes = event.toTelemetryProperties(fullMappingDto.dpsCSIPReportId),
       )
       return MAPPING_FAILED
     }
