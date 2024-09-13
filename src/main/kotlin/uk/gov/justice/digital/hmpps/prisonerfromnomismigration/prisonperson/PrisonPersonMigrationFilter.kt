@@ -11,7 +11,7 @@ class PrisonPersonMigrationFilter(
     description = "Only migrate a single prisoner - used for testing",
     example = "A1234BC",
   )
-  val prisonerNumber: String?,
+  val prisonerNumber: String? = null,
 
   @Schema(
     description = "The type of migration for this person, e.g. which data is being migrated",
