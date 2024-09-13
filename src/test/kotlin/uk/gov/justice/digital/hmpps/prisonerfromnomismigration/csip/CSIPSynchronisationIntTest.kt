@@ -94,7 +94,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         fun setUp() {
           csipNomisApi.stubGetCSIP()
           csipMappingApi.stubGetByNomisId(HttpStatus.NOT_FOUND)
-          csipDpsApi.stubSyncCSIPReport()
+          csipDpsApi.stubSyncCSIPReportWithFactor()
           mappingApi.stubMappingCreate(CSIP_CREATE_MAPPING_URL)
 
           awsSqsCSIPOffenderEventsClient.sendMessage(
@@ -113,7 +113,9 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will retrieve mapping to check if this is a new csip`() {
           await untilAsserted {
-            mappingApi.verify(getRequestedFor(urlPathEqualTo(NOMIS_MAPPING_API_URL)))
+            mappingApi.verify(
+              getRequestedFor(urlPathEqualTo(NOMIS_MAPPING_API_URL)),
+            )
           }
         }
 
@@ -136,7 +138,8 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
             mappingApi.verify(
               postRequestedFor(urlPathEqualTo("/mapping/csip/all"))
                 .withRequestBody(matchingJsonPath("dpsCSIPReportId", equalTo(DPS_CSIP_ID)))
-                .withRequestBody(matchingJsonPath("nomisCSIPReportId", equalTo("$NOMIS_CSIP_ID"))),
+                .withRequestBody(matchingJsonPath("nomisCSIPReportId", equalTo("$NOMIS_CSIP_ID")))
+                .withRequestBody(matchingJsonPath("factorMappings[0].dpsCSIPFactorId", equalTo("a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e6"))),
             )
           }
         }
@@ -163,7 +166,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         fun setUp() {
           csipNomisApi.stubGetCSIPWithMinimalData()
           csipMappingApi.stubGetByNomisId(HttpStatus.NOT_FOUND)
-          csipDpsApi.stubSyncCSIPReport()
+          csipDpsApi.stubSyncCSIPReportWithFactor()
           mappingApi.stubMappingCreate(CSIP_CREATE_MAPPING_URL)
 
           awsSqsCSIPOffenderEventsClient.sendMessage(
