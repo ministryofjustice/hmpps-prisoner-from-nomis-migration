@@ -5,12 +5,14 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
@@ -26,6 +28,32 @@ class PrisonPersonMigrationResource(
   private val migrationService: PrisonPersonMigrationService,
   private val migrationHistoryService: MigrationHistoryService,
 ) {
+  @PreAuthorize("hasRole('ROLE_MIGRATE_PRISONPERSON')")
+  @PostMapping
+  @ResponseStatus(value = HttpStatus.ACCEPTED)
+  @Operation(
+    summary = "Starts a prison person migration. The entity type is determined by the migration filter",
+    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>MIGRATE_PRISONPERSON</b>",
+    responses = [
+      ApiResponse(
+        responseCode = "202",
+        description = "Migration process started",
+      ),
+      ApiResponse(
+        responseCode = "401",
+        description = "Unauthorized to access this endpoint",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+      ApiResponse(
+        responseCode = "403",
+        description = "Incorrect permissions to start migration",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+    ],
+  )
+  suspend fun migratePrisonPerson(
+    @RequestBody @Valid migrationFilter: PrisonPersonMigrationFilter,
+  ) = migrationService.startMigration(migrationFilter)
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_PRISONPERSON')")
   @GetMapping("/history")
