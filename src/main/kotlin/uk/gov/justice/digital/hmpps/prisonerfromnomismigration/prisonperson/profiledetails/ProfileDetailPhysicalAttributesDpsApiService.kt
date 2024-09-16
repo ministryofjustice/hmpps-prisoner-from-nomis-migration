@@ -19,4 +19,9 @@ class ProfileDetailPhysicalAttributesDpsApiService(@Qualifier("prisonPersonApiWe
       .bodyValue(requests)
       .retrieve()
       .awaitBody()
+
+  // TODO SDIT-2019 Implement this service when the DPS API is available
+  suspend fun syncProfileDetailsPhysicalAttributes(
+    prisonerNumber: String,
+  ): Unit = println("Ignoring sync of profile details - waiting for DPS API details")
 }
