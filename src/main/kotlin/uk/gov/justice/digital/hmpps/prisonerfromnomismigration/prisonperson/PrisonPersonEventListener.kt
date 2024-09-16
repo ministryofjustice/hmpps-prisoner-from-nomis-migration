@@ -14,11 +14,13 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.physicalattributes.PhysicalAttributesSyncService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.profiledetails.ProfileDetailsSyncService
 import java.util.concurrent.CompletableFuture
 
 @Service
 class PrisonPersonEventListener(
   private val physicalAttributesSyncService: PhysicalAttributesSyncService,
+  private val profileDetailsSyncService: ProfileDetailsSyncService,
   private val objectMapper: ObjectMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
 ) {
@@ -39,6 +41,7 @@ class PrisonPersonEventListener(
           if (eventFeatureSwitch.isEnabled(eventType, "prisonperson")) {
             when (eventType) {
               "OFFENDER_PHYSICAL_ATTRIBUTES-CHANGED" -> physicalAttributesSyncService.physicalAttributesChanged(sqsMessage.Message.fromJson())
+              "OFFENDER_PHYSICAL_DETAILS-CHANGED" -> profileDetailsSyncService.profileDetailsChanged(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
@@ -62,4 +65,10 @@ private fun asCompletableFuture(
 data class PhysicalAttributesChangedEvent(
   val offenderIdDisplay: String,
   val bookingId: Long,
+)
+
+data class ProfileDetailsChangedEvent(
+  val offenderIdDisplay: String,
+  val bookingId: Long,
+  val profileType: String,
 )
