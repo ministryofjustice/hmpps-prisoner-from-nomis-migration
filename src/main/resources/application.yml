@@ -179,6 +179,10 @@ hmpps.sqs:
     # recreates the incident on each upsert). Stagger incident messages every 5 seconds.
     eventincidents:
       errorVisibilityTimeout: 5
+    # court sentencing will have to process creation events for parent and child entities simultaneously
+    # a short delay should be enough for the hierachy to be created in the right order.
+    eventcourtsentencing:
+      errorVisibilityTimeout: 1
 
 reports:
   incidents:
