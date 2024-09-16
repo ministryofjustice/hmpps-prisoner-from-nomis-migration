@@ -101,7 +101,7 @@ fun SaferCustodyScreening.toDPSSyncCSIPSCS() =
   SyncScreeningOutcomeRequest(
     outcomeTypeCode = outcome!!.code,
     date = recordedDate!!,
-    reasonForDecision = reasonForDecision!!,
+    reasonForDecision = reasonForDecision,
     recordedBy = recordedBy!!,
     recordedByDisplayName = recordedByDisplayName!!,
   )
@@ -115,12 +115,10 @@ fun CSIPFactorResponse.toDPSSyncContributoryFactorRequest() =
     comment = comment,
     createdAt = LocalDateTime.parse(createDateTime),
     createdBy = createdBy,
-    // createdByDisplayName = createdByDisplayName ?: createdBy,
-    createdByDisplayName = createdBy,
+    createdByDisplayName = createdByDisplayName ?: createdBy,
     lastModifiedAt = lastModifiedDateTime?.let { LocalDateTime.parse(lastModifiedDateTime) },
     lastModifiedBy = lastModifiedBy,
-    // lastModifiedByDisplayName = lastModifiedByDisplayName ?: lastModifiedBy
-    lastModifiedByDisplayName = lastModifiedBy,
+    lastModifiedByDisplayName = lastModifiedByDisplayName ?: lastModifiedBy,
   )
 
 fun InvestigationDetails.toDPSSyncInvestigationRequest() =
