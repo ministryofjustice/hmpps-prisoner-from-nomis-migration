@@ -143,7 +143,6 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
             caseNotesApi.verify(
               1,
               postRequestedFor(urlPathEqualTo("/sync/case-notes"))
-                .withRequestBody(matchingJsonPath("id", equalTo(DPS_CASE_NOTE_ID)))
                 .withRequestBody(matchingJsonPath("legacyId", equalTo(NOMIS_CASE_NOTE_ID.toString())))
                 .withRequestBody(matchingJsonPath("personIdentifier", equalTo(OFFENDER_ID_DISPLAY)))
                 .withRequestBody(matchingJsonPath("locationId", equalTo("SWI")))

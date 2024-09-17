@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-09-12.8836.f48d8dd"
+    "version": "2024-09-17.8935.cac032c"
   },
   "servers": [
     {
@@ -8517,6 +8517,72 @@
           },
           "404": {
             "description": "Booking does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/persons/{personId}": {
+      "get": {
+        "tags": [
+          "contact-person-resource"
+        ],
+        "summary": "Get a person by person Id",
+        "description": "Retrieves a person and related contacts. Requires ROLE_NOMIS_CONTACTPERSONS",
+        "operationId": "getPerson",
+        "parameters": [
+          {
+            "name": "personId",
+            "in": "path",
+            "description": "Person Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Person Id",
+              "example": 12345
+            },
+            "example": 12345
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Person Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactPerson"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_CONTACTPERSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Person does not exist",
             "content": {
               "application/json": {
                 "schema": {
@@ -17123,7 +17189,6 @@
       },
       "ProfileDetailsResponse": {
         "required": [
-          "code",
           "createDateTime",
           "createdBy",
           "type"
@@ -17477,22 +17542,30 @@
           "createDateTime": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
-            "description": "The date and time the report was created",
+            "description": "The date and time the factor was created",
             "example": "2021-07-05T10:35:17"
           },
           "createdBy": {
             "type": "string",
-            "description": "The username of the person who created the report"
+            "description": "The username of the person who created the factor"
+          },
+          "createdByDisplayName": {
+            "type": "string",
+            "description": "Real name of the person who created the factor"
           },
           "lastModifiedDateTime": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
-            "description": "The date and time the report was last updated",
+            "description": "The date and time the factor was last updated",
             "example": "2021-07-05T10:35:17"
           },
           "lastModifiedBy": {
             "type": "string",
-            "description": "The username of the person who last updated the report"
+            "description": "The username of the person who last updated the factor"
+          },
+          "lastModifiedByDisplayName": {
+            "type": "string",
+            "description": "Real name of the person who last updated the factor"
           }
         },
         "description": "Contributory factors"
@@ -18740,6 +18813,45 @@
           }
         },
         "description": "The list of alerts held against a booking"
+      },
+      "ContactPerson": {
+        "required": [
+          "firstName",
+          "lastName",
+          "personId"
+        ],
+        "type": "object",
+        "properties": {
+          "personId": {
+            "type": "integer",
+            "description": "The person id",
+            "format": "int64"
+          },
+          "firstName": {
+            "type": "string",
+            "description": "First name of the person"
+          },
+          "lastName": {
+            "type": "string",
+            "description": "Surname name of the person"
+          },
+          "middleName": {
+            "type": "string",
+            "description": "Middle name of the person"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "description": "Date of birth of the person",
+            "format": "date"
+          },
+          "gender": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "title": {
+            "$ref": "#/components/schemas/CodeDescription"
+          }
+        },
+        "description": "The data held in NOMIS about a person who is a contact for a prisoner"
       },
       "NonAssociationResponse": {
         "required": [
