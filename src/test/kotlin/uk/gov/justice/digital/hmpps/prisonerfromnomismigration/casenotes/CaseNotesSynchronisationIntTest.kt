@@ -156,7 +156,7 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBody(matchingJsonPath("authorUsername", equalTo("me")))
                 .withRequestBody(matchingJsonPath("authorUserId", equalTo("123456")))
                 .withRequestBody(matchingJsonPath("authorName", equalTo("me too")))
-                .withRequestBody(matchingJsonPath("occurrenceDateTime", equalTo("2023-08-12T13:14:15"))),
+                .withRequestBody(matchingJsonPath("occurrenceDateTime", equalTo("2021-02-03T04:05:06"))),
             )
           }
         }
