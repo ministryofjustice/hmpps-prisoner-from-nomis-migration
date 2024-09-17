@@ -133,8 +133,8 @@ fun InvestigationDetails.toDPSSyncInvestigationRequest() =
   ).takeUnless { isEmpty() }
 
 fun InvestigationDetails.isEmpty() =
-  staffInvolved.isNullOrEmpty() || evidenceSecured.isNullOrEmpty() || reasonOccurred.isNullOrEmpty() ||
-    usualBehaviour.isNullOrEmpty() || trigger.isNullOrEmpty() || protectiveFactors.isNullOrEmpty() ||
+  staffInvolved.isNullOrEmpty() && evidenceSecured.isNullOrEmpty() && reasonOccurred.isNullOrEmpty() &&
+    usualBehaviour.isNullOrEmpty() && trigger.isNullOrEmpty() && protectiveFactors.isNullOrEmpty() &&
     interviews.isNullOrEmpty()
 
 fun InterviewDetails.toDPSSyncInterviewRequest() =

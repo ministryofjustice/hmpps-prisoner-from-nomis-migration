@@ -170,7 +170,7 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
         firstCaseReviewDate = LocalDate.parse("2024-04-15"),
       )
 
-    fun nomisCSIPReportMinimalData(nomisCSIPId: Long = 1234) =
+    fun nomisCSIPReportMinimalData(nomisCSIPId: Long = 1234, reasonOccurred: String? = null) =
       CSIPResponse(
         id = nomisCSIPId,
         offender = Offender("A1234BC", firstName = "Fred", lastName = "Smith"),
@@ -192,6 +192,7 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
         ),
         saferCustodyScreening = SaferCustodyScreening(),
         investigation = InvestigationDetails(
+          reasonOccurred = reasonOccurred,
           interviews = listOf(),
         ),
         decision = Decision(

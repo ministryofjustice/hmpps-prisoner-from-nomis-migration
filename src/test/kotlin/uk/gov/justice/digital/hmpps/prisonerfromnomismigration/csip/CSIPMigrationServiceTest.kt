@@ -990,6 +990,48 @@ internal class CSIPMigrationServiceTest {
     }
 
     @Nested
+    @DisplayName("migrateCSIPWithMinimalInvestigationData")
+    inner class MigrateCSIPMinimalInvestigationData {
+
+      @BeforeEach
+      internal fun setUp(): Unit = runTest {
+        whenever(csipMappingService.getCSIPReportByNomisId(any())).thenReturn(null)
+        whenever(nomisApiService.getCSIP(any()))
+          .thenReturn(nomisCSIPReportMinimalData(reasonOccurred = "There was a problem"))
+        whenever(csipDpsService.migrateCSIP(any())).thenReturn(dpsCsipReportSyncResponse())
+        whenever(csipMappingService.createMapping(any(), any())).thenReturn(CreateMappingResult())
+      }
+
+      @Test
+      internal fun `will transform and send that csip to the csip api service`(): Unit = runTest {
+        service.migrateNomisEntity(
+          MigrationContext(
+            type = CSIP,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = CSIPIdResponse(NOMIS_CSIP_ID),
+          ),
+        )
+
+        verify(csipDpsService).migrateCSIP(
+          check {
+            assertThat(it.referral!!.investigation!!.occurrenceReason).isEqualTo("There was a problem")
+          },
+        )
+
+        verify(telemetryClient, times(1)).trackEvent(
+          eq("csip-migration-entity-migrated"),
+          check {
+            assertThat(it["migrationId"]).isNotNull
+            assertThat(it["nomisCSIPId"]).isNotNull
+            assertThat(it["dpsCSIPId"]).isNotNull
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
     inner class WhenMigratedAlready {
       @BeforeEach
       internal fun setUp(): Unit = runTest {
