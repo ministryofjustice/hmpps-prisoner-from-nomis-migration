@@ -3,7 +3,10 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.pro
 import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.ProfileDetailsChangedEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.synchronisationUser
+import java.time.LocalDateTime
 
 @Service
 class ProfileDetailsSyncService(
@@ -47,11 +50,31 @@ class ProfileDetailsSyncService(
       val nomisResponse = nomisApiService.getProfileDetails(offenderNo)
 
       val booking = nomisResponse.bookings.find { it.bookingId == bookingId }
-        ?: throw ProfileDetailsChangedException("Booking with profile details not found for bookingId=$bookingId")
-      val physicalAttributes = booking.profileDetails.firstOrNull { it.type == profileType }
+        ?: throw ProfileDetailsChangedException("Booking with requested bookingId not found")
+      val profileDetails = booking.profileDetails.firstOrNull { it.type == profileType }
+        ?: throw ProfileDetailsChangedException("Profile details for requested profileType not found")
 
-      // TODO implement this when the DPS API is ready to call
-      dpsApiService.syncProfileDetailsPhysicalAttributes(offenderNo)
+      getIgnoreReason(nomisResponse.bookings.size, profileDetails)
+        ?.let { ignoreReason ->
+          telemetry["reason"] = ignoreReason
+          telemetryClient.trackEvent("profile-details-physical-attributes-synchronisation-ignored", telemetry)
+          return
+        }
+
+      // TODO SDIT-2019 change to align with the DPS API when it is ready
+      val (createdAt, createdBy) = getCreated(profileDetails)
+      dpsApiService.syncProfileDetailsPhysicalAttributes(
+        SyncProfileDetailsPhysicalAttributesRequest(
+          prisonerNumber = offenderNo,
+          profileType = profileType,
+          profileCode = profileDetails.code,
+          appliesFrom = booking.startDateTime.toLocalDateTime(),
+          appliesTo = booking.endDateTime?.toLocalDateTime(),
+          latestBooking = booking.latestBooking,
+          createdAt = createdAt.toLocalDateTime(),
+          createdBy = createdBy,
+        ),
+      )
     } catch (e: Exception) {
       telemetry["error"] = e.message.toString()
       telemetryClient.trackEvent("profile-details-physical-attributes-synchronisation-error", telemetry)
@@ -60,6 +83,25 @@ class ProfileDetailsSyncService(
 
     telemetryClient.trackEvent("profile-details-physical-attributes-synchronisation-updated", telemetry)
   }
+
+  private fun getIgnoreReason(
+    bookingCount: Int,
+    profileDetails: ProfileDetailsResponse,
+  ): String? =
+    if (bookingCount == 1 && profileDetails.code == null && profileDetails.modifiedDateTime == null) {
+      "New profile details are empty"
+    } else if (profileDetails.auditModuleName == synchronisationUser) {
+      "Profile details were created by $synchronisationUser"
+    } else {
+      null
+    }
+
+  private fun getCreated(profileDetails: ProfileDetailsResponse) =
+    with(profileDetails) {
+      (modifiedDateTime ?: createDateTime) to (modifiedBy ?: createdBy)
+    }
+
+  private fun String.toLocalDateTime() = LocalDateTime.parse(this)
 }
 
 class ProfileDetailsChangedException(message: String) : IllegalArgumentException(message)

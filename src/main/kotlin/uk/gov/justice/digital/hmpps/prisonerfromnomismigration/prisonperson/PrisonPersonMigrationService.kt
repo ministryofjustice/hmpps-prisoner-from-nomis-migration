@@ -20,6 +20,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 
 fun LocalDateTime.atPrisonPersonZone(): String = atZone(ZoneId.of("Europe/London")).toString()
+internal val synchronisationUser = "DPS_SYNCHRONISATION"
 
 @Service
 class PrisonPersonMigrationService(

@@ -7,6 +7,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.B
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PhysicalAttributesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerPhysicalAttributesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PhysicalAttributesChangedEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.synchronisationUser
 import java.time.LocalDateTime
 
 @Service
@@ -15,8 +16,6 @@ class PhysicalAttributesSyncService(
   private val dpsApiService: PhysicalAttributesDpsApiService,
   private val telemetryClient: TelemetryClient,
 ) {
-
-  private val synchronisationUser = "DPS_SYNCHRONISATION"
 
   suspend fun physicalAttributesChanged(event: PhysicalAttributesChangedEvent) {
     val offenderNo = event.offenderIdDisplay
