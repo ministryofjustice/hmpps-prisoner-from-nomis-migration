@@ -59,8 +59,16 @@ class CaseNotesNomisApiServiceTest {
           caseNoteType = CodeDescription("X", "Security"),
           caseNoteSubType = CodeDescription("X", "Security"),
           authorUsername = "me",
-          amended = false,
-          caseNoteId = 1001,
+          authorStaffId = 123456L,
+          authorName = "me too",
+          amendments = emptyList(),
+          createdDatetime = "2021-02-03T04:05:06",
+          noteSourceCode = CaseNoteResponse.NoteSourceCode.INST,
+          occurrenceDateTime = "2021-02-03T04:05:06",
+          prisonId = "SWI",
+          caseNoteText = "the actual casenote",
+          auditModuleName = "module",
+          caseNoteId = 1,
         ),
       )
 
@@ -68,7 +76,9 @@ class CaseNotesNomisApiServiceTest {
 
       assertThat(response.caseNotes).hasSize(2)
       assertThat(response.caseNotes[0].bookingId).isEqualTo(1L)
-      assertThat(response.caseNotes[0].caseNoteId).isEqualTo(1001L)
+      assertThat(response.caseNotes[0].caseNoteId).isEqualTo(1L)
+      assertThat(response.caseNotes[1].bookingId).isEqualTo(2L)
+      assertThat(response.caseNotes[1].caseNoteId).isEqualTo(2L)
     }
   }
 
@@ -104,7 +114,15 @@ class CaseNotesNomisApiServiceTest {
           caseNoteType = CodeDescription("X", "Security"),
           caseNoteSubType = CodeDescription("X", "Security"),
           authorUsername = "me",
-          amended = false,
+          authorStaffId = 123456L,
+          authorName = "me too",
+          amendments = emptyList(),
+          createdDatetime = "2021-02-03T04:05:06",
+          noteSourceCode = CaseNoteResponse.NoteSourceCode.INST,
+          occurrenceDateTime = "2021-02-03T04:05:06",
+          prisonId = "SWI",
+          caseNoteText = "the actual casenote",
+          auditModuleName = "module",
           caseNoteId = 1001,
         ),
       )

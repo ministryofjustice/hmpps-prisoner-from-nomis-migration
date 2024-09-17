@@ -38,6 +38,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.util.AbstractMap.SimpleEntry
+import java.util.UUID
 
 private const val BOOKING_ID = 1234L
 private const val NOMIS_CASE_NOTE_ID = 2345678L
@@ -122,7 +123,7 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           // caseNotesMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
-          caseNotesApi.stubPostCaseNote(dpsCaseNote().copy(caseNoteId = DPS_CASE_NOTE_ID))
+          caseNotesApi.stubPostCaseNote(dpsCaseNote().copy(id = UUID.fromString(DPS_CASE_NOTE_ID)))
           caseNotesMappingApiMockServer.stubPostMapping()
 
           awsSqsCaseNoteOffenderEventsClient.sendMessage(
@@ -140,8 +141,23 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create caseNote in DPS`() {
           await untilAsserted {
             caseNotesApi.verify(
-              postRequestedFor(urlPathEqualTo("/sync/upsert")),
-              // TBC .withRequestBody(matchingJsonPath("caseNoteType", equalTo("XNR"))),
+              1,
+              postRequestedFor(urlPathEqualTo("/sync/case-notes"))
+                .withRequestBody(matchingJsonPath("id", equalTo(DPS_CASE_NOTE_ID)))
+                .withRequestBody(matchingJsonPath("legacyId", equalTo(NOMIS_CASE_NOTE_ID.toString())))
+                .withRequestBody(matchingJsonPath("personIdentifier", equalTo(OFFENDER_ID_DISPLAY)))
+                .withRequestBody(matchingJsonPath("locationId", equalTo("SWI")))
+                .withRequestBody(matchingJsonPath("type", equalTo("XNR")))
+                .withRequestBody(matchingJsonPath("subType", equalTo("X")))
+                .withRequestBody(matchingJsonPath("text", equalTo("the actual casenote")))
+                .withRequestBody(matchingJsonPath("systemGenerated", equalTo("false")))
+                .withRequestBody(matchingJsonPath("createdDateTime", equalTo("2021-02-03T04:05:06")))
+                .withRequestBody(matchingJsonPath("createdByUsername", equalTo("TBC"))) // TODO
+                .withRequestBody(matchingJsonPath("source", equalTo("NOMIS")))
+                .withRequestBody(matchingJsonPath("authorUsername", equalTo("me")))
+                .withRequestBody(matchingJsonPath("authorUserId", equalTo("123456")))
+                .withRequestBody(matchingJsonPath("authorName", equalTo("me too")))
+                .withRequestBody(matchingJsonPath("occurrenceDateTime", equalTo("2023-08-12T13:14:15"))),
             )
           }
         }
@@ -185,7 +201,7 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
         fun setUp() {
           caseNotesMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
           caseNotesApi.stubPostCaseNote(
-            dpsCaseNote().copy(caseNoteId = DPS_CASE_NOTE_ID),
+            dpsCaseNote().copy(id = UUID.fromString(DPS_CASE_NOTE_ID)),
           )
         }
 
@@ -211,8 +227,7 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
           fun `will create caseNote in DPS`() {
             await untilAsserted {
               caseNotesApi.verify(
-                postRequestedFor(urlPathEqualTo("/sync/upsert")),
-                // TBC .withRequestBody(matchingJsonPath("caseNoteId", equalTo(DPS_CASE_NOTE_ID))),
+                postRequestedFor(urlPathEqualTo("/sync/case-notes")),
               )
             }
           }
@@ -290,8 +305,7 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
             await untilAsserted {
               caseNotesApi.verify(
                 1,
-                postRequestedFor(urlPathEqualTo("/sync/upsert")),
-                // TBC .withRequestBody(matchingJsonPath("caseNoteId", equalTo(DPS_CASE_NOTE_ID))),
+                postRequestedFor(urlPathEqualTo("/sync/case-notes")),
               )
             }
           }
@@ -382,16 +396,19 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
     @Nested
     @DisplayName("When caseNote was updated in NOMIS")
     inner class NomisUpdated {
+      lateinit var nomisCaseNote: CaseNoteResponse
+
       @BeforeEach
       fun setUp() {
+        nomisCaseNote = caseNote(bookingId = BOOKING_ID, caseNoteId = NOMIS_CASE_NOTE_ID).copy(
+          caseNoteType = CodeDescription("XNR", "Not For Release"),
+          caseNoteSubType = CodeDescription("X", "Security"),
+          occurrenceDateTime = "2023-08-12T13:14:15",
+        )
         caseNotesNomisApiMockServer.stubGetCaseNote(
           bookingId = BOOKING_ID,
           caseNoteId = NOMIS_CASE_NOTE_ID,
-          caseNote = caseNote(bookingId = BOOKING_ID, caseNoteId = NOMIS_CASE_NOTE_ID).copy(
-            caseNoteType = CodeDescription("XNR", "Not For Release"),
-            caseNoteSubType = CodeDescription("X", "Security"),
-            occurrenceDateTime = "2023-08-12",
-          ),
+          caseNote = nomisCaseNote,
         )
       }
 
@@ -471,8 +488,22 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             caseNotesApi.verify(
               1,
-              postRequestedFor(urlPathEqualTo("/sync/upsert")),
-              // TBC .withRequestBody(matchingJsonPath("activeTo", equalTo(caseNoteExpiryDate))),
+              postRequestedFor(urlPathEqualTo("/sync/case-notes"))
+                .withRequestBody(matchingJsonPath("id", equalTo(DPS_CASE_NOTE_ID)))
+                .withRequestBody(matchingJsonPath("legacyId", equalTo(NOMIS_CASE_NOTE_ID.toString())))
+                .withRequestBody(matchingJsonPath("personIdentifier", equalTo(OFFENDER_ID_DISPLAY)))
+                .withRequestBody(matchingJsonPath("locationId", equalTo(nomisCaseNote.prisonId)))
+                .withRequestBody(matchingJsonPath("type", equalTo("XNR")))
+                .withRequestBody(matchingJsonPath("subType", equalTo("X")))
+                .withRequestBody(matchingJsonPath("text", equalTo("the actual casenote")))
+                .withRequestBody(matchingJsonPath("systemGenerated", equalTo("false")))
+                .withRequestBody(matchingJsonPath("createdDateTime", equalTo("2021-02-03T04:05:06")))
+                .withRequestBody(matchingJsonPath("createdByUsername", equalTo("TBC"))) // TODO
+                .withRequestBody(matchingJsonPath("source", equalTo("NOMIS")))
+                .withRequestBody(matchingJsonPath("authorUsername", equalTo("me")))
+                .withRequestBody(matchingJsonPath("authorUserId", equalTo("123456")))
+                .withRequestBody(matchingJsonPath("authorName", equalTo("me too")))
+                .withRequestBody(matchingJsonPath("occurrenceDateTime", equalTo("2023-08-12T13:14:15"))),
             )
           }
         }
@@ -568,7 +599,7 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             caseNotesApi.verify(
               1,
-              deleteRequestedFor(urlPathEqualTo("/sync/delete/$DPS_CASE_NOTE_ID")),
+              deleteRequestedFor(urlPathEqualTo("/sync/case-notes/$DPS_CASE_NOTE_ID")),
             )
           }
         }
@@ -633,7 +664,7 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             caseNotesApi.verify(
               1,
-              deleteRequestedFor(urlPathEqualTo("/sync/delete/$DPS_CASE_NOTE_ID")),
+              deleteRequestedFor(urlPathEqualTo("/sync/case-notes/$DPS_CASE_NOTE_ID")),
             )
           }
         }
@@ -707,5 +738,13 @@ private fun caseNote(bookingId: Long = 123456, caseNoteId: Long = 3) = CaseNoteR
   caseNoteType = CodeDescription("X", "Security"),
   caseNoteSubType = CodeDescription("X", "Security"),
   authorUsername = "me",
-  amended = false,
+  authorStaffId = 123456L,
+  authorName = "me too",
+  amendments = emptyList(),
+  createdDatetime = "2021-02-03T04:05:06",
+  noteSourceCode = CaseNoteResponse.NoteSourceCode.INST,
+  occurrenceDateTime = "2021-02-03T04:05:06",
+  prisonId = "SWI",
+  caseNoteText = "the actual casenote",
+  auditModuleName = "module",
 )
