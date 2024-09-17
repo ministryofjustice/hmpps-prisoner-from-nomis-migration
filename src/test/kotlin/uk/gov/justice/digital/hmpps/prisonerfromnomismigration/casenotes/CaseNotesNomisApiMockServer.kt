@@ -4,11 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.okJson
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
-import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
-import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerCaseNotesResponse
@@ -19,7 +16,6 @@ class CaseNotesNomisApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubGetCaseNote(
     caseNoteId: Long = 1001,
     bookingId: Long = 123456,
-    alertSequence: Long = 1,
     auditModuleName: String = "OIDNOMIS",
     caseNote: CaseNoteResponse = CaseNoteResponse(
       caseNoteId = caseNoteId,
@@ -72,14 +68,6 @@ class CaseNotesNomisApiMockServer(private val objectMapper: ObjectMapper) {
     nomisApi.stubFor(
       get(urlEqualTo("/prisoners/$offenderNo/casenotes")).willReturn(
         okJson(objectMapper.writeValueAsString(response)),
-      ),
-    )
-  }
-
-  fun stubGetCaseNotesToMigrate(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
-    nomisApi.stubFor(
-      get(urlPathMatching("/prisoners/.+/casenotes")).willReturn(
-        okJson(objectMapper.writeValueAsString(error)),
       ),
     )
   }
