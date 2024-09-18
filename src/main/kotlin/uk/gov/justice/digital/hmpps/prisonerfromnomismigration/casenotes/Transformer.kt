@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes
 
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.Author
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.MigrateAmendmentRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.MigrateCaseNoteRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.SyncCaseNoteAmendmentRequest
@@ -16,22 +17,28 @@ fun CaseNoteResponse.toDPSCreateCaseNote(offenderNo: String) = MigrateCaseNoteRe
   type = this.caseNoteType.code,
   subType = this.caseNoteSubType.code,
   // never null:
-  text = this.caseNoteText!!,
+  text = this.caseNoteText,
   // never null in prod data:
   occurrenceDateTime = LocalDateTime.parse(this.occurrenceDateTime!!),
   systemGenerated = this.noteSourceCode == CaseNoteResponse.NoteSourceCode.AUTO,
-  authorUsername = this.authorUsername,
-  authorUserId = this.authorStaffId.toString(),
-  authorName = this.authorName,
+  author = Author(
+    username = this.authorUsername,
+    userId = this.authorStaffId.toString(),
+    firstName = this.authorFirstName ?: "",
+    lastName = this.authorLastName,
+  ),
   createdDateTime = LocalDateTime.parse(this.createdDatetime),
-  createdByUsername = "TBC",
+  createdByUsername = this.createdUsername,
   source = MigrateCaseNoteRequest.Source.NOMIS,
   amendments = this.amendments.map { a ->
     MigrateAmendmentRequest(
       text = a.text,
-      authorUsername = a.authorUsername,
-      authorUserId = a.authorUserId.toString(),
-      authorName = a.authorName ?: "Unknown",
+      author = Author(
+        username = a.authorUsername,
+        userId = a.authorStaffId.toString(),
+        firstName = a.authorFirstName ?: "",
+        lastName = a.authorLastName ?: "",
+      ),
       createdDateTime = LocalDateTime.parse(a.createdDateTime),
     )
   }.toSet(),
@@ -46,22 +53,28 @@ fun CaseNoteResponse.toDPSSyncCaseNote(offenderNo: String, id: UUID? = null) = S
   type = this.caseNoteType.code,
   subType = this.caseNoteSubType.code,
   // never null:
-  text = this.caseNoteText!!,
+  text = this.caseNoteText,
   // never null in prod data:
   occurrenceDateTime = LocalDateTime.parse(this.occurrenceDateTime!!),
   systemGenerated = this.noteSourceCode == CaseNoteResponse.NoteSourceCode.AUTO,
-  authorUsername = this.authorUsername,
-  authorUserId = this.authorStaffId.toString(),
-  authorName = this.authorName,
+  author = Author(
+    username = this.authorUsername,
+    userId = this.authorStaffId.toString(),
+    firstName = this.authorFirstName ?: "",
+    lastName = this.authorLastName,
+  ),
   createdDateTime = LocalDateTime.parse(this.createdDatetime),
-  createdByUsername = "TBC",
+  createdByUsername = this.createdUsername,
   source = SyncCaseNoteRequest.Source.NOMIS,
   amendments = this.amendments.map { a ->
     SyncCaseNoteAmendmentRequest(
       text = a.text,
-      authorUsername = a.authorUsername,
-      authorUserId = a.authorUserId.toString(),
-      authorName = a.authorName ?: "Unknown",
+      author = Author(
+        username = a.authorUsername,
+        userId = a.authorStaffId.toString(),
+        firstName = a.authorFirstName ?: "",
+        lastName = a.authorLastName ?: "",
+      ),
       createdDateTime = LocalDateTime.parse(a.createdDateTime),
     )
   }.toSet(),

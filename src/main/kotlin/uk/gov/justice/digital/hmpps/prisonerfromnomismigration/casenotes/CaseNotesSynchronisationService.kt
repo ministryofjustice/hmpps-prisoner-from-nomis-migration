@@ -36,7 +36,7 @@ class CaseNotesSynchronisationService(
       telemetryClient.trackEvent("casenotes-synchronisation-created-skipped", event.toTelemetryProperties())
       return
     }
-    caseNotesService.upsertCaseNote(nomisCaseNote.toDPSSyncCaseNote(event.offenderIdDisplay!!)).apply {
+    caseNotesService.upsertCaseNote(nomisCaseNote.toDPSSyncCaseNote(event.offenderIdDisplay)).apply {
       tryToCreateCaseNoteMapping(
         event,
         this.id.toString(),
@@ -62,7 +62,7 @@ class CaseNotesSynchronisationService(
       ?.also { mapping ->
         caseNotesService.upsertCaseNote(
           nomisCaseNote.toDPSSyncCaseNote(
-            event.offenderIdDisplay!!,
+            event.offenderIdDisplay,
             UUID.fromString(mapping.dpsCaseNoteId),
           ),
         )
@@ -108,8 +108,8 @@ class CaseNotesSynchronisationService(
     val mapping = CaseNoteMappingDto(
       dpsCaseNoteId = caseNoteId,
       nomisCaseNoteId = event.caseNoteId,
-      nomisBookingId = event.bookingId!!,
-      offenderNo = event.offenderIdDisplay!!,
+      nomisBookingId = event.bookingId ?: 0,
+      offenderNo = event.offenderIdDisplay,
       mappingType = NOMIS_CREATED,
     )
     try {
@@ -172,7 +172,7 @@ private fun CaseNotesEvent.toTelemetryProperties(
   mappingFailed: Boolean? = null,
 ) = mapOf(
   "nomisCaseNoteId" to this.caseNoteId.toString(),
-  "offenderNo" to (this.offenderIdDisplay ?: ""),
+  "offenderNo" to this.offenderIdDisplay,
   "bookingId" to this.bookingId.toString(),
 ) + (dpsCaseNoteId?.let { mapOf("dpsCaseNoteId" to it) } ?: emptyMap()) + (
   if (mappingFailed == true) mapOf("mapping" to "initial-failure") else emptyMap()
