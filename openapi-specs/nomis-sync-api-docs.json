@@ -17060,7 +17060,6 @@
       },
       "ProfileDetailsResponse": {
         "required": [
-          "code",
           "createDateTime",
           "createdBy",
           "type"
