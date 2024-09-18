@@ -135,7 +135,7 @@ fun InvestigationDetails.toDPSSyncInvestigationRequest() =
 fun InvestigationDetails.isEmpty() =
   staffInvolved.isNullOrEmpty() && evidenceSecured.isNullOrEmpty() && reasonOccurred.isNullOrEmpty() &&
     usualBehaviour.isNullOrEmpty() && trigger.isNullOrEmpty() && protectiveFactors.isNullOrEmpty() &&
-    interviews.isNullOrEmpty()
+    interviews.isNullOrEmpty() && interviews.isNullOrEmpty()
 
 fun InterviewDetails.toDPSSyncInterviewRequest() =
   SyncInterviewRequest(
