@@ -49,6 +49,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFullMappingDto.MappingType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReportMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.InterviewDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
@@ -1016,6 +1018,60 @@ internal class CSIPMigrationServiceTest {
         verify(csipDpsService).migrateCSIP(
           check {
             assertThat(it.referral!!.investigation!!.occurrenceReason).isEqualTo("There was a problem")
+            assertThat(it.referral!!.investigation!!.interviews.size).isEqualTo(0)
+          },
+        )
+
+        verify(telemetryClient, times(1)).trackEvent(
+          eq("csip-migration-entity-migrated"),
+          check {
+            assertThat(it["migrationId"]).isNotNull
+            assertThat(it["nomisCSIPId"]).isNotNull
+            assertThat(it["dpsCSIPId"]).isNotNull
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @DisplayName("migrateCSIPWithMinimaDataAndInterview")
+    inner class MigrateCSIPWithInterviewAndNoInvestigationData {
+
+      @BeforeEach
+      internal fun setUp(): Unit = runTest {
+        val interview = InterviewDetails(
+          id = 3343,
+          interviewee = "Bill Black",
+          date = LocalDate.parse("2024-06-06"),
+          role = CodeDescription(code = "WITNESS", description = "Witness"),
+          createDateTime = "2024-04-04T15:12:32.00462",
+          createdBy = "AA_ADM",
+          createdByDisplayName = "ADAM SMITH",
+          comments = "Saw a pipe in his hand",
+        )
+        whenever(csipMappingService.getCSIPReportByNomisId(any())).thenReturn(null)
+        whenever(nomisApiService.getCSIP(any()))
+          .thenReturn(nomisCSIPReportMinimalData(interviews = listOf(interview)))
+        whenever(csipDpsService.migrateCSIP(any())).thenReturn(dpsCsipReportSyncResponse())
+        whenever(csipMappingService.createMapping(any(), any())).thenReturn(CreateMappingResult())
+      }
+
+      @Test
+      internal fun `will transform and send that csip to the csip api service`(): Unit = runTest {
+        service.migrateNomisEntity(
+          MigrationContext(
+            type = CSIP,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = CSIPIdResponse(NOMIS_CSIP_ID),
+          ),
+        )
+
+        verify(csipDpsService).migrateCSIP(
+          check {
+            assertThat(it.referral!!.investigation!!.occurrenceReason).isNull()
+            assertThat(it.referral!!.investigation!!.interviews[0].interviewee).isEqualTo("Bill Black")
           },
         )
 
