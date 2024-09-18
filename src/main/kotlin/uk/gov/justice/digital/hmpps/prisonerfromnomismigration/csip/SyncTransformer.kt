@@ -68,9 +68,9 @@ fun CSIPResponse.toDPSSyncRequest(dpsReportId: String? = null, actioned: ActionD
       contributoryFactors = reportDetails.factors.map { it.toDPSSyncContributoryFactorRequest() },
       saferCustodyScreeningOutcome = saferCustodyScreening.outcome ?.let { saferCustodyScreening.toDPSSyncCSIPSCS() },
       investigation = investigation.toDPSSyncInvestigationRequest(),
-      decisionAndActions = decision.decisionOutcome ?.let { decision.toDPSSyncDecisionsAndActionsRequest() },
+      decisionAndActions = decision.toDPSSyncDecisionsAndActionsRequest(),
     ),
-    plan = caseManager?.let { this.toDPSSyncPlanRequest() },
+    plan = toDPSSyncPlanRequest(),
 
     createdAt = LocalDateTime.parse(createDateTime),
     createdBy = createdBy,
@@ -103,7 +103,7 @@ fun SaferCustodyScreening.toDPSSyncCSIPSCS() =
     date = recordedDate!!,
     reasonForDecision = reasonForDecision,
     recordedBy = recordedBy!!,
-    recordedByDisplayName = recordedByDisplayName!!,
+    recordedByDisplayName = recordedByDisplayName ?: recordedBy!!,
   )
 
 fun CSIPFactorResponse.toDPSSyncContributoryFactorRequest() =
@@ -133,9 +133,14 @@ fun InvestigationDetails.toDPSSyncInvestigationRequest() =
   ).takeUnless { isEmpty() }
 
 fun InvestigationDetails.isEmpty() =
-  staffInvolved.isNullOrEmpty() && evidenceSecured.isNullOrEmpty() && reasonOccurred.isNullOrEmpty() &&
-    usualBehaviour.isNullOrEmpty() && trigger.isNullOrEmpty() && protectiveFactors.isNullOrEmpty() &&
-    interviews.isNullOrEmpty()
+  listOfNotNull(
+    staffInvolved,
+    evidenceSecured,
+    reasonOccurred,
+    usualBehaviour,
+    trigger,
+    protectiveFactors,
+  ).isEmpty() && interviews.isNullOrEmpty()
 
 fun InterviewDetails.toDPSSyncInterviewRequest() =
   SyncInterviewRequest(
@@ -157,7 +162,7 @@ fun InterviewDetails.toDPSSyncInterviewRequest() =
 
 fun Decision.toDPSSyncDecisionsAndActionsRequest() =
   SyncDecisionAndActionsRequest(
-    outcomeTypeCode = decisionOutcome!!.code,
+    outcomeTypeCode = decisionOutcome?.code,
     conclusion = conclusion,
     signedOffByRoleCode = signedOffRole?.code ?: "OTHER",
     recordedBy = recordedBy,
@@ -166,7 +171,23 @@ fun Decision.toDPSSyncDecisionsAndActionsRequest() =
     nextSteps = nextSteps,
     actions = actions.toDPSSyncActions(),
     actionOther = otherDetails,
-  )
+  ).takeUnless { isEmpty() }
+
+fun Decision.isEmpty() =
+  listOfNotNull(
+    decisionOutcome,
+    conclusion,
+    signedOffRole,
+    recordedBy,
+    recordedByDisplayName,
+    recordedDate,
+    nextSteps,
+    otherDetails,
+  ).isEmpty() && actions.isEmpty()
+
+fun Actions.isEmpty() =
+  !openCSIPAlert && !nonAssociationsUpdated && !observationBook && !unitOrCellMove &&
+    !csraOrRsraReview && !serviceReferral && !simReferral
 
 fun Actions.toDPSSyncActions(): MutableSet<SyncDecisionAndActionsRequest.Actions> {
   val dpsActions: MutableSet<SyncDecisionAndActionsRequest.Actions> = mutableSetOf()
@@ -181,17 +202,24 @@ fun Actions.toDPSSyncActions(): MutableSet<SyncDecisionAndActionsRequest.Actions
 }
 
 fun MutableSet<SyncDecisionAndActionsRequest.Actions>.addIfTrue(actionSet: Boolean, action: SyncDecisionAndActionsRequest.Actions) {
-  if (actionSet) this.add(action)
+  if (actionSet) add(action)
 }
 
 fun CSIPResponse.toDPSSyncPlanRequest() =
   SyncPlanRequest(
-    caseManager = caseManager!!,
-    reasonForPlan = planReason!!,
-    firstCaseReviewDate = firstCaseReviewDate!!,
+    caseManager = caseManager,
+    reasonForPlan = planReason,
+    firstCaseReviewDate = firstCaseReviewDate,
     identifiedNeeds = plans.map { it.toDPSSyncNeedRequest() },
     reviews = reviews.map { it.toDPSSyncReviewRequest() },
-  )
+  ).takeUnless { isPlanEmpty() }
+
+fun CSIPResponse.isPlanEmpty() =
+  listOfNotNull(
+    caseManager,
+    planReason,
+    firstCaseReviewDate,
+  ).isEmpty() && plans.isEmpty() && reviews.isEmpty()
 
 fun Plan.toDPSSyncNeedRequest() =
   SyncNeedRequest(
@@ -222,7 +250,7 @@ fun Review.toDPSSyncReviewRequest() =
     id = null,
     legacyId = id,
     recordedBy = recordedBy,
-    recordedByDisplayName = recordedByDisplayName!!,
+    recordedByDisplayName = recordedByDisplayName ?: recordedBy,
     reviewDate = recordedDate,
     summary = summary,
     nextReviewDate = nextReviewDate,
