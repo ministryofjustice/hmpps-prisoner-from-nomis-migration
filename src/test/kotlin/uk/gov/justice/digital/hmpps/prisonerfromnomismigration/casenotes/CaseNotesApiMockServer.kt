@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.junit.jupiter.api.extension.AfterAllCallback
@@ -14,6 +16,11 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus.CREATED
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiExtension.Companion.objectMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.MigrationResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.SyncCaseNoteRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.SyncCaseNoteRequest.Source
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.SyncResult
+import java.time.LocalDateTime
 import java.util.UUID
 
 class CaseNotesApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
@@ -42,24 +49,22 @@ class CaseNotesApiMockServer : WireMockServer(WIREMOCK_PORT) {
     private const val WIREMOCK_PORT = 8096
 
     fun dpsCaseNote() = SyncCaseNoteRequest(
-      caseNoteId = UUID.randomUUID().toString(),
-      dummyAttribute = "text",
-      // TBC
-//      offenderIdentifier = "",
-//      type = "",
-//      typeDescription = "",
-//      subType = "",
-//      subTypeDescription = "",
-//      source = "",
-//      creationDateTime = LocalDateTime.now(),
-//      occurrenceDateTime = LocalDateTime.now(),
-//      authorName = "",
-//      authorUserId = "",
-//      text = "",
-//      eventId = 0,
-//      sensitive = false,
-//      amendments = emptyList(),
-      // locationId: String? = null
+      id = UUID.randomUUID(),
+      legacyId = 12345L,
+      personIdentifier = "A1234AA",
+      locationId = "SWI",
+      type = "X",
+      subType = "Y",
+      text = "the actual casenote",
+      systemGenerated = false,
+      createdDateTime = LocalDateTime.parse("2021-02-03T04:05:06"),
+      createdByUsername = "the-computer",
+      source = Source.NOMIS,
+      authorUsername = "me",
+      authorUserId = "123456",
+      authorName = "me too",
+      amendments = emptySet(),
+      occurrenceDateTime = LocalDateTime.parse("2021-02-03T04:05:06"),
     )
   }
 
@@ -74,42 +79,37 @@ class CaseNotesApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubMigrateCaseNotes(
-    offenderNo: String,
-    dpsCaseNotesIds: List<String>,
-  ) {
+  fun stubMigrateCaseNotes(offenderNo: String, caseNotesIdPairs: List<Pair<Long, String>>) {
     stubFor(
-      post("/migrate/$offenderNo/casenotes").willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(CREATED.value())
-          .withBody(
-            objectMapper.writeValueAsString(
-              dpsCaseNotesIds.map {
-                DpsCaseNote(
-                  dummyAttribute = "qwerty",
-                  caseNoteId = it,
-                )
-              },
+      post("/migrate/case-notes")
+        .withRequestBody(matchingJsonPath("$[0].personIdentifier", equalTo(offenderNo)))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(CREATED.value())
+            .withBody(
+              objectMapper.writeValueAsString(
+                caseNotesIdPairs.map {
+                  MigrationResult(UUID.fromString(it.second), legacyId = it.first)
+                }.shuffled(),
+              ),
             ),
-          ),
-      ),
+        ),
     )
   }
 
-  fun stubPostCaseNote(
-    caseNoteRequest: SyncCaseNoteRequest,
-  ) {
+  fun stubPostCaseNote(caseNoteRequest: SyncCaseNoteRequest) {
     stubFor(
-      post("/sync/upsert").willReturn(
+      post("/sync/case-notes").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(CREATED.value())
           .withBody(
             objectMapper.writeValueAsString(
-              DpsCaseNote(
-                dummyAttribute = caseNoteRequest.dummyAttribute,
-                caseNoteId = caseNoteRequest.caseNoteId,
+              SyncResult(
+                id = caseNoteRequest.id ?: UUID.randomUUID(),
+                legacyId = caseNoteRequest.legacyId,
+                action = if (caseNoteRequest.id == null) SyncResult.Action.CREATED else SyncResult.Action.UPDATED,
               ),
             ),
           ),
@@ -119,7 +119,7 @@ class CaseNotesApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubDeleteCaseNote() {
     stubFor(
-      delete(urlPathMatching("/sync/delete/.+"))
+      delete(urlPathMatching("/sync/case-notes/.+"))
         .willReturn(
           aResponse()
             .withStatus(204)

@@ -751,10 +751,10 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubGetPrisonIds(totalElements: Long = 20, pageSize: Long = 20, offenderNo: String = "A0001KT") {
+  fun stubGetPrisonIds(totalElements: Long = 20, pageSize: Long = 20, firstOffenderNo: String = "A0001KT") {
     val content: List<PrisonerId> = (1..kotlin.math.min(pageSize, totalElements)).map {
       PrisonerId(
-        offenderNo = offenderNo.replace("0001", "$it".padStart(4, '0')),
+        offenderNo = firstOffenderNo.replace("0001", "$it".padStart(4, '0')),
       )
     }
     nomisApi.stubFor(

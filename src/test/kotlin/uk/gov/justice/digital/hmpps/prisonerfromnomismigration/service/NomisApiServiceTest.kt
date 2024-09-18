@@ -943,7 +943,7 @@ internal class NomisApiServiceTest {
 
     @Test
     fun `will return a page of alerts`() = runTest {
-      nomisApi.stubGetPrisonIds(totalElements = 10, offenderNo = "A0001KT")
+      nomisApi.stubGetPrisonIds(totalElements = 10, firstOffenderNo = "A0001KT")
 
       val prisonerIds = nomisService.getPrisonerIds(
         pageNumber = 5,

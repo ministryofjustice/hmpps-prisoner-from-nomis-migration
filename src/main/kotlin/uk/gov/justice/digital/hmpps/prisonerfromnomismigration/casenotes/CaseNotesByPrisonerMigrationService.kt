@@ -64,36 +64,34 @@ class CaseNotesByPrisonerMigrationService(
 
     val nomisCaseNotes =
       caseNotesNomisService.getCaseNotesToMigrate(offenderNo) ?: PrisonerCaseNotesResponse(emptyList())
-    val caseNotesToMigrate = nomisCaseNotes.caseNotes.map { it.toDPSCreateCaseNote() }
-    caseNotesDpsService.migrateCaseNotes(
-      offenderNo = offenderNo,
-      dpsCaseNotes = caseNotesToMigrate,
-    ).also {
-      val zip = it.zip(nomisCaseNotes.caseNotes)
-      createMapping(
-        offenderNo = offenderNo,
-        PrisonerCaseNoteMappingsDto(
-          label = context.migrationId,
-          mappingType = PrisonerCaseNoteMappingsDto.MappingType.MIGRATED,
-          mappings = zip.map { (dpsCaseNote, nomisCaseNote) ->
-            CaseNoteMappingIdDto(
-              nomisBookingId = nomisCaseNote.bookingId,
-              nomisCaseNoteId = nomisCaseNote.caseNoteId,
-              dpsCaseNoteId = dpsCaseNote.caseNoteId!!,
-            )
-          },
-        ),
-        context = context,
-      )
-      telemetryClient.trackEvent(
-        "casenotes-migration-entity-migrated",
-        mapOf(
-          "offenderNo" to offenderNo,
-          "migrationId" to context.migrationId,
-          "caseNoteCount" to it.size.toString(),
-        ),
-      )
-    }
+    val caseNotesToMigrate = nomisCaseNotes.caseNotes.map { it.toDPSCreateCaseNote(offenderNo) }
+    val bookingIdMap: Map<Long, Long> = nomisCaseNotes.caseNotes.map { it.caseNoteId to it.bookingId }.toMap()
+    caseNotesDpsService.migrateCaseNotes(dpsCaseNotes = caseNotesToMigrate)
+      .also { migrationResultList ->
+        createMapping(
+          offenderNo = offenderNo,
+          PrisonerCaseNoteMappingsDto(
+            label = context.migrationId,
+            mappingType = PrisonerCaseNoteMappingsDto.MappingType.MIGRATED,
+            mappings = migrationResultList.map { migrationResult ->
+              CaseNoteMappingIdDto(
+                nomisBookingId = bookingIdMap[migrationResult.legacyId] ?: 0,
+                nomisCaseNoteId = migrationResult.legacyId,
+                dpsCaseNoteId = migrationResult.id.toString(),
+              )
+            },
+          ),
+          context = context,
+        )
+        telemetryClient.trackEvent(
+          "casenotes-migration-entity-migrated",
+          mapOf(
+            "offenderNo" to offenderNo,
+            "migrationId" to context.migrationId,
+            "caseNoteCount" to migrationResultList.size.toString(),
+          ),
+        )
+      }
   }
 
   private suspend fun createMapping(

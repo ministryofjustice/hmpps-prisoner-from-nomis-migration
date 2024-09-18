@@ -7,6 +7,7 @@ import io.opentelemetry.api.trace.SpanKind
 import io.opentelemetry.instrumentation.annotations.WithSpan
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.Message
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CASENOTES_QUEUE_ID
@@ -19,7 +20,7 @@ class CaseNotesMigrationMessageListener(
   objectMapper: ObjectMapper,
   caseNotesMigrationService: CaseNotesByPrisonerMigrationService,
 ) :
-  MigrationMessageListener<CaseNotesMigrationFilter, PrisonerId, CaseNotesForPrisonerResponse, CaseNoteMigrationMapping>(
+  MigrationMessageListener<CaseNotesMigrationFilter, PrisonerId, List<MigrationResult>, CaseNoteMigrationMapping>(
     objectMapper,
     caseNotesMigrationService,
   ) {
