@@ -86,11 +86,7 @@ class PhysicalAttributesSyncService(
   private fun BookingPhysicalAttributesResponse.findLastModifiedPhysicalAttributes() =
     physicalAttributes
       .maxBy {
-        if (it.modifiedDateTime != null) {
-          it.modifiedDateTime.toLocalDateTime()
-        } else {
-          it.createDateTime.toLocalDateTime()
-        }
+        (it.modifiedDateTime ?: it.createDateTime).toLocalDateTime()
       }
 
   private fun String.toLocalDateTime() = LocalDateTime.parse(this)

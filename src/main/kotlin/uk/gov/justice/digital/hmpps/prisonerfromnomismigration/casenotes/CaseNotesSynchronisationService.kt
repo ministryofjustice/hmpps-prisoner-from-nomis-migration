@@ -16,6 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.CASENOTES
+import java.util.UUID
 
 @Service
 class CaseNotesSynchronisationService(
@@ -35,15 +36,15 @@ class CaseNotesSynchronisationService(
       telemetryClient.trackEvent("casenotes-synchronisation-created-skipped", event.toTelemetryProperties())
       return
     }
-    caseNotesService.upsertCaseNote(nomisCaseNote.toDPSCreateSyncCaseNote()).apply {
+    caseNotesService.upsertCaseNote(nomisCaseNote.toDPSSyncCaseNote(event.offenderIdDisplay!!)).apply {
       tryToCreateCaseNoteMapping(
         event,
-        this.caseNoteId!!,
+        this.id.toString(),
       ).also { mappingCreateResult ->
         telemetryClient.trackEvent(
           "casenotes-synchronisation-created-success",
           event.toTelemetryProperties(
-            dpsCaseNoteId = this.caseNoteId,
+            dpsCaseNoteId = this.id.toString(),
             mappingFailed = mappingCreateResult == MAPPING_FAILED,
           ),
         )
@@ -59,17 +60,12 @@ class CaseNotesSynchronisationService(
     }
     caseNotesMappingService.getMappingGivenNomisIdOrNull(event.caseNoteId)
       ?.also { mapping ->
-        caseNotesService.upsertCaseNote(nomisCaseNote.toDPSUpdateCaseNote(mapping.dpsCaseNoteId))
-//     "caseNoteId").isEqualTo(casenote1.id)
-//     "bookingId").isEqualTo(bookingId)
-//     "caseNoteType.code").isEqualTo("ALL")
-//     "caseNoteSubType.code").isEqualTo("SA")
-//     "authorUsername").isEqualTo("JANE.NARK")
-//     "prisonId").isEqualTo("BXI")
-//     "caseNoteText").isEqualTo("A note")
-//     "amended").isEqualTo("false")
-//     "occurrenceDateTime") assertThat(LocalDateTime.parse(it)).isCloseTo(now, within(2, ChronoUnit.MINUTES)) }
-
+        caseNotesService.upsertCaseNote(
+          nomisCaseNote.toDPSSyncCaseNote(
+            event.offenderIdDisplay!!,
+            UUID.fromString(mapping.dpsCaseNoteId),
+          ),
+        )
         telemetryClient.trackEvent(
           "casenotes-synchronisation-updated-success",
           event.toTelemetryProperties(mapping.dpsCaseNoteId),

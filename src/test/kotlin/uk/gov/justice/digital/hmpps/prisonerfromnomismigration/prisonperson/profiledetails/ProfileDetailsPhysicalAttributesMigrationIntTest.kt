@@ -49,7 +49,7 @@ class ProfileDetailsPhysicalAttributesMigrationIntTest : SqsIntegrationTestBase(
   inner class MigrateProfileDetailPhysicalAttributes {
     private lateinit var migrationId: String
     private fun stubMigrationDependencies(entities: Int = 2) {
-      nomisApi.stubGetPrisonIds(totalElements = entities.toLong(), pageSize = 10, offenderNo = "A0001KT")
+      nomisApi.stubGetPrisonIds(totalElements = entities.toLong(), pageSize = 10, firstOffenderNo = "A0001KT")
       (1L..entities)
         .map { "A000${it}KT" }
         .forEachIndexed { index, offenderNo ->

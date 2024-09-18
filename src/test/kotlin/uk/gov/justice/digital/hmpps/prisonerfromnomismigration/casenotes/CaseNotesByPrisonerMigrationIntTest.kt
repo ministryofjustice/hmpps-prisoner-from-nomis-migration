@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes
 
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.runBlocking
@@ -90,22 +91,11 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
-        nomisApi.stubGetPrisonIds(totalElements = 2, pageSize = 10, offenderNo = OFFENDER_NUMBER1)
-        caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(
-          offenderNo = OFFENDER_NUMBER1,
-          currentCaseNoteCount = 1,
-//          caseNote = CaseNoteResponse(
-//            offenderNo = OFFENDER_NUMBER,
-//            caseNoteType = CodeDescription("X", "Security"),
-//            caseNoteSubType = CodeDescription("X", "Security"),
-//            authorUsername = "me",
-//            amended = false,
-//            caseNoteId = 1001,
-//          ),
-        )
+        nomisApi.stubGetPrisonIds(totalElements = 2, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
         caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(offenderNo = OFFENDER_NUMBER1, currentCaseNoteCount = 1)
-        caseNotesApi.stubMigrateCaseNotes(OFFENDER_NUMBER1, listOf("00000000-0000-0000-0000-000000000001"))
-        caseNotesApi.stubMigrateCaseNotes(OFFENDER_NUMBER2, listOf("00000000-0000-0000-0000-000000000002"))
+        caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(offenderNo = OFFENDER_NUMBER2, currentCaseNoteCount = 1)
+        caseNotesApi.stubMigrateCaseNotes(OFFENDER_NUMBER1, listOf(1 to "00000000-0000-0000-0000-000000000001"))
+        caseNotesApi.stubMigrateCaseNotes(OFFENDER_NUMBER2, listOf(1 to "00000000-0000-0000-0000-000000000002"))
         caseNotesMappingApiMockServer.stubGetMappings(listOf())
         caseNotesMappingApiMockServer.stubPostBatchMappings(OFFENDER_NUMBER1)
         caseNotesMappingApiMockServer.stubPostBatchMappings(OFFENDER_NUMBER2)
@@ -134,8 +124,40 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will POST all casenotes to DPS for each prisoner`() {
-        caseNotesApi.verify(postRequestedFor(urlPathEqualTo("/migrate/$OFFENDER_NUMBER1/casenotes")))
-        caseNotesApi.verify(postRequestedFor(urlPathEqualTo("/migrate/$OFFENDER_NUMBER2/casenotes")))
+        caseNotesApi.verify(
+          postRequestedFor(urlPathEqualTo("/migrate/case-notes"))
+            .withRequestBodyJsonPath("$[0].legacyId", "1")
+            .withRequestBodyJsonPath("$[0].personIdentifier", equalTo(OFFENDER_NUMBER1))
+            .withRequestBodyJsonPath("$[0].locationId", equalTo("SWI"))
+            .withRequestBodyJsonPath("$[0].type", equalTo("type"))
+            .withRequestBodyJsonPath("$[0].subType", equalTo("subtype"))
+            .withRequestBodyJsonPath("$[0].text", equalTo("text"))
+            .withRequestBodyJsonPath("$[0].systemGenerated", equalTo("false"))
+            .withRequestBodyJsonPath("$[0].createdDateTime", equalTo("2021-02-03T04:05:06"))
+            .withRequestBodyJsonPath("$[0].createdByUsername", equalTo("TBC")) // TODO
+            .withRequestBodyJsonPath("$[0].source", equalTo("NOMIS"))
+            .withRequestBodyJsonPath("$[0].authorUsername", equalTo("me"))
+            .withRequestBodyJsonPath("$[0].authorUserId", equalTo("123456"))
+            .withRequestBodyJsonPath("$[0].authorName", equalTo("me too"))
+            .withRequestBodyJsonPath("$[0].occurrenceDateTime", equalTo("2021-02-03T04:05:06")),
+        )
+        caseNotesApi.verify(
+          postRequestedFor(urlPathEqualTo("/migrate/case-notes"))
+            .withRequestBodyJsonPath("$[0].legacyId", equalTo("1"))
+            .withRequestBodyJsonPath("$[0].personIdentifier", equalTo(OFFENDER_NUMBER2))
+            .withRequestBodyJsonPath("$[0].locationId", equalTo("SWI"))
+            .withRequestBodyJsonPath("$[0].type", equalTo("type"))
+            .withRequestBodyJsonPath("$[0].subType", equalTo("subtype"))
+            .withRequestBodyJsonPath("$[0].text", equalTo("text"))
+            .withRequestBodyJsonPath("$[0].systemGenerated", equalTo("false"))
+            .withRequestBodyJsonPath("$[0].createdDateTime", equalTo("2021-02-03T04:05:06"))
+            .withRequestBodyJsonPath("$[0].createdByUsername", equalTo("TBC")) // TODO
+            .withRequestBodyJsonPath("$[0].source", equalTo("NOMIS"))
+            .withRequestBodyJsonPath("$[0].authorUsername", equalTo("me"))
+            .withRequestBodyJsonPath("$[0].authorUserId", equalTo("123456"))
+            .withRequestBodyJsonPath("$[0].authorName", equalTo("me too"))
+            .withRequestBodyJsonPath("$[0].occurrenceDateTime", equalTo("2021-02-03T04:05:06")),
+        )
       }
 
       @Test
@@ -163,8 +185,14 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will transform NOMIS case note to DPS case note`() {
         caseNotesApi.verify(
-          postRequestedFor(urlPathEqualTo("/migrate/$OFFENDER_NUMBER1/casenotes"))
-            .withRequestBodyJsonPath("$[0].dummyAttribute", "text"),
+          postRequestedFor(urlPathEqualTo("/migrate/case-notes"))
+            .withRequestBodyJsonPath("$[0].personIdentifier", OFFENDER_NUMBER1)
+            .withRequestBodyJsonPath("$[0].text", "text"),
+        )
+        caseNotesApi.verify(
+          postRequestedFor(urlPathEqualTo("/migrate/case-notes"))
+            .withRequestBodyJsonPath("$[0].personIdentifier", OFFENDER_NUMBER2)
+            .withRequestBodyJsonPath("$[0].text", "text"),
         )
       }
     }
@@ -173,16 +201,16 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
     inner class ErrorRecovery {
       @BeforeEach
       fun setUp() {
-        nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, offenderNo = OFFENDER_NUMBER1)
+        nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
         caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(offenderNo = OFFENDER_NUMBER1, currentCaseNoteCount = 1)
-        caseNotesApi.stubMigrateCaseNotes(OFFENDER_NUMBER1, listOf("00000000-0000-0000-0000-000000000001"))
+        caseNotesApi.stubMigrateCaseNotes(OFFENDER_NUMBER1, listOf(1 to "00000000-0000-0000-0000-000000000001"))
         caseNotesMappingApiMockServer.stubPostBatchMappingsFailureFollowedBySuccess(OFFENDER_NUMBER1)
         performMigration()
       }
 
       @Test
       fun `will POST the casenotes to DPS only once`() {
-        caseNotesApi.verify(1, postRequestedFor(urlPathEqualTo("/migrate/$OFFENDER_NUMBER1/casenotes")))
+        caseNotesApi.verify(1, postRequestedFor(urlPathEqualTo("/migrate/case-notes")))
       }
 
       @Test
@@ -199,7 +227,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
   @DisplayName("GET /migrate/casenotes/history")
   inner class GetAll {
     @BeforeEach
-    internal fun createHistoryRecords() {
+    fun createHistoryRecords() {
       runBlocking {
         migrationHistoryRepository.deleteAll()
         migrationHistoryRepository.save(
@@ -258,7 +286,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @AfterEach
-    internal fun deleteHistoryRecords() {
+    fun deleteHistoryRecords() {
       runBlocking {
         migrationHistoryRepository.deleteAll()
       }
@@ -292,7 +320,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Test
-    internal fun `can read all records`() {
+    fun `can read all records`() {
       webTestClient.get().uri("/migrate/casenotes/history")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CASENOTES")))
         .header("Content-Type", "application/json")
@@ -311,7 +339,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
   @DisplayName("GET /migrate/casenotes/history/{migrationId}")
   inner class Get {
     @BeforeEach
-    internal fun createHistoryRecords() {
+    fun createHistoryRecords() {
       runBlocking {
         migrationHistoryRepository.deleteAll()
         migrationHistoryRepository.save(
@@ -331,7 +359,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @AfterEach
-    internal fun deleteHistoryRecords() {
+    fun deleteHistoryRecords() {
       runBlocking {
         migrationHistoryRepository.deleteAll()
       }
@@ -365,7 +393,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Test
-    internal fun `can read record`() {
+    fun `can read record`() {
       webTestClient.get().uri("/migrate/casenotes/history/2020-01-01T00:00:00")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CASENOTES")))
         .header("Content-Type", "application/json")
@@ -381,7 +409,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
   @DisplayName("GET /migrate/casenotes/active-migration")
   inner class GetActiveMigration {
     @BeforeEach
-    internal fun createHistoryRecords() {
+    fun createHistoryRecords() {
       runBlocking {
         migrationHistoryRepository.deleteAll()
         migrationHistoryRepository.save(
@@ -414,7 +442,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @AfterEach
-    internal fun deleteHistoryRecords() {
+    fun deleteHistoryRecords() {
       runBlocking {
         migrationHistoryRepository.deleteAll()
       }
@@ -448,7 +476,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Test
-    internal fun `will return dto with null contents if no migrations are found`() {
+    fun `will return dto with null contents if no migrations are found`() {
       deleteHistoryRecords()
       webTestClient.get().uri("/migrate/casenotes/active-migration")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CASENOTES")))
@@ -465,7 +493,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Test
-    internal fun `can read active migration data`() {
+    fun `can read active migration data`() {
       caseNotesMappingApiMockServer.stubSingleItemByMigrationId(migrationId = "2020-01-01T00:00:00", count = 123456)
       webTestClient.get().uri("/migrate/casenotes/active-migration")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CASENOTES")))
@@ -489,7 +517,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
   @DisplayName("POST /migrate/casenotes/{migrationId}/cancel")
   inner class TerminateMigrationDpsCaseNotes {
     @BeforeEach
-    internal fun setUp() {
+    fun setUp() {
       webTestClient.delete().uri("/history")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATION_ADMIN")))
         .header("Content-Type", "application/json")
@@ -527,7 +555,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Test
-    internal fun `will return a not found if no running migration found`() {
+    fun `will return a not found if no running migration found`() {
       webTestClient.post().uri("/migrate/casenotes/{migrationId}/cancel", "some id")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CASENOTES")))
         .header("Content-Type", "application/json")
@@ -536,8 +564,8 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Test
-    internal fun `will terminate a running migration`() {
-      nomisApi.stubGetPrisonIds(totalElements = 2, pageSize = 10, offenderNo = OFFENDER_NUMBER1)
+    fun `will terminate a running migration`() {
+      nomisApi.stubGetPrisonIds(totalElements = 2, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
       caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(offenderNo = OFFENDER_NUMBER1, currentCaseNoteCount = 1)
       caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(offenderNo = OFFENDER_NUMBER1, currentCaseNoteCount = 1)
 

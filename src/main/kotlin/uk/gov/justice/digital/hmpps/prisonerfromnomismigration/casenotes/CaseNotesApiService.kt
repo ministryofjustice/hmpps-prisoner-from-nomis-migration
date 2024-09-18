@@ -6,12 +6,16 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import org.springframework.web.reactive.function.client.awaitBody
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.MigrateCaseNoteRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.MigrationResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.SyncCaseNoteRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.SyncResult
 
 @Service
 class CaseNotesApiService(@Qualifier("caseNotesApiWebClient") private val webClient: WebClient) {
-  suspend fun upsertCaseNote(upsertRequest: SyncCaseNoteRequest): DpsCaseNote =
+  suspend fun upsertCaseNote(upsertRequest: SyncCaseNoteRequest): SyncResult =
     webClient.post()
-      .uri("/sync/upsert")
+      .uri("/sync/case-notes")
       .contentType(MediaType.APPLICATION_JSON)
       .bodyValue(upsertRequest)
       .retrieve()
@@ -19,34 +23,16 @@ class CaseNotesApiService(@Qualifier("caseNotesApiWebClient") private val webCli
 
   suspend fun deleteCaseNote(id: String) {
     webClient.delete()
-      .uri("/sync/delete/{id}", id)
+      .uri("/sync/case-notes/{id}", id)
       .retrieve()
       .awaitBodilessEntity()
   }
 
-  suspend fun migrateCaseNotes(offenderNo: String, dpsCaseNotes: List<MigrateCaseNoteRequest>): List<DpsCaseNote> =
+  suspend fun migrateCaseNotes(dpsCaseNotes: List<MigrateCaseNoteRequest>): List<MigrationResult> =
     webClient.post()
-      .uri("/migrate/{offenderNo}/casenotes", offenderNo)
+      .uri("/migrate/case-notes")
       .contentType(MediaType.APPLICATION_JSON)
       .bodyValue(dpsCaseNotes)
       .retrieve()
       .awaitBody()
 }
-
-data class MigrateCaseNoteRequest(
-  val dummyAttribute: String? = null,
-)
-
-data class SyncCaseNoteRequest(
-  val caseNoteId: String? = null,
-  val dummyAttribute: String? = null,
-)
-
-data class DpsCaseNote(
-  val caseNoteId: String? = null,
-  val dummyAttribute: String? = null,
-)
-
-data class CaseNotesForPrisonerResponse(
-  val caseNotes: List<DpsCaseNote>,
-)
