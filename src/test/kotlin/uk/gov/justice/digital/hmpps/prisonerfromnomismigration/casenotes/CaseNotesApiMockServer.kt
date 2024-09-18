@@ -16,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus.CREATED
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiExtension.Companion.objectMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.Author
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.SyncCaseNoteRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.SyncCaseNoteRequest.Source
@@ -60,9 +61,12 @@ class CaseNotesApiMockServer : WireMockServer(WIREMOCK_PORT) {
       createdDateTime = LocalDateTime.parse("2021-02-03T04:05:06"),
       createdByUsername = "the-computer",
       source = Source.NOMIS,
-      authorUsername = "me",
-      authorUserId = "123456",
-      authorName = "me too",
+      author = Author(
+        username = "me",
+        userId = "123456",
+        firstName = "First",
+        lastName = "Last",
+      ),
       amendments = emptySet(),
       occurrenceDateTime = LocalDateTime.parse("2021-02-03T04:05:06"),
     )

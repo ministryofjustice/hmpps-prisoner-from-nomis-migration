@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-09-12.6452.99e6ace"
+    "version": "2024-09-18.6573.3d27e57"
   },
   "servers": [
     {
@@ -65,6 +65,16 @@
           "required": true
         },
         "responses": {
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Bad request",
             "content": {
@@ -81,16 +91,6 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/SyncResult"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorised, requires a valid Oauth2 token",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -203,7 +203,7 @@
         }
       }
     },
-    "/case-notes/{offenderIdentifier}/{caseNoteIdentifier}": {
+    "/case-notes/{personIdentifier}/{caseNoteIdentifier}": {
       "get": {
         "tags": [
           "case-notes"
@@ -212,9 +212,9 @@
         "operationId": "getCaseNote",
         "parameters": [
           {
-            "name": "offenderIdentifier",
+            "name": "personIdentifier",
             "in": "path",
-            "description": "Offender Identifier",
+            "description": "Person Identifier",
             "required": true,
             "schema": {
               "type": "string"
@@ -272,9 +272,9 @@
         "operationId": "amendCaseNote",
         "parameters": [
           {
-            "name": "offenderIdentifier",
+            "name": "personIdentifier",
             "in": "path",
-            "description": "Offender Identifier",
+            "description": "Person Identifier",
             "required": true,
             "schema": {
               "type": "string"
@@ -290,15 +290,6 @@
               "type": "string"
             },
             "example": "518b2200-6489-4c77-8514-10cf80ccd488"
-          },
-          {
-            "name": "useRestrictedType",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
           },
           {
             "name": "CaseloadId",
@@ -320,22 +311,22 @@
           "required": true
         },
         "responses": {
-          "201": {
-            "description": "The Case Note has been recorded. The updated object is returned including the status.",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/CaseNote"
-                }
-              }
-            }
-          },
           "404": {
             "description": "No case notes where found for this offender and case note id",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "The Case Note has been recorded. The updated object is returned including the status.",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseNote"
                 }
               }
             }
@@ -382,8 +373,8 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request",
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
               "*/*": {
                 "schema": {
@@ -392,8 +383,8 @@
               }
             }
           },
-          "401": {
-            "description": "Unauthorised, requires a valid Oauth2 token",
+          "400": {
+            "description": "Bad request",
             "content": {
               "*/*": {
                 "schema": {
@@ -437,8 +428,8 @@
           "required": true
         },
         "responses": {
-          "400": {
-            "description": "Bad request",
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
               "*/*": {
                 "schema": {
@@ -447,8 +438,8 @@
               }
             }
           },
-          "401": {
-            "description": "Unauthorised, requires a valid Oauth2 token",
+          "400": {
+            "description": "Bad request",
             "content": {
               "*/*": {
                 "schema": {
@@ -483,7 +474,7 @@
         }
       }
     },
-    "/case-notes/{offenderIdentifier}": {
+    "/case-notes/{personIdentifier}": {
       "get": {
         "tags": [
           "case-notes"
@@ -493,9 +484,9 @@
         "operationId": "getCaseNotes",
         "parameters": [
           {
-            "name": "offenderIdentifier",
+            "name": "personIdentifier",
             "in": "path",
-            "description": "Offender Identifier",
+            "description": "Person Identifier",
             "required": true,
             "schema": {
               "type": "string"
@@ -529,22 +520,22 @@
           }
         ],
         "responses": {
-          "404": {
-            "description": "Offender not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/PageCaseNote"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Offender not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -560,24 +551,14 @@
         "operationId": "createCaseNote",
         "parameters": [
           {
-            "name": "offenderIdentifier",
+            "name": "personIdentifier",
             "in": "path",
-            "description": "Offender Identifier",
+            "description": "Person Identifier",
             "required": true,
             "schema": {
               "type": "string"
             },
             "example": "A1234AA"
-          },
-          {
-            "name": "useRestrictedType",
-            "in": "query",
-            "description": "Boolean to indicate that the user creating the case note has privileges to use restricted use case note types",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
           },
           {
             "name": "CaseloadId",
@@ -671,16 +652,6 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Request successfully processed - content found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SubjectAccessRequestContent"
-                }
-              }
-            }
-          },
           "204": {
             "description": "Request successfully processed - no content found",
             "content": {
@@ -691,18 +662,18 @@
               }
             }
           },
-          "401": {
-            "description": "The client does not have authorisation to make this request",
+          "200": {
+            "description": "Request successfully processed - content found",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "$ref": "#/components/schemas/SubjectAccessRequestContent"
                 }
               }
             }
           },
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
+          "401": {
+            "description": "The client does not have authorisation to make this request",
             "content": {
               "application/json": {
                 "schema": {
@@ -727,6 +698,16 @@
               "application/json": {
                 "schema": {
                   "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -814,6 +795,16 @@
           }
         ],
         "responses": {
+          "404": {
+            "description": "Case notes types not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -823,16 +814,6 @@
                   "items": {
                     "$ref": "#/components/schemas/CaseNoteType"
                   }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Case notes types not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -860,9 +841,6 @@
           }
         ],
         "responses": {
-          "204": {
-            "description": "Case Note successfully deleted"
-          },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
@@ -872,6 +850,9 @@
                 }
               }
             }
+          },
+          "204": {
+            "description": "Case Note successfully deleted"
           },
           "403": {
             "description": "Forbidden, requires an appropriate role",
@@ -886,7 +867,7 @@
         }
       }
     },
-    "/case-notes/{offenderIdentifier}/{caseNoteId}": {
+    "/case-notes/{personIdentifier}/{caseNoteId}": {
       "delete": {
         "tags": [
           "case-notes"
@@ -895,9 +876,9 @@
         "operationId": "softDeleteCaseNote",
         "parameters": [
           {
-            "name": "offenderIdentifier",
+            "name": "personIdentifier",
             "in": "path",
-            "description": "Offender Identifier",
+            "description": "Person Identifier",
             "required": true,
             "schema": {
               "type": "string"
@@ -943,11 +924,36 @@
   },
   "components": {
     "schemas": {
+      "Author": {
+        "required": [
+          "firstName",
+          "lastName",
+          "userId",
+          "username"
+        ],
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "Username of the staff member that created the case note"
+          },
+          "userId": {
+            "type": "string",
+            "description": "Id of the staff member that created the case note"
+          },
+          "firstName": {
+            "type": "string",
+            "description": "The first name of the author"
+          },
+          "lastName": {
+            "type": "string",
+            "description": "The last name of the author"
+          }
+        }
+      },
       "SyncCaseNoteAmendmentRequest": {
         "required": [
-          "authorName",
-          "authorUserId",
-          "authorUsername",
+          "author",
           "createdDateTime",
           "text"
         ],
@@ -957,15 +963,8 @@
             "type": "string",
             "description": "The text of the note"
           },
-          "authorUsername": {
-            "type": "string"
-          },
-          "authorUserId": {
-            "type": "string"
-          },
-          "authorName": {
-            "type": "string",
-            "description": "Full name of the staff member that created the case note"
+          "author": {
+            "$ref": "#/components/schemas/Author"
           },
           "createdDateTime": {
             "type": "string",
@@ -977,9 +976,7 @@
       "SyncCaseNoteRequest": {
         "required": [
           "amendments",
-          "authorName",
-          "authorUserId",
-          "authorUsername",
+          "author",
           "createdByUsername",
           "createdDateTime",
           "legacyId",
@@ -1039,17 +1036,8 @@
             "type": "boolean",
             "description": "Boolean flag to indicate if case note is system generated"
           },
-          "authorUsername": {
-            "type": "string",
-            "description": "Username of the staff member that created the case note"
-          },
-          "authorUserId": {
-            "type": "string",
-            "description": "Id of the staff member that created the case note"
-          },
-          "authorName": {
-            "type": "string",
-            "description": "Full name of the staff member that created the case note"
+          "author": {
+            "$ref": "#/components/schemas/Author"
           },
           "createdDateTime": {
             "type": "string",
@@ -1257,9 +1245,10 @@
           },
           "eventId": {
             "type": "integer",
-            "description": "Delius number representation of the case note id - will be negative for sensitive case note types",
+            "description": "Deprecated - replaced with legacyId",
             "format": "int64",
-            "example": -23
+            "example": -23,
+            "deprecated": true
           },
           "sensitive": {
             "type": "boolean",
@@ -1365,9 +1354,7 @@
       },
       "MigrateAmendmentRequest": {
         "required": [
-          "authorName",
-          "authorUserId",
-          "authorUsername",
+          "author",
           "createdDateTime",
           "text"
         ],
@@ -1377,15 +1364,8 @@
             "type": "string",
             "description": "The text of the note"
           },
-          "authorUsername": {
-            "type": "string"
-          },
-          "authorUserId": {
-            "type": "string"
-          },
-          "authorName": {
-            "type": "string",
-            "description": "Full name of the staff member that created the case note"
+          "author": {
+            "$ref": "#/components/schemas/Author"
           },
           "createdDateTime": {
             "type": "string",
@@ -1397,9 +1377,7 @@
       "MigrateCaseNoteRequest": {
         "required": [
           "amendments",
-          "authorName",
-          "authorUserId",
-          "authorUsername",
+          "author",
           "createdByUsername",
           "createdDateTime",
           "legacyId",
@@ -1453,17 +1431,8 @@
             "type": "boolean",
             "description": "Boolean flag to indicate if case note is system generated"
           },
-          "authorUsername": {
-            "type": "string",
-            "description": "Username of the staff member that created the case note"
-          },
-          "authorUserId": {
-            "type": "string",
-            "description": "Id of the staff member that created the case note"
-          },
-          "authorName": {
-            "type": "string",
-            "description": "Full name of the staff member that created the case note"
+          "author": {
+            "$ref": "#/components/schemas/Author"
           },
           "createdDateTime": {
             "type": "string",
@@ -1737,12 +1706,6 @@
             "type": "integer",
             "format": "int32"
           },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
-          },
           "size": {
             "type": "integer",
             "format": "int32"
@@ -1762,6 +1725,12 @@
             "items": {
               "$ref": "#/components/schemas/SortObject"
             }
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
           },
           "numberOfElements": {
             "type": "integer",

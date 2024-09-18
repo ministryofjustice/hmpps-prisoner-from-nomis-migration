@@ -36,6 +36,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto.MappingType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.util.AbstractMap.SimpleEntry
 import java.util.UUID
@@ -143,20 +144,21 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
             caseNotesApi.verify(
               1,
               postRequestedFor(urlPathEqualTo("/sync/case-notes"))
-                .withRequestBody(matchingJsonPath("legacyId", equalTo(NOMIS_CASE_NOTE_ID.toString())))
-                .withRequestBody(matchingJsonPath("personIdentifier", equalTo(OFFENDER_ID_DISPLAY)))
-                .withRequestBody(matchingJsonPath("locationId", equalTo("SWI")))
-                .withRequestBody(matchingJsonPath("type", equalTo("XNR")))
-                .withRequestBody(matchingJsonPath("subType", equalTo("X")))
-                .withRequestBody(matchingJsonPath("text", equalTo("the actual casenote")))
-                .withRequestBody(matchingJsonPath("systemGenerated", equalTo("false")))
-                .withRequestBody(matchingJsonPath("createdDateTime", equalTo("2021-02-03T04:05:06")))
-                .withRequestBody(matchingJsonPath("createdByUsername", equalTo("TBC"))) // TODO
-                .withRequestBody(matchingJsonPath("source", equalTo("NOMIS")))
-                .withRequestBody(matchingJsonPath("authorUsername", equalTo("me")))
-                .withRequestBody(matchingJsonPath("authorUserId", equalTo("123456")))
-                .withRequestBody(matchingJsonPath("authorName", equalTo("me too")))
-                .withRequestBody(matchingJsonPath("occurrenceDateTime", equalTo("2021-02-03T04:05:06"))),
+                .withRequestBodyJsonPath("legacyId", equalTo(NOMIS_CASE_NOTE_ID.toString()))
+                .withRequestBodyJsonPath("personIdentifier", equalTo(OFFENDER_ID_DISPLAY))
+                .withRequestBodyJsonPath("locationId", equalTo("SWI"))
+                .withRequestBodyJsonPath("type", equalTo("XNR"))
+                .withRequestBodyJsonPath("subType", equalTo("X"))
+                .withRequestBodyJsonPath("text", equalTo("the actual casenote"))
+                .withRequestBodyJsonPath("systemGenerated", equalTo("false"))
+                .withRequestBodyJsonPath("createdDateTime", equalTo("2021-02-03T04:05:06"))
+                .withRequestBodyJsonPath("createdByUsername", equalTo("John"))
+                .withRequestBodyJsonPath("source", equalTo("NOMIS"))
+                .withRequestBodyJsonPath("author.username", equalTo("me"))
+                .withRequestBodyJsonPath("author.userId", equalTo("123456"))
+                .withRequestBodyJsonPath("author.firstName", equalTo("First"))
+                .withRequestBodyJsonPath("author.lastName", equalTo("Last"))
+                .withRequestBodyJsonPath("occurrenceDateTime", equalTo("2021-02-03T04:05:06")),
             )
           }
         }
@@ -488,21 +490,22 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
             caseNotesApi.verify(
               1,
               postRequestedFor(urlPathEqualTo("/sync/case-notes"))
-                .withRequestBody(matchingJsonPath("id", equalTo(DPS_CASE_NOTE_ID)))
-                .withRequestBody(matchingJsonPath("legacyId", equalTo(NOMIS_CASE_NOTE_ID.toString())))
-                .withRequestBody(matchingJsonPath("personIdentifier", equalTo(OFFENDER_ID_DISPLAY)))
-                .withRequestBody(matchingJsonPath("locationId", equalTo(nomisCaseNote.prisonId)))
-                .withRequestBody(matchingJsonPath("type", equalTo("XNR")))
-                .withRequestBody(matchingJsonPath("subType", equalTo("X")))
-                .withRequestBody(matchingJsonPath("text", equalTo("the actual casenote")))
-                .withRequestBody(matchingJsonPath("systemGenerated", equalTo("false")))
-                .withRequestBody(matchingJsonPath("createdDateTime", equalTo("2021-02-03T04:05:06")))
-                .withRequestBody(matchingJsonPath("createdByUsername", equalTo("TBC"))) // TODO
-                .withRequestBody(matchingJsonPath("source", equalTo("NOMIS")))
-                .withRequestBody(matchingJsonPath("authorUsername", equalTo("me")))
-                .withRequestBody(matchingJsonPath("authorUserId", equalTo("123456")))
-                .withRequestBody(matchingJsonPath("authorName", equalTo("me too")))
-                .withRequestBody(matchingJsonPath("occurrenceDateTime", equalTo("2023-08-12T13:14:15"))),
+                .withRequestBodyJsonPath("id", equalTo(DPS_CASE_NOTE_ID))
+                .withRequestBodyJsonPath("legacyId", equalTo(NOMIS_CASE_NOTE_ID.toString()))
+                .withRequestBodyJsonPath("personIdentifier", equalTo(OFFENDER_ID_DISPLAY))
+                .withRequestBodyJsonPath("locationId", equalTo(nomisCaseNote.prisonId))
+                .withRequestBodyJsonPath("type", equalTo("XNR"))
+                .withRequestBodyJsonPath("subType", equalTo("X"))
+                .withRequestBodyJsonPath("text", equalTo("the actual casenote"))
+                .withRequestBodyJsonPath("systemGenerated", equalTo("false"))
+                .withRequestBodyJsonPath("createdDateTime", equalTo("2021-02-03T04:05:06"))
+                .withRequestBodyJsonPath("createdByUsername", equalTo("John"))
+                .withRequestBodyJsonPath("source", equalTo("NOMIS"))
+                .withRequestBodyJsonPath("author.username", equalTo("me"))
+                .withRequestBodyJsonPath("author.userId", equalTo("123456"))
+                .withRequestBodyJsonPath("author.firstName", equalTo("First"))
+                .withRequestBodyJsonPath("author.lastName", equalTo("Last"))
+                .withRequestBodyJsonPath("occurrenceDateTime", equalTo("2023-08-12T13:14:15")),
             )
           }
         }
@@ -738,9 +741,11 @@ private fun caseNote(bookingId: Long = 123456, caseNoteId: Long = 3) = CaseNoteR
   caseNoteSubType = CodeDescription("X", "Security"),
   authorUsername = "me",
   authorStaffId = 123456L,
-  authorName = "me too",
+  authorFirstName = "First",
+  authorLastName = "Last",
   amendments = emptyList(),
   createdDatetime = "2021-02-03T04:05:06",
+  createdUsername = "John",
   noteSourceCode = CaseNoteResponse.NoteSourceCode.INST,
   occurrenceDateTime = "2021-02-03T04:05:06",
   prisonId = "SWI",

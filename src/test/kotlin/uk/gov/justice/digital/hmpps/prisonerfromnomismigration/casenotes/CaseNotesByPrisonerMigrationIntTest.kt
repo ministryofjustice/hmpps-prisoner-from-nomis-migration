@@ -134,11 +134,12 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
             .withRequestBodyJsonPath("$[0].text", equalTo("text"))
             .withRequestBodyJsonPath("$[0].systemGenerated", equalTo("false"))
             .withRequestBodyJsonPath("$[0].createdDateTime", equalTo("2021-02-03T04:05:06"))
-            .withRequestBodyJsonPath("$[0].createdByUsername", equalTo("TBC")) // TODO
+            .withRequestBodyJsonPath("$[0].createdByUsername", equalTo("John"))
             .withRequestBodyJsonPath("$[0].source", equalTo("NOMIS"))
-            .withRequestBodyJsonPath("$[0].authorUsername", equalTo("me"))
-            .withRequestBodyJsonPath("$[0].authorUserId", equalTo("123456"))
-            .withRequestBodyJsonPath("$[0].authorName", equalTo("me too"))
+            .withRequestBodyJsonPath("$[0].author.username", equalTo("me"))
+            .withRequestBodyJsonPath("$[0].author.userId", equalTo("123456"))
+            .withRequestBodyJsonPath("$[0].author.firstName", equalTo("First"))
+            .withRequestBodyJsonPath("$[0].author.lastName", equalTo("Last"))
             .withRequestBodyJsonPath("$[0].occurrenceDateTime", equalTo("2021-02-03T04:05:06")),
         )
         caseNotesApi.verify(
@@ -151,11 +152,12 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
             .withRequestBodyJsonPath("$[0].text", equalTo("text"))
             .withRequestBodyJsonPath("$[0].systemGenerated", equalTo("false"))
             .withRequestBodyJsonPath("$[0].createdDateTime", equalTo("2021-02-03T04:05:06"))
-            .withRequestBodyJsonPath("$[0].createdByUsername", equalTo("TBC")) // TODO
+            .withRequestBodyJsonPath("$[0].createdByUsername", equalTo("John"))
             .withRequestBodyJsonPath("$[0].source", equalTo("NOMIS"))
-            .withRequestBodyJsonPath("$[0].authorUsername", equalTo("me"))
-            .withRequestBodyJsonPath("$[0].authorUserId", equalTo("123456"))
-            .withRequestBodyJsonPath("$[0].authorName", equalTo("me too"))
+            .withRequestBodyJsonPath("$[0].author.username", equalTo("me"))
+            .withRequestBodyJsonPath("$[0].author.userId", equalTo("123456"))
+            .withRequestBodyJsonPath("$[0].author.firstName", equalTo("First"))
+            .withRequestBodyJsonPath("$[0].author.lastName", equalTo("Last"))
             .withRequestBodyJsonPath("$[0].occurrenceDateTime", equalTo("2021-02-03T04:05:06")),
         )
       }
