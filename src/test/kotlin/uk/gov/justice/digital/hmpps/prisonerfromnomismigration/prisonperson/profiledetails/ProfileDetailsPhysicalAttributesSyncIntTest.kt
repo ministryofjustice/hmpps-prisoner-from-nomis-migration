@@ -312,7 +312,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
           .also { waitForDlqMessage() }
 
         nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
-        dpsApi.verify(type = "error")
+        dpsApi.verify(type = "ignored")
         verifyTelemetry(telemetryType = "error", errorReason = "Booking with requested bookingId not found")
       }
 
@@ -338,7 +338,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
           .also { waitForDlqMessage() }
 
         nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
-        dpsApi.verify(type = "error")
+        dpsApi.verify(type = "ignored")
         verifyTelemetry(
           telemetryType = "error",
           profileType = "BUILD",
