@@ -6,12 +6,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.Create
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateSaferCustodyScreeningOutcomeRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateContributoryFactorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateCsipRecordRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateInvestigationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdatePlanRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateReferral
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateReferral.IsSaferCustodyTeamInformed.NO
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateReferral.IsSaferCustodyTeamInformed.YES
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpsertDecisionAndActionsRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpsertInvestigationRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpsertPlanRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Actions
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPFactorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPResponse
@@ -141,7 +141,7 @@ fun CSIPFactorResponse.toDPSUpdateFactorRequest() =
   )
 
 fun InvestigationDetails.toDPSUpdateInvestigationRequest() =
-  UpsertInvestigationRequest(
+  UpdateInvestigationRequest(
     staffInvolved = staffInvolved,
     evidenceSecured = evidenceSecured,
     occurrenceReason = reasonOccurred,
@@ -182,7 +182,7 @@ fun MutableSet<UpsertDecisionAndActionsRequest.Actions>.addIfTrue(actionSet: Boo
 
 // ////// OIDCSIPP - Plan ////////////////////////////
 fun CSIPResponse.toDPSUpsertPlanRequest() =
-  UpsertPlanRequest(
+  UpdatePlanRequest(
     caseManager = caseManager!!,
     reasonForPlan = planReason!!,
     firstCaseReviewDate = firstCaseReviewDate!!,

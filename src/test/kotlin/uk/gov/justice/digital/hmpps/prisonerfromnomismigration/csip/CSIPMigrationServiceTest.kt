@@ -955,135 +955,227 @@ internal class CSIPMigrationServiceTest {
       }
 
     @Nested
-    @DisplayName("migrateCSIPWithMinimalData")
-    inner class MigrateCSIPMinimalData {
+    @DisplayName("migrateMinimalData")
+    inner class MigrateMinimalData {
 
-      @BeforeEach
-      internal fun setUp(): Unit = runTest {
-        whenever(csipMappingService.getCSIPReportByNomisId(any())).thenReturn(null)
-        whenever(nomisApiService.getCSIP(any())).thenReturn(nomisCSIPReportMinimalData())
-        whenever(csipDpsService.migrateCSIP(any())).thenReturn(dpsCsipReportSyncResponse())
-        whenever(csipMappingService.createMapping(any(), any())).thenReturn(CreateMappingResult())
+      @Nested
+      @DisplayName("migrateCSIPWithMinimalData")
+      inner class MigrateCSIPMinimalData {
+
+        @BeforeEach
+        internal fun setUp(): Unit = runTest {
+          whenever(csipMappingService.getCSIPReportByNomisId(any())).thenReturn(null)
+          whenever(nomisApiService.getCSIP(any())).thenReturn(nomisCSIPReportMinimalData())
+          whenever(csipDpsService.migrateCSIP(any())).thenReturn(dpsCsipReportSyncResponse())
+          whenever(csipMappingService.createMapping(any(), any())).thenReturn(CreateMappingResult())
+        }
+
+        @Test
+        internal fun `will transform and send that csip to the csip api service`(): Unit = runTest {
+          service.migrateNomisEntity(
+            MigrationContext(
+              type = CSIP,
+              migrationId = "2020-05-23T11:30:00",
+              estimatedCount = 100_200,
+              body = CSIPIdResponse(NOMIS_CSIP_ID),
+            ),
+          )
+
+          verify(csipDpsService).migrateCSIP(eq(dpsSyncCsipRequestMinimal()))
+
+          verify(telemetryClient, times(1)).trackEvent(
+            eq("csip-migration-entity-migrated"),
+            check {
+              assertThat(it["migrationId"]).isNotNull
+              assertThat(it["nomisCSIPId"]).isNotNull
+              assertThat(it["dpsCSIPId"]).isNotNull
+            },
+            isNull(),
+          )
+        }
       }
 
-      @Test
-      internal fun `will transform and send that csip to the csip api service`(): Unit = runTest {
-        service.migrateNomisEntity(
-          MigrationContext(
-            type = CSIP,
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = CSIPIdResponse(NOMIS_CSIP_ID),
-          ),
-        )
+      @Nested
+      @DisplayName("migrateCSIPWithMinimalInvestigationData")
+      inner class MigrateCSIPMinimalInvestigationData {
 
-        verify(csipDpsService).migrateCSIP(eq(dpsSyncCsipRequestMinimal()))
+        @BeforeEach
+        internal fun setUp(): Unit = runTest {
+          whenever(csipMappingService.getCSIPReportByNomisId(any())).thenReturn(null)
+          whenever(nomisApiService.getCSIP(any()))
+            .thenReturn(nomisCSIPReportMinimalData(reasonOccurred = "There was a problem"))
+          whenever(csipDpsService.migrateCSIP(any())).thenReturn(dpsCsipReportSyncResponse())
+          whenever(csipMappingService.createMapping(any(), any())).thenReturn(CreateMappingResult())
+        }
 
-        verify(telemetryClient, times(1)).trackEvent(
-          eq("csip-migration-entity-migrated"),
-          check {
-            assertThat(it["migrationId"]).isNotNull
-            assertThat(it["nomisCSIPId"]).isNotNull
-            assertThat(it["dpsCSIPId"]).isNotNull
-          },
-          isNull(),
-        )
-      }
-    }
+        @Test
+        internal fun `will transform and send that csip to the csip api service`(): Unit = runTest {
+          service.migrateNomisEntity(
+            MigrationContext(
+              type = CSIP,
+              migrationId = "2020-05-23T11:30:00",
+              estimatedCount = 100_200,
+              body = CSIPIdResponse(NOMIS_CSIP_ID),
+            ),
+          )
 
-    @Nested
-    @DisplayName("migrateCSIPWithMinimalInvestigationData")
-    inner class MigrateCSIPMinimalInvestigationData {
+          verify(csipDpsService).migrateCSIP(
+            check {
+              assertThat(it.referral!!.investigation!!.occurrenceReason).isEqualTo("There was a problem")
+              assertThat(it.referral!!.investigation!!.interviews.size).isEqualTo(0)
+            },
+          )
 
-      @BeforeEach
-      internal fun setUp(): Unit = runTest {
-        whenever(csipMappingService.getCSIPReportByNomisId(any())).thenReturn(null)
-        whenever(nomisApiService.getCSIP(any()))
-          .thenReturn(nomisCSIPReportMinimalData(reasonOccurred = "There was a problem"))
-        whenever(csipDpsService.migrateCSIP(any())).thenReturn(dpsCsipReportSyncResponse())
-        whenever(csipMappingService.createMapping(any(), any())).thenReturn(CreateMappingResult())
-      }
-
-      @Test
-      internal fun `will transform and send that csip to the csip api service`(): Unit = runTest {
-        service.migrateNomisEntity(
-          MigrationContext(
-            type = CSIP,
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = CSIPIdResponse(NOMIS_CSIP_ID),
-          ),
-        )
-
-        verify(csipDpsService).migrateCSIP(
-          check {
-            assertThat(it.referral!!.investigation!!.occurrenceReason).isEqualTo("There was a problem")
-            assertThat(it.referral!!.investigation!!.interviews.size).isEqualTo(0)
-          },
-        )
-
-        verify(telemetryClient, times(1)).trackEvent(
-          eq("csip-migration-entity-migrated"),
-          check {
-            assertThat(it["migrationId"]).isNotNull
-            assertThat(it["nomisCSIPId"]).isNotNull
-            assertThat(it["dpsCSIPId"]).isNotNull
-          },
-          isNull(),
-        )
-      }
-    }
-
-    @Nested
-    @DisplayName("migrateCSIPWithMinimaDataAndInterview")
-    inner class MigrateCSIPWithInterviewAndNoInvestigationData {
-
-      @BeforeEach
-      internal fun setUp(): Unit = runTest {
-        val interview = InterviewDetails(
-          id = 3343,
-          interviewee = "Bill Black",
-          date = LocalDate.parse("2024-06-06"),
-          role = CodeDescription(code = "WITNESS", description = "Witness"),
-          createDateTime = "2024-04-04T15:12:32.00462",
-          createdBy = "AA_ADM",
-          createdByDisplayName = "ADAM SMITH",
-          comments = "Saw a pipe in his hand",
-        )
-        whenever(csipMappingService.getCSIPReportByNomisId(any())).thenReturn(null)
-        whenever(nomisApiService.getCSIP(any()))
-          .thenReturn(nomisCSIPReportMinimalData(interviews = listOf(interview)))
-        whenever(csipDpsService.migrateCSIP(any())).thenReturn(dpsCsipReportSyncResponse())
-        whenever(csipMappingService.createMapping(any(), any())).thenReturn(CreateMappingResult())
+          verify(telemetryClient, times(1)).trackEvent(
+            eq("csip-migration-entity-migrated"),
+            check {
+              assertThat(it["migrationId"]).isNotNull
+              assertThat(it["nomisCSIPId"]).isNotNull
+              assertThat(it["dpsCSIPId"]).isNotNull
+            },
+            isNull(),
+          )
+        }
       }
 
-      @Test
-      internal fun `will transform and send that csip to the csip api service`(): Unit = runTest {
-        service.migrateNomisEntity(
-          MigrationContext(
-            type = CSIP,
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = CSIPIdResponse(NOMIS_CSIP_ID),
-          ),
-        )
+      @Nested
+      @DisplayName("migrateCSIPWithMinimaDataAndInterview")
+      inner class MigrateCSIPWithInterviewAndNoInvestigationData {
 
-        verify(csipDpsService).migrateCSIP(
-          check {
-            assertThat(it.referral!!.investigation!!.occurrenceReason).isNull()
-            assertThat(it.referral!!.investigation!!.interviews[0].interviewee).isEqualTo("Bill Black")
-          },
-        )
+        @BeforeEach
+        internal fun setUp(): Unit = runTest {
+          val interview = InterviewDetails(
+            id = 3343,
+            interviewee = "Bill Black",
+            date = LocalDate.parse("2024-06-06"),
+            role = CodeDescription(code = "WITNESS", description = "Witness"),
+            createDateTime = "2024-04-04T15:12:32.00462",
+            createdBy = "AA_ADM",
+            createdByDisplayName = "ADAM SMITH",
+            comments = "Saw a pipe in his hand",
+          )
+          whenever(csipMappingService.getCSIPReportByNomisId(any())).thenReturn(null)
+          whenever(nomisApiService.getCSIP(any()))
+            .thenReturn(nomisCSIPReportMinimalData(interviews = listOf(interview)))
+          whenever(csipDpsService.migrateCSIP(any())).thenReturn(dpsCsipReportSyncResponse())
+          whenever(csipMappingService.createMapping(any(), any())).thenReturn(CreateMappingResult())
+        }
 
-        verify(telemetryClient, times(1)).trackEvent(
-          eq("csip-migration-entity-migrated"),
-          check {
-            assertThat(it["migrationId"]).isNotNull
-            assertThat(it["nomisCSIPId"]).isNotNull
-            assertThat(it["dpsCSIPId"]).isNotNull
-          },
-          isNull(),
-        )
+        @Test
+        internal fun `will transform and send that csip to the csip api service`(): Unit = runTest {
+          service.migrateNomisEntity(
+            MigrationContext(
+              type = CSIP,
+              migrationId = "2020-05-23T11:30:00",
+              estimatedCount = 100_200,
+              body = CSIPIdResponse(NOMIS_CSIP_ID),
+            ),
+          )
+
+          verify(csipDpsService).migrateCSIP(
+            check {
+              assertThat(it.referral!!.investigation!!.occurrenceReason).isNull()
+              assertThat(it.referral!!.investigation!!.interviews[0].interviewee).isEqualTo("Bill Black")
+            },
+          )
+
+          verify(telemetryClient, times(1)).trackEvent(
+            eq("csip-migration-entity-migrated"),
+            check {
+              assertThat(it["migrationId"]).isNotNull
+              assertThat(it["nomisCSIPId"]).isNotNull
+              assertThat(it["dpsCSIPId"]).isNotNull
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      @DisplayName("migrateCSIPWithMinimalDecisionData")
+      inner class MigrateCSIPWithMinimalDecisionData {
+
+        @BeforeEach
+        internal fun setUp(): Unit = runTest {
+          whenever(csipMappingService.getCSIPReportByNomisId(any())).thenReturn(null)
+          whenever(nomisApiService.getCSIP(any()))
+            .thenReturn(nomisCSIPReportMinimalData(conclusion = "There was a conclusion"))
+          whenever(csipDpsService.migrateCSIP(any())).thenReturn(dpsCsipReportSyncResponse())
+          whenever(csipMappingService.createMapping(any(), any())).thenReturn(CreateMappingResult())
+        }
+
+        @Test
+        internal fun `will transform and send that csip to the csip api service`(): Unit = runTest {
+          service.migrateNomisEntity(
+            MigrationContext(
+              type = CSIP,
+              migrationId = "2020-05-23T11:30:00",
+              estimatedCount = 100_200,
+              body = CSIPIdResponse(NOMIS_CSIP_ID),
+            ),
+          )
+
+          verify(csipDpsService).migrateCSIP(
+            check {
+              assertThat(it.referral!!.decisionAndActions!!.actions.size).isEqualTo(0)
+              assertThat(it.referral!!.decisionAndActions!!.conclusion).isEqualTo("There was a conclusion")
+            },
+          )
+
+          verify(telemetryClient, times(1)).trackEvent(
+            eq("csip-migration-entity-migrated"),
+            check {
+              assertThat(it["migrationId"]).isNotNull
+              assertThat(it["nomisCSIPId"]).isNotNull
+              assertThat(it["dpsCSIPId"]).isNotNull
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      @DisplayName("migrateCSIPWithMinimalDecisionActionData")
+      inner class MigrateCSIPWithMinimalDecisionActionData {
+
+        @BeforeEach
+        internal fun setUp(): Unit = runTest {
+          whenever(csipMappingService.getCSIPReportByNomisId(any())).thenReturn(null)
+          whenever(nomisApiService.getCSIP(any()))
+            .thenReturn(nomisCSIPReportMinimalData(openCSIPAlert = true))
+          whenever(csipDpsService.migrateCSIP(any())).thenReturn(dpsCsipReportSyncResponse())
+          whenever(csipMappingService.createMapping(any(), any())).thenReturn(CreateMappingResult())
+        }
+
+        @Test
+        internal fun `will transform and send that csip to the csip api service`(): Unit = runTest {
+          service.migrateNomisEntity(
+            MigrationContext(
+              type = CSIP,
+              migrationId = "2020-05-23T11:30:00",
+              estimatedCount = 100_200,
+              body = CSIPIdResponse(NOMIS_CSIP_ID),
+            ),
+          )
+
+          verify(csipDpsService).migrateCSIP(
+            check {
+              assertThat(it.referral!!.decisionAndActions!!.actions.size).isEqualTo(1)
+              assertThat(it.referral!!.decisionAndActions!!.actions.first().value).isEqualTo("OPEN_CSIP_ALERT")
+              assertThat(it.referral!!.decisionAndActions!!.conclusion).isNull()
+            },
+          )
+
+          verify(telemetryClient, times(1)).trackEvent(
+            eq("csip-migration-entity-migrated"),
+            check {
+              assertThat(it["migrationId"]).isNotNull
+              assertThat(it["nomisCSIPId"]).isNotNull
+              assertThat(it["dpsCSIPId"]).isNotNull
+            },
+            isNull(),
+          )
+        }
       }
     }
 

@@ -19,9 +19,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncCs
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateContributoryFactorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateCsipRecordRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateInvestigationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdatePlanRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpsertDecisionAndActionsRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpsertInvestigationRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpsertPlanRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
 
 @Service
@@ -73,7 +73,7 @@ class CSIPDpsApiService(@Qualifier("csipApiWebClient") private val webClient: We
       .retrieve()
       .awaitBody()
 
-  suspend fun updateCSIPInvestigation(csipReportId: String, investigationRequest: UpsertInvestigationRequest, updatedByUsername: String): Investigation =
+  suspend fun updateCSIPInvestigation(csipReportId: String, investigationRequest: UpdateInvestigationRequest, updatedByUsername: String): Investigation =
     webClient.put()
       .uri("/csip-records/{csipReportId}/referral/investigation", csipReportId)
       .header("Source", "NOMIS")
@@ -91,7 +91,7 @@ class CSIPDpsApiService(@Qualifier("csipApiWebClient") private val webClient: We
       .retrieve()
       .awaitBody()
 
-  suspend fun updateCSIPPlan(csipReportId: String, planRequest: UpsertPlanRequest, updatedByUsername: String): Plan =
+  suspend fun updateCSIPPlan(csipReportId: String, planRequest: UpdatePlanRequest, updatedByUsername: String): Plan =
     webClient.put()
       .uri("/csip-records/{csipReportId}/plan", csipReportId)
       .header("Source", "NOMIS")

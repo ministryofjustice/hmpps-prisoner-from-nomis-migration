@@ -170,7 +170,13 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
         firstCaseReviewDate = LocalDate.parse("2024-04-15"),
       )
 
-    fun nomisCSIPReportMinimalData(nomisCSIPId: Long = 1234, reasonOccurred: String? = null, interviews: List<InterviewDetails>? = listOf()) =
+    fun nomisCSIPReportMinimalData(
+      nomisCSIPId: Long = 1234,
+      reasonOccurred: String? = null,
+      interviews: List<InterviewDetails>? = listOf(),
+      conclusion: String? = null,
+      openCSIPAlert: Boolean = false,
+    ) =
       CSIPResponse(
         id = nomisCSIPId,
         offender = Offender("A1234BC", firstName = "Fred", lastName = "Smith"),
@@ -196,8 +202,9 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
           interviews = interviews,
         ),
         decision = Decision(
+          conclusion = conclusion,
           actions = Actions(
-            openCSIPAlert = false,
+            openCSIPAlert = openCSIPAlert,
             nonAssociationsUpdated = false,
             observationBook = false,
             unitOrCellMove = false,

@@ -50,10 +50,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncRe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncScreeningOutcomeRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateContributoryFactorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateCsipRecordRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateInvestigationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdatePlanRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateReferral
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpsertDecisionAndActionsRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpsertInvestigationRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpsertPlanRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -390,7 +390,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
       )
 
     fun dpsUpdateInvestigationRequest() =
-      UpsertInvestigationRequest(
+      UpdateInvestigationRequest(
         staffInvolved = "some people",
         evidenceSecured = "A piece of pipe",
         occurrenceReason = "bad behaviour",
@@ -468,7 +468,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
       )
 
     fun dpsUpdatePlanRequest() =
-      UpsertPlanRequest(
+      UpdatePlanRequest(
         caseManager = "C Jones",
         reasonForPlan = "helper",
         firstCaseReviewDate = LocalDate.parse("2024-04-15"),

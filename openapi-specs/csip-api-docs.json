@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-09-16.1993.2ee5414"
+    "version": "2024-09-19.2042.843980d"
   },
   "servers": [
     {
@@ -448,16 +448,6 @@
           "required": true
         },
         "responses": {
-          "409": {
-            "description": "Conflict. The CSIP referral already has a Safer Custody Screening Outcome created.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "404": {
             "description": "The CSIP referral associated with this identifier was not found.",
             "content": {
@@ -480,6 +470,16 @@
           },
           "401": {
             "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict. The CSIP referral already has a Safer Custody Screening Outcome created.",
             "content": {
               "application/json": {
                 "schema": {
@@ -627,7 +627,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpsertInvestigationRequest"
+                "$ref": "#/components/schemas/UpdateInvestigationRequest"
               }
             }
           },
@@ -981,7 +981,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpsertPlanRequest"
+                "$ref": "#/components/schemas/UpdatePlanRequest"
               }
             }
           },
@@ -1196,22 +1196,22 @@
               }
             }
           },
-          "201": {
-            "description": "Identified need added to CSIP plan",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/IdentifiedNeed"
-                }
-              }
-            }
-          },
           "404": {
             "description": "The CSIP plan associated with this identifier was not found.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Identified need added to CSIP plan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentifiedNeed"
                 }
               }
             }
@@ -1636,16 +1636,6 @@
           "required": true
         },
         "responses": {
-          "404": {
-            "description": "The contributory factor associated with this identifier was not found.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "403": {
             "description": "Forbidden, requires an appropriate role",
             "content": {
@@ -1682,6 +1672,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ContributoryFactor"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The contributory factor associated with this identifier was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -2270,8 +2270,7 @@
       },
       "SyncDecisionAndActionsRequest": {
         "required": [
-          "actions",
-          "outcomeTypeCode"
+          "actions"
         ],
         "type": "object",
         "properties": {
@@ -2515,10 +2514,7 @@
       },
       "SyncPlanRequest": {
         "required": [
-          "caseManager",
-          "firstCaseReviewDate",
           "identifiedNeeds",
-          "reasonForPlan",
           "reviews"
         ],
         "type": "object",
@@ -3586,10 +3582,7 @@
       },
       "Plan": {
         "required": [
-          "caseManager",
-          "firstCaseReviewDate",
           "identifiedNeeds",
-          "reasonForPlan",
           "reviews"
         ],
         "type": "object",
@@ -4316,7 +4309,7 @@
         },
         "description": "The detail for updating a CSIP referral"
       },
-      "UpsertInvestigationRequest": {
+      "UpdateInvestigationRequest": {
         "type": "object",
         "properties": {
           "staffInvolved": {
@@ -4358,7 +4351,7 @@
         },
         "description": "The request body to update an investigation on the incident that motivated the CSIP referral."
       },
-      "UpsertPlanRequest": {
+      "UpdatePlanRequest": {
         "required": [
           "caseManager",
           "firstCaseReviewDate",
