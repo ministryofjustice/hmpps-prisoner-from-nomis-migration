@@ -170,6 +170,8 @@ azure:
 
 hmpps.sqs:
   queues:
+    migrationcasenotes:
+      propagateTracing: false
     # The locations migration involves cells, landings etc. which have a parent which may not yet exist. These may fail initially
     # and there needs to be a significant delay before they are retried which is long enough for the parent to be created.
     migrationlocations:
@@ -180,7 +182,7 @@ hmpps.sqs:
     eventincidents:
       errorVisibilityTimeout: 5
     # court sentencing will have to process creation events for parent and child entities simultaneously
-    # a short delay should be enough for the hierachy to be created in the right order.
+    # a short delay should be enough for the hierarchy to be created in the right order.
     eventcourtsentencing:
       errorVisibilityTimeout: 1
 
