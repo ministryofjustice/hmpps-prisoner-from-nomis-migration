@@ -86,12 +86,11 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
         ),
     )
   }
-
   fun stubGetByNomisId(status: HttpStatus) {
     stubGetErrorResponse(status = status, url = "/mapping/csip/nomis-csip-id/.*")
   }
 
-  fun stubGetFullMappingByDpsId(nomisCSIPId: Long = 1234, dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
+  fun stubGetFullMappingByDpsReportId(nomisCSIPId: Long = 1234, dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/csip/dps-csip-id/$dpsCSIPId/all"))
         .willReturn(
@@ -108,11 +107,17 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
                 interviewMappings = listOf(),
                 planMappings = listOf(),
                 reviewMappings = listOf(),
+                label = "2022-02-14T09:58:45",
+                whenCreated = "2020-01-01T11:10:00",
               ),
             ),
         ),
     )
   }
+  fun stubGetFullMappingByDpsReportId(status: HttpStatus) {
+    stubGetErrorResponse(status = status, url = "/mapping/csip/dps-csip-id/\\S+/all")
+  }
+
   fun stubCSIPLatestMigration(migrationId: String) {
     mappingApi.stubFor(
       get(urlEqualTo("/mapping/csip/migrated/latest")).willReturn(
