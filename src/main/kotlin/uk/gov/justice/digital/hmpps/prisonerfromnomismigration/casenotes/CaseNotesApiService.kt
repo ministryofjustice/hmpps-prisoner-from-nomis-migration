@@ -14,7 +14,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.S
 @Service
 class CaseNotesApiService(@Qualifier("caseNotesApiWebClient") private val webClient: WebClient) {
   suspend fun upsertCaseNote(upsertRequest: SyncCaseNoteRequest): SyncResult =
-    webClient.post()
+    webClient.put()
       .uri("/sync/case-notes")
       .contentType(MediaType.APPLICATION_JSON)
       .bodyValue(upsertRequest)

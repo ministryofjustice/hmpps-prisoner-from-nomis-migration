@@ -124,7 +124,7 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           // caseNotesMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
-          caseNotesApi.stubPostCaseNote(dpsCaseNote().copy(id = UUID.fromString(DPS_CASE_NOTE_ID)))
+          caseNotesApi.stubPutCaseNote(dpsCaseNote().copy(id = UUID.fromString(DPS_CASE_NOTE_ID)))
           caseNotesMappingApiMockServer.stubPostMapping()
 
           awsSqsCaseNoteOffenderEventsClient.sendMessage(
@@ -143,7 +143,7 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             caseNotesApi.verify(
               1,
-              postRequestedFor(urlPathEqualTo("/sync/case-notes"))
+              putRequestedFor(urlPathEqualTo("/sync/case-notes"))
                 .withRequestBodyJsonPath("legacyId", equalTo(NOMIS_CASE_NOTE_ID.toString()))
                 .withRequestBodyJsonPath("personIdentifier", equalTo(OFFENDER_ID_DISPLAY))
                 .withRequestBodyJsonPath("locationId", equalTo("SWI"))
@@ -201,7 +201,7 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           caseNotesMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
-          caseNotesApi.stubPostCaseNote(
+          caseNotesApi.stubPutCaseNote(
             dpsCaseNote().copy(id = UUID.fromString(DPS_CASE_NOTE_ID)),
           )
         }
@@ -228,7 +228,7 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
           fun `will create caseNote in DPS`() {
             await untilAsserted {
               caseNotesApi.verify(
-                postRequestedFor(urlPathEqualTo("/sync/case-notes")),
+                putRequestedFor(urlPathEqualTo("/sync/case-notes")),
               )
             }
           }
@@ -306,7 +306,7 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
             await untilAsserted {
               caseNotesApi.verify(
                 1,
-                postRequestedFor(urlPathEqualTo("/sync/case-notes")),
+                putRequestedFor(urlPathEqualTo("/sync/case-notes")),
               )
             }
           }
@@ -472,7 +472,7 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
               mappingType = MIGRATED,
             ),
           )
-          caseNotesApi.stubPostCaseNote(dpsCaseNote())
+          caseNotesApi.stubPutCaseNote(dpsCaseNote())
           awsSqsCaseNoteOffenderEventsClient.sendMessage(
             caseNotesQueueOffenderEventsUrl,
             caseNoteEvent(
@@ -489,7 +489,7 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             caseNotesApi.verify(
               1,
-              postRequestedFor(urlPathEqualTo("/sync/case-notes"))
+              putRequestedFor(urlPathEqualTo("/sync/case-notes"))
                 .withRequestBodyJsonPath("id", equalTo(DPS_CASE_NOTE_ID))
                 .withRequestBodyJsonPath("legacyId", equalTo(NOMIS_CASE_NOTE_ID.toString()))
                 .withRequestBodyJsonPath("personIdentifier", equalTo(OFFENDER_ID_DISPLAY))
