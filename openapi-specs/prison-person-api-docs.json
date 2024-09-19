@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-09-10.1093.2045041"
+    "version": "2024-09-18.1142.fb7e173"
   },
   "servers": [
     {
@@ -69,6 +69,93 @@
     }
   ],
   "paths": {
+    "/sync/prisoners/{prisonerNumber}/profile-details-physical-attributes": {
+      "put": {
+        "tags": [
+          "Profile Details Physical Attributes",
+          "Sync with NOMIS"
+        ],
+        "summary": "SYNC endpoint to sync changes to profile details physical attributes made in NOMIS",
+        "description": "This endpoint <b>SHOULD ONLY BE USED IN ORDER TO SYNC CHANGES MADE IN NOMIS.</b> There is a separate endpoint for normal editing of the Physical Attributes.<br/><br/>Requires role `ROLE_PRISON_PERSON_API__PROFILE_DETAILS_PHYSICAL_ATTRIBUTES_SYNC__RW`<br/><br/>Edits can be made to profile details physical attributes in NOMIS to both the current booking and to old bookings. This sync API can handle both by accepting the `appliesFrom` and `appliesTo` timestamps.  For edits to the current booking, `appliesFrom` should be equal to the point in time that the edit happened, and `appliesTo` should be null.  For edits to historical bookings `appliesFrom` should be equal to the booking start date and and `appliesTo` should be equal to the booking end date. The `lastModifiedAt` date should always be the point in time that the user made the edit.",
+        "operationId": "syncPhysicalAttributes",
+        "parameters": [
+          {
+            "name": "prisonerNumber",
+            "in": "path",
+            "description": "The prisoner number",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The prisoner number",
+              "example": "A1234AA"
+            },
+            "example": "A1234AA"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileDetailsPhysicalAttributesSyncRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Returns prisoner's physical attributes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileDetailsPhysicalAttributesSyncResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires ROLE_PRISON_PERSON_API__PROFILE_DETAILS_PHYSICAL_ATTRIBUTES_SYNC__RW",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileDetailsPhysicalAttributesSyncResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/sync/prisoners/{prisonerNumber}/physical-attributes": {
       "put": {
         "tags": [
@@ -77,7 +164,7 @@
         ],
         "summary": "SYNC endpoint to sync changes to physical attributes made in NOMIS",
         "description": "This endpoint <b>SHOULD ONLY BE USED IN ORDER TO SYNC CHANGES MADE IN NOMIS.</b> There is a separate endpoint for normal editing of the Physical Attributes.<br/><br/>Requires role `ROLE_PRISON_PERSON_API__PHYSICAL_ATTRIBUTES_SYNC__RW`<br/><br/>Edits can be made to physical attributes in NOMIS to both the current booking and to old bookings. This sync API can handle both by accepting the `appliesFrom` and `appliesTo` timestamps.  For edits to the current booking, `appliesFrom` should be equal to the point in time that the edit happened, and `appliesTo` should be null.  For edits to historical bookings `appliesFrom` should be equal to the booking start date and and `appliesTo` should be equal to the booking end date. The `createdAt` date should always be the point in time that the user made the edit.",
-        "operationId": "syncPhysicalAttributes",
+        "operationId": "syncPhysicalAttributes_1",
         "parameters": [
           {
             "name": "prisonerNumber",
@@ -1445,6 +1532,100 @@
           }
         }
       },
+      "ProfileDetailsPhysicalAttributesSyncRequest": {
+        "required": [
+          "appliesFrom"
+        ],
+        "type": "object",
+        "properties": {
+          "hair": {
+            "$ref": "#/components/schemas/SyncValueWithMetadataString"
+          },
+          "facialHair": {
+            "$ref": "#/components/schemas/SyncValueWithMetadataString"
+          },
+          "face": {
+            "$ref": "#/components/schemas/SyncValueWithMetadataString"
+          },
+          "build": {
+            "$ref": "#/components/schemas/SyncValueWithMetadataString"
+          },
+          "leftEyeColour": {
+            "$ref": "#/components/schemas/SyncValueWithMetadataString"
+          },
+          "rightEyeColour": {
+            "$ref": "#/components/schemas/SyncValueWithMetadataString"
+          },
+          "shoeSize": {
+            "$ref": "#/components/schemas/SyncValueWithMetadataString"
+          },
+          "appliesFrom": {
+            "type": "string",
+            "description": "The timestamp indicating from when these profile details physical attributes were true for the prisoner. For edits to the current booking, this should be equal to the 'createdAt' date. For edits to historical bookings, this should be equal to the booking start date.",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+0100"
+          },
+          "appliesTo": {
+            "type": "string",
+            "description": "The timestamp of when these profile details physical attributes should no longer be considered applicable. For edits to the current booking, this should be left null. For edits to historical bookings, this should be equal to the booking end date.",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+0100"
+          },
+          "latestBooking": {
+            "type": "boolean",
+            "description": "An indication of whether the edit was performed to the latest booking. If this is not the latest booking, the edit will be inserted into field history but the physical attributes table will not be updated.",
+            "example": true
+          }
+        },
+        "description": "Request object for syncing a prisoner's profile details physical attributes"
+      },
+      "SyncValueWithMetadataString": {
+        "required": [
+          "lastModifiedAt",
+          "lastModifiedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "description": "Value"
+          },
+          "lastModifiedAt": {
+            "type": "string",
+            "description": "The timestamp indicating when this record was last edited in NOMIS",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+0100"
+          },
+          "lastModifiedBy": {
+            "type": "string",
+            "description": "The username of who last edited the record in NOMIS",
+            "example": "USER1"
+          }
+        },
+        "description": "The sync value with metadata"
+      },
+      "ProfileDetailsPhysicalAttributesSyncResponse": {
+        "required": [
+          "fieldHistoryInserted"
+        ],
+        "type": "object",
+        "properties": {
+          "fieldHistoryInserted": {
+            "type": "array",
+            "description": "The IDs of field history inserted during the sync",
+            "example": [
+              123,
+              456
+            ],
+            "items": {
+              "type": "integer",
+              "description": "The IDs of field history inserted during the sync",
+              "format": "int64"
+            }
+          }
+        },
+        "description": "Profile Details Physical Attributes Sync Response"
+      },
       "PhysicalAttributesSyncRequest": {
         "required": [
           "appliesFrom",
@@ -1567,7 +1748,7 @@
             "example": "USER1"
           }
         },
-        "description": "The migration value with metadata"
+        "description": "The migration value (`ReferenceDataCode.code`) with metadata"
       },
       "ProfileDetailsPhysicalAttributesMigrationRequest": {
         "required": [

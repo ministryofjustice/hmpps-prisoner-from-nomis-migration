@@ -1,7 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.profiledetails
 
+import com.github.tomakehurst.wiremock.client.WireMock.absent
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
+import com.github.tomakehurst.wiremock.matching.StringValuePattern
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
@@ -9,34 +14,28 @@ import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
 import org.mockito.kotlin.check
-import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
-import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.mock.mockito.SpyBean
-import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
-import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.BookingProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ProfileDetailsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.ProfileDetailsPhysicalAttributesSyncResponse
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
-import java.time.LocalDateTime
 
 class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
 
   @Autowired
   private lateinit var nomisApi: ProfileDetailsNomisApiMockServer
 
-  @SpyBean
-  private lateinit var dpsApi: ProfileDetailPhysicalAttributesDpsApiService
+  @Autowired
+  private lateinit var dpsApi: ProfileDetailsPhysicalAttributesDpsApiMockServer
 
   @Nested
   @DisplayName("OFFENDER_PHYSICAL_DETAILS-CHANGED for physical attributes")
@@ -47,7 +46,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
       fun `should sync new profile detail physical attributes`() = runTest {
         nomisApi.stubGetProfileDetails(
           "A1234AA",
-          response(
+          nomisResponse(
             offenderNo = "A1234AA",
             bookings = listOf(
               booking(
@@ -70,21 +69,26 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
+        dpsApi.stubSyncProfileDetailsPhysicalAttributes(dpsResponse())
 
         sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "SHOESIZE")
 
         nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
-        verify(dpsApi).syncProfileDetailsPhysicalAttributes(
-          check {
-            assertThat(it.prisonerNumber).isEqualTo("A1234AA")
-            assertThat(it.profileType).isEqualTo("SHOESIZE")
-            assertThat(it.profileCode).isEqualTo("8.5")
-            assertThat(it.appliesFrom).isEqualTo(LocalDateTime.parse("2024-09-03T12:34:56"))
-            assertThat(it.appliesTo).isNull()
-            assertThat(it.latestBooking).isTrue
-            assertThat(it.createdAt).isEqualTo(LocalDateTime.parse("2024-09-04T12:34:56"))
-            assertThat(it.createdBy).isEqualTo("A_USER")
-          },
+        dpsApi.verify(
+          dpsUpdates = mapOf(
+            "shoeSize.value" to equalTo("8.5"),
+            "appliesFrom" to equalTo("2024-09-03T12:34:56+01:00[Europe/London]"),
+            "appliesTo" to absent(),
+            "latestBooking" to equalTo("true"),
+            "shoeSize.lastModifiedAt" to equalTo("2024-09-04T12:34:56+01:00[Europe/London]"),
+            "shoeSize.lastModifiedBy" to equalTo("A_USER"),
+            "hair" to absent(),
+            "facialHair" to absent(),
+            "face" to absent(),
+            "build" to absent(),
+            "leftEyeColour" to absent(),
+            "leftRightColour" to absent(),
+          ),
         )
         verifyTelemetry(
           telemetryType = "updated",
@@ -98,7 +102,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
       fun `should sync a null value`() = runTest {
         nomisApi.stubGetProfileDetails(
           "A1234AA",
-          response(
+          nomisResponse(
             bookings = listOf(
               booking(
                 profileDetails = listOf(
@@ -113,17 +117,17 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
+        dpsApi.stubSyncProfileDetailsPhysicalAttributes(dpsResponse())
 
         sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "SHOESIZE")
 
         nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
-        verify(dpsApi).syncProfileDetailsPhysicalAttributes(
-          check {
-            assertThat(it.profileType).isEqualTo("SHOESIZE")
-            assertThat(it.profileCode).isEqualTo(null)
-            assertThat(it.createdAt).isEqualTo(LocalDateTime.parse("2024-09-05T12:34:56"))
-            assertThat(it.createdBy).isEqualTo("ANOTHER_USER")
-          },
+        dpsApi.verify(
+          dpsUpdates = mapOf(
+            "shoeSize.value" to absent(),
+            "shoeSize.lastModifiedAt" to equalTo("2024-09-05T12:34:56+01:00[Europe/London]"),
+            "shoeSize.lastModifiedBy" to equalTo("ANOTHER_USER"),
+          ),
         )
         verifyTelemetry()
       }
@@ -132,7 +136,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
       fun `should ignore a null value that has just been created`() = runTest {
         nomisApi.stubGetProfileDetails(
           "A1234AA",
-          response(
+          nomisResponse(
             bookings = listOf(
               booking(
                 profileDetails = listOf(
@@ -151,7 +155,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
         sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "SHOESIZE")
 
         nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
-        verify(dpsApi, never()).syncProfileDetailsPhysicalAttributes(any())
+        dpsApi.verify(type = "ignored")
         verifyTelemetry(telemetryType = "ignored", ignoreReason = "New profile details are empty")
       }
 
@@ -159,7 +163,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
       fun `should ignore an update created by the synchronisation service`() = runTest {
         nomisApi.stubGetProfileDetails(
           "A1234AA",
-          response(
+          nomisResponse(
             bookings = listOf(
               booking(
                 profileDetails = listOf(
@@ -173,7 +177,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
         sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "SHOESIZE")
 
         nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
-        verify(dpsApi, never()).syncProfileDetailsPhysicalAttributes(any())
+        dpsApi.verify(type = "ignored")
         verifyTelemetry(
           telemetryType = "ignored",
           ignoreReason = "Profile details were created by DPS_SYNCHRONISATION",
@@ -184,7 +188,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
       fun `should sync a historical booking`() = runTest {
         nomisApi.stubGetProfileDetails(
           "A1234AA",
-          response(
+          nomisResponse(
             bookings = listOf(
               booking(
                 bookingId = 1,
@@ -212,18 +216,18 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
+        dpsApi.stubSyncProfileDetailsPhysicalAttributes(dpsResponse())
 
         sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "SHOESIZE")
 
         nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
-        verify(dpsApi).syncProfileDetailsPhysicalAttributes(
-          check {
-            assertThat(it.profileType).isEqualTo("SHOESIZE")
-            assertThat(it.profileCode).isEqualTo("9.5")
-            assertThat(it.appliesFrom).isEqualTo(LocalDateTime.parse("2024-09-02T12:34:56"))
-            assertThat(it.appliesTo).isEqualTo(LocalDateTime.parse("2024-09-03T12:34:56"))
-            assertThat(it.latestBooking).isFalse()
-          },
+        dpsApi.verify(
+          dpsUpdates = mapOf(
+            "shoeSize.value" to equalTo("9.5"),
+            "appliesFrom" to equalTo("2024-09-02T12:34:56+01:00[Europe/London]"),
+            "appliesTo" to equalTo("2024-09-03T12:34:56+01:00[Europe/London]"),
+            "latestBooking" to equalTo("false"),
+          ),
         )
         verifyTelemetry()
       }
@@ -232,7 +236,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
       fun `should sync a historical booking which is the latest`() = runTest {
         nomisApi.stubGetProfileDetails(
           "A1234AA",
-          response(
+          nomisResponse(
             bookings = listOf(
               booking(
                 bookingId = 12345,
@@ -249,18 +253,18 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
+        dpsApi.stubSyncProfileDetailsPhysicalAttributes(dpsResponse())
 
         sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "SHOESIZE")
 
         nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
-        verify(dpsApi).syncProfileDetailsPhysicalAttributes(
-          check {
-            assertThat(it.profileType).isEqualTo("SHOESIZE")
-            assertThat(it.profileCode).isEqualTo("8.5")
-            assertThat(it.appliesFrom).isEqualTo(LocalDateTime.parse("2024-09-02T12:34:56"))
-            assertThat(it.appliesTo).isEqualTo(LocalDateTime.parse("2024-09-03T12:34:56"))
-            assertThat(it.latestBooking).isTrue()
-          },
+        dpsApi.verify(
+          dpsUpdates = mapOf(
+            "shoeSize.value" to equalTo("8.5"),
+            "appliesFrom" to equalTo("2024-09-02T12:34:56+01:00[Europe/London]"),
+            "appliesTo" to equalTo("2024-09-03T12:34:56+01:00[Europe/London]"),
+            "latestBooking" to equalTo("true"),
+          ),
         )
         verifyTelemetry()
       }
@@ -276,30 +280,28 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
           .also { waitForDlqMessage() }
 
         nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
-        verify(dpsApi, never()).syncProfileDetailsPhysicalAttributes(any())
+        dpsApi.verify(type = "ignored")
         verifyTelemetry(telemetryType = "error", errorReason = "404 Not Found from GET http://localhost:8081/prisoners/A1234AA/profile-details")
       }
 
       @Test
       fun `should put message on DLQ if call to DPS fails`() = runTest {
-        nomisApi.stubGetProfileDetails("A1234AA", response())
-        // TODO SDIT-2019 Change this to use Wiremock when the DPS API is available
-        doThrow(WebClientResponseException.create(500, "Internal Server Error", HttpHeaders.EMPTY, ByteArray(0), null))
-          .whenever(dpsApi).syncProfileDetailsPhysicalAttributes(any())
+        nomisApi.stubGetProfileDetails("A1234AA", nomisResponse())
+        dpsApi.stubSyncProfileDetailsPhysicalAttributes(INTERNAL_SERVER_ERROR)
 
         sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "SHOESIZE")
           .also { waitForDlqMessage() }
 
         nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
-        verify(dpsApi).syncProfileDetailsPhysicalAttributes(any())
-        verifyTelemetry(telemetryType = "error", errorReason = "500 Internal Server Error")
+        dpsApi.verify()
+        verifyTelemetry(telemetryType = "error", errorReason = "500 Internal Server Error from PUT http://localhost:8095/sync/prisoners/A1234AA/profile-details-physical-attributes")
       }
 
       @Test
       fun `should put message on DLQ if booking doesn't exist`() = runTest {
         nomisApi.stubGetProfileDetails(
           "A1234AA",
-          response(
+          nomisResponse(
             bookings = listOf(
               booking(bookingId = 1),
             ),
@@ -310,7 +312,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
           .also { waitForDlqMessage() }
 
         nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
-        verify(dpsApi, never()).syncProfileDetailsPhysicalAttributes(any())
+        dpsApi.verify(type = "ignored")
         verifyTelemetry(telemetryType = "error", errorReason = "Booking with requested bookingId not found")
       }
 
@@ -318,7 +320,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
       fun `should put message on DLQ if booking doesn't have requested profile type`() = runTest {
         nomisApi.stubGetProfileDetails(
           "A1234AA",
-          response(
+          nomisResponse(
             bookings = listOf(
               booking(
                 profileDetails = listOf(
@@ -336,7 +338,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
           .also { waitForDlqMessage() }
 
         nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
-        verify(dpsApi, never()).syncProfileDetailsPhysicalAttributes(any())
+        dpsApi.verify(type = "ignored")
         verifyTelemetry(
           telemetryType = "error",
           profileType = "BUILD",
@@ -349,12 +351,13 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
     inner class Events {
       @Test
       fun `should sync profile types we are interested in`() = runTest {
-        nomisApi.stubGetProfileDetails("A1234AA", response())
+        nomisApi.stubGetProfileDetails("A1234AA", nomisResponse())
+        dpsApi.stubSyncProfileDetailsPhysicalAttributes(dpsResponse())
 
         sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "SHOESIZE")
 
         nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
-        verify(dpsApi).syncProfileDetailsPhysicalAttributes(any())
+        dpsApi.verify()
         verifyTelemetry()
       }
 
@@ -363,7 +366,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
         sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "RELF")
 
         nomisApi.verify(0, getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
-        verify(dpsApi, never()).syncProfileDetailsPhysicalAttributes(any())
+        dpsApi.verify(type = "ignored")
         verify(telemetryClient).trackEvent(
           eq("profile-details-synchronisation-ignored"),
           check {
@@ -449,13 +452,35 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
     profileDetails = profileDetails,
   )
 
-  private fun response(
+  private fun nomisResponse(
     offenderNo: String = "A1234AA",
     bookings: List<BookingProfileDetailsResponse> = listOf(booking()),
   ) = PrisonerProfileDetailsResponse(
     offenderNo = offenderNo,
     bookings = bookings,
   )
+
+  private fun dpsResponse(ids: List<Long> = listOf(321)) = ProfileDetailsPhysicalAttributesSyncResponse(ids)
+
+  private fun ProfileDetailsPhysicalAttributesDpsApiMockServer.verify(
+    type: String = "updated",
+    dpsUpdates: Map<String, StringValuePattern> = mapOf(),
+  ) {
+    // For updates verify we sent the correct details to the DPS API
+    if (type == "updated") {
+      verify(
+        putRequestedFor(urlPathEqualTo("/sync/prisoners/A1234AA/profile-details-physical-attributes"))
+          .apply {
+            dpsUpdates.forEach { (jsonPath, pattern) ->
+              withRequestBody(matchingJsonPath(jsonPath, pattern))
+            }
+          },
+      )
+    } else {
+      // If not updated we shouldn't call the DPS API
+      verify(0, putRequestedFor(urlPathEqualTo("/sync/prisoners/A1234AA/profile-details-physical-attributes")))
+    }
+  }
 
   private fun verifyTelemetry(
     offenderNo: String = "A1234AA",
@@ -473,6 +498,9 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
         assertThat(it["profileType"]).isEqualTo(profileType)
         ignoreReason?.run { assertThat(it["reason"]).isEqualTo(this) }
         errorReason?.run { assertThat(it["error"]).isEqualTo(this) }
+        if (ignoreReason == null && errorReason == null) {
+          assertThat(it["physicalAttributesHistoryId"]).isEqualTo("[321]")
+        }
       },
       isNull(),
     )
