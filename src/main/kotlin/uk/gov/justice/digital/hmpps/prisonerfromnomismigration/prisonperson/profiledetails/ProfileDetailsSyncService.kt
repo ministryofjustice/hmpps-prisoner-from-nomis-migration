@@ -19,7 +19,7 @@ class ProfileDetailsSyncService(
 ) {
 
   private fun String.isPhysicalAttributesProfileType() =
-    listOf("BUILD", "L_EYE_C", "R_EYE_C", "HAIR", "FACIAL_HAIR", "SHOESIZE").contains(this)
+    listOf("BUILD", "FACE", "L_EYE_C", "R_EYE_C", "HAIR", "FACIAL_HAIR", "SHOESIZE").contains(this)
 
   suspend fun profileDetailsChanged(event: ProfileDetailsChangedEvent) {
     val profileType = event.profileType
