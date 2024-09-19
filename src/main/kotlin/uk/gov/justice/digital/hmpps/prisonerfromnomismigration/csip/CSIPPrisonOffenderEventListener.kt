@@ -43,7 +43,7 @@ class CSIPPrisonOffenderEventListener(
             when (eventType) {
               // The first grouping will all (eventually) call the same method
               "CSIP_REPORTS-INSERTED" -> csipSynchronisationService.csipReportInserted(sqsMessage.Message.fromJson())
-              "CSIP_REPORTS-UPDATED" -> csipReportUpdated(sqsMessage.Message.fromJson())
+              "CSIP_REPORTS-UPDATED" -> csipSynchronisationService.csipReportUpdated(sqsMessage.Message.fromJson())
               "CSIP_REPORTS-DELETED" -> csipSynchronisationService.csipReportDeleted(sqsMessage.Message.fromJson())
               "CSIP_PLANS-INSERTED" -> log.debug("Insert CSIP Plan")
               "CSIP_PLANS-UPDATED" -> log.debug("Update CSIP Plan")
@@ -74,20 +74,6 @@ class CSIPPrisonOffenderEventListener(
           sqsMessage.Message.fromJson(),
         )
       }
-    }
-  }
-
-  private suspend fun csipReportUpdated(event: CSIPReportEvent) {
-    when (event.auditModuleName) {
-      "OIDCSIPN" -> csipSynchronisationService.csipReportUpdated(event)
-      "OIDCSIPC" -> csipSynchronisationService.csipReportReferralContUpdated(event)
-      "OIDCSIPS" -> csipSynchronisationService.csipSaferCustodyScreeningInserted(event)
-      "OIDCSIPI" -> csipSynchronisationService.csipInvestigationUpdated(event)
-      "OIDCSIPD" -> csipSynchronisationService.csipDecisionUpdated(event)
-      "OIDCSIPP" -> csipSynchronisationService.csipPlanUpdated(event)
-      "OIDCSIPR" -> log.info("Received unexpected CSIP_REPORTS-UPDATED message for audit module OIDCSIPR")
-      "DPS_SYNCHRONISATION" -> log.info("Received CSIP_REPORTS-UPDATED message for DPS_SYNCHRONISATION - synchronization skipped")
-      else -> log.info("Received unexpected CSIP_REPORTS-UPDATED message for ${event.auditModuleName}")
     }
   }
 
