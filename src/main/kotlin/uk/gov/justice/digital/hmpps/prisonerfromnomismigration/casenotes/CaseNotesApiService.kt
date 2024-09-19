@@ -10,6 +10,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.M
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.SyncCaseNoteRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.SyncResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
 
 @Service
 class CaseNotesApiService(@Qualifier("caseNotesApiWebClient") private val webClient: WebClient) {
@@ -34,5 +35,5 @@ class CaseNotesApiService(@Qualifier("caseNotesApiWebClient") private val webCli
       .contentType(MediaType.APPLICATION_JSON)
       .bodyValue(dpsCaseNotes)
       .retrieve()
-      .awaitBody()
+      .awaitBodyOrLogAndRethrowBadRequest()
 }
