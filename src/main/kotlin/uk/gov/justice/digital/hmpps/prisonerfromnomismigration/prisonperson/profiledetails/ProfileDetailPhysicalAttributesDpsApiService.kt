@@ -6,7 +6,8 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.ProfileDetailsPhysicalAttributesMigrationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.ProfileDetailsPhysicalAttributesMigrationResponse
-import java.time.LocalDateTime
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.ProfileDetailsPhysicalAttributesSyncRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.ProfileDetailsPhysicalAttributesSyncResponse
 
 @Service
 class ProfileDetailPhysicalAttributesDpsApiService(@Qualifier("prisonPersonApiWebClient") private val webClient: WebClient) {
@@ -21,17 +22,14 @@ class ProfileDetailPhysicalAttributesDpsApiService(@Qualifier("prisonPersonApiWe
       .retrieve()
       .awaitBody()
 
-  // TODO SDIT-2019 Implement this service when the DPS API is available
-  suspend fun syncProfileDetailsPhysicalAttributes(request: SyncProfileDetailsPhysicalAttributesRequest): Unit = println("Ignoring sync of profile details - waiting for DPS API details")
+  suspend fun syncProfileDetailsPhysicalAttributes(
+    prisonerNumber: String,
+    request: ProfileDetailsPhysicalAttributesSyncRequest,
+  ): ProfileDetailsPhysicalAttributesSyncResponse =
+    webClient
+      .put()
+      .uri("/sync/prisoners/{prisonerNumber}/profile-details-physical-attributes", prisonerNumber)
+      .bodyValue(request)
+      .retrieve()
+      .awaitBody()
 }
-
-data class SyncProfileDetailsPhysicalAttributesRequest(
-  val prisonerNumber: String,
-  val profileType: String,
-  val profileCode: String?,
-  val appliesFrom: LocalDateTime,
-  val appliesTo: LocalDateTime?,
-  val latestBooking: Boolean,
-  val createdAt: LocalDateTime,
-  val createdBy: String,
-)

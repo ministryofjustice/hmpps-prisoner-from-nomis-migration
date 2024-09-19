@@ -10,9 +10,36 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonDpsApiExtension.Companion.dpsPrisonPersonApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonDpsApiExtension.Companion.objectMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.ProfileDetailsPhysicalAttributesMigrationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.ProfileDetailsPhysicalAttributesSyncResponse
 
 @Component
 class ProfileDetailsPhysicalAttributesDpsApiMockServer {
+
+  fun stubSyncProfileDetailsPhysicalAttributes(
+    response: ProfileDetailsPhysicalAttributesSyncResponse,
+  ) {
+    dpsPrisonPersonApi.stubFor(
+      put(urlPathMatching("/sync/prisoners/.*/profile-details-physical-attributes"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubSyncProfileDetailsPhysicalAttributes(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    dpsPrisonPersonApi.stubFor(
+      put(urlPathMatching("/sync/prisoners/.*/profile-details-physical-attributes"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody(objectMapper.writeValueAsString(error)),
+        ),
+    )
+  }
 
   fun stubMigrateProfileDetailsPhysicalAttributes(
     offenderNo: String,
