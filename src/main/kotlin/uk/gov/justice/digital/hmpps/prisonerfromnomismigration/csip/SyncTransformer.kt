@@ -164,7 +164,7 @@ fun Decision.toDPSSyncDecisionsAndActionsRequest() =
   SyncDecisionAndActionsRequest(
     outcomeTypeCode = decisionOutcome?.code,
     conclusion = conclusion,
-    signedOffByRoleCode = signedOffRole?.code ?: "OTHER",
+    signedOffByRoleCode = signedOffRole?.code,
     recordedBy = recordedBy,
     recordedByDisplayName = recordedByDisplayName,
     date = recordedDate,
