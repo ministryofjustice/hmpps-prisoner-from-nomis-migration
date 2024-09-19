@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-09-17.8935.cac032c"
+    "version": "2024-09-18.8975.96661ab"
   },
   "servers": [
     {
@@ -13057,16 +13057,20 @@
           },
           "authorUsername": {
             "type": "string",
-            "description": "Author login name"
+            "description": "Author login name of person or department that added the amendment"
           },
-          "authorUserId": {
+          "authorStaffId": {
             "type": "integer",
             "description": "Author STAFF_ID",
             "format": "int64"
           },
-          "authorName": {
+          "authorFirstName": {
             "type": "string",
-            "description": "Free format text of person or department that added the amendment"
+            "description": "Author first name"
+          },
+          "authorLastName": {
+            "type": "string",
+            "description": "Author last name"
           },
           "createdDateTime": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
@@ -13080,14 +13084,16 @@
       "CaseNoteResponse": {
         "required": [
           "amendments",
-          "authorName",
+          "authorLastName",
           "authorStaffId",
           "authorUsername",
           "bookingId",
           "caseNoteId",
           "caseNoteSubType",
+          "caseNoteText",
           "caseNoteType",
-          "createdDatetime"
+          "createdDatetime",
+          "createdUsername"
         ],
         "type": "object",
         "properties": {
@@ -13131,9 +13137,13 @@
             "type": "string",
             "description": "Author username or login name"
           },
-          "authorName": {
+          "authorFirstName": {
             "type": "string",
-            "description": "Free format text of person or department that created the case note (first and last names)"
+            "description": "Author first name"
+          },
+          "authorLastName": {
+            "type": "string",
+            "description": "Author last name"
           },
           "prisonId": {
             "type": "string",
@@ -13155,6 +13165,10 @@
             "type": "string",
             "description": "Created timestamp",
             "example": "2021-07-05T10:35:17"
+          },
+          "createdUsername": {
+            "type": "string",
+            "description": "Created username"
           },
           "auditModuleName": {
             "type": "string",
@@ -18816,7 +18830,10 @@
       },
       "ContactPerson": {
         "required": [
+          "audit",
           "firstName",
+          "interpreterRequired",
+          "keepBiometrics",
           "lastName",
           "personId"
         ],
@@ -18849,6 +18866,36 @@
           },
           "title": {
             "$ref": "#/components/schemas/CodeDescription"
+          },
+          "language": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "interpreterRequired": {
+            "type": "boolean",
+            "description": "True if the person requires an interpreter"
+          },
+          "domesticStatus": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "deceasedDate": {
+            "type": "string",
+            "description": "Date the person dies",
+            "format": "date"
+          },
+          "isStaff": {
+            "type": "boolean",
+            "description": "True if a staff member"
+          },
+          "isRemitter": {
+            "type": "boolean",
+            "description": "No longer used in NOMIS since 2018"
+          },
+          "keepBiometrics": {
+            "type": "boolean",
+            "description": "No longer used in NOMIS since 2019"
+          },
+          "audit": {
+            "$ref": "#/components/schemas/NomisAudit"
           }
         },
         "description": "The data held in NOMIS about a person who is a contact for a prisoner"

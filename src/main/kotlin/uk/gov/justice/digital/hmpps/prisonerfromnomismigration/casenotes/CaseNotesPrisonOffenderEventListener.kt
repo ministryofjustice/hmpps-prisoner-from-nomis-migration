@@ -65,7 +65,7 @@ data class CaseNotesEvent(
   val caseNoteId: Long,
   val caseNoteType: String?,
   val caseNoteSubType: String?,
-  val offenderIdDisplay: String?,
+  val offenderIdDisplay: String,
   val bookingId: Long?,
   val auditModuleName: String?,
   val recordDeleted: Boolean?,

@@ -8,6 +8,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus.CREATED
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiExtension.Companion.objectMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.Author
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.SyncCaseNoteRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.SyncCaseNoteRequest.Source
@@ -60,9 +62,12 @@ class CaseNotesApiMockServer : WireMockServer(WIREMOCK_PORT) {
       createdDateTime = LocalDateTime.parse("2021-02-03T04:05:06"),
       createdByUsername = "the-computer",
       source = Source.NOMIS,
-      authorUsername = "me",
-      authorUserId = "123456",
-      authorName = "me too",
+      author = Author(
+        username = "me",
+        userId = "123456",
+        firstName = "First",
+        lastName = "Last",
+      ),
       amendments = emptySet(),
       occurrenceDateTime = LocalDateTime.parse("2021-02-03T04:05:06"),
     )
@@ -98,9 +103,9 @@ class CaseNotesApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubPostCaseNote(caseNoteRequest: SyncCaseNoteRequest) {
+  fun stubPutCaseNote(caseNoteRequest: SyncCaseNoteRequest) {
     stubFor(
-      post("/sync/case-notes").willReturn(
+      put("/sync/case-notes").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(CREATED.value())
