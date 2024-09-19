@@ -79,7 +79,7 @@ class CSIPPrisonOffenderEventListener(
 
   private suspend fun csipReportUpdated(event: CSIPReportEvent) {
     when (event.auditModuleName) {
-      "OIDCSIPN" -> csipSynchronisationService.csipReportReferralUpdated(event)
+      "OIDCSIPN" -> csipSynchronisationService.csipReportUpdated(event)
       "OIDCSIPC" -> csipSynchronisationService.csipReportReferralContUpdated(event)
       "OIDCSIPS" -> csipSynchronisationService.csipSaferCustodyScreeningInserted(event)
       "OIDCSIPI" -> csipSynchronisationService.csipInvestigationUpdated(event)

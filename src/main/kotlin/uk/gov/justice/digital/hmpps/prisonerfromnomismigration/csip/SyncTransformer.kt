@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncRe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncScreeningOutcomeRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPAttendeeMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFactorMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFullMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPInterviewMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPPlanMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReviewMappingDto
@@ -31,7 +32,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.S
 import java.time.LocalDateTime
 import java.util.UUID
 
-fun CSIPResponse.toDPSSyncRequest(dpsReportId: String? = null, actioned: ActionDetails) =
+fun CSIPResponse.toDPSSyncRequest(dpsReportId: String? = null, actioned: ActionDetails, fullMappingDto: CSIPFullMappingDto? = null) =
   SyncCsipRequest(
     id = dpsReportId ?.let { UUID.fromString(dpsReportId) },
     legacyId = id,
@@ -65,12 +66,12 @@ fun CSIPResponse.toDPSSyncRequest(dpsReportId: String? = null, actioned: ActionD
       completedDate = reportDetails.referralCompletedDate,
       completedBy = reportDetails.referralCompletedBy,
       completedByDisplayName = reportDetails.referralCompletedByDisplayName,
-      contributoryFactors = reportDetails.factors.map { it.toDPSSyncContributoryFactorRequest() },
+      contributoryFactors = reportDetails.factors.map { it.toDPSSyncContributoryFactorRequest(fullMappingDto?.factorMappings) },
       saferCustodyScreeningOutcome = saferCustodyScreening.outcome ?.let { saferCustodyScreening.toDPSSyncCSIPSCS() },
-      investigation = investigation.toDPSSyncInvestigationRequest(),
+      investigation = investigation.toDPSSyncInvestigationRequest(fullMappingDto?.interviewMappings),
       decisionAndActions = decision.toDPSSyncDecisionsAndActionsRequest(),
     ),
-    plan = toDPSSyncPlanRequest(),
+    plan = toDPSSyncPlanRequest(fullMappingDto),
 
     createdAt = LocalDateTime.parse(createDateTime),
     createdBy = createdBy,
@@ -84,13 +85,44 @@ fun CSIPResponse.toDPSSyncRequest(dpsReportId: String? = null, actioned: ActionD
     actionedByDisplayName = actioned.actionedByDisplayName,
   )
 
+fun List<CSIPAttendeeMappingDto>.findMatchingDPSAttendeeId(nomisCSIPAttendeeId: Long) =
+  find { it.nomisCSIPAttendeeId == nomisCSIPAttendeeId }?.let { UUID.fromString(it.dpsCSIPAttendeeId) }
+
+fun List<CSIPFactorMappingDto>.findMatchingDPSFactorId(nomisCSIPFactorId: Long) =
+  find { it.nomisCSIPFactorId == nomisCSIPFactorId }?.let { UUID.fromString(it.dpsCSIPFactorId) }
+
+fun List<CSIPInterviewMappingDto>.findMatchingDPSInterviewId(nomisCSIPInterviewId: Long) =
+  find { it.nomisCSIPInterviewId == nomisCSIPInterviewId }?.let { UUID.fromString(it.dpsCSIPInterviewId) }
+
+fun List<CSIPPlanMappingDto>.findMatchingDPSPlanId(nomisCSIPPlanId: Long) =
+  find { it.nomisCSIPPlanId == nomisCSIPPlanId }?.let { UUID.fromString(it.dpsCSIPPlanId) }
+
+fun List<CSIPReviewMappingDto>.findMatchingDPSReviewId(nomisCSIPReviewId: Long) =
+  find { it.nomisCSIPReviewId == nomisCSIPReviewId }?.let { UUID.fromString(it.dpsCSIPReviewId) }
+
 data class ActionDetails(
   val actionedAt: LocalDateTime,
   val actionedBy: String,
   val actionedByDisplayName: String,
 )
 
-fun CSIPResponse.toActionDetails() =
+fun CSIPResponse.toActionDetails() = getActionDetails(
+  createDateTime,
+  createdBy,
+  createdByDisplayName,
+  lastModifiedDateTime,
+  lastModifiedBy,
+  lastModifiedByDisplayName,
+)
+
+fun getActionDetails(
+  createDateTime: String,
+  createdBy: String,
+  createdByDisplayName: String?,
+  lastModifiedDateTime: String?,
+  lastModifiedBy: String?,
+  lastModifiedByDisplayName: String?,
+) =
   ActionDetails(
     actionedAt = lastModifiedDateTime?.let { LocalDateTime.parse(lastModifiedDateTime) } ?: LocalDateTime.parse(createDateTime),
     actionedBy = lastModifiedBy ?: createdBy,
@@ -106,10 +138,9 @@ fun SaferCustodyScreening.toDPSSyncCSIPSCS() =
     recordedByDisplayName = recordedByDisplayName ?: recordedBy!!,
   )
 
-fun CSIPFactorResponse.toDPSSyncContributoryFactorRequest() =
+fun CSIPFactorResponse.toDPSSyncContributoryFactorRequest(factorMappings: List<CSIPFactorMappingDto>?) =
   SyncContributoryFactorRequest(
-    // TODO Add in id for update
-    id = null,
+    id = factorMappings?.findMatchingDPSFactorId(id),
     legacyId = id,
     factorTypeCode = type.code,
     comment = comment,
@@ -121,7 +152,7 @@ fun CSIPFactorResponse.toDPSSyncContributoryFactorRequest() =
     lastModifiedByDisplayName = lastModifiedByDisplayName ?: lastModifiedBy,
   )
 
-fun InvestigationDetails.toDPSSyncInvestigationRequest() =
+fun InvestigationDetails.toDPSSyncInvestigationRequest(interviewMappings: List<CSIPInterviewMappingDto>?) =
   SyncInvestigationRequest(
     staffInvolved = staffInvolved,
     evidenceSecured = evidenceSecured,
@@ -129,7 +160,7 @@ fun InvestigationDetails.toDPSSyncInvestigationRequest() =
     personsUsualBehaviour = usualBehaviour,
     personsTrigger = trigger,
     protectiveFactors = protectiveFactors,
-    interviews = interviews?.map { it.toDPSSyncInterviewRequest() } ?: listOf(),
+    interviews = interviews?.map { it.toDPSSyncInterviewRequest(interviewMappings) } ?: listOf(),
   ).takeUnless { isEmpty() }
 
 fun InvestigationDetails.isEmpty() =
@@ -142,10 +173,9 @@ fun InvestigationDetails.isEmpty() =
     protectiveFactors,
   ).isEmpty() && interviews.isNullOrEmpty()
 
-fun InterviewDetails.toDPSSyncInterviewRequest() =
+fun InterviewDetails.toDPSSyncInterviewRequest(interviewMappings: List<CSIPInterviewMappingDto>?) =
   SyncInterviewRequest(
-    // TODO Add in id for update
-    id = null,
+    id = interviewMappings?.findMatchingDPSInterviewId(id),
     legacyId = id,
     interviewee = interviewee,
     interviewDate = date,
@@ -205,13 +235,13 @@ fun MutableSet<SyncDecisionAndActionsRequest.Actions>.addIfTrue(actionSet: Boole
   if (actionSet) add(action)
 }
 
-fun CSIPResponse.toDPSSyncPlanRequest() =
+fun CSIPResponse.toDPSSyncPlanRequest(fullMappingDto: CSIPFullMappingDto?) =
   SyncPlanRequest(
     caseManager = caseManager,
     reasonForPlan = planReason,
     firstCaseReviewDate = firstCaseReviewDate,
-    identifiedNeeds = plans.map { it.toDPSSyncNeedRequest() },
-    reviews = reviews.map { it.toDPSSyncReviewRequest() },
+    identifiedNeeds = plans.map { it.toDPSSyncNeedRequest(fullMappingDto?.planMappings) },
+    reviews = reviews.map { it.toDPSSyncReviewRequest(fullMappingDto?.reviewMappings, fullMappingDto?.attendeeMappings) },
   ).takeUnless { isPlanEmpty() }
 
 fun CSIPResponse.isPlanEmpty() =
@@ -221,10 +251,9 @@ fun CSIPResponse.isPlanEmpty() =
     firstCaseReviewDate,
   ).isEmpty() && plans.isEmpty() && reviews.isEmpty()
 
-fun Plan.toDPSSyncNeedRequest() =
+fun Plan.toDPSSyncNeedRequest(planMappings: List<CSIPPlanMappingDto>?) =
   SyncNeedRequest(
-    // TODO Add in id for update
-    id = null,
+    id = planMappings?.findMatchingDPSPlanId(id),
     legacyId = id,
     identifiedNeed = identifiedNeed,
     responsiblePerson = referredBy!!,
@@ -244,10 +273,9 @@ fun Plan.toDPSSyncNeedRequest() =
     lastModifiedByDisplayName = lastModifiedByDisplayName ?: lastModifiedBy,
   )
 
-fun Review.toDPSSyncReviewRequest() =
+fun Review.toDPSSyncReviewRequest(reviewMappings: List<CSIPReviewMappingDto>?, attendeeMappings: List<CSIPAttendeeMappingDto>?) =
   SyncReviewRequest(
-    // TODO Add in id for update
-    id = null,
+    id = reviewMappings?.findMatchingDPSReviewId(id),
     legacyId = id,
     recordedBy = recordedBy,
     recordedByDisplayName = recordedByDisplayName ?: recordedBy,
@@ -257,12 +285,11 @@ fun Review.toDPSSyncReviewRequest() =
     csipClosedDate = closeDate,
 
     actions = toSyncReviewActions(),
-    attendees = attendees.map { it.toSyncAttendeeRequest() },
+    attendees = attendees.map { it.toSyncAttendeeRequest(attendeeMappings) },
 
     createdAt = LocalDateTime.parse(createDateTime),
     createdBy = createdBy,
     createdByDisplayName = createdByDisplayName ?: createdBy,
-
     lastModifiedAt = lastModifiedDateTime?.let { LocalDateTime.parse(lastModifiedDateTime) },
     lastModifiedBy = lastModifiedBy,
     lastModifiedByDisplayName = lastModifiedByDisplayName ?: lastModifiedBy,
@@ -280,12 +307,10 @@ fun Review.toSyncReviewActions(): MutableSet<SyncReviewRequest.Actions> {
 fun MutableSet<SyncReviewRequest.Actions>.addIfTrue(actionSet: Boolean, action: SyncReviewRequest.Actions) {
   if (actionSet) this.add(action)
 }
-fun Attendee.toSyncAttendeeRequest() =
+fun Attendee.toSyncAttendeeRequest(attendeeMappings: List<CSIPAttendeeMappingDto>?) =
   SyncAttendeeRequest(
-    // TODO Add in for update
-    id = null,
+    id = attendeeMappings?.findMatchingDPSAttendeeId(id),
     legacyId = id,
-
     name = name,
     role = role,
     isAttended = attended,
@@ -294,7 +319,6 @@ fun Attendee.toSyncAttendeeRequest() =
     createdAt = LocalDateTime.parse(createDateTime),
     createdBy = createdBy,
     createdByDisplayName = createdByDisplayName ?: createdBy,
-
     lastModifiedAt = lastModifiedDateTime?.let { LocalDateTime.parse(lastModifiedDateTime) },
     lastModifiedBy = lastModifiedBy,
     lastModifiedByDisplayName = lastModifiedByDisplayName ?: lastModifiedBy,

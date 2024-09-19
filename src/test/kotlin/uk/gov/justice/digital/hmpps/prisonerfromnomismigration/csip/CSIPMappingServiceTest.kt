@@ -85,6 +85,41 @@ internal class CSIPMappingServiceTest {
     }
 
     @Nested
+    @DisplayName("FindCSIPFullReportMapping")
+    inner class FindCSIPFullReportMapping {
+      private val dpsCsipReportId = UUID.randomUUID().toString()
+
+      @Test
+      internal fun `will return null when not found`() = runTest {
+        csipMappingApi.stubGetFullMappingByDpsReportId(HttpStatus.NOT_FOUND)
+
+        assertThat(csipMappingService.getFullMappingByDPSReportId(dpsCSIPReportId = dpsCsipReportId)).isNull()
+      }
+
+      @Test
+      internal fun `will return the mapping when found`(): Unit = runTest {
+        csipMappingApi.stubGetFullMappingByDpsReportId(dpsCSIPId = dpsCsipReportId)
+
+        val mapping = csipMappingService.getFullMappingByDPSReportId(dpsCSIPReportId = dpsCsipReportId)
+        assertThat(mapping).isNotNull
+        assertThat(mapping!!.dpsCSIPReportId).isEqualTo(dpsCsipReportId)
+        assertThat(mapping.nomisCSIPReportId).isEqualTo(NOMIS_CSIP_ID)
+        assertThat(mapping.label).isEqualTo("2022-02-14T09:58:45")
+        assertThat(mapping.mappingType).isEqualTo(CSIPFullMappingDto.MappingType.NOMIS_CREATED)
+        assertThat(mapping.whenCreated).isEqualTo("2020-01-01T11:10:00")
+      }
+
+      @Test
+      internal fun `will throw exception for any other error`() = runTest {
+        csipMappingApi.stubGetFullMappingByDpsReportId(HttpStatus.INTERNAL_SERVER_ERROR)
+
+        assertThrows<WebClientResponseException.InternalServerError> {
+          csipMappingService.getFullMappingByDPSReportId(dpsCSIPReportId = dpsCsipReportId)
+        }
+      }
+    }
+
+    @Nested
     @DisplayName("createCSIPMapping")
     inner class CreateCSIPMapping {
       @BeforeEach

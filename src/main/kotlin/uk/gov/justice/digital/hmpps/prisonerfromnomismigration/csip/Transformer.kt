@@ -1,8 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip
 
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateContributoryFactorRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateCsipRecordRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.CreateSaferCustodyScreeningOutcomeRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateContributoryFactorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.UpdateCsipRecordRequest
@@ -18,55 +16,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Decision
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.InvestigationDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SaferCustodyScreening
-
-// TODO This needs updating once csip api updated
-fun CSIPResponse.toDPSMigrateCSIP() =
-  CreateCsipRecordRequest(
-    logCode = logNumber,
-    referral =
-    CreateReferralRequest(
-      incidentDate = incidentDate,
-      incidentTime = incidentTime,
-      incidentTypeCode = type.code,
-      incidentLocationCode = location.code,
-      referredBy = reportedBy,
-      refererAreaCode = areaOfWork.code,
-      isProactiveReferral = proActiveReferral,
-      isStaffAssaulted = staffAssaulted,
-      assaultedStaffName = staffAssaultedName,
-      incidentInvolvementCode = reportDetails.involvement?.code,
-      descriptionOfConcern = reportDetails.concern,
-      knownReasons = reportDetails.knownReasons,
-      contributoryFactors = listOf(),
-      otherInformation = reportDetails.otherInformation,
-      isSaferCustodyTeamInformed = if (reportDetails.saferCustodyTeamInformed) {
-        CreateReferralRequest.IsSaferCustodyTeamInformed.YES
-      } else {
-        CreateReferralRequest.IsSaferCustodyTeamInformed.NO
-      },
-      isReferralComplete = reportDetails.referralComplete,
-
-    ),
-  )
-
-// ////// OIDCSIPN ////////////////////////////
-fun CSIPResponse.toDPSCreateRequest() =
-  CreateCsipRecordRequest(
-    logCode = logNumber,
-    referral = CreateReferralRequest(
-      incidentDate = incidentDate,
-      incidentTime = incidentTime,
-      incidentTypeCode = type.code,
-      incidentLocationCode = location.code,
-      referredBy = reportedBy,
-      refererAreaCode = areaOfWork.code,
-      isProactiveReferral = proActiveReferral,
-      isStaffAssaulted = staffAssaulted,
-      assaultedStaffName = staffAssaultedName,
-      contributoryFactors = reportDetails.factors.map { it.toDPSCreateFactorRequest() },
-      isSaferCustodyTeamInformed = CreateReferralRequest.IsSaferCustodyTeamInformed.DO_NOT_KNOW,
-    ),
-  )
 
 // From OIDCSIPN - everything that's the same as the create request but also need lognumber update
 fun CSIPResponse.toDPSUpdateCsipRecordRequest() =
@@ -137,6 +86,7 @@ fun CSIPFactorResponse.toDPSCreateFactorRequest() =
   )
 fun CSIPFactorResponse.toDPSUpdateFactorRequest() =
   UpdateContributoryFactorRequest(
+    factorTypeCode = type.code,
     comment = comment,
   )
 

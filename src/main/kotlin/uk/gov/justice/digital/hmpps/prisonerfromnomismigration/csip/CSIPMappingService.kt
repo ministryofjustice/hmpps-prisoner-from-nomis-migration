@@ -34,13 +34,11 @@ class CSIPMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient)
       .retrieve()
       .awaitBodyOrNullWhenNotFound()
 
-/** WIP
-   suspend fun getFullMappingByDPSReportId(dpsCSIPReportId: String): CSIPFullMappingDto? =
-   webClient.get()
-   .uri("/mapping/csip/dps-csip-id/{dpsCSIPReportId}/all", dpsCSIPReportId)
-   .retrieve()
-   .awaitBodyOrNullWhenNotFound()
-*/
+  suspend fun getFullMappingByDPSReportId(dpsCSIPReportId: String): CSIPFullMappingDto? =
+    webClient.get()
+      .uri("/mapping/csip/dps-csip-id/{dpsCSIPReportId}/all", dpsCSIPReportId)
+      .retrieve()
+      .awaitBodyOrNullWhenNotFound()
 
   suspend fun deleteCSIPReportMappingByDPSId(dpsCSIPReportId: String) {
     webClient.delete()

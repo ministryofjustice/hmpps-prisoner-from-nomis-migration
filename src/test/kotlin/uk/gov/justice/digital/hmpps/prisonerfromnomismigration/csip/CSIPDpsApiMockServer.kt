@@ -497,6 +497,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
       )
     fun dpsUpdateContributoryFactorRequest() =
       UpdateContributoryFactorRequest(
+        factorTypeCode = "BUL",
         comment = "Offender causes trouble",
       )
 
@@ -529,6 +530,17 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withHeader("Content-Type", "application/json")
           .withStatus(CREATED.value())
           .withBody(dpsCsipReportSyncResponse(dpsCSIPReportId = dpsCSIPId)),
+      ),
+    )
+  }
+
+  fun stubSyncCSIPReportNoMappingUpdates() {
+    stubFor(
+      put("/sync/csip-records").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(CREATED.value())
+          .withBody(SyncResponse(setOf())),
       ),
     )
   }
