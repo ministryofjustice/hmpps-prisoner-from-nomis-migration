@@ -5,6 +5,9 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.ProfileDetailsChangedEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.atPrisonPersonZone
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.ProfileDetailsPhysicalAttributesSyncRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.SyncValueWithMetadataString
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.synchronisationUser
 import java.time.LocalDateTime
 
@@ -61,19 +64,22 @@ class ProfileDetailsSyncService(
           return
         }
 
-      // TODO SDIT-2019 change to align with the DPS API when it is ready
-      val (createdAt, createdBy) = getCreated(profileDetails)
       dpsApiService.syncProfileDetailsPhysicalAttributes(
-        SyncProfileDetailsPhysicalAttributesRequest(
-          prisonerNumber = offenderNo,
-          profileType = profileType,
-          profileCode = profileDetails.code,
-          appliesFrom = booking.startDateTime.toLocalDateTime(),
-          appliesTo = booking.endDateTime?.toLocalDateTime(),
-          latestBooking = booking.latestBooking,
-          createdAt = createdAt.toLocalDateTime(),
-          createdBy = createdBy,
-        ),
+        prisonerNumber = offenderNo,
+        with(profileDetails) {
+          ProfileDetailsPhysicalAttributesSyncRequest(
+            appliesFrom = booking.startDateTime.toLocalDateTime().atPrisonPersonZone(),
+            appliesTo = booking.endDateTime?.toLocalDateTime()?.atPrisonPersonZone(),
+            latestBooking = booking.latestBooking,
+            build = toDpsRequestIfType("BUILD"),
+            shoeSize = toDpsRequestIfType("SHOESIZE"),
+            hair = toDpsRequestIfType("HAIR"),
+            facialHair = toDpsRequestIfType("FACIAL_HAIR"),
+            face = toDpsRequestIfType("FACE"),
+            leftEyeColour = toDpsRequestIfType("L_EYE_C"),
+            rightEyeColour = toDpsRequestIfType("R_EYE_C"),
+          )
+        },
       )
     } catch (e: Exception) {
       telemetry["error"] = e.message.toString()
@@ -81,6 +87,7 @@ class ProfileDetailsSyncService(
       throw e
     }
 
+    telemetry["physicalAttributesHistoryId"] = dpsResponse.fieldHistoryInserted.toString()
     telemetryClient.trackEvent("profile-details-physical-attributes-synchronisation-updated", telemetry)
   }
 
@@ -96,10 +103,19 @@ class ProfileDetailsSyncService(
       null
     }
 
-  private fun getCreated(profileDetails: ProfileDetailsResponse) =
-    with(profileDetails) {
-      (modifiedDateTime ?: createDateTime) to (modifiedBy ?: createdBy)
-    }
+  private fun ProfileDetailsResponse.toDpsRequestIfType(profileType: String) =
+    takeIf { type == profileType }
+      ?.let {
+        val (lastModifiedAt, lastModifiedBy) = it.lastModified()
+        SyncValueWithMetadataString(
+          value = it.code,
+          lastModifiedAt = lastModifiedAt.atPrisonPersonZone(),
+          lastModifiedBy = lastModifiedBy,
+        )
+      }
+
+  private fun ProfileDetailsResponse.lastModified(): Pair<LocalDateTime, String> =
+    (modifiedDateTime ?: createDateTime).toLocalDateTime() to (modifiedBy ?: createdBy)
 
   private fun String.toLocalDateTime() = LocalDateTime.parse(this)
 }
