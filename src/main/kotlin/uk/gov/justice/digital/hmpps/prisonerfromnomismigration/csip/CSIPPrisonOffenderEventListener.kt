@@ -51,7 +51,7 @@ class CSIPPrisonOffenderEventListener(
               "CSIP_REVIEWS-UPDATED" -> log.debug("Update CSIP Review")
               "CSIP_ATTENDEES-INSERTED" -> log.debug("Insert CSIP Attendee")
               "CSIP_ATTENDEES-UPDATED" -> log.debug("Update CSIP Attendee")
-              "CSIP_FACTORS-INSERTED" -> csipSynchronisationService.csipReportUpdated(sqsMessage.Message.fromJson())
+              "CSIP_FACTORS-INSERTED" -> csipFactorSynchronisationService.csipFactorInserted(sqsMessage.Message.fromJson())
               "CSIP_FACTORS-UPDATED" -> csipFactorSynchronisationService.csipFactorUpdated(sqsMessage.Message.fromJson())
               "CSIP_INTVW-INSERTED" -> log.debug("Insert CSIP Interview")
               "CSIP_INTVW-UPDATED" -> log.debug("Update CSIP Interview")
