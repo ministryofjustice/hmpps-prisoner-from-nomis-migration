@@ -14,10 +14,12 @@ import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
+import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.http.HttpStatus.CREATED
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiExtension.Companion.objectMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.Author
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.SyncCaseNoteRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.SyncCaseNoteRequest.Source
@@ -97,6 +99,27 @@ class CaseNotesApiMockServer : WireMockServer(WIREMOCK_PORT) {
                 caseNotesIdPairs.map {
                   MigrationResult(UUID.fromString(it.second), legacyId = it.first)
                 }.shuffled(),
+              ),
+            ),
+        ),
+    )
+  }
+
+  fun stubMigrateCaseNotesFailure(offenderNo: String) {
+    stubFor(
+      post("/migrate/case-notes")
+        .withRequestBody(matchingJsonPath("$[0].personIdentifier", equalTo(offenderNo)))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(BAD_REQUEST.value())
+            .withBody(
+              objectMapper.writeValueAsString(
+                ErrorResponse(
+                  status = 400,
+                  userMessage = "test message",
+                  developerMessage = "dev message",
+                ),
               ),
             ),
         ),

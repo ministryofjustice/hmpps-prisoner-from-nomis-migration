@@ -160,7 +160,7 @@ class SqsIntegrationTestBase : TestBase() {
   internal val caseNotesQueueOffenderEventsUrl by lazy { caseNotesOffenderEventsQueue.queueUrl }
   internal val caseNotesQueueOffenderEventsDlqUrl by lazy { caseNotesOffenderEventsQueue.dlqUrl as String }
   internal val awsSqsCaseNoteOffenderEventsClient by lazy { caseNotesOffenderEventsQueue.sqsClient }
-  internal val awsSqsCaseNotesOffenderEventDlqClient by lazy { caseNotesOffenderEventsQueue.sqsDlqClient as SqsAsyncClient }
+  internal val awsSqsCaseNotesOffenderEventsDlqClient by lazy { caseNotesOffenderEventsQueue.sqsDlqClient as SqsAsyncClient }
 
   internal val courtSentencingOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId("eventcourtsentencing") as HmppsQueue }
   internal val courtSentencingQueueOffenderEventsUrl by lazy { courtSentencingOffenderEventsQueue.queueUrl }
@@ -177,6 +177,12 @@ class SqsIntegrationTestBase : TestBase() {
   internal val prisonPersonQueueOffenderEventsDlqUrl by lazy { prisonPersonOffenderEventsQueue.dlqUrl as String }
   internal val awsSqsPrisonPersonOffenderEventsClient by lazy { prisonPersonOffenderEventsQueue.sqsClient }
   internal val awsSqsPrisonPersonOffenderEventDlqClient by lazy { prisonPersonOffenderEventsQueue.sqsDlqClient as SqsAsyncClient }
+
+  internal val caseNotesOffenderMigrationQueue by lazy { hmppsQueueService.findByQueueId("migrationcasenotes") as HmppsQueue }
+  internal val caseNotesQueueOffenderMigrationUrl by lazy { caseNotesOffenderMigrationQueue.queueUrl }
+  internal val caseNotesQueueOffenderMigrationDlqUrl by lazy { caseNotesOffenderMigrationQueue.dlqUrl as String }
+  internal val awsSqsCaseNoteOffenderMigrationClient by lazy { caseNotesOffenderMigrationQueue.sqsClient }
+  internal val awsSqsCaseNotesOffenderMigrationDlqClient by lazy { caseNotesOffenderMigrationQueue.sqsDlqClient as SqsAsyncClient }
 
   internal val prisonPersonMigrationQueue by lazy { hmppsQueueService.findByQueueId("migrationprisonperson") as HmppsQueue }
   internal val prisonPersonMigrationQueueUrl by lazy { prisonPersonMigrationQueue.queueUrl }

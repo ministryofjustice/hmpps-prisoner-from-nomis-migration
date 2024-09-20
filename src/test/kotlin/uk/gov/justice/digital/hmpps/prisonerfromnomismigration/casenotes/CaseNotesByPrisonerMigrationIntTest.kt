@@ -7,7 +7,9 @@ import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
+import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilAsserted
+import org.awaitility.kotlin.untilCallTo
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
@@ -33,6 +35,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
+import uk.gov.justice.hmpps.sqs.countMessagesOnQueue
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -221,6 +224,32 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
           2,
           postRequestedFor(urlPathEqualTo("/mapping/casenotes/$OFFENDER_NUMBER1/all")),
         )
+      }
+    }
+
+    @Nested
+    inner class ErrorDpsFailure {
+      @BeforeEach
+      fun setUp() {
+        nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
+        caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(offenderNo = OFFENDER_NUMBER1, currentCaseNoteCount = 1)
+        caseNotesApi.stubMigrateCaseNotesFailure(OFFENDER_NUMBER1)
+        performMigration()
+      }
+
+      @Test
+      fun `will POST the casenotes to DPS twice as per dlqMaxReceiveCount, but not mappings`() {
+        await untilAsserted {
+          caseNotesApi.verify(2, postRequestedFor(urlPathEqualTo("/migrate/case-notes")))
+          caseNotesMappingApiMockServer.verify(0, postRequestedFor(urlPathEqualTo("/mapping/casenotes/$OFFENDER_NUMBER1/all")))
+        }
+      }
+
+      @Test
+      fun `message ends up on the dead letter queue`() {
+        await untilCallTo {
+          awsSqsCaseNotesOffenderMigrationDlqClient.countMessagesOnQueue(caseNotesQueueOffenderMigrationDlqUrl).get()
+        } matches { it == 1 }
       }
     }
   }
