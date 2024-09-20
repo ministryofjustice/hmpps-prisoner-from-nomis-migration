@@ -18,6 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFullMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPInterviewMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPPlanMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReportMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReviewMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
@@ -70,17 +71,12 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
             .withBody(
-              CSIPFullMappingDto(
+              CSIPReportMappingDto(
                 nomisCSIPReportId = nomisCSIPId,
                 dpsCSIPReportId = dpsCSIPId,
-                mappingType = CSIPFullMappingDto.MappingType.NOMIS_CREATED,
+                mappingType = CSIPReportMappingDto.MappingType.NOMIS_CREATED,
                 label = "2022-02-14T09:58:45",
                 whenCreated = "2020-01-01T11:10:00",
-                attendeeMappings = listOf(),
-                factorMappings = listOf(),
-                interviewMappings = listOf(),
-                planMappings = listOf(),
-                reviewMappings = listOf(),
               ),
             ),
         ),
