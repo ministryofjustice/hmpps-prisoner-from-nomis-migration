@@ -64,7 +64,6 @@ class CSIPMigrationService(
       ?: run {
         val nomisCSIPResponse = nomisApiService.getCSIP(nomisCSIPReportId)
         val syncCsipRequest = nomisCSIPResponse.toDPSSyncRequest(actioned = nomisCSIPResponse.toActionDetails())
-        log.debug("Sync Request for {}", syncCsipRequest)
         csipService.migrateCSIP(syncCsipRequest)
           .also { syncResponse ->
             // At this point we need to determine all mappings and call the appropriate mapping endpoint
