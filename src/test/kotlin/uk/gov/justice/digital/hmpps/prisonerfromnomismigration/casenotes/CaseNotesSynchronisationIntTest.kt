@@ -34,6 +34,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto.MappingType.MIGRATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteAmendment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
@@ -111,10 +112,7 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
         caseNotesNomisApiMockServer.stubGetCaseNote(
           bookingId = BOOKING_ID,
           caseNoteId = NOMIS_CASE_NOTE_ID,
-          caseNote = caseNote(bookingId = BOOKING_ID, caseNoteId = NOMIS_CASE_NOTE_ID).copy(
-            caseNoteType = CodeDescription("XNR", "Not For Release"),
-            caseNoteSubType = CodeDescription("X", "Security"),
-          ),
+          caseNote = caseNote(bookingId = BOOKING_ID, caseNoteId = NOMIS_CASE_NOTE_ID),
         )
       }
 
@@ -123,7 +121,6 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class HappyPath {
         @BeforeEach
         fun setUp() {
-          // caseNotesMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
           caseNotesApi.stubPutCaseNote(dpsCaseNote().copy(id = UUID.fromString(DPS_CASE_NOTE_ID)))
           caseNotesMappingApiMockServer.stubPostMapping()
 
@@ -149,16 +146,22 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBodyJsonPath("locationId", equalTo("SWI"))
                 .withRequestBodyJsonPath("type", equalTo("XNR"))
                 .withRequestBodyJsonPath("subType", equalTo("X"))
+                .withRequestBodyJsonPath("occurrenceDateTime", equalTo("2021-02-03T04:05:06"))
                 .withRequestBodyJsonPath("text", equalTo("the actual casenote"))
                 .withRequestBodyJsonPath("systemGenerated", equalTo("false"))
-                .withRequestBodyJsonPath("createdDateTime", equalTo("2021-02-03T04:05:06"))
-                .withRequestBodyJsonPath("createdByUsername", equalTo("John"))
-                .withRequestBodyJsonPath("source", equalTo("NOMIS"))
                 .withRequestBodyJsonPath("author.username", equalTo("me"))
                 .withRequestBodyJsonPath("author.userId", equalTo("123456"))
                 .withRequestBodyJsonPath("author.firstName", equalTo("First"))
                 .withRequestBodyJsonPath("author.lastName", equalTo("Last"))
-                .withRequestBodyJsonPath("occurrenceDateTime", equalTo("2021-02-03T04:05:06")),
+                .withRequestBodyJsonPath("createdDateTime", equalTo("2021-02-03T04:05:06"))
+                .withRequestBodyJsonPath("createdByUsername", equalTo("John"))
+                .withRequestBodyJsonPath("source", equalTo("NOMIS"))
+                .withRequestBodyJsonPath("amendments[0].createdDateTime", equalTo("2021-02-03T04:05:06"))
+                .withRequestBodyJsonPath("amendments[0].text", equalTo("amendment text"))
+                .withRequestBodyJsonPath("amendments[0].author.username", equalTo("authorone"))
+                .withRequestBodyJsonPath("amendments[0].author.userId", equalTo("2001"))
+                .withRequestBodyJsonPath("amendments[0].author.firstName", equalTo("AUTHOR"))
+                .withRequestBodyJsonPath("amendments[0].author.lastName", equalTo("ONE")),
             )
           }
         }
@@ -234,7 +237,7 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
           }
 
           @Test
-          fun `will attempt to create mapping two times and succeed`() {
+          fun `will attempt to create mapping twice and succeed`() {
             await untilAsserted {
               caseNotesMappingApiMockServer.verify(
                 exactly(2),
@@ -247,7 +250,7 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
             }
 
             assertThat(
-              awsSqsCaseNotesOffenderEventDlqClient.countAllMessagesOnQueue(caseNotesQueueOffenderEventsDlqUrl).get(),
+              awsSqsCaseNotesOffenderEventsDlqClient.countAllMessagesOnQueue(caseNotesQueueOffenderEventsDlqUrl).get(),
             ).isEqualTo(0)
           }
 
@@ -297,7 +300,7 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
               ),
             )
             await untilCallTo {
-              awsSqsCaseNotesOffenderEventDlqClient.countAllMessagesOnQueue(caseNotesQueueOffenderEventsDlqUrl).get()
+              awsSqsCaseNotesOffenderEventsDlqClient.countAllMessagesOnQueue(caseNotesQueueOffenderEventsDlqUrl).get()
             } matches { it == 1 }
           }
 
@@ -401,11 +404,7 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
-        nomisCaseNote = caseNote(bookingId = BOOKING_ID, caseNoteId = NOMIS_CASE_NOTE_ID).copy(
-          caseNoteType = CodeDescription("XNR", "Not For Release"),
-          caseNoteSubType = CodeDescription("X", "Security"),
-          occurrenceDateTime = "2023-08-12T13:14:15",
-        )
+        nomisCaseNote = caseNote(bookingId = BOOKING_ID, caseNoteId = NOMIS_CASE_NOTE_ID)
         caseNotesNomisApiMockServer.stubGetCaseNote(
           bookingId = BOOKING_ID,
           caseNoteId = NOMIS_CASE_NOTE_ID,
@@ -448,11 +447,9 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `the event is placed on dead letter queue`() {
-          await untilAsserted {
-            assertThat(
-              awsSqsCaseNotesOffenderEventDlqClient.countAllMessagesOnQueue(caseNotesQueueOffenderEventsDlqUrl).get(),
-            ).isEqualTo(1)
-          }
+          await untilCallTo {
+            awsSqsCaseNotesOffenderEventsDlqClient.countAllMessagesOnQueue(caseNotesQueueOffenderEventsDlqUrl).get()
+          } matches { it == 1 }
         }
       }
 
@@ -505,7 +502,13 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBodyJsonPath("author.userId", equalTo("123456"))
                 .withRequestBodyJsonPath("author.firstName", equalTo("First"))
                 .withRequestBodyJsonPath("author.lastName", equalTo("Last"))
-                .withRequestBodyJsonPath("occurrenceDateTime", equalTo("2023-08-12T13:14:15")),
+                .withRequestBodyJsonPath("amendments[0].createdDateTime", equalTo("2021-02-03T04:05:06"))
+                .withRequestBodyJsonPath("amendments[0].text", equalTo("amendment text"))
+                .withRequestBodyJsonPath("amendments[0].author.username", equalTo("authorone"))
+                .withRequestBodyJsonPath("amendments[0].author.userId", equalTo("2001"))
+                .withRequestBodyJsonPath("amendments[0].author.firstName", equalTo("AUTHOR"))
+                .withRequestBodyJsonPath("amendments[0].author.lastName", equalTo("ONE"))
+                .withRequestBodyJsonPath("occurrenceDateTime", equalTo("2021-02-03T04:05:06")),
             )
           }
         }
@@ -737,13 +740,22 @@ fun caseNoteEvent(
 private fun caseNote(bookingId: Long = 123456, caseNoteId: Long = 3) = CaseNoteResponse(
   bookingId = bookingId,
   caseNoteId = caseNoteId,
-  caseNoteType = CodeDescription("X", "Security"),
+  caseNoteType = CodeDescription("XNR", "Not For Release"),
   caseNoteSubType = CodeDescription("X", "Security"),
   authorUsername = "me",
   authorStaffId = 123456L,
   authorFirstName = "First",
   authorLastName = "Last",
-  amendments = emptyList(),
+  amendments = listOf(
+    CaseNoteAmendment(
+      createdDateTime = "2021-02-03T04:05:06",
+      text = "amendment text",
+      authorUsername = "authorone",
+      authorStaffId = 2001,
+      authorFirstName = "AUTHOR",
+      authorLastName = "ONE",
+    ),
+  ),
   createdDatetime = "2021-02-03T04:05:06",
   createdUsername = "John",
   noteSourceCode = CaseNoteResponse.NoteSourceCode.INST,
