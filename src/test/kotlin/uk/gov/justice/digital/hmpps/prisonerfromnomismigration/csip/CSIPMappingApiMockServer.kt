@@ -76,7 +76,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
                 dpsCSIPReportId = dpsCSIPId,
                 mappingType = CSIPReportMappingDto.MappingType.NOMIS_CREATED,
                 label = "2022-02-14T09:58:45",
-
+                whenCreated = "2020-01-01T11:10:00",
               ),
             ),
         ),
