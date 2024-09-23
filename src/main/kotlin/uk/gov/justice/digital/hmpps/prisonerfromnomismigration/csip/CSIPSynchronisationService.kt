@@ -139,8 +139,6 @@ class CSIPSynchronisationService(
       telemetryClient.trackEvent("csip-synchronisation-updated-failed", telemetry)
       throw IllegalStateException("Received CSIP UPDATED for a csip that has never been created")
     } else {
-      // val nomisCSIPResponse = nomisApiService.getCSIP(nomisCsipReportId)
-
       val dpsCSIPReportId = reportMapping.dpsCSIPReportId
 
       // For an update we need to populate the Sync Request with any existing dps mappings
