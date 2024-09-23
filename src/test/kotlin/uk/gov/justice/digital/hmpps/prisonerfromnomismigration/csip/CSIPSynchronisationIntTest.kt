@@ -117,7 +117,6 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create the csip in the csip service`() {
           csipDpsApi.verify(
             putRequestedFor(urlPathEqualTo("/sync/csip-records"))
-              .withHeader("Username", equalTo("JSMITH"))
               .withRequestBody(matchingJsonPath("prisonNumber", equalTo("A1234BC")))
               .withRequestBody(matchingJsonPath("referral.incidentDate", equalTo("2024-06-12")))
               .withRequestBody(matchingJsonPath("referral.incidentTime", equalTo("10:32:12"))),
@@ -398,7 +397,6 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will update DPS with the changes specific to the OIDCSIPN screen`() {
           csipDpsApi.verify(
             putRequestedFor(urlEqualTo("/sync/csip-records"))
-              .withHeader("Username", equalTo("JSMITH"))
               .withRequestBody(matchingJsonPath("id", equalTo(dpsCSIPId)))
               .withRequestBody(matchingJsonPath("legacyId", equalTo("1234")))
               .withRequestBody(matchingJsonPath("logCode", equalTo("ASI-001")))
@@ -577,162 +575,6 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
 
 /*
   @Nested
-  @DisplayName("CSIP_FACTORS-INSERTED")
-  inner class CSIPFactorInserted {
-
-    @Nested
-    @DisplayName("CSIP_FACTORS-INSERTED - When csip was updated in DPS")
-    inner class CSIPDPSUpdated {
-
-      @BeforeEach
-      fun setUp() {
-        awsSqsCSIPOffenderEventsClient.sendMessage(
-          csipQueueOffenderEventsUrl,
-          csipEvent(eventType = "CSIP_FACTORS-INSERTED", auditModuleName = "DPS_SYNCHRONISATION"),
-        )
-      }
-
-      @Test
-      fun `the event is ignored`() {
-        await untilAsserted {
-          verify(telemetryClient).trackEvent(
-            eq("csip-synchronisation-updated-skipped"),
-            check {
-              assertThat(it["nomisCSIPId"]).isEqualTo("$NOMIS_CSIP_ID")
-              assertThat(it["dpsCSIPId"]).isNull()
-            },
-            isNull(),
-          )
-        }
-
-        csipNomisApi.verify(exactly(0), getRequestedFor(anyUrl()))
-        csipMappingApi.verify(exactly(0), getRequestedFor(anyUrl()))
-        csipDpsApi.verify(exactly(0), anyRequestedFor(anyUrl()))
-      }
-    }
-
-    @Nested
-    @DisplayName("CSIP_FACTORS-INSERTED - When csip factor was inserted in Nomis")
-    inner class NomisUpdated {
-      private val nomisCSIPFactorId = 543L
-
-      @BeforeEach
-      fun setUp() {
-        csipNomisApi.stubGetCSIP()
-        awsSqsCSIPOffenderEventsClient.sendMessage(
-          csipQueueOffenderEventsUrl,
-          csipFactorEvent(eventType = "CSIP_FACTORS-INSERTED", csipFactorId = nomisCSIPFactorId.toString()),
-        )
-      }
-
-      @Nested
-      @DisplayName("When mapping doesn't exist")
-      inner class MappingDoesNotExist {
-        @BeforeEach
-        fun setUp() {
-          csipMappingApi.stubGetByNomisId(status = HttpStatus.NOT_FOUND)
-        }
-
-        @Test
-        fun `telemetry added to track the failure`() {
-          await untilAsserted {
-            verify(telemetryClient, Mockito.atLeastOnce()).trackEvent(
-              eq("csip-synchronisation-updated-failed"),
-              check {
-                assertThat(it["nomisCSIPId"]).isEqualTo(NOMIS_CSIP_ID.toString())
-                assertThat(it["offenderNo"]).isEqualTo("A1234BC")
-              },
-              isNull(),
-            )
-          }
-        }
-
-        @Test
-        fun `the event is placed on dead letter queue`() {
-          await untilAsserted {
-            assertThat(
-              awsSqsCSIPOffenderEventDlqClient.countAllMessagesOnQueue(csipQueueOffenderEventsDlqUrl).get(),
-            ).isEqualTo(1)
-          }
-        }
-      }
-
-      @Nested
-      @DisplayName("Happy Path")
-      inner class HappyPath {
-        private val dpsCSIPId = "a4725216-892d-4325-bc18-f74d95f3bca2"
-        private val dpsCSIPFactorId = UUID.randomUUID().toString()
-
-        @BeforeEach
-        fun setUp() {
-          csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPId)
-          csipMappingApi.stubGetFullMappingByDpsReportId(dpsCSIPId = dpsCSIPId)
-          csipDpsApi.stubSyncCSIPReportFactorMappingUpdate(dpsCSIPFactorId = dpsCSIPFactorId)
-
-          waitForAnyProcessingToComplete("csip-synchronisation-updated-success")
-        }
-
-        @Test
-        fun `will retrieve details about the csip from NOMIS`() {
-          csipNomisApi.verify(getRequestedFor(urlEqualTo(NOMIS_API_URL)))
-        }
-
-        @Test
-        fun `will check the csip report exists`() {
-          mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/csip/nomis-csip-id/$NOMIS_CSIP_ID")))
-        }
-
-        @Test
-        fun `will request full csip mapping`() {
-          mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/csip/dps-csip-id/$dpsCSIPId/all")))
-        }
-
-        @Test
-        fun `will update DPS with the changes specific to the OIDCSIPN screen`() {
-          csipDpsApi.verify(
-            putRequestedFor(urlEqualTo("/sync/csip-records"))
-              .withHeader("Username", equalTo("JSMITH"))
-              .withRequestBody(matchingJsonPath("id", equalTo(dpsCSIPId)))
-              .withRequestBody(matchingJsonPath("legacyId", equalTo("1234")))
-              .withRequestBody(matchingJsonPath("logCode", equalTo("ASI-001")))
-              .withRequestBody(matchingJsonPath("prisonNumber", equalTo("A1234BC")))
-              .withRequestBody(matchingJsonPath("actionedAt", equalTo("2024-04-01T10:32:12.867081")))
-              .withRequestBody(matchingJsonPath("actionedBy", equalTo("JSMITH")))
-              .withRequestBody(matchingJsonPath("actionedByDisplayName", equalTo("JSMITH"))),
-          )
-        }
-
-        @Test
-        fun `will create a mapping between the two records or its children`() {
-          mappingApi.verify(
-            1,
-            postRequestedFor(urlPathEqualTo("/mapping/csip/all"))
-              .withRequestBody(matchingJsonPath("dpsCSIPReportId", equalTo(DPS_CSIP_ID)))
-              .withRequestBody(matchingJsonPath("nomisCSIPReportId", equalTo("$NOMIS_CSIP_ID")))
-              .withRequestBody(matchingJsonPath("factorMappings[0].dpsCSIPFactorId", equalTo("a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e6"))),
-
-          )
-        }
-
-        @Test
-        fun `will create telemetry tracking the update`() {
-          verify(telemetryClient).trackEvent(
-            eq("csip-synchronisation-updated-success"),
-            check {
-              assertThat(it["nomisCSIPId"]).isEqualTo("$NOMIS_CSIP_ID")
-              assertThat(it["dpsCSIPId"]).isEqualTo(dpsCSIPId)
-              assertThat(it["offenderNo"]).isEqualTo("A1234BC")
-              assertThat(it).doesNotContainKey("mapping")
-            },
-            isNull(),
-          )
-        }
-      }
-    }
-  }
-*/
-/*
-  @Nested
   @DisplayName("CSIP_REPORTS-UPDATED - Safer Custody Screening (OIDCSIPS)")
   inner class CSIPSCSUpdated {
 
@@ -797,7 +639,6 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
             csipDpsApi.verify(
               1,
               postRequestedFor(urlPathEqualTo("/csip-records/$dpsCSIPId/referral/safer-custody-screening"))
-                .withHeader("Username", equalTo("FRED_ADM"))
                 .withRequestBody(matchingJsonPath("outcomeTypeCode", equalTo("CUR")))
                 .withRequestBody(matchingJsonPath("date", equalTo("2024-04-08")))
                 .withRequestBody(matchingJsonPath("reasonForDecision", equalTo("There is a reason for the decision - it goes here")))
@@ -893,7 +734,6 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
           csipDpsApi.verify(
             1,
             patchRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral"))
-              .withHeader("Username", equalTo("JSMITH"))
               // Whilst not part of the Referral Continue screen, these are mandatory to the update
               .withRequestBody(matchingJsonPath("referral.incidentDate", equalTo("2024-06-12")))
               .withRequestBody(matchingJsonPath("referral.incidentTypeCode", equalTo("INT")))
@@ -991,8 +831,6 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
           csipDpsApi.verify(
             1,
             putRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral/investigation"))
-              .withHeader("Username", equalTo("JSMITH"))
-              .withHeader("Source", equalTo("NOMIS"))
               .withRequestBody(matchingJsonPath("staffInvolved", equalTo("some people")))
               .withRequestBody(matchingJsonPath("evidenceSecured", equalTo("A piece of pipe")))
               .withRequestBody(matchingJsonPath("occurrenceReason", equalTo("bad behaviour")))
@@ -1084,8 +922,6 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
           csipDpsApi.verify(
             1,
             putRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/referral/decision-and-actions"))
-              .withHeader("Username", equalTo("JSMITH"))
-              .withHeader("Source", equalTo("NOMIS"))
               .withRequestBody(matchingJsonPath("outcomeTypeCode", equalTo("OPE")))
               .withRequestBody(matchingJsonPath("conclusion", equalTo("Offender needs help")))
               .withRequestBody(matchingJsonPath("signedOffByRoleCode", equalTo("CUSTMAN")))
@@ -1181,8 +1017,6 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
           csipDpsApi.verify(
             1,
             putRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId/plan"))
-              .withHeader("Username", equalTo("JSMITH"))
-              .withHeader("Source", equalTo("NOMIS"))
               .withRequestBody(matchingJsonPath("caseManager", equalTo("C Jones")))
               .withRequestBody(matchingJsonPath("reasonForPlan", equalTo("helper")))
               .withRequestBody(matchingJsonPath("firstCaseReviewDate", equalTo("2024-04-15"))),

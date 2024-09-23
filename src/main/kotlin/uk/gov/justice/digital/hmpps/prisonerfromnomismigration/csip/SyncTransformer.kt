@@ -115,6 +115,15 @@ fun CSIPResponse.toActionDetails() = getActionDetails(
   lastModifiedByDisplayName,
 )
 
+fun CSIPFactorResponse.toActionDetails() = getActionDetails(
+  createDateTime,
+  createdBy,
+  createdByDisplayName,
+  lastModifiedDateTime,
+  lastModifiedBy,
+  lastModifiedByDisplayName,
+)
+
 fun getActionDetails(
   createDateTime: String,
   createdBy: String,

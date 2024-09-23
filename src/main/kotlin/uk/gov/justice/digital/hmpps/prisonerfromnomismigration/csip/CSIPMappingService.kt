@@ -28,6 +28,21 @@ class CSIPMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient)
     return super.createMappingUrl() + "/all"
   }
 
+  suspend fun updateMapping(
+    csipFullMappingDto: CSIPFullMappingDto,
+    errorJavaClass: ParameterizedTypeReference<DuplicateErrorResponse<CSIPFullMappingDto>>,
+  ) =
+    webClient.put()
+      .uri("/mapping/csip/all")
+      .bodyValue(csipFullMappingDto)
+      .retrieve()
+      .bodyToMono(Unit::class.java)
+      .map { CreateMappingResult<CSIPFullMappingDto>() }
+      .onErrorResume(WebClientResponseException.Conflict::class.java) {
+        Mono.just(CreateMappingResult(it.getResponseBodyAs(errorJavaClass)))
+      }
+      .awaitFirstOrDefault(CreateMappingResult())
+
   suspend fun getCSIPReportByNomisId(nomisCSIPReportId: Long): CSIPReportMappingDto? =
     webClient.get()
       .uri("/mapping/csip/nomis-csip-id/{nomisCSIPReportId}", nomisCSIPReportId)

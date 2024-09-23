@@ -8,6 +8,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
@@ -63,6 +64,15 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
+  fun stubPutMappingUpdate(url: String) {
+    mappingApi.stubFor(
+      put(urlEqualTo(url)).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value()),
+      ),
+    )
+  }
   fun stubGetByNomisId(nomisCSIPId: Long = 1234, dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/csip/nomis-csip-id/$nomisCSIPId"))
@@ -89,6 +99,35 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubGetFullMappingByDpsReportId(nomisCSIPId: Long = 1234, dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/csip/dps-csip-id/$dpsCSIPId/all"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(
+              CSIPFullMappingDto(
+                nomisCSIPReportId = nomisCSIPId,
+                dpsCSIPReportId = dpsCSIPId,
+                mappingType = CSIPFullMappingDto.MappingType.NOMIS_CREATED,
+                attendeeMappings = listOf(),
+                factorMappings = listOf(),
+                interviewMappings = listOf(),
+                planMappings = listOf(),
+                reviewMappings = listOf(),
+                label = "2022-02-14T09:58:45",
+                whenCreated = "2020-01-01T11:10:00",
+              ),
+            ),
+        ),
+    )
+  }
+
+  fun stubUpdateFullMappingByDpsReportId(status: HttpStatus) {
+    stubPutErrorResponse(status = status, url = "/mapping/csip/all")
+  }
+
+  fun stubUpdateFullMappingByDpsReportId(nomisCSIPId: Long = 1234, dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
+    mappingApi.stubFor(
+      put(urlPathMatching("/mapping/csip/all"))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -632,6 +671,18 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubGetErrorResponse(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value()), url: String) {
     mappingApi.stubFor(
       get(urlPathMatching(url))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody(objectMapper.writeValueAsString(error)),
+        ),
+    )
+  }
+
+  fun stubPutErrorResponse(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value()), url: String) {
+    mappingApi.stubFor(
+      put(urlPathMatching(url))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")

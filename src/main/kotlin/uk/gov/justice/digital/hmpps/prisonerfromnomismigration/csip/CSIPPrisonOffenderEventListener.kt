@@ -14,14 +14,13 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING_CHILD
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CSIP_SYNC_QUEUE_ID
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_CSIP_FACTOR_SYNCHRONISATION_MAPPING
 import java.util.concurrent.CompletableFuture
 
 @Service
 class CSIPPrisonOffenderEventListener(
   private val csipSynchronisationService: CSIPSynchronisationService,
-  private val csipFactorSynchronisationService: CSIPFactorSynchronisationService,
   private val objectMapper: ObjectMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
 ) {
@@ -51,8 +50,9 @@ class CSIPPrisonOffenderEventListener(
               "CSIP_REVIEWS-UPDATED" -> log.debug("Update CSIP Review")
               "CSIP_ATTENDEES-INSERTED" -> log.debug("Insert CSIP Attendee")
               "CSIP_ATTENDEES-UPDATED" -> log.debug("Update CSIP Attendee")
-              "CSIP_FACTORS-INSERTED" -> csipFactorSynchronisationService.csipFactorInserted(sqsMessage.Message.fromJson())
-              "CSIP_FACTORS-UPDATED" -> csipFactorSynchronisationService.csipFactorUpdated(sqsMessage.Message.fromJson())
+              "CSIP_FACTORS-INSERTED",
+              "CSIP_FACTORS-UPDATED",
+              -> csipSynchronisationService.csipFactorUpserted(sqsMessage.Message.fromJson())
               "CSIP_INTVW-INSERTED" -> log.debug("Insert CSIP Interview")
               "CSIP_INTVW-UPDATED" -> log.debug("Update CSIP Interview")
 
@@ -66,13 +66,11 @@ class CSIPPrisonOffenderEventListener(
           }
         }
 
-        RETRY_SYNCHRONISATION_MAPPING.name -> csipSynchronisationService.retryCreateCSIPReportMapping(
-          sqsMessage.Message.fromJson(),
-        )
+        RETRY_SYNCHRONISATION_MAPPING.name ->
+          csipSynchronisationService.retryCreateCSIPReportMapping(sqsMessage.Message.fromJson())
 
-        RETRY_CSIP_FACTOR_SYNCHRONISATION_MAPPING -> csipFactorSynchronisationService.retryCreateCSIPFactorMapping(
-          sqsMessage.Message.fromJson(),
-        )
+        RETRY_SYNCHRONISATION_MAPPING_CHILD.name ->
+          csipSynchronisationService.retryUpdateCSIPReportMapping(sqsMessage.Message.fromJson())
       }
     }
   }
@@ -87,6 +85,7 @@ data class CSIPReportEvent(
   val offenderIdDisplay: String,
   val auditModuleName: String?,
 )
+
 data class CSIPFactorEvent(
   val csipFactorId: Long,
   val csipReportId: Long,

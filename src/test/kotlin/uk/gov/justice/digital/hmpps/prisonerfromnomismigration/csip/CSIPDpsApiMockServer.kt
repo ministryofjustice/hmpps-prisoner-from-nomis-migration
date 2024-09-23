@@ -114,8 +114,8 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
               factorTypeCode = "BUL",
               legacyId = 43,
               createdAt = LocalDateTime.parse("2024-04-01T10:00:00"),
-              createdBy = "JSMITH",
-              createdByDisplayName = "JSMITH",
+              createdBy = "CFACTOR",
+              createdByDisplayName = "CFACTOR",
               comment = "Offender causes trouble",
               id = null,
               lastModifiedAt = null,
@@ -539,8 +539,28 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
       put("/sync/csip-records").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withStatus(CREATED.value())
+          .withStatus(OK.value())
           .withBody(SyncResponse(setOf())),
+      ),
+    )
+  }
+  fun stubSyncCSIPReportFactorMappingUpdate(dpsCSIPFactorId: String, nomisCSIPFactorId: Long) {
+    stubFor(
+      put("/sync/csip-records").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(OK.value())
+          .withBody(
+            SyncResponse(
+              setOf(
+                ResponseMapping(
+                  ResponseMapping.Component.CONTRIBUTORY_FACTOR,
+                  id = nomisCSIPFactorId,
+                  uuid = UUID.fromString(dpsCSIPFactorId),
+                ),
+              ),
+            ),
+          ),
       ),
     )
   }
@@ -616,28 +636,6 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withHeader("Content-Type", "application/json")
           .withStatus(CREATED.value())
           .withBody(dpsSaferCustodyScreening()),
-      ),
-    )
-  }
-
-  // /////////////// CSIP Factor
-  fun stubInsertCSIPFactor(dpsCSIPReportId: String, dpsCSIPFactorId: String) {
-    stubFor(
-      post("/csip-records/$dpsCSIPReportId/referral/contributory-factors").willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(CREATED.value())
-          .withBody(dpsCSIPFactor(dpsCSIPFactorId)),
-      ),
-    )
-  }
-  fun stubUpdateCSIPFactor(dpsCSIPFactorId: String) {
-    stubFor(
-      patch("/csip-records/referral/contributory-factors/$dpsCSIPFactorId").willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(CREATED.value())
-          .withBody(dpsCSIPFactor(dpsCSIPFactorId)),
       ),
     )
   }
