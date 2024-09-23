@@ -226,7 +226,7 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
         type = CodeDescription(code = "BUL", description = "Bullying"),
         comment = "Offender causes trouble",
         createDateTime = "2024-04-01T10:00:00",
-        createdBy = "JSMITH",
+        createdBy = "CFACTOR",
       )
   }
 

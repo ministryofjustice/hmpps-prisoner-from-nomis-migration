@@ -1,13 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip
 
-import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.exactly
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
-import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
@@ -29,10 +28,12 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension.Companion.csipDpsApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingApiMockServer.Companion.CSIP_CREATE_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
+import java.util.UUID
 
 private const val NOMIS_CSIP_ID = 1234L
 
@@ -63,12 +64,12 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `the event is ignored`() {
         await untilAsserted {
           verify(telemetryClient).trackEvent(
-            eq("csip-factor-synchronisation-skipped"),
+            eq("csip-synchronisation-updated-skipped"),
             check {
               assertThat(it["nomisCSIPFactorId"]).isEqualTo(nomisCSIPFactorId.toString())
-              assertThat(it["nomisCSIPReportId"]).isEqualTo(NOMIS_CSIP_ID.toString())
+              assertThat(it["nomisCSIPId"]).isEqualTo(NOMIS_CSIP_ID.toString())
               assertThat(it["offenderNo"]).isEqualTo("A1234BC")
-              assertThat(it["dpsCSIPFactorId"]).isNull()
+              assertThat(it["dpsCSIPId"]).isNull()
             },
             isNull(),
           )
@@ -82,32 +83,35 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
     @Nested
     @DisplayName("When there is a new CSIP Factor Inserted Event")
     inner class WhenNewCSIPFactor {
-      private val nomisCSIPFactorId = 654L
+      private val nomisCSIPFactorId = 43L
       private val nomisCSIPReportId = NOMIS_CSIP_ID
       val dpsCSIPReportId = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5"
       val dpsCSIPFactorId = "e07fdbee-1463-4c7e-a374-aae2445845be"
 
       @Nested
       @DisplayName("When Create CSIP Factor Happy Path")
-      inner class WhenCreateByNomisSuccess {
+      inner class HappyPath {
         @BeforeEach
         fun setUp() {
-          csipNomisApi.stubGetCSIPFactor(nomisCSIPFactorId)
-          csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPReportId) // Needed to ensure we have the uuid for dps
-          csipMappingApi.stubGetFactorByNomisId(HttpStatus.NOT_FOUND)
-          csipDpsApi.stubInsertCSIPFactor(dpsCSIPReportId, dpsCSIPFactorId)
-          mappingApi.stubMappingCreate("/mapping/csip/factors")
+          csipNomisApi.stubGetCSIP(nomisCSIPReportId)
+          csipMappingApi.stubGetByNomisId(nomisCSIPId = nomisCSIPReportId, dpsCSIPId = dpsCSIPReportId)
+          csipMappingApi.stubGetFullMappingByDpsReportId(dpsCSIPId = dpsCSIPReportId)
+          csipDpsApi.stubSyncCSIPReportFactorMappingUpdate(
+            dpsCSIPFactorId = dpsCSIPFactorId,
+            nomisCSIPFactorId = nomisCSIPFactorId,
+          )
+          csipMappingApi.stubPutMappingUpdate(CSIP_CREATE_MAPPING_URL)
 
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
             csipFactorEvent(eventType = "CSIP_FACTORS-INSERTED", csipFactorId = nomisCSIPFactorId.toString()),
           )
-          waitForAnyProcessingToComplete("csip-factor-synchronisation-created-success")
+          waitForAnyProcessingToComplete("csip-synchronisation-updated-success")
         }
 
         @Test
         fun `will retrieve details about the csip from NOMIS`() {
-          csipNomisApi.verify(getRequestedFor(urlEqualTo("/csip/factors/$nomisCSIPFactorId")))
+          csipNomisApi.verify(getRequestedFor(urlEqualTo("/csip/$nomisCSIPReportId")))
         }
 
         @Test
@@ -116,48 +120,64 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
         }
 
         @Test
-        fun `will retrieve mapping to check if this is a new csip factor`() {
-          mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/csip/factors/nomis-csip-factor-id/$nomisCSIPFactorId")))
+        fun `will request full csip mapping`() {
+          mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/csip/dps-csip-id/$dpsCSIPReportId/all")))
         }
 
         @Test
-        fun `will create the csip factor in the csip service`() {
+        fun `will update DPS with the changes including CSIP Factors`() {
           csipDpsApi.verify(
-            postRequestedFor(urlPathEqualTo("/csip-records/$dpsCSIPReportId/referral/contributory-factors"))
-              .withHeader("Username", equalTo("JSMITH")),
+            putRequestedFor(urlEqualTo("/sync/csip-records"))
+              .withRequestBody(matchingJsonPath("id", equalTo(dpsCSIPReportId)))
+              .withRequestBody(matchingJsonPath("legacyId", equalTo("1234")))
+              .withRequestBody(matchingJsonPath("logCode", equalTo("ASI-001")))
+              .withRequestBody(matchingJsonPath("prisonNumber", equalTo("A1234BC")))
+              .withRequestBody(matchingJsonPath("actionedAt", equalTo("2024-04-01T10:00:00")))
+              .withRequestBody(matchingJsonPath("actionedBy", equalTo("CFACTOR")))
+              .withRequestBody(matchingJsonPath("actionedByDisplayName", equalTo("CFACTOR"))),
           )
         }
 
         @Test
-        fun `will create a mapping between the two records`() {
-          mappingApi.verify(
-            postRequestedFor(urlPathEqualTo("/mapping/csip/factors"))
-              .withRequestBody(matchingJsonPath("dpsCSIPFactorId", equalTo(dpsCSIPFactorId)))
-              .withRequestBody(matchingJsonPath("nomisCSIPFactorId", equalTo(nomisCSIPFactorId.toString()))),
+        fun `will update the mapping between the two records`() {
+          csipMappingApi.verify(
+            putRequestedFor(urlPathEqualTo("/mapping/csip/all"))
+              .withRequestBody(matchingJsonPath("dpsCSIPReportId", equalTo(dpsCSIPReportId)))
+              .withRequestBody(matchingJsonPath("nomisCSIPReportId", equalTo(nomisCSIPReportId.toString())))
+              .withRequestBody(matchingJsonPath("factorMappings[0].dpsCSIPFactorId", equalTo(dpsCSIPFactorId)))
+              .withRequestBody(
+                matchingJsonPath(
+                  "factorMappings[0].nomisCSIPFactorId",
+                  equalTo(nomisCSIPFactorId.toString()),
+                ),
+              ),
           )
         }
 
         @Test
-        fun `will create telemetry tracking the create`() {
+        fun `will create telemetry tracking the update`() {
           verify(telemetryClient).trackEvent(
-            eq("csip-factor-synchronisation-created-success"),
+            eq("csip-synchronisation-updated-success"),
             check {
-              assertThat(it["nomisCSIPReportId"]).isEqualTo(nomisCSIPReportId.toString())
-              assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+              assertThat(it["nomisCSIPId"]).isEqualTo(nomisCSIPReportId.toString())
               assertThat(it["nomisCSIPFactorId"]).isEqualTo(nomisCSIPFactorId.toString())
-              assertThat(it["dpsCSIPFactorId"]).isEqualTo(dpsCSIPFactorId)
+              assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+              assertThat(it["dpsCSIPId"]).isEqualTo(dpsCSIPReportId)
             },
             isNull(),
           )
         }
       }
 
+      // TODO Add Test when id for factor in event can not be found to create actionDetails from factor details
+      // so throws exception
+
       @Nested
-      @DisplayName("When Nomis has no CSIP Factor")
-      inner class WhenNomisHasNoCSIPFactor {
+      @DisplayName("When Nomis has no CSIP Report")
+      inner class WhenNomisHasNoCSIP {
         @BeforeEach
         fun setUp() {
-          csipNomisApi.stubGetCSIPFactor(HttpStatus.NOT_FOUND)
+          csipNomisApi.stubGetCSIP(HttpStatus.NOT_FOUND)
 
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
@@ -184,318 +204,55 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @Nested
       inner class WhenDuplicateMapping {
-        private val duplicateDPSCSIPFactorId = "ddd5e842-e9f9-4200-9024-1e4a02ec46ae"
-
-        @Test
-        internal fun `it will not retry after a 409 (duplicate csip written to CSIP API)`() {
-          csipNomisApi.stubGetCSIPFactor(nomisCSIPFactorId)
-          csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPReportId) // Needed to ensure we have the uuid for dps
-          csipMappingApi.stubGetFactorByNomisId(HttpStatus.NOT_FOUND)
-          csipDpsApi.stubInsertCSIPFactor(dpsCSIPReportId, duplicateDPSCSIPFactorId)
-          csipMappingApi.stubCSIPFactorMappingCreateConflict(
-            nomisCSIPFactorId = nomisCSIPFactorId,
-            duplicateDPSCSIPFactorId = duplicateDPSCSIPFactorId,
-            existingDPSCSIPFactorId = dpsCSIPFactorId,
-            dpsCSIPReportId = dpsCSIPReportId,
-          )
-
-          awsSqsCSIPOffenderEventsClient.sendMessage(
-            csipQueueOffenderEventsUrl,
-            csipFactorEvent(eventType = "CSIP_FACTORS-INSERTED", csipFactorId = nomisCSIPFactorId.toString()),
-          )
-
-          // wait for all mappings to be created before verifying
-          await untilCallTo { mappingApi.createMappingCount("/mapping/csip/factors") } matches { it == 1 }
-
-          // check that one csip is created
-          assertThat(csipDpsApi.createCSIPFactorSyncCount()).isEqualTo(1)
-
-          // doesn't retry
-          csipMappingApi.verifyCreateCSIPFactorMapping(dpsCSIPFactorId = duplicateDPSCSIPFactorId)
-
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("csip-factor-synchronisation-from-nomis-duplicate"),
-              check {
-                assertThat(it["existingNomisCSIPFactorId"]).isEqualTo("$nomisCSIPFactorId")
-                assertThat(it["duplicateNomisCSIPFactorId"]).isEqualTo("$nomisCSIPFactorId")
-                assertThat(it["existingDPSCSIPFactorId"]).isEqualTo(dpsCSIPFactorId)
-                assertThat(it["duplicateDPSCSIPFactorId"]).isEqualTo(duplicateDPSCSIPFactorId)
-                assertThat(it["migrationId"]).isNull()
-              },
-              isNull(),
-            )
-          }
-        }
-      }
-
-      @Nested
-      inner class WhenMappingAlreadyExists {
-
-        @Test
-        internal fun `it will not retry after a 409 (duplicate csip written to CSIP API)`() {
-          csipNomisApi.stubGetCSIPFactor(nomisCSIPFactorId)
-          csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPReportId) // Needed to ensure we have the uuid for dps
-          csipMappingApi.stubGetFactorByNomisId(nomisCSIPFactorId, dpsCSIPFactorId, dpsCSIPReportId)
-
-          awsSqsCSIPOffenderEventsClient.sendMessage(
-            csipQueueOffenderEventsUrl,
-            csipFactorEvent(eventType = "CSIP_FACTORS-INSERTED", csipFactorId = nomisCSIPFactorId.toString()),
-          )
-
-          // check that no CSIPs are created
-          assertThat(csipDpsApi.createCSIPFactorSyncCount()).isEqualTo(0)
-          csipDpsApi.verify(0, postRequestedFor(anyUrl()))
-
-          // doesn't try to create a new mapping
-          csipMappingApi.verify(0, postRequestedFor(anyUrl()))
-
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("csip-factor-synchronisation-created-ignored"),
-              check {
-                assertThat(it["dpsCSIPFactorId"]).isEqualTo(dpsCSIPFactorId)
-                assertThat(it["nomisCSIPFactorId"]).isEqualTo(nomisCSIPFactorId.toString())
-                assertThat(it["reason"]).isEqualTo("CSIP Factor already mapped")
-                assertThat(it["migrationId"]).isNull()
-              },
-              isNull(),
-            )
-          }
-        }
-      }
-
-      @Nested
-      @DisplayName("When no CSIP Report Mapping for the CSIP Factor has been created")
-      inner class WhenAssociatedReportMappingDoesNotYetExist {
-
-        @Test
-        internal fun `it will put the message on the dlq`() {
-          csipNomisApi.stubGetCSIPFactor(nomisCSIPFactorId)
-          csipMappingApi.stubGetByNomisId(HttpStatus.NOT_FOUND)
-
-          awsSqsCSIPOffenderEventsClient.sendMessage(
-            csipQueueOffenderEventsUrl,
-            csipFactorEvent(eventType = "CSIP_FACTORS-INSERTED", csipFactorId = nomisCSIPFactorId.toString()),
-          )
-
-          awsSqsCSIPOffenderEventDlqClient.waitForMessageCountOnQueue(csipQueueOffenderEventsDlqUrl, 1)
-
-          // check that no CSIPs are created and no posts of any kind are sent
-          assertThat(csipDpsApi.createCSIPFactorSyncCount()).isEqualTo(0)
-          csipDpsApi.verify(0, postRequestedFor(anyUrl()))
-
-          // doesn't try to create a new mapping
-          csipMappingApi.verify(0, postRequestedFor(anyUrl()))
-
-          await untilAsserted {
-            verify(telemetryClient, Mockito.atLeastOnce()).trackEvent(
-              eq("csip-factor-synchronisation-created-failed"),
-              check {
-                assertThat(it["nomisCSIPReportId"]).isEqualTo("$NOMIS_CSIP_ID")
-                assertThat(it["offenderNo"]).isEqualTo("A1234BC")
-                assertThat(it["nomisCSIPFactorId"]).isEqualTo(nomisCSIPFactorId.toString())
-                assertThat(it["reason"]).isEqualTo("CSIP Report for CSIP factor not mapped")
-                assertThat(it["migrationId"]).isNull()
-              },
-              isNull(),
-            )
-          }
-        }
-      }
-
-      @Nested
-      @DisplayName("When mapping POST fails")
-      inner class MappingFail {
-        private val dpsCSIPFactorId = "a04f7a8d-61aa-400c-9395-f4dc62f36a11"
+        private val dpsCsipReportId = UUID.randomUUID().toString()
+        private val duplicateDPSCSIPId = "ddd596da-8eab-4d2a-a026-bc5afb8acda0"
 
         @BeforeEach
         fun setUp() {
-          csipNomisApi.stubGetCSIPFactor(nomisCSIPFactorId)
-          csipMappingApi.stubGetByNomisId(dpsCSIPId = dpsCSIPReportId) // Needed to ensure we have the uuid for dps
-          csipMappingApi.stubGetFactorByNomisId(HttpStatus.NOT_FOUND)
-          csipDpsApi.stubInsertCSIPFactor(dpsCSIPReportId, dpsCSIPFactorId)
-        }
+          csipNomisApi.stubGetCSIP()
+          csipMappingApi.stubGetByNomisId(status = HttpStatus.NOT_FOUND)
 
-        @Nested
-        @DisplayName("Fails once")
-        inner class FailsOnce {
-          @BeforeEach
-          fun setUp() {
-            mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/csip/factors")
-            awsSqsCSIPOffenderEventsClient.sendMessage(
-              csipQueueOffenderEventsUrl,
-              csipFactorEvent(eventType = "CSIP_FACTORS-INSERTED", csipFactorId = nomisCSIPFactorId.toString()),
-            )
-            waitForAnyProcessingToComplete("csip-factor-mapping-created-synchronisation-success")
-          }
-
-          @Test
-          fun `will create csip factor in DPS`() {
-            csipDpsApi.verify(
-              postRequestedFor(urlPathEqualTo("/csip-records/$dpsCSIPReportId/referral/contributory-factors"))
-                .withRequestBody(matchingJsonPath("factorTypeCode", equalTo("BUL")))
-                .withRequestBody(matchingJsonPath("comment", equalTo("Offender causes trouble"))),
-            )
-          }
-
-          @Test
-          fun `will attempt to create mapping two times and succeed`() {
-            csipMappingApi.verify(
-              exactly(2),
-              postRequestedFor(urlPathEqualTo("/mapping/csip/factors"))
-                .withRequestBody(matchingJsonPath("dpsCSIPFactorId", equalTo(dpsCSIPFactorId)))
-                .withRequestBody(matchingJsonPath("nomisCSIPFactorId", equalTo(nomisCSIPFactorId.toString())))
-                .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
-            )
-
-            assertThat(
-              awsSqsCSIPOffenderEventDlqClient.countAllMessagesOnQueue(csipQueueOffenderEventsDlqUrl).get(),
-            ).isEqualTo(0)
-          }
-
-          @Test
-          fun `will track a telemetry event for partial success`() {
-            verify(telemetryClient).trackEvent(
-              eq("csip-factor-synchronisation-created-success"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo("A1234BC")
-                assertThat(it["nomisCSIPFactorId"]).isEqualTo(nomisCSIPFactorId.toString())
-                assertThat(it["nomisCSIPReportId"]).isEqualTo(nomisCSIPReportId.toString())
-                assertThat(it["dpsCSIPFactorId"]).isEqualTo(dpsCSIPFactorId)
-                assertThat(it["mapping"]).isEqualTo("initial-failure")
-              },
-              isNull(),
-            )
-
-            verify(telemetryClient).trackEvent(
-              eq("csip-factor-mapping-created-synchronisation-success"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo("A1234BC")
-                assertThat(it["nomisCSIPFactorId"]).isEqualTo(nomisCSIPFactorId.toString())
-                assertThat(it["dpsCSIPFactorId"]).isEqualTo(dpsCSIPFactorId)
-              },
-              isNull(),
-            )
-          }
-        }
-
-        @Nested
-        @DisplayName("Fails constantly")
-        inner class FailsConstantly {
-          @BeforeEach
-          fun setUp() {
-            csipMappingApi.stubCreateFactorMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
-            awsSqsCSIPOffenderEventsClient.sendMessage(
-              csipQueueOffenderEventsUrl,
-              csipFactorEvent(eventType = "CSIP_FACTORS-INSERTED", csipFactorId = nomisCSIPFactorId.toString()),
-            )
-            await untilCallTo {
-              awsSqsCSIPOffenderEventDlqClient.countAllMessagesOnQueue(csipQueueOffenderEventsDlqUrl).get()
-            } matches { it == 1 }
-          }
-
-          @Test
-          fun `will create csip factor in DPS`() {
-            await untilAsserted {
-              csipDpsApi.verify(
-                1,
-                postRequestedFor(urlPathEqualTo("/csip-records/$dpsCSIPReportId/referral/contributory-factors"))
-                  .withRequestBody(matchingJsonPath("factorTypeCode", equalTo("BUL")))
-                  .withRequestBody(matchingJsonPath("comment", equalTo("Offender causes trouble"))),
-              )
-            }
-          }
-
-          @Test
-          fun `will attempt to create mapping several times and keep failing`() {
-            // Once and then twice via RETRY_CSIP_FACTOR_SYNCHRONISATION_MAPPING message
-            csipMappingApi.verify(
-              exactly(3),
-              postRequestedFor(urlPathEqualTo("/mapping/csip/factors")),
-            )
-          }
-
-          @Test
-          fun `will track a telemetry event for success`() {
-            await untilAsserted {
-              verify(telemetryClient).trackEvent(
-                eq("csip-factor-synchronisation-created-success"),
-                check {
-                  assertThat(it["offenderNo"]).isEqualTo("A1234BC")
-                  assertThat(it["nomisCSIPFactorId"]).isEqualTo(nomisCSIPFactorId.toString())
-                  assertThat(it["nomisCSIPReportId"]).isEqualTo(nomisCSIPReportId.toString())
-                  assertThat(it["dpsCSIPFactorId"]).isEqualTo(dpsCSIPFactorId)
-                  assertThat(it["mapping"]).isEqualTo("initial-failure")
-                },
-                isNull(),
-              )
-            }
-          }
-        }
-      }
-    }
-  }
-
-  @Nested
-  @DisplayName("CSIP_FACTORS-UPDATED")
-  inner class CSIPFactorUpdated {
-    @Nested
-    @DisplayName("When csip factor was updated in DPS")
-    inner class DPSUpdated {
-
-      private val nomisCSIPFactorId = 12345L
-
-      @BeforeEach
-      fun setUp() {
-        csipNomisApi.stubGetCSIPFactor(nomisCSIPFactorId = nomisCSIPFactorId)
-        awsSqsCSIPOffenderEventsClient.sendMessage(
-          csipQueueOffenderEventsUrl,
-          csipFactorEvent(
-            eventType = "CSIP_FACTORS-UPDATED",
-            auditModuleName = "DPS_SYNCHRONISATION",
-            csipFactorId = nomisCSIPFactorId.toString(),
-          ),
-        )
-      }
-
-      @Test
-      fun `the event is ignored`() {
-        await untilAsserted {
-          verify(telemetryClient).trackEvent(
-            eq("csip-factor-synchronisation-updated-skipped"),
-            check {
-              assertThat(it["offenderNo"]).isEqualTo("A1234BC")
-              assertThat(it["nomisCSIPFactorId"]).isEqualTo(nomisCSIPFactorId.toString())
-              assertThat(it["nomisCSIPReportId"]).isEqualTo(NOMIS_CSIP_ID.toString())
-            },
-            isNull(),
+          awsSqsCSIPOffenderEventsClient.sendMessage(
+            csipQueueOffenderEventsUrl,
+            csipFactorEvent(eventType = "CSIP_FACTORS-INSERTED", csipFactorId = nomisCSIPFactorId.toString()),
           )
         }
 
-        // will not bother getting mapping
-        csipMappingApi.verify(
-          count = 0,
-          getRequestedFor(WireMock.urlPathMatching("/mapping/csip/factors/nomis-factor-id/\\d+")),
-        )
-        // will not update the csip factor  in DPS
-        csipDpsApi.verify(
-          0,
-          WireMock.putRequestedFor(anyUrl()),
-        )
-      }
-    }
+        @Test
+        internal fun `it will not retry after a 409 (duplicate csip written to CSIP API)`() {
+          csipNomisApi.stubGetCSIP()
+          csipMappingApi.stubGetByNomisId(HttpStatus.NOT_FOUND)
+          csipDpsApi.stubSyncCSIPReport(duplicateDPSCSIPId)
+          csipMappingApi.stubCSIPMappingCreateConflict(existingDPSCSIPId = dpsCsipReportId)
 
-    @Nested
-    @DisplayName("When csip factor was updated in NOMIS")
-    inner class NomisUpdated {
-      private val nomisCSIPFactorId = 12345L
+          awsSqsCSIPOffenderEventsClient.sendMessage(
+            csipQueueOffenderEventsUrl,
+            csipEvent(eventType = "CSIP_REPORTS-INSERTED"),
+          )
 
-      @BeforeEach
-      fun setUp() {
-        csipNomisApi.stubGetCSIPFactor(
-          nomisCSIPFactorId = nomisCSIPFactorId,
-        )
+          // wait for all mappings to be created before verifying
+          await untilCallTo { mappingApi.createMappingCount(CSIP_CREATE_MAPPING_URL) } matches { it == 1 }
+
+          // check that one csip is created
+          assertThat(csipDpsApi.syncCSIPCount()).isEqualTo(1)
+
+          // doesn't retry
+          csipMappingApi.verifyCreateCSIPReportMapping(dpsCSIPId = duplicateDPSCSIPId)
+
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("csip-synchronisation-from-nomis-duplicate"),
+              check {
+                assertThat(it["existingNomisCSIPId"]).isEqualTo("$NOMIS_CSIP_ID")
+                assertThat(it["duplicateNomisCSIPId"]).isEqualTo("$NOMIS_CSIP_ID")
+                assertThat(it["existingDPSCSIPId"]).isEqualTo(dpsCsipReportId)
+                assertThat(it["duplicateDPSCSIPId"]).isEqualTo(duplicateDPSCSIPId)
+                assertThat(it["migrationId"]).isNull()
+              },
+              isNull(),
+            )
+          }
+        }
       }
 
       @Nested
@@ -503,13 +260,12 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class MappingDoesNotExist {
         @BeforeEach
         fun setUp() {
-          csipMappingApi.stubGetFactorByNomisId(status = HttpStatus.NOT_FOUND)
+          csipNomisApi.stubGetCSIP()
+          csipMappingApi.stubGetByNomisId(status = HttpStatus.NOT_FOUND)
+
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
-            csipFactorEvent(
-              eventType = "CSIP_FACTORS-UPDATED",
-              csipFactorId = nomisCSIPFactorId.toString(),
-            ),
+            csipFactorEvent(eventType = "CSIP_FACTORS-INSERTED", csipFactorId = nomisCSIPFactorId.toString()),
           )
         }
 
@@ -517,11 +273,10 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `telemetry added to track the failure`() {
           await untilAsserted {
             verify(telemetryClient, Mockito.atLeastOnce()).trackEvent(
-              eq("csip-factor-synchronisation-updated-failed"),
+              eq("csip-synchronisation-updated-failed"),
               check {
+                assertThat(it["nomisCSIPId"]).isEqualTo(NOMIS_CSIP_ID.toString())
                 assertThat(it["offenderNo"]).isEqualTo("A1234BC")
-                assertThat(it["nomisCSIPFactorId"]).isEqualTo(nomisCSIPFactorId.toString())
-                assertThat(it["nomisCSIPReportId"]).isEqualTo(NOMIS_CSIP_ID.toString())
               },
               isNull(),
             )
@@ -537,64 +292,13 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
           }
         }
       }
-
-      @Nested
-      @DisplayName("When mapping does exist")
-      inner class HappyPath {
-        private val dpsCSIPFactorId = "a04f7a8d-61aa-400c-9395-f4dc62f36ab0"
-        private val dpsCSIPReportId = "a04f7a8d-61aa-400c-9395-f4dc62f36ab0"
-
-        @BeforeEach
-        fun setUp() {
-          csipMappingApi.stubGetFactorByNomisId(
-            nomisCSIPFactorId = nomisCSIPFactorId,
-            dpsCSIPFactorId = dpsCSIPFactorId,
-            dpsCSIPReportId = dpsCSIPReportId,
-          )
-          csipDpsApi.stubUpdateCSIPFactor(dpsCSIPFactorId = dpsCSIPFactorId)
-          awsSqsCSIPOffenderEventsClient.sendMessage(
-            csipQueueOffenderEventsUrl,
-            csipFactorEvent(
-              eventType = "CSIP_FACTORS-UPDATED",
-              csipFactorId = nomisCSIPFactorId.toString(),
-            ),
-          )
-          waitForAnyProcessingToComplete("csip-factor-synchronisation-updated-success")
-        }
-
-        @Test
-        fun `will update (patch) DPS with the changes`() {
-          await untilAsserted {
-            csipDpsApi.verify(
-              1,
-              WireMock.patchRequestedFor(urlPathEqualTo("/csip-records/referral/contributory-factors/$dpsCSIPFactorId"))
-                .withRequestBody(matchingJsonPath("comment", equalTo("Offender causes trouble"))),
-            )
-          }
-        }
-
-        @Test
-        fun `will track a telemetry event for success`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("csip-factor-synchronisation-updated-success"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo("A1234BC")
-                assertThat(it["nomisCSIPFactorId"]).isEqualTo(nomisCSIPFactorId.toString())
-                assertThat(it["nomisCSIPReportId"]).isEqualTo(NOMIS_CSIP_ID.toString())
-                assertThat(it["dpsCSIPFactorId"]).isEqualTo(dpsCSIPFactorId)
-              },
-              isNull(),
-            )
-          }
-        }
-      }
     }
   }
+  // TODO Tests for CSIP_FACTORS-UPDATED Event
 }
 
 fun csipFactorEvent(
-  eventType: String = "CSIP_FACTORS-INSERTED",
+  eventType: String,
   csipFactorId: String,
   csipReportId: String = "$NOMIS_CSIP_ID",
   auditModuleName: String = "OIDCSIPC",
