@@ -118,7 +118,7 @@ class CSIPNomisApiServiceTest {
       assertThat(csipFactor.type.description).isEqualTo("Bullying")
       assertThat(csipFactor.comment).isEqualTo("Offender causes trouble")
       assertThat(csipFactor.createDateTime).isEqualTo("2024-04-01T10:00:00")
-      assertThat(csipFactor.createdBy).isEqualTo("JSMITH")
+      assertThat(csipFactor.createdBy).isEqualTo("CFACTOR")
       assertThat(csipFactor.lastModifiedDateTime).isNull()
       assertThat(csipFactor.lastModifiedBy).isNull()
     }
