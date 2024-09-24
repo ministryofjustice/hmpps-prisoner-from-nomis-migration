@@ -13,8 +13,8 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_CHILD_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING_CHILD
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CSIP_SYNC_QUEUE_ID
 import java.util.concurrent.CompletableFuture
 
@@ -69,7 +69,7 @@ class CSIPPrisonOffenderEventListener(
         RETRY_SYNCHRONISATION_MAPPING.name ->
           csipSynchronisationService.retryCreateCSIPReportMapping(sqsMessage.Message.fromJson())
 
-        RETRY_SYNCHRONISATION_MAPPING_CHILD.name ->
+        RETRY_SYNCHRONISATION_CHILD_MAPPING.name ->
           csipSynchronisationService.retryUpdateCSIPReportMapping(sqsMessage.Message.fromJson())
       }
     }

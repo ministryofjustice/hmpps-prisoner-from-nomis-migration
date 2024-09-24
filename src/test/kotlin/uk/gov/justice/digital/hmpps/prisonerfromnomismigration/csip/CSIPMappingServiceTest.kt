@@ -23,6 +23,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpStatus
 import org.springframework.web.reactive.function.client.WebClientResponseException
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingApiMockServer.Companion.CSIP_CREATE_CHILD_MAPPINGS_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingApiMockServer.Companion.CSIP_CREATE_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -120,8 +121,138 @@ internal class CSIPMappingServiceTest {
     }
 
     @Nested
-    @DisplayName("createCSIPMapping")
-    inner class CreateCSIPMapping {
+    @DisplayName("createCSIPChildMappings")
+    inner class CreateCSIPChildMappings {
+      @BeforeEach
+      internal fun setUp() {
+        mappingApi.stubFor(
+          post(urlEqualTo(CSIP_CREATE_CHILD_MAPPINGS_URL)).willReturn(
+            aResponse()
+              .withHeader("Content-Type", "application/json")
+              .withStatus(HttpStatus.CREATED.value()),
+          ),
+        )
+      }
+
+      @Test
+      fun `should provide oath2 token`() = runTest {
+        csipMappingApi.stubCreateChildMappings()
+
+        csipMappingService.createChildMappings(
+          CSIPFullMappingDto(
+            dpsCSIPReportId = DPS_CSIP_ID,
+            nomisCSIPReportId = NOMIS_CSIP_ID,
+            label = "some-migration-id",
+            mappingType = MIGRATED,
+            attendeeMappings = listOf(),
+            factorMappings = listOf(),
+            interviewMappings = listOf(),
+            planMappings = listOf(),
+            reviewMappings = listOf(),
+          ),
+          object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPFullMappingDto>>() {},
+        )
+
+        mappingApi.verify(
+          postRequestedFor(
+            urlPathEqualTo(CSIP_CREATE_CHILD_MAPPINGS_URL),
+          ).withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
+        )
+      }
+
+      @Test
+      internal fun `will pass all parameters dps csip id, nomis csip id, migration Id, factors and MIGRATED indicator to mapping service`(): Unit =
+        runTest {
+          val dpsCSIPFactorId = "081b743a-1b23-4621-90d5-111f55003c11"
+          csipMappingService.createChildMappings(
+            CSIPFullMappingDto(
+              dpsCSIPReportId = DPS_CSIP_ID,
+              nomisCSIPReportId = NOMIS_CSIP_ID,
+              mappingType = MIGRATED,
+              label = "5678",
+              whenCreated = "2020-01-01T00:00:00",
+              attendeeMappings = listOf(),
+              factorMappings = listOf(
+                CSIPFactorMappingDto(
+                  nomisCSIPFactorId = 123,
+                  dpsCSIPFactorId = dpsCSIPFactorId,
+                  dpsCSIPReportId = DPS_CSIP_ID,
+                  mappingType = CSIPFactorMappingDto.MappingType.MIGRATED,
+                ),
+              ),
+              interviewMappings = listOf(),
+              planMappings = listOf(),
+              reviewMappings = listOf(),
+            ),
+            errorJavaClass = object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPFullMappingDto>>() {},
+          )
+
+          mappingApi.verify(
+            postRequestedFor(urlEqualTo(CSIP_CREATE_CHILD_MAPPINGS_URL))
+              .withRequestBody(
+                equalToJson(
+                  """
+                  {
+                    "dpsCSIPReportId": "$DPS_CSIP_ID",
+                    "nomisCSIPReportId": $NOMIS_CSIP_ID,                                                                            
+                    "label": "5678",
+                    "mappingType": "MIGRATED",
+                    "whenCreated": "2020-01-01T00:00:00",
+                    "attendeeMappings": [],
+                    "factorMappings": [
+                      {
+                        "nomisCSIPFactorId" : 123,
+                        "dpsCSIPFactorId" : "081b743a-1b23-4621-90d5-111f55003c11",
+                        "dpsCSIPReportId" : "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5",
+                        "mappingType" : "MIGRATED",
+                        "label" : null,
+                        "whenCreated" : null
+                      }
+                    ],
+                    "interviewMappings": [],
+                    "planMappings": [],
+                    "reviewMappings": []
+                  }
+                  """.trimIndent(),
+                ),
+              ),
+          )
+        }
+
+      @Test
+      fun `should throw exception for any error`() = runTest {
+        mappingApi.stubFor(
+          post(urlPathMatching(CSIP_CREATE_CHILD_MAPPINGS_URL)).willReturn(
+            aResponse()
+              .withHeader("Content-Type", "application/json")
+              .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
+              .withBody("""{"message":"Tea"}"""),
+          ),
+        )
+
+        assertThrows<WebClientResponseException.InternalServerError> {
+          csipMappingService.createChildMappings(
+            CSIPFullMappingDto(
+              dpsCSIPReportId = DPS_CSIP_ID,
+              nomisCSIPReportId = NOMIS_CSIP_ID,
+              mappingType = MIGRATED,
+              label = "5678",
+              whenCreated = "2020-01-01T00:00:00",
+              attendeeMappings = listOf(),
+              factorMappings = listOf(),
+              interviewMappings = listOf(),
+              planMappings = listOf(),
+              reviewMappings = listOf(),
+            ),
+            object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPFullMappingDto>>() {},
+          )
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName("createFullCSIPMapping")
+    inner class CreateFullCSIPMapping {
       @BeforeEach
       internal fun setUp() {
         mappingApi.stubFor(
