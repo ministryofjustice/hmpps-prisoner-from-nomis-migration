@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.eq
 import org.mockito.internal.verification.Times
 import org.mockito.kotlin.any
+import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
@@ -259,8 +260,15 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
         }
 
         @Test
-        fun `will not create telemetry tracking`() {
-          verify(telemetryClient, Times(0)).trackEvent(any(), any(), isNull())
+        fun `will create failure telemetry tracking`() {
+          verify(telemetryClient, atLeast(1)).trackEvent(
+            eq("locations-created-synchronisation-failed"),
+            check {
+              assertThat(it["nomisLocationId"]).isEqualTo("$NOMIS_LOCATION_ID")
+              assertThat(it["exception"]).isEqualTo("404 Not Found from GET http://localhost:8081/locations/$NOMIS_LOCATION_ID")
+            },
+            isNull(),
+          )
         }
       }
 
@@ -362,6 +370,56 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Nested
+      inner class WhenDuplicateMapping {
+
+        private val duplicationLocationId = "12345678-1234-1234-1234-1234567890ab"
+
+        @Test
+        internal fun `it will not retry after a mapping 409 (duplicate location written to Location API)`() {
+          nomisApi.stubGetLocationWithMinimalData(NOMIS_LOCATION_ID)
+          mappingApi.stubGetAnyLocationNotFound()
+          locationsApi.stubUpsertLocationForSynchronisation(locationId = duplicationLocationId)
+          mappingApi.stubLocationMappingCreateConflict(
+            nomisLocationId = NOMIS_LOCATION_ID,
+            existingLocationId = DPS_LOCATION_ID,
+            duplicateLocationId = duplicationLocationId,
+          )
+
+          awsSqsLocationsOffenderEventsClient.sendMessage(
+            locationsQueueOffenderEventsUrl,
+            locationEvent(),
+          )
+
+          // wait for all mappings to be created before verifying
+          await untilCallTo { mappingApi.createMappingCount(LOCATIONS_CREATE_MAPPING_URL) } matches { it == 1 }
+
+          // check that one location is created
+          assertThat(locationsApi.createLocationSynchronisationCount()).isEqualTo(1)
+
+          // doesn't retry
+          mappingApi.verifyCreateMappingLocationIds(arrayOf(duplicationLocationId), times = 1)
+
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("from-nomis-synch-location-duplicate"),
+              check {
+                assertThat(it["duplicateDpsLocationId"]).isEqualTo(duplicationLocationId)
+                assertThat(it["duplicateNomisLocationId"]).isEqualTo(NOMIS_LOCATION_ID.toString())
+                assertThat(it["existingDpsLocationId"]).isEqualTo(DPS_LOCATION_ID)
+                assertThat(it["existingNomisLocationId"]).isEqualTo(NOMIS_LOCATION_ID.toString())
+                assertThat(it["migrationId"]).isNull()
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName("When Location is updated in Nomis")
+    inner class WhenUpdated {
+      @Nested
       inner class WhenUpdateByNomisSuccess {
         @BeforeEach
         fun setUp() {
@@ -421,44 +479,42 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Nested
-      inner class WhenDuplicateMapping {
-
-        private val duplicationLocationId = "12345678-1234-1234-1234-1234567890ab"
-
-        @Test
-        internal fun `it will not retry after a mapping 409 (duplicate location written to Location API)`() {
-          nomisApi.stubGetLocationWithMinimalData(NOMIS_LOCATION_ID)
-          mappingApi.stubGetAnyLocationNotFound()
-          locationsApi.stubUpsertLocationForSynchronisation(locationId = duplicationLocationId)
-          mappingApi.stubLocationMappingCreateConflict(
-            nomisLocationId = NOMIS_LOCATION_ID,
-            existingLocationId = DPS_LOCATION_ID,
-            duplicateLocationId = duplicationLocationId,
+      inner class WhenUpdateByNomisLocationApiFailure {
+        @BeforeEach
+        fun setUp() {
+          nomisApi.stubGetLocation(NOMIS_LOCATION_ID, NOMIS_PARENT_LOCATION_ID)
+          mappingApi.stubGetLocation(DPS_LOCATION_ID, NOMIS_LOCATION_ID)
+          mappingApi.stubGetLocation(DPS_PARENT_LOCATION_ID, NOMIS_PARENT_LOCATION_ID)
+          locationsApi.stubUpsertLocationForSynchronisationWithError(
+            ErrorResponse(
+              status = 400,
+              userMessage = "test error",
+              developerMessage = "dev error",
+            ),
           )
 
           awsSqsLocationsOffenderEventsClient.sendMessage(
             locationsQueueOffenderEventsUrl,
             locationEvent(),
           )
+        }
 
-          // wait for all mappings to be created before verifying
-          await untilCallTo { mappingApi.createMappingCount(LOCATIONS_CREATE_MAPPING_URL) } matches { it == 1 }
-
-          // check that one location is created
-          assertThat(locationsApi.createLocationSynchronisationCount()).isEqualTo(1)
-
-          // doesn't retry
-          mappingApi.verifyCreateMappingLocationIds(arrayOf(duplicationLocationId), times = 1)
-
+        @Test
+        fun `will send the update to the location in the locations service`() {
           await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("from-nomis-synch-location-duplicate"),
+            locationsApi.verify(postRequestedFor(urlPathEqualTo("/sync/upsert")))
+          }
+        }
+
+        @Test
+        fun `will create failure telemetry tracking the update`() {
+          await untilAsserted {
+            verify(telemetryClient, atLeast(1)).trackEvent(
+              eq("locations-updated-synchronisation-failed"),
               check {
-                assertThat(it["duplicateDpsLocationId"]).isEqualTo(duplicationLocationId)
-                assertThat(it["duplicateNomisLocationId"]).isEqualTo(NOMIS_LOCATION_ID.toString())
-                assertThat(it["existingDpsLocationId"]).isEqualTo(DPS_LOCATION_ID)
-                assertThat(it["existingNomisLocationId"]).isEqualTo(NOMIS_LOCATION_ID.toString())
-                assertThat(it["migrationId"]).isNull()
+                assertThat(it["dpsLocationId"]).isEqualTo(DPS_LOCATION_ID)
+                assertThat(it["nomisLocationId"]).isEqualTo(NOMIS_LOCATION_ID.toString())
+                assertThat(it["exception"]).isEqualTo("400 Bad Request from POST http://localhost:8093/sync/upsert")
               },
               isNull(),
             )

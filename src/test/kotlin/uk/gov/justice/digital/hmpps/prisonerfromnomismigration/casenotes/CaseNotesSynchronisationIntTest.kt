@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.atLeastOnce
 import org.mockito.Mockito.eq
 import org.mockito.kotlin.any
+import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
@@ -340,6 +341,45 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
           }
         }
       }
+
+      @Nested
+      @DisplayName("When casenotes api POST fails")
+      inner class CasenotesApiFail {
+        @BeforeEach
+        fun setUp() {
+          caseNotesApi.stubPutCaseNoteFailure()
+
+          awsSqsCaseNoteOffenderEventsClient.sendMessage(
+            caseNotesQueueOffenderEventsUrl,
+            caseNoteEvent(
+              eventType = "OFFENDER_CASE_NOTES-INSERTED",
+              bookingId = BOOKING_ID,
+              caseNoteId = NOMIS_CASE_NOTE_ID,
+              offenderNo = OFFENDER_ID_DISPLAY,
+            ),
+          )
+        }
+
+        @Test
+        fun `will not attempt to create mapping and will track a telemetry event for failure`() {
+          await untilAsserted {
+            verify(telemetryClient, atLeast(1)).trackEvent(
+              eq("casenotes-synchronisation-created-failed"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+                assertThat(it["nomisCaseNoteId"]).isEqualTo(NOMIS_CASE_NOTE_ID.toString())
+                assertThat(it["error"]).isEqualTo("500 Internal Server Error from PUT http://localhost:8096/sync/case-notes")
+              },
+              isNull(),
+            )
+          }
+          caseNotesMappingApiMockServer.verify(
+            0,
+            postRequestedFor(urlPathEqualTo("/mapping/casenotes")),
+          )
+        }
+      }
     }
   }
 
@@ -434,7 +474,7 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `telemetry added to track the failure`() {
           await untilAsserted {
             verify(telemetryClient, atLeastOnce()).trackEvent(
-              eq("casenotes-synchronisation-updated-failed"),
+              eq("casenotes-synchronisation-updated-mapping-failed"),
               check {
                 assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
                 assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
@@ -523,6 +563,52 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
                 assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
                 assertThat(it["nomisCaseNoteId"]).isEqualTo(NOMIS_CASE_NOTE_ID.toString())
                 assertThat(it["dpsCaseNoteId"]).isEqualTo(DPS_CASE_NOTE_ID)
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("When casenotes api POST fails")
+      inner class CasenotesApiFail {
+
+        @BeforeEach
+        fun setUp() {
+          caseNotesMappingApiMockServer.stubGetByNomisId(
+            caseNoteId = NOMIS_CASE_NOTE_ID,
+            CaseNoteMappingDto(
+              nomisBookingId = BOOKING_ID,
+              nomisCaseNoteId = NOMIS_CASE_NOTE_ID,
+              dpsCaseNoteId = DPS_CASE_NOTE_ID,
+              offenderNo = OFFENDER_ID_DISPLAY,
+              mappingType = MIGRATED,
+            ),
+          )
+          caseNotesApi.stubPutCaseNoteFailure()
+
+          awsSqsCaseNoteOffenderEventsClient.sendMessage(
+            caseNotesQueueOffenderEventsUrl,
+            caseNoteEvent(
+              eventType = "OFFENDER_CASE_NOTES-UPDATED",
+              bookingId = BOOKING_ID,
+              caseNoteId = NOMIS_CASE_NOTE_ID,
+              offenderNo = OFFENDER_ID_DISPLAY,
+            ),
+          )
+        }
+
+        @Test
+        fun `will track a telemetry event for failure`() {
+          await untilAsserted {
+            verify(telemetryClient, atLeast(1)).trackEvent(
+              eq("casenotes-synchronisation-updated-failed"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+                assertThat(it["nomisCaseNoteId"]).isEqualTo(NOMIS_CASE_NOTE_ID.toString())
+                assertThat(it["error"]).isEqualTo("500 Internal Server Error from PUT http://localhost:8096/sync/case-notes")
               },
               isNull(),
             )
@@ -653,6 +739,7 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
           )
           caseNotesApi.stubDeleteCaseNote()
           caseNotesMappingApiMockServer.stubDeleteMapping(status = INTERNAL_SERVER_ERROR)
+
           awsSqsCaseNoteOffenderEventsClient.sendMessage(
             caseNotesQueueOffenderEventsUrl,
             caseNoteEvent(
@@ -678,7 +765,7 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will try to delete CaseNote mapping once and record failure`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("casenotes-deleted-mapping-failed"),
+              eq("casenotes-synchronisation-deleted-failed"),
               any(),
               isNull(),
             )
@@ -689,17 +776,47 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
             )
           }
         }
+      }
+
+      @Nested
+      @DisplayName("When casenotes api POST fails")
+      inner class CasenotesApiFail {
+        @BeforeEach
+        fun setUp() {
+          caseNotesMappingApiMockServer.stubGetByNomisId(
+            caseNoteId = NOMIS_CASE_NOTE_ID,
+            CaseNoteMappingDto(
+              nomisBookingId = BOOKING_ID,
+              nomisCaseNoteId = NOMIS_CASE_NOTE_ID,
+              dpsCaseNoteId = DPS_CASE_NOTE_ID,
+              offenderNo = "A1234KT",
+              mappingType = MIGRATED,
+            ),
+          )
+          caseNotesApi.stubDeleteCaseNoteFailure()
+          caseNotesMappingApiMockServer.stubDeleteMapping()
+
+          awsSqsCaseNoteOffenderEventsClient.sendMessage(
+            caseNotesQueueOffenderEventsUrl,
+            caseNoteEvent(
+              eventType = "OFFENDER_CASE_NOTES-DELETED",
+              bookingId = BOOKING_ID,
+              caseNoteId = NOMIS_CASE_NOTE_ID,
+              offenderNo = OFFENDER_ID_DISPLAY,
+            ),
+          )
+        }
 
         @Test
-        fun `will track a telemetry event for success`() {
+        fun `will track a telemetry event for failure`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("casenotes-synchronisation-deleted-success"),
+              eq("casenotes-synchronisation-deleted-failed"),
               check {
                 assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
                 assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
                 assertThat(it["nomisCaseNoteId"]).isEqualTo(NOMIS_CASE_NOTE_ID.toString())
-                assertThat(it["dpsCaseNoteId"]).isEqualTo(DPS_CASE_NOTE_ID)
+                assertThat(it["error"]).isEqualTo("500 Internal Server Error from DELETE http://localhost:8096/sync/case-notes/$DPS_CASE_NOTE_ID")
               },
               isNull(),
             )
@@ -727,15 +844,6 @@ fun caseNoteEvent(
     }
 }
 """.trimIndent()
-/*
-    eventType = xtag.eventType,
-    eventDatetime = xtag.nomisTimestamp,
-    bookingId = xtag.content.p_offender_book_id?.toLong(),
-    caseNoteId = xtag.content.p_case_note_id?.toLong(),
-    caseNoteType = xtag.content.p_case_note_type,
-    caseNoteSubType = xtag.content.p_case_note_sub_type,
-    recordDeleted = "Y".equals(xtag.content.p_delete_flag),
- */
 
 private fun caseNote(bookingId: Long = 123456, caseNoteId: Long = 3) = CaseNoteResponse(
   bookingId = bookingId,

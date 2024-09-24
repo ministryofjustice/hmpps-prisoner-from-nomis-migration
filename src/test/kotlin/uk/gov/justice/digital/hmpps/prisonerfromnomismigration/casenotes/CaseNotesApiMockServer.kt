@@ -16,6 +16,7 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.http.HttpStatus.CREATED
+import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiExtension.Companion.objectMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.Author
@@ -145,6 +146,25 @@ class CaseNotesApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubPutCaseNoteFailure() {
+    stubFor(
+      put("/sync/case-notes").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(INTERNAL_SERVER_ERROR.value())
+          .withBody(
+            objectMapper.writeValueAsString(
+              ErrorResponse(
+                status = 500,
+                userMessage = "test message",
+                developerMessage = "dev message",
+              ),
+            ),
+          ),
+      ),
+    )
+  }
+
   fun stubDeleteCaseNote() {
     stubFor(
       delete(urlPathMatching("/sync/case-notes/.+"))
@@ -155,9 +175,15 @@ class CaseNotesApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
     )
   }
-//  fun createCaseNotesMigrationCount() =
-//    findAll(postRequestedFor(urlMatching("/migrate/bookings/.*"))).count()
-//
-//  fun createCaseNotesSyncCount() =
-//    findAll(postRequestedFor(urlMatching("/bookings/.*"))).count()
+
+  fun stubDeleteCaseNoteFailure() {
+    stubFor(
+      delete(urlPathMatching("/sync/case-notes/.+"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(INTERNAL_SERVER_ERROR.value()),
+        ),
+    )
+  }
 }

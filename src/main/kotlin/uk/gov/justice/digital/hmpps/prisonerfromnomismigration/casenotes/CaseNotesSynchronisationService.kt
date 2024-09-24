@@ -36,64 +36,92 @@ class CaseNotesSynchronisationService(
       telemetryClient.trackEvent("casenotes-synchronisation-created-skipped", event.toTelemetryProperties())
       return
     }
-    caseNotesService.upsertCaseNote(nomisCaseNote.toDPSSyncCaseNote(event.offenderIdDisplay)).apply {
-      tryToCreateCaseNoteMapping(
-        event,
-        this.id.toString(),
-      ).also { mappingCreateResult ->
-        telemetryClient.trackEvent(
-          "casenotes-synchronisation-created-success",
-          event.toTelemetryProperties(
-            dpsCaseNoteId = this.id.toString(),
-            mappingFailed = mappingCreateResult == MAPPING_FAILED,
-          ),
-        )
+
+    try {
+      caseNotesService.upsertCaseNote(nomisCaseNote.toDPSSyncCaseNote(event.offenderIdDisplay)).apply {
+        tryToCreateCaseNoteMapping(
+          event,
+          this.id.toString(),
+        ).also { mappingCreateResult ->
+          telemetryClient.trackEvent(
+            "casenotes-synchronisation-created-success",
+            event.toTelemetryProperties(
+              dpsCaseNoteId = this.id.toString(),
+              mappingFailed = mappingCreateResult == MAPPING_FAILED,
+            ),
+          )
+        }
       }
+    } catch (e: Exception) {
+      telemetryClient.trackEvent(
+        "casenotes-synchronisation-created-failed",
+        event.toTelemetryProperties() + mapOf("error" to (e.message ?: "unknown error")),
+      )
+      throw e
     }
   }
 
-  suspend fun caseNoteUpdated(event: CaseNotesEvent) { // , mapping: CaseNoteMappingDto?) {
+  suspend fun caseNoteUpdated(event: CaseNotesEvent) {
     val nomisCaseNote = nomisApiService.getCaseNote(event.caseNoteId)
     if (nomisCaseNote.isSourcedFromDPS()) {
       telemetryClient.trackEvent("casenotes-synchronisation-updated-skipped", event.toTelemetryProperties())
       return
     }
-    caseNotesMappingService.getMappingGivenNomisIdOrNull(event.caseNoteId)
-      ?.also { mapping ->
-        caseNotesService.upsertCaseNote(
-          nomisCaseNote.toDPSSyncCaseNote(
-            event.offenderIdDisplay,
-            UUID.fromString(mapping.dpsCaseNoteId),
-          ),
-        )
-        telemetryClient.trackEvent(
-          "casenotes-synchronisation-updated-success",
-          event.toTelemetryProperties(mapping.dpsCaseNoteId),
-        )
-      }
-      ?: run {
+    val mapping =
+      try {
+        caseNotesMappingService.getMappingGivenNomisIdOrNull(event.caseNoteId)
+          ?.also { mapping ->
+            caseNotesService.upsertCaseNote(
+              nomisCaseNote.toDPSSyncCaseNote(
+                event.offenderIdDisplay,
+                UUID.fromString(mapping.dpsCaseNoteId),
+              ),
+            )
+            telemetryClient.trackEvent(
+              "casenotes-synchronisation-updated-success",
+              event.toTelemetryProperties(mapping.dpsCaseNoteId),
+            )
+          }
+      } catch (e: Exception) {
         telemetryClient.trackEvent(
           "casenotes-synchronisation-updated-failed",
-          event.toTelemetryProperties(),
+          event.toTelemetryProperties() + mapOf("error" to (e.message ?: "unknown error")),
         )
-        throw IllegalStateException("NO mapping found updating $nomisCaseNote")
+        throw e
       }
+
+    if (mapping == null) {
+      telemetryClient.trackEvent(
+        "casenotes-synchronisation-updated-mapping-failed",
+        event.toTelemetryProperties(),
+      )
+      throw IllegalStateException("NO mapping found updating $nomisCaseNote")
+    }
   }
 
   suspend fun caseNoteDeleted(event: CaseNotesEvent) {
-    caseNotesMappingService.getMappingGivenNomisIdOrNull(event.caseNoteId)
-      ?.also { mapping ->
-        caseNotesService.deleteCaseNote(mapping.dpsCaseNoteId)
-        tryToDeleteMapping(mapping.dpsCaseNoteId)
+    try {
+      caseNotesMappingService.getMappingGivenNomisIdOrNull(event.caseNoteId)
+        ?.also { mapping ->
+          caseNotesService.deleteCaseNote(mapping.dpsCaseNoteId)
+          caseNotesMappingService.deleteMappingGivenDpsId(mapping.dpsCaseNoteId)
+          // Some syncs have separate telemetry for mapping failure but casenotes deletions are extremely rare
 
-        telemetryClient.trackEvent(
-          "casenotes-synchronisation-deleted-success",
-          event.toTelemetryProperties(mapping.dpsCaseNoteId),
+          telemetryClient.trackEvent(
+            "casenotes-synchronisation-deleted-success",
+            event.toTelemetryProperties(mapping.dpsCaseNoteId),
+          )
+        }
+        ?: telemetryClient.trackEvent(
+          "casenotes-deleted-synchronisation-skipped", event.toTelemetryProperties(),
         )
-      }
-      ?: telemetryClient.trackEvent(
-        "casenotes-deleted-synchronisation-skipped", event.toTelemetryProperties(),
+    } catch (e: Exception) {
+      telemetryClient.trackEvent(
+        "casenotes-synchronisation-deleted-failed",
+        event.toTelemetryProperties() + mapOf("error" to (e.message ?: "unknown error")),
       )
+      log.warn("Unable to delete mapping for prisoner ${event.offenderIdDisplay} nomisCaseNoteId=${event.caseNoteId}. Please delete manually", e)
+    }
   }
 
   enum class MappingResponse {
@@ -144,14 +172,6 @@ class CaseNotesSynchronisationService(
       )
       return MAPPING_FAILED
     }
-  }
-
-  private suspend fun tryToDeleteMapping(dpsId: String) = runCatching {
-    caseNotesMappingService.deleteMappingGivenDpsId(dpsId)
-    telemetryClient.trackEvent("casenotes-deleted-mapping-success", mapOf("dpsCaseNoteId" to dpsId))
-  }.onFailure { e ->
-    telemetryClient.trackEvent("casenotes-deleted-mapping-failed", mapOf("dpsCaseNoteId" to dpsId))
-    log.warn("Unable to delete mapping for dpsCaseNoteId=$dpsId. Please delete manually", e)
   }
 
   suspend fun retryCreateCaseNoteMapping(retryMessage: InternalMessage<CaseNoteMappingDto>) {
