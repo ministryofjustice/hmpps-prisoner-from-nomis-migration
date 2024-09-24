@@ -69,7 +69,7 @@ class CSIPSynchronisationService(
                 reviewMappings = syncResponse.filterReviews(dpsCSIPReportId = dpsCSIPReportId),
 
               ),
-              telemetry,
+              telemetry + ("dpsCSIPId" to dpsCSIPReportId),
             )
               .also { result ->
                 val mappingSuccessTelemetry =
@@ -154,7 +154,7 @@ class CSIPSynchronisationService(
         .also { syncResponse ->
           // Only create mappings if we have new child ids to map
           if (syncResponse.mappings.isNotEmpty()) {
-            tryToUpdateCSIPMapping(
+            tryToCreateChildMappings(
               nomisCSIPResponse.id,
               CSIPFullMappingDto(
                 nomisCSIPReportId = nomisCSIPResponse.id,
@@ -166,7 +166,7 @@ class CSIPSynchronisationService(
                 planMappings = syncResponse.filterPlans(dpsCSIPReportId = dpsCSIPReportId),
                 reviewMappings = syncResponse.filterReviews(dpsCSIPReportId = dpsCSIPReportId),
               ),
-              telemetry,
+              telemetry + ("dpsCSIPId" to dpsCSIPReportId),
             ).also { result ->
               val mappingSuccessTelemetry =
                 (if (result == MappingResponse.MAPPING_CREATED) mapOf() else mapOf("mapping" to "initial-failure"))
@@ -271,13 +271,13 @@ class CSIPSynchronisationService(
     }
   }
 
-  private suspend fun tryToUpdateCSIPMapping(
+  private suspend fun tryToCreateChildMappings(
     nomisCsipReportId: Long,
     fullMappingDto: CSIPFullMappingDto,
     telemetry: Map<String, Any>,
   ): MappingResponse {
     try {
-      mappingApiService.updateMapping(
+      mappingApiService.createChildMappings(
         fullMappingDto,
         object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPFullMappingDto>>() {},
       )
@@ -303,7 +303,7 @@ class CSIPSynchronisationService(
         e,
       )
       queueService.sendMessage(
-        messageType = SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING_CHILD.name,
+        messageType = SynchronisationMessageType.RETRY_SYNCHRONISATION_CHILD_MAPPING.name,
         synchronisationType = SynchronisationType.CSIP,
         message = fullMappingDto,
         telemetryAttributes = telemetry.valuesAsStrings(),
@@ -318,19 +318,19 @@ class CSIPSynchronisationService(
       object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPFullMappingDto>>() {},
     ).also {
       telemetryClient.trackEvent(
-        "csip-synchronisation-mapping-created-success",
+        "csip-mapping-created-synchronisation-success",
         retryMessage.telemetryAttributes,
       )
     }
   }
 
   suspend fun retryUpdateCSIPReportMapping(retryMessage: InternalMessage<CSIPFullMappingDto>) {
-    mappingApiService.updateMapping(
+    mappingApiService.createChildMappings(
       retryMessage.body,
       object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPFullMappingDto>>() {},
     ).also {
       telemetryClient.trackEvent(
-        "csip-synchronisation-mapping-updated-success",
+        "csip-mapping-updated-synchronisation-success",
         retryMessage.telemetryAttributes,
       )
     }

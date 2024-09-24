@@ -28,12 +28,12 @@ class CSIPMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient)
     return super.createMappingUrl() + "/all"
   }
 
-  suspend fun updateMapping(
+  suspend fun createChildMappings(
     csipFullMappingDto: CSIPFullMappingDto,
     errorJavaClass: ParameterizedTypeReference<DuplicateErrorResponse<CSIPFullMappingDto>>,
-  ) =
-    webClient.put()
-      .uri("/mapping/csip/all")
+  ): CreateMappingResult<CSIPFullMappingDto> =
+    webClient.post()
+      .uri("/mapping/csip/children/all")
       .bodyValue(csipFullMappingDto)
       .retrieve()
       .bodyToMono(Unit::class.java)
