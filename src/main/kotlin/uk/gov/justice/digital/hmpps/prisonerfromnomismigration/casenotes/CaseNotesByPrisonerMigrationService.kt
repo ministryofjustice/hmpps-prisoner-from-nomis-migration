@@ -59,39 +59,43 @@ class CaseNotesByPrisonerMigrationService(
       )
 
   override suspend fun migrateNomisEntity(context: MigrationContext<PrisonerId>) {
-    log.info("attempting to migrate ${context.body}")
     val offenderNo = context.body.offenderNo
-
-    val nomisCaseNotes =
-      caseNotesNomisService.getCaseNotesToMigrate(offenderNo) ?: PrisonerCaseNotesResponse(emptyList())
-    val caseNotesToMigrate = nomisCaseNotes.caseNotes.map { it.toDPSCreateCaseNote(offenderNo) }
-    val bookingIdMap: Map<Long, Long> = nomisCaseNotes.caseNotes.map { it.caseNoteId to it.bookingId }.toMap()
-    caseNotesDpsService.migrateCaseNotes(dpsCaseNotes = caseNotesToMigrate)
-      .also { migrationResultList ->
-        createMapping(
-          offenderNo = offenderNo,
-          PrisonerCaseNoteMappingsDto(
-            label = context.migrationId,
-            mappingType = PrisonerCaseNoteMappingsDto.MappingType.MIGRATED,
-            mappings = migrationResultList.map { migrationResult ->
-              CaseNoteMappingIdDto(
-                nomisBookingId = bookingIdMap[migrationResult.legacyId] ?: 0,
-                nomisCaseNoteId = migrationResult.legacyId,
-                dpsCaseNoteId = migrationResult.id.toString(),
-              )
-            },
-          ),
-          context = context,
-        )
-        telemetryClient.trackEvent(
-          "casenotes-migration-entity-migrated",
-          mapOf(
-            "offenderNo" to offenderNo,
-            "migrationId" to context.migrationId,
-            "caseNoteCount" to migrationResultList.size.toString(),
-          ),
-        )
-      }
+    log.info("attempting to migrate $offenderNo")
+    val telemetry = mutableMapOf(
+      "offenderNo" to offenderNo,
+      "migrationId" to context.migrationId,
+      "migrationType" to "CASENOTES",
+    )
+    try {
+      val nomisCaseNotes = caseNotesNomisService.getCaseNotesToMigrate(offenderNo)
+        ?: PrisonerCaseNotesResponse(emptyList())
+      val caseNotesToMigrate = nomisCaseNotes.caseNotes.map { it.toDPSCreateCaseNote(offenderNo) }
+      val bookingIdMap: Map<Long, Long> = nomisCaseNotes.caseNotes.map { it.caseNoteId to it.bookingId }.toMap()
+      caseNotesDpsService.migrateCaseNotes(dpsCaseNotes = caseNotesToMigrate)
+        .also { migrationResultList ->
+          createMapping(
+            offenderNo = offenderNo,
+            PrisonerCaseNoteMappingsDto(
+              label = context.migrationId,
+              mappingType = PrisonerCaseNoteMappingsDto.MappingType.MIGRATED,
+              mappings = migrationResultList.map { migrationResult ->
+                CaseNoteMappingIdDto(
+                  nomisBookingId = bookingIdMap[migrationResult.legacyId] ?: 0,
+                  nomisCaseNoteId = migrationResult.legacyId,
+                  dpsCaseNoteId = migrationResult.id.toString(),
+                )
+              },
+            ),
+            context = context,
+          )
+          telemetry["caseNoteCount"] = migrationResultList.size.toString()
+          telemetryClient.trackEvent("casenotes-migration-entity-migrated", telemetry)
+        }
+    } catch (e: Exception) {
+      telemetry["error"] = e.message ?: "unknown error"
+      telemetryClient.trackEvent("casenotes-migration-entity-failed", telemetry)
+      throw e
+    }
   }
 
   private suspend fun createMapping(

@@ -17,6 +17,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
@@ -243,6 +244,18 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
           caseNotesApi.verify(2, postRequestedFor(urlPathEqualTo("/migrate/case-notes")))
           caseNotesMappingApiMockServer.verify(0, postRequestedFor(urlPathEqualTo("/mapping/casenotes/$OFFENDER_NUMBER1/all")))
         }
+      }
+
+      @Test
+      fun `failure telemetry is posted`() {
+        verify(telemetryClient, atLeast(2)).trackEvent(
+          eq("casenotes-migration-entity-failed"),
+          check {
+            assertThat(it).containsEntry("offenderNo", OFFENDER_NUMBER1)
+            assertThat(it).containsEntry("error", "400 Bad Request from POST http://localhost:8096/migrate/case-notes")
+          },
+          isNull(),
+        )
       }
 
       @Test
