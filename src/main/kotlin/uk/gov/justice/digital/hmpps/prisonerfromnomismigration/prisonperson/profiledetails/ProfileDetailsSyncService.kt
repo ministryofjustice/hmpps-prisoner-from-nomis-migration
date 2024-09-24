@@ -31,7 +31,7 @@ class ProfileDetailsSyncService(
           mapOf(
             "offenderNo" to event.offenderIdDisplay,
             "bookingId" to event.bookingId.toString(),
-            "profileType" to profileType,
+            "requestedProfileType" to profileType,
             "reason" to "Profile type not supported",
           ),
         )
@@ -46,7 +46,7 @@ class ProfileDetailsSyncService(
     val telemetry = mutableMapOf(
       "offenderNo" to offenderNo,
       "bookingId" to bookingId.toString(),
-      "profileType" to profileType,
+      "requestedProfileType" to profileType,
     )
 
     val dpsResponse = try {
@@ -54,10 +54,10 @@ class ProfileDetailsSyncService(
 
       val booking = nomisResponse.bookings.find { it.bookingId == bookingId }
         ?: throw ProfileDetailsChangedException("Booking with requested bookingId not found")
-      val profileDetails = booking.profileDetails.firstOrNull { it.type == profileType }
+      val requestedProfileDetails = booking.profileDetails.firstOrNull { it.type == profileType }
         ?: throw ProfileDetailsChangedException("Profile details for requested profileType not found")
 
-      getIgnoreReason(nomisResponse.bookings.size, profileDetails)
+      getIgnoreReason(nomisResponse.bookings.size, requestedProfileDetails)
         ?.let { ignoreReason ->
           telemetry["reason"] = ignoreReason
           telemetryClient.trackEvent("profile-details-physical-attributes-synchronisation-ignored", telemetry)
@@ -66,18 +66,18 @@ class ProfileDetailsSyncService(
 
       dpsApiService.syncProfileDetailsPhysicalAttributes(
         prisonerNumber = offenderNo,
-        with(profileDetails) {
+        with(booking.profileDetails) {
           ProfileDetailsPhysicalAttributesSyncRequest(
             appliesFrom = booking.startDateTime.toLocalDateTime().atPrisonPersonZone(),
             appliesTo = booking.endDateTime?.toLocalDateTime()?.atPrisonPersonZone(),
             latestBooking = booking.latestBooking,
-            build = toDpsRequestIfType("BUILD"),
-            shoeSize = toDpsRequestIfType("SHOESIZE"),
-            hair = toDpsRequestIfType("HAIR"),
-            facialHair = toDpsRequestIfType("FACIAL_HAIR"),
-            face = toDpsRequestIfType("FACE"),
-            leftEyeColour = toDpsRequestIfType("L_EYE_C"),
-            rightEyeColour = toDpsRequestIfType("R_EYE_C"),
+            build = toDpsRequest("BUILD"),
+            shoeSize = toDpsRequest("SHOESIZE"),
+            hair = toDpsRequest("HAIR"),
+            facialHair = toDpsRequest("FACIAL_HAIR"),
+            face = toDpsRequest("FACE"),
+            leftEyeColour = toDpsRequest("L_EYE_C"),
+            rightEyeColour = toDpsRequest("R_EYE_C"),
           )
         },
       )
@@ -103,8 +103,8 @@ class ProfileDetailsSyncService(
       null
     }
 
-  private fun ProfileDetailsResponse.toDpsRequestIfType(profileType: String) =
-    takeIf { type == profileType }
+  private fun List<ProfileDetailsResponse>.toDpsRequest(profileType: String) =
+    find { it.type == profileType }
       ?.let {
         val (lastModifiedAt, lastModifiedBy) = it.lastModified()
         SyncValueWithMetadataString(
