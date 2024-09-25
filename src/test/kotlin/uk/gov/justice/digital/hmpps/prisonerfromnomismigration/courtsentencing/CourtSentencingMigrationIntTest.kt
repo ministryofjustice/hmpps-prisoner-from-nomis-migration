@@ -39,6 +39,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.courtCaseIdsPagedResponse
 import java.time.Duration
 import java.time.LocalDateTime
+import java.util.UUID
 
 data class MigrationResult(val migrationId: String)
 
@@ -109,7 +110,7 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
       courtSentencingMappingApiMockServer.stubGetByNomisId(HttpStatus.NOT_FOUND)
       courtSentencingMappingApiMockServer.stubPostMapping()
 
-      dpsCourtSentencingServer.stubPostCourtCaseForCreateMigration()
+      dpsCourtSentencingServer.stubPostCourtCaseForCreateMigration(response = dpsCourtCaseCreateResponseWithTwoAppearancesAndTwoCharges())
       courtSentencingMappingApiMockServer.stubCourtCaseMappingByMigrationId(count = 14)
 
       webTestClient.performMigration(
@@ -145,7 +146,8 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
       // stub 25 migrated records and 1 fake a failure
       courtSentencingMappingApiMockServer.stubCourtCaseMappingByMigrationId(count = 25)
       awsSqsCourtSentencingMigrationDlqClient!!.sendMessage(
-        SendMessageRequest.builder().queueUrl(courtSentencingMigrationDlqUrl).messageBody("""{ "message": "some error" }""").build(),
+        SendMessageRequest.builder().queueUrl(courtSentencingMigrationDlqUrl)
+          .messageBody("""{ "message": "some error" }""").build(),
       ).get()
 
       webTestClient.performMigration()
@@ -656,3 +658,19 @@ fun someMigrationFilter(): BodyInserter<String, ReactiveHttpOutputMessage> = Bod
   }
   """.trimIndent(),
 )
+
+// charges can be shared across appearances
+fun dpsCourtCaseCreateResponseWithTwoAppearancesAndTwoCharges(): CreateCourtCaseMigrationResponse {
+  val courtCaseUUID: UUID = UUID.randomUUID()
+  val courtChargesIds: List<String> =
+    listOf(UUID.randomUUID().toString(), UUID.randomUUID().toString())
+  val courtAppearancesIds: List<String> = listOf(
+    UUID.randomUUID().toString(),
+    UUID.randomUUID().toString(),
+  )
+  return CreateCourtCaseMigrationResponse(
+    courtCaseUuid = courtCaseUUID.toString(),
+    courtAppearanceIds = courtAppearancesIds,
+    courtChargeIds = courtChargesIds,
+  )
+}

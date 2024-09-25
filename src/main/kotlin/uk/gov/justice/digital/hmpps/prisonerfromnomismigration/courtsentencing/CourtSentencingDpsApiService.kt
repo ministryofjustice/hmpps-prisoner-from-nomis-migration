@@ -22,6 +22,15 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .retrieve()
       .awaitBody()
 
+  // separating this out for now - DPS may use the same endpoint
+  suspend fun createCourtCaseMigration(courtCase: CreateCourtCase): CreateCourtCaseMigrationResponse =
+    webClient
+      .post()
+      .uri("/court-case/migration")
+      .bodyValue(courtCase)
+      .retrieve()
+      .awaitBody()
+
   suspend fun updateCourtCase(courtCaseId: String, courtCase: CreateCourtCase): CreateCourtCaseResponse =
     webClient
       .put()
@@ -130,7 +139,7 @@ data class CreateNewChargeResponse(
 data class CreateSentenceRequest(
 
   @field:JsonProperty("prisonerId")
-  val prisonerId: kotlin.String,
+  val prisonerId: String,
 
   @field:JsonProperty("chargeUuids")
   val chargeUuids: List<java.util.UUID>,
@@ -142,4 +151,19 @@ data class CreateSentenceResponse(
   @field:JsonProperty("sentenceUuid")
   val sentenceUuid: String,
 
+)
+
+// TODO request endpoint to provide multiple ids for migration
+// order must be returned to match body
+data class CreateCourtCaseMigrationResponse(
+  val courtCaseUuid: String,
+  val courtAppearanceIds: List<String>,
+  // unique list as charges may span multiple appearances
+  val courtChargeIds: List<String>,
+)
+
+data class CreateCourtAppearanceMigrationResponse(
+
+  val appearanceUuid: java.util.UUID,
+  val courtEventChargesIds: List<CreateNewChargeResponse>,
 )
