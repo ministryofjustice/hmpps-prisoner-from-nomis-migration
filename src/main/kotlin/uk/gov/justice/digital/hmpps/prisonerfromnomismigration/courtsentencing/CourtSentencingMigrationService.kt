@@ -9,8 +9,13 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseAllMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationMinutes
@@ -45,6 +50,8 @@ class CourtSentencingMigrationService(
     pageSize = pageSize,
   )
 
+  // TODO waiting for DPS new or amended endpoint to return created ids for appearances and charges
+  // TODO consider Next Appearance - nomis already has a seperate apppearance for the next appearance date
   override suspend fun migrateNomisEntity(context: MigrationContext<CourtCaseIdResponse>) {
     log.info("attempting to migrate ${context.body}")
     val nomisCaseId = context.body.caseId
@@ -59,14 +66,13 @@ class CourtSentencingMigrationService(
           courtCaseId = nomisCaseId,
         )
 
-      courtSentencingDpsService.createCourtCase(nomisCourtCase.toDpsCourtCase()).also { dpsCourtCase ->
-        // TODO map child entities - appearances and charges
-        createCourtCaseMapping(nomisCourtCaseId = nomisCaseId, dpsCourtCaseId = dpsCourtCase.courtCaseUuid, context)
+      courtSentencingDpsService.createCourtCaseMigration(nomisCourtCase.toDpsCourtCase()).also { dpsCourtCaseCreateResponse ->
+        createCourtCaseMapping(nomisCourtCase = nomisCourtCase, dpsCourtCaseCreateResponse = dpsCourtCaseCreateResponse, context)
         telemetryClient.trackEvent(
           "court-sentencing-migration-entity-migrated",
           mapOf(
             "nomisCourtCaseId" to nomisCaseId.toString(),
-            "dpsCourtCaseId" to dpsCourtCase.courtCaseUuid,
+            "dpsCourtCaseId" to dpsCourtCaseCreateResponse.courtCaseUuid,
             "offenderNo" to nomisCourtCase.offenderNo,
             "migrationId" to context.migrationId,
           ),
@@ -76,17 +82,16 @@ class CourtSentencingMigrationService(
     }
   }
 
-  // TODO map appearances and charges
   private suspend fun createCourtCaseMapping(
-    nomisCourtCaseId: Long,
-    dpsCourtCaseId: String,
+    nomisCourtCase: CourtCaseResponse,
+    dpsCourtCaseCreateResponse: CreateCourtCaseMigrationResponse,
     context: MigrationContext<*>,
   ) {
     val mapping = CourtCaseAllMappingDto(
-      nomisCourtCaseId = nomisCourtCaseId,
-      dpsCourtCaseId = dpsCourtCaseId,
-      courtCharges = emptyList(),
-      courtAppearances = emptyList(),
+      nomisCourtCaseId = nomisCourtCase.id,
+      dpsCourtCaseId = dpsCourtCaseCreateResponse.courtCaseUuid,
+      courtCharges = buildCourtChargeMapping(dpsIds = dpsCourtCaseCreateResponse.courtChargeIds, nomisCharges = nomisCourtCase.offenderCharges),
+      courtAppearances = buildCourtAppearanceMapping(dpsIds = dpsCourtCaseCreateResponse.courtAppearanceIds, nomisCourtAppearances = nomisCourtCase.courtEvents),
       label = context.migrationId,
       mappingType = CourtCaseAllMappingDto.MappingType.MIGRATED,
     )
@@ -113,7 +118,7 @@ class CourtSentencingMigrationService(
       }
     } catch (e: Exception) {
       log.error(
-        "Failed to create mapping for Court case nomis id: $nomisCourtCaseId, dps Court case id $dpsCourtCaseId",
+        "Failed to create mapping for Court case nomis id: ${nomisCourtCase.id}, dps Court case id ${dpsCourtCaseCreateResponse.courtCaseUuid}",
         e,
       )
       queueService.sendMessage(
@@ -124,5 +129,15 @@ class CourtSentencingMigrationService(
         ),
       )
     }
+  }
+
+  // dependent on court appearance order back from dps to match nomis
+  private fun buildCourtAppearanceMapping(dpsIds: List<String>, nomisCourtAppearances: List<CourtEventResponse>): List<CourtAppearanceMappingDto> {
+    return nomisCourtAppearances.zip(dpsIds) { nomis, dps -> CourtAppearanceMappingDto(nomisCourtAppearanceId = nomis.id, dpsCourtAppearanceId = dps) }
+  }
+
+  // dependent on court charge order back from dps to match nomis
+  private fun buildCourtChargeMapping(dpsIds: List<String>, nomisCharges: List<OffenderChargeResponse>): List<CourtChargeMappingDto> {
+    return nomisCharges.zip(dpsIds) { nomis, dps -> CourtChargeMappingDto(nomisCourtChargeId = nomis.id, dpsCourtChargeId = dps) }
   }
 }
