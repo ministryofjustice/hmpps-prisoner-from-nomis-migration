@@ -52,7 +52,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
 
     @Nested
     inner class WhenCreateByDPS {
-      private val nomisCSIPFactorId = 543L
+      private val nomisCSIPFactorId = 43L
 
       @BeforeEach
       fun setUp() {
@@ -134,6 +134,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
               .withRequestBody(matchingJsonPath("legacyId", equalTo("1234")))
               .withRequestBody(matchingJsonPath("logCode", equalTo("ASI-001")))
               .withRequestBody(matchingJsonPath("prisonNumber", equalTo("A1234BC")))
+              .withRequestBody(matchingJsonPath("referral.contributoryFactors[0].legacyId", equalTo("43")))
               .withRequestBody(matchingJsonPath("actionedAt", equalTo("2024-04-01T10:00:00")))
               .withRequestBody(matchingJsonPath("actionedBy", equalTo("CFACTOR")))
               .withRequestBody(matchingJsonPath("actionedByDisplayName", equalTo("CFACTOR"))),
@@ -300,7 +301,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
 
     @Nested
     inner class WhenUpdateByDPS {
-      private val nomisCSIPFactorId = 543L
+      private val nomisCSIPFactorId = 43L
 
       @BeforeEach
       fun setUp() {
@@ -377,6 +378,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
               .withRequestBody(matchingJsonPath("legacyId", equalTo("1234")))
               .withRequestBody(matchingJsonPath("logCode", equalTo("ASI-001")))
               .withRequestBody(matchingJsonPath("prisonNumber", equalTo("A1234BC")))
+              .withRequestBody(matchingJsonPath("referral.contributoryFactors[0].legacyId", equalTo("43")))
               .withRequestBody(matchingJsonPath("actionedAt", equalTo("2024-04-01T10:00:00")))
               .withRequestBody(matchingJsonPath("actionedBy", equalTo("CFACTOR")))
               .withRequestBody(matchingJsonPath("actionedByDisplayName", equalTo("CFACTOR"))),

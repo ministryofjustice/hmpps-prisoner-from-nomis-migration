@@ -17,7 +17,6 @@ import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilAsserted
 import org.awaitility.kotlin.untilCallTo
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -29,7 +28,6 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
@@ -96,7 +94,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           csipNomisApi.stubGetCSIP()
-          csipMappingApi.stubGetByNomisId(HttpStatus.NOT_FOUND)
+          csipMappingApi.stubGetByNomisId(NOT_FOUND)
           csipDpsApi.stubSyncCSIPReportWithFactor()
           mappingApi.stubMappingCreate(CSIP_CREATE_MAPPING_URL)
 
@@ -161,7 +159,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           csipNomisApi.stubGetCSIPWithMinimalData()
-          csipMappingApi.stubGetByNomisId(HttpStatus.NOT_FOUND)
+          csipMappingApi.stubGetByNomisId(NOT_FOUND)
           csipDpsApi.stubSyncCSIPReportWithFactor()
           mappingApi.stubMappingCreate(CSIP_CREATE_MAPPING_URL)
 
@@ -191,7 +189,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class WhenNomisHasNoCSIP {
         @BeforeEach
         fun setUp() {
-          csipNomisApi.stubGetCSIP(HttpStatus.NOT_FOUND)
+          csipNomisApi.stubGetCSIP(NOT_FOUND)
 
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
@@ -223,7 +221,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         internal fun `it will not retry after a 409 (duplicate csip written to CSIP API)`() {
           csipNomisApi.stubGetCSIP()
-          csipMappingApi.stubGetByNomisId(HttpStatus.NOT_FOUND)
+          csipMappingApi.stubGetByNomisId(NOT_FOUND)
           csipDpsApi.stubSyncCSIPReport(duplicateDPSCSIPId)
           csipMappingApi.stubCSIPMappingCreateConflict()
 
@@ -471,7 +469,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class MappingDoesNotExist {
         @BeforeEach
         fun setUp() {
-          csipMappingApi.stubGetByNomisId(status = HttpStatus.NOT_FOUND)
+          csipMappingApi.stubGetByNomisId(status = NOT_FOUND)
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
             csipEvent(eventType = "CSIP_REPORTS-UPDATED", auditModuleName = "OIDCSIPN"),
@@ -525,7 +523,6 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         }
 
         @Test
-        @Disabled("Disabled because it appears to be flaky and is blocking the build")
         fun `will check the csip report exists`() {
           mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/csip/nomis-csip-id/$NOMIS_CSIP_ID")))
         }
@@ -713,7 +710,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class MappingDoesNotExist {
         @BeforeEach
         fun setUp() {
-          csipMappingApi.stubGetByNomisId(HttpStatus.NOT_FOUND)
+          csipMappingApi.stubGetByNomisId(NOT_FOUND)
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
             csipEvent(eventType = "CSIP_REPORTS-DELETED"),
