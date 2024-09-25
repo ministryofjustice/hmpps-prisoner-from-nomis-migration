@@ -177,8 +177,8 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
               createdDate = LocalDate.parse("2024-04-16"),
 
               createdAt = LocalDateTime.parse("2024-03-16T11:32:15"),
-              createdBy = "JSMITH",
-              createdByDisplayName = "JOHN SMITH",
+              createdBy = "PPLAN",
+              createdByDisplayName = "Peter Plan",
               lastModifiedAt = null,
               lastModifiedBy = null,
               lastModifiedByDisplayName = null,
@@ -196,8 +196,8 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
               recordedByDisplayName = "JOHN SMITH",
 
               createdAt = LocalDateTime.parse("2024-04-01T10:00"),
-              createdBy = "JSMITH",
-              createdByDisplayName = "JOHN SMITH",
+              createdBy = "FJAMES",
+              createdByDisplayName = "FRED JAMES",
               lastModifiedAt = null,
               lastModifiedBy = null,
               lastModifiedByDisplayName = null,
