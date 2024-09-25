@@ -114,8 +114,41 @@ fun CSIPResponse.toActionDetails() = getActionDetails(
   lastModifiedBy,
   lastModifiedByDisplayName,
 )
-
+fun Attendee.toActionDetails() = getActionDetails(
+  createDateTime,
+  createdBy,
+  createdByDisplayName,
+  lastModifiedDateTime,
+  lastModifiedBy,
+  lastModifiedByDisplayName,
+)
 fun CSIPFactorResponse.toActionDetails() = getActionDetails(
+  createDateTime,
+  createdBy,
+  createdByDisplayName,
+  lastModifiedDateTime,
+  lastModifiedBy,
+  lastModifiedByDisplayName,
+)
+
+fun InterviewDetails.toActionDetails() = getActionDetails(
+  createDateTime,
+  createdBy,
+  createdByDisplayName,
+  lastModifiedDateTime,
+  lastModifiedBy,
+  lastModifiedByDisplayName,
+)
+
+fun Plan.toActionDetails() = getActionDetails(
+  createDateTime,
+  createdBy,
+  createdByDisplayName,
+  lastModifiedDateTime,
+  lastModifiedBy,
+  lastModifiedByDisplayName,
+)
+fun Review.toActionDetails() = getActionDetails(
   createDateTime,
   createdBy,
   createdByDisplayName,

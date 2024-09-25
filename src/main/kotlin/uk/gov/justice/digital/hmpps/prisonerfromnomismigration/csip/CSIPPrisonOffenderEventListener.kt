@@ -44,17 +44,21 @@ class CSIPPrisonOffenderEventListener(
               "CSIP_REPORTS-INSERTED" -> csipSynchronisationService.csipReportInserted(sqsMessage.Message.fromJson())
               "CSIP_REPORTS-UPDATED" -> csipSynchronisationService.csipReportUpdated(sqsMessage.Message.fromJson())
               "CSIP_REPORTS-DELETED" -> csipSynchronisationService.csipReportDeleted(sqsMessage.Message.fromJson())
-              "CSIP_PLANS-INSERTED" -> log.debug("Insert CSIP Plan")
-              "CSIP_PLANS-UPDATED" -> log.debug("Update CSIP Plan")
-              "CSIP_REVIEWS-INSERTED" -> log.debug("Insert CSIP Review")
-              "CSIP_REVIEWS-UPDATED" -> log.debug("Update CSIP Review")
-              "CSIP_ATTENDEES-INSERTED" -> log.debug("Insert CSIP Attendee")
-              "CSIP_ATTENDEES-UPDATED" -> log.debug("Update CSIP Attendee")
+              "CSIP_ATTENDEES-INSERTED",
+              "CSIP_ATTENDEES-UPDATED",
+              -> csipSynchronisationService.csipAttendeeUpserted(sqsMessage.Message.fromJson())
               "CSIP_FACTORS-INSERTED",
               "CSIP_FACTORS-UPDATED",
               -> csipSynchronisationService.csipFactorUpserted(sqsMessage.Message.fromJson())
-              "CSIP_INTVW-INSERTED" -> log.debug("Insert CSIP Interview")
-              "CSIP_INTVW-UPDATED" -> log.debug("Update CSIP Interview")
+              "CSIP_INTVW-INSERTED",
+              "CSIP_INTVW-UPDATED",
+              -> csipSynchronisationService.csipInterviewUpserted(sqsMessage.Message.fromJson())
+              "CSIP_PLANS-INSERTED",
+              "CSIP_PLANS-UPDATED",
+              -> csipSynchronisationService.csipPlanUpserted(sqsMessage.Message.fromJson())
+              "CSIP_REVIEWS-INSERTED",
+              "CSIP_REVIEWS-UPDATED",
+              -> csipSynchronisationService.csipReviewUpserted(sqsMessage.Message.fromJson())
 
               // TODO check if needed
               // "prison-offender-events.prisoner.merged"
@@ -86,15 +90,14 @@ data class CSIPReportEvent(
   val auditModuleName: String?,
 )
 
-data class CSIPFactorEvent(
-  val csipFactorId: Long,
+data class CSIPAttendeeEvent(
+  val csipAttendeeId: Long,
   val csipReportId: Long,
   val offenderIdDisplay: String,
   val auditModuleName: String?,
 )
-
-data class CSIPPlanEvent(
-  val csipPlanId: Long,
+data class CSIPFactorEvent(
+  val csipFactorId: Long,
   val csipReportId: Long,
   val offenderIdDisplay: String,
   val auditModuleName: String?,
@@ -107,8 +110,15 @@ data class CSIPInterviewEvent(
   val auditModuleName: String?,
 )
 
-data class CSIPAttendeeEvent(
-  val csipAttendeeId: Long,
+data class CSIPPlanEvent(
+  val csipPlanId: Long,
+  val csipReportId: Long,
+  val offenderIdDisplay: String,
+  val auditModuleName: String?,
+)
+
+data class CSIPReviewEvent(
+  val csipReviewId: Long,
   val csipReportId: Long,
   val offenderIdDisplay: String,
   val auditModuleName: String?,

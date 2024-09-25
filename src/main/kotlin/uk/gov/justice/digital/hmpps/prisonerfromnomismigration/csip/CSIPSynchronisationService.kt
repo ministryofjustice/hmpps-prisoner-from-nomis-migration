@@ -103,6 +103,36 @@ class CSIPSynchronisationService(
     synchronise(nomisCSIPResponse, telemetry, actionDetails)
   }
 
+  suspend fun csipAttendeeUpserted(event: CSIPAttendeeEvent) {
+    val telemetry =
+      mutableMapOf(
+        "nomisCSIPId" to event.csipReportId,
+        "nomisCSIPAttendeeId" to event.csipAttendeeId,
+        "offenderNo" to event.offenderIdDisplay,
+      )
+
+    // Avoid duplicate sync if originated from DPS
+    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      telemetryClient.trackEvent(
+        "csip-synchronisation-updated-skipped",
+        telemetry,
+      )
+      return
+    }
+
+    val nomisCSIPResponse = nomisApiService.getCSIP(event.csipReportId)
+    // Determine Action details
+    val actionDetails = nomisCSIPResponse.reviews.flatMap { it.attendees }
+      .find { it.id == event.csipAttendeeId }?.toActionDetails()
+
+    // Should never happen
+    if (actionDetails == null) {
+      telemetryClient.trackEvent("csip-synchronisation-updated-failed", telemetry)
+      throw IllegalStateException("Received CSIP_ATTENDEES event for a csip attendee that does not exist")
+    }
+    synchronise(nomisCSIPResponse, telemetry, actionDetails)
+  }
+
   suspend fun csipFactorUpserted(event: CSIPFactorEvent) {
     val telemetry =
       mutableMapOf(
@@ -128,6 +158,93 @@ class CSIPSynchronisationService(
     if (actionDetails == null) {
       telemetryClient.trackEvent("csip-synchronisation-updated-failed", telemetry)
       throw IllegalStateException("Received CSIP_FACTORS_INSERTED for a csip factor that does not exist")
+    }
+    synchronise(nomisCSIPResponse, telemetry, actionDetails)
+  }
+
+  suspend fun csipInterviewUpserted(event: CSIPInterviewEvent) {
+    val telemetry =
+      mutableMapOf(
+        "nomisCSIPId" to event.csipReportId,
+        "nomisCSIPInterviewId" to event.csipInterviewId,
+        "offenderNo" to event.offenderIdDisplay,
+      )
+
+    // Avoid duplicate sync if originated from DPS
+    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      telemetryClient.trackEvent(
+        "csip-synchronisation-updated-skipped",
+        telemetry,
+      )
+      return
+    }
+
+    val nomisCSIPResponse = nomisApiService.getCSIP(event.csipReportId)
+    // Determine Action details
+    val actionDetails = nomisCSIPResponse.investigation.interviews?.find { it.id == event.csipInterviewId }?.toActionDetails()
+
+    // Should never happen
+    if (actionDetails == null) {
+      telemetryClient.trackEvent("csip-synchronisation-updated-failed", telemetry)
+      throw IllegalStateException("Received CSIP_INTERVIEWS event for a csip interview that does not exist")
+    }
+    synchronise(nomisCSIPResponse, telemetry, actionDetails)
+  }
+
+  suspend fun csipPlanUpserted(event: CSIPPlanEvent) {
+    val telemetry =
+      mutableMapOf(
+        "nomisCSIPId" to event.csipReportId,
+        "nomisCSIPPlanId" to event.csipPlanId,
+        "offenderNo" to event.offenderIdDisplay,
+      )
+
+    // Avoid duplicate sync if originated from DPS
+    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      telemetryClient.trackEvent(
+        "csip-synchronisation-updated-skipped",
+        telemetry,
+      )
+      return
+    }
+
+    val nomisCSIPResponse = nomisApiService.getCSIP(event.csipReportId)
+    // Determine Action details
+    val actionDetails = nomisCSIPResponse.plans.find { it.id == event.csipPlanId }?.toActionDetails()
+
+    // Should never happen
+    if (actionDetails == null) {
+      telemetryClient.trackEvent("csip-synchronisation-updated-failed", telemetry)
+      throw IllegalStateException("Received CSIP_PLANS event for a csip plan that does not exist")
+    }
+    synchronise(nomisCSIPResponse, telemetry, actionDetails)
+  }
+
+  suspend fun csipReviewUpserted(event: CSIPReviewEvent) {
+    val telemetry =
+      mutableMapOf(
+        "nomisCSIPId" to event.csipReportId,
+        "nomisCSIPReviewId" to event.csipReviewId,
+        "offenderNo" to event.offenderIdDisplay,
+      )
+
+    // Avoid duplicate sync if originated from DPS
+    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      telemetryClient.trackEvent(
+        "csip-synchronisation-updated-skipped",
+        telemetry,
+      )
+      return
+    }
+
+    val nomisCSIPResponse = nomisApiService.getCSIP(event.csipReportId)
+    // Determine Action details
+    val actionDetails = nomisCSIPResponse.reviews.find { it.id == event.csipReviewId }?.toActionDetails()
+
+    // Should never happen
+    if (actionDetails == null) {
+      telemetryClient.trackEvent("csip-synchronisation-updated-failed", telemetry)
+      throw IllegalStateException("Received CSIP_REVIEWS event for a csip review that does not exist")
     }
     synchronise(nomisCSIPResponse, telemetry, actionDetails)
   }

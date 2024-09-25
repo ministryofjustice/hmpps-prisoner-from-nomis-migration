@@ -1,7 +1,43 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip
 
+import com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
+import com.github.tomakehurst.wiremock.client.WireMock.exactly
+import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
+import org.assertj.core.api.Assertions.assertThat
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.matches
+import org.awaitility.kotlin.untilAsserted
+import org.awaitility.kotlin.untilCallTo
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Test
+import org.mockito.Mockito
+import org.mockito.Mockito.eq
+import org.mockito.internal.verification.Times
+import org.mockito.kotlin.any
+import org.mockito.kotlin.check
+import org.mockito.kotlin.isNull
+import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension.Companion.csipDpsApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingApiMockServer.Companion.CSIP_CREATE_CHILD_MAPPINGS_URL
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingApiMockServer.Companion.CSIP_CREATE_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
+import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
+import java.util.UUID
+
+private const val NOMIS_CSIP_ID = 1234L
 
 class CSIPAttendeeSynchronisationIntTest : SqsIntegrationTestBase() {
   @Autowired
@@ -9,12 +45,441 @@ class CSIPAttendeeSynchronisationIntTest : SqsIntegrationTestBase() {
 
   @Autowired
   private lateinit var csipMappingApi: CSIPMappingApiMockServer
+
+  @Nested
+  @DisplayName("CSIP_ATTENDEES-INSERTED")
+  inner class CSIPAttendeeCreated {
+
+    @Nested
+    inner class WhenCreateByDPS {
+      private val nomisCSIPAttendeeId = 221L
+
+      @BeforeEach
+      fun setUp() {
+        awsSqsCSIPOffenderEventsClient.sendMessage(
+          csipQueueOffenderEventsUrl,
+          csipAttendeeEvent(eventType = "CSIP_ATTENDEES-INSERTED", csipAttendeeId = nomisCSIPAttendeeId.toString(), auditModuleName = "DPS_SYNCHRONISATION"),
+        )
+      }
+
+      @Test
+      fun `the event is ignored`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            eq("csip-synchronisation-updated-skipped"),
+            check {
+              assertThat(it["nomisCSIPAttendeeId"]).isEqualTo(nomisCSIPAttendeeId.toString())
+              assertThat(it["nomisCSIPId"]).isEqualTo(NOMIS_CSIP_ID.toString())
+              assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+              assertThat(it["dpsCSIPId"]).isNull()
+            },
+            isNull(),
+          )
+        }
+        csipNomisApi.verify(exactly(0), getRequestedFor(anyUrl()))
+        csipMappingApi.verify(exactly(0), getRequestedFor(anyUrl()))
+        csipDpsApi.verify(exactly(0), anyRequestedFor(anyUrl()))
+      }
+    }
+
+    @Nested
+    @DisplayName("When there is a new CSIP Attendee Inserted Event")
+    inner class WhenNewCSIPAttendee {
+      private val nomisCSIPAttendeeId = 221L
+      private val nomisCSIPReportId = NOMIS_CSIP_ID
+      val dpsCSIPReportId = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5"
+      val dpsCSIPAttendeeId = "e07fdbee-1463-4c7e-a374-aae2445845be"
+
+      @Nested
+      @DisplayName("When Create CSIP Attendee Happy Path")
+      inner class HappyPath {
+        @BeforeEach
+        fun setUp() {
+          csipNomisApi.stubGetCSIP(nomisCSIPReportId)
+          csipMappingApi.stubGetByNomisId(nomisCSIPId = nomisCSIPReportId, dpsCSIPId = dpsCSIPReportId)
+          csipMappingApi.stubGetFullMappingByDpsReportId(dpsCSIPId = dpsCSIPReportId)
+          csipDpsApi.stubSyncCSIPReportAttendeeMappingUpdate(
+            dpsCSIPAttendeeId = dpsCSIPAttendeeId,
+            nomisCSIPAttendeeId = nomisCSIPAttendeeId,
+          )
+          csipMappingApi.stubPostMapping(CSIP_CREATE_CHILD_MAPPINGS_URL)
+
+          awsSqsCSIPOffenderEventsClient.sendMessage(
+            csipQueueOffenderEventsUrl,
+            csipAttendeeEvent(eventType = "CSIP_ATTENDEES-INSERTED", csipAttendeeId = nomisCSIPAttendeeId.toString()),
+          )
+          waitForAnyProcessingToComplete("csip-synchronisation-updated-success")
+        }
+
+        @Test
+        fun `will retrieve details about the csip from NOMIS`() {
+          csipNomisApi.verify(getRequestedFor(urlEqualTo("/csip/$nomisCSIPReportId")))
+        }
+
+        @Test
+        fun `will retrieve mapping to determine the associated csip report`() {
+          mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/csip/nomis-csip-id/$nomisCSIPReportId")))
+        }
+
+        @Test
+        fun `will request full csip mapping`() {
+          mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/csip/dps-csip-id/$dpsCSIPReportId/all")))
+        }
+
+        @Test
+        fun `will update DPS with the changes including CSIP Attendees`() {
+          csipDpsApi.verify(
+            putRequestedFor(urlEqualTo("/sync/csip-records"))
+              .withRequestBody(matchingJsonPath("id", equalTo(dpsCSIPReportId)))
+              .withRequestBody(matchingJsonPath("legacyId", equalTo("1234")))
+              .withRequestBody(matchingJsonPath("logCode", equalTo("ASI-001")))
+              .withRequestBody(matchingJsonPath("prisonNumber", equalTo("A1234BC")))
+              .withRequestBody(matchingJsonPath("plan.reviews[0].attendees[0].legacyId", equalTo("221")))
+              .withRequestBody(matchingJsonPath("actionedAt", equalTo("2024-08-20T10:33:48.946787")))
+              .withRequestBody(matchingJsonPath("actionedBy", equalTo("DBULL_ADM")))
+              .withRequestBody(matchingJsonPath("actionedByDisplayName", equalTo("DOM BULL"))),
+          )
+        }
+
+        @Test
+        fun `will update the mapping between the two records`() {
+          csipMappingApi.verify(
+            postRequestedFor(urlPathEqualTo(CSIP_CREATE_CHILD_MAPPINGS_URL))
+              .withRequestBody(matchingJsonPath("dpsCSIPReportId", equalTo(dpsCSIPReportId)))
+              .withRequestBody(matchingJsonPath("nomisCSIPReportId", equalTo(nomisCSIPReportId.toString())))
+              .withRequestBody(matchingJsonPath("attendeeMappings[0].dpsCSIPAttendeeId", equalTo(dpsCSIPAttendeeId)))
+              .withRequestBody(
+                matchingJsonPath(
+                  "attendeeMappings[0].nomisCSIPAttendeeId",
+                  equalTo(nomisCSIPAttendeeId.toString()),
+                ),
+              ),
+          )
+        }
+
+        @Test
+        fun `will create telemetry tracking the update`() {
+          verify(telemetryClient).trackEvent(
+            eq("csip-synchronisation-updated-success"),
+            check {
+              assertThat(it["nomisCSIPId"]).isEqualTo(nomisCSIPReportId.toString())
+              assertThat(it["nomisCSIPAttendeeId"]).isEqualTo(nomisCSIPAttendeeId.toString())
+              assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+              assertThat(it["dpsCSIPId"]).isEqualTo(dpsCSIPReportId)
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      @DisplayName("When Nomis has no CSIP Report")
+      inner class WhenNomisHasNoCSIP {
+        @BeforeEach
+        fun setUp() {
+          csipNomisApi.stubGetCSIP(HttpStatus.NOT_FOUND)
+
+          awsSqsCSIPOffenderEventsClient.sendMessage(
+            csipQueueOffenderEventsUrl,
+            csipAttendeeEvent(eventType = "CSIP_ATTENDEES-INSERTED", csipAttendeeId = nomisCSIPAttendeeId.toString()),
+          )
+          awsSqsCSIPOffenderEventDlqClient.waitForMessageCountOnQueue(csipQueueOffenderEventsDlqUrl, 1)
+        }
+
+        @Test
+        fun `will not create the csip in the csip service`() {
+          csipDpsApi.verify(exactly(0), anyRequestedFor(anyUrl()))
+        }
+
+        @Test
+        fun `will not attempt to get mapping data`() {
+          mappingApi.verify(exactly(0), getRequestedFor(anyUrl()))
+        }
+
+        @Test
+        fun `will not create telemetry tracking`() {
+          verify(telemetryClient, Times(0)).trackEvent(any(), any(), isNull())
+        }
+      }
+
+      @Nested
+      inner class WhenDuplicateMapping {
+        private val dpsCsipReportId = UUID.randomUUID().toString()
+        private val duplicateDPSCSIPId = "ddd596da-8eab-4d2a-a026-bc5afb8acda0"
+
+        @BeforeEach
+        fun setUp() {
+          csipNomisApi.stubGetCSIP()
+          csipMappingApi.stubGetByNomisId(status = HttpStatus.NOT_FOUND)
+
+          awsSqsCSIPOffenderEventsClient.sendMessage(
+            csipQueueOffenderEventsUrl,
+            csipAttendeeEvent(eventType = "CSIP_ATTENDEES-INSERTED", csipAttendeeId = nomisCSIPAttendeeId.toString()),
+          )
+        }
+
+        @Test
+        internal fun `it will not retry after a 409 (duplicate csip written to CSIP API)`() {
+          csipNomisApi.stubGetCSIP()
+          csipMappingApi.stubGetByNomisId(HttpStatus.NOT_FOUND)
+          csipDpsApi.stubSyncCSIPReport(duplicateDPSCSIPId)
+          csipMappingApi.stubCSIPMappingCreateConflict(existingDPSCSIPId = dpsCsipReportId)
+
+          awsSqsCSIPOffenderEventsClient.sendMessage(
+            csipQueueOffenderEventsUrl,
+            csipEvent(eventType = "CSIP_REPORTS-INSERTED"),
+          )
+
+          // wait for all mappings to be created before verifying
+          await untilCallTo { mappingApi.createMappingCount(CSIP_CREATE_MAPPING_URL) } matches { it == 1 }
+
+          // check that one csip is created
+          assertThat(csipDpsApi.syncCSIPCount()).isEqualTo(1)
+
+          // doesn't retry
+          csipMappingApi.verifyCreateCSIPReportMapping(dpsCSIPId = duplicateDPSCSIPId)
+
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("csip-synchronisation-from-nomis-duplicate"),
+              check {
+                assertThat(it["existingNomisCSIPId"]).isEqualTo("$NOMIS_CSIP_ID")
+                assertThat(it["duplicateNomisCSIPId"]).isEqualTo("$NOMIS_CSIP_ID")
+                assertThat(it["existingDPSCSIPId"]).isEqualTo(dpsCsipReportId)
+                assertThat(it["duplicateDPSCSIPId"]).isEqualTo(duplicateDPSCSIPId)
+                assertThat(it["migrationId"]).isNull()
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("When mapping doesn't exist")
+      inner class MappingDoesNotExist {
+        @BeforeEach
+        fun setUp() {
+          csipNomisApi.stubGetCSIP()
+          csipMappingApi.stubGetByNomisId(status = HttpStatus.NOT_FOUND)
+
+          awsSqsCSIPOffenderEventsClient.sendMessage(
+            csipQueueOffenderEventsUrl,
+            csipAttendeeEvent(eventType = "CSIP_ATTENDEES-INSERTED", csipAttendeeId = nomisCSIPAttendeeId.toString()),
+          )
+        }
+
+        @Test
+        fun `telemetry added to track the failure`() {
+          await untilAsserted {
+            verify(telemetryClient, Mockito.atLeastOnce()).trackEvent(
+              eq("csip-synchronisation-updated-failed"),
+              check {
+                assertThat(it["nomisCSIPId"]).isEqualTo(NOMIS_CSIP_ID.toString())
+                assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+              },
+              isNull(),
+            )
+          }
+        }
+
+        @Test
+        fun `the event is placed on dead letter queue`() {
+          await untilAsserted {
+            assertThat(
+              awsSqsCSIPOffenderEventDlqClient.countAllMessagesOnQueue(csipQueueOffenderEventsDlqUrl).get(),
+            ).isEqualTo(1)
+          }
+        }
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("CSIP_ATTENDEES-UPDATED")
+  inner class CSIPAttendeeUpdated {
+
+    @Nested
+    inner class WhenUpdateByDPS {
+      private val nomisCSIPAttendeeId = 221L
+
+      @BeforeEach
+      fun setUp() {
+        awsSqsCSIPOffenderEventsClient.sendMessage(
+          csipQueueOffenderEventsUrl,
+          csipAttendeeEvent(eventType = "CSIP_ATTENDEES-UPDATED", csipAttendeeId = nomisCSIPAttendeeId.toString(), auditModuleName = "DPS_SYNCHRONISATION"),
+        )
+      }
+
+      @Test
+      fun `the event is ignored`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            eq("csip-synchronisation-updated-skipped"),
+            check {
+              assertThat(it["nomisCSIPAttendeeId"]).isEqualTo(nomisCSIPAttendeeId.toString())
+              assertThat(it["nomisCSIPId"]).isEqualTo(NOMIS_CSIP_ID.toString())
+              assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+              assertThat(it["dpsCSIPId"]).isNull()
+            },
+            isNull(),
+          )
+        }
+        csipNomisApi.verify(exactly(0), getRequestedFor(anyUrl()))
+        csipMappingApi.verify(exactly(0), getRequestedFor(anyUrl()))
+        csipDpsApi.verify(exactly(0), anyRequestedFor(anyUrl()))
+      }
+    }
+
+    @Nested
+    @DisplayName("When there is a new CSIP Attendee Updated Event")
+    inner class WhenUpdateByNomis {
+      private val nomisCSIPAttendeeId = 221L
+      private val nomisCSIPReportId = NOMIS_CSIP_ID
+      val dpsCSIPReportId = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5"
+
+      @Nested
+      @DisplayName("When Update CSIP Attendee Happy Path")
+      inner class HappyPath {
+        @BeforeEach
+        fun setUp() {
+          csipNomisApi.stubGetCSIP(nomisCSIPReportId)
+          csipMappingApi.stubGetByNomisId(nomisCSIPId = nomisCSIPReportId, dpsCSIPId = dpsCSIPReportId)
+          csipMappingApi.stubGetFullMappingByDpsReportId(dpsCSIPId = dpsCSIPReportId)
+          csipDpsApi.stubSyncCSIPReportNoMappingUpdates()
+
+          awsSqsCSIPOffenderEventsClient.sendMessage(
+            csipQueueOffenderEventsUrl,
+            csipAttendeeEvent(eventType = "CSIP_ATTENDEES-UPDATED", csipAttendeeId = nomisCSIPAttendeeId.toString()),
+          )
+          waitForAnyProcessingToComplete("csip-synchronisation-updated-success")
+        }
+
+        @Test
+        fun `will retrieve details about the csip from NOMIS`() {
+          csipNomisApi.verify(getRequestedFor(urlEqualTo("/csip/$nomisCSIPReportId")))
+        }
+
+        @Test
+        fun `will retrieve mapping to determine the associated csip report`() {
+          mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/csip/nomis-csip-id/$nomisCSIPReportId")))
+        }
+
+        @Test
+        fun `will request full csip mapping`() {
+          mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/csip/dps-csip-id/$dpsCSIPReportId/all")))
+        }
+
+        @Test
+        fun `will update DPS with the changes including CSIP Attendees`() {
+          csipDpsApi.verify(
+            putRequestedFor(urlEqualTo("/sync/csip-records"))
+              .withRequestBody(matchingJsonPath("id", equalTo(dpsCSIPReportId)))
+              .withRequestBody(matchingJsonPath("legacyId", equalTo("1234")))
+              .withRequestBody(matchingJsonPath("logCode", equalTo("ASI-001")))
+              .withRequestBody(matchingJsonPath("prisonNumber", equalTo("A1234BC")))
+              .withRequestBody(matchingJsonPath("plan.reviews[0].attendees[0].legacyId", equalTo("221")))
+              .withRequestBody(matchingJsonPath("actionedAt", equalTo("2024-08-20T10:33:48.946787")))
+              .withRequestBody(matchingJsonPath("actionedBy", equalTo("DBULL_ADM")))
+              .withRequestBody(matchingJsonPath("actionedByDisplayName", equalTo("DOM BULL"))),
+          )
+        }
+
+        @Test
+        fun `will NOT update the mapping between the two records`() {
+          mappingApi.verify(exactly(0), postRequestedFor(anyUrl()))
+        }
+
+        @Test
+        fun `will create telemetry tracking the update`() {
+          verify(telemetryClient).trackEvent(
+            eq("csip-synchronisation-updated-success"),
+            check {
+              assertThat(it["nomisCSIPId"]).isEqualTo(nomisCSIPReportId.toString())
+              assertThat(it["nomisCSIPAttendeeId"]).isEqualTo(nomisCSIPAttendeeId.toString())
+              assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+              assertThat(it["dpsCSIPId"]).isEqualTo(dpsCSIPReportId)
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      @DisplayName("When Nomis has no CSIP Report")
+      inner class WhenNomisHasNoCSIP {
+        @BeforeEach
+        fun setUp() {
+          csipNomisApi.stubGetCSIP(HttpStatus.NOT_FOUND)
+
+          awsSqsCSIPOffenderEventsClient.sendMessage(
+            csipQueueOffenderEventsUrl,
+            csipAttendeeEvent(eventType = "CSIP_ATTENDEES-UPDATED", csipAttendeeId = nomisCSIPAttendeeId.toString()),
+          )
+          awsSqsCSIPOffenderEventDlqClient.waitForMessageCountOnQueue(csipQueueOffenderEventsDlqUrl, 1)
+        }
+
+        @Test
+        fun `will not create the csip in the csip service`() {
+          csipDpsApi.verify(exactly(0), anyRequestedFor(anyUrl()))
+        }
+
+        @Test
+        fun `will not attempt to get mapping data`() {
+          mappingApi.verify(exactly(0), getRequestedFor(anyUrl()))
+        }
+
+        @Test
+        fun `will not create telemetry tracking`() {
+          verify(telemetryClient, Times(0)).trackEvent(any(), any(), isNull())
+        }
+      }
+
+      @Nested
+      @DisplayName("When mapping doesn't exist")
+      inner class MappingDoesNotExist {
+        @BeforeEach
+        fun setUp() {
+          csipNomisApi.stubGetCSIP()
+          csipMappingApi.stubGetByNomisId(status = HttpStatus.NOT_FOUND)
+
+          awsSqsCSIPOffenderEventsClient.sendMessage(
+            csipQueueOffenderEventsUrl,
+            csipAttendeeEvent(eventType = "CSIP_ATTENDEES-UPDATED", csipAttendeeId = nomisCSIPAttendeeId.toString()),
+          )
+        }
+
+        @Test
+        fun `telemetry added to track the failure`() {
+          await untilAsserted {
+            verify(telemetryClient, Mockito.atLeastOnce()).trackEvent(
+              eq("csip-synchronisation-updated-failed"),
+              check {
+                assertThat(it["nomisCSIPId"]).isEqualTo(NOMIS_CSIP_ID.toString())
+                assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+              },
+              isNull(),
+            )
+          }
+        }
+
+        @Test
+        fun `the event is placed on dead letter queue`() {
+          await untilAsserted {
+            assertThat(
+              awsSqsCSIPOffenderEventDlqClient.countAllMessagesOnQueue(csipQueueOffenderEventsDlqUrl).get(),
+            ).isEqualTo(1)
+          }
+        }
+      }
+    }
+  }
 }
 
 fun csipAttendeeEvent(
-  eventType: String = "CSIP_ATTENDEES-INSERTED",
+  eventType: String,
   csipAttendeeId: String,
-  csipReportId: String = "1234",
+  csipReportId: String = "$NOMIS_CSIP_ID",
   auditModuleName: String = "OIDCSIPC",
 ) = """
   {

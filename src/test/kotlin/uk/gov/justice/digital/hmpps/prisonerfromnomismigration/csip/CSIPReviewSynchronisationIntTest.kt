@@ -39,7 +39,7 @@ import java.util.UUID
 
 private const val NOMIS_CSIP_ID = 1234L
 
-class CSIPInterviewSynchronisationIntTest : SqsIntegrationTestBase() {
+class CSIPReviewSynchronisationIntTest : SqsIntegrationTestBase() {
   @Autowired
   private lateinit var csipNomisApi: CSIPNomisApiMockServer
 
@@ -47,18 +47,18 @@ class CSIPInterviewSynchronisationIntTest : SqsIntegrationTestBase() {
   private lateinit var csipMappingApi: CSIPMappingApiMockServer
 
   @Nested
-  @DisplayName("CSIP_INTVW-INSERTED")
-  inner class CSIPInterviewCreated {
+  @DisplayName("CSIP_REVIEWS-INSERTED")
+  inner class CSIPReviewCreated {
 
     @Nested
     inner class WhenCreateByDPS {
-      private val nomisCSIPInterviewId = 3343L
+      private val nomisCSIPReviewId = 67L
 
       @BeforeEach
       fun setUp() {
         awsSqsCSIPOffenderEventsClient.sendMessage(
           csipQueueOffenderEventsUrl,
-          csipInterviewEvent(eventType = "CSIP_INTVW-INSERTED", csipInterviewId = nomisCSIPInterviewId.toString(), auditModuleName = "DPS_SYNCHRONISATION"),
+          csipReviewEvent(eventType = "CSIP_REVIEWS-INSERTED", csipReviewId = nomisCSIPReviewId.toString(), auditModuleName = "DPS_SYNCHRONISATION"),
         )
       }
 
@@ -68,7 +68,7 @@ class CSIPInterviewSynchronisationIntTest : SqsIntegrationTestBase() {
           verify(telemetryClient).trackEvent(
             eq("csip-synchronisation-updated-skipped"),
             check {
-              assertThat(it["nomisCSIPInterviewId"]).isEqualTo(nomisCSIPInterviewId.toString())
+              assertThat(it["nomisCSIPReviewId"]).isEqualTo(nomisCSIPReviewId.toString())
               assertThat(it["nomisCSIPId"]).isEqualTo(NOMIS_CSIP_ID.toString())
               assertThat(it["offenderNo"]).isEqualTo("A1234BC")
               assertThat(it["dpsCSIPId"]).isNull()
@@ -83,30 +83,30 @@ class CSIPInterviewSynchronisationIntTest : SqsIntegrationTestBase() {
     }
 
     @Nested
-    @DisplayName("When there is a new CSIP Interview Inserted Event")
-    inner class WhenNewCSIPInterview {
-      private val nomisCSIPInterviewId = 3343L
+    @DisplayName("When there is a new CSIP Review Inserted Event")
+    inner class WhenNewCSIPReview {
+      private val nomisCSIPReviewId = 67L
       private val nomisCSIPReportId = NOMIS_CSIP_ID
       val dpsCSIPReportId = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5"
-      val dpsCSIPInterviewId = "e07fdbee-1463-4c7e-a374-aae2445845be"
+      val dpsCSIPReviewId = "e07fdbee-1463-4c7e-a374-aae2445845be"
 
       @Nested
-      @DisplayName("When Create CSIP Interview Happy Path")
+      @DisplayName("When Create CSIP Review Happy Path")
       inner class HappyPath {
         @BeforeEach
         fun setUp() {
           csipNomisApi.stubGetCSIP(nomisCSIPReportId)
           csipMappingApi.stubGetByNomisId(nomisCSIPId = nomisCSIPReportId, dpsCSIPId = dpsCSIPReportId)
           csipMappingApi.stubGetFullMappingByDpsReportId(dpsCSIPId = dpsCSIPReportId)
-          csipDpsApi.stubSyncCSIPReportInterviewMappingUpdate(
-            dpsCSIPInterviewId = dpsCSIPInterviewId,
-            nomisCSIPInterviewId = nomisCSIPInterviewId,
+          csipDpsApi.stubSyncCSIPReportReviewMappingUpdate(
+            dpsCSIPReviewId = dpsCSIPReviewId,
+            nomisCSIPReviewId = nomisCSIPReviewId,
           )
           csipMappingApi.stubPostMapping(CSIP_CREATE_CHILD_MAPPINGS_URL)
 
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
-            csipInterviewEvent(eventType = "CSIP_INTVW-INSERTED", csipInterviewId = nomisCSIPInterviewId.toString()),
+            csipReviewEvent(eventType = "CSIP_REVIEWS-INSERTED", csipReviewId = nomisCSIPReviewId.toString()),
           )
           waitForAnyProcessingToComplete("csip-synchronisation-updated-success")
         }
@@ -127,17 +127,17 @@ class CSIPInterviewSynchronisationIntTest : SqsIntegrationTestBase() {
         }
 
         @Test
-        fun `will update DPS with the changes including CSIP Interviews`() {
+        fun `will update DPS with the changes including CSIP Reviews`() {
           csipDpsApi.verify(
             putRequestedFor(urlEqualTo("/sync/csip-records"))
               .withRequestBody(matchingJsonPath("id", equalTo(dpsCSIPReportId)))
               .withRequestBody(matchingJsonPath("legacyId", equalTo("1234")))
               .withRequestBody(matchingJsonPath("logCode", equalTo("ASI-001")))
               .withRequestBody(matchingJsonPath("prisonNumber", equalTo("A1234BC")))
-              .withRequestBody(matchingJsonPath("referral.investigation.interviews[0].legacyId", equalTo("3343")))
-              .withRequestBody(matchingJsonPath("actionedAt", equalTo("2024-08-12T11:32:15")))
-              .withRequestBody(matchingJsonPath("actionedBy", equalTo("BB_ADM")))
-              .withRequestBody(matchingJsonPath("actionedByDisplayName", equalTo("Bebe SMITH"))),
+              .withRequestBody(matchingJsonPath("plan.reviews[0].legacyId", equalTo("67")))
+              .withRequestBody(matchingJsonPath("actionedAt", equalTo("2024-04-01T10:00:00")))
+              .withRequestBody(matchingJsonPath("actionedBy", equalTo("FJAMES")))
+              .withRequestBody(matchingJsonPath("actionedByDisplayName", equalTo("FRED JAMES"))),
           )
         }
 
@@ -147,16 +147,11 @@ class CSIPInterviewSynchronisationIntTest : SqsIntegrationTestBase() {
             postRequestedFor(urlPathEqualTo(CSIP_CREATE_CHILD_MAPPINGS_URL))
               .withRequestBody(matchingJsonPath("dpsCSIPReportId", equalTo(dpsCSIPReportId)))
               .withRequestBody(matchingJsonPath("nomisCSIPReportId", equalTo(nomisCSIPReportId.toString())))
+              .withRequestBody(matchingJsonPath("reviewMappings[0].dpsCSIPReviewId", equalTo(dpsCSIPReviewId)))
               .withRequestBody(
                 matchingJsonPath(
-                  "interviewMappings[0].dpsCSIPInterviewId",
-                  equalTo(dpsCSIPInterviewId),
-                ),
-              )
-              .withRequestBody(
-                matchingJsonPath(
-                  "interviewMappings[0].nomisCSIPInterviewId",
-                  equalTo(nomisCSIPInterviewId.toString()),
+                  "reviewMappings[0].nomisCSIPReviewId",
+                  equalTo(nomisCSIPReviewId.toString()),
                 ),
               ),
           )
@@ -168,7 +163,7 @@ class CSIPInterviewSynchronisationIntTest : SqsIntegrationTestBase() {
             eq("csip-synchronisation-updated-success"),
             check {
               assertThat(it["nomisCSIPId"]).isEqualTo(nomisCSIPReportId.toString())
-              assertThat(it["nomisCSIPInterviewId"]).isEqualTo(nomisCSIPInterviewId.toString())
+              assertThat(it["nomisCSIPReviewId"]).isEqualTo(nomisCSIPReviewId.toString())
               assertThat(it["offenderNo"]).isEqualTo("A1234BC")
               assertThat(it["dpsCSIPId"]).isEqualTo(dpsCSIPReportId)
             },
@@ -186,7 +181,7 @@ class CSIPInterviewSynchronisationIntTest : SqsIntegrationTestBase() {
 
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
-            csipInterviewEvent(eventType = "CSIP_INTVW-INSERTED", csipInterviewId = nomisCSIPInterviewId.toString()),
+            csipReviewEvent(eventType = "CSIP_REVIEWS-INSERTED", csipReviewId = nomisCSIPReviewId.toString()),
           )
           awsSqsCSIPOffenderEventDlqClient.waitForMessageCountOnQueue(csipQueueOffenderEventsDlqUrl, 1)
         }
@@ -219,7 +214,7 @@ class CSIPInterviewSynchronisationIntTest : SqsIntegrationTestBase() {
 
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
-            csipInterviewEvent(eventType = "CSIP_INTVW-INSERTED", csipInterviewId = nomisCSIPInterviewId.toString()),
+            csipReviewEvent(eventType = "CSIP_REVIEWS-INSERTED", csipReviewId = nomisCSIPReviewId.toString()),
           )
         }
 
@@ -270,7 +265,7 @@ class CSIPInterviewSynchronisationIntTest : SqsIntegrationTestBase() {
 
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
-            csipInterviewEvent(eventType = "CSIP_INTVW-INSERTED", csipInterviewId = nomisCSIPInterviewId.toString()),
+            csipReviewEvent(eventType = "CSIP_REVIEWS-INSERTED", csipReviewId = nomisCSIPReviewId.toString()),
           )
         }
 
@@ -301,18 +296,18 @@ class CSIPInterviewSynchronisationIntTest : SqsIntegrationTestBase() {
   }
 
   @Nested
-  @DisplayName("CSIP_INTVW-UPDATED")
-  inner class CSIPInterviewUpdated {
+  @DisplayName("CSIP_REVIEWS-UPDATED")
+  inner class CSIPReviewUpdated {
 
     @Nested
     inner class WhenUpdateByDPS {
-      private val nomisCSIPInterviewId = 3343L
+      private val nomisCSIPReviewId = 67L
 
       @BeforeEach
       fun setUp() {
         awsSqsCSIPOffenderEventsClient.sendMessage(
           csipQueueOffenderEventsUrl,
-          csipInterviewEvent(eventType = "CSIP_INTVW-UPDATED", csipInterviewId = nomisCSIPInterviewId.toString(), auditModuleName = "DPS_SYNCHRONISATION"),
+          csipReviewEvent(eventType = "CSIP_REVIEWS-UPDATED", csipReviewId = nomisCSIPReviewId.toString(), auditModuleName = "DPS_SYNCHRONISATION"),
         )
       }
 
@@ -322,7 +317,7 @@ class CSIPInterviewSynchronisationIntTest : SqsIntegrationTestBase() {
           verify(telemetryClient).trackEvent(
             eq("csip-synchronisation-updated-skipped"),
             check {
-              assertThat(it["nomisCSIPInterviewId"]).isEqualTo(nomisCSIPInterviewId.toString())
+              assertThat(it["nomisCSIPReviewId"]).isEqualTo(nomisCSIPReviewId.toString())
               assertThat(it["nomisCSIPId"]).isEqualTo(NOMIS_CSIP_ID.toString())
               assertThat(it["offenderNo"]).isEqualTo("A1234BC")
               assertThat(it["dpsCSIPId"]).isNull()
@@ -337,14 +332,14 @@ class CSIPInterviewSynchronisationIntTest : SqsIntegrationTestBase() {
     }
 
     @Nested
-    @DisplayName("When there is a new CSIP Interview Updated Event")
+    @DisplayName("When there is a new CSIP Review Updated Event")
     inner class WhenUpdateByNomis {
-      private val nomisCSIPInterviewId = 3343L
+      private val nomisCSIPReviewId = 67L
       private val nomisCSIPReportId = NOMIS_CSIP_ID
       val dpsCSIPReportId = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5"
 
       @Nested
-      @DisplayName("When Update CSIP Interview Happy Path")
+      @DisplayName("When Update CSIP Review Happy Path")
       inner class HappyPath {
         @BeforeEach
         fun setUp() {
@@ -355,8 +350,7 @@ class CSIPInterviewSynchronisationIntTest : SqsIntegrationTestBase() {
 
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
-            csipInterviewEvent(eventType = "CSIP_INTVW-UPDATED", csipInterviewId = nomisCSIPInterviewId.toString()),
-
+            csipReviewEvent(eventType = "CSIP_REVIEWS-UPDATED", csipReviewId = nomisCSIPReviewId.toString()),
           )
           waitForAnyProcessingToComplete("csip-synchronisation-updated-success")
         }
@@ -377,17 +371,17 @@ class CSIPInterviewSynchronisationIntTest : SqsIntegrationTestBase() {
         }
 
         @Test
-        fun `will update DPS with the changes including CSIP Interviews`() {
+        fun `will update DPS with the changes including CSIP Reviews`() {
           csipDpsApi.verify(
             putRequestedFor(urlEqualTo("/sync/csip-records"))
               .withRequestBody(matchingJsonPath("id", equalTo(dpsCSIPReportId)))
               .withRequestBody(matchingJsonPath("legacyId", equalTo("1234")))
               .withRequestBody(matchingJsonPath("logCode", equalTo("ASI-001")))
               .withRequestBody(matchingJsonPath("prisonNumber", equalTo("A1234BC")))
-              .withRequestBody(matchingJsonPath("referral.investigation.interviews[0].legacyId", equalTo("3343")))
-              .withRequestBody(matchingJsonPath("actionedAt", equalTo("2024-08-12T11:32:15")))
-              .withRequestBody(matchingJsonPath("actionedBy", equalTo("BB_ADM")))
-              .withRequestBody(matchingJsonPath("actionedByDisplayName", equalTo("Bebe SMITH"))),
+              .withRequestBody(matchingJsonPath("plan.reviews[0].legacyId", equalTo("67")))
+              .withRequestBody(matchingJsonPath("actionedAt", equalTo("2024-04-01T10:00:00")))
+              .withRequestBody(matchingJsonPath("actionedBy", equalTo("FJAMES")))
+              .withRequestBody(matchingJsonPath("actionedByDisplayName", equalTo("FRED JAMES"))),
           )
         }
 
@@ -402,7 +396,7 @@ class CSIPInterviewSynchronisationIntTest : SqsIntegrationTestBase() {
             eq("csip-synchronisation-updated-success"),
             check {
               assertThat(it["nomisCSIPId"]).isEqualTo(nomisCSIPReportId.toString())
-              assertThat(it["nomisCSIPInterviewId"]).isEqualTo(nomisCSIPInterviewId.toString())
+              assertThat(it["nomisCSIPReviewId"]).isEqualTo(nomisCSIPReviewId.toString())
               assertThat(it["offenderNo"]).isEqualTo("A1234BC")
               assertThat(it["dpsCSIPId"]).isEqualTo(dpsCSIPReportId)
             },
@@ -420,7 +414,7 @@ class CSIPInterviewSynchronisationIntTest : SqsIntegrationTestBase() {
 
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
-            csipInterviewEvent(eventType = "CSIP_INTVW-UPDATED", csipInterviewId = nomisCSIPInterviewId.toString()),
+            csipReviewEvent(eventType = "CSIP_REVIEWS-UPDATED", csipReviewId = nomisCSIPReviewId.toString()),
           )
           awsSqsCSIPOffenderEventDlqClient.waitForMessageCountOnQueue(csipQueueOffenderEventsDlqUrl, 1)
         }
@@ -451,7 +445,7 @@ class CSIPInterviewSynchronisationIntTest : SqsIntegrationTestBase() {
 
           awsSqsCSIPOffenderEventsClient.sendMessage(
             csipQueueOffenderEventsUrl,
-            csipInterviewEvent(eventType = "CSIP_INTVW-UPDATED", csipInterviewId = nomisCSIPInterviewId.toString()),
+            csipReviewEvent(eventType = "CSIP_REVIEWS-UPDATED", csipReviewId = nomisCSIPReviewId.toString()),
           )
         }
 
@@ -482,9 +476,9 @@ class CSIPInterviewSynchronisationIntTest : SqsIntegrationTestBase() {
   }
 }
 
-fun csipInterviewEvent(
+fun csipReviewEvent(
   eventType: String,
-  csipInterviewId: String,
+  csipReviewId: String,
   csipReportId: String = "$NOMIS_CSIP_ID",
   auditModuleName: String = "OIDCSIPC",
 ) = """
@@ -492,7 +486,7 @@ fun csipInterviewEvent(
     "Type" : "Notification",
     "MessageId" : "7bdec840-69e5-5163-8013-967eb63d3d26",
     "TopicArn" : "arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-f221e27fcfcf78f6ab4f4c3cc165eee7",
-    "Message" : "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2024-06-11T10:39:17\",\"bookingId\":1215724,\"offenderIdDisplay\":\"A1234BC\",\"nomisEventType\":\"$eventType\",\"rootOffenderId\":2581911,\"csipInterviewId\":\"$csipInterviewId\",\"csipReportId\":\"$csipReportId\",\"auditModuleName\":\"$auditModuleName\"}",
+    "Message" : "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2024-06-11T10:39:17\",\"bookingId\":1215724,\"offenderIdDisplay\":\"A1234BC\",\"nomisEventType\":\"$eventType\",\"rootOffenderId\":2581911,\"csipReviewId\":\"$csipReviewId\",\"csipReportId\":\"$csipReportId\",\"auditModuleName\":\"$auditModuleName\"}",
     "Timestamp" : "2024-02-08T13:56:40.981Z",
     "SignatureVersion" : "1",
     "Signature" : "ZUU+9m0kLuVMVE0KCwk5LN1bhQQ6VTOP7djMUaJFYB/+s8kKpAh4Hm5XbIrqbAIoDJmf2MF+GxGRe1sypAn7z61GqqotcXI6r5CjiCvQVsrcwQqO0qoUkb5NoXWyBCG4MOaasFYfjleDnthQS/+rnNWT9Ndl09QtAhjfztHnD279GbrVhywj9O1xcDpnIkx/zGsZUbQsPZDOTOcfeV0M8mbrJhWMWefg9fZ05LeLljD4B8DjMfkmMAn3nBszWlZQcQPDReV7xoMPA+dXJpYXXx6PRLPRtfs7BFGA1hsuYI0mXZb3V3QBvG4Jt5IEYPkfKGZDEmf/hK9V7WkfBiDu2A==",
