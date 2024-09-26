@@ -18,7 +18,8 @@ fun CourtCaseResponse.toDpsCourtCase() = CreateCourtCase(
 fun CourtCaseResponse.toDpsCourtCaseMigration() = CreateCourtCaseMigrationRequest(
   prisonerId = this.offenderNo,
   appearances = this.courtEvents.map { ca -> ca.toDpsCourtAppearance(offenderNo = offenderNo, caseReference = this.caseInfoNumber) },
-  otherCaseReferences = emptyList(), // TODO map to the list of case identifiers when returned from nomis
+  // TODO map to the list of case identifiers when returned from nomis
+  otherCaseReferences = emptyList(),
 )
 
 private const val WARRANT_TYPE_DEFAULT = "REMAND"
