@@ -822,6 +822,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     bookingId: Long = 2,
     offenderNo: String = "G4803UT",
     courtId: String = "BATHMC",
+    caseInfoNumber: String? = "caseRef1",
   ) {
     nomisApi.stubFor(
       get(
@@ -836,6 +837,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
                 offenderNo = offenderNo,
                 caseId = caseId,
                 courtId = courtId,
+                caseInfoNumber = caseInfoNumber,
               ),
             ),
         ),
@@ -866,6 +868,7 @@ private fun courtCaseResponse(
   offenderNo: String = "G4803UT",
   caseId: Long = 3,
   courtId: String = "BATHMC",
+  caseInfoNumber: String? = "caseRef1",
 ): String {
   // language=JSON
   return """
@@ -874,6 +877,7 @@ private fun courtCaseResponse(
   "offenderNo": "$offenderNo",
   "bookingId": $bookingId,
   "caseSequence": 22,
+  "caseInfoNumber" : "$caseInfoNumber",
   "caseStatus": {
     "code": "A",
     "description": "Active"
@@ -966,6 +970,27 @@ private fun courtCaseResponse(
       "offence": {
         "offenceCode": "RR84027",
         "statuteCode": "RR84",
+        "description": "Failing to stop at school crossing (horsedrawn vehicle)"
+      },
+      "offencesCount": 1,
+      "offenceDate": "2024-01-02",
+      "chargeStatus": {
+        "code": "A",
+        "description": "Active"
+      },
+      "resultCode1": {
+        "code": "1081",
+        "description": "Detention and Training Order"
+      },
+      "resultCode1Indicator": "F",
+      "mostSeriousFlag": false,
+      "lidsOffenceNumber": 3
+    },
+    {
+      "id": 3934646,
+      "offence": {
+        "offenceCode": "RR84028",
+        "statuteCode": "RR28",
         "description": "Failing to stop at school crossing (horsedrawn vehicle)"
       },
       "offencesCount": 1,

@@ -23,7 +23,7 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .awaitBody()
 
   // separating this out for now - DPS may use the same endpoint
-  suspend fun createCourtCaseMigration(courtCase: CreateCourtCase): CreateCourtCaseMigrationResponse =
+  suspend fun createCourtCaseMigration(courtCase: CreateCourtCaseMigrationRequest): CreateCourtCaseMigrationResponse =
     webClient
       .post()
       .uri("/court-case/migration")
@@ -162,8 +162,8 @@ data class CreateCourtCaseMigrationResponse(
   val courtChargeIds: List<String>,
 )
 
-data class CreateCourtAppearanceMigrationResponse(
-
-  val appearanceUuid: java.util.UUID,
-  val courtEventChargesIds: List<CreateNewChargeResponse>,
+data class CreateCourtCaseMigrationRequest(
+  val prisonerId: kotlin.String,
+  val appearances: kotlin.collections.List<CreateCourtAppearance>,
+  val otherCaseReferences: kotlin.collections.List<String>,
 )

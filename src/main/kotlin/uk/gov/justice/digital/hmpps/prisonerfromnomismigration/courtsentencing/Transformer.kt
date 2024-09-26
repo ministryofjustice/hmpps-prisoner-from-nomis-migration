@@ -15,20 +15,26 @@ fun CourtCaseResponse.toDpsCourtCase() = CreateCourtCase(
   appearances = emptyList(),
 )
 
+fun CourtCaseResponse.toDpsCourtCaseMigration() = CreateCourtCaseMigrationRequest(
+  prisonerId = this.offenderNo,
+  appearances = this.courtEvents.map { ca -> ca.toDpsCourtAppearance(offenderNo = offenderNo, caseReference = this.caseInfoNumber) },
+  otherCaseReferences = emptyList(), // TODO map to the list of case identifiers when returned from nomis
+)
+
 private const val WARRANT_TYPE_DEFAULT = "REMAND"
 private const val OUTCOME_DEFAULT = "3034"
 
-fun CourtEventResponse.toDpsCourtAppearance(offenderNo: String, dpsCaseId: String?) = CreateCourtAppearance(
+fun CourtEventResponse.toDpsCourtAppearance(offenderNo: String, dpsCaseId: String? = null, caseReference: String? = null) = CreateCourtAppearance(
   // TODO determine what happens when no result in NOMIS (approx 10% of CAs associated with a case)
   outcome = this.outcomeReasonCode?.code ?: OUTCOME_DEFAULT,
   courtCode = this.courtId,
   // Only handling appearances associated with a case
-  courtCaseUuid = dpsCaseId!!,
-  // case references are not associated with an appearance on NOMIS
-  courtCaseReference = "TBC",
+  courtCaseUuid = dpsCaseId,
+  // case references are not associated with an appearance on NOMIS, using latest (or possibly the version on OffenderCase) for all appearances
+  courtCaseReference = caseReference,
   appearanceDate = LocalDateTime.parse(this.eventDateTime).toLocalDate(),
   warrantType = WARRANT_TYPE_DEFAULT,
-  charges = emptyList(),
+  charges = this.courtEventCharges.map { charge -> charge.offenderCharge.toDpsCharge() },
 )
 
 fun OffenderChargeResponse.toDpsCharge(chargeId: String? = null) = CreateCharge(

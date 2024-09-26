@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
+import com.github.tomakehurst.wiremock.client.WireMock
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
@@ -131,6 +132,70 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
 
       await untilAsserted {
         assertThat(dpsCourtSentencingServer.createCourtCaseMigrationCount()).isEqualTo(14)
+      }
+
+      // verify 2 charges are mapped for each case
+      courtSentencingMappingApiMockServer.verify(
+        14,
+        WireMock.postRequestedFor(WireMock.urlPathEqualTo("/mapping/court-sentencing/court-cases"))
+          .withRequestBody(
+            WireMock.matchingJsonPath(
+              "courtCharges.size()",
+              WireMock.equalTo("2"),
+            ),
+          ),
+      )
+    }
+
+    @Test
+    internal fun `will migrate case hierarchy`() {
+      nomisApi.stubGetInitialCount(NomisApiExtension.COURT_CASES_ID_URL, 1) { courtCaseIdsPagedResponse(it) }
+      nomisApi.stubMultipleGetCourtCaseIdCounts(totalElements = 1, pageSize = 10)
+      nomisApi.stubGetCourtCase(caseId = 1)
+      courtSentencingMappingApiMockServer.stubGetByNomisId(HttpStatus.NOT_FOUND)
+      courtSentencingMappingApiMockServer.stubPostMapping()
+
+      dpsCourtSentencingServer.stubPostCourtCaseForCreateMigration(response = dpsCourtCaseCreateResponseWithTwoAppearancesAndTwoCharges())
+      courtSentencingMappingApiMockServer.stubCourtCaseMappingByMigrationId(count = 1)
+
+      webTestClient.performMigration(
+        """
+          {
+            "fromDate": "2020-01-01",
+            "toDate": "2020-01-02"
+          }
+        """.trimIndent(),
+      )
+
+      await untilAsserted {
+        dpsCourtSentencingServer.verify(
+          1,
+          WireMock.postRequestedFor(WireMock.urlPathEqualTo("/court-case/migration"))
+            .withRequestBody(
+              WireMock.matchingJsonPath(
+                "appearances.size()",
+                WireMock.equalTo("1"),
+              ),
+            )
+            .withRequestBody(
+              WireMock.matchingJsonPath(
+                "appearances[0].courtCaseReference",
+                WireMock.equalTo("caseRef1"),
+              ),
+            )
+            .withRequestBody(
+              WireMock.matchingJsonPath(
+                "appearances[0].charges[0].offenceCode",
+                WireMock.equalTo("RR84027"),
+              ),
+            )
+            .withRequestBody(
+              WireMock.matchingJsonPath(
+                "appearances[0].charges[0].outcome",
+                WireMock.equalTo("1081"),
+              ),
+            ),
+        )
       }
     }
 
