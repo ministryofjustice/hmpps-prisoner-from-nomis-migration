@@ -171,30 +171,10 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
         dpsCourtSentencingServer.verify(
           1,
           WireMock.postRequestedFor(WireMock.urlPathEqualTo("/court-case/migration"))
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "appearances.size()",
-                WireMock.equalTo("1"),
-              ),
-            )
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "appearances[0].courtCaseReference",
-                WireMock.equalTo("caseRef1"),
-              ),
-            )
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "appearances[0].charges[0].offenceCode",
-                WireMock.equalTo("RR84027"),
-              ),
-            )
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "appearances[0].charges[0].outcome",
-                WireMock.equalTo("1081"),
-              ),
-            ),
+            .withRequestBody(WireMock.matchingJsonPath("appearances.size()", WireMock.equalTo("1")))
+            .withRequestBody(WireMock.matchingJsonPath("appearances[0].courtCaseReference", WireMock.equalTo("caseRef1")))
+            .withRequestBody(WireMock.matchingJsonPath("appearances[0].charges[0].offenceCode", WireMock.equalTo("RR84027")))
+            .withRequestBody(WireMock.matchingJsonPath("appearances[0].charges[0].outcome", WireMock.equalTo("1081"))),
         )
       }
     }
