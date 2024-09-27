@@ -107,6 +107,7 @@ class CourtSentencingSynchronisationService(
           mappingApiService.getCourtCaseOrNullByNomisId(nomisCourtAppearance.caseId!!)?.let { courtCaseMapping ->
             telemetry.put("nomisCourtCaseId", courtCaseMapping.nomisCourtCaseId.toString())
             telemetry.put("dpsCourtCaseId", courtCaseMapping.dpsCourtCaseId)
+            // TODO wire up caseref from list of identifiers when implemented
             dpsApiService.createCourtAppearance(
               nomisCourtAppearance.toDpsCourtAppearance(
                 event.offenderIdDisplay,

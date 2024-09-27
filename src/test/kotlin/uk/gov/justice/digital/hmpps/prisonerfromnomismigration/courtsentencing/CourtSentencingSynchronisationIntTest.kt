@@ -858,7 +858,6 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBody(matchingJsonPath("outcome", equalTo("4506")))
                 .withRequestBody(matchingJsonPath("courtCode", equalTo("MDI")))
                 .withRequestBody(matchingJsonPath("courtCaseUuid", equalTo(DPS_COURT_CASE_ID)))
-                .withRequestBody(matchingJsonPath("courtCaseReference", equalTo("TBC")))
                 .withRequestBody(matchingJsonPath("appearanceDate", equalTo("2020-01-02")))
                 .withRequestBody(matchingJsonPath("warrantType", equalTo("REMAND"))),
             )
