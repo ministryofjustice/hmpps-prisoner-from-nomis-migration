@@ -100,7 +100,7 @@ internal class CSIPDpsApiServiceTest {
     }
 
     @Nested
-    @DisplayName("DELETE /csip-records/{dpsReportId}")
+    @DisplayName("DELETE /sync/csip-records/{dpsReportId}")
     inner class DeleteCSIPReport {
       private val dpsCSIPId = UUID.randomUUID().toString()
 
@@ -117,7 +117,7 @@ internal class CSIPDpsApiServiceTest {
         @Test
         fun `should call api with OAuth2 token`() {
           csipDpsApi.verify(
-            deleteRequestedFor(urlEqualTo("/csip-records/$dpsCSIPId"))
+            deleteRequestedFor(urlEqualTo("/sync/csip-records/$dpsCSIPId"))
               .withHeader("Authorization", equalTo("Bearer ABCDE")),
           )
         }
