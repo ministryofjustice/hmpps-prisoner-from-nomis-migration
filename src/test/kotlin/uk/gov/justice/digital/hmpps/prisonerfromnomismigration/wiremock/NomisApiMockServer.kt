@@ -877,7 +877,7 @@ private fun courtCaseResponse(
   "offenderNo": "$offenderNo",
   "bookingId": $bookingId,
   "caseSequence": 22,
-  "caseInfoNumber" : "$caseInfoNumber",
+  "primaryCaseInfoNumber" : "$caseInfoNumber",
   "caseStatus": {
     "code": "A",
     "description": "Active"
@@ -964,6 +964,7 @@ private fun courtCaseResponse(
       ]
     }
   ],
+  "caseInfoNumbers": [],
   "offenderCharges": [
     {
       "id": 3934645,

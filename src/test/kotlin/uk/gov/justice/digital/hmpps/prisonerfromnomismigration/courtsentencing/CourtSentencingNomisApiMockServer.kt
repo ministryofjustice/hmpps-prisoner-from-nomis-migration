@@ -41,7 +41,8 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       createdDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
       createdByUsername = "Q1251T",
       lidsCaseNumber = 1,
-      caseInfoNumber = "caseref1",
+      primaryCaseInfoNumber = "caseref1",
+      caseInfoNumbers = emptyList(),
     ),
   ) {
     nomisApi.stubFor(
