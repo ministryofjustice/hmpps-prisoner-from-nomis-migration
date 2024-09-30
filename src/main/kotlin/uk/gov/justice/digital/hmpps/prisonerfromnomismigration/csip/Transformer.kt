@@ -110,7 +110,7 @@ fun Decision.toDPSUpsertDecisionsAndActionsRequest() =
     recordedByDisplayName = recordedByDisplayName,
     date = recordedDate,
     nextSteps = nextSteps,
-    actions = actions.toUpsertDPSActions(),
+    actions = actions!!.toUpsertDPSActions(),
     actionOther = otherDetails,
   )
 
