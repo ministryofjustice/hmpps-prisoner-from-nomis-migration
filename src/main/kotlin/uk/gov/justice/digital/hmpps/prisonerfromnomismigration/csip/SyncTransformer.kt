@@ -241,7 +241,7 @@ fun Decision.toDPSSyncDecisionsAndActionsRequest() =
     recordedByDisplayName = recordedByDisplayName,
     date = recordedDate,
     nextSteps = nextSteps,
-    actions = actions!!.toDPSSyncActions(),
+    actions = actions.toDPSSyncActions(),
     actionOther = otherDetails,
   ).takeUnless { isEmpty() }
 
@@ -255,7 +255,7 @@ fun Decision.isEmpty() =
     recordedDate,
     nextSteps,
     otherDetails,
-  ).isEmpty() && actions!!.isEmpty()
+  ).isEmpty() && actions.isEmpty()
 
 fun Actions.isEmpty() =
   !openCSIPAlert && !nonAssociationsUpdated && !observationBook && !unitOrCellMove &&

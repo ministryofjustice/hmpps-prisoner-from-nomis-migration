@@ -385,7 +385,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubCSIPDelete(dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
     stubFor(
-      delete("/csip-records/$dpsCSIPId").willReturn(
+      delete("/sync/csip-records/$dpsCSIPId").willReturn(
         aResponse()
           .withStatus(HttpStatus.NO_CONTENT.value()),
       ),
@@ -393,7 +393,7 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubCSIPDeleteNotFound(status: HttpStatus = HttpStatus.NOT_FOUND) {
-    stubDeleteErrorResponse(status = status, url = "/csip-records/\\S+")
+    stubDeleteErrorResponse(status = status, url = "/sync/csip-records/\\S+")
   }
 
   private fun stubDeleteErrorResponse(status: HttpStatus, url: String, error: ErrorResponse = ErrorResponse(status = status.value())) {

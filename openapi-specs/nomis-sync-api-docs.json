@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-09-27.9214.6fc6ed4"
+    "version": "2024-09-30.9231.758682c"
   },
   "servers": [
     {
@@ -18078,6 +18078,9 @@
         "description": "CSIP Details"
       },
       "Decision": {
+        "required": [
+          "actions"
+        ],
         "type": "object",
         "properties": {
           "conclusion": {
