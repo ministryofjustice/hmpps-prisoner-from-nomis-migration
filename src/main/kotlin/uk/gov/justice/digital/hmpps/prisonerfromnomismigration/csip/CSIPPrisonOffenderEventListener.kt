@@ -16,6 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMess
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_CHILD_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CSIP_SYNC_QUEUE_ID
+import java.time.LocalDateTime
 import java.util.concurrent.CompletableFuture
 
 @Service
@@ -88,6 +89,7 @@ data class CSIPReportEvent(
   val csipReportId: Long,
   val offenderIdDisplay: String,
   val auditModuleName: String?,
+  val eventDatetime: LocalDateTime,
 )
 
 data class CSIPAttendeeEvent(

@@ -3,10 +3,8 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
-import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.exactly
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
-import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
@@ -38,6 +36,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingA
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.util.AbstractMap.SimpleEntry
 
@@ -119,9 +118,9 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create the csip in the csip service`() {
           csipDpsApi.verify(
             putRequestedFor(urlPathEqualTo("/sync/csip-records"))
-              .withRequestBody(matchingJsonPath("prisonNumber", equalTo("A1234BC")))
-              .withRequestBody(matchingJsonPath("referral.incidentDate", equalTo("2024-06-12")))
-              .withRequestBody(matchingJsonPath("referral.incidentTime", equalTo("10:32:12"))),
+              .withRequestBodyJsonPath("prisonNumber", "A1234BC")
+              .withRequestBodyJsonPath("referral.incidentDate", "2024-06-12")
+              .withRequestBodyJsonPath("referral.incidentTime", "10:32:12"),
           )
         }
 
@@ -129,14 +128,9 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create a mapping between the two records`() {
           mappingApi.verify(
             postRequestedFor(urlPathEqualTo(CSIP_CREATE_MAPPING_URL))
-              .withRequestBody(matchingJsonPath("dpsCSIPReportId", equalTo(DPS_CSIP_ID)))
-              .withRequestBody(matchingJsonPath("nomisCSIPReportId", equalTo("$NOMIS_CSIP_ID")))
-              .withRequestBody(
-                matchingJsonPath(
-                  "factorMappings[0].dpsCSIPFactorId",
-                  equalTo("a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e6"),
-                ),
-              ),
+              .withRequestBodyJsonPath("dpsCSIPReportId", DPS_CSIP_ID)
+              .withRequestBodyJsonPath("nomisCSIPReportId", "$NOMIS_CSIP_ID")
+              .withRequestBodyJsonPath("factorMappings[0].dpsCSIPFactorId", "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e6"),
           )
         }
 
@@ -327,9 +321,9 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
               csipMappingApi.verify(
                 exactly(2),
                 postRequestedFor(urlPathEqualTo(CSIP_CREATE_MAPPING_URL))
-                  .withRequestBody(matchingJsonPath("dpsCSIPReportId", equalTo(dpsCSIPReportId)))
-                  .withRequestBody(matchingJsonPath("nomisCSIPReportId", equalTo(nomisCSIPReportId.toString())))
-                  .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
+                  .withRequestBodyJsonPath("dpsCSIPReportId", dpsCSIPReportId)
+                  .withRequestBodyJsonPath("nomisCSIPReportId", nomisCSIPReportId.toString())
+                  .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
               )
             }
 
@@ -536,13 +530,13 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will update DPS with the changes specific to the OIDCSIPN screen`() {
           csipDpsApi.verify(
             putRequestedFor(urlEqualTo("/sync/csip-records"))
-              .withRequestBody(matchingJsonPath("id", equalTo(dpsCSIPId)))
-              .withRequestBody(matchingJsonPath("legacyId", equalTo("1234")))
-              .withRequestBody(matchingJsonPath("logCode", equalTo("ASI-001")))
-              .withRequestBody(matchingJsonPath("prisonNumber", equalTo("A1234BC")))
-              .withRequestBody(matchingJsonPath("actionedAt", equalTo("2024-04-01T10:32:12.867081")))
-              .withRequestBody(matchingJsonPath("actionedBy", equalTo("JSMITH")))
-              .withRequestBody(matchingJsonPath("actionedByDisplayName", equalTo("JSMITH"))),
+              .withRequestBodyJsonPath("id", dpsCSIPId)
+              .withRequestBodyJsonPath("legacyId", "1234")
+              .withRequestBodyJsonPath("logCode", "ASI-001")
+              .withRequestBodyJsonPath("prisonNumber", "A1234BC")
+              .withRequestBodyJsonPath("actionedAt", "2024-04-01T10:32:12.867081")
+              .withRequestBodyJsonPath("actionedBy", "JSMITH")
+              .withRequestBodyJsonPath("actionedByDisplayName", "JSMITH"),
           )
         }
 
@@ -605,9 +599,9 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
               csipMappingApi.verify(
                 exactly(2),
                 postRequestedFor(urlPathEqualTo(CSIP_CREATE_CHILD_MAPPINGS_URL))
-                  .withRequestBody(matchingJsonPath("dpsCSIPReportId", equalTo(dpsCSIPReportId)))
-                  .withRequestBody(matchingJsonPath("nomisCSIPReportId", equalTo(nomisCSIPReportId.toString())))
-                  .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
+                  .withRequestBodyJsonPath("dpsCSIPReportId", dpsCSIPReportId)
+                  .withRequestBodyJsonPath("nomisCSIPReportId", nomisCSIPReportId)
+                  .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
               )
             }
 
@@ -753,7 +747,8 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             csipDpsApi.verify(
               1,
-              WireMock.deleteRequestedFor(urlPathEqualTo("/sync/csip-records/$dpsCSIPId")),
+              WireMock.deleteRequestedFor(urlPathEqualTo("/sync/csip-records/$dpsCSIPId"))
+                .withRequestBodyJsonPath("actionedAt", "2024-06-11T10:39:17"),
             )
           }
         }

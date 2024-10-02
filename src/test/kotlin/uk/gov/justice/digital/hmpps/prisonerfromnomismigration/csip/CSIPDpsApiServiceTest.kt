@@ -2,7 +2,6 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip
 
 import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
-import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import kotlinx.coroutines.runBlocking
@@ -18,7 +17,10 @@ import org.springframework.http.HttpStatus
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension.Companion.csipDpsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsSyncCsipRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.DefaultLegacyActioned
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
+import java.time.LocalDateTime
 import java.util.UUID
 
 @SpringAPIServiceTest
@@ -58,27 +60,22 @@ internal class CSIPDpsApiServiceTest {
         fun `will pass data to the api (this is a subset of the full data passed)`() {
           csipDpsApi.verify(
             putRequestedFor(urlEqualTo("/sync/csip-records"))
-              .withRequestBody(matchingJsonPath("legacyId", equalTo("1234")))
-              .withRequestBody(matchingJsonPath("logCode", equalTo("ASI-001")))
-              .withRequestBody(matchingJsonPath("referral.incidentDate", equalTo("2024-06-12")))
-              .withRequestBody(matchingJsonPath("referral.incidentTypeCode", equalTo("INT")))
-              .withRequestBody(matchingJsonPath("referral.incidentLocationCode", equalTo("LIB")))
-              .withRequestBody(matchingJsonPath("referral.referredBy", equalTo("JIM_ADM")))
-              .withRequestBody(matchingJsonPath("referral.refererAreaCode", equalTo("EDU")))
-              .withRequestBody(matchingJsonPath("referral.incidentInvolvementCode", equalTo("PER")))
-              .withRequestBody(
-                matchingJsonPath(
-                  "referral.descriptionOfConcern",
-                  equalTo("There was a worry about the offender"),
-                ),
-              )
-              .withRequestBody(matchingJsonPath("referral.knownReasons", equalTo("known reasons details go in here")))
-              .withRequestBody(matchingJsonPath("referral.incidentTime", equalTo("10:32:12")))
-              .withRequestBody(matchingJsonPath("referral.isProactiveReferral", equalTo("true")))
-              .withRequestBody(matchingJsonPath("referral.isStaffAssaulted", equalTo("true")))
-              .withRequestBody(matchingJsonPath("referral.assaultedStaffName", equalTo("Fred Jones")))
-              .withRequestBody(matchingJsonPath("referral.otherInformation", equalTo("other information goes in here")))
-              .withRequestBody(matchingJsonPath("referral.isSaferCustodyTeamInformed", equalTo("NO"))),
+              .withRequestBodyJsonPath("legacyId", "1234")
+              .withRequestBodyJsonPath("logCode", "ASI-001")
+              .withRequestBodyJsonPath("referral.incidentDate", "2024-06-12")
+              .withRequestBodyJsonPath("referral.incidentTypeCode", "INT")
+              .withRequestBodyJsonPath("referral.incidentLocationCode", "LIB")
+              .withRequestBodyJsonPath("referral.referredBy", "JIM_ADM")
+              .withRequestBodyJsonPath("referral.refererAreaCode", "EDU")
+              .withRequestBodyJsonPath("referral.incidentInvolvementCode", "PER")
+              .withRequestBodyJsonPath("referral.descriptionOfConcern", "There was a worry about the offender")
+              .withRequestBodyJsonPath("referral.knownReasons", "known reasons details go in here")
+              .withRequestBodyJsonPath("referral.incidentTime", "10:32:12")
+              .withRequestBodyJsonPath("referral.isProactiveReferral", "true")
+              .withRequestBodyJsonPath("referral.isStaffAssaulted", "true")
+              .withRequestBodyJsonPath("referral.assaultedStaffName", "Fred Jones")
+              .withRequestBodyJsonPath("referral.otherInformation", "other information goes in here")
+              .withRequestBodyJsonPath("referral.isSaferCustodyTeamInformed", "NO"),
           )
         }
       }
@@ -103,6 +100,7 @@ internal class CSIPDpsApiServiceTest {
     @DisplayName("DELETE /sync/csip-records/{dpsReportId}")
     inner class DeleteCSIPReport {
       private val dpsCSIPId = UUID.randomUUID().toString()
+      private val dateTime = LocalDateTime.now()
 
       @Nested
       inner class CSIPExists {
@@ -110,7 +108,7 @@ internal class CSIPDpsApiServiceTest {
         internal fun setUp() {
           csipDpsApi.stubCSIPDelete(dpsCSIPId = dpsCSIPId)
           runBlocking {
-            csipService.deleteCSIP(csipReportId = dpsCSIPId)
+            csipService.deleteCSIP(csipReportId = dpsCSIPId, DefaultLegacyActioned(actionedAt = dateTime))
           }
         }
 
@@ -118,7 +116,9 @@ internal class CSIPDpsApiServiceTest {
         fun `should call api with OAuth2 token`() {
           csipDpsApi.verify(
             deleteRequestedFor(urlEqualTo("/sync/csip-records/$dpsCSIPId"))
-              .withHeader("Authorization", equalTo("Bearer ABCDE")),
+              .withHeader("Authorization", equalTo("Bearer ABCDE"))
+              .withRequestBodyJsonPath("actionedAt", dateTime),
+
           )
         }
       }
@@ -133,7 +133,7 @@ internal class CSIPDpsApiServiceTest {
         @Test
         fun `should throw error when not found`() = runTest {
           assertThrows<WebClientResponseException.NotFound> {
-            csipService.deleteCSIP(csipReportId = dpsCSIPId)
+            csipService.deleteCSIP(csipReportId = dpsCSIPId, DefaultLegacyActioned(actionedAt = LocalDateTime.now()))
           }
         }
       }
