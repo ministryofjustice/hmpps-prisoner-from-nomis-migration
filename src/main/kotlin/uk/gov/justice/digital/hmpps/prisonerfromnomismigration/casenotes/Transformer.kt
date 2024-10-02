@@ -12,7 +12,6 @@ import java.util.UUID
 
 fun CaseNoteResponse.toDPSCreateCaseNote(offenderNo: String) = MigrateCaseNoteRequest(
   legacyId = this.caseNoteId,
-  personIdentifier = offenderNo,
   // just 5 very early records with no prison which are all 'out':
   locationId = this.prisonId ?: "OUT",
   // 6 records with incorrect code, see https://mojdt.slack.com/archives/C06G85DCF8T/p1727086140883849?thread_ts=1726847680.924269&cid=C06G85DCF8T

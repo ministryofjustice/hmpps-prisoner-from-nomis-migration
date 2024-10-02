@@ -4,9 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
-import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
-import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
@@ -89,8 +87,7 @@ class CaseNotesApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubMigrateCaseNotes(offenderNo: String, caseNotesIdPairs: List<Pair<Long, String>>) {
     stubFor(
-      post("/migrate/case-notes")
-        .withRequestBody(matchingJsonPath("$[0].personIdentifier", equalTo(offenderNo)))
+      post("/migrate/case-notes/$offenderNo")
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -108,8 +105,7 @@ class CaseNotesApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubMigrateCaseNotesFailure(offenderNo: String) {
     stubFor(
-      post("/migrate/case-notes")
-        .withRequestBody(matchingJsonPath("$[0].personIdentifier", equalTo(offenderNo)))
+      post("/migrate/case-notes/$offenderNo")
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
