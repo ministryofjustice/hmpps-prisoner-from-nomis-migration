@@ -130,7 +130,7 @@ class CourtSentencingSynchronisationService(
           } ?: let {
             telemetryClient.trackEvent(
               "court-appearance-synchronisation-created-failed",
-              telemetry + ("nomisCourtCaseId" to nomisCourtAppearance.caseId) + ("reason" to "associated court case is not mapped"),
+              telemetry + ("nomisCourtCaseId" to nomisCourtAppearance.caseId.toString()) + ("reason" to "associated court case is not mapped"),
             )
             throw IllegalStateException("Received COURT_EVENTS_INSERTED for court case that has never been created/mapped")
           }
@@ -417,7 +417,7 @@ class CourtSentencingSynchronisationService(
           } ?: let {
             telemetryClient.trackEvent(
               "court-appearance-synchronisation-updated-failed",
-              telemetry + ("nomisCourtCaseId" to nomisCourtAppearance.caseId) + ("reason" to "associated court case is not mapped"),
+              telemetry + ("nomisCourtCaseId" to nomisCourtAppearance.caseId.toString()) + ("reason" to "associated court case is not mapped"),
             )
             throw IllegalStateException("Received COURT_EVENTS_UPDATED with court case ${nomisCourtAppearance.caseId} that has never been created/mapped")
           }
