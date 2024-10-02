@@ -129,9 +129,8 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will POST all casenotes to DPS for each prisoner`() {
         caseNotesApi.verify(
-          postRequestedFor(urlPathEqualTo("/migrate/case-notes"))
+          postRequestedFor(urlPathEqualTo("/migrate/case-notes/$OFFENDER_NUMBER1"))
             .withRequestBodyJsonPath("$[0].legacyId", "1")
-            .withRequestBodyJsonPath("$[0].personIdentifier", equalTo(OFFENDER_NUMBER1))
             .withRequestBodyJsonPath("$[0].locationId", equalTo("SWI"))
             .withRequestBodyJsonPath("$[0].type", equalTo("GEN"))
             .withRequestBodyJsonPath("$[0].subType", equalTo("OUTCOME"))
@@ -147,9 +146,8 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
             .withRequestBodyJsonPath("$[0].occurrenceDateTime", equalTo("2021-02-03T04:05:06")),
         )
         caseNotesApi.verify(
-          postRequestedFor(urlPathEqualTo("/migrate/case-notes"))
+          postRequestedFor(urlPathEqualTo("/migrate/case-notes/$OFFENDER_NUMBER2"))
             .withRequestBodyJsonPath("$[0].legacyId", equalTo("1"))
-            .withRequestBodyJsonPath("$[0].personIdentifier", equalTo(OFFENDER_NUMBER2))
             .withRequestBodyJsonPath("$[0].locationId", equalTo("SWI"))
             .withRequestBodyJsonPath("$[0].type", equalTo("APP"))
             .withRequestBodyJsonPath("$[0].subType", equalTo("OUTCOME"))
@@ -191,13 +189,11 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will transform NOMIS case note to DPS case note`() {
         caseNotesApi.verify(
-          postRequestedFor(urlPathEqualTo("/migrate/case-notes"))
-            .withRequestBodyJsonPath("$[0].personIdentifier", OFFENDER_NUMBER1)
+          postRequestedFor(urlPathEqualTo("/migrate/case-notes/$OFFENDER_NUMBER1"))
             .withRequestBodyJsonPath("$[0].text", "text"),
         )
         caseNotesApi.verify(
-          postRequestedFor(urlPathEqualTo("/migrate/case-notes"))
-            .withRequestBodyJsonPath("$[0].personIdentifier", OFFENDER_NUMBER2)
+          postRequestedFor(urlPathEqualTo("/migrate/case-notes/$OFFENDER_NUMBER2"))
             .withRequestBodyJsonPath("$[0].text", "text"),
         )
       }
@@ -216,7 +212,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will POST the casenotes to DPS only once`() {
-        caseNotesApi.verify(1, postRequestedFor(urlPathEqualTo("/migrate/case-notes")))
+        caseNotesApi.verify(1, postRequestedFor(urlPathEqualTo("/migrate/case-notes/$OFFENDER_NUMBER1")))
       }
 
       @Test
@@ -241,7 +237,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will POST the casenotes to DPS twice as per dlqMaxReceiveCount, but not mappings`() {
         await untilAsserted {
-          caseNotesApi.verify(2, postRequestedFor(urlPathEqualTo("/migrate/case-notes")))
+          caseNotesApi.verify(2, postRequestedFor(urlPathEqualTo("/migrate/case-notes/$OFFENDER_NUMBER1")))
           caseNotesMappingApiMockServer.verify(0, postRequestedFor(urlPathEqualTo("/mapping/casenotes/$OFFENDER_NUMBER1/all")))
         }
       }
@@ -252,7 +248,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
           eq("casenotes-migration-entity-failed"),
           check {
             assertThat(it).containsEntry("offenderNo", OFFENDER_NUMBER1)
-            assertThat(it).containsEntry("error", "400 Bad Request from POST http://localhost:8096/migrate/case-notes")
+            assertThat(it).containsEntry("error", "400 Bad Request from POST http://localhost:8096/migrate/case-notes/$OFFENDER_NUMBER1")
           },
           isNull(),
         )

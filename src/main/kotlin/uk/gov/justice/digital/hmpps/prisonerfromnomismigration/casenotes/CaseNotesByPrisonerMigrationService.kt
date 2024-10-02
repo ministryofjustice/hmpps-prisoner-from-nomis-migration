@@ -71,7 +71,7 @@ class CaseNotesByPrisonerMigrationService(
         ?: PrisonerCaseNotesResponse(emptyList())
       val caseNotesToMigrate = nomisCaseNotes.caseNotes.map { it.toDPSCreateCaseNote(offenderNo) }
       val bookingIdMap: Map<Long, Long> = nomisCaseNotes.caseNotes.map { it.caseNoteId to it.bookingId }.toMap()
-      caseNotesDpsService.migrateCaseNotes(dpsCaseNotes = caseNotesToMigrate)
+      caseNotesDpsService.migrateCaseNotes(offenderNo, caseNotesToMigrate)
         .also { migrationResultList ->
           createMapping(
             offenderNo = offenderNo,
