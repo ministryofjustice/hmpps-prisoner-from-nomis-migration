@@ -7,6 +7,7 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.MappingResponse.MAPPING_FAILED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.DefaultLegacyActioned
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -333,7 +334,7 @@ class CSIPSynchronisationService(
     mappingApiService.getCSIPReportByNomisId(nomisCSIPReportId = event.csipReportId)
       ?.let {
         log.debug("Found csip mapping: {}", it)
-        csipDpsService.deleteCSIP(it.dpsCSIPReportId)
+        csipDpsService.deleteCSIP(it.dpsCSIPReportId, DefaultLegacyActioned(actionedAt = event.eventDatetime))
         // This will remove all child mappings
         tryToDeleteCSIPReportMapping(it.dpsCSIPReportId)
         telemetryClient.trackEvent(
