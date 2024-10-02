@@ -734,7 +734,7 @@ internal class CSIPMigrationServiceTest {
           ),
         )
 
-        verify(queueService, times(15)).sendMessage(
+        verify(queueService, times(15)).sendMessageNoTracing(
           message = eq(MIGRATE_ENTITY),
           context = check<MigrationContext<CSIPMigrationFilter>> {
             assertThat(it.estimatedCount).isEqualTo(100_200)
@@ -772,11 +772,10 @@ internal class CSIPMigrationServiceTest {
           ),
         )
 
-        verify(queueService, times(15)).sendMessage(
+        verify(queueService, times(15)).sendMessageNoTracing(
           eq(MIGRATE_ENTITY),
           context.capture(),
           delaySeconds = eq(0),
-
         )
         val allContexts: List<MigrationContext<CSIPIdResponse>> = context.allValues
 

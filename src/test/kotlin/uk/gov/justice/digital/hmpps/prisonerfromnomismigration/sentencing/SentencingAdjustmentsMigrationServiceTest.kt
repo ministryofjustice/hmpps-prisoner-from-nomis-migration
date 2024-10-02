@@ -725,7 +725,7 @@ internal class SentencingAdjustmentsMigrationServiceTest {
           ),
         )
 
-        verify(queueService, times(15)).sendMessage(
+        verify(queueService, times(15)).sendMessageNoTracing(
           message = eq(MIGRATE_ENTITY),
           context = check<MigrationContext<SentencingMigrationFilter>> {
             assertThat(it.estimatedCount).isEqualTo(100_200)
@@ -763,11 +763,10 @@ internal class SentencingAdjustmentsMigrationServiceTest {
           ),
         )
 
-        verify(queueService, times(15)).sendMessage(
+        verify(queueService, times(15)).sendMessageNoTracing(
           eq(MIGRATE_ENTITY),
           context.capture(),
           delaySeconds = eq(0),
-
         )
         val allContexts: List<MigrationContext<NomisAdjustmentId>> = context.allValues
 

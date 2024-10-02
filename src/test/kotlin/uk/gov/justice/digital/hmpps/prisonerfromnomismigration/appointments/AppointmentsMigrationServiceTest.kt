@@ -733,7 +733,7 @@ internal class AppointmentsMigrationServiceTest {
           ),
         )
 
-        verify(queueService, times(15)).sendMessage(
+        verify(queueService, times(15)).sendMessageNoTracing(
           message = eq(MIGRATE_ENTITY),
           context = check<MigrationContext<AppointmentsMigrationFilter>> {
             assertThat(it.estimatedCount).isEqualTo(100_200)
@@ -772,7 +772,7 @@ internal class AppointmentsMigrationServiceTest {
           ),
         )
 
-        verify(queueService, times(15)).sendMessage(
+        verify(queueService, times(15)).sendMessageNoTracing(
           eq(MIGRATE_ENTITY),
           context.capture(),
           delaySeconds = eq(0),

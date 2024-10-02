@@ -354,7 +354,7 @@ class ActivitiesMigrationServiceTest {
         ),
       )
 
-      verify(queueService, times(7)).sendMessage(
+      verify(queueService, times(7)).sendMessageNoTracing(
         message = eq(MigrationMessageType.MIGRATE_ENTITY),
         context = check<MigrationContext<ActivitiesMigrationFilter>> {
           assertThat(it.estimatedCount).isEqualTo(7)
@@ -387,7 +387,7 @@ class ActivitiesMigrationServiceTest {
         ),
       )
 
-      verify(queueService, times(7)).sendMessage(
+      verify(queueService, times(7)).sendMessageNoTracing(
         eq(MigrationMessageType.MIGRATE_ENTITY),
         context.capture(),
         delaySeconds = eq(0),

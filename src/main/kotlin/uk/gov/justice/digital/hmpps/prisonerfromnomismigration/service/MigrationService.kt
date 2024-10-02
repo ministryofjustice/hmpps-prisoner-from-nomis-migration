@@ -108,7 +108,7 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any>(
         context = context,
         body = it,
       )
-    }?.forEach { queueService.sendMessage(MigrationMessageType.MIGRATE_ENTITY, it) }
+    }?.forEach { queueService.sendMessageNoTracing(MigrationMessageType.MIGRATE_ENTITY, it) }
 
   suspend fun migrateStatusCheck(context: MigrationContext<MigrationStatusCheck>) {
     /*
