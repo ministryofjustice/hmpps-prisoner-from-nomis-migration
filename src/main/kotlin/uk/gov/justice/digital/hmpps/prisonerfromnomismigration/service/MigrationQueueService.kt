@@ -35,13 +35,21 @@ class MigrationQueueService(
   }
 
   suspend fun <T : Enum<T>> sendMessage(message: T, context: MigrationContext<*>, delaySeconds: Int = 0) {
+    sendMessage(message, context, delaySeconds, noTracing = false)
+  }
+
+  suspend fun <T : Enum<T>> sendMessageNoTracing(message: T, context: MigrationContext<*>, delaySeconds: Int = 0) {
+    sendMessage(message, context, delaySeconds, noTracing = true)
+  }
+
+  private suspend fun <T : Enum<T>> sendMessage(message: T, context: MigrationContext<*>, delaySeconds: Int = 0, noTracing: Boolean = false) {
     val queue = hmppsQueueService.findByQueueId(context.type.queueId)
       ?: throw IllegalStateException("Queue not found for ${context.type.queueId}")
     queue.sqsClient.sendMessage(
       SendMessageRequest.builder()
         .queueUrl(queue.queueUrl)
         .messageBody(MigrationMessage(message, context).toJson())
-        .eventTypeMessageAttributes("prisoner-from-nomis-migration-${context.type.telemetryName}")
+        .eventTypeMessageAttributes("prisoner-from-nomis-migration-${context.type.telemetryName}", noTracing = noTracing)
         .delaySeconds(delaySeconds)
         .build(),
     ).thenAccept {

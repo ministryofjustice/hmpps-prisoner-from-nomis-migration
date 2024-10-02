@@ -370,7 +370,7 @@ class AllocationsMigrationServiceTest {
         ),
       )
 
-      verify(queueService, times(7)).sendMessage(
+      verify(queueService, times(7)).sendMessageNoTracing(
         message = eq(MigrationMessageType.MIGRATE_ENTITY),
         context = check<MigrationContext<AllocationsMigrationFilter>> {
           assertThat(it.estimatedCount).isEqualTo(7)
@@ -403,11 +403,10 @@ class AllocationsMigrationServiceTest {
         ),
       )
 
-      verify(queueService, times(7)).sendMessage(
+      verify(queueService, times(7)).sendMessageNoTracing(
         eq(MigrationMessageType.MIGRATE_ENTITY),
         context.capture(),
         delaySeconds = eq(0),
-
       )
       val allContexts: List<MigrationContext<FindActiveAllocationIdsResponse>> = context.allValues
 
