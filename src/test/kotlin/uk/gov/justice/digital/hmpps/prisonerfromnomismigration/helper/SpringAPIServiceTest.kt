@@ -14,6 +14,7 @@ import org.springframework.test.context.BootstrapWith
 import org.springframework.web.reactive.config.EnableWebFlux
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.WebClientConfiguration
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonDpsApiExtension
@@ -54,6 +55,7 @@ import kotlin.annotation.AnnotationTarget.CLASS
   LocationsApiExtension::class,
   AlertsDpsApiExtension::class,
   PrisonPersonDpsApiExtension::class,
+  ContactPersonDpsApiExtension::class,
 )
 @ActiveProfiles("test")
 @EnableWebFlux
