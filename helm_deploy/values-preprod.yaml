@@ -23,6 +23,9 @@ generic-service:
     API_BASE_URL_ALERTS: https://alerts-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_COURT_SENTENCING: https://remand-and-sentencing-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_PRISON_PERSON: https://prison-person-api-preprod.prison.service.justice.gov.uk
+    API_BASE_URL_CONTACT_PERSON: https://prisoner-nomis-migration-preprod.hmpps.service.justice.gov.uk
+    # switch to this when available
+    # API_BASE_URL_CONTACT_PERSON: https://contacts-api-preprod.hmpps.service.justice.gov.uk
     FEATURE_EVENT_OFFENDER_CASES-DELETED: false
     FEATURE_EVENT_OFFENDER_CASES-UPDATED: false
     FEATURE_EVENT_COURT_EVENTS-INSERTED: false

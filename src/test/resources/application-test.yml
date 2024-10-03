@@ -21,6 +21,7 @@ api.base.url:
   court.sentencing: http://localhost:8094
   prison.person: http://localhost:8095
   casenotes: http://localhost:8096
+  contact.person: http://localhost:8097
 
 visits:
   page:

@@ -16,6 +16,7 @@ api.base.url:
   court.sentencing: http://localhost:8090
   alerts: http://localhost:8092
   prison.person: http://localhost:8095
+  contact.person: http://localhost:8097
 
 spring:
   r2dbc:
