@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.microsoft.applicationinsights.TelemetryClient
+import kotlinx.coroutines.future.await
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
@@ -20,7 +21,7 @@ class SynchronisationQueueService(
   private val objectMapper: ObjectMapper,
 ) {
 
-  fun sendMessage(messageType: String, synchronisationType: SynchronisationType, message: Any, telemetryAttributes: Map<String, String> = mapOf(), delaySeconds: Int = 0) {
+  suspend fun sendMessage(messageType: String, synchronisationType: SynchronisationType, message: Any, telemetryAttributes: Map<String, String> = mapOf()) {
     val queue = hmppsQueueService.findByQueueId(synchronisationType.queueId)
       ?: throw IllegalStateException("Queue not found for ${synchronisationType.queueId}")
     val sqsMessage = SQSMessage(
@@ -40,7 +41,7 @@ class SynchronisationQueueService(
         mapOf("messageId" to it.messageId()),
         null,
       )
-    }
+    }.await()
   }
 
   private fun Any.toJson() = objectMapper.writeValueAsString(this)
