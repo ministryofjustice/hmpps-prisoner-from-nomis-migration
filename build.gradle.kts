@@ -19,7 +19,7 @@ configurations {
 dependencies {
   implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:1.0.7")
   implementation("org.springframework.boot:spring-boot-starter-webflux")
-  implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:5.0.0")
+  implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:5.0.1")
   implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
 
   implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.6.0")
