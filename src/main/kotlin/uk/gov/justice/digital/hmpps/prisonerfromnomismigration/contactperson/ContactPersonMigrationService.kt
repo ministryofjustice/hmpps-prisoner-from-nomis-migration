@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 @Service
 class ContactPersonMigrationService(
   mappingService: ContactPersonMappingApiService,
+  val nomisApiService: ContactPersonNomisApiService,
   @Value("\${contactperson.page.size:1000}") pageSize: Long,
   @Value("\${contactperson.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${contactperson.complete-check.count}") completeCheckCount: Int,
@@ -26,7 +27,12 @@ class ContactPersonMigrationService(
     migrationFilter: ContactPersonMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
-  ): PageImpl<PersonIdResponse> = TODO()
+  ): PageImpl<PersonIdResponse> = nomisApiService.getPersonIdsToMigrate(
+    fromDate = migrationFilter.fromDate,
+    toDate = migrationFilter.toDate,
+    pageNumber = pageNumber,
+    pageSize = pageSize,
+  )
 
   override suspend fun migrateNomisEntity(context: MigrationContext<PersonIdResponse>) = TODO()
 

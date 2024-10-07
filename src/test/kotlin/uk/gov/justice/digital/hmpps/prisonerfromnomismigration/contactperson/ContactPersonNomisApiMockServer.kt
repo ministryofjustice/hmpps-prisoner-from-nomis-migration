@@ -11,9 +11,9 @@ import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactPerson
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PagePersonIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -49,20 +49,35 @@ class ContactPersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
   }
 
   fun stubGetPersonIdsToMigrate(
-    personIdPages: PagePersonIdResponse = pagePersonIdResponse(),
+    count: Long = 1,
+    content: List<PersonIdResponse> = listOf(
+      PersonIdResponse(123456),
+    ),
   ) {
     nomisApi.stubFor(
       get(urlPathEqualTo("/persons/ids")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(personIdPages)),
+          .withBody(pagePersonIdResponse(count = count, content = content)),
       ),
     )
   }
 
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
+
+  fun pagePersonIdResponse(
+    count: Long,
+    content: List<PersonIdResponse>,
+  ) = pageContent(
+    objectMapper = objectMapper,
+    content = content,
+    pageSize = 1L,
+    pageNumber = 0L,
+    totalElements = count,
+    size = 1,
+  )
 }
 
 fun contactPerson(): ContactPerson = ContactPerson(
@@ -82,12 +97,4 @@ fun contactPerson(): ContactPerson = ContactPerson(
   identifiers = emptyList(),
   contacts = emptyList(),
   restrictions = emptyList(),
-)
-
-fun pagePersonIdResponse(): PagePersonIdResponse = PagePersonIdResponse(
-  totalElements = 1,
-  totalPages = 1,
-  number = 0,
-  numberOfElements = 1,
-  content = listOf(PersonIdResponse(123456)),
 )
