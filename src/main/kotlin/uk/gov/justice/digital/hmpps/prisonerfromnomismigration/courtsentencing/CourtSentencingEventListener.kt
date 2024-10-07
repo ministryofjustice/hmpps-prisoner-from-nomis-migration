@@ -50,6 +50,10 @@ class CourtSentencingEventListener(
               "OFFENDER_SENTENCES-INSERTED" -> courtSentencingSynchronisationService.nomisSentenceInserted(sqsMessage.Message.fromJson())
               "OFFENDER_SENTENCES-DELETED" -> courtSentencingSynchronisationService.nomisSentenceDeleted(sqsMessage.Message.fromJson())
               "OFFENDER_SENTENCES-UPDATED" -> courtSentencingSynchronisationService.nomisSentenceUpdated(sqsMessage.Message.fromJson())
+              "OFFENDER_CASE_IDENTIFIERS-DELETED",
+              "OFFENDER_CASE_IDENTIFIERS-INSERTED",
+              "OFFENDER_CASE_IDENTIFIERS-UPDATED",
+              -> courtSentencingSynchronisationService.nomisCaseIdentifiersUpdated(eventType, sqsMessage.Message.fromJson())
 
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
@@ -117,6 +121,15 @@ data class OffenderChargeEvent(
 data class OffenderSentenceEvent(
   val sentenceSequence: Int,
   val offenderIdDisplay: String,
+  val bookingId: Long,
+  val auditModuleName: String?,
+)
+
+data class CaseIdentifiersEvent(
+  val caseId: Long,
+  val offenderIdDisplay: String,
+  val identifierType: String,
+  val identifierNo: String,
   val bookingId: Long,
   val auditModuleName: String?,
 )

@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseIdentifierResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderChargeResponse
@@ -18,14 +19,17 @@ fun CourtCaseResponse.toDpsCourtCase() = CreateCourtCase(
 fun CourtCaseResponse.toDpsCourtCaseMigration() = CreateCourtCaseMigrationRequest(
   prisonerId = this.offenderNo,
   appearances = this.courtEvents.map { ca -> ca.toDpsCourtAppearance(offenderNo = offenderNo, caseReference = this.primaryCaseInfoNumber) },
-  // TODO map to the list of case identifiers when returned from nomis
-  otherCaseReferences = this.caseInfoNumbers.map { it.reference },
+  otherCaseReferences = this.caseInfoNumbers.map { CaseReference(it.reference, LocalDateTime.parse(it.createDateTime)) },
 )
 
 private const val WARRANT_TYPE_DEFAULT = "REMAND"
 private const val OUTCOME_DEFAULT = "3034"
 
-fun CourtEventResponse.toDpsCourtAppearance(offenderNo: String, dpsCaseId: String? = null, caseReference: String? = null) = CreateCourtAppearance(
+fun CourtEventResponse.toDpsCourtAppearance(
+  offenderNo: String,
+  dpsCaseId: String? = null,
+  caseReference: String? = null,
+) = CreateCourtAppearance(
   // TODO determine what happens when no result in NOMIS (approx 10% of CAs associated with a case)
   outcome = this.outcomeReasonCode?.code ?: OUTCOME_DEFAULT,
   courtCode = this.courtId,
@@ -52,3 +56,6 @@ fun SentenceResponse.toDpsSentence(offenderNo: String, sentenceChargeIds: List<S
   prisonerId = offenderNo,
   chargeUuids = sentenceChargeIds.map { UUID.fromString(it) },
 )
+
+fun CaseIdentifierResponse.toDpsCaseReference() =
+  CaseReference(reference = this.reference, createDateTime = LocalDateTime.parse(this.createDateTime))

@@ -9,6 +9,7 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseIdentifierResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventResponse
@@ -28,6 +29,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     bookingId: Long = 123456,
     offenderNo: String = "A3864DZ",
     courtCaseId: Long = 3,
+    caseIndentifiers: List<CaseIdentifierResponse> = emptyList(),
     response: CourtCaseResponse = CourtCaseResponse(
       bookingId = bookingId,
       id = courtCaseId,
@@ -42,7 +44,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       createdByUsername = "Q1251T",
       lidsCaseNumber = 1,
       primaryCaseInfoNumber = "caseref1",
-      caseInfoNumbers = emptyList(),
+      caseInfoNumbers = caseIndentifiers,
     ),
   ) {
     nomisApi.stubFor(
