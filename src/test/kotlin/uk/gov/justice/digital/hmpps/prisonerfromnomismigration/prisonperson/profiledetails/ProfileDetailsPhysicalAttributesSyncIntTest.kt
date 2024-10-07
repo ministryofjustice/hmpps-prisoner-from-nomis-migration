@@ -94,56 +94,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
           telemetryType = "updated",
           offenderNo = "A1234AA",
           bookingId = 12345,
-          requestedProfileType = "SHOESIZE",
-        )
-      }
-
-      @Test
-      fun `should sync multiple profile types regardless of which is requested`() = runTest {
-        nomisApi.stubGetProfileDetails(
-          "A1234AA",
-          nomisResponse(
-            bookings = listOf(
-              booking(
-                profileDetails = listOf(
-                  profileDetails(
-                    type = "SHOESIZE",
-                    code = "8.5",
-                    modifiedDateTime = "2024-09-05T12:34:56",
-                    modifiedBy = "A_USER",
-                  ),
-                  profileDetails(
-                    type = "BUILD",
-                    code = "MEDIUM",
-                    modifiedDateTime = "2024-09-05T11:34:56",
-                    modifiedBy = "ANOTHER_USER",
-                  ),
-                ),
-              ),
-            ),
-          ),
-        )
-        dpsApi.stubSyncProfileDetailsPhysicalAttributes(dpsResponse())
-
-        sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "SHOESIZE")
-
-        nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
-        dpsApi.verify(
-          dpsUpdates = mapOf(
-            "shoeSize.value" to equalTo("8.5"),
-            "shoeSize.lastModifiedAt" to equalTo("2024-09-05T12:34:56+01:00[Europe/London]"),
-            "shoeSize.lastModifiedBy" to equalTo("A_USER"),
-            "build.value" to equalTo("MEDIUM"),
-            "build.lastModifiedAt" to equalTo("2024-09-05T11:34:56+01:00[Europe/London]"),
-            "build.lastModifiedBy" to equalTo("ANOTHER_USER"),
-            "hair" to absent(),
-          ),
-        )
-        verifyTelemetry(
-          telemetryType = "updated",
-          offenderNo = "A1234AA",
-          bookingId = 12345,
-          requestedProfileType = "SHOESIZE",
+          profileType = "SHOESIZE",
         )
       }
 
@@ -390,7 +341,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
         dpsApi.verify(type = "ignored")
         verifyTelemetry(
           telemetryType = "error",
-          requestedProfileType = "BUILD",
+          profileType = "BUILD",
           errorReason = "Profile details for requested profileType not found",
         )
       }
@@ -421,7 +372,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
           check {
             assertThat(it["offenderNo"]).isEqualTo("A1234AA")
             assertThat(it["bookingId"]).isEqualTo("12345")
-            assertThat(it["requestedProfileType"]).isEqualTo("RELF")
+            assertThat(it["profileType"]).isEqualTo("RELF")
             assertThat(it["reason"]).isEqualTo("Profile type not supported")
           },
           isNull(),
@@ -534,7 +485,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
   private fun verifyTelemetry(
     offenderNo: String = "A1234AA",
     bookingId: Long = 12345,
-    requestedProfileType: String = "SHOESIZE",
+    profileType: String = "SHOESIZE",
     telemetryType: String = "updated",
     ignoreReason: String? = null,
     errorReason: String? = null,
@@ -544,7 +495,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
       check {
         assertThat(it["offenderNo"]).isEqualTo(offenderNo)
         assertThat(it["bookingId"]).isEqualTo("$bookingId")
-        assertThat(it["requestedProfileType"]).isEqualTo(requestedProfileType)
+        assertThat(it["profileType"]).isEqualTo(profileType)
         ignoreReason?.run { assertThat(it["reason"]).isEqualTo(this) }
         errorReason?.run { assertThat(it["error"]).isEqualTo(this) }
         if (ignoreReason == null && errorReason == null) {
