@@ -117,13 +117,13 @@ class ContactPersonNomisApiServiceTest {
 
     @Test
     fun `will return person ids`() = runTest {
-      mockServer.stubGetPersonIdsToMigrate(personIdPages = pagePersonIdResponse().copy(content = listOf(PersonIdResponse(1234567), PersonIdResponse(1234568))))
+      mockServer.stubGetPersonIdsToMigrate(content = listOf(PersonIdResponse(1234567), PersonIdResponse(1234568)))
 
       val pages = apiService.getPersonIdsToMigrate(pageNumber = 12, pageSize = 20)
 
       assertThat(pages.content).hasSize(2)
-      assertThat(pages.content!![0].personId).isEqualTo(1234567)
-      assertThat(pages.content!![1].personId).isEqualTo(1234568)
+      assertThat(pages.content[0].personId).isEqualTo(1234567)
+      assertThat(pages.content[1].personId).isEqualTo(1234568)
     }
   }
 }
