@@ -19,7 +19,7 @@ class ContactPersonDpsApiServiceTest {
   private lateinit var apiService: ContactPersonDpsApiService
 
   @Nested
-  inner class CreateAlert {
+  inner class CreatePerson {
     @Test
     internal fun `will pass oath2 token to contact endpoint`() = runTest {
       dpsContactPersonServer.stubCreatePerson()

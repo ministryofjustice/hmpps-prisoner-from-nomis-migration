@@ -116,4 +116,7 @@ generic-prometheus-alerts:
     prisonperson:
       - "syscon-devs-prod-prisoner_from_nomis_prisonperson_queue"
       - "syscon-devs-prod-prisoner_from_nomis_prisonperson_dl_queue"
+    contactperson:
+      - "syscon-devs-prod-migration_contactperson_queue"
+      - "syscon-devs-prod-migration_contactperson_dlq"
 
