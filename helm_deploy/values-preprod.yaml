@@ -122,6 +122,9 @@ generic-prometheus-alerts:
     prisonperson:
       - "syscon-devs-preprod-prisoner_from_nomis_prisonperson_queue"
       - "syscon-devs-preprod-prisoner_from_nomis_prisonperson_dl_queue"
+    contactperson:
+      - "syscon-devs-preprod-migration_contactperson_queue"
+      - "syscon-devs-preprod-migration_contactperson_dlq"
 
 cron:
   retry_dlqs_schedule: "*/10 7-20 * * 1-5"
