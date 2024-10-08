@@ -59,6 +59,8 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
     )
   }
 
+  fun stubCreateMappingsForMigrationFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/contact-person/migrate")
+
   fun stubCreateMappingsForMigration(error: DuplicateMappingErrorResponse) {
     mappingApi.stubFor(
       post("/mapping/contact-person/migrate").willReturn(
