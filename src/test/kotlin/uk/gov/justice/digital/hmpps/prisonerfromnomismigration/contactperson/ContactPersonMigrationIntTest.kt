@@ -20,6 +20,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.MigrationResult
@@ -80,14 +81,22 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
-        nomisApiMock.stubGetPersonIdsToMigrate(count = 0)
-        mappingApiMock.stubGetMigrationDetails(migrationId = "*.", count = 0)
+        nomisApiMock.stubGetPersonIdsToMigrate(content = listOf(PersonIdResponse(1000), PersonIdResponse(2000)))
+        nomisApiMock.stubGetPerson(1000, contactPerson().copy(personId = 1000, firstName = "JOHN", lastName = "SMITH"))
+        nomisApiMock.stubGetPerson(2000, contactPerson().copy(personId = 2000, firstName = "ADDO", lastName = "ABOAGYE"))
+        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 2)
         migrationResult = performMigration()
       }
 
       @Test
       fun `will get the count of the number person contacts to migrate`() {
         nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/persons/ids")))
+      }
+
+      @Test
+      fun `will get details for each person`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/persons/1000")))
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/persons/2000")))
       }
 
       @Test
@@ -100,7 +109,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
           .expectBody()
           .jsonPath("$.migrationId").isEqualTo(migrationResult.migrationId)
           .jsonPath("$.status").isEqualTo("COMPLETED")
-          .jsonPath("$.recordsMigrated").isEqualTo("0")
+          .jsonPath("$.recordsMigrated").isEqualTo("2")
       }
     }
   }

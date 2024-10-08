@@ -75,7 +75,8 @@ courtsentencing:
   has-migrated-data: true
 contactperson:
    complete-check:
-     delay-seconds: 1
+     delay-seconds: 0
+     retry-seconds: 0
      count: 1
    page:
      size: 10

@@ -15,6 +15,7 @@ class ContactPersonMigrationService(
   val nomisApiService: ContactPersonNomisApiService,
   @Value("\${contactperson.page.size:1000}") pageSize: Long,
   @Value("\${contactperson.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
+  @Value("\${contactperson.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
   @Value("\${contactperson.complete-check.count}") completeCheckCount: Int,
 ) : MigrationService<ContactPersonMigrationFilter, PersonIdResponse, ContactPersonMappingsDto>(
   mappingService = mappingService,
@@ -22,6 +23,7 @@ class ContactPersonMigrationService(
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
   completeCheckCount = completeCheckCount,
+  completeCheckRetrySeconds = completeCheckRetrySeconds,
 ) {
   override suspend fun getIds(
     migrationFilter: ContactPersonMigrationFilter,
@@ -34,7 +36,9 @@ class ContactPersonMigrationService(
     pageSize = pageSize,
   )
 
-  override suspend fun migrateNomisEntity(context: MigrationContext<PersonIdResponse>) = TODO()
+  override suspend fun migrateNomisEntity(context: MigrationContext<PersonIdResponse>) {
+    nomisApiService.getPerson(nomisPersonId = context.body.personId)
+  }
 
   override suspend fun retryCreateMapping(context: MigrationContext<ContactPersonMappingsDto>) = TODO()
 }
