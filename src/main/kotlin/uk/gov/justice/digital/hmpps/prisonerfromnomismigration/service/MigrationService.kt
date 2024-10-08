@@ -18,6 +18,7 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any>(
   private val pageSize: Long,
   private val completeCheckDelaySeconds: Int,
   private val completeCheckCount: Int,
+  private val completeCheckRetrySeconds: Int = 1,
 ) {
 
   @Autowired
@@ -147,7 +148,7 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any>(
             context = context,
             body = context.body.increment(),
           ),
-          delaySeconds = 1,
+          delaySeconds = completeCheckRetrySeconds,
         )
       }
     }

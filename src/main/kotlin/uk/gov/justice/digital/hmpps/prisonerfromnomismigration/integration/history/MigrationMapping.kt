@@ -51,20 +51,18 @@ abstract class MigrationMapping<MAPPING : Any>(
   open suspend fun createMapping(
     mapping: MAPPING,
     errorJavaClass: ParameterizedTypeReference<DuplicateErrorResponse<MAPPING>>,
-  ): CreateMappingResult<MAPPING> {
-    return webClient.post()
-      .uri(createMappingUrl())
-      .bodyValue(
-        mapping,
-      )
-      .retrieve()
-      .bodyToMono(Unit::class.java)
-      .map { CreateMappingResult<MAPPING>() }
-      .onErrorResume(WebClientResponseException.Conflict::class.java) {
-        Mono.just(CreateMappingResult(it.getResponseBodyAs(errorJavaClass)))
-      }
-      .awaitFirstOrDefault(CreateMappingResult<MAPPING>())
-  }
+  ): CreateMappingResult<MAPPING> = webClient.post()
+    .uri(createMappingUrl())
+    .bodyValue(
+      mapping,
+    )
+    .retrieve()
+    .bodyToMono(Unit::class.java)
+    .map { CreateMappingResult<MAPPING>() }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(errorJavaClass)))
+    }
+    .awaitFirstOrDefault(CreateMappingResult())
 }
 
 data class CreateMappingResult<MAPPING>(
