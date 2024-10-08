@@ -56,31 +56,57 @@ class ContactPersonMigrationService(
       log.info("Will not migrate the nomis person=$nomisPersonId since it was already mapped to DPS contact ${this.dpsId} during migration ${this.label}")
     } ?: run {
       val person = nomisApiService.getPerson(nomisPersonId = context.body.personId)
-      val dpsMapping = dpsApiService.migratePersonContact(person.toDpsMigrateContactRequest())
-      runCatching {
-        contactPersonMappingService.createMappingsForMigration(dpsMapping.toContactPersonMappingsDto(context.migrationId))
-      }.onFailure {
+      val mapping = dpsApiService.migratePersonContact(person.toDpsMigrateContactRequest()).toContactPersonMappingsDto(context.migrationId)
+      createMappingOrOnFailureDo(context, mapping) {
         queueService.sendMessage(
           MigrationMessageType.RETRY_MIGRATION_MAPPING,
           MigrationContext(
             context = context,
-            body = dpsMapping.toContactPersonMappingsDto(context.migrationId),
+            body = mapping,
           ),
         )
       }
-      telemetryClient.trackEvent(
-        "contactperson-migration-entity-migrated",
-        mapOf(
-          "nomisId" to nomisPersonId,
-          "dpsId" to dpsMapping.person.dpsId,
-          "migrationId" to context.migrationId,
-        ),
-      )
     }
   }
 
-  override suspend fun retryCreateMapping(context: MigrationContext<ContactPersonMappingsDto>) {
-    contactPersonMappingService.createMappingsForMigration(context.body)
+  override suspend fun retryCreateMapping(context: MigrationContext<ContactPersonMappingsDto>) =
+    createMappingOrOnFailureDo(context, context.body) {
+      throw it
+    }
+
+  suspend fun createMappingOrOnFailureDo(
+    context: MigrationContext<*>,
+    mapping: ContactPersonMappingsDto,
+    failureHandler: suspend (error: Throwable) -> Unit,
+  ) {
+    runCatching {
+      contactPersonMappingService.createMappingsForMigration(mapping)
+    }.onFailure {
+      failureHandler(it)
+    }.onSuccess {
+      if (it.isError) {
+        val duplicateErrorDetails = it.errorResponse!!.moreInfo
+        telemetryClient.trackEvent(
+          "nomis-migration-contactperson-duplicate",
+          mapOf(
+            "duplicateDpsId" to duplicateErrorDetails.duplicate.dpsId,
+            "duplicateNomisId" to duplicateErrorDetails.duplicate.nomisId,
+            "existingDpsId" to duplicateErrorDetails.existing.dpsId,
+            "existingNomisId" to duplicateErrorDetails.existing.nomisId,
+            "migrationId" to context.migrationId,
+          ),
+        )
+      } else {
+        telemetryClient.trackEvent(
+          "contactperson-migration-entity-migrated",
+          mapOf(
+            "nomisId" to mapping.personMapping.nomisId,
+            "dpsId" to mapping.personMapping.dpsId,
+            "migrationId" to context.migrationId,
+          ),
+        )
+      }
+    }
   }
 }
 
