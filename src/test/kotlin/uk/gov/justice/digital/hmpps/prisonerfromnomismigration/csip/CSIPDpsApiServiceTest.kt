@@ -100,7 +100,7 @@ internal class CSIPDpsApiServiceTest {
     @DisplayName("DELETE /sync/csip-records/{dpsReportId}")
     inner class DeleteCSIPReport {
       private val dpsCSIPId = UUID.randomUUID().toString()
-      private val dateTime = LocalDateTime.now()
+      private val dateTime = LocalDateTime.parse("2024-07-15T11:15:12")
 
       @Nested
       inner class CSIPExists {
@@ -118,7 +118,6 @@ internal class CSIPDpsApiServiceTest {
             deleteRequestedFor(urlEqualTo("/sync/csip-records/$dpsCSIPId"))
               .withHeader("Authorization", equalTo("Bearer ABCDE"))
               .withRequestBodyJsonPath("actionedAt", dateTime),
-
           )
         }
       }
