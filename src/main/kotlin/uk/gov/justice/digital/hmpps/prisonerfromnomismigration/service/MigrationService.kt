@@ -167,7 +167,7 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any>(
           context = context,
           body = MigrationStatusCheck(),
         ),
-        delaySeconds = 10,
+        delaySeconds = completeCheckRetrySeconds * 10,
       )
     } else {
       if (context.body.hasCheckedAReasonableNumberOfTimes(completeCheckCount)) {
@@ -193,7 +193,7 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any>(
             context = context,
             body = context.body.increment(),
           ),
-          delaySeconds = 1,
+          delaySeconds = completeCheckRetrySeconds,
         )
       }
     }
