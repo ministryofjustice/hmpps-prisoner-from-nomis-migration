@@ -1,8 +1,10 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson
 
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.runBlocking
+import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
@@ -12,6 +14,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
@@ -20,12 +23,14 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -76,14 +81,65 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Nested
+    inner class EverythingAlreadyMigrated {
+      private lateinit var migrationResult: MigrationResult
+
+      @BeforeEach
+      fun setUp() {
+        nomisApiMock.stubGetPersonIdsToMigrate(content = listOf(PersonIdResponse(1000), PersonIdResponse(2000)))
+        mappingApiMock.stubGetByNomisPersonIdOrNull(
+          nomisPersonId = 1000,
+          mapping = PersonMappingDto(
+            dpsId = "10000",
+            nomisId = 1000,
+            mappingType = PersonMappingDto.MappingType.MIGRATED,
+            label = "2020-01-01T00:00:00",
+          ),
+        )
+        mappingApiMock.stubGetByNomisPersonIdOrNull(
+          nomisPersonId = 2000,
+          mapping = PersonMappingDto(
+            dpsId = "20000",
+            nomisId = 2000,
+            mappingType = PersonMappingDto.MappingType.MIGRATED,
+            label = "2020-01-01T00:00:00",
+          ),
+        )
+        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 0)
+        migrationResult = performMigration()
+      }
+
+      @Test
+      fun `will not bother retrieving any person details`() {
+        nomisApiMock.verify(0, getRequestedFor(urlPathEqualTo("/persons/1000")))
+        nomisApiMock.verify(0, getRequestedFor(urlPathEqualTo("/persons/2000")))
+      }
+
+      @Test
+      fun `will mark migration as complete`() {
+        webTestClient.get().uri("/migrate/contactperson/history/${migrationResult.migrationId}")
+          .headers(setAuthorisation(roles = listOf("MIGRATE_CONTACTPERSON")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.migrationId").isEqualTo(migrationResult.migrationId)
+          .jsonPath("$.status").isEqualTo("COMPLETED")
+      }
+    }
+
+    @Nested
     inner class HappyPath {
       private lateinit var migrationResult: MigrationResult
 
       @BeforeEach
       fun setUp() {
         nomisApiMock.stubGetPersonIdsToMigrate(content = listOf(PersonIdResponse(1000), PersonIdResponse(2000)))
+        mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = 1000, mapping = null)
+        mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = 2000, mapping = null)
         nomisApiMock.stubGetPerson(1000, contactPerson().copy(personId = 1000, firstName = "JOHN", lastName = "SMITH"))
         nomisApiMock.stubGetPerson(2000, contactPerson().copy(personId = 2000, firstName = "ADDO", lastName = "ABOAGYE"))
+        mappingApiMock.stubCreateMappingsForMigration()
         mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 2)
         migrationResult = performMigration()
       }
@@ -97,6 +153,45 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
       fun `will get details for each person`() {
         nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/persons/1000")))
         nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/persons/2000")))
+      }
+
+      @Test
+      fun `will create mapping for each person and children`() {
+        mappingApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/contact-person/migrate"))
+            .withRequestBodyJsonPath("mappingType", "MIGRATED")
+            .withRequestBodyJsonPath("label", migrationResult.migrationId)
+            .withRequestBodyJsonPath("personMapping.dpsId", "10000")
+            .withRequestBodyJsonPath("personMapping.nomisId", "1000"),
+        )
+        mappingApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/contact-person/migrate"))
+            .withRequestBodyJsonPath("mappingType", "MIGRATED")
+            .withRequestBodyJsonPath("label", migrationResult.migrationId)
+            .withRequestBodyJsonPath("personMapping.dpsId", "20000")
+            .withRequestBodyJsonPath("personMapping.nomisId", "2000"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for each person migrated`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-migration-entity-migrated"),
+          check {
+            assertThat(it["nomisId"]).isEqualTo("1000")
+            assertThat(it["dpsId"]).isEqualTo("10000")
+          },
+          isNull(),
+        )
+
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-migration-entity-migrated"),
+          check {
+            assertThat(it["nomisId"]).isEqualTo("2000")
+            assertThat(it["dpsId"]).isEqualTo("20000")
+          },
+          isNull(),
+        )
       }
 
       @Test
@@ -485,8 +580,11 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     internal fun `will terminate a running migration`() {
       nomisApiMock.stubGetPersonIdsToMigrate(content = listOf(PersonIdResponse(1000), PersonIdResponse(2000)))
+      mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = 1000, mapping = null)
+      mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = 2000, mapping = null)
       nomisApiMock.stubGetPerson(1000, contactPerson().copy(personId = 1000, firstName = "JOHN", lastName = "SMITH"))
       nomisApiMock.stubGetPerson(2000, contactPerson().copy(personId = 2000, firstName = "ADDO", lastName = "ABOAGYE"))
+      mappingApiMock.stubCreateMappingsForMigration()
       mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 2)
 
       val migrationId = performMigration().migrationId
