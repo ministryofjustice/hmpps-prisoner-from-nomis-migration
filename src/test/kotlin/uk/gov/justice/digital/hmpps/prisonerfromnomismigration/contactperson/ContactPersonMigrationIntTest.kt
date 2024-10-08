@@ -224,6 +224,15 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
         .jsonPath("$[2].migrationId").isEqualTo("2020-01-02T00:00:00")
         .jsonPath("$[3].migrationId").isEqualTo("2020-01-01T00:00:00")
     }
+
+    @Test
+    fun `can also use the syscon generic role`() {
+      webTestClient.get().uri("/migrate/contactperson/history")
+        .headers(setAuthorisation(roles = listOf("MIGRATE_NOMIS_SYSCON")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
+    }
   }
 
   @Nested
@@ -293,6 +302,15 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
         .expectBody()
         .jsonPath("$.migrationId").isEqualTo("2020-01-01T00:00:00")
         .jsonPath("$.status").isEqualTo("COMPLETED")
+    }
+
+    @Test
+    fun `can also use the syscon generic role`() {
+      webTestClient.get().uri("/migrate/contactperson/history/2020-01-01T00:00:00")
+        .headers(setAuthorisation(roles = listOf("MIGRATE_NOMIS_SYSCON")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
     }
   }
 
@@ -402,6 +420,16 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
         .jsonPath("$.status").isEqualTo("STARTED")
         .jsonPath("$.migrationType").isEqualTo("CONTACTPERSON")
     }
+
+    @Test
+    fun `can also use the syscon generic role`() {
+      mappingApiMock.stubGetMigrationDetails(migrationId = "2020-01-01T00%3A00%3A00", count = 123456)
+      webTestClient.get().uri("/migrate/contactperson/active-migration")
+        .headers(setAuthorisation(roles = listOf("MIGRATE_NOMIS_SYSCON")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
+    }
   }
 
   @Nested
@@ -452,6 +480,42 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isNotFound
+    }
+
+    @Test
+    internal fun `will terminate a running migration`() {
+      nomisApiMock.stubGetPersonIdsToMigrate(content = listOf(PersonIdResponse(1000), PersonIdResponse(2000)))
+      nomisApiMock.stubGetPerson(1000, contactPerson().copy(personId = 1000, firstName = "JOHN", lastName = "SMITH"))
+      nomisApiMock.stubGetPerson(2000, contactPerson().copy(personId = 2000, firstName = "ADDO", lastName = "ABOAGYE"))
+      mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 2)
+
+      val migrationId = performMigration().migrationId
+
+      webTestClient.post().uri("/migrate/contactperson/{migrationId}/cancel", migrationId)
+        .headers(setAuthorisation(roles = listOf("MIGRATE_CONTACTPERSON")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isAccepted
+
+      webTestClient.get().uri("/migrate/contactperson/history/{migrationId}", migrationId)
+        .headers(setAuthorisation(roles = listOf("MIGRATE_CONTACTPERSON")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$.migrationId").isEqualTo(migrationId)
+        .jsonPath("$.status").isEqualTo("CANCELLED_REQUESTED")
+
+      await atMost Duration.ofSeconds(60) untilAsserted {
+        webTestClient.get().uri("/migrate/contactperson/history/{migrationId}", migrationId)
+          .headers(setAuthorisation(roles = listOf("MIGRATE_CONTACTPERSON")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.migrationId").isEqualTo(migrationId)
+          .jsonPath("$.status").isEqualTo("CANCELLED")
+      }
     }
   }
 

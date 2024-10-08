@@ -24,11 +24,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 @RestController
 @RequestMapping("/migrate/contactperson", produces = [MediaType.APPLICATION_JSON_VALUE])
 @Tag(name = "contact-person-migration-resource")
+@PreAuthorize("hasAnyRole('ROLE_MIGRATE_CONTACTPERSON', 'ROLE_MIGRATE_NOMIS_SYSCON')")
 class ContactPersonMigrationResource(
   private val migrationService: ContactPersonMigrationService,
   private val migrationHistoryService: MigrationHistoryService,
 ) {
-  @PreAuthorize("hasRole('ROLE_MIGRATE_CONTACTPERSON')")
   @PostMapping
   @ResponseStatus(value = HttpStatus.ACCEPTED)
   @Operation(
@@ -55,7 +55,6 @@ class ContactPersonMigrationResource(
     @RequestBody @Valid migrationFilter: ContactPersonMigrationFilter,
   ) = migrationService.startMigration(migrationFilter)
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_CONTACTPERSON')")
   @GetMapping("/history")
   @Operation(
     summary = "Lists all migration history records un-paged for contact person",
@@ -79,7 +78,6 @@ class ContactPersonMigrationResource(
   )
   suspend fun getAll() = migrationHistoryService.findAll(HistoryFilter(migrationTypes = listOf(MigrationType.CONTACTPERSON.name)))
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_CONTACTPERSON')")
   @GetMapping("/history/{migrationId}")
   @Operation(
     summary = "Gets a specific migration history record",
@@ -110,7 +108,6 @@ class ContactPersonMigrationResource(
     @PathVariable @Schema(description = "Migration Id", example = "2020-03-24T12:00:00") migrationId: String,
   ) = migrationHistoryService.get(migrationId)
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_CONTACTPERSON')")
   @PostMapping("/{migrationId}/cancel")
   @ResponseStatus(value = HttpStatus.ACCEPTED)
   @Operation(
@@ -142,7 +139,6 @@ class ContactPersonMigrationResource(
     @PathVariable @Schema(description = "Migration Id", example = "2020-03-24T12:00:00") migrationId: String,
   ) = migrationService.cancel(migrationId)
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_CONTACTPERSON')")
   @GetMapping("/active-migration")
   @Operation(
     summary = "Gets active/currently running migration data, using migration record and migration queues",

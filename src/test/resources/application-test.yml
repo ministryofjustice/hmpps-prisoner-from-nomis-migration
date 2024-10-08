@@ -100,8 +100,8 @@ spring:
 #    io.r2dbc.postgresql.PARAM: INFO # for parameters
 cancel:
   queue:
-    purge-frequency-time: 100ms
-    purge-total-time: 5s
+    purge-frequency-time: 500ms
+    purge-total-time: 1s
 
 complete-check:
   delay-seconds: 1
