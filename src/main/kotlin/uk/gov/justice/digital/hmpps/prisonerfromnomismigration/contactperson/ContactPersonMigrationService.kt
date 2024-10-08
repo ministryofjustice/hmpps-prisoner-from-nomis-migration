@@ -7,6 +7,7 @@ import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonSequenceMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonSimpleMappingIdDto
@@ -56,7 +57,17 @@ class ContactPersonMigrationService(
     } ?: run {
       val person = nomisApiService.getPerson(nomisPersonId = context.body.personId)
       val dpsMapping = dpsApiService.migratePersonContact(person.toDpsMigrateContactRequest())
-      contactPersonMappingService.createMappingsForMigration(dpsMapping.toContactPersonMappingsDto(context.migrationId))
+      runCatching {
+        contactPersonMappingService.createMappingsForMigration(dpsMapping.toContactPersonMappingsDto(context.migrationId))
+      }.onFailure {
+        queueService.sendMessage(
+          MigrationMessageType.RETRY_MIGRATION_MAPPING,
+          MigrationContext(
+            context = context,
+            body = dpsMapping.toContactPersonMappingsDto(context.migrationId),
+          ),
+        )
+      }
       telemetryClient.trackEvent(
         "contactperson-migration-entity-migrated",
         mapOf(
@@ -68,7 +79,9 @@ class ContactPersonMigrationService(
     }
   }
 
-  override suspend fun retryCreateMapping(context: MigrationContext<ContactPersonMappingsDto>) = TODO()
+  override suspend fun retryCreateMapping(context: MigrationContext<ContactPersonMappingsDto>) {
+    contactPersonMappingService.createMappingsForMigration(context.body)
+  }
 }
 
 // speculative code of how the DPS mapping might mapping to our mappings
