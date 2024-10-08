@@ -23,7 +23,10 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto.MappingType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
@@ -262,6 +265,83 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
           .jsonPath("$.migrationId").isEqualTo(migrationResult.migrationId)
           .jsonPath("$.status").isEqualTo("COMPLETED")
           .jsonPath("$.recordsMigrated").isEqualTo("1")
+      }
+    }
+
+    @Nested
+    inner class DuplicateMappingErrorHandling {
+      private lateinit var migrationResult: MigrationResult
+
+      @BeforeEach
+      fun setUp() {
+        nomisApiMock.stubGetPersonIdsToMigrate(content = listOf(PersonIdResponse(1000)))
+        mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = 1000, mapping = null)
+        nomisApiMock.stubGetPerson(1000, contactPerson().copy(personId = 1000, firstName = "JOHN", lastName = "SMITH"))
+        mappingApiMock.stubCreateMappingsForMigration(
+          error = DuplicateMappingErrorResponse(
+            moreInfo = DuplicateErrorContentObject(
+              duplicate = PersonMappingDto(
+                dpsId = "1000",
+                nomisId = 100,
+                mappingType = MIGRATED,
+              ),
+              existing = PersonMappingDto(
+                dpsId = "999",
+                nomisId = 100,
+                mappingType = MIGRATED,
+              ),
+            ),
+            errorCode = 1409,
+            status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+            userMessage = "Duplicate mapping",
+          ),
+        )
+        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 0)
+        migrationResult = performMigration()
+      }
+
+      @Test
+      fun `will get details for person only once`() {
+        nomisApiMock.verify(1, getRequestedFor(urlPathEqualTo("/persons/1000")))
+      }
+
+      @Test
+      fun `will attempt create mapping once before failing`() {
+        mappingApiMock.verify(
+          1,
+          postRequestedFor(urlPathEqualTo("/mapping/contact-person/migrate"))
+            .withRequestBodyJsonPath("mappingType", "MIGRATED")
+            .withRequestBodyJsonPath("label", migrationResult.migrationId)
+            .withRequestBodyJsonPath("personMapping.dpsId", "10000")
+            .withRequestBodyJsonPath("personMapping.nomisId", "1000"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for each person migrated`() {
+        verify(telemetryClient).trackEvent(
+          eq("nomis-migration-contactperson-duplicate"),
+          check {
+            assertThat(it["duplicateNomisId"]).isEqualTo("100")
+            assertThat(it["duplicateDpsId"]).isEqualTo("1000")
+            assertThat(it["existingNomisId"]).isEqualTo("100")
+            assertThat(it["existingDpsId"]).isEqualTo("999")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will record the number of prisoners migrated`() {
+        webTestClient.get().uri("/migrate/contactperson/history/${migrationResult.migrationId}")
+          .headers(setAuthorisation(roles = listOf("MIGRATE_CONTACTPERSON")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.migrationId").isEqualTo(migrationResult.migrationId)
+          .jsonPath("$.status").isEqualTo("COMPLETED")
+          .jsonPath("$.recordsMigrated").isEqualTo("0")
       }
     }
   }
