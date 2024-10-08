@@ -207,6 +207,63 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
           .jsonPath("$.recordsMigrated").isEqualTo("2")
       }
     }
+
+    @Nested
+    inner class MappingErrorRecovery {
+      private lateinit var migrationResult: MigrationResult
+
+      @BeforeEach
+      fun setUp() {
+        nomisApiMock.stubGetPersonIdsToMigrate(content = listOf(PersonIdResponse(1000)))
+        mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = 1000, mapping = null)
+        nomisApiMock.stubGetPerson(1000, contactPerson().copy(personId = 1000, firstName = "JOHN", lastName = "SMITH"))
+        mappingApiMock.stubCreateMappingsForMigrationFailureFollowedBySuccess()
+        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 1)
+        migrationResult = performMigration()
+      }
+
+      @Test
+      fun `will get details for person only once`() {
+        nomisApiMock.verify(1, getRequestedFor(urlPathEqualTo("/persons/1000")))
+      }
+
+      @Test
+      fun `will attempt create mapping twice before succeeding`() {
+        mappingApiMock.verify(
+          2,
+          postRequestedFor(urlPathEqualTo("/mapping/contact-person/migrate"))
+            .withRequestBodyJsonPath("mappingType", "MIGRATED")
+            .withRequestBodyJsonPath("label", migrationResult.migrationId)
+            .withRequestBodyJsonPath("personMapping.dpsId", "10000")
+            .withRequestBodyJsonPath("personMapping.nomisId", "1000"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for each person migrated`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-migration-entity-migrated"),
+          check {
+            assertThat(it["nomisId"]).isEqualTo("1000")
+            assertThat(it["dpsId"]).isEqualTo("10000")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will record the number of prisoners migrated`() {
+        webTestClient.get().uri("/migrate/contactperson/history/${migrationResult.migrationId}")
+          .headers(setAuthorisation(roles = listOf("MIGRATE_CONTACTPERSON")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.migrationId").isEqualTo(migrationResult.migrationId)
+          .jsonPath("$.status").isEqualTo("COMPLETED")
+          .jsonPath("$.recordsMigrated").isEqualTo("1")
+      }
+    }
   }
 
   @Nested
