@@ -41,6 +41,7 @@ class CourtSentencingSynchronisationService(
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
+    const val DPS_CASE_REFERENCE = "CASE/INFO#"
   }
 
   suspend fun nomisCourtCaseInserted(event: CourtCaseEvent) {
@@ -831,7 +832,8 @@ class CourtSentencingSynchronisationService(
           nomisApiService.getCourtCase(offenderNo = event.offenderIdDisplay, courtCaseId = event.caseId)
         dpsApiService.refreshCaseIdentifiers(
           courtCaseId = mapping.dpsCourtCaseId,
-          caseReferences = nomisCourtCase.caseInfoNumbers.map { it.toDpsCaseReference() },
+          caseReferences = nomisCourtCase.caseInfoNumbers.filter { it.type == DPS_CASE_REFERENCE }
+            .map { it.toDpsCaseReference() },
         )
         telemetryClient.trackEvent(
           "case-identifiers-synchronisation-success",

@@ -839,6 +839,11 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               createDateTime = LocalDateTime.now().plusHours(1).toString(),
               type = NOMIS_CASE_IDENTIFIER_TYPE,
             ),
+            CaseIdentifierResponse(
+              reference = "ref2",
+              createDateTime = LocalDateTime.now().plusHours(1).toString(),
+              type = "NOT_OF_INTEREST_TO_DPS",
+            ),
           ),
         )
       }
@@ -913,6 +918,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             dpsCourtSentencingServer.verify(
               1,
               postRequestedFor(urlPathEqualTo("/court-case/$DPS_COURT_CASE_ID/case-references/refresh"))
+                .withRequestBody(WireMock.matchingJsonPath("$.size()", WireMock.equalTo("2")))
                 .withRequestBody(matchingJsonPath("[0].reference", equalTo(NOMIS_CASE_IDENTIFIER)))
                 .withRequestBody(matchingJsonPath("[1].reference", equalTo("ref2"))),
             )
@@ -930,6 +936,86 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 assertThat(it["nomisIdentifiersType"]).isEqualTo(NOMIS_CASE_IDENTIFIER_TYPE)
                 assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
                 assertThat(it["eventType"]).isEqualTo("OFFENDER_CASE_IDENTIFIERS-UPDATED")
+                assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("When mapping exists")
+      inner class HandlesDeletedEvent {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetByNomisId(
+            nomisCourtCaseId = NOMIS_COURT_CASE_ID,
+            dpsCourtCaseId = DPS_COURT_CASE_ID,
+          )
+
+          dpsCourtSentencingServer.stubPostCaseIdentifierRefresh(courtCaseId = DPS_COURT_CASE_ID)
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            caseIdentifiersEvent(
+              eventType = "OFFENDER_CASE_IDENTIFIERS-DELETED",
+            ),
+          ).also {
+            waitForTelemetry()
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("case-identifiers-synchronisation-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisIdentifiersNo"]).isEqualTo(NOMIS_CASE_IDENTIFIER)
+                assertThat(it["nomisIdentifiersType"]).isEqualTo(NOMIS_CASE_IDENTIFIER_TYPE)
+                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+                assertThat(it["eventType"]).isEqualTo("OFFENDER_CASE_IDENTIFIERS-DELETED")
+                assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("When mapping exists")
+      inner class HandlesInsertedEvent {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetByNomisId(
+            nomisCourtCaseId = NOMIS_COURT_CASE_ID,
+            dpsCourtCaseId = DPS_COURT_CASE_ID,
+          )
+
+          dpsCourtSentencingServer.stubPostCaseIdentifierRefresh(courtCaseId = DPS_COURT_CASE_ID)
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            caseIdentifiersEvent(
+              eventType = "OFFENDER_CASE_IDENTIFIERS-INSERTED",
+            ),
+          ).also {
+            waitForTelemetry()
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("case-identifiers-synchronisation-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisIdentifiersNo"]).isEqualTo(NOMIS_CASE_IDENTIFIER)
+                assertThat(it["nomisIdentifiersType"]).isEqualTo(NOMIS_CASE_IDENTIFIER_TYPE)
+                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+                assertThat(it["eventType"]).isEqualTo("OFFENDER_CASE_IDENTIFIERS-INSERTED")
                 assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
               },
               isNull(),
