@@ -25,6 +25,9 @@ generic-service:
     API_BASE_URL_PRISON_PERSON: https://prison-person-api-dev.prison.service.justice.gov.uk
     API_BASE_URL_CONTACT_PERSON: https://contacts-api-dev.hmpps.service.justice.gov.uk
     FEATURE_EVENT_COURT_EVENT_CHARGES-INSERTED: false
+    FEATURE_EVENT_OFFENDER_CASE_IDENTIFIERS-UPDATED: false
+    FEATURE_EVENT_OFFENDER_CASE_IDENTIFIERS-INSERTED: false
+    FEATURE_EVENT_OFFENDER_CASE_IDENTIFIERS-DELETED: false
 
   scheduledDowntime:
     enabled: true
