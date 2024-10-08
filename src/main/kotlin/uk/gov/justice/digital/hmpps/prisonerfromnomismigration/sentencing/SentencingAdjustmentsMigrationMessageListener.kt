@@ -3,6 +3,8 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.awspring.cloud.sqs.annotation.SqsListener
+import io.opentelemetry.api.trace.SpanKind
+import io.opentelemetry.instrumentation.annotations.WithSpan
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.Message
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener
@@ -23,6 +25,7 @@ class SentencingAdjustmentsMigrationMessageListener(
 ) {
 
   @SqsListener(SENTENCING_ADJUSTMENTS_QUEUE_ID, factory = "hmppsQueueContainerFactoryProxy")
+  @WithSpan(value = "dps-syscon-migration_sentencing_queue", kind = SpanKind.SERVER)
   fun onSentencingMessage(message: String, rawMessage: Message): CompletableFuture<Void>? {
     return onMessage(message, rawMessage)
   }
