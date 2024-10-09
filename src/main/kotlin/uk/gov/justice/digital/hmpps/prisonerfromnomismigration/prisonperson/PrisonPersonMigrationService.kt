@@ -82,7 +82,7 @@ class PrisonPersonMigrationService(
         migrationType = context.body.migrationType,
         label = context.migrationId,
         dpsIds = dpsIds,
-      ).createActivityMapping(context)
+      ).createMapping(context)
 
       telemetryClient.trackEvent("prisonperson-migration-entity-migrated", telemetry)
     } catch (e: Exception) {
@@ -92,13 +92,13 @@ class PrisonPersonMigrationService(
     }
   }
 
-  private suspend fun PrisonPersonMigrationMappingRequest.createActivityMapping(context: MigrationContext<*>) =
+  private suspend fun PrisonPersonMigrationMappingRequest.createMapping(context: MigrationContext<*>) =
     try {
       mappingApiService.createMapping(this, object : ParameterizedTypeReference<DuplicateErrorResponse<PrisonPersonMigrationMappingRequest>>() {})
         .also { it.handleError(context) }
     } catch (e: Exception) {
       log.error(
-        "Failed to create activity mapping for nomisPrisonerNumber: $nomisPrisonerNumber, dpsIds $dpsIds for migration ${this.label}",
+        "Failed to create prison person mapping for nomisPrisonerNumber: $nomisPrisonerNumber, migrationType $migrationType, dpsIds $dpsIds for migration  ID $label",
         e,
       )
       queueService.sendMessage(
