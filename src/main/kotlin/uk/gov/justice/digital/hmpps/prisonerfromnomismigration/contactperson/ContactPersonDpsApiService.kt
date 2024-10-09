@@ -7,6 +7,7 @@ import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.CreateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.GetContactResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactPerson
+import java.util.UUID
 
 @Service
 class ContactPersonDpsApiService(@Qualifier("contactPersonApiWebClient") private val webClient: WebClient) {
@@ -26,13 +27,13 @@ class ContactPersonDpsApiService(@Qualifier("contactPersonApiWebClient") private
     employments = person.employments.map { person.personId.toDpsToNomisId(it.sequence) },
     identifiers = person.identifiers.map { person.personId.toDpsToNomisId(it.sequence) },
     contacts = person.contacts.map { it.id.toDpsToNomisId() },
-    contactRestrictions = person.contacts.flatMap { it.restrictions.map { it.id.toDpsToNomisId() } },
+    contactRestrictions = person.contacts.flatMap { it.restrictions.map { restriction -> restriction.id.toDpsToNomisId() } },
     restrictions = person.restrictions.map { it.id.toDpsToNomisId() },
   )
 }
 
 fun Long.toDpsToNomisId() = DpsToNomisId(dpsId = (this * 10).toString(), nomisId = this)
-fun Long.toDpsToNomisId(sequence: Long) = DpsToNomisIdWithSequence(dpsId = (this * 10).toString(), nomisId = this, nomisSequence = sequence)
+fun Long.toDpsToNomisId(sequence: Long) = DpsToNomisIdWithSequence(dpsId = UUID.randomUUID().toString(), nomisId = this, nomisSequence = sequence)
 
 // speculative DPS return model
 data class DpsContactPersonMapping(
