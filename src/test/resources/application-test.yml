@@ -105,6 +105,7 @@ cancel:
 
 complete-check:
   delay-seconds: 1
+  scheduled-retry-seconds: 1
   count: 1
 
 hmpps.sqs:

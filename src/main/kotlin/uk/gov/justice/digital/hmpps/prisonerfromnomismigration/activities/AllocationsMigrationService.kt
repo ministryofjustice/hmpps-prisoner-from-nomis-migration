@@ -39,12 +39,14 @@ class AllocationsMigrationService(
   @Value("\${allocations.page.size:50}") pageSize: Long,
   @Value("\${allocations.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${allocations.complete-check.count}") completeCheckCount: Int,
+  @Value("\${complete-check.scheduled-retry-seconds}") completeCheckScheduledRetrySeconds: Int,
 ) : MigrationService<AllocationsMigrationFilter, FindActiveAllocationIdsResponse, AllocationMigrationMappingDto>(
   mappingService = allocationsMappingService,
   migrationType = MigrationType.ALLOCATIONS,
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
   completeCheckCount = completeCheckCount,
+  completeCheckScheduledRetrySeconds = completeCheckScheduledRetrySeconds,
 ) {
 
   private val log = LoggerFactory.getLogger(this::class.java)
