@@ -11,6 +11,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.junit.jupiter.api.extension.AfterAllCallback
+import org.junit.jupiter.api.extension.AfterEachCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
@@ -18,11 +19,16 @@ import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.objectMapper
 import java.lang.Long.min
 
-class NomisApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
+class NomisApiExtension :
+  BeforeAllCallback,
+  AfterAllCallback,
+  BeforeEachCallback,
+  AfterEachCallback {
   companion object {
     const val ADJUDICATIONS_ID_URL = "/adjudications/charges/ids"
     const val VISITS_ID_URL = "/visits/ids"
@@ -49,6 +55,10 @@ class NomisApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallbac
 
   override fun afterAll(context: ExtensionContext) {
     nomisApi.stop()
+  }
+
+  override fun afterEach(context: ExtensionContext) {
+    mappingApi.setGlobalFixedDelay(0)
   }
 }
 
@@ -1178,15 +1188,13 @@ fun adjudicationsIdsPagedResponse(
   adjudicationNumber: Long,
   chargeSequence: Int,
   offenderNo: String,
-): String {
-  return pageContent(
-    """{ "adjudicationNumber": $adjudicationNumber, "chargeSequence": $chargeSequence, "offenderNo": "$offenderNo" }""",
-    pageSize = 10,
-    pageNumber = 0,
-    totalElements = 1,
-    size = 10,
-  )
-}
+): String = pageContent(
+  """{ "adjudicationNumber": $adjudicationNumber, "chargeSequence": $chargeSequence, "offenderNo": "$offenderNo" }""",
+  pageSize = 10,
+  pageNumber = 0,
+  totalElements = 1,
+  size = 10,
+)
 
 private fun getAdjustmentCategory(it: Long) = if (it % 2L == 0L) "KEY_DATE" else "SENTENCE"
 

@@ -33,6 +33,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repos
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.Duration
 import java.time.LocalDateTime
@@ -716,6 +717,8 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will terminate a running migration`() {
+      // slow the API calls so there is time to cancel before it completes
+      nomisApi.setGlobalFixedDelay(1000)
       nomisApiMock.stubGetPersonIdsToMigrate(content = listOf(PersonIdResponse(1000), PersonIdResponse(2000)))
       mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = 1000, mapping = null)
       mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = 2000, mapping = null)
