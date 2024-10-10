@@ -3,9 +3,6 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.awspring.cloud.sqs.annotation.SqsListener
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.future.future
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -13,6 +10,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_CHILD_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CSIP_SYNC_QUEUE_ID
 import java.time.LocalDateTime
 import java.util.concurrent.CompletableFuture
@@ -122,9 +120,3 @@ data class CSIPReviewEvent(
   val offenderIdDisplay: String,
   val auditModuleName: String?,
 )
-
-private fun asCompletableFuture(
-  process: suspend () -> Unit,
-): CompletableFuture<Void> = CoroutineScope(Dispatchers.Default).future {
-  process()
-}.thenAccept { }

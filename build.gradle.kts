@@ -32,6 +32,7 @@ dependencies {
   runtimeOnly("org.springframework.boot:spring-boot-starter-jdbc")
   runtimeOnly("org.postgresql:postgresql:42.7.4")
   runtimeOnly("org.flywaydb:flyway-database-postgresql")
+  implementation("io.opentelemetry:opentelemetry-extension-kotlin:1.40.0")
 
   implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:2.6.0")
 
