@@ -67,6 +67,7 @@ class ActivitiesMigrationServiceTest {
     pageSize = 3L,
     completeCheckDelaySeconds = 10,
     completeCheckCount = 9,
+    completeCheckScheduledRetrySeconds = 10,
   ) {
     init {
       queueService = this@ActivitiesMigrationServiceTest.queueService
@@ -91,6 +92,7 @@ class ActivitiesMigrationServiceTest {
       pageSize = 3L,
       completeCheckDelaySeconds = 10,
       completeCheckCount = 9,
+      completeCheckScheduledRetrySeconds = 0,
     ) {
       init {
         queueService = this@ActivitiesMigrationServiceTest.queueService
