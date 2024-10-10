@@ -19,6 +19,7 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any>(
   private val completeCheckDelaySeconds: Int,
   private val completeCheckCount: Int,
   private val completeCheckRetrySeconds: Int = 1,
+  private val completeCheckScheduledRetrySeconds: Int = completeCheckDelaySeconds,
 ) {
 
   @Autowired
@@ -123,7 +124,7 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any>(
           context = context,
           body = MigrationStatusCheck(),
         ),
-        delaySeconds = completeCheckDelaySeconds,
+        delaySeconds = completeCheckScheduledRetrySeconds,
       )
     } else {
       if (context.body.hasCheckedAReasonableNumberOfTimes(completeCheckCount)) {

@@ -33,12 +33,14 @@ class ActivitiesMigrationService(
   @Value("\${activities.page.size:20}") pageSize: Long,
   @Value("\${activities.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${activities.complete-check.count}") completeCheckCount: Int,
+  @Value("\${complete-check.scheduled-retry-seconds}") completeCheckScheduledRetrySeconds: Int,
 ) : MigrationService<ActivitiesMigrationFilter, FindActiveActivityIdsResponse, ActivityMigrationMappingDto>(
   mappingService = activitiesMappingService,
   migrationType = ACTIVITIES,
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
   completeCheckCount = completeCheckCount,
+  completeCheckScheduledRetrySeconds = completeCheckScheduledRetrySeconds,
 ) {
 
   private val log = LoggerFactory.getLogger(this::class.java)

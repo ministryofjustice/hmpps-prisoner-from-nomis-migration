@@ -25,6 +25,7 @@ class ContactPersonMigrationService(
   @Value("\${contactperson.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${contactperson.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
   @Value("\${contactperson.complete-check.count}") completeCheckCount: Int,
+  @Value("\${complete-check.scheduled-retry-seconds}") completeCheckScheduledRetrySeconds: Int,
 ) : MigrationService<ContactPersonMigrationFilter, PersonIdResponse, ContactPersonMappingsDto>(
   mappingService = contactPersonMappingService,
   migrationType = MigrationType.CONTACTPERSON,
@@ -32,6 +33,7 @@ class ContactPersonMigrationService(
   completeCheckDelaySeconds = completeCheckDelaySeconds,
   completeCheckCount = completeCheckCount,
   completeCheckRetrySeconds = completeCheckRetrySeconds,
+  completeCheckScheduledRetrySeconds = completeCheckScheduledRetrySeconds,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)

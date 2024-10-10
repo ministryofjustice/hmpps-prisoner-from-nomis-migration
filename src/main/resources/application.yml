@@ -152,6 +152,7 @@ cancel:
 
 complete-check:
   delay-seconds: 10
+  scheduled-retry-seconds: 10
   count: 9
 
 activities:
