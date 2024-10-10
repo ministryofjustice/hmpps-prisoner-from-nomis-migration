@@ -3,8 +3,6 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.awspring.cloud.sqs.annotation.SqsListener
-import io.opentelemetry.api.trace.SpanKind
-import io.opentelemetry.instrumentation.annotations.WithSpan
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.Message
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.MigrationResult
@@ -31,7 +29,6 @@ class CaseNotesMigrationMessageListener(
     maxConcurrentMessages = "8",
     maxMessagesPerPoll = "8",
   )
-  @WithSpan(value = "dps-syscon-migration_casenotes_queue", kind = SpanKind.SERVER)
   fun onCaseNoteMessage(message: String, rawMessage: Message): CompletableFuture<Void>? {
     return onMessage(message, rawMessage)
   }
