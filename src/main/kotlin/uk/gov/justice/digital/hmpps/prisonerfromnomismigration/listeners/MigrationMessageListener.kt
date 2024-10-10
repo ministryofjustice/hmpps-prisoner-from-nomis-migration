@@ -2,9 +2,6 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners
 
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.future.future
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.services.sqs.model.Message
@@ -33,7 +30,7 @@ abstract class MigrationMessageListener<FILTER : Any, NOMIS_ID : Any, NOMIS_ENTI
   fun onMessage(message: String, rawMessage: Message): CompletableFuture<Void>? {
     log.debug("Received message {}", message)
     val migrationMessage: LocalMessage<MigrationMessageType> = message.fromJson()
-    return CoroutineScope(Dispatchers.Default).future {
+    return asCompletableFuture {
       runCatching {
         when (migrationMessage.type) {
           MIGRATE_ENTITIES -> migrationService.divideEntitiesByPage(migrationContextFilter(parseContextFilter(message)))
