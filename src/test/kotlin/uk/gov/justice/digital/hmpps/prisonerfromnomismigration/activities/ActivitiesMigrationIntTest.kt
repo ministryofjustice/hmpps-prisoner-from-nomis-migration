@@ -490,6 +490,8 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `will cancel a running migration`() {
+      // slow the API calls so there is time to cancel before it completes
+      nomisApi.setGlobalFixedDelay(1000)
       stubMigrationDependencies(entities = 10)
       mappingApi.stubActivitiesMappingByMigrationId(count = 10)
 
