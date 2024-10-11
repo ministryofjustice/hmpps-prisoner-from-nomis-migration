@@ -20,7 +20,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReviewMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPChildMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import java.util.UUID
 
@@ -59,11 +59,11 @@ internal class CSIPReviewMappingServiceTest {
         val mapping = csipMappingService.getCSIPReviewByNomisId(nomisCSIPReviewId = nomisCsipReviewId)
 
         Assertions.assertThat(mapping).isNotNull
-        Assertions.assertThat(mapping!!.dpsCSIPReviewId).isEqualTo(dpsCsipReviewId)
-        Assertions.assertThat(mapping.nomisCSIPReviewId).isEqualTo(nomisCsipReviewId)
+        Assertions.assertThat(mapping!!.dpsId).isEqualTo(dpsCsipReviewId)
+        Assertions.assertThat(mapping.nomisId).isEqualTo(nomisCsipReviewId)
         Assertions.assertThat(mapping.dpsCSIPReportId).isEqualTo(dpsCsipReportId)
         Assertions.assertThat(mapping.label).isEqualTo("2022-02-14T09:58:45")
-        Assertions.assertThat(mapping.mappingType).isEqualTo(CSIPReviewMappingDto.MappingType.NOMIS_CREATED)
+        Assertions.assertThat(mapping.mappingType).isEqualTo(CSIPChildMappingDto.MappingType.NOMIS_CREATED)
         Assertions.assertThat(mapping.whenCreated).isEqualTo("2020-01-01T11:10:00")
       }
 
@@ -100,12 +100,12 @@ internal class CSIPReviewMappingServiceTest {
       @Test
       fun `should provide oath2 token`() = runTest {
         csipMappingService.createCSIPReviewMapping(
-          CSIPReviewMappingDto(
-            dpsCSIPReviewId = dpsCsipReviewId,
-            nomisCSIPReviewId = nomisCsipReviewId,
+          CSIPChildMappingDto(
+            dpsId = dpsCsipReviewId,
+            nomisId = nomisCsipReviewId,
             dpsCSIPReportId = dpsCsipReportId,
             label = "some-migration-id",
-            mappingType = CSIPReviewMappingDto.MappingType.MIGRATED,
+            mappingType = CSIPChildMappingDto.MappingType.MIGRATED,
           ),
         )
 
@@ -120,11 +120,11 @@ internal class CSIPReviewMappingServiceTest {
       internal fun `will pass all parameters dps csip review id, nomis csip review id, migration Id and MIGRATED indicator to mapping service`(): Unit =
         runTest {
           csipMappingService.createCSIPReviewMapping(
-            CSIPReviewMappingDto(
-              dpsCSIPReviewId = dpsCsipReviewId,
-              nomisCSIPReviewId = nomisCsipReviewId,
+            CSIPChildMappingDto(
+              dpsId = dpsCsipReviewId,
+              nomisId = nomisCsipReviewId,
               dpsCSIPReportId = dpsCsipReportId,
-              mappingType = CSIPReviewMappingDto.MappingType.MIGRATED,
+              mappingType = CSIPChildMappingDto.MappingType.MIGRATED,
               label = "5678",
               whenCreated = "2020-01-01T00:00:00",
             ),
@@ -136,8 +136,8 @@ internal class CSIPReviewMappingServiceTest {
                 equalToJson(
                   """
                   {
-                    "dpsCSIPReviewId": "$dpsCsipReviewId",
-                    "nomisCSIPReviewId": $nomisCsipReviewId,                                       
+                    "dpsId": "$dpsCsipReviewId",
+                    "nomisId": $nomisCsipReviewId,                                       
                     "dpsCSIPReportId": "$dpsCsipReportId",                                       
                     "label": "5678",
                     "mappingType": "MIGRATED",
@@ -162,11 +162,11 @@ internal class CSIPReviewMappingServiceTest {
 
         assertThrows<WebClientResponseException.InternalServerError> {
           csipMappingService.createCSIPReviewMapping(
-            CSIPReviewMappingDto(
-              dpsCSIPReviewId = dpsCsipReviewId,
-              nomisCSIPReviewId = nomisCsipReviewId,
+            CSIPChildMappingDto(
+              dpsId = dpsCsipReviewId,
+              nomisId = nomisCsipReviewId,
               dpsCSIPReportId = dpsCsipReportId,
-              mappingType = CSIPReviewMappingDto.MappingType.MIGRATED,
+              mappingType = CSIPChildMappingDto.MappingType.MIGRATED,
               label = "5678",
               whenCreated = "2020-01-01T00:00:00",
             ),

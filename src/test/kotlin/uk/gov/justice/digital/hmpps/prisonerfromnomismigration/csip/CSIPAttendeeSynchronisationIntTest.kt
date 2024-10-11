@@ -147,10 +147,10 @@ class CSIPAttendeeSynchronisationIntTest : SqsIntegrationTestBase() {
             postRequestedFor(urlPathEqualTo(CSIP_CREATE_CHILD_MAPPINGS_URL))
               .withRequestBody(matchingJsonPath("dpsCSIPReportId", equalTo(dpsCSIPReportId)))
               .withRequestBody(matchingJsonPath("nomisCSIPReportId", equalTo(nomisCSIPReportId.toString())))
-              .withRequestBody(matchingJsonPath("attendeeMappings[0].dpsCSIPAttendeeId", equalTo(dpsCSIPAttendeeId)))
+              .withRequestBody(matchingJsonPath("attendeeMappings[0].dpsId", equalTo(dpsCSIPAttendeeId)))
               .withRequestBody(
                 matchingJsonPath(
-                  "attendeeMappings[0].nomisCSIPAttendeeId",
+                  "attendeeMappings[0].nomisId",
                   equalTo(nomisCSIPAttendeeId.toString()),
                 ),
               ),

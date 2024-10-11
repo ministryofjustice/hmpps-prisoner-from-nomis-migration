@@ -27,7 +27,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingA
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingApiMockServer.Companion.CSIP_CREATE_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFactorMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPChildMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFullMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFullMappingDto.MappingType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReportMappingDto
@@ -173,11 +173,11 @@ internal class CSIPMappingServiceTest {
               whenCreated = "2020-01-01T00:00:00",
               attendeeMappings = listOf(),
               factorMappings = listOf(
-                CSIPFactorMappingDto(
-                  nomisCSIPFactorId = 123,
-                  dpsCSIPFactorId = dpsCSIPFactorId,
+                CSIPChildMappingDto(
+                  nomisId = 123,
+                  dpsId = dpsCSIPFactorId,
                   dpsCSIPReportId = DPS_CSIP_ID,
-                  mappingType = CSIPFactorMappingDto.MappingType.MIGRATED,
+                  mappingType = CSIPChildMappingDto.MappingType.MIGRATED,
                 ),
               ),
               interviewMappings = listOf(),
@@ -201,8 +201,8 @@ internal class CSIPMappingServiceTest {
                     "attendeeMappings": [],
                     "factorMappings": [
                       {
-                        "nomisCSIPFactorId" : 123,
-                        "dpsCSIPFactorId" : "081b743a-1b23-4621-90d5-111f55003c11",
+                        "nomisId" : 123,
+                        "dpsId" : "081b743a-1b23-4621-90d5-111f55003c11",
                         "dpsCSIPReportId" : "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5",
                         "mappingType" : "MIGRATED",
                         "label" : null,
@@ -304,11 +304,11 @@ internal class CSIPMappingServiceTest {
               whenCreated = "2020-01-01T00:00:00",
               attendeeMappings = listOf(),
               factorMappings = listOf(
-                CSIPFactorMappingDto(
-                  nomisCSIPFactorId = 123,
-                  dpsCSIPFactorId = dpsCSIPFactorId,
+                CSIPChildMappingDto(
+                  nomisId = 123,
+                  dpsId = dpsCSIPFactorId,
                   dpsCSIPReportId = DPS_CSIP_ID,
-                  mappingType = CSIPFactorMappingDto.MappingType.MIGRATED,
+                  mappingType = CSIPChildMappingDto.MappingType.MIGRATED,
                 ),
               ),
               interviewMappings = listOf(),
@@ -332,8 +332,8 @@ internal class CSIPMappingServiceTest {
                     "attendeeMappings": [],
                     "factorMappings": [
                       {
-                        "nomisCSIPFactorId" : 123,
-                        "dpsCSIPFactorId" : "081b743a-1b23-4621-90d5-111f55003c11",
+                        "nomisId" : 123,
+                        "dpsId" : "081b743a-1b23-4621-90d5-111f55003c11",
                         "dpsCSIPReportId" : "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5",
                         "mappingType" : "MIGRATED",
                         "label" : null,
@@ -434,11 +434,11 @@ internal class CSIPMappingServiceTest {
         val mapping = csipMappingService.getCSIPFactorByNomisId(nomisCSIPFactorId = nomisCsipFactorId)
 
         assertThat(mapping).isNotNull
-        assertThat(mapping!!.dpsCSIPFactorId).isEqualTo(dpsCsipFactorId)
-        assertThat(mapping.nomisCSIPFactorId).isEqualTo(nomisCsipFactorId)
+        assertThat(mapping!!.dpsId).isEqualTo(dpsCsipFactorId)
+        assertThat(mapping.nomisId).isEqualTo(nomisCsipFactorId)
         assertThat(mapping.dpsCSIPReportId).isEqualTo(dpsCSIPReportId)
         assertThat(mapping.label).isEqualTo("2022-02-14T09:58:45")
-        assertThat(mapping.mappingType).isEqualTo(CSIPFactorMappingDto.MappingType.NOMIS_CREATED)
+        assertThat(mapping.mappingType).isEqualTo(CSIPChildMappingDto.MappingType.NOMIS_CREATED)
         assertThat(mapping.whenCreated).isEqualTo("2020-01-01T11:10:00")
       }
 

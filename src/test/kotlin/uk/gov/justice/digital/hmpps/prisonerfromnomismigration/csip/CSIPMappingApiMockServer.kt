@@ -14,13 +14,9 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPAttendeeMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFactorMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPChildMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFullMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPInterviewMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPPlanMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReportMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReviewMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
@@ -70,7 +66,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
       post(urlEqualTo(url)).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value()),
+          .withStatus(HttpStatus.CREATED.value()),
       ),
     )
   }
@@ -199,7 +195,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
         )
         .withRequestBody(
           WireMock.matchingJsonPath(
-            "factorMappings[0].dpsCSIPFactorId",
+            "factorMappings[0].dpsId",
             WireMock.equalTo(dpsCSIPFactorId),
           ),
         ),
@@ -294,11 +290,11 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
             .withBody(
-              CSIPFactorMappingDto(
-                nomisCSIPFactorId = nomisCSIPFactorId,
-                dpsCSIPFactorId = dpsCSIPFactorId,
+              CSIPChildMappingDto(
+                nomisId = nomisCSIPFactorId,
+                dpsId = dpsCSIPFactorId,
                 dpsCSIPReportId = dpsCSIPReportId,
-                mappingType = CSIPFactorMappingDto.MappingType.NOMIS_CREATED,
+                mappingType = CSIPChildMappingDto.MappingType.NOMIS_CREATED,
                 label = "2022-02-14T09:58:45",
                 whenCreated = "2020-01-01T11:10:00",
               ),
@@ -319,11 +315,11 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
             .withBody(
-              CSIPPlanMappingDto(
-                nomisCSIPPlanId = nomisCSIPPlanId,
-                dpsCSIPPlanId = dpsCSIPPlanId,
+              CSIPChildMappingDto(
+                nomisId = nomisCSIPPlanId,
+                dpsId = dpsCSIPPlanId,
                 dpsCSIPReportId = dpsCSIPReportId,
-                mappingType = CSIPPlanMappingDto.MappingType.NOMIS_CREATED,
+                mappingType = CSIPChildMappingDto.MappingType.NOMIS_CREATED,
                 label = "2022-02-14T09:58:45",
                 whenCreated = "2020-01-01T11:10:00",
               ),
@@ -344,11 +340,11 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
             .withBody(
-              CSIPReviewMappingDto(
-                nomisCSIPReviewId = nomisCSIPReviewId,
-                dpsCSIPReviewId = dpsCSIPReviewId,
+              CSIPChildMappingDto(
+                nomisId = nomisCSIPReviewId,
+                dpsId = dpsCSIPReviewId,
                 dpsCSIPReportId = dpsCSIPReportId,
-                mappingType = CSIPReviewMappingDto.MappingType.NOMIS_CREATED,
+                mappingType = CSIPChildMappingDto.MappingType.NOMIS_CREATED,
                 label = "2022-02-14T09:58:45",
                 whenCreated = "2020-01-01T11:10:00",
               ),
@@ -369,11 +365,11 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
             .withBody(
-              CSIPAttendeeMappingDto(
-                nomisCSIPAttendeeId = nomisCSIPAttendeeId,
-                dpsCSIPAttendeeId = dpsCSIPAttendeeId,
+              CSIPChildMappingDto(
+                nomisId = nomisCSIPAttendeeId,
+                dpsId = dpsCSIPAttendeeId,
                 dpsCSIPReportId = dpsCSIPReportId,
-                mappingType = CSIPAttendeeMappingDto.MappingType.NOMIS_CREATED,
+                mappingType = CSIPChildMappingDto.MappingType.NOMIS_CREATED,
                 label = "2022-02-14T09:58:45",
                 whenCreated = "2020-01-01T11:10:00",
               ),
@@ -394,11 +390,11 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
             .withBody(
-              CSIPInterviewMappingDto(
-                nomisCSIPInterviewId = nomisCSIPInterviewId,
-                dpsCSIPInterviewId = dpsCSIPInterviewId,
+              CSIPChildMappingDto(
+                nomisId = nomisCSIPInterviewId,
+                dpsId = dpsCSIPInterviewId,
                 dpsCSIPReportId = dpsCSIPReportId,
-                mappingType = CSIPInterviewMappingDto.MappingType.NOMIS_CREATED,
+                mappingType = CSIPChildMappingDto.MappingType.NOMIS_CREATED,
                 label = "2022-02-14T09:58:45",
                 whenCreated = "2020-01-01T11:10:00",
               ),

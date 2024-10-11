@@ -20,7 +20,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPInterviewMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPChildMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import java.util.UUID
 
@@ -58,11 +58,11 @@ internal class CSIPInterviewMappingServiceTest {
         val mapping = csipMappingService.getCSIPInterviewByNomisId(nomisCSIPInterviewId = nomisCsipInterviewId)
 
         Assertions.assertThat(mapping).isNotNull
-        Assertions.assertThat(mapping!!.dpsCSIPInterviewId).isEqualTo(dpsCsipInterviewId)
-        Assertions.assertThat(mapping.nomisCSIPInterviewId).isEqualTo(nomisCsipInterviewId)
+        Assertions.assertThat(mapping!!.dpsId).isEqualTo(dpsCsipInterviewId)
+        Assertions.assertThat(mapping.nomisId).isEqualTo(nomisCsipInterviewId)
         Assertions.assertThat(mapping.dpsCSIPReportId).isEqualTo(dpsCsipReportId)
         Assertions.assertThat(mapping.label).isEqualTo("2022-02-14T09:58:45")
-        Assertions.assertThat(mapping.mappingType).isEqualTo(CSIPInterviewMappingDto.MappingType.NOMIS_CREATED)
+        Assertions.assertThat(mapping.mappingType).isEqualTo(CSIPChildMappingDto.MappingType.NOMIS_CREATED)
         Assertions.assertThat(mapping.whenCreated).isEqualTo("2020-01-01T11:10:00")
       }
 
@@ -99,12 +99,12 @@ internal class CSIPInterviewMappingServiceTest {
       @Test
       fun `should provide oath2 token`() = runTest {
         csipMappingService.createCSIPInterviewMapping(
-          CSIPInterviewMappingDto(
-            dpsCSIPInterviewId = dpsCsipInterviewId,
-            nomisCSIPInterviewId = nomisCsipInterviewId,
+          CSIPChildMappingDto(
+            dpsId = dpsCsipInterviewId,
+            nomisId = nomisCsipInterviewId,
             dpsCSIPReportId = dpsCsipReportId,
             label = "some-migration-id",
-            mappingType = CSIPInterviewMappingDto.MappingType.MIGRATED,
+            mappingType = CSIPChildMappingDto.MappingType.MIGRATED,
           ),
         )
 
@@ -119,11 +119,11 @@ internal class CSIPInterviewMappingServiceTest {
       internal fun `will pass all parameters dps csip interview id, nomis csip interview id, migration Id and MIGRATED indicator to mapping service`(): Unit =
         runTest {
           csipMappingService.createCSIPInterviewMapping(
-            CSIPInterviewMappingDto(
-              dpsCSIPInterviewId = dpsCsipInterviewId,
-              nomisCSIPInterviewId = nomisCsipInterviewId,
+            CSIPChildMappingDto(
+              dpsId = dpsCsipInterviewId,
+              nomisId = nomisCsipInterviewId,
               dpsCSIPReportId = dpsCsipReportId,
-              mappingType = CSIPInterviewMappingDto.MappingType.MIGRATED,
+              mappingType = CSIPChildMappingDto.MappingType.MIGRATED,
               label = "5678",
               whenCreated = "2020-01-01T00:00:00",
             ),
@@ -135,8 +135,8 @@ internal class CSIPInterviewMappingServiceTest {
                 equalToJson(
                   """
                   {
-                    "dpsCSIPInterviewId": "$dpsCsipInterviewId",
-                    "nomisCSIPInterviewId": $nomisCsipInterviewId,                                       
+                    "dpsId": "$dpsCsipInterviewId",
+                    "nomisId": $nomisCsipInterviewId,                                       
                     "dpsCSIPReportId": "$dpsCsipReportId",                                       
                     "label": "5678",
                     "mappingType": "MIGRATED",
@@ -161,11 +161,11 @@ internal class CSIPInterviewMappingServiceTest {
 
         assertThrows<WebClientResponseException.InternalServerError> {
           csipMappingService.createCSIPInterviewMapping(
-            CSIPInterviewMappingDto(
-              dpsCSIPInterviewId = dpsCsipInterviewId,
-              nomisCSIPInterviewId = nomisCsipInterviewId,
+            CSIPChildMappingDto(
+              dpsId = dpsCsipInterviewId,
+              nomisId = nomisCsipInterviewId,
               dpsCSIPReportId = dpsCsipReportId,
-              mappingType = CSIPInterviewMappingDto.MappingType.MIGRATED,
+              mappingType = CSIPChildMappingDto.MappingType.MIGRATED,
               label = "5678",
               whenCreated = "2020-01-01T00:00:00",
             ),

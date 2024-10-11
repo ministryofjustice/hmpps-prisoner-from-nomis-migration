@@ -13,12 +13,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncRe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncReviewRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncScreeningOutcomeRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPAttendeeMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFactorMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPChildMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFullMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPInterviewMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPPlanMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReviewMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Actions
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Attendee
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPFactorResponse
@@ -85,20 +81,8 @@ fun CSIPResponse.toDPSSyncRequest(dpsReportId: String? = null, actioned: ActionD
     actionedByDisplayName = actioned.actionedByDisplayName,
   )
 
-fun List<CSIPAttendeeMappingDto>.findMatchingDPSAttendeeId(nomisCSIPAttendeeId: Long) =
-  find { it.nomisCSIPAttendeeId == nomisCSIPAttendeeId }?.let { UUID.fromString(it.dpsCSIPAttendeeId) }
-
-fun List<CSIPFactorMappingDto>.findMatchingDPSFactorId(nomisCSIPFactorId: Long) =
-  find { it.nomisCSIPFactorId == nomisCSIPFactorId }?.let { UUID.fromString(it.dpsCSIPFactorId) }
-
-fun List<CSIPInterviewMappingDto>.findMatchingDPSInterviewId(nomisCSIPInterviewId: Long) =
-  find { it.nomisCSIPInterviewId == nomisCSIPInterviewId }?.let { UUID.fromString(it.dpsCSIPInterviewId) }
-
-fun List<CSIPPlanMappingDto>.findMatchingDPSPlanId(nomisCSIPPlanId: Long) =
-  find { it.nomisCSIPPlanId == nomisCSIPPlanId }?.let { UUID.fromString(it.dpsCSIPPlanId) }
-
-fun List<CSIPReviewMappingDto>.findMatchingDPSReviewId(nomisCSIPReviewId: Long) =
-  find { it.nomisCSIPReviewId == nomisCSIPReviewId }?.let { UUID.fromString(it.dpsCSIPReviewId) }
+fun List<CSIPChildMappingDto>.findMatchingDPSChildId(nomisId: Long) =
+  find { it.nomisId == nomisId }?.let { UUID.fromString(it.dpsId) }
 
 data class ActionDetails(
   val actionedAt: LocalDateTime,
@@ -180,9 +164,9 @@ fun SaferCustodyScreening.toDPSSyncCSIPSCS() =
     recordedByDisplayName = recordedByDisplayName ?: recordedBy!!,
   )
 
-fun CSIPFactorResponse.toDPSSyncContributoryFactorRequest(factorMappings: List<CSIPFactorMappingDto>?) =
+fun CSIPFactorResponse.toDPSSyncContributoryFactorRequest(factorMappings: List<CSIPChildMappingDto>?) =
   SyncContributoryFactorRequest(
-    id = factorMappings?.findMatchingDPSFactorId(id),
+    id = factorMappings?.findMatchingDPSChildId(id),
     legacyId = id,
     factorTypeCode = type.code,
     comment = comment,
@@ -194,7 +178,7 @@ fun CSIPFactorResponse.toDPSSyncContributoryFactorRequest(factorMappings: List<C
     lastModifiedByDisplayName = lastModifiedByDisplayName ?: lastModifiedBy,
   )
 
-fun InvestigationDetails.toDPSSyncInvestigationRequest(interviewMappings: List<CSIPInterviewMappingDto>?) =
+fun InvestigationDetails.toDPSSyncInvestigationRequest(interviewMappings: List<CSIPChildMappingDto>?) =
   SyncInvestigationRequest(
     staffInvolved = staffInvolved,
     evidenceSecured = evidenceSecured,
@@ -215,9 +199,9 @@ fun InvestigationDetails.isEmpty() =
     protectiveFactors,
   ).isEmpty() && interviews.isNullOrEmpty()
 
-fun InterviewDetails.toDPSSyncInterviewRequest(interviewMappings: List<CSIPInterviewMappingDto>?) =
+fun InterviewDetails.toDPSSyncInterviewRequest(interviewMappings: List<CSIPChildMappingDto>?) =
   SyncInterviewRequest(
-    id = interviewMappings?.findMatchingDPSInterviewId(id),
+    id = interviewMappings?.findMatchingDPSChildId(id),
     legacyId = id,
     interviewee = interviewee,
     interviewDate = date,
@@ -283,7 +267,12 @@ fun CSIPResponse.toDPSSyncPlanRequest(fullMappingDto: CSIPFullMappingDto?) =
     reasonForPlan = planReason,
     firstCaseReviewDate = firstCaseReviewDate,
     identifiedNeeds = plans.map { it.toDPSSyncNeedRequest(fullMappingDto?.planMappings) },
-    reviews = reviews.map { it.toDPSSyncReviewRequest(fullMappingDto?.reviewMappings, fullMappingDto?.attendeeMappings) },
+    reviews = reviews.map {
+      it.toDPSSyncReviewRequest(
+        reviewMappings = fullMappingDto?.reviewMappings,
+        attendeeMappings = fullMappingDto?.attendeeMappings,
+      )
+    },
   ).takeUnless { isPlanEmpty() }
 
 fun CSIPResponse.isPlanEmpty() =
@@ -293,9 +282,9 @@ fun CSIPResponse.isPlanEmpty() =
     firstCaseReviewDate,
   ).isEmpty() && plans.isEmpty() && reviews.isEmpty()
 
-fun Plan.toDPSSyncNeedRequest(planMappings: List<CSIPPlanMappingDto>?) =
+fun Plan.toDPSSyncNeedRequest(planMappings: List<CSIPChildMappingDto>?) =
   SyncNeedRequest(
-    id = planMappings?.findMatchingDPSPlanId(id),
+    id = planMappings?.findMatchingDPSChildId(id),
     legacyId = id,
     identifiedNeed = identifiedNeed,
     responsiblePerson = referredBy!!,
@@ -315,9 +304,9 @@ fun Plan.toDPSSyncNeedRequest(planMappings: List<CSIPPlanMappingDto>?) =
     lastModifiedByDisplayName = lastModifiedByDisplayName ?: lastModifiedBy,
   )
 
-fun Review.toDPSSyncReviewRequest(reviewMappings: List<CSIPReviewMappingDto>?, attendeeMappings: List<CSIPAttendeeMappingDto>?) =
+fun Review.toDPSSyncReviewRequest(reviewMappings: List<CSIPChildMappingDto>?, attendeeMappings: List<CSIPChildMappingDto>?) =
   SyncReviewRequest(
-    id = reviewMappings?.findMatchingDPSReviewId(id),
+    id = reviewMappings?.findMatchingDPSChildId(id),
     legacyId = id,
     recordedBy = recordedBy,
     recordedByDisplayName = recordedByDisplayName ?: recordedBy,
@@ -349,9 +338,9 @@ fun Review.toSyncReviewActions(): MutableSet<SyncReviewRequest.Actions> {
 fun MutableSet<SyncReviewRequest.Actions>.addIfTrue(actionSet: Boolean, action: SyncReviewRequest.Actions) {
   if (actionSet) this.add(action)
 }
-fun Attendee.toSyncAttendeeRequest(attendeeMappings: List<CSIPAttendeeMappingDto>?) =
+fun Attendee.toSyncAttendeeRequest(attendeeMappings: List<CSIPChildMappingDto>?) =
   SyncAttendeeRequest(
-    id = attendeeMappings?.findMatchingDPSAttendeeId(id),
+    id = attendeeMappings?.findMatchingDPSChildId(id),
     legacyId = id,
     name = name,
     role = role,
@@ -368,61 +357,13 @@ fun Attendee.toSyncAttendeeRequest(attendeeMappings: List<CSIPAttendeeMappingDto
 
 fun SyncResponse.filterReport() = mappings.first { it.component == ResponseMapping.Component.RECORD }
 
-fun SyncResponse.filterAttendees(dpsCSIPReportId: String, mappingType: CSIPAttendeeMappingDto.MappingType = CSIPAttendeeMappingDto.MappingType.NOMIS_CREATED, label: String? = null) =
-  mappings.filter { it.component == ResponseMapping.Component.ATTENDEE }
+fun SyncResponse.filterChildMappings(dpsCSIPReportId: String, component: ResponseMapping.Component, mappingType: CSIPChildMappingDto.MappingType = CSIPChildMappingDto.MappingType.NOMIS_CREATED, label: String? = null) =
+  mappings.filter { it.component == component }
     .map {
-      CSIPAttendeeMappingDto(
+      CSIPChildMappingDto(
         dpsCSIPReportId = dpsCSIPReportId,
-        nomisCSIPAttendeeId = it.id,
-        dpsCSIPAttendeeId = it.uuid.toString(),
-        label = label,
-        mappingType = mappingType,
-      )
-    }
-
-fun SyncResponse.filterFactors(dpsCSIPReportId: String, mappingType: CSIPFactorMappingDto.MappingType = CSIPFactorMappingDto.MappingType.NOMIS_CREATED, label: String? = null) =
-  mappings.filter { it.component == ResponseMapping.Component.CONTRIBUTORY_FACTOR }
-    .map {
-      CSIPFactorMappingDto(
-        dpsCSIPReportId = dpsCSIPReportId,
-        nomisCSIPFactorId = it.id,
-        dpsCSIPFactorId = it.uuid.toString(),
-        label = label,
-        mappingType = mappingType,
-      )
-    }
-
-fun SyncResponse.filterInterviews(dpsCSIPReportId: String, mappingType: CSIPInterviewMappingDto.MappingType = CSIPInterviewMappingDto.MappingType.NOMIS_CREATED, label: String? = null) =
-  mappings.filter { it.component == ResponseMapping.Component.INTERVIEW }
-    .map {
-      CSIPInterviewMappingDto(
-        dpsCSIPReportId = dpsCSIPReportId,
-        nomisCSIPInterviewId = it.id,
-        dpsCSIPInterviewId = it.uuid.toString(),
-        label = label,
-        mappingType = mappingType,
-      )
-    }
-
-fun SyncResponse.filterPlans(dpsCSIPReportId: String, mappingType: CSIPPlanMappingDto.MappingType = CSIPPlanMappingDto.MappingType.NOMIS_CREATED, label: String? = null) =
-  mappings.filter { it.component == ResponseMapping.Component.IDENTIFIED_NEED }
-    .map {
-      CSIPPlanMappingDto(
-        dpsCSIPReportId = dpsCSIPReportId,
-        nomisCSIPPlanId = it.id,
-        dpsCSIPPlanId = it.uuid.toString(),
-        label = label,
-        mappingType = mappingType,
-      )
-    }
-
-fun SyncResponse.filterReviews(dpsCSIPReportId: String, mappingType: CSIPReviewMappingDto.MappingType = CSIPReviewMappingDto.MappingType.NOMIS_CREATED, label: String? = null) =
-  mappings.filter { it.component == ResponseMapping.Component.REVIEW }
-    .map {
-      CSIPReviewMappingDto(
-        dpsCSIPReportId = dpsCSIPReportId,
-        nomisCSIPReviewId = it.id,
-        dpsCSIPReviewId = it.uuid.toString(),
+        nomisId = it.id,
+        dpsId = it.uuid.toString(),
         label = label,
         mappingType = mappingType,
       )

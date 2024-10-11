@@ -6,16 +6,17 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ResponseMapping.Component.ATTENDEE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ResponseMapping.Component.CONTRIBUTORY_FACTOR
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ResponseMapping.Component.IDENTIFIED_NEED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ResponseMapping.Component.INTERVIEW
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ResponseMapping.Component.REVIEW
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPAttendeeMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFactorMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPChildMappingDto.MappingType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFullMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPInterviewMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPPlanMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReviewMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
@@ -75,11 +76,11 @@ class CSIPMigrationService(
                 dpsCSIPReportId = dpsCSIPReportId,
                 label = migrationId,
                 mappingType = CSIPFullMappingDto.MappingType.MIGRATED,
-                attendeeMappings = syncResponse.filterAttendees(dpsCSIPReportId = dpsCSIPReportId, mappingType = CSIPAttendeeMappingDto.MappingType.MIGRATED, label = migrationId),
-                factorMappings = syncResponse.filterFactors(dpsCSIPReportId = dpsCSIPReportId, mappingType = CSIPFactorMappingDto.MappingType.MIGRATED, label = migrationId),
-                interviewMappings = syncResponse.filterInterviews(dpsCSIPReportId = dpsCSIPReportId, mappingType = CSIPInterviewMappingDto.MappingType.MIGRATED, label = migrationId),
-                planMappings = syncResponse.filterPlans(dpsCSIPReportId = dpsCSIPReportId, mappingType = CSIPPlanMappingDto.MappingType.MIGRATED, label = migrationId),
-                reviewMappings = syncResponse.filterReviews(dpsCSIPReportId = dpsCSIPReportId, mappingType = CSIPReviewMappingDto.MappingType.MIGRATED, label = migrationId),
+                attendeeMappings = syncResponse.filterChildMappings(dpsCSIPReportId = dpsCSIPReportId, ATTENDEE, mappingType = MIGRATED, label = migrationId),
+                factorMappings = syncResponse.filterChildMappings(dpsCSIPReportId = dpsCSIPReportId, CONTRIBUTORY_FACTOR, mappingType = MIGRATED, label = migrationId),
+                interviewMappings = syncResponse.filterChildMappings(dpsCSIPReportId = dpsCSIPReportId, INTERVIEW, mappingType = MIGRATED, label = migrationId),
+                planMappings = syncResponse.filterChildMappings(dpsCSIPReportId = dpsCSIPReportId, IDENTIFIED_NEED, mappingType = MIGRATED, label = migrationId),
+                reviewMappings = syncResponse.filterChildMappings(dpsCSIPReportId = dpsCSIPReportId, REVIEW, mappingType = MIGRATED, label = migrationId),
               ),
             )
             telemetryClient.trackEvent(
