@@ -1,5 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.ChargeLegacyData
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CourtAppearanceLegacyData
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCase
@@ -8,6 +10,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SentenceResponse
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -18,20 +21,28 @@ fun CourtCaseResponse.toDpsCourtCase() = CreateCourtCase(
 
 fun CourtCaseResponse.toDpsCourtCaseMigration() = CreateCourtCaseMigrationRequest(
   prisonerId = this.offenderNo,
-  appearances = this.courtEvents.map { ca -> ca.toDpsCourtAppearance(offenderNo = offenderNo, caseReference = this.primaryCaseInfoNumber) },
-  otherCaseReferences = this.caseInfoNumbers.map { CaseReference(it.reference, LocalDateTime.parse(it.createDateTime)) },
+  appearances = this.courtEvents.map { ca ->
+    ca.toDpsCourtAppearance(
+      bookingId = this.bookingId,
+      caseReference = this.primaryCaseInfoNumber,
+    )
+  },
+  otherCaseReferences = this.caseInfoNumbers.map {
+    CaseReference(
+      it.reference,
+      LocalDateTime.parse(it.createDateTime),
+    )
+  },
 )
 
 private const val WARRANT_TYPE_DEFAULT = "REMAND"
 private const val OUTCOME_DEFAULT = "3034"
 
 fun CourtEventResponse.toDpsCourtAppearance(
-  offenderNo: String,
+  bookingId: Long,
   dpsCaseId: String? = null,
   caseReference: String? = null,
 ) = CreateCourtAppearance(
-  // TODO determine what happens when no result in NOMIS (approx 10% of CAs associated with a case)
-  outcome = this.outcomeReasonCode?.code ?: OUTCOME_DEFAULT,
   courtCode = this.courtId,
   // Only handling appearances associated with a case
   courtCaseUuid = dpsCaseId,
@@ -39,15 +50,29 @@ fun CourtEventResponse.toDpsCourtAppearance(
   courtCaseReference = caseReference,
   appearanceDate = LocalDateTime.parse(this.eventDateTime).toLocalDate(),
   warrantType = WARRANT_TYPE_DEFAULT,
-  charges = this.courtEventCharges.map { charge -> charge.offenderCharge.toDpsCharge() },
+  legacyData =
+  CourtAppearanceLegacyData(
+    eventId = this.id.toString(),
+    caseId = this.caseId?.toString(),
+    postedDate = LocalDate.now().toString(),
+    outcomeDescription = this.outcomeReasonCode?.description,
+    nomisOutcomeCode = this.outcomeReasonCode?.code,
+  ),
+  charges = this.courtEventCharges.map { charge -> charge.offenderCharge.toDpsCharge(bookingId = bookingId) },
 )
 
-fun OffenderChargeResponse.toDpsCharge(chargeId: String? = null) = CreateCharge(
+fun OffenderChargeResponse.toDpsCharge(chargeId: String? = null, bookingId: Long) = CreateCharge(
   offenceCode = this.offence.offenceCode,
   // TODO determine if this is ever optional on NOMIS
   offenceStartDate = this.offenceDate!!,
-  // TODO can be persisted without a result code in NOMIS
-  outcome = this.resultCode1?.code ?: "PLACEHOLDER",
+  legacyData =
+  ChargeLegacyData(
+    offenderChargeId = this.id.toString(),
+    bookingId = bookingId.toString(),
+    postedDate = LocalDate.now().toString(),
+    outcomeDescription = this.resultCode1?.description,
+    nomisOutcomeCode = this.resultCode1?.code,
+  ),
   offenceEndDate = this.offenceEndDate,
   chargeUuid = chargeId?.let { UUID.fromString(chargeId) },
 )

@@ -918,7 +918,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             dpsCourtSentencingServer.verify(
               1,
               postRequestedFor(urlPathEqualTo("/court-case/$DPS_COURT_CASE_ID/case-references/refresh"))
-                .withRequestBody(WireMock.matchingJsonPath("$.size()", WireMock.equalTo("2")))
+                .withRequestBody(matchingJsonPath("$.size()", equalTo("2")))
                 .withRequestBody(matchingJsonPath("[0].reference", equalTo(NOMIS_CASE_IDENTIFIER)))
                 .withRequestBody(matchingJsonPath("[1].reference", equalTo("ref2"))),
             )
@@ -1115,7 +1115,11 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
               postRequestedFor(urlPathEqualTo("/court-appearance"))
-                .withRequestBody(matchingJsonPath("outcome", equalTo("4506")))
+                .withRequestBody(matchingJsonPath("legacyData.eventId", equalTo(NOMIS_COURT_APPEARANCE_ID.toString())))
+                .withRequestBody(matchingJsonPath("legacyData.nomisOutcomeCode", equalTo("4506")))
+                .withRequestBody(matchingJsonPath("legacyData.caseId", equalTo(NOMIS_COURT_CASE_ID.toString())))
+                .withRequestBody(matchingJsonPath("legacyData.outcomeDescription", equalTo("Adjournment")))
+                .withRequestBody(matchingJsonPath("legacyData.postedDate", WireMock.not(WireMock.absent())))
                 .withRequestBody(matchingJsonPath("courtCode", equalTo("MDI")))
                 .withRequestBody(matchingJsonPath("courtCaseUuid", equalTo(DPS_COURT_CASE_ID)))
                 .withRequestBody(matchingJsonPath("appearanceDate", equalTo("2020-01-02")))
