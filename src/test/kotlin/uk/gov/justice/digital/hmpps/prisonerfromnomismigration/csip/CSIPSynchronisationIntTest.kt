@@ -130,7 +130,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
             postRequestedFor(urlPathEqualTo(CSIP_CREATE_MAPPING_URL))
               .withRequestBodyJsonPath("dpsCSIPReportId", DPS_CSIP_ID)
               .withRequestBodyJsonPath("nomisCSIPReportId", "$NOMIS_CSIP_ID")
-              .withRequestBodyJsonPath("factorMappings[0].dpsCSIPFactorId", "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e6"),
+              .withRequestBodyJsonPath("factorMappings[0].dpsId", "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e6"),
           )
         }
 

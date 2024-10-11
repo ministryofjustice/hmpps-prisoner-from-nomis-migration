@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-10-02.5169.94feac8"
+    "version": "2024-10-11.5202.6cfa18c"
   },
   "servers": [
     {
@@ -1612,7 +1612,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CSIPReviewMappingDto"
+                "$ref": "#/components/schemas/CSIPChildMappingDto"
               }
             }
           },
@@ -1664,7 +1664,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CSIPPlanMappingDto"
+                "$ref": "#/components/schemas/CSIPChildMappingDto"
               }
             }
           },
@@ -1716,7 +1716,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CSIPInterviewMappingDto"
+                "$ref": "#/components/schemas/CSIPChildMappingDto"
               }
             }
           },
@@ -1768,7 +1768,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CSIPFactorMappingDto"
+                "$ref": "#/components/schemas/CSIPChildMappingDto"
               }
             }
           },
@@ -1865,7 +1865,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CSIPAttendeeMappingDto"
+                "$ref": "#/components/schemas/CSIPChildMappingDto"
               }
             }
           },
@@ -5130,7 +5130,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CSIPReviewMappingDto"
+                  "$ref": "#/components/schemas/CSIPChildMappingDto"
                 }
               }
             }
@@ -5186,7 +5186,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CSIPReviewMappingDto"
+                  "$ref": "#/components/schemas/CSIPChildMappingDto"
                 }
               }
             }
@@ -5289,7 +5289,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CSIPPlanMappingDto"
+                  "$ref": "#/components/schemas/CSIPChildMappingDto"
                 }
               }
             }
@@ -5345,7 +5345,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CSIPPlanMappingDto"
+                  "$ref": "#/components/schemas/CSIPChildMappingDto"
                 }
               }
             }
@@ -5598,7 +5598,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CSIPInterviewMappingDto"
+                  "$ref": "#/components/schemas/CSIPChildMappingDto"
                 }
               }
             }
@@ -5654,7 +5654,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CSIPInterviewMappingDto"
+                  "$ref": "#/components/schemas/CSIPChildMappingDto"
                 }
               }
             }
@@ -5757,7 +5757,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CSIPFactorMappingDto"
+                  "$ref": "#/components/schemas/CSIPChildMappingDto"
                 }
               }
             }
@@ -5813,7 +5813,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CSIPFactorMappingDto"
+                  "$ref": "#/components/schemas/CSIPChildMappingDto"
                 }
               }
             }
@@ -6028,7 +6028,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CSIPAttendeeMappingDto"
+                  "$ref": "#/components/schemas/CSIPChildMappingDto"
                 }
               }
             }
@@ -6084,7 +6084,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CSIPAttendeeMappingDto"
+                  "$ref": "#/components/schemas/CSIPChildMappingDto"
                 }
               }
             }
@@ -10109,23 +10109,23 @@
         },
         "description": "Adjudication mapping (same value for NOMIS and DPS)"
       },
-      "CSIPReviewMappingDto": {
+      "CSIPChildMappingDto": {
         "required": [
           "dpsCSIPReportId",
-          "dpsCSIPReviewId",
+          "dpsId",
           "mappingType",
-          "nomisCSIPReviewId"
+          "nomisId"
         ],
         "type": "object",
         "properties": {
-          "nomisCSIPReviewId": {
+          "nomisId": {
             "type": "integer",
-            "description": "NOMIS CSIP Review id",
+            "description": "NOMIS CSIP child id",
             "format": "int64"
           },
-          "dpsCSIPReviewId": {
+          "dpsId": {
             "type": "string",
-            "description": "DPS CSIP Review id"
+            "description": "DPS CSIP child id"
           },
           "dpsCSIPReportId": {
             "type": "string",
@@ -10153,7 +10153,7 @@
             "example": "2021-07-05T10:35:17"
           }
         },
-        "description": "CSIP Review mapping"
+        "description": "CSIP Child mapping"
       },
       "CSIPReviewMapping": {
         "required": [
@@ -10204,52 +10204,6 @@
           }
         }
       },
-      "CSIPPlanMappingDto": {
-        "required": [
-          "dpsCSIPPlanId",
-          "dpsCSIPReportId",
-          "mappingType",
-          "nomisCSIPPlanId"
-        ],
-        "type": "object",
-        "properties": {
-          "nomisCSIPPlanId": {
-            "type": "integer",
-            "description": "NOMIS CSIP Plan id",
-            "format": "int64"
-          },
-          "dpsCSIPPlanId": {
-            "type": "string",
-            "description": "DPS CSIP Plan id"
-          },
-          "dpsCSIPReportId": {
-            "type": "string",
-            "description": "DPS CSIP Report id"
-          },
-          "label": {
-            "maxLength": 20,
-            "minLength": 0,
-            "type": "string",
-            "description": "Label (a timestamp for migrated ids)"
-          },
-          "mappingType": {
-            "type": "string",
-            "description": "Mapping type",
-            "enum": [
-              "MIGRATED",
-              "NOMIS_CREATED",
-              "DPS_CREATED"
-            ]
-          },
-          "whenCreated": {
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
-            "type": "string",
-            "description": "Date-time the mapping was created",
-            "example": "2021-07-05T10:35:17"
-          }
-        },
-        "description": "CSIP Plan mapping"
-      },
       "CSIPPlanMapping": {
         "required": [
           "dpsCSIPPlanId",
@@ -10298,52 +10252,6 @@
             "type": "boolean"
           }
         }
-      },
-      "CSIPInterviewMappingDto": {
-        "required": [
-          "dpsCSIPInterviewId",
-          "dpsCSIPReportId",
-          "mappingType",
-          "nomisCSIPInterviewId"
-        ],
-        "type": "object",
-        "properties": {
-          "nomisCSIPInterviewId": {
-            "type": "integer",
-            "description": "NOMIS CSIP Interview id",
-            "format": "int64"
-          },
-          "dpsCSIPInterviewId": {
-            "type": "string",
-            "description": "DPS CSIP Interview id"
-          },
-          "dpsCSIPReportId": {
-            "type": "string",
-            "description": "DPS CSIP Report id"
-          },
-          "label": {
-            "maxLength": 20,
-            "minLength": 0,
-            "type": "string",
-            "description": "Label (a timestamp for migrated ids)"
-          },
-          "mappingType": {
-            "type": "string",
-            "description": "Mapping type",
-            "enum": [
-              "MIGRATED",
-              "NOMIS_CREATED",
-              "DPS_CREATED"
-            ]
-          },
-          "whenCreated": {
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
-            "type": "string",
-            "description": "Date-time the mapping was created",
-            "example": "2021-07-05T10:35:17"
-          }
-        },
-        "description": "CSIP Interview mapping"
       },
       "CSIPInterviewMapping": {
         "required": [
@@ -10394,52 +10302,6 @@
           }
         }
       },
-      "CSIPFactorMappingDto": {
-        "required": [
-          "dpsCSIPFactorId",
-          "dpsCSIPReportId",
-          "mappingType",
-          "nomisCSIPFactorId"
-        ],
-        "type": "object",
-        "properties": {
-          "nomisCSIPFactorId": {
-            "type": "integer",
-            "description": "NOMIS CSIP Factor id",
-            "format": "int64"
-          },
-          "dpsCSIPFactorId": {
-            "type": "string",
-            "description": "DPS CSIP Factor id"
-          },
-          "dpsCSIPReportId": {
-            "type": "string",
-            "description": "DPS CSIP Report id"
-          },
-          "label": {
-            "maxLength": 20,
-            "minLength": 0,
-            "type": "string",
-            "description": "Label (a timestamp for migrated ids)"
-          },
-          "mappingType": {
-            "type": "string",
-            "description": "Mapping type",
-            "enum": [
-              "MIGRATED",
-              "NOMIS_CREATED",
-              "DPS_CREATED"
-            ]
-          },
-          "whenCreated": {
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
-            "type": "string",
-            "description": "Date-time the mapping was created",
-            "example": "2021-07-05T10:35:17"
-          }
-        },
-        "description": "CSIP Factor mapping"
-      },
       "CSIPFactorMapping": {
         "required": [
           "dpsCSIPFactorId",
@@ -10489,52 +10351,6 @@
           }
         }
       },
-      "CSIPAttendeeMappingDto": {
-        "required": [
-          "dpsCSIPAttendeeId",
-          "dpsCSIPReportId",
-          "mappingType",
-          "nomisCSIPAttendeeId"
-        ],
-        "type": "object",
-        "properties": {
-          "nomisCSIPAttendeeId": {
-            "type": "integer",
-            "description": "NOMIS CSIP Attendee id",
-            "format": "int64"
-          },
-          "dpsCSIPAttendeeId": {
-            "type": "string",
-            "description": "DPS CSIP Attendee id"
-          },
-          "dpsCSIPReportId": {
-            "type": "string",
-            "description": "DPS CSIP Report id"
-          },
-          "label": {
-            "maxLength": 20,
-            "minLength": 0,
-            "type": "string",
-            "description": "Label (a timestamp for migrated ids)"
-          },
-          "mappingType": {
-            "type": "string",
-            "description": "Mapping type",
-            "enum": [
-              "MIGRATED",
-              "NOMIS_CREATED",
-              "DPS_CREATED"
-            ]
-          },
-          "whenCreated": {
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
-            "type": "string",
-            "description": "Date-time the mapping was created",
-            "example": "2021-07-05T10:35:17"
-          }
-        },
-        "description": "CSIP Attendee mapping"
-      },
       "CSIPFullMappingDto": {
         "required": [
           "attendeeMappings",
@@ -10582,35 +10398,35 @@
             "type": "array",
             "description": "CSIP Attendee Mappings",
             "items": {
-              "$ref": "#/components/schemas/CSIPAttendeeMappingDto"
+              "$ref": "#/components/schemas/CSIPChildMappingDto"
             }
           },
           "factorMappings": {
             "type": "array",
             "description": "CSIP Factor Mappings",
             "items": {
-              "$ref": "#/components/schemas/CSIPFactorMappingDto"
+              "$ref": "#/components/schemas/CSIPChildMappingDto"
             }
           },
           "interviewMappings": {
             "type": "array",
             "description": "CSIP Interview Mappings",
             "items": {
-              "$ref": "#/components/schemas/CSIPInterviewMappingDto"
+              "$ref": "#/components/schemas/CSIPChildMappingDto"
             }
           },
           "planMappings": {
             "type": "array",
             "description": "CSIP Plan Mappings",
             "items": {
-              "$ref": "#/components/schemas/CSIPPlanMappingDto"
+              "$ref": "#/components/schemas/CSIPChildMappingDto"
             }
           },
           "reviewMappings": {
             "type": "array",
             "description": "CSIP Review Mappings",
             "items": {
-              "$ref": "#/components/schemas/CSIPReviewMappingDto"
+              "$ref": "#/components/schemas/CSIPChildMappingDto"
             }
           }
         },
@@ -11776,12 +11592,12 @@
             "type": "integer",
             "format": "int32"
           },
+          "paged": {
+            "type": "boolean"
+          },
           "pageNumber": {
             "type": "integer",
             "format": "int32"
-          },
-          "paged": {
-            "type": "boolean"
           },
           "unpaged": {
             "type": "boolean"

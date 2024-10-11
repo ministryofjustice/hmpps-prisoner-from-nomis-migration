@@ -8,6 +8,11 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.MappingResponse.MAPPING_FAILED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.DefaultLegacyActioned
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ResponseMapping.Component.ATTENDEE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ResponseMapping.Component.CONTRIBUTORY_FACTOR
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ResponseMapping.Component.IDENTIFIED_NEED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ResponseMapping.Component.INTERVIEW
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ResponseMapping.Component.REVIEW
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -63,11 +68,11 @@ class CSIPSynchronisationService(
                 nomisCSIPReportId = event.csipReportId,
                 dpsCSIPReportId = dpsCSIPReportId,
                 mappingType = CSIPFullMappingDto.MappingType.NOMIS_CREATED,
-                attendeeMappings = syncResponse.filterAttendees(dpsCSIPReportId = dpsCSIPReportId),
-                factorMappings = syncResponse.filterFactors(dpsCSIPReportId = dpsCSIPReportId),
-                interviewMappings = syncResponse.filterInterviews(dpsCSIPReportId = dpsCSIPReportId),
-                planMappings = syncResponse.filterPlans(dpsCSIPReportId = dpsCSIPReportId),
-                reviewMappings = syncResponse.filterReviews(dpsCSIPReportId = dpsCSIPReportId),
+                attendeeMappings = syncResponse.filterChildMappings(dpsCSIPReportId = dpsCSIPReportId, ATTENDEE),
+                factorMappings = syncResponse.filterChildMappings(dpsCSIPReportId = dpsCSIPReportId, CONTRIBUTORY_FACTOR),
+                interviewMappings = syncResponse.filterChildMappings(dpsCSIPReportId = dpsCSIPReportId, INTERVIEW),
+                planMappings = syncResponse.filterChildMappings(dpsCSIPReportId = dpsCSIPReportId, IDENTIFIED_NEED),
+                reviewMappings = syncResponse.filterChildMappings(dpsCSIPReportId = dpsCSIPReportId, REVIEW),
 
               ),
               telemetry + ("dpsCSIPId" to dpsCSIPReportId),
@@ -278,11 +283,11 @@ class CSIPSynchronisationService(
                 nomisCSIPReportId = nomisCSIPResponse.id,
                 dpsCSIPReportId = dpsCSIPReportId,
                 mappingType = CSIPFullMappingDto.MappingType.NOMIS_CREATED,
-                attendeeMappings = syncResponse.filterAttendees(dpsCSIPReportId = dpsCSIPReportId),
-                factorMappings = syncResponse.filterFactors(dpsCSIPReportId = dpsCSIPReportId),
-                interviewMappings = syncResponse.filterInterviews(dpsCSIPReportId = dpsCSIPReportId),
-                planMappings = syncResponse.filterPlans(dpsCSIPReportId = dpsCSIPReportId),
-                reviewMappings = syncResponse.filterReviews(dpsCSIPReportId = dpsCSIPReportId),
+                attendeeMappings = syncResponse.filterChildMappings(dpsCSIPReportId = dpsCSIPReportId, ATTENDEE),
+                factorMappings = syncResponse.filterChildMappings(dpsCSIPReportId = dpsCSIPReportId, CONTRIBUTORY_FACTOR),
+                interviewMappings = syncResponse.filterChildMappings(dpsCSIPReportId = dpsCSIPReportId, INTERVIEW),
+                planMappings = syncResponse.filterChildMappings(dpsCSIPReportId = dpsCSIPReportId, IDENTIFIED_NEED),
+                reviewMappings = syncResponse.filterChildMappings(dpsCSIPReportId = dpsCSIPReportId, REVIEW),
               ),
               telemetry + ("dpsCSIPId" to dpsCSIPReportId),
             ).also { result ->
