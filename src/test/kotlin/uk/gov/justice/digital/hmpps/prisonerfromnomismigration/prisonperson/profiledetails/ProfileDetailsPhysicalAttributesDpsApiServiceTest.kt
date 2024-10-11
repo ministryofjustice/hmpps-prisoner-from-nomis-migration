@@ -70,7 +70,8 @@ class ProfileDetailsPhysicalAttributesDpsApiServiceTest {
           .withRequestBody(matchingJsonPath("[0].build.lastModifiedBy", equalTo(buildCreatedBy)))
           .withRequestBody(matchingJsonPath("[0].shoeSize.value", equalTo(shoeSizeCode)))
           .withRequestBody(matchingJsonPath("[0].shoeSize.lastModifiedAt", equalTo(shoeSizeCreatedAt.atPrisonPersonZone())))
-          .withRequestBody(matchingJsonPath("[0].shoeSize.lastModifiedBy", equalTo(shoeSizeCreatedBy))),
+          .withRequestBody(matchingJsonPath("[0].shoeSize.lastModifiedBy", equalTo(shoeSizeCreatedBy)))
+          .withRequestBody(matchingJsonPath("[0].latestBooking", equalTo("true"))),
       )
     }
 
@@ -122,6 +123,7 @@ class ProfileDetailsPhysicalAttributesDpsApiServiceTest {
           lastModifiedAt = shoeSizeCreatedAt.atPrisonPersonZone(),
           lastModifiedBy = shoeSizeCreatedBy,
         ),
+        latestBooking = true,
       ),
     )
 

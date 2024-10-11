@@ -33,6 +33,7 @@ class PhysicalAttributesEntityMigrator(
           appliesTo = booking.endDateTime?.toLocalDateTime(),
           createdAt = lastModifiedAt,
           createdBy = lastModifiedBy,
+          latestBooking = booking.latestBooking,
         )
       }
     }

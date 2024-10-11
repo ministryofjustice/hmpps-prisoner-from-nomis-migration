@@ -114,6 +114,7 @@ class PhysicalAttributesDpsApiServiceTest {
     private val appliesTo = LocalDateTime.now()
     private val createdAt = LocalDateTime.now()
     private val createdBy = "A_USER"
+    private val latestBooking = true
 
     @Test
     fun `should pass auth token to the service`() = runTest {
@@ -122,7 +123,7 @@ class PhysicalAttributesDpsApiServiceTest {
       apiService.migratePhysicalAttributes(
         prisonerNumber,
         listOf(
-          apiService.migratePhysicalAttributesRequest(height, weight, appliesFrom, appliesTo, createdAt, createdBy),
+          apiService.migratePhysicalAttributesRequest(height, weight, appliesFrom, appliesTo, createdAt, createdBy, latestBooking),
         ),
       )
       dpsApi.verify(
@@ -138,7 +139,7 @@ class PhysicalAttributesDpsApiServiceTest {
       apiService.migratePhysicalAttributes(
         prisonerNumber,
         listOf(
-          apiService.migratePhysicalAttributesRequest(height, weight, appliesFrom, appliesTo, createdAt, createdBy),
+          apiService.migratePhysicalAttributesRequest(height, weight, appliesFrom, appliesTo, createdAt, createdBy, latestBooking),
         ),
       )
 
@@ -149,7 +150,8 @@ class PhysicalAttributesDpsApiServiceTest {
           .withRequestBody(matchingJsonPath("$[0].appliesFrom", equalTo(appliesFrom.atZone(ZoneId.of("Europe/London")).toString())))
           .withRequestBody(matchingJsonPath("$[0].appliesTo", equalTo(appliesTo.atZone(ZoneId.of("Europe/London")).toString())))
           .withRequestBody(matchingJsonPath("$[0].createdAt", equalTo(createdAt.atZone(ZoneId.of("Europe/London")).toString())))
-          .withRequestBody(matchingJsonPath("$[0].createdBy", equalTo(createdBy))),
+          .withRequestBody(matchingJsonPath("$[0].createdBy", equalTo(createdBy)))
+          .withRequestBody(matchingJsonPath("$[0].latestBooking", equalTo(latestBooking.toString()))),
       )
     }
 
@@ -160,7 +162,7 @@ class PhysicalAttributesDpsApiServiceTest {
       apiService.migratePhysicalAttributes(
         prisonerNumber,
         listOf(
-          apiService.migratePhysicalAttributesRequest(null, null, appliesFrom, null, createdAt, createdBy),
+          apiService.migratePhysicalAttributesRequest(null, null, appliesFrom, null, createdAt, createdBy, latestBooking),
         ),
       )
 
@@ -179,7 +181,7 @@ class PhysicalAttributesDpsApiServiceTest {
       val response = apiService.migratePhysicalAttributes(
         prisonerNumber,
         listOf(
-          apiService.migratePhysicalAttributesRequest(height, weight, appliesFrom, appliesTo, createdAt, createdBy),
+          apiService.migratePhysicalAttributesRequest(height, weight, appliesFrom, appliesTo, createdAt, createdBy, latestBooking),
         ),
       )
 
@@ -194,7 +196,7 @@ class PhysicalAttributesDpsApiServiceTest {
         apiService.migratePhysicalAttributes(
           prisonerNumber,
           listOf(
-            apiService.migratePhysicalAttributesRequest(height, weight, appliesFrom, appliesTo, createdAt, createdBy),
+            apiService.migratePhysicalAttributesRequest(height, weight, appliesFrom, appliesTo, createdAt, createdBy, latestBooking),
           ),
         )
       }

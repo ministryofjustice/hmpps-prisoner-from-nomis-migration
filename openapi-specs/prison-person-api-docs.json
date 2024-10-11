@@ -1752,7 +1752,8 @@
       },
       "ProfileDetailsPhysicalAttributesMigrationRequest": {
         "required": [
-          "appliesFrom"
+          "appliesFrom",
+          "latestBooking"
         ],
         "type": "object",
         "properties": {
@@ -1788,6 +1789,11 @@
             "description": "The timestamp of when these physical attributes should no longer be considered applicable. For migration of the current booking, this should be left null. For migration of historical bookings, this should be equal to the booking end date.",
             "format": "yyyy-MM-dd'T'HH:mm:ssX",
             "example": "2024-06-14T10:35:17+0100"
+          },
+          "latestBooking": {
+            "type": "boolean",
+            "description": "Indicates that this is the latest booking",
+            "example": true
           }
         },
         "description": "Request object for migration of a prisoner's profile details physical attributes"
@@ -1818,7 +1824,8 @@
         "required": [
           "appliesFrom",
           "createdAt",
-          "createdBy"
+          "createdBy",
+          "latestBooking"
         ],
         "type": "object",
         "properties": {
@@ -1858,6 +1865,11 @@
             "type": "string",
             "description": "The username of who last edited the record in NOMIS",
             "example": "USER1"
+          },
+          "latestBooking": {
+            "type": "boolean",
+            "description": "Latest booking",
+            "example": true
           }
         },
         "description": "Request object for migration of a prisoner's physical attributes"

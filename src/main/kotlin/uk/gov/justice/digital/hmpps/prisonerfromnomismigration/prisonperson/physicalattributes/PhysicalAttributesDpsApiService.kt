@@ -68,6 +68,7 @@ class PhysicalAttributesDpsApiService(@Qualifier("prisonPersonApiWebClient") pri
     appliesTo: LocalDateTime?,
     createdAt: LocalDateTime,
     createdBy: String,
+    latestBooking: Boolean,
   ) =
     PhysicalAttributesMigrationRequest(
       height = heightCentimetres,
@@ -76,5 +77,6 @@ class PhysicalAttributesDpsApiService(@Qualifier("prisonPersonApiWebClient") pri
       appliesTo = appliesTo?.atPrisonPersonZone(),
       createdAt = createdAt.atPrisonPersonZone(),
       createdBy = createdBy,
+      latestBooking = latestBooking,
     )
 }
