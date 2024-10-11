@@ -492,8 +492,8 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
     fun `will cancel a running migration`() {
       // slow the API calls so there is time to cancel before it completes
       nomisApi.setGlobalFixedDelay(1000)
-      stubMigrationDependencies(entities = 10)
-      mappingApi.stubActivitiesMappingByMigrationId(count = 10)
+      stubMigrationDependencies(entities = 100)
+      mappingApi.stubActivitiesMappingByMigrationId(count = 100)
 
       val migrationId = webTestClient.post().uri("/migrate/activities")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
