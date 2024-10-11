@@ -147,10 +147,10 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
             postRequestedFor(urlPathEqualTo(CSIP_CREATE_CHILD_MAPPINGS_URL))
               .withRequestBody(matchingJsonPath("dpsCSIPReportId", equalTo(dpsCSIPReportId)))
               .withRequestBody(matchingJsonPath("nomisCSIPReportId", equalTo(nomisCSIPReportId.toString())))
-              .withRequestBody(matchingJsonPath("factorMappings[0].dpsCSIPFactorId", equalTo(dpsCSIPFactorId)))
+              .withRequestBody(matchingJsonPath("factorMappings[0].dpsId", equalTo(dpsCSIPFactorId)))
               .withRequestBody(
                 matchingJsonPath(
-                  "factorMappings[0].nomisCSIPFactorId",
+                  "factorMappings[0].nomisId",
                   equalTo(nomisCSIPFactorId.toString()),
                 ),
               ),

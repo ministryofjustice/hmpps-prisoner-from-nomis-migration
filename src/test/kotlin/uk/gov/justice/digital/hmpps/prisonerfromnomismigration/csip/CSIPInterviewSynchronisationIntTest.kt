@@ -149,13 +149,13 @@ class CSIPInterviewSynchronisationIntTest : SqsIntegrationTestBase() {
               .withRequestBody(matchingJsonPath("nomisCSIPReportId", equalTo(nomisCSIPReportId.toString())))
               .withRequestBody(
                 matchingJsonPath(
-                  "interviewMappings[0].dpsCSIPInterviewId",
+                  "interviewMappings[0].dpsId",
                   equalTo(dpsCSIPInterviewId),
                 ),
               )
               .withRequestBody(
                 matchingJsonPath(
-                  "interviewMappings[0].nomisCSIPInterviewId",
+                  "interviewMappings[0].nomisId",
                   equalTo(nomisCSIPInterviewId.toString()),
                 ),
               ),

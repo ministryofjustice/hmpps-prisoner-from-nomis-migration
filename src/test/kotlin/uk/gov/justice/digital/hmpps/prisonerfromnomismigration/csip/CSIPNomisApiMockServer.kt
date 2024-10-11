@@ -59,6 +59,7 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
           concern = "There was a worry about the offender",
           knownReasons = "known reasons details go in here",
           otherInformation = "other information goes in here",
+          releaseDate = LocalDate.parse("2026-06-06"),
         ),
         saferCustodyScreening = SaferCustodyScreening(
           outcome = CodeDescription(

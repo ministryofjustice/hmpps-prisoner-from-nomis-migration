@@ -12,13 +12,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPAttendeeMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFactorMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPChildMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFullMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPInterviewMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPPlanMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReportMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReviewMappingDto
 
 @Service
 class CSIPMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) :
@@ -62,15 +58,15 @@ class CSIPMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient)
       .awaitBodilessEntity()
   }
 
-  suspend fun getCSIPFactorByNomisId(nomisCSIPFactorId: Long): CSIPFactorMappingDto? =
+  suspend fun getCSIPFactorByNomisId(nomisCSIPFactorId: Long): CSIPChildMappingDto? =
     webClient.get()
       .uri("/mapping/csip/factors/nomis-csip-factor-id/{nomisCSIPFactorId}", nomisCSIPFactorId)
       .retrieve()
       .awaitBodyOrNullWhenNotFound()
 
   suspend fun createCSIPFactorMapping(
-    mapping: CSIPFactorMappingDto,
-  ): CreateMappingResult<CSIPFactorMappingDto> {
+    mapping: CSIPChildMappingDto,
+  ): CreateMappingResult<CSIPChildMappingDto> {
     return webClient.post()
       .uri("/mapping/csip/factors")
       .bodyValue(
@@ -78,22 +74,22 @@ class CSIPMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient)
       )
       .retrieve()
       .bodyToMono(Unit::class.java)
-      .map { CreateMappingResult<CSIPFactorMappingDto>() }
+      .map { CreateMappingResult<CSIPChildMappingDto>() }
       .onErrorResume(WebClientResponseException.Conflict::class.java) {
-        Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPFactorMappingDto>>() {})))
+        Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPChildMappingDto>>() {})))
       }
       .awaitFirstOrDefault(CreateMappingResult())
   }
 
-  suspend fun getCSIPPlanByNomisId(nomisCSIPPlanId: Long): CSIPPlanMappingDto? =
+  suspend fun getCSIPPlanByNomisId(nomisCSIPPlanId: Long): CSIPChildMappingDto? =
     webClient.get()
       .uri("/mapping/csip/plans/nomis-csip-plan-id/{nomisCSIPPlanId}", nomisCSIPPlanId)
       .retrieve()
       .awaitBodyOrNullWhenNotFound()
 
   suspend fun createCSIPPlanMapping(
-    mapping: CSIPPlanMappingDto,
-  ): CreateMappingResult<CSIPPlanMappingDto> {
+    mapping: CSIPChildMappingDto,
+  ): CreateMappingResult<CSIPChildMappingDto> {
     return webClient.post()
       .uri("/mapping/csip/plans")
       .bodyValue(
@@ -101,22 +97,22 @@ class CSIPMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient)
       )
       .retrieve()
       .bodyToMono(Unit::class.java)
-      .map { CreateMappingResult<CSIPPlanMappingDto>() }
+      .map { CreateMappingResult<CSIPChildMappingDto>() }
       .onErrorResume(WebClientResponseException.Conflict::class.java) {
-        Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPPlanMappingDto>>() {})))
+        Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPChildMappingDto>>() {})))
       }
       .awaitFirstOrDefault(CreateMappingResult())
   }
 
-  suspend fun getCSIPReviewByNomisId(nomisCSIPReviewId: Long): CSIPReviewMappingDto? =
+  suspend fun getCSIPReviewByNomisId(nomisCSIPReviewId: Long): CSIPChildMappingDto? =
     webClient.get()
       .uri("/mapping/csip/reviews/nomis-csip-review-id/{nomisCSIPReviewId}", nomisCSIPReviewId)
       .retrieve()
       .awaitBodyOrNullWhenNotFound()
 
   suspend fun createCSIPReviewMapping(
-    mapping: CSIPReviewMappingDto,
-  ): CreateMappingResult<CSIPReviewMappingDto> {
+    mapping: CSIPChildMappingDto,
+  ): CreateMappingResult<CSIPChildMappingDto> {
     return webClient.post()
       .uri("/mapping/csip/reviews")
       .bodyValue(
@@ -124,22 +120,22 @@ class CSIPMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient)
       )
       .retrieve()
       .bodyToMono(Unit::class.java)
-      .map { CreateMappingResult<CSIPReviewMappingDto>() }
+      .map { CreateMappingResult<CSIPChildMappingDto>() }
       .onErrorResume(WebClientResponseException.Conflict::class.java) {
-        Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPReviewMappingDto>>() {})))
+        Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPChildMappingDto>>() {})))
       }
       .awaitFirstOrDefault(CreateMappingResult())
   }
 
-  suspend fun getCSIPAttendeeByNomisId(nomisCSIPAttendeeId: Long): CSIPAttendeeMappingDto? =
+  suspend fun getCSIPAttendeeByNomisId(nomisCSIPAttendeeId: Long): CSIPChildMappingDto? =
     webClient.get()
       .uri("/mapping/csip/attendees/nomis-csip-attendee-id/{nomisCSIPAttendeeId}", nomisCSIPAttendeeId)
       .retrieve()
       .awaitBodyOrNullWhenNotFound()
 
   suspend fun createCSIPAttendeeMapping(
-    mapping: CSIPAttendeeMappingDto,
-  ): CreateMappingResult<CSIPAttendeeMappingDto> {
+    mapping: CSIPChildMappingDto,
+  ): CreateMappingResult<CSIPChildMappingDto> {
     return webClient.post()
       .uri("/mapping/csip/attendees")
       .bodyValue(
@@ -147,22 +143,22 @@ class CSIPMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient)
       )
       .retrieve()
       .bodyToMono(Unit::class.java)
-      .map { CreateMappingResult<CSIPAttendeeMappingDto>() }
+      .map { CreateMappingResult<CSIPChildMappingDto>() }
       .onErrorResume(WebClientResponseException.Conflict::class.java) {
-        Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPAttendeeMappingDto>>() {})))
+        Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPChildMappingDto>>() {})))
       }
       .awaitFirstOrDefault(CreateMappingResult())
   }
 
-  suspend fun getCSIPInterviewByNomisId(nomisCSIPInterviewId: Long): CSIPInterviewMappingDto? =
+  suspend fun getCSIPInterviewByNomisId(nomisCSIPInterviewId: Long): CSIPChildMappingDto? =
     webClient.get()
       .uri("/mapping/csip/interviews/nomis-csip-interview-id/{nomisCSIPInterviewId}", nomisCSIPInterviewId)
       .retrieve()
       .awaitBodyOrNullWhenNotFound()
 
   suspend fun createCSIPInterviewMapping(
-    mapping: CSIPInterviewMappingDto,
-  ): CreateMappingResult<CSIPInterviewMappingDto> {
+    mapping: CSIPChildMappingDto,
+  ): CreateMappingResult<CSIPChildMappingDto> {
     return webClient.post()
       .uri("/mapping/csip/interviews")
       .bodyValue(
@@ -170,9 +166,9 @@ class CSIPMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient)
       )
       .retrieve()
       .bodyToMono(Unit::class.java)
-      .map { CreateMappingResult<CSIPInterviewMappingDto>() }
+      .map { CreateMappingResult<CSIPChildMappingDto>() }
       .onErrorResume(WebClientResponseException.Conflict::class.java) {
-        Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPInterviewMappingDto>>() {})))
+        Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPChildMappingDto>>() {})))
       }
       .awaitFirstOrDefault(CreateMappingResult())
   }
