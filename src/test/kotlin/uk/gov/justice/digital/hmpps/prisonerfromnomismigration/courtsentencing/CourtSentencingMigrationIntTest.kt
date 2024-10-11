@@ -151,7 +151,7 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
     internal fun `will migrate case hierarchy`() {
       nomisApi.stubGetInitialCount(NomisApiExtension.COURT_CASES_ID_URL, 1) { courtCaseIdsPagedResponse(it) }
       nomisApi.stubMultipleGetCourtCaseIdCounts(totalElements = 1, pageSize = 10)
-      nomisApi.stubGetCourtCase(caseId = 1)
+      nomisApi.stubGetCourtCase(bookingId = 3, caseId = 1)
       courtSentencingMappingApiMockServer.stubGetByNomisId(HttpStatus.NOT_FOUND)
       courtSentencingMappingApiMockServer.stubPostMapping()
 
@@ -173,8 +173,17 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
           WireMock.postRequestedFor(WireMock.urlPathEqualTo("/court-case/migration"))
             .withRequestBody(WireMock.matchingJsonPath("appearances.size()", WireMock.equalTo("1")))
             .withRequestBody(WireMock.matchingJsonPath("appearances[0].courtCaseReference", WireMock.equalTo("caseRef1")))
+            .withRequestBody(WireMock.matchingJsonPath("appearances[0].legacyData.eventId", WireMock.equalTo("528456562")))
+            .withRequestBody(WireMock.matchingJsonPath("appearances[0].legacyData.nomisOutcomeCode", WireMock.equalTo("4506")))
+            .withRequestBody(WireMock.matchingJsonPath("appearances[0].legacyData.caseId", WireMock.equalTo("1")))
+            .withRequestBody(WireMock.matchingJsonPath("appearances[0].legacyData.outcomeDescription", WireMock.equalTo("Adjournment")))
+            .withRequestBody(WireMock.matchingJsonPath("appearances[0].legacyData.postedDate", WireMock.not(WireMock.absent())))
             .withRequestBody(WireMock.matchingJsonPath("appearances[0].charges[0].offenceCode", WireMock.equalTo("RR84027")))
-            .withRequestBody(WireMock.matchingJsonPath("appearances[0].charges[0].outcome", WireMock.equalTo("1081"))),
+            .withRequestBody(WireMock.matchingJsonPath("appearances[0].charges[0].legacyData.nomisOutcomeCode", WireMock.equalTo("1081")))
+            .withRequestBody(WireMock.matchingJsonPath("appearances[0].charges[0].legacyData.outcomeDescription", WireMock.equalTo("Detention and Training Order")))
+            .withRequestBody(WireMock.matchingJsonPath("appearances[0].charges[0].legacyData.bookingId", WireMock.equalTo("3")))
+            .withRequestBody(WireMock.matchingJsonPath("appearances[0].charges[0].legacyData.offenderChargeId", WireMock.equalTo("3934645")))
+            .withRequestBody(WireMock.matchingJsonPath("appearances[0].charges[0].legacyData.postedDate", WireMock.not(WireMock.absent()))),
         )
       }
     }

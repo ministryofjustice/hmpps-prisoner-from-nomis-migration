@@ -111,7 +111,7 @@ class CourtSentencingSynchronisationService(
             // TODO wire up caseref from list of identifiers when implemented
             dpsApiService.createCourtAppearance(
               nomisCourtAppearance.toDpsCourtAppearance(
-                event.offenderIdDisplay,
+                event.bookingId,
                 courtCaseMapping.dpsCourtCaseId,
               ),
             ).run {
@@ -409,7 +409,7 @@ class CourtSentencingSynchronisationService(
             // TODO DPS have yet to implement an update - expecting a new update DTO without a caseId
             dpsApiService.updateCourtAppearance(
               courtAppearanceId = mapping.dpsCourtAppearanceId,
-              nomisCourtAppearance.toDpsCourtAppearance(offenderNo = event.offenderIdDisplay, dpsCaseId = "DUMMY"),
+              nomisCourtAppearance.toDpsCourtAppearance(bookingId = event.bookingId, dpsCaseId = "DUMMY"),
             )
             telemetryClient.trackEvent(
               "court-appearance-synchronisation-updated-success",
@@ -483,14 +483,14 @@ class CourtSentencingSynchronisationService(
           telemetry.put("existingDpsCharge", "true")
           dpsApiService.associateExistingCourtCharge(
             courtAppearanceMapping.dpsCourtAppearanceId,
-            nomisOffenderCharge.toDpsCharge(mapping.dpsCourtChargeId),
+            nomisOffenderCharge.toDpsCharge(chargeId = mapping.dpsCourtChargeId, bookingId = event.bookingId),
           )
         } ?: let {
           // no mapping means this is a new offender charge to be created and applied to the appearance
           telemetry.put("existingDpsCharge", "false")
           dpsApiService.addNewCourtCharge(
             courtAppearanceId = courtAppearanceMapping.dpsCourtAppearanceId,
-            nomisOffenderCharge.toDpsCharge(),
+            nomisOffenderCharge.toDpsCharge(bookingId = event.bookingId),
           ).run {
             telemetry.put("dpsChargeId", this.chargeUuid.toString())
             tryToCreateChargeMapping(
@@ -598,7 +598,7 @@ class CourtSentencingSynchronisationService(
         // TODO DPS have yet to implement an update - expecting a new update DTO without a caseId
         dpsApiService.updateCourtCharge(
           chargeId = mapping.dpsCourtChargeId,
-          nomisCourtCase.toDpsCharge(chargeId = mapping.dpsCourtChargeId),
+          nomisCourtCase.toDpsCharge(chargeId = mapping.dpsCourtChargeId, bookingId = event.bookingId),
         )
         telemetryClient.trackEvent(
           "court-charge-synchronisation-updated-success",
