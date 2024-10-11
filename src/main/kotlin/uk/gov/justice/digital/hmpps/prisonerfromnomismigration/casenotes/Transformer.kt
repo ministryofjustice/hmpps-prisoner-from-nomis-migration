@@ -17,7 +17,8 @@ fun CaseNoteResponse.toDPSCreateCaseNote(offenderNo: String) = MigrateCaseNoteRe
   // 6 records with incorrect code, see https://mojdt.slack.com/archives/C06G85DCF8T/p1727086140883849?thread_ts=1726847680.924269&cid=C06G85DCF8T
   type = if (caseNoteType.code == "CNOTE" && caseNoteSubType.code == "OUTCOME") {
     "APP".also {
-      LoggerFactory.getLogger(this::class.java).warn("CNOTE/OUTCOME detected and corrected for $offenderNo, $caseNoteId")
+      LoggerFactory.getLogger(this::class.java)
+        .warn("CNOTE/OUTCOME detected and corrected for $offenderNo, $caseNoteId")
     }
   } else {
     caseNoteType.code
@@ -36,7 +37,7 @@ fun CaseNoteResponse.toDPSCreateCaseNote(offenderNo: String) = MigrateCaseNoteRe
   ),
   createdDateTime = LocalDateTime.parse(this.createdDatetime),
   createdByUsername = this.createdUsername,
-  source = MigrateCaseNoteRequest.Source.NOMIS,
+  system = MigrateCaseNoteRequest.System.valueOf(this.sourceSystem.name),
   amendments = this.amendments.map { a ->
     MigrateAmendmentRequest(
       text = a.text,
@@ -47,6 +48,7 @@ fun CaseNoteResponse.toDPSCreateCaseNote(offenderNo: String) = MigrateCaseNoteRe
         lastName = a.authorLastName ?: "",
       ),
       createdDateTime = LocalDateTime.parse(a.createdDateTime),
+      system = MigrateAmendmentRequest.System.valueOf(a.sourceSystem.name),
     )
   }.toSet(),
 )
@@ -72,7 +74,6 @@ fun CaseNoteResponse.toDPSSyncCaseNote(offenderNo: String, id: UUID? = null) = S
   ),
   createdDateTime = LocalDateTime.parse(this.createdDatetime),
   createdByUsername = this.createdUsername,
-  source = SyncCaseNoteRequest.Source.NOMIS,
   amendments = this.amendments.map { a ->
     SyncCaseNoteAmendmentRequest(
       text = a.text,

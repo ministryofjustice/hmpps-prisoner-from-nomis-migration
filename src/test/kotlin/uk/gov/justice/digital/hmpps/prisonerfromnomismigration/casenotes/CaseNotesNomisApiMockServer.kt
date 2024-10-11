@@ -7,6 +7,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse.SourceSystem
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerCaseNotesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
@@ -34,6 +35,7 @@ class CaseNotesNomisApiMockServer(private val objectMapper: ObjectMapper) {
       prisonId = "SWI",
       caseNoteText = "the actual casenote",
       auditModuleName = auditModuleName,
+      sourceSystem = SourceSystem.NOMIS,
     ),
   ) {
     nomisApi.stubFor(
@@ -65,6 +67,7 @@ class CaseNotesNomisApiMockServer(private val objectMapper: ObjectMapper) {
       occurrenceDateTime = "2021-02-03T04:05:06",
       prisonId = "SWI",
       auditModuleName = auditModuleName,
+      sourceSystem = SourceSystem.NOMIS,
     ),
   ) {
     val response = PrisonerCaseNotesResponse(

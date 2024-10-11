@@ -37,6 +37,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto.MappingType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteAmendment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse.SourceSystem
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
@@ -156,7 +157,6 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBodyJsonPath("author.lastName", equalTo("Last"))
                 .withRequestBodyJsonPath("createdDateTime", equalTo("2021-02-03T04:05:06"))
                 .withRequestBodyJsonPath("createdByUsername", equalTo("John"))
-                .withRequestBodyJsonPath("source", equalTo("NOMIS"))
                 .withRequestBodyJsonPath("amendments[0].createdDateTime", equalTo("2021-02-03T04:05:06"))
                 .withRequestBodyJsonPath("amendments[0].text", equalTo("amendment text"))
                 .withRequestBodyJsonPath("amendments[0].author.username", equalTo("authorone"))
@@ -537,7 +537,6 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBodyJsonPath("systemGenerated", equalTo("false"))
                 .withRequestBodyJsonPath("createdDateTime", equalTo("2021-02-03T04:05:06"))
                 .withRequestBodyJsonPath("createdByUsername", equalTo("John"))
-                .withRequestBodyJsonPath("source", equalTo("NOMIS"))
                 .withRequestBodyJsonPath("author.username", equalTo("me"))
                 .withRequestBodyJsonPath("author.userId", equalTo("123456"))
                 .withRequestBodyJsonPath("author.firstName", equalTo("First"))
@@ -862,6 +861,7 @@ private fun caseNote(bookingId: Long = 123456, caseNoteId: Long = 3) = CaseNoteR
       authorStaffId = 2001,
       authorFirstName = "AUTHOR",
       authorLastName = "ONE",
+      sourceSystem = CaseNoteAmendment.SourceSystem.NOMIS,
     ),
   ),
   createdDatetime = "2021-02-03T04:05:06",
@@ -871,4 +871,5 @@ private fun caseNote(bookingId: Long = 123456, caseNoteId: Long = 3) = CaseNoteR
   prisonId = "SWI",
   caseNoteText = "the actual casenote",
   auditModuleName = "module",
+  sourceSystem = SourceSystem.NOMIS,
 )

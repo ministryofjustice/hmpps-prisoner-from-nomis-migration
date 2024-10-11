@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-10-01.6790.12c6308"
+    "version": "2024-10-11.6966.6be27b7"
   },
   "servers": [
     {
@@ -65,28 +65,8 @@
           "required": true
         },
         "responses": {
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "201": {
             "description": "Case Note successfully created",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/SyncResult"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "Case Note successfully updated",
             "content": {
               "*/*": {
                 "schema": {
@@ -111,6 +91,26 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Case Note successfully updated",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncResult"
                 }
               }
             }
@@ -241,22 +241,22 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/CaseNote"
-                }
-              }
-            }
-          },
           "404": {
             "description": "Offender or case note not found",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseNote"
                 }
               }
             }
@@ -363,16 +363,6 @@
           "required": true
         },
         "responses": {
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "201": {
             "description": "Case note successfully created",
             "content": {
@@ -395,6 +385,16 @@
           },
           "403": {
             "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
             "content": {
               "*/*": {
                 "schema": {
@@ -440,8 +440,18 @@
           "required": true
         },
         "responses": {
-          "400": {
-            "description": "Bad request",
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
             "content": {
               "*/*": {
                 "schema": {
@@ -463,18 +473,8 @@
               }
             }
           },
-          "401": {
-            "description": "Unauthorised, requires a valid Oauth2 token",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
+          "400": {
+            "description": "Bad request",
             "content": {
               "*/*": {
                 "schema": {
@@ -493,7 +493,7 @@
         ],
         "summary": "Retrieves a list of case notes",
         "description": "Sorting can be applied on occurrenceDateTime (default) or creationDateTime. Any other sort parameter will have the default result (occurrenceDateTime,desc)",
-        "operationId": "getCaseNotes",
+        "operationId": "getCaseNotes_1",
         "parameters": [
           {
             "name": "personIdentifier",
@@ -615,6 +615,40 @@
         }
       }
     },
+    "/sync/case-notes/{personIdentifier}": {
+      "get": {
+        "tags": [
+          "Sync Case Notes"
+        ],
+        "description": "\nRequires one of the following roles: \n* ROLE_PRISONER_CASE_NOTES__SYNC__RW",
+        "operationId": "getCaseNotes",
+        "parameters": [
+          {
+            "name": "personIdentifier",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CaseNote"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/subject-access-request": {
       "get": {
         "tags": [
@@ -674,22 +708,32 @@
               }
             }
           },
+          "401": {
+            "description": "The client does not have authorisation to make this request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "200": {
             "description": "Request successfully processed - content found",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SubjectAccessRequestContent"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -704,18 +748,8 @@
               }
             }
           },
-          "401": {
-            "description": "The client does not have authorisation to make this request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Unexpected error occurred",
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
             "content": {
               "application/json": {
                 "schema": {
@@ -807,16 +841,6 @@
           }
         ],
         "responses": {
-          "404": {
-            "description": "Case notes types not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -826,6 +850,16 @@
                   "items": {
                     "$ref": "#/components/schemas/CaseNoteType"
                   }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Case notes types not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -906,20 +940,9 @@
               "type": "string"
             },
             "example": "518b2200-6489-4c77-8514-10cf80ccd488"
-          },
-          {
-            "name": "CaseloadId",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK"
-          },
           "404": {
             "description": "Offender or case note not found",
             "content": {
@@ -929,6 +952,9 @@
                 }
               }
             }
+          },
+          "200": {
+            "description": "OK"
           }
         }
       }
@@ -995,7 +1021,6 @@
           "locationId",
           "occurrenceDateTime",
           "personIdentifier",
-          "source",
           "subType",
           "systemGenerated",
           "text",
@@ -1059,17 +1084,6 @@
           "createdByUsername": {
             "type": "string",
             "description": "Username of the user that created the case note"
-          },
-          "source": {
-            "type": "string",
-            "description": "Indicates whether the case note was created via prison API or nomis",
-            "example": "DPS",
-            "enum": [
-              "DPS",
-              "NOMIS",
-              "DPS",
-              "NOMIS"
-            ]
           },
           "amendments": {
             "uniqueItems": true,
@@ -1375,6 +1389,7 @@
         "required": [
           "author",
           "createdDateTime",
+          "system",
           "text"
         ],
         "type": "object",
@@ -1382,6 +1397,13 @@
           "text": {
             "type": "string",
             "description": "The text of the note"
+          },
+          "system": {
+            "type": "string",
+            "enum": [
+              "DPS",
+              "NOMIS"
+            ]
           },
           "author": {
             "$ref": "#/components/schemas/Author"
@@ -1402,8 +1424,8 @@
           "legacyId",
           "locationId",
           "occurrenceDateTime",
-          "source",
           "subType",
+          "system",
           "systemGenerated",
           "text",
           "type"
@@ -1444,6 +1466,13 @@
             "type": "boolean",
             "description": "Boolean flag to indicate if case note is system generated"
           },
+          "system": {
+            "type": "string",
+            "enum": [
+              "DPS",
+              "NOMIS"
+            ]
+          },
           "author": {
             "$ref": "#/components/schemas/Author"
           },
@@ -1455,17 +1484,6 @@
           "createdByUsername": {
             "type": "string",
             "description": "Username of the user that created the case note"
-          },
-          "source": {
-            "type": "string",
-            "description": "Indicates whether the case note was created via prison API or nomis",
-            "example": "DPS",
-            "enum": [
-              "DPS",
-              "NOMIS",
-              "DPS",
-              "NOMIS"
-            ]
           },
           "amendments": {
             "uniqueItems": true,
@@ -1809,7 +1827,6 @@
       "CaseNoteSubType": {
         "required": [
           "active",
-          "activeFlag",
           "code",
           "description",
           "restrictedUse",
@@ -1853,13 +1870,6 @@
                 "ALL"
               ]
             }
-          },
-          "activeFlag": {
-            "type": "string",
-            "enum": [
-              "Y",
-              "N"
-            ]
           }
         },
         "description": "List of case note sub types"

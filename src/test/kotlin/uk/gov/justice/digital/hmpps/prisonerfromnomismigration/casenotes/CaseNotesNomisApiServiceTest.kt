@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse.SourceSystem
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 
 private const val OFFENDER_NUMBER = "G4803UT"
@@ -71,6 +72,7 @@ class CaseNotesNomisApiServiceTest {
           caseNoteText = "the actual casenote",
           auditModuleName = "module",
           caseNoteId = 1,
+          sourceSystem = SourceSystem.NOMIS,
         ),
       )
 
@@ -128,6 +130,7 @@ class CaseNotesNomisApiServiceTest {
           caseNoteText = "the actual casenote",
           auditModuleName = "module",
           caseNoteId = 1001,
+          sourceSystem = SourceSystem.NOMIS,
         ),
       )
 

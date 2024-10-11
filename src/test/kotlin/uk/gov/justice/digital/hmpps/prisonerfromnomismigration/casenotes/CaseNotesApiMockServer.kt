@@ -21,7 +21,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.A
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.SyncCaseNoteRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.SyncCaseNoteRequest.Source
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.SyncResult
 import java.time.LocalDateTime
 import java.util.UUID
@@ -62,7 +61,6 @@ class CaseNotesApiMockServer : WireMockServer(WIREMOCK_PORT) {
       systemGenerated = false,
       createdDateTime = LocalDateTime.parse("2021-02-03T04:05:06"),
       createdByUsername = "the-computer",
-      source = Source.NOMIS,
       author = Author(
         username = "me",
         userId = "123456",
