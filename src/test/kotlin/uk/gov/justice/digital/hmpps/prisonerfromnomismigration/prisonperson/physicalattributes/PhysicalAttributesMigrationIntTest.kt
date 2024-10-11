@@ -78,7 +78,8 @@ class PhysicalAttributesMigrationIntTest : SqsIntegrationTestBase() {
             .withRequestBodyJsonPath("$[0].weight", 80)
             .withRequestBodyJsonPath("$[0].appliesFrom", "2024-02-03T12:34:56Z[Europe/London]")
             .withRequestBodyJsonPath("$[0].appliesTo", "2024-10-21T12:34:56+01:00[Europe/London]")
-            .withRequestBodyJsonPath("$[0].createdBy", "ANOTHER_USER"),
+            .withRequestBodyJsonPath("$[0].createdBy", "ANOTHER_USER")
+            .withRequestBodyJsonPath("$[0].latestBooking", "true"),
         )
         dpsApi.verify(
           putRequestedFor(urlMatching("/migration/prisoners/A0002KT/physical-attributes")),

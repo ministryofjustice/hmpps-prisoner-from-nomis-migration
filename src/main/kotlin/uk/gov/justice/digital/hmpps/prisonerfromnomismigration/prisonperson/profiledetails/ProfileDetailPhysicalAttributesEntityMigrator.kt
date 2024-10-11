@@ -37,6 +37,7 @@ class ProfileDetailPhysicalAttributesEntityMigrator(
           face = profileDetails.toDpsRequest("FACE"),
           leftEyeColour = profileDetails.toDpsRequest("L_EYE_C"),
           rightEyeColour = profileDetails.toDpsRequest("R_EYE_C"),
+          latestBooking = booking.latestBooking,
         )
       }
     }

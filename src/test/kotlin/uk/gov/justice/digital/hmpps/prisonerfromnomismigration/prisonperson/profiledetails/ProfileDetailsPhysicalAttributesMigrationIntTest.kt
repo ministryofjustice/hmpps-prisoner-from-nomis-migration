@@ -79,7 +79,8 @@ class ProfileDetailsPhysicalAttributesMigrationIntTest : SqsIntegrationTestBase(
             .withRequestBodyJsonPath("$[0].shoeSize.value", "8.5")
             .withRequestBodyJsonPath("$[0].shoeSize.lastModifiedAt", containing(LocalDate.now().toString()))
             .withRequestBodyJsonPath("$[0].shoeSize.lastModifiedBy", "ANOTHER_USER")
-            .withRequestBodyJsonPath("$[0].facialHair", absent()),
+            .withRequestBodyJsonPath("$[0].facialHair", absent())
+            .withRequestBodyJsonPath("$[0].latestBooking", "true"),
         )
         dpsApi.verify(
           putRequestedFor(urlMatching("/migration/prisoners/A0002KT/profile-details-physical-attributes")),
