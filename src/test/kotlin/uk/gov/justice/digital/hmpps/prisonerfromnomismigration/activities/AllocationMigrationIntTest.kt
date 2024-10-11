@@ -516,8 +516,10 @@ class AllocationMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `will cancel a running migration`() {
-      stubMigrationDependencies(entities = 10)
-      mappingApi.stubAllocationsMappingByMigrationId(count = 10)
+      // slow the API calls so there is time to cancel before it completes
+      nomisApi.setGlobalFixedDelay(20)
+      stubMigrationDependencies(entities = 100)
+      mappingApi.stubAllocationsMappingByMigrationId(count = 100)
 
       val migrationId = webTestClient.post().uri("/migrate/allocations")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))

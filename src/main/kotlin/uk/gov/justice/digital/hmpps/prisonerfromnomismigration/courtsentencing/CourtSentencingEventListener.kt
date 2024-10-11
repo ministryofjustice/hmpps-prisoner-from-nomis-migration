@@ -3,16 +3,12 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.awspring.cloud.sqs.annotation.SqsListener
-import io.opentelemetry.api.trace.SpanKind
-import io.opentelemetry.instrumentation.annotations.WithSpan
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.future.future
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_APPEARANCE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CASE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CHARGE_SYNCHRONISATION_MAPPING
@@ -31,7 +27,6 @@ class CourtSentencingEventListener(
   }
 
   @SqsListener("eventcourtsentencing", factory = "hmppsQueueContainerFactoryProxy")
-  @WithSpan(value = "syscon-devs-prisoner_from_nomis_courtsentencing_queue", kind = SpanKind.SERVER)
   fun onMessage(message: String): CompletableFuture<Void> {
     log.debug("Received offender event message {}", message)
     val sqsMessage: SQSMessage = objectMapper.readValue(message)
@@ -136,9 +131,3 @@ data class CaseIdentifiersEvent(
   val bookingId: Long,
   val auditModuleName: String?,
 )
-
-private fun asCompletableFuture(
-  process: suspend () -> Unit,
-): CompletableFuture<Void> = CoroutineScope(Dispatchers.Default).future {
-  process()
-}.thenAccept { }

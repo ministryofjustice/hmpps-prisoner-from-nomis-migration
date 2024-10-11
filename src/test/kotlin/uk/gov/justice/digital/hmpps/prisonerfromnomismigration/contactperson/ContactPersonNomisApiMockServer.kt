@@ -9,11 +9,23 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactForPrisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactPerson
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactRestriction
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactRestrictionEnteredStaff
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonContact
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonEmailAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonEmployment
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonEmploymentCorporate
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonIdentifier
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonPhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -90,11 +102,30 @@ fun contactPerson(): ContactPerson = ContactPerson(
     createDatetime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
     createUsername = "Q1251T",
   ),
-  phoneNumbers = emptyList(),
-  addresses = emptyList(),
-  emailAddresses = emptyList(),
-  employments = emptyList(),
-  identifiers = emptyList(),
-  contacts = emptyList(),
-  restrictions = emptyList(),
+  phoneNumbers = listOf(PersonPhoneNumber(phoneId = 1, number = "0114555555", type = CodeDescription(code = "HOME", description = "Home"))),
+  addresses = listOf(PersonAddress(addressId = 1, phoneNumbers = listOf(PersonPhoneNumber(phoneId = 2, number = "0114555555", type = CodeDescription(code = "HOME", description = "Home"))), validatedPAF = false, primaryAddress = true, mailAddress = true)),
+  emailAddresses = listOf(PersonEmailAddress(emailAddressId = 1, email = "test@justice.gov.uk")),
+  employments = listOf(PersonEmployment(sequence = 1, active = true, corporate = PersonEmploymentCorporate(id = 1, name = "Police"))),
+  identifiers = listOf(
+    PersonIdentifier(
+      sequence = 1,
+      type = CodeDescription(code = "DL", description = "Driving Licence"),
+      identifier = "SMITH1717171",
+      issuedAuthority = "DVLA",
+    ),
+  ),
+  contacts = listOf(
+    PersonContact(
+      id = 1,
+      relationshipType = CodeDescription(code = "BOF", description = "Boyfriend"),
+      contactType = CodeDescription(code = "S", description = "Social/ Family"),
+      active = true,
+      emergencyContact = true,
+      nextOfKin = false,
+      approvedVisitor = false,
+      prisoner = ContactForPrisoner(bookingId = 1, offenderNo = "A1234KT", lastName = "SMITH", firstName = "JOHN"),
+      restrictions = listOf(ContactRestriction(id = 1, type = CodeDescription(code = "BAN", description = "Banned"), enteredStaff = ContactRestrictionEnteredStaff(staffId = 1), effectiveDate = LocalDate.parse("2020-01-01"))),
+    ),
+  ),
+  restrictions = listOf(ContactRestriction(id = 2, type = CodeDescription(code = "BAN", description = "Banned"), enteredStaff = ContactRestrictionEnteredStaff(staffId = 1), effectiveDate = LocalDate.parse("2020-01-01"))),
 )
