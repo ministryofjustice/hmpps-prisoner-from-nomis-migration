@@ -5,7 +5,6 @@ import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
-import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.MigrateCaseNoteRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.SyncCaseNoteRequest
@@ -20,7 +19,7 @@ class CaseNotesApiService(@Qualifier("caseNotesApiWebClient") private val webCli
       .contentType(MediaType.APPLICATION_JSON)
       .bodyValue(upsertRequest)
       .retrieve()
-      .awaitBody()
+      .awaitBodyOrLogAndRethrowBadRequest()
 
   suspend fun deleteCaseNote(id: String) {
     webClient.delete()
