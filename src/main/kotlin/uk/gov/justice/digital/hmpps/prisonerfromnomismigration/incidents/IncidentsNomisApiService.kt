@@ -99,6 +99,7 @@ class IncidentsNomisApiService(@Qualifier("nomisApiWebClient") private val webCl
 
 fun IncidentResponse.toMigrateUpsertNomisIncident() =
   NomisSyncRequest(
+    id = null,
     initialMigration = true,
     incidentReport = toNomisIncidentReport(),
   )

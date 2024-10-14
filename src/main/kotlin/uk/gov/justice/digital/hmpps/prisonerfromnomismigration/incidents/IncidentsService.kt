@@ -18,10 +18,10 @@ class IncidentsService(@Qualifier("incidentsApiWebClient") private val webClient
     val closedStatusValues = listOf("CLOSED", "DUPLICATE")
   }
 
-  suspend fun upsertIncident(migrateRequest: NomisSyncRequest): NomisSyncReportId =
+  suspend fun upsertIncident(syncRequest: NomisSyncRequest): NomisSyncReportId =
     webClient.post()
       .uri("/sync/upsert")
-      .bodyValue(migrateRequest)
+      .bodyValue(syncRequest)
       .retrieve()
       .awaitBody()
 
