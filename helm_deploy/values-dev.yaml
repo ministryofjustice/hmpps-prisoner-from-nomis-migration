@@ -100,6 +100,8 @@ generic-prometheus-alerts:
     contactperson:
       - "syscon-devs-dev-migration_contactperson_queue"
       - "syscon-devs-dev-migration_contactperson_dlq"
+      - "syscon-devs-dev-prisoner_from_nomis_contactperson_queue"
+      - "syscon-devs-dev-prisoner_from_nomis_contactperson_dl_queue"
 
 cron:
   retry_dlqs_schedule: "*/10 7-20 * * 1-5"

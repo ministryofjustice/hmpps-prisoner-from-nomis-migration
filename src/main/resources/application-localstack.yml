@@ -76,3 +76,6 @@ hmpps.sqs:
     eventprisonperson:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    eventcontactperson:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
