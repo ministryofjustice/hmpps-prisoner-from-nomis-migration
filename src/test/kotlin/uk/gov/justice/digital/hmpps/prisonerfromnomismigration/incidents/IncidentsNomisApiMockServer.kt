@@ -67,14 +67,15 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
 
   fun stubGetIncident(
     nomisIncidentId: Long = 1234,
-    createDateTime: String = "2021-07-23T10:35:17",
     offenderParty: String = "A1234BC",
+    status: String = "AWAN",
+    type: String = "ATT_ESC_E",
   ) {
     nomisApi.stubFor(
       get(urlPathEqualTo("/incidents/$nomisIncidentId"))
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(incidentResponse(nomisIncidentId, createDateTime, offenderParty)),
+            .withBody(incidentResponse(nomisIncidentId = nomisIncidentId, offenderParty = offenderParty, status = status, type = type)),
         ),
     )
   }
@@ -200,8 +201,9 @@ private fun incidentAgencyCount(agencyId: String, open: Long, closed: Long) =
 
 private fun incidentResponse(
   nomisIncidentId: Long = 1234,
-  createDateTime: String = "2021-07-23T10:35:17",
   offenderParty: String = "A1234BC",
+  status: String = "AWAN",
+  type: String = "ATT_ESC_E",
 ): IncidentResponse =
   IncidentResponse(
     incidentId = nomisIncidentId,
@@ -209,7 +211,7 @@ private fun incidentResponse(
     title = "This is a test incident",
     description = "On 12/04/2023 approx 16:45 Mr Smith tried to escape.",
     status = IncidentStatus(
-      code = "AWAN",
+      code = status,
       description = "Awaiting Analysis",
       listSequence = 1,
       standardUser = true,
@@ -219,7 +221,7 @@ private fun incidentResponse(
       code = "BXI",
       description = "Brixton",
     ),
-    type = "ATT_ESC_E",
+    type = type,
     lockedResponse = false,
     incidentDateTime = "2017-04-12T16:45:00",
     reportingStaff = Staff(
@@ -229,7 +231,7 @@ private fun incidentResponse(
       lastName = "STAFF",
     ),
     followUpDate = LocalDate.parse("2017-04-12"),
-    createDateTime = createDateTime,
+    createDateTime = "2021-07-23T10:35:17",
     createdBy = "JIM SMITH",
     lastModifiedBy = "JIM_ADM",
     lastModifiedDateTime = "2021-07-23T10:35:17",

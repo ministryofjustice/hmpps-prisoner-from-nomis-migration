@@ -80,6 +80,8 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         prisonId = "ASI",
         title = "There was an incident in the exercise yard",
         description = "Fred and Jimmy were fighting outside.",
+        nomisType = "ATT_ESC_E",
+        nomisStatus = "AWAN",
         event = Event(
           id = UUID.randomUUID(),
           eventReference = nomisIncidentId,

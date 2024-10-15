@@ -49,6 +49,7 @@ class IncidentsSynchronisationService(
       } ?: let {
       incidentsService.upsertIncident(
         NomisSyncRequest(
+          id = null,
           initialMigration = false,
           incidentReport = nomisIncident.toNomisIncidentReport(),
         ),

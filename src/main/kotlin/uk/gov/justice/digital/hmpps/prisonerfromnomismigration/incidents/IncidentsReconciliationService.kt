@@ -16,8 +16,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.R
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentAgencyId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.doApiCallWithRetries
-import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 @Service
@@ -130,7 +128,12 @@ class IncidentsReconciliationService(
       }.awaitBoth()
 
     val verdict = doesNotMatch(nomisOpenIncident, dpsOpenIncident)
-    log.debug("Incidents-NomisIncidentId:$nomisOpenIncidentId; DPSIncidentId:${dpsOpenIncident.id} matchVerdict: $verdict")
+    log.debug(
+      "Incidents-NomisIncidentId:{}; DPSIncidentId:{} matchVerdict: {}",
+      nomisOpenIncidentId,
+      dpsOpenIncident.id,
+      verdict,
+    )
 
     return if (verdict != null) {
       MismatchOpenIncident(
@@ -172,16 +175,14 @@ class IncidentsReconciliationService(
   ): String? {
     // Note. lastModifiedDateTime should not be compared here as merge updates are not passed through to DPS,
     // and therefore the values will be out of sync
-    if (nomis.createDateTime.dateWithoutMillis() != dps.event.createdAt.dateWithoutMillis()) return "Create date mismatch"
     if (nomis.reportingStaff.username != dps.reportedBy) return "Reporting Staff mismatch"
     if (nomis.offenderParties.size != dps.prisonersInvolved.size) return "Offender parties mismatch"
+    if (nomis.type != dps.nomisType) return "type mismatch"
+    if (nomis.status.code != dps.nomisStatus) return "status mismatch"
     val offendersDifference = nomis.offenderParties.map { it.offender.offenderNo }.compare(dps.prisonersInvolved.map { it.prisonerNumber })
     if (offendersDifference.isNotEmpty()) return "offender parties mismatch $offendersDifference"
     return null
   }
-
-  fun String.dateWithoutMillis(): LocalDateTime =
-    LocalDateTime.parse(this).truncatedTo(ChronoUnit.SECONDS)
 
   fun List<String>.compare(otherList: List<String>): List<String> {
     val both = (this + otherList).toSet()
@@ -206,8 +207,8 @@ data class MismatchOpenIncident(
 )
 
 data class IncidentReportDetail(
-  val type: String,
-  val createDateTime: String,
+  val type: String? = null,
+  val status: String? = null,
   val reportedBy: String,
   val offenderParties: List<String>? = null,
 )
@@ -215,15 +216,15 @@ data class IncidentReportDetail(
 fun IncidentResponse.toReportDetail() =
   IncidentReportDetail(
     type,
-    createDateTime,
+    status.code,
     reportingStaff.username,
     offenderParties.map { it.offender.offenderNo },
   )
 
 fun ReportWithDetails.toReportDetail() =
   IncidentReportDetail(
-    type.toString(),
-    event.createdAt,
+    nomisType,
+    nomisStatus,
     reportedBy,
     prisonersInvolved.map { it.prisonerNumber },
   )

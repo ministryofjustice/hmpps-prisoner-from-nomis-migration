@@ -3,10 +3,8 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents
 import com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
-import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.exactly
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
-import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
@@ -35,6 +33,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 
 private const val DPS_INCIDENT_ID = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42"
@@ -86,7 +85,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenNewIncident {
 
       @Nested
-      inner class WhenCreateByNomisSuccess {
+      inner class HappyPath {
         @BeforeEach
         fun setUp() {
           incidentsNomisApi.stubGetIncident()
@@ -127,8 +126,8 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             mappingApi.verify(
               postRequestedFor(urlPathEqualTo("/mapping/incidents"))
-                .withRequestBody(matchingJsonPath("dpsIncidentId", equalTo(DPS_INCIDENT_ID)))
-                .withRequestBody(matchingJsonPath("nomisIncidentId", equalTo("$NOMIS_INCIDENT_ID"))),
+                .withRequestBodyJsonPath("dpsIncidentId", DPS_INCIDENT_ID)
+                .withRequestBodyJsonPath("nomisIncidentId", "$NOMIS_INCIDENT_ID"),
             )
           }
         }
@@ -348,7 +347,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Nested
-      inner class WhenUpdateByNomisSuccess {
+      inner class HappyPath {
         @BeforeEach
         fun setUp() {
           incidentsNomisApi.stubGetIncident()
@@ -379,7 +378,10 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will send the update to the incident in the incidents service`() {
           await untilAsserted {
-            incidentsApi.verify(postRequestedFor(urlPathEqualTo("/sync/upsert")))
+            incidentsApi.verify(
+              postRequestedFor(urlPathEqualTo("/sync/upsert"))
+                .withRequestBodyJsonPath("id", "fb4b2e91-91e7-457b-aa17-797f8c5c2f42"),
+            )
           }
         }
 

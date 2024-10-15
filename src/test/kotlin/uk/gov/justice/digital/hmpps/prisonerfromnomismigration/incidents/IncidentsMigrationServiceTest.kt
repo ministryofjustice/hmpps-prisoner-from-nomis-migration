@@ -1069,6 +1069,7 @@ internal class IncidentsMigrationServiceTest {
 
 fun aMigrationRequest() =
   NomisSyncRequest(
+    id = null,
     initialMigration = true,
     incidentReport = NomisReport(
       incidentId = NOMIS_INCIDENT_ID,
