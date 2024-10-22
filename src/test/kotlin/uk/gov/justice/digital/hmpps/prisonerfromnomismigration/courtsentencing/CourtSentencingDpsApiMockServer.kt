@@ -64,12 +64,12 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     courtCaseId: String = UUID.randomUUID().toString(),
     response: CreateCourtCaseMigrationResponse = CreateCourtCaseMigrationResponse(
       courtCaseUuid = courtCaseId,
-      courtAppearanceIds = emptyList(),
-      courtChargeIds = emptyList(),
+      charges = emptyList(),
+      appearances = emptyList(),
     ),
   ) {
     stubFor(
-      post("/court-case/migration")
+      post("/court-case")
         .willReturn(
           aResponse()
             .withStatus(201)
@@ -287,7 +287,7 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun createCourtCaseMigrationCount() =
-    findAll(WireMock.postRequestedFor(WireMock.urlMatching("/court-case/migration"))).count()
+    findAll(WireMock.postRequestedFor(WireMock.urlMatching("/court-case"))).count()
 
   fun createCourtCaseForSynchronisationCount() =
     findAll(WireMock.postRequestedFor(WireMock.urlMatching("/court-case"))).count()
