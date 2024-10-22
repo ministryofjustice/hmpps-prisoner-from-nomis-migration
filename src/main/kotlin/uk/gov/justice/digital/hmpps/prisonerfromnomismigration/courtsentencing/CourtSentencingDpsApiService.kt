@@ -28,7 +28,7 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
   suspend fun createCourtCaseMigration(courtCase: CreateCourtCaseMigrationRequest): CreateCourtCaseMigrationResponse =
     webClient
       .post()
-      .uri("/court-case/migration")
+      .uri("/court-case")
       .bodyValue(courtCase)
       .retrieve()
       .awaitBody()
@@ -168,9 +168,19 @@ data class CreateSentenceResponse(
 // order must be returned to match body
 data class CreateCourtCaseMigrationResponse(
   val courtCaseUuid: String,
-  val courtAppearanceIds: List<String>,
-  // unique list as charges may span multiple appearances
-  val courtChargeIds: List<String>,
+  val appearances: List<AppearanceMapping>,
+  // charges may span multiple appearances
+  val charges: List<ChargeMapping>,
+)
+
+data class AppearanceMapping(
+  val eventId: String,
+  val appearanceUuid: String,
+)
+
+data class ChargeMapping(
+  val offenderChargeId: String,
+  val chargeUuid: String,
 )
 
 data class CreateCourtCaseMigrationRequest(

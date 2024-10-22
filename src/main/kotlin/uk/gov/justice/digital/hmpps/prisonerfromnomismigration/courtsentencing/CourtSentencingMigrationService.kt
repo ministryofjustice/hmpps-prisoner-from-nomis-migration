@@ -14,8 +14,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationMinutes
@@ -90,8 +88,8 @@ class CourtSentencingMigrationService(
     val mapping = CourtCaseAllMappingDto(
       nomisCourtCaseId = nomisCourtCase.id,
       dpsCourtCaseId = dpsCourtCaseCreateResponse.courtCaseUuid,
-      courtCharges = buildCourtChargeMapping(dpsIds = dpsCourtCaseCreateResponse.courtChargeIds, nomisCharges = nomisCourtCase.offenderCharges),
-      courtAppearances = buildCourtAppearanceMapping(dpsIds = dpsCourtCaseCreateResponse.courtAppearanceIds, nomisCourtAppearances = nomisCourtCase.courtEvents),
+      courtCharges = buildCourtChargeMapping(dpsCourtCaseCreateResponse.charges),
+      courtAppearances = buildCourtAppearanceMapping(dpsCourtCaseCreateResponse.appearances),
       label = context.migrationId,
       mappingType = CourtCaseAllMappingDto.MappingType.MIGRATED,
     )
@@ -133,12 +131,11 @@ class CourtSentencingMigrationService(
   }
 
   // dependent on court appearance order back from dps to match nomis
-  private fun buildCourtAppearanceMapping(dpsIds: List<String>, nomisCourtAppearances: List<CourtEventResponse>): List<CourtAppearanceMappingDto> {
-    return nomisCourtAppearances.zip(dpsIds) { nomis, dps -> CourtAppearanceMappingDto(nomisCourtAppearanceId = nomis.id, dpsCourtAppearanceId = dps) }
+  private fun buildCourtAppearanceMapping(responseMappings: List<AppearanceMapping>): List<CourtAppearanceMappingDto> {
+    return responseMappings.map { it -> CourtAppearanceMappingDto(nomisCourtAppearanceId = it.eventId.toLong(), dpsCourtAppearanceId = it.appearanceUuid) }
   }
 
-  // dependent on court charge order back from dps to match nomis
-  private fun buildCourtChargeMapping(dpsIds: List<String>, nomisCharges: List<OffenderChargeResponse>): List<CourtChargeMappingDto> {
-    return nomisCharges.zip(dpsIds) { nomis, dps -> CourtChargeMappingDto(nomisCourtChargeId = nomis.id, dpsCourtChargeId = dps) }
+  private fun buildCourtChargeMapping(responseMappings: List<ChargeMapping>): List<CourtChargeMappingDto> {
+    return responseMappings.map { it -> CourtChargeMappingDto(nomisCourtChargeId = it.offenderChargeId.toLong(), dpsCourtChargeId = it.chargeUuid) }
   }
 }
