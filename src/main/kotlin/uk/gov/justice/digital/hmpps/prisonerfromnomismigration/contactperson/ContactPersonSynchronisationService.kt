@@ -67,4 +67,30 @@ class ContactPersonSynchronisationService(
       telemetry,
     )
   }
+  suspend fun personAdded(event: PersonEvent) {
+    val telemetry =
+      mapOf("personId" to event.personId)
+    telemetryClient.trackEvent(
+      "contactperson-person-synchronisation-created-success",
+      telemetry,
+    )
+  }
+
+  suspend fun personUpdated(event: PersonEvent) {
+    val telemetry =
+      mapOf("personId" to event.personId)
+    telemetryClient.trackEvent(
+      "contactperson-person-synchronisation-updated-success",
+      telemetry,
+    )
+  }
+
+  suspend fun personDeleted(event: PersonEvent) {
+    val telemetry =
+      mapOf("personId" to event.personId)
+    telemetryClient.trackEvent(
+      "contactperson-person-synchronisation-deleted-success",
+      telemetry,
+    )
+  }
 }
