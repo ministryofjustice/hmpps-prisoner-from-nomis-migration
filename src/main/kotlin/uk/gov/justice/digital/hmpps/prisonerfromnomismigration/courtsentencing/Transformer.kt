@@ -1,7 +1,9 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CaseReferenceLegacyData
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.ChargeLegacyData
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CourtAppearanceLegacyData
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CourtCaseLegacyData
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCase
@@ -16,23 +18,20 @@ import java.util.UUID
 
 fun CourtCaseResponse.toDpsCourtCase() = CreateCourtCase(
   prisonerId = this.offenderNo,
-  appearances = emptyList(),
-)
-
-fun CourtCaseResponse.toDpsCourtCaseMigration() = CreateCourtCaseMigrationRequest(
-  prisonerId = this.offenderNo,
   appearances = this.courtEvents.map { ca ->
     ca.toDpsCourtAppearance(
       bookingId = this.bookingId,
       caseReference = this.primaryCaseInfoNumber,
     )
   },
-  otherCaseReferences = this.caseInfoNumbers.map {
-    CaseReference(
-      it.reference,
-      LocalDateTime.parse(it.createDateTime),
-    )
-  },
+  legacyData = CourtCaseLegacyData(
+    caseReferences = this.caseInfoNumbers.map {
+      CaseReferenceLegacyData(
+        offenderCaseReference = it.reference,
+        updatedDate = it.createDateTime,
+      )
+    },
+  ),
 )
 
 private const val WARRANT_TYPE_DEFAULT = "REMAND"

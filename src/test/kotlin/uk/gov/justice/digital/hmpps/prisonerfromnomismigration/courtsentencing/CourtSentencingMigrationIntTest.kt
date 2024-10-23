@@ -30,6 +30,12 @@ import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.dpsCourtSentencingServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseIdentifierResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
@@ -38,18 +44,19 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.courtCaseIdsPagedResponse
 import java.time.Duration
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 private const val OFFENDER_NO = "AN12345"
-private const val NOMIS_CASE_ID = 1
-private const val NOMIS_APPEARANCE_1_ID = 11
-private const val NOMIS_APPEARANCE_2_ID = 22
+private const val NOMIS_CASE_ID = 1L
+private const val NOMIS_APPEARANCE_1_ID = 11L
+private const val NOMIS_APPEARANCE_2_ID = 22L
 private const val DPS_APPEARANCE_1_ID = "11CA"
 private const val DPS_APPEARANCE_2_ID = "22CA"
-private const val NOMIS_CHARGE_1_ID = 111
-private const val NOMIS_CHARGE_2_ID = 222
+private const val NOMIS_CHARGE_1_ID = 111L
+private const val NOMIS_CHARGE_2_ID = 222L
 private const val DPS_CHARGE_1_ID = "111C"
 private const val DPS_CHARGE_2_ID = "222C"
 private const val DPS_COURT_CASE_ID = "99C"
@@ -63,6 +70,9 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
 
   @Autowired
   private lateinit var courtSentencingMappingApiMockServer: CourtSentencingMappingApiMockServer
+
+  @Autowired
+  private lateinit var courtSentencingNomisApiMockServer: CourtSentencingNomisApiMockServer
 
   @Nested
   @DisplayName("POST /migrate/court-sentencing")
@@ -117,9 +127,12 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will start processing pages of court cases`() {
-      nomisApi.stubGetInitialCount(NomisApiExtension.COURT_CASES_ID_URL, 14) { courtCaseIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetCourtCaseIdCounts(totalElements = 14, pageSize = 10)
-      nomisApi.stubMultipleGetCourtCases(1..14)
+      nomisApi.stubGetInitialCount(
+        NomisApiExtension.COURT_CASES_ID_URL,
+        14,
+      ) { courtSentencingNomisApiMockServer.courtCaseIdsPagedResponse(it) }
+      courtSentencingNomisApiMockServer.stubMultipleGetCourtCaseIdCounts(totalElements = 14, pageSize = 10)
+      courtSentencingNomisApiMockServer.stubMultipleGetCourtCases(1..14)
       courtSentencingMappingApiMockServer.stubGetByNomisId(HttpStatus.NOT_FOUND)
       courtSentencingMappingApiMockServer.stubPostMapping()
 
@@ -161,9 +174,20 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will migrate case hierarchy`() {
-      nomisApi.stubGetInitialCount(NomisApiExtension.COURT_CASES_ID_URL, 1) { courtCaseIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetCourtCaseIdCounts(totalElements = 1, pageSize = 10)
-      nomisApi.stubGetCourtCase(bookingId = 3, caseId = 1)
+      nomisApi.stubGetInitialCount(
+        NomisApiExtension.COURT_CASES_ID_URL,
+        1,
+      ) { courtSentencingNomisApiMockServer.courtCaseIdsPagedResponse(it) }
+      courtSentencingNomisApiMockServer.stubMultipleGetCourtCaseIdCounts(totalElements = 1, pageSize = 10)
+      courtSentencingNomisApiMockServer.stubGetCourtCaseForMigration(
+        bookingId = 3,
+        caseId = 1,
+        caseIndentifiers = listOf(
+          buildCaseIdentifierResponse(reference = "YY12345678"),
+          buildCaseIdentifierResponse(reference = "XX12345678"),
+        ),
+        courtEvents = listOf(buildCourtEventResponseCourtEventResponse()),
+      )
       courtSentencingMappingApiMockServer.stubGetByNomisId(HttpStatus.NOT_FOUND)
       courtSentencingMappingApiMockServer.stubPostMapping()
 
@@ -183,6 +207,18 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
         dpsCourtSentencingServer.verify(
           1,
           WireMock.postRequestedFor(WireMock.urlPathEqualTo("/court-case"))
+            .withRequestBody(
+              WireMock.matchingJsonPath(
+                "legacyData.caseReferences[0].offenderCaseReference",
+                WireMock.equalTo("YY12345678"),
+              ),
+            )
+            .withRequestBody(
+              WireMock.matchingJsonPath(
+                "legacyData.caseReferences[1].offenderCaseReference",
+                WireMock.equalTo("XX12345678"),
+              ),
+            )
             .withRequestBody(WireMock.matchingJsonPath("appearances.size()", WireMock.equalTo("1")))
             .withRequestBody(
               WireMock.matchingJsonPath(
@@ -193,7 +229,7 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
             .withRequestBody(
               WireMock.matchingJsonPath(
                 "appearances[0].legacyData.eventId",
-                WireMock.equalTo("528456562"),
+                WireMock.equalTo(NOMIS_APPEARANCE_1_ID.toString()),
               ),
             )
             .withRequestBody(
@@ -257,9 +293,12 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will map result IDs from a migrated record`() {
-      nomisApi.stubGetInitialCount(NomisApiExtension.COURT_CASES_ID_URL, 1) { courtCaseIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetCourtCaseIdCounts(totalElements = 1, pageSize = 10)
-      nomisApi.stubGetCourtCase(bookingId = 3, caseId = NOMIS_CASE_ID.toLong())
+      nomisApi.stubGetInitialCount(
+        NomisApiExtension.COURT_CASES_ID_URL,
+        1,
+      ) { courtSentencingNomisApiMockServer.courtCaseIdsPagedResponse(it) }
+      courtSentencingNomisApiMockServer.stubMultipleGetCourtCaseIdCounts(totalElements = 1, pageSize = 10)
+      courtSentencingNomisApiMockServer.stubGetCourtCaseForMigration(bookingId = 3, caseId = NOMIS_CASE_ID.toLong())
       courtSentencingMappingApiMockServer.stubGetByNomisId(HttpStatus.NOT_FOUND)
       courtSentencingMappingApiMockServer.stubPostMapping()
 
@@ -348,9 +387,12 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will add analytical events for starting, ending and each migrated record`() {
-      nomisApi.stubGetInitialCount(NomisApiExtension.COURT_CASES_ID_URL, 26) { courtCaseIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetCourtCaseIdCounts(totalElements = 26, pageSize = 10)
-      nomisApi.stubMultipleGetCourtCases(1..26)
+      nomisApi.stubGetInitialCount(
+        NomisApiExtension.COURT_CASES_ID_URL,
+        26,
+      ) { courtSentencingNomisApiMockServer.courtCaseIdsPagedResponse(it) }
+      courtSentencingNomisApiMockServer.stubMultipleGetCourtCaseIdCounts(totalElements = 26, pageSize = 10)
+      courtSentencingNomisApiMockServer.stubMultipleGetCourtCases(1..26)
       dpsCourtSentencingServer.stubPostCourtCaseForCreateMigration()
       courtSentencingMappingApiMockServer.stubGetByNomisId(HttpStatus.NOT_FOUND)
       courtSentencingMappingApiMockServer.stubPostMapping()
@@ -388,9 +430,12 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will retry to create a mapping, and only the mapping, if it fails first time`() {
-      nomisApi.stubGetInitialCount(NomisApiExtension.COURT_CASES_ID_URL, 1) { courtCaseIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetCourtCaseIdCounts(totalElements = 1, pageSize = 10)
-      nomisApi.stubGetCourtCase(caseId = 1)
+      nomisApi.stubGetInitialCount(
+        NomisApiExtension.COURT_CASES_ID_URL,
+        1,
+      ) { courtSentencingNomisApiMockServer.courtCaseIdsPagedResponse(it) }
+      courtSentencingNomisApiMockServer.stubMultipleGetCourtCaseIdCounts(totalElements = 1, pageSize = 10)
+      courtSentencingNomisApiMockServer.stubGetCourtCaseForMigration(caseId = 1)
       courtSentencingMappingApiMockServer.stubGetByNomisId(HttpStatus.NOT_FOUND)
       courtSentencingMappingApiMockServer.stubCourtCaseMappingByMigrationId()
       dpsCourtSentencingServer.stubPostCourtCaseForCreateMigration("05b332ad-58eb-4ec2-963c-c9c927856788")
@@ -410,9 +455,12 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `it will not retry after a 409 (duplicate court case written to Sentencing API)`() {
-      nomisApi.stubGetInitialCount(NomisApiExtension.COURT_CASES_ID_URL, 1) { courtCaseIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetCourtCaseIdCounts(totalElements = 1, pageSize = 10)
-      nomisApi.stubMultipleGetCourtCases(1..1)
+      nomisApi.stubGetInitialCount(
+        NomisApiExtension.COURT_CASES_ID_URL,
+        1,
+      ) { courtSentencingNomisApiMockServer.courtCaseIdsPagedResponse(it) }
+      courtSentencingNomisApiMockServer.stubMultipleGetCourtCaseIdCounts(totalElements = 1, pageSize = 10)
+      courtSentencingNomisApiMockServer.stubMultipleGetCourtCases(1..1)
       courtSentencingMappingApiMockServer.stubGetByNomisId(HttpStatus.NOT_FOUND)
       courtSentencingMappingApiMockServer.stubCourtCaseMappingByMigrationId()
       dpsCourtSentencingServer.stubPostCourtCaseForCreateMigration("05b332ad-58eb-4ec2-963c-c9c927856788")
@@ -812,8 +860,11 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     internal fun `will terminate a running migration`() {
       val count = 30L
-      nomisApi.stubGetInitialCount(NomisApiExtension.COURT_CASES_ID_URL, count) { courtCaseIdsPagedResponse(it) }
-      nomisApi.stubMultipleGetCourtCaseIdCounts(totalElements = count, pageSize = 10)
+      nomisApi.stubGetInitialCount(
+        NomisApiExtension.COURT_CASES_ID_URL,
+        count,
+      ) { courtSentencingNomisApiMockServer.courtCaseIdsPagedResponse(it) }
+      courtSentencingNomisApiMockServer.stubMultipleGetCourtCaseIdCounts(totalElements = count, pageSize = 10)
       courtSentencingMappingApiMockServer.stubCourtCaseMappingByMigrationId(count = count.toInt())
       courtSentencingMappingApiMockServer.stubGetByNomisId(HttpStatus.NOT_FOUND)
 
@@ -889,3 +940,191 @@ fun dpsCourtCaseCreateResponseWithTwoAppearancesAndTwoCharges(): CreateCourtCase
     charges = courtChargesIds,
   )
 }
+
+fun buildCaseIdentifierResponse(reference: String = "AB12345678"): CaseIdentifierResponse =
+  CaseIdentifierResponse(type = "CASE/INFO#", reference = reference, createDateTime = "2020-01-01T00:00:00")
+
+fun buildCourtEventResponseCourtEventResponse(
+  courtAppearanceId: Long = NOMIS_APPEARANCE_1_ID,
+  offenderNo: String = OFFENDER_NO,
+  courtCaseId: Long = NOMIS_CASE_ID,
+  courtId: String = "DER",
+  eventDateTime: String = "2020-01-01T00:00:00",
+  courtEventCharges: List<CourtEventChargeResponse> = listOf(
+    CourtEventChargeResponse(
+      eventId = NOMIS_APPEARANCE_1_ID,
+      offenderCharge = OffenderChargeResponse(
+        id = 3934645,
+        offence = OffenceResponse(
+          offenceCode = "RR84027",
+          statuteCode = "RR84",
+          description = "Failing to stop at school crossing (horsedrawn vehicle)",
+        ),
+        mostSeriousFlag = false,
+        offenceDate = LocalDate.parse("2024-01-02"),
+        resultCode1 = CodeDescription(
+          code = "1081",
+          description = "Detention and Training Order",
+        ),
+      ),
+      mostSeriousFlag = false,
+      resultCode1 = CodeDescription(
+        code = "1081",
+        description = "Detention and Training Order",
+      ),
+    ),
+  ),
+): CourtEventResponse =
+  CourtEventResponse(
+    id = courtAppearanceId,
+    offenderNo = offenderNo,
+    caseId = courtCaseId,
+    courtId = courtId,
+    courtEventCharges = courtEventCharges,
+    createdDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+    createdByUsername = "Q1251T",
+    courtEventType = CodeDescription("CRT", "Court Appearance"),
+    outcomeReasonCode = CodeDescription("4506", "Adjournment"),
+    eventStatus = CodeDescription("SCH", "Scheduled (Approved)"),
+    eventDateTime = eventDateTime,
+    courtOrders = emptyList(),
+  )
+
+/*
+"id": $caseId,
+"offenderNo": "$offenderNo",
+"bookingId": $bookingId,
+"caseSequence": 22,
+"primaryCaseInfoNumber" : "$caseInfoNumber",
+"caseStatus": {
+  "code": "A",
+  "description": "Active"
+},
+"legalCaseType": {
+  "code": "A",
+  "description": "Adult"
+},
+"beginDate": "2024-02-01",
+"courtId": "$courtId",
+"lidsCaseNumber": 1,
+"createdDateTime": "2024-02-08T14:36:16.370572",
+"createdByUsername": "PRISONER_MANAGER_API",
+"courtEvents": [
+{
+  "id": 528456562,
+  "caseId": $caseId,
+  "offenderNo": "A3864DZ",
+  "eventDateTime": "2024-02-01T10:00:00",
+  "courtEventType": {
+    "code": "CRT",
+    "description": "Court Appearance"
+  },
+  "eventStatus": {
+    "code": "SCH",
+    "description": "Scheduled (Approved)"
+  },
+  "directionCode": {
+    "code": "OUT",
+    "description": "Out"
+  },
+  "courtId": "ABDRCT",
+  "outcomeReasonCode": {
+    "code": "4506",
+    "description": "Adjournment"
+  },
+  "orderRequestedFlag": false,
+  "nextEventRequestFlag": false,
+  "createdDateTime": "2024-02-08T14:36:16.485181",
+  "createdByUsername": "PRISONER_MANAGER_API",
+  "courtEventCharges": [
+  {
+    "eventId": 528456562,
+    "offenderCharge": {
+    "id": 3934645,
+    "offence": {
+      "offenceCode": "RR84027",
+      "statuteCode": "RR84",
+      "description": "Failing to stop at school crossing (horsedrawn vehicle)"
+    },
+    "offencesCount": 1,
+    "offenceDate": "2024-01-02",
+    "chargeStatus": {
+      "code": "A",
+      "description": "Active"
+    },
+    "resultCode1": {
+      "code": "1081",
+      "description": "Detention and Training Order"
+    },
+    "resultCode1Indicator": "F",
+    "mostSeriousFlag": false,
+    "lidsOffenceNumber": 3
+  },
+    "offencesCount": 1,
+    "offenceDate": "2024-01-02",
+    "resultCode1": {
+      "code": "1081",
+      "description": "Detention and Training Order"
+    },
+    "resultCode1Indicator": "F",
+    "mostSeriousFlag": false
+  }
+  ],
+  "courtOrders": [
+  {
+    "id": 1434174,
+    "courtDate": "2024-02-01",
+    "issuingCourt": "ABDRCT",
+    "orderType": "AUTO",
+    "orderStatus": "A",
+    "sentencePurposes": []
+  }
+  ]
+}
+],
+"caseInfoNumbers": [],
+"offenderCharges": [
+{
+  "id": 3934645,
+  "offence": {
+  "offenceCode": "RR84027",
+  "statuteCode": "RR84",
+  "description": "Failing to stop at school crossing (horsedrawn vehicle)"
+},
+  "offencesCount": 1,
+  "offenceDate": "2024-01-02",
+  "chargeStatus": {
+  "code": "A",
+  "description": "Active"
+},
+  "resultCode1": {
+  "code": "1081",
+  "description": "Detention and Training Order"
+},
+  "resultCode1Indicator": "F",
+  "mostSeriousFlag": false,
+  "lidsOffenceNumber": 3
+},
+{
+  "id": 3934646,
+  "offence": {
+  "offenceCode": "RR84028",
+  "statuteCode": "RR28",
+  "description": "Failing to stop at school crossing (horsedrawn vehicle)"
+},
+  "offencesCount": 1,
+  "offenceDate": "2024-01-02",
+  "chargeStatus": {
+  "code": "A",
+  "description": "Active"
+},
+  "resultCode1": {
+  "code": "1081",
+  "description": "Detention and Training Order"
+},
+  "resultCode1Indicator": "F",
+  "mostSeriousFlag": false,
+  "lidsOffenceNumber": 3
+}
+]
+}*/

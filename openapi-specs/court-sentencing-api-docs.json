@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-10-10.2577.b8c28e2"
+    "version": "2024-10-23.2783.cae053f"
   },
   "servers": [
     {
@@ -37,12 +37,12 @@
       "description": "Sentence Type"
     },
     {
-      "name": "appearance-outcome-controller",
-      "description": "Appearance outcome"
-    },
-    {
       "name": "court-appearance-controller",
       "description": "Court Appearances"
+    },
+    {
+      "name": "appearance-outcome-controller",
+      "description": "Appearance outcome"
     },
     {
       "name": "person-controller",
@@ -433,7 +433,7 @@
               }
             }
           },
-          "201": {
+          "200": {
             "description": "Returns court case UUID",
             "content": {
               "*/*": {
@@ -442,16 +442,190 @@
                 }
               }
             }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "court-appearance-controller"
+        ],
+        "summary": "Delete Appearance",
+        "description": "This endpoint will delete an appearance",
+        "operationId": "deleteAppearance",
+        "parameters": [
+          {
+            "name": "appearanceUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
           },
-          "200": {
-            "description": "OK",
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token"
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role"
+          }
+        }
+      }
+    },
+    "/charge/{chargeUuid}": {
+      "get": {
+        "tags": [
+          "charge-controller"
+        ],
+        "summary": "Retrieve charge details",
+        "description": "This endpoint will retrieve charge details",
+        "operationId": "getChargeDetails_1",
+        "parameters": [
+          {
+            "name": "chargeUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Not found if no charge at uuid",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/CreateCourtAppearanceResponse"
+                  "$ref": "#/components/schemas/Charge"
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Charge"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Returns charge details",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Charge"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Charge"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "charge-controller"
+        ],
+        "summary": "Create Charge",
+        "description": "This endpoint will create a charge in a given court appearance",
+        "operationId": "updateCharge",
+        "parameters": [
+          {
+            "name": "chargeUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCharge"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateChargeResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateChargeResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Returns court case UUID",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateChargeResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "charge-controller"
+        ],
+        "summary": "Delete Charge",
+        "description": "This endpoint will delete a charge",
+        "operationId": "deleteCharge",
+        "parameters": [
+          {
+            "name": "chargeUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token"
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role"
           }
         }
       }
@@ -605,6 +779,69 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/CreateCourtAppearanceResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/court-appearance/{appearanceUuid}/charge": {
+      "post": {
+        "tags": [
+          "court-appearance-controller"
+        ],
+        "summary": "Create Charge in appearance",
+        "description": "This endpoint will create a charge in a given court appearance",
+        "operationId": "createChargeInAppearance",
+        "parameters": [
+          {
+            "name": "appearanceUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCharge"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Returns charge UUID",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateChargeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateChargeResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateChargeResponse"
                 }
               }
             }
@@ -1109,69 +1346,6 @@
         }
       }
     },
-    "/charge/{chargeUuid}": {
-      "get": {
-        "tags": [
-          "charge-controller"
-        ],
-        "summary": "Retrieve charge details",
-        "description": "This endpoint will retrieve charge details",
-        "operationId": "getChargeDetails_1",
-        "parameters": [
-          {
-            "name": "chargeUuid",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "404": {
-            "description": "Not found if no charge at uuid",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/Charge"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorised, requires a valid Oauth2 token",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/Charge"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "Returns charge details",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/Charge"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/Charge"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/charge-outcome/{outcomeUuid}": {
       "get": {
         "tags": [
@@ -1591,6 +1765,10 @@
         ],
         "type": "object",
         "properties": {
+          "appearanceUuid": {
+            "type": "string",
+            "format": "uuid"
+          },
           "chargeUuid": {
             "type": "string",
             "format": "uuid"
@@ -1717,7 +1895,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "08:17:38.113332814"
+            "example": "10:44:29.225944632"
           },
           "courtCode": {
             "type": "string"
@@ -1794,6 +1972,10 @@
           "consecutiveToChargeNumber": {
             "type": "string"
           },
+          "consecutiveToSentenceUuid": {
+            "type": "string",
+            "format": "uuid"
+          },
           "sentenceTypeId": {
             "type": "string",
             "format": "uuid"
@@ -1822,6 +2004,18 @@
         "type": "object",
         "properties": {
           "appearanceUuid": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "CreateChargeResponse": {
+        "required": [
+          "chargeUuid"
+        ],
+        "type": "object",
+        "properties": {
+          "chargeUuid": {
             "type": "string",
             "format": "uuid"
           }
@@ -2238,7 +2432,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "08:17:38.113332814"
+            "example": "10:44:29.225944632"
           },
           "courtCode": {
             "type": "string"
@@ -2335,12 +2529,12 @@
             "type": "integer",
             "format": "int32"
           },
+          "paged": {
+            "type": "boolean"
+          },
           "pageNumber": {
             "type": "integer",
             "format": "int32"
-          },
-          "paged": {
-            "type": "boolean"
           },
           "unpaged": {
             "type": "boolean"

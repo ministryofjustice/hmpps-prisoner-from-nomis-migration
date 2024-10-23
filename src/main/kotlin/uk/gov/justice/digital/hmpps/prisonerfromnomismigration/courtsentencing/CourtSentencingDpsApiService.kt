@@ -25,7 +25,7 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .awaitBody()
 
   // separating this out for now - DPS may use the same endpoint
-  suspend fun createCourtCaseMigration(courtCase: CreateCourtCaseMigrationRequest): CreateCourtCaseMigrationResponse =
+  suspend fun createCourtCaseMigration(courtCase: CreateCourtCase): CreateCourtCaseMigrationResponse =
     webClient
       .post()
       .uri("/court-case")
