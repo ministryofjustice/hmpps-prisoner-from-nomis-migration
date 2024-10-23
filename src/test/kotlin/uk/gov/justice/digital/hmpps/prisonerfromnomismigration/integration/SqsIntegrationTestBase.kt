@@ -192,6 +192,10 @@ class SqsIntegrationTestBase : TestBase() {
   internal val prisonPersonMigrationQueueClient by lazy { prisonPersonMigrationQueue.sqsClient }
   internal val prisonPersonMigrationDlqClient by lazy { prisonPersonMigrationQueue.sqsDlqClient as SqsAsyncClient }
 
+  internal val contactPersonOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId("eventcontactperson") as HmppsQueue }
+  internal val awsSqsContactPersonOffenderEventsClient by lazy { contactPersonOffenderEventsQueue.sqsClient }
+  internal val contactPersonQueueOffenderEventsUrl by lazy { contactPersonOffenderEventsQueue.queueUrl }
+
   private val allQueues by lazy {
     listOf(
       incidentsOffenderEventsQueue,
@@ -212,6 +216,7 @@ class SqsIntegrationTestBase : TestBase() {
       courtSentencingOffenderEventsQueue,
       prisonPersonOffenderEventsQueue,
       prisonPersonMigrationQueue,
+      contactPersonOffenderEventsQueue,
     )
   }
 

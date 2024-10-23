@@ -15,6 +15,7 @@ import java.util.concurrent.CompletableFuture
 class ContactPersonEventListener(
   private val objectMapper: ObjectMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
+  private val service: ContactPersonSynchronisationService,
 ) {
 
   private companion object {
@@ -30,8 +31,14 @@ class ContactPersonEventListener(
         "Notification" -> {
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
           if (eventFeatureSwitch.isEnabled(eventType, "contactperson")) {
-            @Suppress("UNUSED_EXPRESSION")
             when (eventType) {
+              "VISITOR_RESTRICTION-UPSERTED" -> service.personRestrictionUpserted(sqsMessage.Message.fromJson())
+              "VISITOR_RESTRICTION-DELETED" -> service.personRestrictionDeleted(sqsMessage.Message.fromJson())
+              "OFFENDER_CONTACT-INSERTED" -> service.contactAdded(sqsMessage.Message.fromJson())
+              "OFFENDER_CONTACT-UPDATED" -> service.contactUpdated(sqsMessage.Message.fromJson())
+              "OFFENDER_CONTACT-DELETED" -> service.contactDeleted(sqsMessage.Message.fromJson())
+              "PERSON_RESTRICTION-UPSERTED" -> service.contactRestrictionUpserted(sqsMessage.Message.fromJson())
+              "PERSON_RESTRICTION-DELETED" -> service.contactRestrictionDeleted(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
@@ -41,4 +48,28 @@ class ContactPersonEventListener(
       }
     }
   }
+  private inline fun <reified T> String.fromJson(): T =
+    objectMapper.readValue(this)
 }
+
+data class PersonRestrictionEvent(
+  val visitorRestrictionId: Long,
+  val personId: Long,
+  val auditModuleName: String,
+)
+
+data class ContactEvent(
+  val offenderIdDisplay: String,
+  val bookingId: Long,
+  val contactId: Long,
+  val personId: Long,
+  val auditModuleName: String,
+)
+
+data class ContactRestrictionEvent(
+  val offenderPersonRestrictionId: Long,
+  val offenderIdDisplay: String,
+  val personId: Long,
+  val contactPersonId: Long,
+  val auditModuleName: String,
+)
