@@ -32,6 +32,9 @@ class ContactPersonEventListener(
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
           if (eventFeatureSwitch.isEnabled(eventType, "contactperson")) {
             when (eventType) {
+              "PERSON-INSERTED" -> service.personAdded(sqsMessage.Message.fromJson())
+              "PERSON-UPDATED" -> service.personUpdated(sqsMessage.Message.fromJson())
+              "PERSON-DELETED" -> service.personDeleted(sqsMessage.Message.fromJson())
               "VISITOR_RESTRICTION-UPSERTED" -> service.personRestrictionUpserted(sqsMessage.Message.fromJson())
               "VISITOR_RESTRICTION-DELETED" -> service.personRestrictionDeleted(sqsMessage.Message.fromJson())
               "OFFENDER_CONTACT-INSERTED" -> service.contactAdded(sqsMessage.Message.fromJson())
@@ -71,5 +74,10 @@ data class ContactRestrictionEvent(
   val offenderIdDisplay: String,
   val personId: Long,
   val contactPersonId: Long,
+  val auditModuleName: String,
+)
+
+data class PersonEvent(
+  val personId: Long,
   val auditModuleName: String,
 )
