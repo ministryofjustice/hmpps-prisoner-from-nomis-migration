@@ -35,6 +35,9 @@ class ContactPersonEventListener(
               "PERSON-INSERTED" -> service.personAdded(sqsMessage.Message.fromJson())
               "PERSON-UPDATED" -> service.personUpdated(sqsMessage.Message.fromJson())
               "PERSON-DELETED" -> service.personDeleted(sqsMessage.Message.fromJson())
+              "ADDRESSES_PERSON-INSERTED" -> service.personAddressAdded(sqsMessage.Message.fromJson())
+              "ADDRESSES_PERSON-UPDATED" -> service.personAddressUpdated(sqsMessage.Message.fromJson())
+              "ADDRESSES_PERSON-DELETED" -> service.personAddressDeleted(sqsMessage.Message.fromJson())
               "VISITOR_RESTRICTION-UPSERTED" -> service.personRestrictionUpserted(sqsMessage.Message.fromJson())
               "VISITOR_RESTRICTION-DELETED" -> service.personRestrictionDeleted(sqsMessage.Message.fromJson())
               "OFFENDER_CONTACT-INSERTED" -> service.contactAdded(sqsMessage.Message.fromJson())
@@ -79,5 +82,11 @@ data class ContactRestrictionEvent(
 
 data class PersonEvent(
   val personId: Long,
+  val auditModuleName: String,
+)
+
+data class PersonAddressEvent(
+  val personId: Long,
+  val addressId: Long,
   val auditModuleName: String,
 )
