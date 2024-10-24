@@ -125,7 +125,6 @@ data class OffenderSentenceEvent(
 
 data class CaseIdentifiersEvent(
   val caseId: Long,
-  val offenderIdDisplay: String,
   val identifierType: String,
   val identifierNo: String,
   val bookingId: Long,

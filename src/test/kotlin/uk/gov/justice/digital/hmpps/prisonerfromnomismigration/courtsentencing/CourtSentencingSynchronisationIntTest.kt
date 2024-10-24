@@ -793,7 +793,6 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           verify(telemetryClient).trackEvent(
             eq("case-identifiers-synchronisation-skipped"),
             check {
-              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
               assertThat(it["nomisIdentifiersNo"]).isEqualTo(NOMIS_CASE_IDENTIFIER)
               assertThat(it["nomisIdentifiersType"]).isEqualTo(NOMIS_CASE_IDENTIFIER_TYPE)
               assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
@@ -824,8 +823,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
-        courtSentencingNomisApiMockServer.stubGetCourtCase(
-          courtCaseId = NOMIS_COURT_CASE_ID,
+        courtSentencingNomisApiMockServer.stubGetCourtCaseForMigration(
+          caseId = NOMIS_COURT_CASE_ID,
           bookingId = NOMIS_BOOKING_ID,
           offenderNo = OFFENDER_ID_DISPLAY,
           caseIndentifiers = listOf(
@@ -868,7 +867,6 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             verify(telemetryClient, times(2)).trackEvent(
               eq("case-identifiers-synchronisation-failed"),
               check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
                 assertThat(it["nomisIdentifiersNo"]).isEqualTo(NOMIS_CASE_IDENTIFIER)
                 assertThat(it["nomisIdentifiersType"]).isEqualTo(NOMIS_CASE_IDENTIFIER_TYPE)
                 assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
