@@ -93,6 +93,7 @@ class ContactPersonSynchronisationService(
       telemetry,
     )
   }
+
   suspend fun personAddressAdded(event: PersonAddressEvent) {
     val telemetry =
       mapOf("personId" to event.personId, "addressId" to event.addressId)
@@ -118,5 +119,54 @@ class ContactPersonSynchronisationService(
       "contactperson-person-address-synchronisation-deleted-success",
       telemetry,
     )
+  }
+
+  suspend fun personPhoneAdded(event: PersonPhoneEvent) {
+    val telemetry =
+      mapOf("personId" to event.personId, "phoneId" to event.phoneId)
+
+    if (event.isAddress) {
+      telemetryClient.trackEvent(
+        "contactperson-person-address-phone-synchronisation-created-todo",
+        telemetry,
+      )
+    } else {
+      telemetryClient.trackEvent(
+        "contactperson-person-phone-synchronisation-created-success",
+        telemetry,
+      )
+    }
+  }
+
+  suspend fun personPhoneUpdated(event: PersonPhoneEvent) {
+    val telemetry =
+      mapOf("personId" to event.personId, "phoneId" to event.phoneId)
+    if (event.isAddress) {
+      telemetryClient.trackEvent(
+        "contactperson-person-address-phone-synchronisation-updated-todo",
+        telemetry,
+      )
+    } else {
+      telemetryClient.trackEvent(
+        "contactperson-person-phone-synchronisation-updated-success",
+        telemetry,
+      )
+    }
+  }
+
+  suspend fun personPhoneDeleted(event: PersonPhoneEvent) {
+    val telemetry =
+      mapOf("personId" to event.personId, "phoneId" to event.phoneId)
+    if (event.isAddress) {
+      telemetryClient.trackEvent(
+        "contactperson-person-address-phone-synchronisation-deleted-todo",
+        telemetry,
+      )
+    } else {
+      telemetryClient.trackEvent(
+        "contactperson-person-phone-synchronisation-deleted-success",
+        telemetry,
+      )
+    }
   }
 }
