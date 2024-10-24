@@ -7,7 +7,11 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesSynchronisationService.MappingResponse.MAPPING_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesSynchronisationService.MappingResponse.MAPPING_FAILED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.MoveCaseNotesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerBookingMovedDomainEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerMergeDomainEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto
@@ -121,6 +125,70 @@ class CaseNotesSynchronisationService(
         event.toTelemetryProperties() + mapOf("error" to (e.message ?: "unknown error")),
       )
       log.warn("Unable to delete mapping for prisoner ${event.offenderIdDisplay} nomisCaseNoteId=${event.caseNoteId}. Please delete manually", e)
+    }
+  }
+
+  suspend fun synchronisePrisonerMerged(prisonerMergeEvent: PrisonerMergeDomainEvent) {
+    val (nomsNumber, removedNomsNumber, bookingId) = prisonerMergeEvent.additionalInformation
+    try {
+      caseNotesMappingService.updateMappingsByNomisId(removedNomsNumber, nomsNumber)
+
+      telemetryClient.trackEvent(
+        "casenotes-prisoner-merge",
+        mapOf(
+          "offenderNo" to nomsNumber,
+          "removedOffenderNo" to removedNomsNumber,
+          "bookingId" to bookingId,
+        ),
+      )
+    } catch (e: Exception) {
+      telemetryClient.trackEvent(
+        "casenotes-prisoner-merge-failed",
+        mapOf(
+          "offenderNo" to nomsNumber,
+          "removedOffenderNo" to removedNomsNumber,
+          "bookingId" to bookingId,
+          "error" to (e.message ?: "unknown error"),
+        ),
+      )
+      throw e
+    }
+  }
+
+  suspend fun synchronisePrisonerBookingMoved(prisonerMergeEvent: PrisonerBookingMovedDomainEvent) {
+    val (movedToNomsNumber, movedFromNomsNumber, bookingId) = prisonerMergeEvent.additionalInformation
+
+    try {
+      val caseNotes = caseNotesMappingService.updateMappingsByBookingId(bookingId.toLong(), movedToNomsNumber)
+      val caseNotesToResynchronise = caseNotes.map { UUID.fromString(it.dpsCaseNoteId) }.toSet()
+      caseNotesService.moveCaseNotes(
+        MoveCaseNotesRequest(
+          fromPersonIdentifier = movedFromNomsNumber,
+          toPersonIdentifier = movedToNomsNumber,
+          caseNoteIds = caseNotesToResynchronise,
+        ),
+      )
+
+      telemetryClient.trackEvent(
+        "casenotes-booking-moved",
+        mapOf(
+          "bookingId" to bookingId,
+          "movedToNomsNumber" to movedToNomsNumber,
+          "movedFromNomsNumber" to movedFromNomsNumber,
+          "count" to caseNotesToResynchronise.size,
+        ),
+      )
+    } catch (e: Exception) {
+      telemetryClient.trackEvent(
+        "casenotes-booking-moved-failed",
+        mapOf(
+          "bookingId" to bookingId,
+          "movedToNomsNumber" to movedToNomsNumber,
+          "movedFromNomsNumber" to movedFromNomsNumber,
+          "error" to (e.message ?: "unknown error"),
+        ),
+      )
+      throw e
     }
   }
 

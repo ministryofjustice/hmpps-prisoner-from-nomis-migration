@@ -51,4 +51,17 @@ class CaseNotesMappingApiService(@Qualifier("mappingApiWebClient") webClient: We
       .uri("/mapping/casenotes/nomis-casenote-id/$caseNoteId")
       .retrieve()
       .awaitBodyOrNullWhenNotFound()
+
+  suspend fun updateMappingsByNomisId(oldOffenderNo: String, newOffenderNo: String) {
+    webClient.put()
+      .uri("/mapping/casenotes/merge/from/{oldOffenderNo}/to/{newOffenderNo}", oldOffenderNo, newOffenderNo)
+      .retrieve()
+      .awaitBodilessEntity()
+  }
+
+  suspend fun updateMappingsByBookingId(bookingId: Long, newOffenderNo: String): List<CaseNoteMappingDto> =
+    webClient.put()
+      .uri("/mapping/casenotes/merge/booking-id/{bookingId}/to/{newOffenderNo}", bookingId, newOffenderNo)
+      .retrieve()
+      .awaitBody()
 }
