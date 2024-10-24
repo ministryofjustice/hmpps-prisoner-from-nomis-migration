@@ -51,6 +51,12 @@ class ContactPersonEventListener(
               "OFFENDER_CONTACT-DELETED" -> service.contactDeleted(sqsMessage.Message.fromJson())
               "PERSON_RESTRICTION-UPSERTED" -> service.contactRestrictionUpserted(sqsMessage.Message.fromJson())
               "PERSON_RESTRICTION-DELETED" -> service.contactRestrictionDeleted(sqsMessage.Message.fromJson())
+              "PERSON_EMPLOYMENTS-INSERTED" -> service.personEmploymentAdded(sqsMessage.Message.fromJson())
+              "PERSON_EMPLOYMENTS-UPDATED" -> service.personEmploymentUpdated(sqsMessage.Message.fromJson())
+              "PERSON_EMPLOYMENTS-DELETED" -> service.personEmploymentDeleted(sqsMessage.Message.fromJson())
+              "PERSON_IDENTIFIERS-INSERTED" -> service.personIdentifierAdded(sqsMessage.Message.fromJson())
+              "PERSON_IDENTIFIERS-UPDATED" -> service.personIdentifierUpdated(sqsMessage.Message.fromJson())
+              "PERSON_IDENTIFIERS-DELETED" -> service.personIdentifierDeleted(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
@@ -107,5 +113,17 @@ data class PersonPhoneEvent(
 data class PersonInternetAddressEvent(
   val personId: Long,
   val internetAddressId: Long,
+  val auditModuleName: String,
+)
+
+data class PersonEmploymentEvent(
+  val personId: Long,
+  val employmentSequence: Long,
+  val auditModuleName: String,
+)
+
+data class PersonIdentifierEvent(
+  val personId: Long,
+  val identifierSequence: Long,
   val auditModuleName: String,
 )

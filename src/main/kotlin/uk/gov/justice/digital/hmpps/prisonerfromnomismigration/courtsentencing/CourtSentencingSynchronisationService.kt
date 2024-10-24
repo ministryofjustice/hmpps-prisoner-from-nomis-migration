@@ -814,7 +814,6 @@ class CourtSentencingSynchronisationService(
         "nomisIdentifiersNo" to event.identifierNo,
         "nomisIdentifiersType" to event.identifierType,
         "nomisCourtCaseId" to event.caseId.toString(),
-        "offenderNo" to event.offenderIdDisplay,
         "eventType" to eventName,
       )
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
@@ -829,7 +828,7 @@ class CourtSentencingSynchronisationService(
         throw IllegalStateException("Received OFFENDER_CASE_IDENTIFIERS event to for court-case without a mapping")
       } else {
         val nomisCourtCase =
-          nomisApiService.getCourtCase(offenderNo = event.offenderIdDisplay, courtCaseId = event.caseId)
+          nomisApiService.getCourtCaseForMigration(courtCaseId = event.caseId)
         dpsApiService.refreshCaseIdentifiers(
           courtCaseId = mapping.dpsCourtCaseId,
           caseReferences = nomisCourtCase.caseInfoNumbers.filter { it.type == DPS_CASE_REFERENCE }
@@ -837,7 +836,7 @@ class CourtSentencingSynchronisationService(
         )
         telemetryClient.trackEvent(
           "case-identifiers-synchronisation-success",
-          telemetry + ("dpsCourtCaseId" to mapping.dpsCourtCaseId),
+          telemetry + ("dpsCourtCaseId" to mapping.dpsCourtCaseId) + ("offenderNo" to nomisCourtCase.offenderNo),
         )
       }
     }

@@ -473,6 +473,192 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
   }
 
   @Nested
+  @DisplayName("PERSON_EMPLOYMENTS-INSERTED")
+  inner class PersonEmploymentAdded {
+    private val personId = 123456L
+    private val employmentSequence = 76543L
+
+    @BeforeEach
+    fun setUp() {
+      awsSqsContactPersonOffenderEventsClient.sendMessage(
+        contactPersonQueueOffenderEventsUrl,
+        personEmploymentEvent(
+          eventType = "PERSON_EMPLOYMENTS-INSERTED",
+          personId = personId,
+          employmentSequence = employmentSequence,
+        ),
+      ).also { waitForAnyProcessingToComplete() }
+    }
+
+    @Test
+    fun `will track telemetry`() {
+      verify(telemetryClient).trackEvent(
+        eq("contactperson-person-employment-synchronisation-created-success"),
+        check {
+          assertThat(it["personId"]).isEqualTo(personId.toString())
+          assertThat(it["employmentSequence"]).isEqualTo(employmentSequence.toString())
+        },
+        isNull(),
+      )
+    }
+  }
+
+  @Nested
+  @DisplayName("PERSON_EMPLOYMENTS-UPDATED")
+  inner class PersonEmploymentUpdated {
+    private val personId = 123456L
+    private val employmentSequence = 76543L
+
+    @BeforeEach
+    fun setUp() {
+      awsSqsContactPersonOffenderEventsClient.sendMessage(
+        contactPersonQueueOffenderEventsUrl,
+        personEmploymentEvent(
+          eventType = "PERSON_EMPLOYMENTS-UPDATED",
+          personId = personId,
+          employmentSequence = employmentSequence,
+        ),
+      ).also { waitForAnyProcessingToComplete() }
+    }
+
+    @Test
+    fun `will track telemetry`() {
+      verify(telemetryClient).trackEvent(
+        eq("contactperson-person-employment-synchronisation-updated-success"),
+        check {
+          assertThat(it["personId"]).isEqualTo(personId.toString())
+          assertThat(it["employmentSequence"]).isEqualTo(employmentSequence.toString())
+        },
+        isNull(),
+      )
+    }
+  }
+
+  @Nested
+  @DisplayName("PERSON_EMPLOYMENTS-DELETED")
+  inner class PersonEmploymentDeleted {
+    private val personId = 123456L
+    private val employmentSequence = 76543L
+
+    @BeforeEach
+    fun setUp() {
+      awsSqsContactPersonOffenderEventsClient.sendMessage(
+        contactPersonQueueOffenderEventsUrl,
+        personEmploymentEvent(
+          eventType = "PERSON_EMPLOYMENTS-DELETED",
+          personId = personId,
+          employmentSequence = employmentSequence,
+        ),
+      ).also { waitForAnyProcessingToComplete() }
+    }
+
+    @Test
+    fun `will track telemetry`() {
+      verify(telemetryClient).trackEvent(
+        eq("contactperson-person-employment-synchronisation-deleted-success"),
+        check {
+          assertThat(it["personId"]).isEqualTo(personId.toString())
+          assertThat(it["employmentSequence"]).isEqualTo(employmentSequence.toString())
+        },
+        isNull(),
+      )
+    }
+  }
+
+  @Nested
+  @DisplayName("PERSON_IDENTIFIERS-INSERTED")
+  inner class PersonIdentifierAdded {
+    private val personId = 123456L
+    private val identifierSequence = 76543L
+
+    @BeforeEach
+    fun setUp() {
+      awsSqsContactPersonOffenderEventsClient.sendMessage(
+        contactPersonQueueOffenderEventsUrl,
+        personIdentifierEvent(
+          eventType = "PERSON_IDENTIFIERS-INSERTED",
+          personId = personId,
+          identifierSequence = identifierSequence,
+        ),
+      ).also { waitForAnyProcessingToComplete() }
+    }
+
+    @Test
+    fun `will track telemetry`() {
+      verify(telemetryClient).trackEvent(
+        eq("contactperson-person-identifier-synchronisation-created-success"),
+        check {
+          assertThat(it["personId"]).isEqualTo(personId.toString())
+          assertThat(it["identifierSequence"]).isEqualTo(identifierSequence.toString())
+        },
+        isNull(),
+      )
+    }
+  }
+
+  @Nested
+  @DisplayName("PERSON_IDENTIFIERS-UPDATED")
+  inner class PersonIdentifierUpdated {
+    private val personId = 123456L
+    private val identifierSequence = 76543L
+
+    @BeforeEach
+    fun setUp() {
+      awsSqsContactPersonOffenderEventsClient.sendMessage(
+        contactPersonQueueOffenderEventsUrl,
+        personIdentifierEvent(
+          eventType = "PERSON_IDENTIFIERS-UPDATED",
+          personId = personId,
+          identifierSequence = identifierSequence,
+        ),
+      ).also { waitForAnyProcessingToComplete() }
+    }
+
+    @Test
+    fun `will track telemetry`() {
+      verify(telemetryClient).trackEvent(
+        eq("contactperson-person-identifier-synchronisation-updated-success"),
+        check {
+          assertThat(it["personId"]).isEqualTo(personId.toString())
+          assertThat(it["identifierSequence"]).isEqualTo(identifierSequence.toString())
+        },
+        isNull(),
+      )
+    }
+  }
+
+  @Nested
+  @DisplayName("PERSON_IDENTIFIERS-DELETED")
+  inner class PersonIdentifierDeleted {
+    private val personId = 123456L
+    private val identifierSequence = 76543L
+
+    @BeforeEach
+    fun setUp() {
+      awsSqsContactPersonOffenderEventsClient.sendMessage(
+        contactPersonQueueOffenderEventsUrl,
+        personIdentifierEvent(
+          eventType = "PERSON_IDENTIFIERS-DELETED",
+          personId = personId,
+          identifierSequence = identifierSequence,
+        ),
+      ).also { waitForAnyProcessingToComplete() }
+    }
+
+    @Test
+    fun `will track telemetry`() {
+      verify(telemetryClient).trackEvent(
+        eq("contactperson-person-identifier-synchronisation-deleted-success"),
+        check {
+          assertThat(it["personId"]).isEqualTo(personId.toString())
+          assertThat(it["identifierSequence"]).isEqualTo(identifierSequence.toString())
+        },
+        isNull(),
+      )
+    }
+  }
+
+  @Nested
   @DisplayName("VISITOR_RESTRICTION-UPSERTED")
   inner class PersonRestrictionUpserted {
     private val restrictionId = 9876L
@@ -790,6 +976,46 @@ fun personInternetAddressEvent(
   """{
     "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
     "Message": "{\"eventId\":\"5958295\",\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"internetAddressId\": \"$internetAddressId\",\"personId\": \"$personId\",\"auditModuleName\":\"$auditModuleName\",\"nomisEventType\":\"$eventType\" }",
+    "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
+    "MessageAttributes": {
+      "eventType": {"Type": "String", "Value": "$eventType"}, 
+      "id": {"Type": "String", "Value": "8b07cbd9-0820-0a0f-c32f-a9429b618e0b"}, 
+      "contentType": {"Type": "String", "Value": "text/plain;charset=UTF-8"}, 
+      "timestamp": {"Type": "Number.java.lang.Long", "Value": "1571666478344"}
+    }
+}
+  """.trimIndent()
+
+fun personEmploymentEvent(
+  eventType: String,
+  personId: Long,
+  employmentSequence: Long,
+  auditModuleName: String = "OCDPERSO",
+) =
+  // language=JSON
+  """{
+    "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
+    "Message": "{\"eventId\":\"5958295\",\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"employmentSequence\": \"$employmentSequence\",\"personId\": \"$personId\",\"auditModuleName\":\"$auditModuleName\",\"nomisEventType\":\"$eventType\" }",
+    "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
+    "MessageAttributes": {
+      "eventType": {"Type": "String", "Value": "$eventType"}, 
+      "id": {"Type": "String", "Value": "8b07cbd9-0820-0a0f-c32f-a9429b618e0b"}, 
+      "contentType": {"Type": "String", "Value": "text/plain;charset=UTF-8"}, 
+      "timestamp": {"Type": "Number.java.lang.Long", "Value": "1571666478344"}
+    }
+}
+  """.trimIndent()
+
+fun personIdentifierEvent(
+  eventType: String,
+  personId: Long,
+  identifierSequence: Long,
+  auditModuleName: String = "OCDPERSO",
+) =
+  // language=JSON
+  """{
+    "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
+    "Message": "{\"eventId\":\"5958295\",\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"identifierSequence\": \"$identifierSequence\",\"personId\": \"$personId\",\"auditModuleName\":\"$auditModuleName\",\"nomisEventType\":\"$eventType\" }",
     "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
     "MessageAttributes": {
       "eventType": {"Type": "String", "Value": "$eventType"}, 
