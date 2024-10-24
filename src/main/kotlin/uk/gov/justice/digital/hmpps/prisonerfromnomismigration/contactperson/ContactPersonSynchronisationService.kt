@@ -196,4 +196,31 @@ class ContactPersonSynchronisationService(
       telemetry,
     )
   }
+
+  suspend fun personEmploymentAdded(event: PersonEmploymentEvent) {
+    val telemetry =
+      mapOf("personId" to event.personId, "employmentSequence" to event.employmentSequence)
+    telemetryClient.trackEvent(
+      "contactperson-person-employment-synchronisation-created-success",
+      telemetry,
+    )
+  }
+
+  suspend fun personEmploymentUpdated(event: PersonEmploymentEvent) {
+    val telemetry =
+      mapOf("personId" to event.personId, "employmentSequence" to event.employmentSequence)
+    telemetryClient.trackEvent(
+      "contactperson-person-employment-synchronisation-updated-success",
+      telemetry,
+    )
+  }
+
+  suspend fun personEmploymentDeleted(event: PersonEmploymentEvent) {
+    val telemetry =
+      mapOf("personId" to event.personId, "employmentSequence" to event.employmentSequence)
+    telemetryClient.trackEvent(
+      "contactperson-person-employment-synchronisation-deleted-success",
+      telemetry,
+    )
+  }
 }
