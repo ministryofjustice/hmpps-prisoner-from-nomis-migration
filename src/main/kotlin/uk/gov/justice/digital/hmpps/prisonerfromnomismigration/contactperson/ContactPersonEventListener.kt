@@ -41,6 +41,9 @@ class ContactPersonEventListener(
               "PHONES_PERSON-INSERTED" -> service.personPhoneAdded(sqsMessage.Message.fromJson())
               "PHONES_PERSON-UPDATED" -> service.personPhoneUpdated(sqsMessage.Message.fromJson())
               "PHONES_PERSON-DELETED" -> service.personPhoneDeleted(sqsMessage.Message.fromJson())
+              "INTERNET_ADDRESSES_PERSON-INSERTED" -> service.personEmailAdded(sqsMessage.Message.fromJson())
+              "INTERNET_ADDRESSES_PERSON-UPDATED" -> service.personEmailUpdated(sqsMessage.Message.fromJson())
+              "INTERNET_ADDRESSES_PERSON-DELETED" -> service.personEmailDeleted(sqsMessage.Message.fromJson())
               "VISITOR_RESTRICTION-UPSERTED" -> service.personRestrictionUpserted(sqsMessage.Message.fromJson())
               "VISITOR_RESTRICTION-DELETED" -> service.personRestrictionDeleted(sqsMessage.Message.fromJson())
               "OFFENDER_CONTACT-INSERTED" -> service.contactAdded(sqsMessage.Message.fromJson())
@@ -99,4 +102,10 @@ data class PersonPhoneEvent(
   val phoneId: Long,
   val auditModuleName: String,
   val isAddress: Boolean,
+)
+
+data class PersonInternetAddressEvent(
+  val personId: Long,
+  val internetAddressId: Long,
+  val auditModuleName: String,
 )

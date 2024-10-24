@@ -169,4 +169,31 @@ class ContactPersonSynchronisationService(
       )
     }
   }
+
+  suspend fun personEmailAdded(event: PersonInternetAddressEvent) {
+    val telemetry =
+      mapOf("personId" to event.personId, "internetAddressId" to event.internetAddressId)
+    telemetryClient.trackEvent(
+      "contactperson-person-email-synchronisation-created-success",
+      telemetry,
+    )
+  }
+
+  suspend fun personEmailUpdated(event: PersonInternetAddressEvent) {
+    val telemetry =
+      mapOf("personId" to event.personId, "internetAddressId" to event.internetAddressId)
+    telemetryClient.trackEvent(
+      "contactperson-person-email-synchronisation-updated-success",
+      telemetry,
+    )
+  }
+
+  suspend fun personEmailDeleted(event: PersonInternetAddressEvent) {
+    val telemetry =
+      mapOf("personId" to event.personId, "internetAddressId" to event.internetAddressId)
+    telemetryClient.trackEvent(
+      "contactperson-person-email-synchronisation-deleted-success",
+      telemetry,
+    )
+  }
 }
