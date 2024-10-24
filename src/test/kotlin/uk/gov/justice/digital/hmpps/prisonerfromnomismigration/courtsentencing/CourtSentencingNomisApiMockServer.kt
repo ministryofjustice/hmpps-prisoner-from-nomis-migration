@@ -18,7 +18,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.O
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SentenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SentenceTermResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -43,7 +45,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       createdDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
       createdByUsername = "Q1251T",
       lidsCaseNumber = 1,
-      primaryCaseInfoNumber = "caseref1",
+      primaryCaseInfoNumber = "caseRef1",
       caseInfoNumbers = caseIndentifiers,
     ),
   ) {
@@ -65,6 +67,62 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
           .withStatus(status.value())
           .withBody(objectMapper.writeValueAsString(error)),
       ),
+    )
+  }
+
+  // this migration version does not have offenderNo validation
+  fun stubGetCourtCaseForMigration(
+    caseId: Long,
+    bookingId: Long = 2,
+    offenderNo: String = "G4803UT",
+    courtId: String = "BATHMC",
+    caseInfoNumber: String? = "caseRef1",
+    caseIndentifiers: List<CaseIdentifierResponse> = emptyList(),
+    courtEvents: List<CourtEventResponse> = emptyList(),
+    response: CourtCaseResponse = CourtCaseResponse(
+      bookingId = bookingId,
+      id = caseId,
+      offenderNo = offenderNo,
+      caseSequence = 22,
+      caseStatus = CodeDescription("A", "Active"),
+      legalCaseType = CodeDescription("A", "Adult"),
+      courtId = "MDI",
+      courtEvents = courtEvents,
+      offenderCharges = emptyList(),
+      createdDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+      createdByUsername = "Q1251T",
+      lidsCaseNumber = 1,
+      primaryCaseInfoNumber = "caseRef1",
+      caseInfoNumbers = caseIndentifiers,
+    ),
+  ) {
+    nomisApi.stubFor(
+      get(
+        WireMock.urlPathEqualTo("/court-cases/$caseId"),
+      )
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubGetCourtCaseForMigration(
+    caseId: Long,
+    status: HttpStatus,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    nomisApi.stubFor(
+      get(
+        WireMock.urlPathEqualTo("/court-cases/$caseId"),
+      )
+        .willReturn(
+          aResponse()
+            .withStatus(status.value())
+            .withHeader("Content-Type", "application/json")
+            .withBody(NomisApiExtension.objectMapper.writeValueAsString(error)),
+        ),
     )
   }
 
@@ -167,7 +225,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         offence = OffenceResponse(
           offenceCode = "AN16094",
           statuteCode = "AN16",
-          description = "Act as organiser of flying display without applying for / obtaining permission of CAA",
+          description = "Act as organiser of flying    without applying for / obtaining permission of CAA",
         ),
         resultCode1Indicator = "F",
         mostSeriousFlag = false,
@@ -220,6 +278,209 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
           .withBody(objectMapper.writeValueAsString(error)),
       ),
     )
+  }
+
+  fun stubMultipleGetCourtCaseIdCounts(totalElements: Long, pageSize: Long) {
+    // for each page create a response for each case id starting from 1 up to `totalElements`
+
+    val pages = (totalElements / pageSize) + 1
+    (0..pages).forEach { page ->
+      val startCaseId = (page * pageSize) + 1
+      val endCaseId = java.lang.Long.min((page * pageSize) + pageSize, totalElements)
+      nomisApi.stubFor(
+        get(
+          WireMock.urlPathEqualTo("/court-cases/ids"),
+        )
+          .withQueryParam("page", WireMock.equalTo(page.toString()))
+          .willReturn(
+            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+              .withBody(
+                courtCaseIdsPagedResponse(
+                  totalElements = totalElements,
+                  caseIds = (startCaseId..endCaseId).map { it },
+                  pageNumber = page,
+                  pageSize = pageSize,
+                ),
+              ),
+          ),
+      )
+    }
+  }
+
+  fun stubMultipleGetCourtCases(intProgression: IntProgression) {
+    (intProgression).forEach {
+      nomisApi.stubFor(
+        get(
+          WireMock.urlPathEqualTo("/court-cases/$it"),
+        )
+          .willReturn(
+            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+              .withBody(courtCaseResponse(caseId = it.toLong())),
+          ),
+      )
+    }
+  }
+
+  private fun courtCaseResponse(
+    bookingId: Long = 2,
+    offenderNo: String = "G4803UT",
+    caseId: Long = 3,
+    courtId: String = "BATHMC",
+    caseInfoNumber: String? = "caseRef1",
+    caseIndentifiers: List<CaseIdentifierResponse> = emptyList(),
+  ): String {
+    // language=JSON
+    return """
+{
+  "id": $caseId,
+  "offenderNo": "$offenderNo",
+  "bookingId": $bookingId,
+  "caseSequence": 22,
+  "primaryCaseInfoNumber" : "$caseInfoNumber",
+  "caseStatus": {
+    "code": "A",
+    "description": "Active"
+  },
+  "legalCaseType": {
+    "code": "A",
+    "description": "Adult"
+  },
+  "beginDate": "2024-02-01",
+  "courtId": "$courtId",
+  "lidsCaseNumber": 1,
+  "createdDateTime": "2024-02-08T14:36:16.370572",
+  "createdByUsername": "PRISONER_MANAGER_API",
+  "courtEvents": [
+    {
+      "id": 528456562,
+      "caseId": $caseId,
+      "offenderNo": "A3864DZ",
+      "eventDateTime": "2024-02-01T10:00:00",
+      "courtEventType": {
+        "code": "CRT",
+        "description": "Court Appearance"
+      },
+      "eventStatus": {
+        "code": "SCH",
+        "description": "Scheduled (Approved)"
+      },
+      "directionCode": {
+        "code": "OUT",
+        "description": "Out"
+      },
+      "courtId": "ABDRCT",
+      "outcomeReasonCode": {
+        "code": "4506",
+        "description": "Adjournment"
+      },
+      "orderRequestedFlag": false,
+      "nextEventRequestFlag": false,
+      "createdDateTime": "2024-02-08T14:36:16.485181",
+      "createdByUsername": "PRISONER_MANAGER_API",
+      "courtEventCharges": [
+        {
+          "eventId": 528456562,
+          "offenderCharge": {
+            "id": 3934645,
+            "offence": {
+              "offenceCode": "RR84027",
+              "statuteCode": "RR84",
+              "description": "Failing to stop at school crossing (horsedrawn vehicle)"
+            },
+            "offencesCount": 1,
+            "offenceDate": "2024-01-02",
+            "chargeStatus": {
+              "code": "A",
+              "description": "Active"
+            },
+            "resultCode1": {
+              "code": "1081",
+              "description": "Detention and Training Order"
+            },
+            "resultCode1Indicator": "F",
+            "mostSeriousFlag": false,
+            "lidsOffenceNumber": 3
+          },
+          "offencesCount": 1,
+          "offenceDate": "2024-01-02",
+          "resultCode1": {
+            "code": "1081",
+            "description": "Detention and Training Order"
+          },
+          "resultCode1Indicator": "F",
+          "mostSeriousFlag": false
+        }
+      ],
+      "courtOrders": [
+        {
+          "id": 1434174,
+          "courtDate": "2024-02-01",
+          "issuingCourt": "ABDRCT",
+          "orderType": "AUTO",
+          "orderStatus": "A",
+          "sentencePurposes": []
+        }
+      ]
+    }
+  ],
+  "caseInfoNumbers": [],
+  "offenderCharges": [
+    {
+      "id": 3934645,
+      "offence": {
+        "offenceCode": "RR84027",
+        "statuteCode": "RR84",
+        "description": "Failing to stop at school crossing (horsedrawn vehicle)"
+      },
+      "offencesCount": 1,
+      "offenceDate": "2024-01-02",
+      "chargeStatus": {
+        "code": "A",
+        "description": "Active"
+      },
+      "resultCode1": {
+        "code": "1081",
+        "description": "Detention and Training Order"
+      },
+      "resultCode1Indicator": "F",
+      "mostSeriousFlag": false,
+      "lidsOffenceNumber": 3
+    },
+    {
+      "id": 3934646,
+      "offence": {
+        "offenceCode": "RR84028",
+        "statuteCode": "RR28",
+        "description": "Failing to stop at school crossing (horsedrawn vehicle)"
+      },
+      "offencesCount": 1,
+      "offenceDate": "2024-01-02",
+      "chargeStatus": {
+        "code": "A",
+        "description": "Active"
+      },
+      "resultCode1": {
+        "code": "1081",
+        "description": "Detention and Training Order"
+      },
+      "resultCode1Indicator": "F",
+      "mostSeriousFlag": false,
+      "lidsOffenceNumber": 3
+    }
+  ]
+}
+    """.trimIndent()
+  }
+
+  fun courtCaseIdsPagedResponse(
+    totalElements: Long = 10,
+    caseIds: List<Long> = (0L..10L).toList(),
+    pageSize: Long = 10,
+    pageNumber: Long = 0,
+  ): String {
+    val content = caseIds.map { """{ "caseId": $it}""" }
+      .joinToString { it }
+    return pageContent(content, pageSize, pageNumber, totalElements, caseIds.size)
   }
 
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)

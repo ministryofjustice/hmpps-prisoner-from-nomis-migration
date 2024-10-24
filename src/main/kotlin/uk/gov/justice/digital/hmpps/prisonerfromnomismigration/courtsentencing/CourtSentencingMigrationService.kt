@@ -64,7 +64,7 @@ class CourtSentencingMigrationService(
           courtCaseId = nomisCaseId,
         )
 
-      courtSentencingDpsService.createCourtCaseMigration(nomisCourtCase.toDpsCourtCaseMigration()).also { dpsCourtCaseCreateResponse ->
+      courtSentencingDpsService.createCourtCaseMigration(nomisCourtCase.toDpsCourtCase()).also { dpsCourtCaseCreateResponse ->
         createCourtCaseMapping(nomisCourtCase = nomisCourtCase, dpsCourtCaseCreateResponse = dpsCourtCaseCreateResponse, context)
         telemetryClient.trackEvent(
           "court-sentencing-migration-entity-migrated",
