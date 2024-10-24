@@ -223,4 +223,31 @@ class ContactPersonSynchronisationService(
       telemetry,
     )
   }
+
+  suspend fun personIdentifierAdded(event: PersonIdentifierEvent) {
+    val telemetry =
+      mapOf("personId" to event.personId, "identifierSequence" to event.identifierSequence)
+    telemetryClient.trackEvent(
+      "contactperson-person-identifier-synchronisation-created-success",
+      telemetry,
+    )
+  }
+
+  suspend fun personIdentifierUpdated(event: PersonIdentifierEvent) {
+    val telemetry =
+      mapOf("personId" to event.personId, "identifierSequence" to event.identifierSequence)
+    telemetryClient.trackEvent(
+      "contactperson-person-identifier-synchronisation-updated-success",
+      telemetry,
+    )
+  }
+
+  suspend fun personIdentifierDeleted(event: PersonIdentifierEvent) {
+    val telemetry =
+      mapOf("personId" to event.personId, "identifierSequence" to event.identifierSequence)
+    telemetryClient.trackEvent(
+      "contactperson-person-identifier-synchronisation-deleted-success",
+      telemetry,
+    )
+  }
 }
