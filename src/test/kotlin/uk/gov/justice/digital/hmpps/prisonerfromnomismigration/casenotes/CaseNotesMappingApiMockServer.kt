@@ -6,8 +6,10 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.jsonResponse
+import com.github.tomakehurst.wiremock.client.WireMock.ok
 import com.github.tomakehurst.wiremock.client.WireMock.okJson
 import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
@@ -210,6 +212,38 @@ class CaseNotesMappingApiMockServer(private val objectMapper: ObjectMapper) {
     mappingApi.stubFor(
       post("/mapping/migration-id/{migrationId}/count-by-prisoner").willReturn(
         okJson(objectMapper.writeValueAsString(count)),
+      ),
+    )
+  }
+
+  fun stubUpdateMappingsByNomisId() {
+    mappingApi.stubFor(
+      put(urlPathMatching("/mapping/casenotes/merge/from/.+/to/.+")).willReturn(
+        ok(),
+      ),
+    )
+  }
+
+  fun stubUpdateMappingsByNomisIdError(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      put(urlPathMatching("/mapping/casenotes/merge/from/.+/to/.+")).willReturn(
+        jsonResponse(objectMapper.writeValueAsString(error), status.value()),
+      ),
+    )
+  }
+
+  fun stubUpdateMappingsByBookingId(response: List<CaseNoteMappingDto>) {
+    mappingApi.stubFor(
+      put(urlPathMatching("/mapping/casenotes/merge/booking-id/.+/to/.+")).willReturn(
+        okJson(objectMapper.writeValueAsString(response)),
+      ),
+    )
+  }
+
+  fun stubUpdateMappingsByBookingIdError(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      put(urlPathMatching("/mapping/casenotes/merge/booking-id/.+/to/.+")).willReturn(
+        jsonResponse(objectMapper.writeValueAsString(error), status.value()),
       ),
     )
   }

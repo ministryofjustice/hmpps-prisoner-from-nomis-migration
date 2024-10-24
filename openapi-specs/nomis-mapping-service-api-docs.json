@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-10-11.5202.6cfa18c"
+    "version": "2024-10-23.5236.fe63d56"
   },
   "servers": [
     {
@@ -268,6 +268,118 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DuplicateMappingErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/casenotes/merge/from/{oldOffenderNo}/to/{newOffenderNo}": {
+      "put": {
+        "tags": [
+          "case-notes-mapping-resource"
+        ],
+        "summary": "Replaces all occurrences of the 'from' id with the 'to' id in the mapping table",
+        "description": "Used for update after a prisoner number merge. Requires role ROLE_NOMIS_CASENOTES",
+        "operationId": "updateMappingsByNomisId_1",
+        "parameters": [
+          {
+            "name": "oldOffenderNo",
+            "in": "path",
+            "description": "Old prisoner number to replace",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Old prisoner number to replace",
+              "example": "A3456KM"
+            },
+            "example": "A3456KM"
+          },
+          {
+            "name": "newOffenderNo",
+            "in": "path",
+            "description": "New prisoner number to use",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "New prisoner number to use",
+              "example": "A3457LZ"
+            },
+            "example": "A3457LZ"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Replacement made, or not present in table"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/casenotes/merge/booking-id/{bookingId}/to/{newOffenderNo}": {
+      "put": {
+        "tags": [
+          "case-notes-mapping-resource"
+        ],
+        "summary": "For all case notes with the given booking id in the mapping table, sets the offender no to the given 'to' id",
+        "description": "Used for update after a booking has been moved from one offender to another. Returns the affected case notes. Requires role ROLE_NOMIS_CASENOTES",
+        "operationId": "updateMappingsByBookingId",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "description": "The booking id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The booking id",
+              "example": 1234567
+            },
+            "example": 1234567
+          },
+          {
+            "name": "newOffenderNo",
+            "in": "path",
+            "description": "New prisoner number to use",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "New prisoner number to use",
+              "example": "A3457LZ"
+            },
+            "example": "A3457LZ"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Replacement made, or not present in table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CaseNoteMappingDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -9349,6 +9461,58 @@
         },
         "description": "ID of mapping identified by the NOMIS id for a Court Charge mapping"
       },
+      "CaseNoteMappingDto": {
+        "required": [
+          "dpsCaseNoteId",
+          "mappingType",
+          "nomisBookingId",
+          "nomisCaseNoteId",
+          "offenderNo"
+        ],
+        "type": "object",
+        "properties": {
+          "dpsCaseNoteId": {
+            "type": "string",
+            "description": "Case note id in DPS"
+          },
+          "nomisCaseNoteId": {
+            "type": "integer",
+            "description": "Case note id in Nomis",
+            "format": "int64"
+          },
+          "offenderNo": {
+            "type": "string",
+            "description": "Prisoner number in Nomis"
+          },
+          "nomisBookingId": {
+            "type": "integer",
+            "description": "Nomis booking id",
+            "format": "int64"
+          },
+          "label": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": "string",
+            "description": "Label (a timestamp for migrated ids)"
+          },
+          "mappingType": {
+            "type": "string",
+            "description": "Mapping type",
+            "enum": [
+              "MIGRATED",
+              "NOMIS_CREATED",
+              "DPS_CREATED"
+            ]
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "Date-time the mapping was created",
+            "example": "2021-07-05T10:35:17"
+          }
+        },
+        "description": "Case note mapping"
+      },
       "AlertMappingIdDto": {
         "required": [
           "dpsAlertId",
@@ -11171,58 +11335,6 @@
           }
         },
         "description": "Mappings for a prisoner created during migration"
-      },
-      "CaseNoteMappingDto": {
-        "required": [
-          "dpsCaseNoteId",
-          "mappingType",
-          "nomisBookingId",
-          "nomisCaseNoteId",
-          "offenderNo"
-        ],
-        "type": "object",
-        "properties": {
-          "dpsCaseNoteId": {
-            "type": "string",
-            "description": "Case note id in DPS"
-          },
-          "nomisCaseNoteId": {
-            "type": "integer",
-            "description": "Case note id in Nomis",
-            "format": "int64"
-          },
-          "offenderNo": {
-            "type": "string",
-            "description": "Prisoner number in Nomis"
-          },
-          "nomisBookingId": {
-            "type": "integer",
-            "description": "Nomis booking id",
-            "format": "int64"
-          },
-          "label": {
-            "maxLength": 20,
-            "minLength": 0,
-            "type": "string",
-            "description": "Label (a timestamp for migrated ids)"
-          },
-          "mappingType": {
-            "type": "string",
-            "description": "Mapping type",
-            "enum": [
-              "MIGRATED",
-              "NOMIS_CREATED",
-              "DPS_CREATED"
-            ]
-          },
-          "whenCreated": {
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
-            "type": "string",
-            "description": "Date-time the mapping was created",
-            "example": "2021-07-05T10:35:17"
-          }
-        },
-        "description": "Case note mapping"
       },
       "AppointmentMappingDto": {
         "required": [

@@ -7,6 +7,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.put
+import com.github.tomakehurst.wiremock.client.WireMock.status
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
@@ -178,6 +179,13 @@ class CaseNotesApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withHeader("Content-Type", "application/json")
             .withStatus(INTERNAL_SERVER_ERROR.value()),
         ),
+    )
+  }
+
+  fun stubMoveCaseNotes(status: Int = 200) {
+    stubFor(
+      put("/move/case-notes")
+        .willReturn(status(status)),
     )
   }
 }

@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-10-11.6966.6be27b7"
+    "version": "2024-10-22.7079.6c1bc5b"
   },
   "servers": [
     {
@@ -75,8 +75,8 @@
               }
             }
           },
-          "401": {
-            "description": "Unauthorised, requires a valid Oauth2 token",
+          "400": {
+            "description": "Bad request",
             "content": {
               "*/*": {
                 "schema": {
@@ -95,8 +95,8 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request",
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
               "*/*": {
                 "schema": {
@@ -203,6 +203,61 @@
         }
       }
     },
+    "/move/case-notes": {
+      "put": {
+        "tags": [
+          "Sync Case Notes"
+        ],
+        "summary": "Endpoint to move case notes - only for sync operations",
+        "description": "Case notes that are moved across bookings in nomis can be moved using this endpoint\nRequires one of the following roles: \n* ROLE_PRISONER_CASE_NOTES__SYNC__RW",
+        "operationId": "moveCaseNotes",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveCaseNotesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Case notes successfully moved"
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/case-notes/{personIdentifier}/{caseNoteIdentifier}": {
       "get": {
         "tags": [
@@ -241,22 +296,22 @@
           }
         ],
         "responses": {
-          "404": {
-            "description": "Offender or case note not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/CaseNote"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Offender or case note not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -373,8 +428,8 @@
               }
             }
           },
-          "401": {
-            "description": "Unauthorised, requires a valid Oauth2 token",
+          "400": {
+            "description": "Bad request",
             "content": {
               "*/*": {
                 "schema": {
@@ -393,8 +448,8 @@
               }
             }
           },
-          "400": {
-            "description": "Bad request",
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
               "*/*": {
                 "schema": {
@@ -440,8 +495,8 @@
           "required": true
         },
         "responses": {
-          "401": {
-            "description": "Unauthorised, requires a valid Oauth2 token",
+          "400": {
+            "description": "Bad request",
             "content": {
               "*/*": {
                 "schema": {
@@ -452,6 +507,16 @@
           },
           "403": {
             "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
               "*/*": {
                 "schema": {
@@ -472,16 +537,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -493,7 +548,7 @@
         ],
         "summary": "Retrieves a list of case notes",
         "description": "Sorting can be applied on occurrenceDateTime (default) or creationDateTime. Any other sort parameter will have the default result (occurrenceDateTime,desc)",
-        "operationId": "getCaseNotes_1",
+        "operationId": "getCaseNotes",
         "parameters": [
           {
             "name": "personIdentifier",
@@ -592,22 +647,22 @@
           "required": true
         },
         "responses": {
-          "201": {
-            "description": "The Case Note has been recorded. The updated object is returned including the status.",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/CaseNote"
-                }
-              }
-            }
-          },
           "409": {
             "description": "The case note has already been recorded under the booking. The current unmodified object (including status) is returned.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "The Case Note has been recorded. The updated object is returned including the status.",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseNote"
                 }
               }
             }
@@ -621,7 +676,7 @@
           "Sync Case Notes"
         ],
         "description": "\nRequires one of the following roles: \n* ROLE_PRISONER_CASE_NOTES__SYNC__RW",
-        "operationId": "getCaseNotes",
+        "operationId": "getNomisCaseNotes",
         "parameters": [
           {
             "name": "personIdentifier",
@@ -668,15 +723,6 @@
             }
           },
           {
-            "name": "crn",
-            "in": "query",
-            "description": "nDelius Case Reference Number",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "fromDate",
             "in": "query",
             "description": "Optional parameter denoting minimum date of event occurrence which should be returned in the response",
@@ -703,7 +749,17 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/SubjectAccessResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -733,7 +789,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SubjectAccessRequestContent"
+                  "$ref": "#/components/schemas/SubjectAccessResponse"
                 }
               }
             }
@@ -743,17 +799,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "$ref": "#/components/schemas/SubjectAccessResponse"
                 }
               }
             }
@@ -890,8 +936,8 @@
           "204": {
             "description": "Case Note successfully deleted"
           },
-          "401": {
-            "description": "Unauthorised, requires a valid Oauth2 token",
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
             "content": {
               "*/*": {
                 "schema": {
@@ -900,8 +946,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
             "content": {
               "*/*": {
                 "schema": {
@@ -943,6 +989,9 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "OK"
+          },
           "404": {
             "description": "Offender or case note not found",
             "content": {
@@ -952,9 +1001,6 @@
                 }
               }
             }
-          },
-          "200": {
-            "description": "OK"
           }
         }
       }
@@ -1166,6 +1212,30 @@
           "messagesFoundCount": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "MoveCaseNotesRequest": {
+        "required": [
+          "caseNoteIds",
+          "fromPersonIdentifier",
+          "toPersonIdentifier"
+        ],
+        "type": "object",
+        "properties": {
+          "fromPersonIdentifier": {
+            "type": "string"
+          },
+          "toPersonIdentifier": {
+            "type": "string"
+          },
+          "caseNoteIds": {
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         }
       },
@@ -1550,63 +1620,78 @@
           }
         }
       },
-      "SARCaseNoteAmendment": {
+      "SarAmendment": {
+        "required": [
+          "additionalNoteText",
+          "authorName",
+          "creationDateTime"
+        ],
         "type": "object",
         "properties": {
           "creationDateTime": {
             "type": "string",
             "format": "date-time"
           },
-          "authorName": {
-            "type": "string"
-          },
           "additionalNoteText": {
             "type": "string"
-          }
-        },
-        "description": "SubjectAccessResponse"
-      },
-      "SubjectAccessRequestContent": {
-        "required": [
-          "content"
-        ],
-        "type": "object",
-        "properties": {
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SubjectAccessRequestData"
-            }
+          },
+          "authorName": {
+            "type": "string"
           }
         }
       },
-      "SubjectAccessRequestData": {
+      "SarNote": {
+        "required": [
+          "amendments",
+          "authorName",
+          "creationDateTime",
+          "subType",
+          "text",
+          "type"
+        ],
         "type": "object",
         "properties": {
+          "creationDateTime": {
+            "type": "string",
+            "format": "date-time"
+          },
           "type": {
             "type": "string"
           },
           "subType": {
             "type": "string"
           },
-          "creationDateTime": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "authorName": {
+          "text": {
             "type": "string"
           },
-          "text": {
+          "authorName": {
             "type": "string"
           },
           "amendments": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SARCaseNoteAmendment"
+              "$ref": "#/components/schemas/SarAmendment"
             }
           }
-        },
-        "description": "SubjectAccessResponse"
+        }
+      },
+      "SubjectAccessResponse": {
+        "required": [
+          "content",
+          "prn"
+        ],
+        "type": "object",
+        "properties": {
+          "prn": {
+            "type": "string"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SarNote"
+            }
+          }
+        }
       },
       "DlqMessage": {
         "required": [

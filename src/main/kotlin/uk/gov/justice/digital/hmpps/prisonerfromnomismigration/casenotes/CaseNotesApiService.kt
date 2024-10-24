@@ -7,8 +7,10 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.MigrateCaseNoteRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.MigrationResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.MoveCaseNotesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.SyncCaseNoteRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.SyncResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityOrLogAndRethrowBadRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
 
 @Service
@@ -35,4 +37,13 @@ class CaseNotesApiService(@Qualifier("caseNotesApiWebClient") private val webCli
       .bodyValue(dpsCaseNotes)
       .retrieve()
       .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun moveCaseNotes(request: MoveCaseNotesRequest) {
+    webClient.put()
+      .uri("/move/case-notes")
+      .contentType(MediaType.APPLICATION_JSON)
+      .bodyValue(request)
+      .retrieve()
+      .awaitBodilessEntityOrLogAndRethrowBadRequest()
+  }
 }

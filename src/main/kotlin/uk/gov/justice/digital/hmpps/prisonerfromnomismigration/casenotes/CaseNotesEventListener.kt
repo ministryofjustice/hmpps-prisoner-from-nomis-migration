@@ -14,7 +14,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CASENOTES
 import java.util.concurrent.CompletableFuture
 
 @Service
-class CaseNotesPrisonOffenderEventListener(
+class CaseNotesEventListener(
   private val caseNotesSynchronisationService: CaseNotesSynchronisationService,
   private val objectMapper: ObjectMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
@@ -37,9 +37,9 @@ class CaseNotesPrisonOffenderEventListener(
               "OFFENDER_CASE_NOTES-INSERTED" -> caseNotesSynchronisationService.caseNoteInserted(sqsMessage.Message.fromJson())
               "OFFENDER_CASE_NOTES-UPDATED" -> caseNotesSynchronisationService.caseNoteUpdated(sqsMessage.Message.fromJson())
               "OFFENDER_CASE_NOTES-DELETED" -> caseNotesSynchronisationService.caseNoteDeleted(sqsMessage.Message.fromJson())
-//              "prison-offender-events.prisoner.merged" -> // TODO alertsSynchronisationService.synchronisePrisonerMerge(sqsMessage.Message.fromJson())
-//              "prison-offender-events.prisoner.booking.moved" -> // TODO()
               // There are about 2 deletions per day
+              "prison-offender-events.prisoner.merged" -> caseNotesSynchronisationService.synchronisePrisonerMerged(sqsMessage.Message.fromJson())
+              "prison-offender-events.prisoner.booking.moved" -> caseNotesSynchronisationService.synchronisePrisonerBookingMoved(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {

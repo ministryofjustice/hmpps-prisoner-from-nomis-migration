@@ -21,7 +21,7 @@ class LocationsRepairResource(
   @PostMapping("/id/{internalLocationId}/repair")
   @Operation(
     summary = "Resynchronises location from NOMIS to DPS, i.e. updates DPS with the data from Nomis",
-    description = "Used when a domain event adjudication.punishments.updated has gone missing, so emergency use only. Requires ROLE_NOMIS_LOCATIONS",
+    description = "Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, so emergency use only. Requires ROLE_NOMIS_LOCATIONS",
   )
   suspend fun repairPunishments(
     @Schema(description = "Id of the location in Nomis")
