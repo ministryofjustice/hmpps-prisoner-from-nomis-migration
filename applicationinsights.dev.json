@@ -56,6 +56,17 @@
       "r2dbc": {
         "enabled": true
       }
-    }
+    },
+    "processors": [
+      {
+        "type": "metric-filter",
+        "exclude": {
+          "matchType": "regexp",
+          "metricNames": [
+            "(cache|executor|disk|http|logback|spring_).*"
+          ]
+        }
+      }
+    ]
   }
 }
