@@ -4,9 +4,6 @@ hmpps.sqs:
     migrationvisits:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
-    migrationsentencing:
-      queueName: ${random.uuid}
-      dlqName: ${random.uuid}
     migrationactivities:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
@@ -14,9 +11,6 @@ hmpps.sqs:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
     migrationappointments:
-      queueName: ${random.uuid}
-      dlqName: ${random.uuid}
-    migrationadjudications:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
     migrationincidents:
@@ -32,10 +26,6 @@ hmpps.sqs:
     migrationcasenotes:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
-    migrationalerts:
-      queueName: ${random.uuid}
-      dlqName: ${random.uuid}
-      errorVisibilityTimeout: 0
     migrationprisonperson:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}

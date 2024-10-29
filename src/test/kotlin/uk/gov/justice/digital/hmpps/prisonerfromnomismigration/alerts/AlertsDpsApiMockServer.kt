@@ -15,15 +15,15 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.Alert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.AlertCodeSummary
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MergedAlert
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MergedAlerts
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MigratedAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.ResyncedAlert
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
-class AlertsDpsApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
+class AlertsDpsApiExtension :
+  BeforeAllCallback,
+  AfterAllCallback,
+  BeforeEachCallback {
   companion object {
     @JvmField
     val dpsAlertsServer = AlertsDpsApiMockServer()
@@ -70,19 +70,7 @@ class AlertsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       lastModifiedByDisplayName = "Firstname Lastname",
     )
 
-    fun migratedAlert() = MigratedAlert(
-      alertUuid = UUID.randomUUID(),
-      bookingSeq = 1,
-      alertSeq = 1,
-      offenderBookId = 1234567,
-    )
     fun resyncedAlert() = ResyncedAlert(
-      alertUuid = UUID.randomUUID(),
-      alertSeq = 1,
-      offenderBookId = 1234567,
-    )
-
-    fun mergedAlert() = MergedAlert(
       alertUuid = UUID.randomUUID(),
       alertSeq = 1,
       offenderBookId = 1234567,
@@ -104,20 +92,6 @@ class AlertsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubMigrateAlerts(
-    offenderNo: String,
-    response: List<MigratedAlert> = listOf(migratedAlert()),
-  ) {
-    stubFor(
-      post("/migrate/$offenderNo/alerts")
-        .willReturn(
-          aResponse()
-            .withStatus(201)
-            .withHeader("Content-Type", "application/json")
-            .withBody(AlertsDpsApiExtension.objectMapper.writeValueAsString(response)),
-        ),
-    )
-  }
   fun stubResynchroniseAlerts(
     offenderNo: String,
     response: List<ResyncedAlert> = listOf(resyncedAlert()),
@@ -166,21 +140,6 @@ class AlertsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withBody(if (status == 200) "pong" else "some error")
           .withStatus(status),
       ),
-    )
-  }
-
-  fun stubMergePrisonerAlerts(
-    created: List<MergedAlert> = listOf(mergedAlert()),
-    deleted: List<UUID> = emptyList(),
-  ) {
-    stubFor(
-      post("/merge-alerts")
-        .willReturn(
-          aResponse()
-            .withStatus(201)
-            .withHeader("Content-Type", "application/json")
-            .withBody(AlertsDpsApiExtension.objectMapper.writeValueAsString(MergedAlerts(alertsCreated = created, alertsDeleted = deleted))),
-        ),
     )
   }
 }

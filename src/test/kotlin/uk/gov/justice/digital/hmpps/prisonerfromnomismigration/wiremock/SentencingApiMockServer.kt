@@ -13,7 +13,10 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
 
-class SentencingApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
+class SentencingApiExtension :
+  BeforeAllCallback,
+  AfterAllCallback,
+  BeforeEachCallback {
   companion object {
     @JvmField
     val sentencingApi = SentencingApiMockServer()
@@ -44,17 +47,6 @@ class SentencingApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withHeader("Content-Type", "application/json")
           .withBody(if (status == 200) "pong" else "some error")
           .withStatus(status),
-      ),
-    )
-  }
-
-  fun stubCreateSentencingAdjustmentForMigration(sentenceAdjustmentId: String = "05b332ad-58eb-4ec2-963c-c9c927856788") {
-    stubFor(
-      post(WireMock.urlMatching("/legacy/adjustments/migration")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.CREATED.value())
-          .withBody("""{"adjustmentId": "$sentenceAdjustmentId"}"""),
       ),
     )
   }
@@ -99,9 +91,6 @@ class SentencingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       ),
     )
   }
-
-  fun createSentenceAdjustmentCount() =
-    findAll(WireMock.postRequestedFor(WireMock.urlMatching("/legacy/adjustments/migration"))).count()
 
   fun createSentenceAdjustmentForSynchronisationCount() =
     findAll(WireMock.postRequestedFor(WireMock.urlMatching("/legacy/adjustments"))).count()

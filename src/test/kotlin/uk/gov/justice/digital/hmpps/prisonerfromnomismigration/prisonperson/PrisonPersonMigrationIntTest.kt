@@ -27,7 +27,7 @@ import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.returnResult
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsMigrationFilter
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
@@ -37,7 +37,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repos
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesMigrationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.physicalattributes.PhysicalAttributesDpsApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.physicalattributes.PhysicalAttributesNomisApiMockServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
@@ -86,7 +85,7 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
         webTestClient.post().uri("/migrate/prisonperson")
           .headers(setAuthorisation(roles = listOf()))
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(AlertsMigrationFilter())
+          .bodyValue("{}")
           .exchange()
           .expectStatus().isForbidden
       }
@@ -96,7 +95,7 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
         webTestClient.post().uri("/migrate/prisonperson")
           .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(AlertsMigrationFilter())
+          .bodyValue("{}")
           .exchange()
           .expectStatus().isForbidden
       }
@@ -105,7 +104,7 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
       fun `access unauthorised with no auth token`() {
         webTestClient.post().uri("/migrate/prisonperson")
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(AlertsMigrationFilter())
+          .bodyValue("{}")
           .exchange()
           .expectStatus().isUnauthorized
       }

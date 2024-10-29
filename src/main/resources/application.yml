@@ -53,11 +53,6 @@ spring:
             client-id: ${activities.client.id}
             client-secret: ${activities.client.secret}
             authorization-grant-type: client_credentials
-          adjudications-api:
-            provider: hmpps-auth
-            client-id: ${adjudications.client.id}
-            client-secret: ${adjudications.client.secret}
-            authorization-grant-type: client_credentials
           incidents-api:
             provider: hmpps-auth
             client-id: ${incidents.client.id}
@@ -160,11 +155,6 @@ activities:
     delay-seconds: 180
     count: 9
 allocations:
-  complete-check:
-    delay-seconds: 180
-    count: 9
-
-alerts:
   complete-check:
     delay-seconds: 180
     count: 9

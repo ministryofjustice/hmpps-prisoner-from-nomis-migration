@@ -19,7 +19,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExten
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.AdjudicationsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.HmppsAuthApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.LocationsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
@@ -49,7 +48,6 @@ import kotlin.annotation.AnnotationTarget.CLASS
   MappingApiExtension::class,
   SentencingApiExtension::class,
   ActivitiesApiExtension::class,
-  AdjudicationsApiExtension::class,
   IncidentsApiExtension::class,
   CSIPApiExtension::class,
   LocationsApiExtension::class,

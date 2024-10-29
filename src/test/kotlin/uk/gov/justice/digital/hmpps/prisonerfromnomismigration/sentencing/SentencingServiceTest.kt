@@ -29,57 +29,6 @@ internal class SentencingServiceTest {
   private lateinit var sentencingService: SentencingService
 
   @Nested
-  @DisplayName("POST /legacy/adjustments/migration")
-  inner class CreateAdjustmentForMigration {
-    @BeforeEach
-    internal fun setUp() {
-      sentencingApi.stubCreateSentencingAdjustmentForMigration(sentenceAdjustmentId = ADJUSTMENT_ID)
-      runBlocking {
-        sentencingService.migrateSentencingAdjustment(
-          LegacyAdjustment(
-            bookingId = 1234,
-            sentenceSequence = 2,
-            adjustmentType = RX,
-            adjustmentDate = LocalDate.parse("2022-01-01"),
-            adjustmentFromDate = LocalDate.parse("2021-07-01"),
-            adjustmentDays = 99,
-            comment = "Remand added",
-            active = true,
-            offenderNo = "G4803UT",
-            bookingReleased = false,
-            agencyId = "MDI",
-          ),
-        )
-      }
-    }
-
-    @Test
-    fun `should call api with OAuth2 token`() {
-      sentencingApi.verify(
-        postRequestedFor(urlEqualTo("/legacy/adjustments/migration"))
-          .withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    fun `will pass data to the api`() {
-      sentencingApi.verify(
-        postRequestedFor(urlEqualTo("/legacy/adjustments/migration"))
-          .withRequestBody(WireMock.matchingJsonPath("bookingId", equalTo("1234")))
-          .withRequestBody(WireMock.matchingJsonPath("offenderNo", equalTo("G4803UT")))
-          .withRequestBody(WireMock.matchingJsonPath("sentenceSequence", equalTo("2")))
-          .withRequestBody(WireMock.matchingJsonPath("adjustmentType", equalTo("RX")))
-          .withRequestBody(WireMock.matchingJsonPath("adjustmentDate", equalTo("2022-01-01")))
-          .withRequestBody(WireMock.matchingJsonPath("adjustmentDays", equalTo("99")))
-          .withRequestBody(WireMock.matchingJsonPath("adjustmentFromDate", equalTo("2021-07-01")))
-          .withRequestBody(WireMock.matchingJsonPath("comment", equalTo("Remand added")))
-          .withRequestBody(WireMock.matchingJsonPath("bookingReleased", equalTo("false")))
-          .withRequestBody(WireMock.matchingJsonPath("active", equalTo("true"))),
-      )
-    }
-  }
-
-  @Nested
   @DisplayName("POST /legacy/adjustments")
   inner class CreateAdjustmentForSynchronisation {
     @BeforeEach

@@ -265,7 +265,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               isNull(),
             )
             await untilCallTo {
-              awsSqsSentencingMigrationDlqClient?.countAllMessagesOnQueue(sentencingMigrationDlqUrl!!)
+              awsSqsSentencingOffenderEventsDlqClient?.countAllMessagesOnQueue(sentencingQueueOffenderEventsDlqUrl!!)
                 ?.get()
             } matches { it == 0 }
           }
@@ -1099,7 +1099,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               isNull(),
             )
             await untilCallTo {
-              awsSqsSentencingMigrationDlqClient?.countAllMessagesOnQueue(sentencingMigrationDlqUrl!!)
+              awsSqsSentencingOffenderEventsDlqClient?.countAllMessagesOnQueue(sentencingQueueOffenderEventsDlqUrl!!)
                 ?.get()
             } matches { it == 0 }
           }
