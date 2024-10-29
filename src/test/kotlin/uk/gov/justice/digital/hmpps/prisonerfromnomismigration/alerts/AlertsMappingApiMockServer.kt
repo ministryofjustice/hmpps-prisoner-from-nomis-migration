@@ -17,8 +17,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
-import java.time.LocalDateTime
 import java.util.UUID
 
 @Component
@@ -117,19 +115,6 @@ class AlertsMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubPostBatchMappingsFailureFollowedBySuccess() {
-    mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/alerts/batch")
-  }
-
-  fun stubPostMappings(offenderNo: String) {
-    mappingApi.stubFor(
-      post("/mapping/alerts/$offenderNo/all").willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(201),
-      ),
-    )
-  }
   fun stubReplaceMappings(offenderNo: String) {
     mappingApi.stubFor(
       put("/mapping/alerts/$offenderNo/all").willReturn(
@@ -157,30 +142,6 @@ class AlertsMappingApiMockServer(private val objectMapper: ObjectMapper) {
     mappingApi.stubMappingUpdateFailureFollowedBySuccess(url = "/mapping/alerts/$offenderNo/merge")
   }
 
-  fun stubMigrationCount(recordsMigrated: Long) {
-    mappingApi.stubFor(
-      get(urlPathMatching("/mapping/alerts/migration-id/.*/grouped-by-prisoner")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(200)
-          .withBody(
-            """
-              {
-                "totalElements": $recordsMigrated,
-                "content": [
-                  {
-                    "whenCreated": "${LocalDateTime.now()}"
-                  }
-                ]           
-              }
-            """.trimIndent(),
-          ),
-      ),
-    )
-  }
-
-  fun stubPostMappingsFailureFollowedBySuccess(offenderNo: String) = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/alerts/$offenderNo/all")
-
   fun stubDeleteMapping() {
     mappingApi.stubFor(
       delete(urlPathMatching("/mapping/alerts/dps-alert-id/.*")).willReturn(
@@ -198,35 +159,6 @@ class AlertsMappingApiMockServer(private val objectMapper: ObjectMapper) {
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
           .withBody(objectMapper.writeValueAsString(error)),
-      ),
-    )
-  }
-
-  fun stubSingleItemByMigrationId(migrationId: String = "2020-01-01T11:10:00", count: Int = 278887) {
-    mappingApi.stubFor(
-      get(urlPathMatching("/mapping/alerts/migration-id/.*")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withBody(
-            pageContent(
-              objectMapper = objectMapper,
-              content = listOf(
-                AlertMappingDto(
-                  dpsAlertId = UUID.randomUUID().toString(),
-                  nomisBookingId = 123456,
-                  nomisAlertSequence = 1,
-                  mappingType = MIGRATED,
-                  label = migrationId,
-                  offenderNo = "A1234KT",
-                  whenCreated = migrationId,
-                ),
-              ),
-              pageSize = 1L,
-              pageNumber = 0L,
-              totalElements = count.toLong(),
-              size = 1,
-            ),
-          ),
       ),
     )
   }

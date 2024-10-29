@@ -14,14 +14,6 @@ class SentencingService(@Qualifier("sentencingApiWebClient") private val webClie
     const val LEGACY_CONTENT_TYPE = "application/vnd.nomis-offence+json"
   }
 
-  suspend fun migrateSentencingAdjustment(sentencingAdjustment: LegacyAdjustment): LegacyAdjustmentCreatedResponse =
-    webClient.post()
-      .uri("/legacy/adjustments/migration")
-      .header("Content-Type", LEGACY_CONTENT_TYPE)
-      .bodyValue(sentencingAdjustment)
-      .retrieve()
-      .awaitBody()
-
   suspend fun createSentencingAdjustment(sentencingAdjustment: LegacyAdjustment): LegacyAdjustmentCreatedResponse =
     webClient.post()
       .uri("/legacy/adjustments")

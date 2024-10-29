@@ -10,7 +10,6 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.BookingAlertsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerAlertsResponse
@@ -61,36 +60,6 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubGetAlertsToMigrate(
-    offenderNo: String,
-    currentAlertCount: Long = 1,
-    alert: AlertResponse = AlertResponse(
-      bookingId = 1,
-      alertSequence = 1,
-      bookingSequence = 10,
-      alertCode = CodeDescription("XA", "TACT"),
-      type = CodeDescription("X", "Security"),
-      date = LocalDate.now(),
-      isActive = true,
-      isVerified = false,
-      audit = NomisAudit(
-        createDatetime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-        createUsername = "Q1251T",
-      ),
-    ),
-  ) {
-    val response = PrisonerAlertsResponse(
-      latestBookingAlerts = (1..currentAlertCount).map { alert.copy(bookingId = it, alertSequence = 1) },
-    )
-    nomisApi.stubFor(
-      get(urlEqualTo("/prisoners/$offenderNo/alerts/to-migrate")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(response)),
-      ),
-    )
-  }
   fun stubGetAlertsToResynchronise(
     offenderNo: String,
     bookingId: Long,
@@ -119,66 +88,6 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
           .withBody(objectMapper.writeValueAsString(response)),
-      ),
-    )
-  }
-
-  fun stubGetAlertsToMigrate(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
-    nomisApi.stubFor(
-      get(urlPathMatching("/prisoners/.+/alerts/to-migrate")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
-      ),
-    )
-  }
-
-  fun stubGetAlertsByBookingId(
-    bookingId: Long,
-    alertCount: Long = 1,
-    alert: AlertResponse = AlertResponse(
-      bookingId = 1,
-      alertSequence = 1,
-      bookingSequence = 10,
-      alertCode = CodeDescription("XA", "TACT"),
-      type = CodeDescription("X", "Security"),
-      date = LocalDate.now(),
-      isActive = true,
-      isVerified = false,
-      audit = NomisAudit(
-        createDatetime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-        createUsername = "Q1251T",
-      ),
-    ),
-  ) {
-    val response = BookingAlertsResponse(
-      alerts = (1..alertCount).map { alert.copy(bookingId = bookingId, alertSequence = it) },
-    )
-    nomisApi.stubFor(
-      get(urlEqualTo("/prisoners/booking-id/$bookingId/alerts")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(response)),
-      ),
-    )
-  }
-
-  fun stubGetPreviousBooking(offenderNo: String, bookingId: Long, oldBookingId: Long = 12345, oldBookingSequence: Long = 2) {
-    nomisApi.stubFor(
-      get(urlEqualTo("/prisoners/$offenderNo/bookings/$bookingId/previous")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-          .withBody(
-            """
-              {
-                "bookingId": $oldBookingId,
-                "bookingSequence": $oldBookingSequence
-              }
-            """.trimIndent(),
-          ),
       ),
     )
   }

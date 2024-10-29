@@ -16,12 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension.Companion.dpsAlertsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.dpsAlert
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.mergedAlert
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.migratedAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.resyncedAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.CreateAlert
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MergeAlert
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.MigrateAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.ResyncAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.UpdateAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
@@ -255,90 +251,6 @@ class AlertsDpsApiServiceTest {
   }
 
   @Nested
-  inner class MigrateAlerts {
-    @Test
-    internal fun `will pass oath2 token to service`() = runTest {
-      dpsAlertsServer.stubMigrateAlerts(offenderNo = "A1234KL")
-
-      apiService.migrateAlerts(
-        offenderNo = "A1234KL",
-        alerts = listOf(
-          MigrateAlert(
-            offenderBookId = 1234567,
-            bookingSeq = 1,
-            alertSeq = 2,
-            activeFrom = LocalDate.now(),
-            alertCode = "XA",
-            authorisedBy = null,
-            description = null,
-            createdBy = "B.MORRIS",
-            createdByDisplayName = "B. Morris",
-            createdAt = LocalDateTime.now(),
-          ),
-        ),
-      )
-
-      dpsAlertsServer.verify(
-        postRequestedFor(anyUrl())
-          .withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    internal fun `will pass alerts to service`() = runTest {
-      dpsAlertsServer.stubMigrateAlerts(offenderNo = "A1234KL")
-
-      apiService.migrateAlerts(
-        offenderNo = "A1234KL",
-        alerts = listOf(
-          MigrateAlert(
-            offenderBookId = 1234567,
-            bookingSeq = 1,
-            alertSeq = 2,
-            activeFrom = LocalDate.now(),
-            alertCode = "XA",
-            authorisedBy = null,
-            description = null,
-            createdBy = "B.MORRIS",
-            createdByDisplayName = "B. Morris",
-            createdAt = LocalDateTime.now(),
-          ),
-        ),
-      )
-
-      dpsAlertsServer.verify(
-        postRequestedFor(urlMatching("/migrate/A1234KL/alerts"))
-          .withRequestBody(matchingJsonPath("$[0].alertCode", equalTo("XA"))),
-      )
-    }
-
-    @Test
-    fun `will return dpsAlertIds`() = runTest {
-      dpsAlertsServer.stubMigrateAlerts(offenderNo = "A1234KL", response = listOf(migratedAlert().copy(alertUuid = UUID.fromString("f3f31737-6ee3-4ec5-8a79-0ac110fe50e2"))))
-
-      val dpsAlerts = apiService.migrateAlerts(
-        offenderNo = "A1234KL",
-        alerts = listOf(
-          MigrateAlert(
-            offenderBookId = 1234567,
-            bookingSeq = 1,
-            alertSeq = 2,
-            activeFrom = LocalDate.now(),
-            alertCode = "XA",
-            authorisedBy = null,
-            description = null,
-            createdBy = "B.MORRIS",
-            createdByDisplayName = "B. Morris",
-            createdAt = LocalDateTime.now(),
-          ),
-        ),
-      )
-
-      assertThat(dpsAlerts[0].alertUuid.toString()).isEqualTo("f3f31737-6ee3-4ec5-8a79-0ac110fe50e2")
-    }
-  }
-
-  @Nested
   inner class ResynchroniseAlerts {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
@@ -419,88 +331,6 @@ class AlertsDpsApiServiceTest {
       )
 
       assertThat(dpsAlerts[0].alertUuid.toString()).isEqualTo("f3f31737-6ee3-4ec5-8a79-0ac110fe50e2")
-    }
-  }
-
-  @Nested
-  inner class MergeAlerts {
-    @Test
-    internal fun `will pass oath2 token to service`() = runTest {
-      dpsAlertsServer.stubMergePrisonerAlerts()
-
-      apiService.mergePrisonerAlerts(
-        offenderNo = "A1234KL",
-        removedOffenderNo = "A1000KL",
-        alerts = listOf(
-          MergeAlert(
-            offenderBookId = 1234567,
-            alertSeq = 2,
-            activeFrom = LocalDate.now(),
-            alertCode = "XA",
-            authorisedBy = null,
-            description = null,
-          ),
-        ),
-        retainedAlertIds = listOf(UUID.randomUUID().toString()),
-      )
-
-      dpsAlertsServer.verify(
-        postRequestedFor(anyUrl())
-          .withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    internal fun `will pass alerts to service`() = runTest {
-      dpsAlertsServer.stubMergePrisonerAlerts()
-
-      apiService.mergePrisonerAlerts(
-        offenderNo = "A1234KL",
-        removedOffenderNo = "A1000KL",
-        alerts = listOf(
-          MergeAlert(
-            offenderBookId = 1234567,
-            alertSeq = 2,
-            activeFrom = LocalDate.now(),
-            alertCode = "XA",
-            authorisedBy = null,
-            description = null,
-          ),
-        ),
-        retainedAlertIds = listOf("a01b4d92-8d19-4a7e-8fd7-85b4c5e296bb", "20640934-cd38-481e-9826-51da09a17f77"),
-      )
-
-      dpsAlertsServer.verify(
-        postRequestedFor(urlMatching("/merge-alerts"))
-          .withRequestBody(matchingJsonPath("prisonNumberMergeFrom", equalTo("A1000KL")))
-          .withRequestBody(matchingJsonPath("prisonNumberMergeTo", equalTo("A1234KL")))
-          .withRequestBody(matchingJsonPath("newAlerts[0].alertCode", equalTo("XA")))
-          .withRequestBody(matchingJsonPath("retainedAlertUuids[0]", equalTo("a01b4d92-8d19-4a7e-8fd7-85b4c5e296bb")))
-          .withRequestBody(matchingJsonPath("retainedAlertUuids[1]", equalTo("20640934-cd38-481e-9826-51da09a17f77"))),
-      )
-    }
-
-    @Test
-    fun `will return dpsAlertIds`() = runTest {
-      dpsAlertsServer.stubMergePrisonerAlerts(created = listOf(mergedAlert().copy(alertUuid = UUID.fromString("f3f31737-6ee3-4ec5-8a79-0ac110fe50e2"))))
-
-      val response = apiService.mergePrisonerAlerts(
-        offenderNo = "A1234KL",
-        removedOffenderNo = "A1000KL",
-        alerts = listOf(
-          MergeAlert(
-            offenderBookId = 1234567,
-            alertSeq = 2,
-            activeFrom = LocalDate.now(),
-            alertCode = "XA",
-            authorisedBy = null,
-            description = null,
-          ),
-        ),
-        retainedAlertIds = listOf(UUID.randomUUID().toString()),
-      )
-
-      assertThat(response.alertsCreated[0].alertUuid.toString()).isEqualTo("f3f31737-6ee3-4ec5-8a79-0ac110fe50e2")
     }
   }
 }

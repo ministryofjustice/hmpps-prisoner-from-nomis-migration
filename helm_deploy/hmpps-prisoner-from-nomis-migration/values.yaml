@@ -57,8 +57,6 @@ generic-service:
       SENTENCING_CLIENT_SECRET: "SENTENCING_CLIENT_SECRET"
       ACTIVITIES_CLIENT_ID: "ACTIVITIES_CLIENT_ID"
       ACTIVITIES_CLIENT_SECRET: "ACTIVITIES_CLIENT_SECRET"
-      ADJUDICATIONS_CLIENT_ID: "ADJUDICATIONS_CLIENT_ID"
-      ADJUDICATIONS_CLIENT_SECRET: "ADJUDICATIONS_CLIENT_SECRET"
       INCIDENTS_CLIENT_ID: "INCIDENTS_CLIENT_ID"
       INCIDENTS_CLIENT_SECRET: "INCIDENTS_CLIENT_SECRET"
       CSIP_CLIENT_ID: "CSIP_CLIENT_ID"
@@ -79,18 +77,10 @@ generic-service:
       HMPPS_SQS_QUEUES_MIGRATIONVISITS_QUEUE_NAME: "sqs_name"
     sqs-migration-visits-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONVISITS_DLQ_NAME: "sqs_name"
-    sqs-migration-sentencing-queue:
-      HMPPS_SQS_QUEUES_MIGRATIONSENTENCING_QUEUE_NAME: "sqs_name"
-    sqs-migration-sentencing-dlq:
-      HMPPS_SQS_QUEUES_MIGRATIONSENTENCING_DLQ_NAME: "sqs_name"
     sqs-migration-appointments-queue:
       HMPPS_SQS_QUEUES_MIGRATIONAPPOINTMENTS_QUEUE_NAME: "sqs_name"
     sqs-migration-appointments-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONAPPOINTMENTS_DLQ_NAME: "sqs_name"
-    sqs-migration-adjudications-queue:
-      HMPPS_SQS_QUEUES_MIGRATIONADJUDICATIONS_QUEUE_NAME: "sqs_name"
-    sqs-migration-adjudications-dlq:
-      HMPPS_SQS_QUEUES_MIGRATIONADJUDICATIONS_DLQ_NAME: "sqs_name"
     sqs-migration-activities-queue:
       HMPPS_SQS_QUEUES_MIGRATIONACTIVITIES_QUEUE_NAME: "sqs_name"
     sqs-migration-activities-dlq:
@@ -111,10 +101,6 @@ generic-service:
       HMPPS_SQS_QUEUES_MIGRATIONLOCATIONS_QUEUE_NAME: "sqs_name"
     sqs-migration-locations-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONLOCATIONS_DLQ_NAME: "sqs_name"
-    sqs-migration-alerts-queue:
-      HMPPS_SQS_QUEUES_MIGRATIONALERTS_QUEUE_NAME: "sqs_name"
-    sqs-migration-alerts-dlq:
-      HMPPS_SQS_QUEUES_MIGRATIONALERTS_DLQ_NAME: "sqs_name"
     sqs-migration-casenotes-queue:
       HMPPS_SQS_QUEUES_MIGRATIONCASENOTES_QUEUE_NAME: "sqs_name"
     sqs-migration-casenotes-dlq:

@@ -61,7 +61,6 @@ tasks {
     dependsOn(
       "buildActivityApiModel",
       "buildNomisSyncApiModel",
-      "buildAdjudicationApiModel",
       "buildIncidentsApiModel",
       "buildCsipApiModel",
       "buildLocationsApiModel",
@@ -80,7 +79,6 @@ tasks {
     mustRunAfter(
       "buildActivityApiModel",
       "buildNomisSyncApiModel",
-      "buildAdjudicationApiModel",
       "buildIncidentsApiModel",
       "buildCsipApiModel",
       "buildLocationsApiModel",
@@ -98,7 +96,6 @@ tasks {
     mustRunAfter(
       "buildActivityApiModel",
       "buildNomisSyncApiModel",
-      "buildAdjudicationApiModel",
       "buildIncidentsApiModel",
       "buildCsipApiModel",
       "buildLocationsApiModel",
@@ -149,17 +146,6 @@ tasks.register("buildMappingServiceApiModel", GenerateTask::class) {
   outputDir.set("$buildDirectory/generated/mappings")
   modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model")
   apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api")
-  configOptions.set(configValues)
-  globalProperties.set(mapOf("models" to ""))
-}
-
-tasks.register("buildAdjudicationApiModel", GenerateTask::class) {
-  generatorName.set("kotlin")
-  skipValidateSpec.set(true)
-  inputSpec.set("openapi-specs/adjudications-api-docs.json")
-  outputDir.set("$buildDirectory/generated/adjudications")
-  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.model")
-  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.adjudications.api")
   configOptions.set(configValues)
   globalProperties.set(mapOf("models" to ""))
 }
@@ -262,7 +248,7 @@ tasks.register("buildContactPersonApiModel", GenerateTask::class) {
 
 val generatedProjectDirs =
   listOf(
-    "activities", "adjudications", "incidents", "csip", "locations", "casenotes",
+    "activities", "incidents", "csip", "locations", "casenotes",
     "nomissync", "mappings", "sentencingadjustments", "alerts", "courtsentencing", "prisonperson", "contactperson",
   )
 

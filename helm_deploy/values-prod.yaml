@@ -20,7 +20,6 @@ generic-service:
     API_BASE_URL_INCIDENTS: https://incident-reporting-api.hmpps.service.justice.gov.uk
     API_BASE_URL_LOCATIONS: https://locations-inside-prison-api.hmpps.service.justice.gov.uk
     API_BASE_URL_CASENOTES: https://offender-case-notes.service.justice.gov.uk
-    API_BASE_URL_ADJUDICATIONS: https://manage-adjudications-api.hmpps.service.justice.gov.uk
     API_BASE_URL_ALERTS: https://alerts-api.hmpps.service.justice.gov.uk
     API_BASE_URL_COURT_SENTENCING: https://remand-and-sentencing-api.hmpps.service.justice.gov.uk
     API_BASE_URL_PRISON_PERSON: https://prison-person-api.prison.service.justice.gov.uk

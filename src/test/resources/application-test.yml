@@ -12,7 +12,6 @@ api.base.url:
   mapping: http://localhost:8083
   sentencing: http://localhost:8085
   activities: http://localhost:8086
-  adjudications: http://localhost:8087
   csip: http://localhost:8088
   incidents: http://localhost:8089
   # do not use port 8091 - clashes on some Macs
@@ -24,9 +23,6 @@ api.base.url:
   contact.person: http://localhost:8097
 
 visits:
-  page:
-    size: 10
-sentencing:
   page:
     size: 10
 appointments:
@@ -44,9 +40,6 @@ allocations:
   complete-check:
     delay-seconds: 1
     count: 1
-adjudications:
-  page:
-    size: 10
 incidents:
   page:
     size: 10
@@ -59,13 +52,6 @@ locations:
 casenotes:
   page:
     size: 10
-alerts:
-  complete-check:
-    delay-seconds: 1
-    count: 1
-  page:
-    size: 10
-  has-migrated-data: true
 courtsentencing:
   complete-check:
     delay-seconds: 1
@@ -111,8 +97,6 @@ complete-check:
 hmpps.sqs:
   provider: localstack
   queues:
-    migrationsentencing:
-      dlqMaxReceiveCount: 2
     migrationcasenotes:
       dlqMaxReceiveCount: 2
     migrationprisonperson:
