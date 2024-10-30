@@ -52,7 +52,7 @@ class MigrationQueueService(
         .eventTypeMessageAttributes("prisoner-from-nomis-migration-${context.type.telemetryName}", noTracing = noTracing)
         .delaySeconds(delaySeconds)
         .build(),
-    ).thenAccept {
+    ).await().also {
       telemetryClient.trackEvent(
         message.name,
         mapOf("messageId" to it.messageId(), "migrationId" to context.migrationId),

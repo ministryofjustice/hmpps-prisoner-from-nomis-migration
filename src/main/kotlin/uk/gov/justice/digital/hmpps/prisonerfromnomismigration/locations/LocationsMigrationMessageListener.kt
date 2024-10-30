@@ -24,7 +24,7 @@ class LocationsMigrationMessageListener(
 ) {
 
   @SqsListener(LOCATIONS_QUEUE_ID, factory = "hmppsQueueContainerFactoryProxy")
-  fun onLocationMessage(message: String, rawMessage: Message): CompletableFuture<Void>? {
+  fun onLocationMessage(message: String, rawMessage: Message): CompletableFuture<Void?> {
     return onMessage(message, rawMessage)
   }
 

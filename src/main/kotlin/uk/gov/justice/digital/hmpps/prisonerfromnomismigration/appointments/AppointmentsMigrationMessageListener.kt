@@ -23,7 +23,7 @@ class AppointmentsMigrationMessageListener(
 ) {
 
   @SqsListener(APPOINTMENTS_QUEUE_ID, factory = "hmppsQueueContainerFactoryProxy")
-  fun onAppointmentsMessage(message: String, rawMessage: Message): CompletableFuture<Void>? {
+  fun onAppointmentsMessage(message: String, rawMessage: Message): CompletableFuture<Void?> {
     return onMessage(message, rawMessage)
   }
 

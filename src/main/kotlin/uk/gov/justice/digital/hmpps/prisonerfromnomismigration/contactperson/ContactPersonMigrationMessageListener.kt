@@ -29,7 +29,7 @@ class ContactPersonMigrationMessageListener(
     maxConcurrentMessages = "8",
     maxMessagesPerPoll = "8",
   )
-  fun onContactPersonMessage(message: String, rawMessage: Message): CompletableFuture<Void>? = onMessage(message, rawMessage)
+  fun onContactPersonMessage(message: String, rawMessage: Message): CompletableFuture<Void?> = onMessage(message, rawMessage)
 
   override fun parseContextFilter(json: String): MigrationMessage<*, ContactPersonMigrationFilter> = objectMapper.readValue(json)
 

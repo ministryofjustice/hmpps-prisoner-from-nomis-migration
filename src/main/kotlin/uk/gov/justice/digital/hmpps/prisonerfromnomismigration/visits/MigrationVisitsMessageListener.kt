@@ -23,7 +23,7 @@ class MigrationVisitsMessageListener(
 ) {
 
   @SqsListener(VISITS_QUEUE_ID, factory = "hmppsQueueContainerFactoryProxy")
-  fun onVisitMessage(message: String, rawMessage: Message): CompletableFuture<Void>? {
+  fun onVisitMessage(message: String, rawMessage: Message): CompletableFuture<Void?> {
     return onMessage(message, rawMessage)
   }
 

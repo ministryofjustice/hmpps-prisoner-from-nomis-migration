@@ -29,7 +29,7 @@ class CaseNotesMigrationMessageListener(
     maxConcurrentMessages = "8",
     maxMessagesPerPoll = "8",
   )
-  fun onCaseNoteMessage(message: String, rawMessage: Message): CompletableFuture<Void>? {
+  fun onCaseNoteMessage(message: String, rawMessage: Message): CompletableFuture<Void?> {
     return onMessage(message, rawMessage)
   }
 

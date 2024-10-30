@@ -35,13 +35,13 @@ class SynchronisationQueueService(
         .messageBody(sqsMessage.toJson())
         .eventTypeMessageAttributes("prisoner-from-nomis-synchronisation-$messageType")
         .build(),
-    ).thenAccept {
+    ).await().also {
       telemetryClient.trackEvent(
         messageType,
         mapOf("messageId" to it.messageId()),
         null,
       )
-    }.await()
+    }
   }
 
   private fun Any.toJson() = objectMapper.writeValueAsString(this)
