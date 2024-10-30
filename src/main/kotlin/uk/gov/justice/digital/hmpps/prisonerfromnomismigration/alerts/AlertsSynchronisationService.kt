@@ -62,7 +62,8 @@ class AlertsSynchronisationService(
             telemetryClient.trackEvent("alert-synchronisation-created-ignored-previous-booking", telemetry + ("bookingSequence" to nomisAlert.bookingSequence))
           } else {
             dpsApiService.createAlert(
-              nomisAlert.toDPSCreateAlert(event.offenderIdDisplay),
+              offenderNo = event.offenderIdDisplay,
+              nomisAlert.toDPSCreateAlert(),
               createdByUsername = nomisAlert.audit.createUsername,
             ).run {
               tryToCreateMapping(

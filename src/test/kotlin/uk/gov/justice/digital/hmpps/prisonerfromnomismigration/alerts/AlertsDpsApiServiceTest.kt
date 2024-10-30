@@ -38,8 +38,8 @@ class AlertsDpsApiServiceTest {
       dpsAlertsServer.stubPostAlert("A1234KL")
 
       apiService.createAlert(
+        offenderNo = "A1234KL",
         alert = CreateAlert(
-          prisonNumber = "A1234KL",
           activeFrom = LocalDate.now(),
           alertCode = "XA",
         ),
@@ -57,8 +57,8 @@ class AlertsDpsApiServiceTest {
       dpsAlertsServer.stubPostAlert("A1234KL")
 
       apiService.createAlert(
+        offenderNo = "A1234KL",
         alert = CreateAlert(
-          prisonNumber = "A1234KL",
           activeFrom = LocalDate.now(),
           alertCode = "XA",
         ),
@@ -76,8 +76,8 @@ class AlertsDpsApiServiceTest {
       dpsAlertsServer.stubPostAlert("A1234KL")
 
       apiService.createAlert(
+        offenderNo = "A1234KL",
         alert = CreateAlert(
-          prisonNumber = "A1234KL",
           activeFrom = LocalDate.now(),
           alertCode = "XA",
         ),
@@ -95,8 +95,8 @@ class AlertsDpsApiServiceTest {
       dpsAlertsServer.stubPostAlert("A1234KL")
 
       apiService.createAlert(
+        offenderNo = "A1234KL",
         alert = CreateAlert(
-          prisonNumber = "A1234KL",
           activeFrom = LocalDate.now(),
           alertCode = "XA",
         ),
@@ -114,8 +114,8 @@ class AlertsDpsApiServiceTest {
       dpsAlertsServer.stubPostAlert("A1234KL", response = dpsAlert().copy(alertUuid = UUID.fromString("f3f31737-6ee3-4ec5-8a79-0ac110fe50e2")))
 
       val dpsAlert = apiService.createAlert(
+        offenderNo = "A1234KL",
         alert = CreateAlert(
-          prisonNumber = "A1234KL",
           activeFrom = LocalDate.now(),
           alertCode = "XA",
         ),
