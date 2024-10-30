@@ -24,7 +24,7 @@ class AllocationsMigrationMessageListener(
 ) {
 
   @SqsListener(ALLOCATIONS_QUEUE_ID, factory = "hmppsQueueContainerFactoryProxy")
-  fun onActivitiesMessage(message: String, rawMessage: Message): CompletableFuture<Void>? {
+  fun onActivitiesMessage(message: String, rawMessage: Message): CompletableFuture<Void?> {
     return onMessage(message, rawMessage)
   }
 

@@ -24,7 +24,7 @@ class CSIPMigrationMessageListener(
 ) {
 
   @SqsListener(CSIP_QUEUE_ID, factory = "hmppsQueueContainerFactoryProxy", maxConcurrentMessages = "8", maxMessagesPerPoll = "8")
-  fun onCSIPMessage(message: String, rawMessage: Message): CompletableFuture<Void>? {
+  fun onCSIPMessage(message: String, rawMessage: Message): CompletableFuture<Void?> {
     return onMessage(message, rawMessage)
   }
 
