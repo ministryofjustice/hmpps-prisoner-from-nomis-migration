@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-10-11.9458.fe77e26"
+    "version": "2024-10-29.9687.0f17b24"
   },
   "servers": [
     {
@@ -5167,7 +5167,7 @@
         }
       }
     },
-    "/prisoners/{offenderNo}/sentencing/court-cases/{caseId}/case_identifiers": {
+    "/prisoners/{offenderNo}/sentencing/court-cases/{caseId}/case-identifiers": {
       "post": {
         "tags": [
           "sentencing-resource"
@@ -5205,7 +5205,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CourtAppearanceRequest"
+                "$ref": "#/components/schemas/CaseIdentifierRequest"
               }
             }
           },
@@ -7952,14 +7952,14 @@
         }
       }
     },
-    "/prisoners/{offenderNo}/csip/to-migrate": {
+    "/prisoners/{offenderNo}/csip/reconciliation": {
       "get": {
         "tags": [
           "csip-resource"
         ],
-        "summary": "Gets csips for an offender",
-        "description": "Retrieves csips for a prisoner from all bookings. Requires ROLE_NOMIS_CSIP",
-        "operationId": "getCSIPsToMigrate",
+        "summary": "Gets csips for an offender for reconciliation",
+        "description": "Retrieves a list of csips for a prisoner. Requires ROLE_NOMIS_CSIP",
+        "operationId": "getCSIPsForPrisoner",
         "parameters": [
           {
             "name": "offenderNo",
@@ -8234,8 +8234,8 @@
         "tags": [
           "prisoners-resource"
         ],
-        "summary": "Gets the identifiers for all prisoners. By default only active prisoners will be return unless active=false",
-        "description": "Requires role SYNCHRONISATION_REPORTING.",
+        "summary": "Gets the identifiers for all prisoners. By default only active prisoners will be returned unless active=false",
+        "description": "Requires role SYNCHRONISATION_REPORTING or ROLE_NOMIS_ALERTS.",
         "operationId": "getPrisonerIdentifiers",
         "parameters": [
           {
@@ -8298,7 +8298,7 @@
           "prisoners-resource"
         ],
         "summary": "Gets the identifier for all prisoners.",
-        "description": "Requires role SYNCHRONISATION_REPORTING.",
+        "description": "Requires role SYNCHRONISATION_REPORTING, NOMIS_ALERTS or NOMIS_PRISON_PERSON.",
         "operationId": "getAllPrisoners",
         "parameters": [
           {
@@ -8317,6 +8317,73 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PagePrisonerId"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint when role SYNCHRONISATION_REPORTING or ROLE_NOMIS_ALERTS not present",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisoners/ids/all-from-id": {
+      "get": {
+        "tags": [
+          "prisoners-resource"
+        ],
+        "summary": "Gets the identifier for all prisoners.",
+        "description": "Gets the specified number of prisoners starting after the given id number.\n      Clients can iterate through all prisoners by calling this endpoint using the id from the last call (omit for first call).\n      Requires role SYNCHRONISATION_REPORTING or NOMIS_CASENOTES.",
+        "operationId": "getAllPrisonersFromId",
+        "parameters": [
+          {
+            "name": "offenderId",
+            "in": "query",
+            "description": "If supplied get offenders starting after this id",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "If supplied get offenders starting after this id",
+              "example": 1555999
+            },
+            "example": 1555999
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Number of offenders to get",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Number of offenders to get",
+              "default": "10"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "list of prisoner ids",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrisonerNosWithLast"
                 }
               }
             }
@@ -13357,7 +13424,7 @@
         },
         "description": "Incentive information"
       },
-      "ResponseMapping": {
+      "CSIPComponent": {
         "required": [
           "component",
           "dpsId",
@@ -13390,7 +13457,7 @@
       },
       "UpsertCSIPResponse": {
         "required": [
-          "mappings",
+          "components",
           "nomisCSIPReportId",
           "offenderNo"
         ],
@@ -13405,11 +13472,11 @@
             "type": "string",
             "description": "The prisoner nomis Id relating to this csip"
           },
-          "mappings": {
+          "components": {
             "type": "array",
             "description": "Any new CSIP components that were created",
             "items": {
-              "$ref": "#/components/schemas/ResponseMapping"
+              "$ref": "#/components/schemas/CSIPComponent"
             }
           }
         },
@@ -14523,6 +14590,18 @@
             "type": "number",
             "description": "The half day rate",
             "example": 0.5
+          },
+          "startDate": {
+            "type": "string",
+            "description": "Pay rate start date, null means 'before every other rate'",
+            "format": "date",
+            "example": "2022-08-12"
+          },
+          "endDate": {
+            "type": "string",
+            "description": "Pay rate end date, if not passed will be derived from start dates",
+            "format": "date",
+            "example": "2022-08-12"
           }
         },
         "description": "Course activity creation request pay rates"
@@ -15076,6 +15155,39 @@
           }
         },
         "description": "Create court case response"
+      },
+      "CaseIdentifier": {
+        "required": [
+          "createdDate",
+          "reference"
+        ],
+        "type": "object",
+        "properties": {
+          "reference": {
+            "type": "string"
+          },
+          "createdDate": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "example": "2021-07-05T10:35:17"
+          }
+        },
+        "description": "Court case associated reference"
+      },
+      "CaseIdentifierRequest": {
+        "required": [
+          "caseIdentifiers"
+        ],
+        "type": "object",
+        "properties": {
+          "caseIdentifiers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaseIdentifier"
+            }
+          }
+        },
+        "description": "Case identifier list"
       },
       "CreateCaseNoteResponse": {
         "required": [
@@ -16966,13 +17078,13 @@
       "PageVisitIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -17416,13 +17528,13 @@
       "PageQuestionnaireIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -19286,13 +19398,13 @@
       "PagePrisonerIds": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -19356,13 +19468,13 @@
       "PagePrisonerId": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -19415,6 +19527,25 @@
           }
         },
         "description": "Prisoner identifier"
+      },
+      "PrisonerNosWithLast": {
+        "required": [
+          "lastOffenderId",
+          "prisonerIds"
+        ],
+        "type": "object",
+        "properties": {
+          "prisonerIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PrisonerId"
+            }
+          },
+          "lastOffenderId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
       },
       "SentenceResponse": {
         "required": [
@@ -19846,6 +19977,7 @@
       "ContactForPrisoner": {
         "required": [
           "bookingId",
+          "bookingSequence",
           "firstName",
           "lastName",
           "offenderNo"
@@ -19855,6 +19987,11 @@
           "bookingId": {
             "type": "integer",
             "description": "Unique NOMIS Id of booking associated with the prisoner",
+            "format": "int64"
+          },
+          "bookingSequence": {
+            "type": "integer",
+            "description": "Booking sequence this contact is related to. WHen 1 this indicates contact is for current term",
             "format": "int64"
           },
           "offenderNo": {
@@ -20005,6 +20142,7 @@
       },
       "ContactRestriction": {
         "required": [
+          "audit",
           "effectiveDate",
           "enteredStaff",
           "id",
@@ -20036,13 +20174,17 @@
           },
           "enteredStaff": {
             "$ref": "#/components/schemas/ContactRestrictionEnteredStaff"
+          },
+          "audit": {
+            "$ref": "#/components/schemas/NomisAudit"
           }
         },
         "description": "The data held in NOMIS about a person's restriction with a prisoner"
       },
       "ContactRestrictionEnteredStaff": {
         "required": [
-          "staffId"
+          "staffId",
+          "username"
         ],
         "type": "object",
         "properties": {
@@ -20050,6 +20192,10 @@
             "type": "integer",
             "description": "NOMIS staff id",
             "format": "int64"
+          },
+          "username": {
+            "type": "string",
+            "description": "username for staff member. For staff with multiple accounts this will be the general account username."
           }
         },
         "description": "Staff member who created the restriction"
@@ -20057,6 +20203,7 @@
       "PersonAddress": {
         "required": [
           "addressId",
+          "audit",
           "mailAddress",
           "phoneNumbers",
           "primaryAddress",
@@ -20142,6 +20289,9 @@
             "type": "string",
             "description": "Date address was valid to",
             "format": "date"
+          },
+          "audit": {
+            "$ref": "#/components/schemas/NomisAudit"
           }
         },
         "description": "The data held in NOMIS about a address number"
@@ -20150,6 +20300,7 @@
         "required": [
           "active",
           "approvedVisitor",
+          "audit",
           "contactType",
           "emergencyContact",
           "id",
@@ -20205,12 +20356,16 @@
             "items": {
               "$ref": "#/components/schemas/ContactRestriction"
             }
+          },
+          "audit": {
+            "$ref": "#/components/schemas/NomisAudit"
           }
         },
         "description": "The data held in NOMIS about a person's contact with a prisoner"
       },
       "PersonEmailAddress": {
         "required": [
+          "audit",
           "email",
           "emailAddressId"
         ],
@@ -20225,6 +20380,9 @@
             "type": "string",
             "description": "The email address",
             "example": "john.smith@internet.co.uk"
+          },
+          "audit": {
+            "$ref": "#/components/schemas/NomisAudit"
           }
         },
         "description": "The data held in NOMIS about a email address"
@@ -20232,6 +20390,7 @@
       "PersonEmployment": {
         "required": [
           "active",
+          "audit",
           "sequence"
         ],
         "type": "object",
@@ -20247,6 +20406,9 @@
           "active": {
             "type": "boolean",
             "description": "True is employment is active"
+          },
+          "audit": {
+            "$ref": "#/components/schemas/NomisAudit"
           }
         },
         "description": "The data held in NOMIS about a person's employment"
@@ -20272,6 +20434,7 @@
       },
       "PersonIdentifier": {
         "required": [
+          "audit",
           "identifier",
           "sequence",
           "type"
@@ -20295,12 +20458,16 @@
             "type": "string",
             "description": "The issued authority",
             "example": "Police"
+          },
+          "audit": {
+            "$ref": "#/components/schemas/NomisAudit"
           }
         },
         "description": "The data held in NOMIS about a person's identifiers"
       },
       "PersonPhoneNumber": {
         "required": [
+          "audit",
           "number",
           "phoneId",
           "type"
@@ -20322,6 +20489,9 @@
           },
           "type": {
             "$ref": "#/components/schemas/CodeDescription"
+          },
+          "audit": {
+            "$ref": "#/components/schemas/NomisAudit"
           }
         },
         "description": "The data held in NOMIS about a phone number"
@@ -20329,13 +20499,13 @@
       "PagePersonIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -20485,13 +20655,13 @@
       "PageNonAssociationIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -20743,13 +20913,13 @@
       "PageLocationIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -21326,13 +21496,13 @@
       "PageIncidentIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -21449,13 +21619,13 @@
       "PageIncentiveIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -21593,13 +21763,13 @@
       "PageCSIPIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -21656,13 +21826,13 @@
       "PageCourtCaseIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -21852,13 +22022,13 @@
       "PageAppointmentIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -22181,13 +22351,13 @@
       "PageFindActiveAllocationIdsResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -22249,13 +22419,13 @@
       "PageAdjustmentIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -22323,13 +22493,13 @@
       "PageAdjudicationChargeIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -22631,13 +22801,13 @@
       "PageFindActiveActivityIdsResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"

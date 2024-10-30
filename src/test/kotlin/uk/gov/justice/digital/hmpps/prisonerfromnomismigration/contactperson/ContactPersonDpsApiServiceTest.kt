@@ -3,13 +3,14 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiExtension.Companion.dpsContactPersonServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.CreateContactRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.migrateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 
 @SpringAPIServiceTest
@@ -19,23 +20,28 @@ class ContactPersonDpsApiServiceTest {
   private lateinit var apiService: ContactPersonDpsApiService
 
   @Nested
-  inner class CreatePerson {
+  inner class MigrateContact {
     @Test
     internal fun `will pass oath2 token to contact endpoint`() = runTest {
-      dpsContactPersonServer.stubCreatePerson()
+      dpsContactPersonServer.stubMigrateContact()
 
-      apiService.createPerson(createContactRequest())
+      apiService.migrateContact(migrateContactRequest())
 
       dpsContactPersonServer.verify(
         postRequestedFor(anyUrl())
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
-  }
 
-  private fun createContactRequest(): CreateContactRequest = CreateContactRequest(
-    firstName = "John",
-    lastName = "Smith",
-    createdBy = "QT12334",
-  )
+    @Test
+    fun `will call the migrate endpoint`() = runTest {
+      dpsContactPersonServer.stubMigrateContact()
+
+      apiService.migrateContact(migrateContactRequest())
+
+      dpsContactPersonServer.verify(
+        postRequestedFor(urlPathEqualTo("/migrate/contact")),
+      )
+    }
+  }
 }

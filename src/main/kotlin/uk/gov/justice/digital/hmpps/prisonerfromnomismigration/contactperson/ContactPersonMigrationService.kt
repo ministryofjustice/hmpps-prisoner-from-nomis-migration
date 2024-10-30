@@ -5,6 +5,8 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateContactRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateContactResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
@@ -58,7 +60,7 @@ class ContactPersonMigrationService(
       log.info("Will not migrate the nomis person=$nomisPersonId since it was already mapped to DPS contact ${this.dpsId} during migration ${this.label}")
     } ?: run {
       val person = nomisApiService.getPerson(nomisPersonId = context.body.personId)
-      val mapping = dpsApiService.migratePersonContact(person.toDpsMigrateContactRequest()).toContactPersonMappingsDto(context.migrationId)
+      val mapping = dpsApiService.migrateContact(person.toDpsMigrateContactRequest()).toContactPersonMappingsDto(context.migrationId)
       createMappingOrOnFailureDo(context, mapping) {
         queueService.sendMessage(
           MigrationMessageType.RETRY_MIGRATION_MAPPING,
@@ -112,31 +114,35 @@ class ContactPersonMigrationService(
   }
 }
 
-// speculative code of how the DPS mapping might mapping to our mappings
-private fun DpsContactPersonMapping.toContactPersonMappingsDto(migrationId: String) = ContactPersonMappingsDto(
+private fun MigrateContactResponse.toContactPersonMappingsDto(migrationId: String) = ContactPersonMappingsDto(
   mappingType = ContactPersonMappingsDto.MappingType.MIGRATED,
   label = migrationId,
-  personMapping = person.toContactPersonSimpleMappingIdDto(),
-  personAddressMapping = addresses.map { it.toContactPersonSimpleMappingIdDto() },
-  personPhoneMapping = phoneNumbers.map { it.toContactPersonSimpleMappingIdDto() },
-  personEmailMapping = emailAddresses.map { it.toContactPersonSimpleMappingIdDto() },
-  personEmploymentMapping = employments.map { it.toContactPersonSimpleMappingIdDto() },
-  personIdentifierMapping = identifiers.map { it.toContactPersonSimpleMappingIdDto() },
-  personRestrictionMapping = restrictions.map { it.toContactPersonSimpleMappingIdDto() },
-  personContactMapping = contacts.map { it.toContactPersonSimpleMappingIdDto() },
-  personContactRestrictionMapping = contactRestrictions.map { it.toContactPersonSimpleMappingIdDto() },
+  personMapping = ContactPersonSimpleMappingIdDto(dpsId = this.dpsContactId.toString(), nomisId = this.nomisPersonId),
+  personAddressMapping = addresses.map { ContactPersonSimpleMappingIdDto(dpsId = it.dpsId.toString(), nomisId = it.nomisId) },
+  personPhoneMapping = phoneNumbers.map { ContactPersonSimpleMappingIdDto(dpsId = it.dpsId.toString(), nomisId = it.nomisId) },
+  personEmailMapping = emailAddresses.map { ContactPersonSimpleMappingIdDto(dpsId = it.dpsId.toString(), nomisId = it.nomisId) },
+  // TODO - when in DPS response
+  personEmploymentMapping = emptyList(),
+  personIdentifierMapping = identities.map { ContactPersonSequenceMappingIdDto(dpsId = it.dpsId.toString(), nomisSequenceNumber = it.nomisId, nomisPersonId = this.nomisPersonId) },
+  // TODO - when in DPS response
+  personRestrictionMapping = emptyList(),
+  personContactMapping = prisonerContacts.map { ContactPersonSimpleMappingIdDto(dpsId = it.dpsId.toString(), nomisId = it.nomisId) },
+  personContactRestrictionMapping = prisonerContactRestrictions.map { ContactPersonSimpleMappingIdDto(dpsId = it.dpsId.toString(), nomisId = it.nomisId) },
 
 )
 
-private fun DpsToNomisId.toContactPersonSimpleMappingIdDto() = ContactPersonSimpleMappingIdDto(
-  dpsId = dpsId,
-  nomisId = nomisId,
-)
-private fun DpsToNomisIdWithSequence.toContactPersonSimpleMappingIdDto() = ContactPersonSequenceMappingIdDto(
-  dpsId = dpsId,
-  nomisPersonId = nomisId,
-  nomisSequenceNumber = nomisSequence,
-)
+private fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateContactRequest(
+  // TODO map these correctly when final version released
+  personId = this.personId,
+  lastName = this.lastName,
+  firstName = this.firstName,
+  remitter = false,
+  staff = false,
+  keepBiometrics = this.keepBiometrics,
+  interpreterRequired = this.interpreterRequired,
+  phoneNumbers = emptyList(),
+  addresses = emptyList(),
+  emailAddresses = emptyList(),
+  identifiers = emptyList(),
 
-// NO DPS DTO defined yet - so just use the NOMIS model
-private fun ContactPerson.toDpsMigrateContactRequest(): ContactPerson = this
+)

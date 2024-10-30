@@ -98,20 +98,18 @@ fun contactPerson(): ContactPerson = ContactPerson(
   lastName = "KOBE",
   interpreterRequired = false,
   keepBiometrics = false,
-  audit = NomisAudit(
-    createDatetime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-    createUsername = "Q1251T",
-  ),
-  phoneNumbers = listOf(PersonPhoneNumber(phoneId = 1, number = "0114555555", type = CodeDescription(code = "HOME", description = "Home"))),
-  addresses = listOf(PersonAddress(addressId = 1, phoneNumbers = listOf(PersonPhoneNumber(phoneId = 2, number = "0114555555", type = CodeDescription(code = "HOME", description = "Home"))), validatedPAF = false, primaryAddress = true, mailAddress = true)),
-  emailAddresses = listOf(PersonEmailAddress(emailAddressId = 1, email = "test@justice.gov.uk")),
-  employments = listOf(PersonEmployment(sequence = 1, active = true, corporate = PersonEmploymentCorporate(id = 1, name = "Police"))),
+  audit = nomisAudit(),
+  phoneNumbers = listOf(PersonPhoneNumber(phoneId = 1, number = "0114555555", type = CodeDescription(code = "HOME", description = "Home"), audit = nomisAudit())),
+  addresses = listOf(PersonAddress(addressId = 1, phoneNumbers = listOf(PersonPhoneNumber(phoneId = 2, number = "0114555555", type = CodeDescription(code = "HOME", description = "Home"), audit = nomisAudit())), validatedPAF = false, primaryAddress = true, mailAddress = true, audit = nomisAudit())),
+  emailAddresses = listOf(PersonEmailAddress(emailAddressId = 1, email = "test@justice.gov.uk", audit = nomisAudit())),
+  employments = listOf(PersonEmployment(sequence = 1, active = true, corporate = PersonEmploymentCorporate(id = 1, name = "Police"), audit = nomisAudit())),
   identifiers = listOf(
     PersonIdentifier(
       sequence = 1,
       type = CodeDescription(code = "DL", description = "Driving Licence"),
       identifier = "SMITH1717171",
       issuedAuthority = "DVLA",
+      audit = nomisAudit(),
     ),
   ),
   contacts = listOf(
@@ -123,9 +121,15 @@ fun contactPerson(): ContactPerson = ContactPerson(
       emergencyContact = true,
       nextOfKin = false,
       approvedVisitor = false,
-      prisoner = ContactForPrisoner(bookingId = 1, offenderNo = "A1234KT", lastName = "SMITH", firstName = "JOHN"),
-      restrictions = listOf(ContactRestriction(id = 1, type = CodeDescription(code = "BAN", description = "Banned"), enteredStaff = ContactRestrictionEnteredStaff(staffId = 1), effectiveDate = LocalDate.parse("2020-01-01"))),
+      prisoner = ContactForPrisoner(bookingId = 1, offenderNo = "A1234KT", lastName = "SMITH", firstName = "JOHN", bookingSequence = 1),
+      restrictions = listOf(ContactRestriction(id = 1, type = CodeDescription(code = "BAN", description = "Banned"), enteredStaff = ContactRestrictionEnteredStaff(staffId = 1, username = "Q1251T"), effectiveDate = LocalDate.parse("2020-01-01"), audit = nomisAudit())),
+      audit = nomisAudit(),
     ),
   ),
-  restrictions = listOf(ContactRestriction(id = 2, type = CodeDescription(code = "BAN", description = "Banned"), enteredStaff = ContactRestrictionEnteredStaff(staffId = 1), effectiveDate = LocalDate.parse("2020-01-01"))),
+  restrictions = listOf(ContactRestriction(id = 2, type = CodeDescription(code = "BAN", description = "Banned"), enteredStaff = ContactRestrictionEnteredStaff(staffId = 1, username = "Q1251T"), effectiveDate = LocalDate.parse("2020-01-01"), audit = nomisAudit())),
+)
+
+fun nomisAudit() = NomisAudit(
+  createDatetime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+  createUsername = "Q1251T",
 )
