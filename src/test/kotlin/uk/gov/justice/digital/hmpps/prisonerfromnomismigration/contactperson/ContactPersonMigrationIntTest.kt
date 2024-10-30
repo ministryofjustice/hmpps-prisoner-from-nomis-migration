@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.migrateContactResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
@@ -43,6 +44,8 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
   @Autowired
   private lateinit var nomisApiMock: ContactPersonNomisApiMockServer
 
+  private val dpsApiMock = ContactPersonDpsApiExtension.dpsContactPersonServer
+
   @Autowired
   private lateinit var mappingApiMock: ContactPersonMappingApiMockServer
 
@@ -52,6 +55,13 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
   @Nested
   @DisplayName("POST /migrate/contactperson")
   inner class MigrateAlerts {
+    @BeforeEach
+    internal fun deleteHistoryRecords() {
+      runBlocking {
+        migrationHistoryRepository.deleteAll()
+      }
+    }
+
     @Nested
     inner class Security {
       @Test
@@ -143,6 +153,8 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
         mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = 2000, mapping = null)
         nomisApiMock.stubGetPerson(1000, contactPerson().copy(personId = 1000, firstName = "JOHN", lastName = "SMITH"))
         nomisApiMock.stubGetPerson(2000, contactPerson().copy(personId = 2000, firstName = "ADDO", lastName = "ABOAGYE"))
+        dpsApiMock.stubMigrateContact(nomisPersonId = 1000, migrateContactResponse().copy(nomisPersonId = 1000, dpsContactId = 10_000))
+        dpsApiMock.stubMigrateContact(nomisPersonId = 2000, migrateContactResponse().copy(nomisPersonId = 2000, dpsContactId = 20_000))
         mappingApiMock.stubCreateMappingsForMigration()
         mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 2)
         migrationResult = performMigration()
@@ -221,6 +233,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
         nomisApiMock.stubGetPersonIdsToMigrate(content = listOf(PersonIdResponse(1000)))
         mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = 1000, mapping = null)
         nomisApiMock.stubGetPerson(1000, contactPerson().copy(personId = 1000, firstName = "JOHN", lastName = "SMITH"))
+        dpsApiMock.stubMigrateContact(migrateContactResponse().copy(nomisPersonId = 1000, dpsContactId = 10_000))
         mappingApiMock.stubCreateMappingsForMigrationFailureFollowedBySuccess()
         mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 1)
         migrationResult = performMigration()
@@ -278,6 +291,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
         nomisApiMock.stubGetPersonIdsToMigrate(content = listOf(PersonIdResponse(1000)))
         mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = 1000, mapping = null)
         nomisApiMock.stubGetPerson(1000, contactPerson().copy(personId = 1000, firstName = "JOHN", lastName = "SMITH"))
+        dpsApiMock.stubMigrateContact(migrateContactResponse().copy(nomisPersonId = 1000, dpsContactId = 10_000))
         mappingApiMock.stubCreateMappingsForMigration(
           error = DuplicateMappingErrorResponse(
             moreInfo = DuplicateErrorContentObject(
@@ -724,6 +738,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
       mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = 2000, mapping = null)
       nomisApiMock.stubGetPerson(1000, contactPerson().copy(personId = 1000, firstName = "JOHN", lastName = "SMITH"))
       nomisApiMock.stubGetPerson(2000, contactPerson().copy(personId = 2000, firstName = "ADDO", lastName = "ABOAGYE"))
+      dpsApiMock.stubMigrateContact()
       mappingApiMock.stubCreateMappingsForMigration()
       mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 2)
 
