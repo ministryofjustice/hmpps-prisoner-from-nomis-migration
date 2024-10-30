@@ -23,7 +23,7 @@ class VisitsPrisonOffenderEventListener(
   }
 
   @SqsListener("eventvisits", factory = "hmppsQueueContainerFactoryProxy")
-  fun onMessage(message: String): CompletableFuture<Void> {
+  fun onMessage(message: String): CompletableFuture<Void?> {
     log.debug("Received offender event message {}", message)
     val sqsMessage: SQSMessage = objectMapper.readValue(message)
     val eventType = sqsMessage.MessageAttributes!!.eventType.Value
@@ -43,7 +43,7 @@ class VisitsPrisonOffenderEventListener(
       } else {
         log.info("Feature switch is disabled for event {}", eventType)
       }
-    }.thenAccept { }
+    }
   }
 }
 

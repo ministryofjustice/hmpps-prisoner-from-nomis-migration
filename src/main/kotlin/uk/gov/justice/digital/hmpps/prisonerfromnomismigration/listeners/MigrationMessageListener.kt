@@ -27,7 +27,7 @@ abstract class MigrationMessageListener<FILTER : Any, NOMIS_ID : Any, NOMIS_ENTI
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  fun onMessage(message: String, rawMessage: Message): CompletableFuture<Void>? {
+  fun onMessage(message: String, rawMessage: Message): CompletableFuture<Void?> {
     log.debug("Received message {}", message)
     val migrationMessage: LocalMessage<MigrationMessageType> = message.fromJson()
     return asCompletableFuture {
@@ -50,7 +50,7 @@ abstract class MigrationMessageListener<FILTER : Any, NOMIS_ID : Any, NOMIS_ENTI
         log.error("MessageID:${rawMessage.messageId()}", it)
         throw it
       }
-    }.thenAccept { }
+    }
   }
 
   private fun <T> migrationContextFilter(message: MigrationMessage<*, T>): MigrationContext<T> =

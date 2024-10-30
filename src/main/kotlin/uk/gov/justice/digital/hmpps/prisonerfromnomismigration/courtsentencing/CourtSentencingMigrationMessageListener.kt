@@ -29,7 +29,7 @@ class CourtSentencingMigrationMessageListener(
     maxConcurrentMessages = "8",
     maxMessagesPerPoll = "8",
   )
-  fun onCourtSentencingMessage(message: String, rawMessage: Message): CompletableFuture<Void>? {
+  fun onCourtSentencingMessage(message: String, rawMessage: Message): CompletableFuture<Void?> {
     return onMessage(message, rawMessage)
   }
 

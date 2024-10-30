@@ -28,7 +28,7 @@ class PrisonPersonMigrationMessageListener(
     maxConcurrentMessages = "8",
     maxMessagesPerPoll = "8",
   )
-  fun onPrisonPersonMessage(message: String, rawMessage: Message): CompletableFuture<Void>? = onMessage(message, rawMessage)
+  fun onPrisonPersonMessage(message: String, rawMessage: Message): CompletableFuture<Void?> = onMessage(message, rawMessage)
 
   override fun parseContextFilter(json: String): MigrationMessage<*, PrisonPersonMigrationFilter> = objectMapper.readValue(json)
 

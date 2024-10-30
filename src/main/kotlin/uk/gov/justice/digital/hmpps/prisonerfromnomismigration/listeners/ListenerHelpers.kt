@@ -23,5 +23,8 @@ data class SQSMessage(val Type: String, val Message: String, val MessageId: Stri
 data class MessageAttributes(val eventType: EventType)
 data class EventType(val Value: String, val Type: String)
 
-fun asCompletableFuture(process: suspend () -> Unit): CompletableFuture<Void> =
-  CoroutineScope(Context.current().asContextElement()).future { process() }.thenAccept { }
+fun asCompletableFuture(process: suspend () -> Unit): CompletableFuture<Void?> =
+  CoroutineScope(Context.current().asContextElement()).future {
+    process()
+    null
+  }
