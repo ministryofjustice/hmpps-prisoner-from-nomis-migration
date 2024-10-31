@@ -5,6 +5,8 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.CodedValue
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.IdPair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateContactResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
@@ -13,6 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Migrati
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonSequenceMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonSimpleMappingIdDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactPerson
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
@@ -117,32 +120,44 @@ class ContactPersonMigrationService(
 private fun MigrateContactResponse.toContactPersonMappingsDto(migrationId: String) = ContactPersonMappingsDto(
   mappingType = ContactPersonMappingsDto.MappingType.MIGRATED,
   label = migrationId,
-  personMapping = ContactPersonSimpleMappingIdDto(dpsId = this.dpsContactId.toString(), nomisId = this.nomisPersonId),
-  personAddressMapping = addresses.map { ContactPersonSimpleMappingIdDto(dpsId = it.dpsId.toString(), nomisId = it.nomisId) },
-  personPhoneMapping = phoneNumbers.map { ContactPersonSimpleMappingIdDto(dpsId = it.dpsId.toString(), nomisId = it.nomisId) },
+  personMapping = this.contact!!.toContactPersonSimpleMappingIdDto(),
+  personAddressMapping = this.addresses.map { it.address!!.toContactPersonSimpleMappingIdDto() } + this.addresses.flatMap { address -> address.phones.map { it.toContactPersonSimpleMappingIdDto() } },
+  personPhoneMapping = phoneNumbers.map { it.toContactPersonSimpleMappingIdDto() },
   personEmailMapping = emailAddresses.map { ContactPersonSimpleMappingIdDto(dpsId = it.dpsId.toString(), nomisId = it.nomisId) },
-  // TODO - when in DPS response
-  personEmploymentMapping = emptyList(),
-  personIdentifierMapping = identities.map { ContactPersonSequenceMappingIdDto(dpsId = it.dpsId.toString(), nomisSequenceNumber = it.nomisId, nomisPersonId = this.nomisPersonId) },
-  // TODO - when in DPS response
-  personRestrictionMapping = emptyList(),
-  personContactMapping = prisonerContacts.map { ContactPersonSimpleMappingIdDto(dpsId = it.dpsId.toString(), nomisId = it.nomisId) },
-  personContactRestrictionMapping = prisonerContactRestrictions.map { ContactPersonSimpleMappingIdDto(dpsId = it.dpsId.toString(), nomisId = it.nomisId) },
-
+  personEmploymentMapping = employments?.map { it.toContactPersonSequenceMappingIdDto(this.contact.nomisId) } ?: emptyList(),
+  personIdentifierMapping = identities.map { it.toContactPersonSequenceMappingIdDto(this.contact.nomisId) },
+  personRestrictionMapping = restrictions.map { it.toContactPersonSimpleMappingIdDto() },
+  personContactMapping = relationships.map { it.relationship!!.toContactPersonSimpleMappingIdDto() },
+  personContactRestrictionMapping = relationships.flatMap { it.restrictions.map { it.toContactPersonSimpleMappingIdDto() } },
 )
 
 private fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateContactRequest(
-  // TODO map these correctly when final version released
   personId = this.personId,
   lastName = this.lastName,
   firstName = this.firstName,
-  remitter = false,
-  staff = false,
-  keepBiometrics = this.keepBiometrics,
+  middleName = this.middleName,
+  dateOfBirth = this.dateOfBirth,
+  gender = this.gender?.toCodedValue(),
+  title = this.title?.toCodedValue(),
+  language = this.language?.toCodedValue(),
   interpreterRequired = this.interpreterRequired,
+  domesticStatus = this.domesticStatus?.toCodedValue(),
+  deceasedDate = this.deceasedDate,
+  staff = this.isStaff ?: false,
   phoneNumbers = emptyList(),
   addresses = emptyList(),
   emailAddresses = emptyList(),
+  employments = emptyList(),
   identifiers = emptyList(),
-
+  contacts = emptyList(),
+  restrictions = emptyList(),
+  createDateTime = this.audit.createDatetime.toDateTime(),
+  createUsername = this.audit.createUsername,
+  modifyDateTime = this.audit.modifyDatetime.toDateTime(),
+  modifyUsername = this.audit.modifyUserId,
 )
+
+private fun IdPair.toContactPersonSimpleMappingIdDto() = ContactPersonSimpleMappingIdDto(dpsId = this.dpsId.toString(), nomisId = this.nomisId)
+private fun IdPair.toContactPersonSequenceMappingIdDto(personId: Long) = ContactPersonSequenceMappingIdDto(dpsId = this.dpsId.toString(), nomisSequenceNumber = this.nomisId, nomisPersonId = personId)
+private fun CodeDescription.toCodedValue() = CodedValue(code = this.code, description = this.description)
+private fun String?.toDateTime() = this?.let { java.time.LocalDateTime.parse(it) }

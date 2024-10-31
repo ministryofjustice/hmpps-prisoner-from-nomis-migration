@@ -735,6 +735,11 @@ class AllocationsMigrationServiceTest {
 
   @Nested
   inner class MigrateStatusCheck {
+    @BeforeEach
+    fun setUp(): Unit = runBlocking {
+      whenever(migrationHistoryService.isCancelling(any())).thenReturn(false)
+    }
+
     @Nested
     inner class MessagesOnQueue {
       @BeforeEach

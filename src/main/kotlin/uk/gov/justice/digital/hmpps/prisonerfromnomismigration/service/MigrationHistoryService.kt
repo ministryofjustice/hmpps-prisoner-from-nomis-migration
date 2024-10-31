@@ -9,6 +9,7 @@ import software.amazon.awssdk.services.sqs.model.GetQueueAttributesRequest
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.CANCELLED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.CANCELLED_REQUESTED
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
@@ -63,7 +64,7 @@ class MigrationHistoryService(
             whenEnded = LocalDateTime.now(),
             recordsFailed = recordsFailed,
             recordsMigrated = recordsMigrated,
-            status = MigrationStatus.CANCELLED,
+            status = CANCELLED,
           ),
         )
       }
@@ -87,7 +88,7 @@ class MigrationHistoryService(
     migrationHistoryRepository.findById(migrationId) ?: throw NotFoundException(migrationId)
 
   suspend fun isCancelling(migrationId: String) =
-    migrationHistoryRepository.findById(migrationId)?.status == CANCELLED_REQUESTED
+    migrationHistoryRepository.findById(migrationId)?.status in listOf(CANCELLED_REQUESTED, CANCELLED)
 
   suspend fun getActiveMigrationDetails(type: MigrationType): InProgressMigration {
     val queue = hmppsQueueService.findByQueueId(type.queueId)!!

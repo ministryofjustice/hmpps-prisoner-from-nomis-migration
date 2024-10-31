@@ -113,6 +113,9 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any>(
     }?.forEach { queueService.sendMessageNoTracing(MigrationMessageType.MIGRATE_ENTITY, it) }
 
   suspend fun migrateStatusCheck(context: MigrationContext<MigrationStatusCheck>) {
+    // no need to carry on checking if cancelling
+    if (migrationHistoryService.isCancelling(context.migrationId)) return
+
     /*
        when checking if there are messages to process, it is always an estimation due to SQS, therefore once
        we think there are no messages we check several times in row reducing probability of false positives significantly
