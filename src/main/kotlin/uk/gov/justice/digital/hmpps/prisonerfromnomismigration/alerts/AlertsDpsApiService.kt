@@ -13,10 +13,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.Upda
 
 @Service
 class AlertsDpsApiService(@Qualifier("alertsApiWebClient") private val webClient: WebClient) {
-  suspend fun createAlert(alert: CreateAlert, createdByUsername: String): Alert =
+  suspend fun createAlert(offenderNo: String, alert: CreateAlert, createdByUsername: String): Alert =
     webClient
       .post()
-      .uri("/prisoners/{prisonNumber}/alerts", alert.prisonNumber)
+      .uri("/prisoners/{prisonNumber}/alerts", offenderNo)
       .bodyValue(alert)
       .header("Source", "NOMIS")
       .header("Username", createdByUsername)

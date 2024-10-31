@@ -6,8 +6,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.Upda
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertResponse
 import java.time.LocalDateTime
 
-fun AlertResponse.toDPSCreateAlert(offenderNo: String) = CreateAlert(
-  prisonNumber = offenderNo,
+fun AlertResponse.toDPSCreateAlert() = CreateAlert(
   alertCode = this.alertCode.code,
   description = this.comment,
   activeFrom = this.date,
@@ -20,7 +19,6 @@ fun AlertResponse.toDPSUpdateAlert() = UpdateAlert(
   activeFrom = this.date,
   activeTo = this.expiryDate,
   authorisedBy = this.authorisedBy,
-  appendComment = null,
 )
 
 fun AlertResponse.toDPSResyncAlert() = ResyncAlert(
