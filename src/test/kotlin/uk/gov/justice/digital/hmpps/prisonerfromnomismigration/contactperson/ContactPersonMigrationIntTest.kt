@@ -9,10 +9,12 @@ import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.mockito.kotlin.any
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
@@ -22,14 +24,18 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiExtension.Companion.getRequestBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.migrateContactResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.IdPair
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto.MappingType.MIGRATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactPerson
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
@@ -38,6 +44,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.Duration
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -222,6 +229,59 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
           .jsonPath("$.migrationId").isEqualTo(migrationResult.migrationId)
           .jsonPath("$.status").isEqualTo("COMPLETED")
           .jsonPath("$.recordsMigrated").isEqualTo("2")
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPathNomisToDPSMapping {
+      lateinit var request: MigrateContactRequest
+
+      @BeforeAll
+      fun setUp() {
+        stubMigrateSinglePerson(
+          contactPerson().copy(
+            personId = 1000,
+            firstName = "JOHN",
+            lastName = "SMITH",
+            middleName = "MIKE",
+            dateOfBirth = LocalDate.parse("1965-07-19"),
+            gender = CodeDescription("M", "Male"),
+            title = CodeDescription("MR", "Mr"),
+            language = CodeDescription("VIE", "Vietnamese"),
+            interpreterRequired = true,
+            domesticStatus = CodeDescription("M", "Married or in civil partnership"),
+            deceasedDate = LocalDate.parse("2020-01-23"),
+            isStaff = true,
+            audit = contactPerson().audit.copy(
+              modifyUserId = "ADJUA.MENSAH",
+              modifyDatetime = "2024-01-02T10:23",
+              createUsername = "ADJUA.BEEK",
+              createDatetime = "2022-01-02T10:23",
+            ),
+          ),
+        )
+        performMigration()
+        request = getRequestBody(postRequestedFor(urlPathEqualTo("/migrate/contact")))
+      }
+
+      @Test
+      fun `will send core person data to DPS`() {
+        assertThat(request.personId).isEqualTo(1000L)
+        assertThat(request.firstName).isEqualTo("JOHN")
+        assertThat(request.lastName).isEqualTo("SMITH")
+        assertThat(request.dateOfBirth).isEqualTo(LocalDate.parse("1965-07-19"))
+        assertThat(request.gender?.code).isEqualTo("M")
+        assertThat(request.title?.code).isEqualTo("MR")
+        assertThat(request.language?.code).isEqualTo("VIE")
+        assertThat(request.interpreterRequired).isTrue()
+        assertThat(request.domesticStatus?.code).isEqualTo("M")
+        assertThat(request.deceasedDate).isEqualTo(LocalDate.parse("2020-01-23"))
+        assertThat(request.staff).isTrue()
+        assertThat(request.createUsername).isEqualTo("ADJUA.BEEK")
+        assertThat(request.createDateTime).isEqualTo(LocalDateTime.parse("2022-01-02T10:23"))
+        assertThat(request.modifyUsername).isEqualTo("ADJUA.MENSAH")
+        assertThat(request.modifyDateTime).isEqualTo(LocalDateTime.parse("2024-01-02T10:23"))
       }
     }
 
@@ -792,4 +852,13 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
         isNull(),
       )
     }
+
+  private fun stubMigrateSinglePerson(nomisPersonContact: ContactPerson) {
+    nomisApiMock.stubGetPersonIdsToMigrate(content = listOf(PersonIdResponse(1000)))
+    mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = 1000, mapping = null)
+    nomisApiMock.stubGetPerson(1000, nomisPersonContact)
+    dpsApiMock.stubMigrateContact(nomisPersonId = 1000L, migrateContactResponse().copy(contact = IdPair(nomisId = 1000, dpsId = 10_000, elementType = IdPair.ElementType.CONTACT)))
+    mappingApiMock.stubCreateMappingsForMigration()
+    mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 1)
+  }
 }
