@@ -1,7 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson
 
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
-import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
@@ -29,9 +28,6 @@ import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonPersonMigrationMappingRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonPersonMigrationMappingRequest.MigrationType.PHYSICAL_ATTRIBUTES
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesMigrationResponse
@@ -74,7 +70,7 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
         .forEachIndexed { index, offenderNo ->
           physicalAttributesNomisApi.stubGetPhysicalAttributes(offenderNo)
           dpsApi.stubMigratePhysicalAttributes(offenderNo, PhysicalAttributesMigrationResponse(listOf(index + 1.toLong())))
-          prisonPersonMappingApi.stubPostMapping()
+          prisonPersonMappingApi.stubPutMapping()
         }
     }
 
@@ -176,7 +172,7 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
         nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, firstOffenderNo = "A0001KT")
         physicalAttributesNomisApi.stubGetPhysicalAttributes("A0001KT")
         dpsApi.stubMigratePhysicalAttributes("A0001KT", PhysicalAttributesMigrationResponse(listOf(1L)))
-        prisonPersonMappingApi.stubPostMappingFailureFollowedBySuccess()
+        prisonPersonMappingApi.stubPutMappingFailureFollowedBySuccess()
 
         migrationResult = webTestClient.performMigration()
 
@@ -196,52 +192,6 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
           isNull(),
         )
       }
-
-      @Test
-      fun `will not retry if mapping is a duplicate`() {
-        nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, firstOffenderNo = "A0001KT")
-        physicalAttributesNomisApi.stubGetPhysicalAttributes("A0001KT")
-        dpsApi.stubMigratePhysicalAttributes("A0001KT", PhysicalAttributesMigrationResponse(listOf(1L)))
-        prisonPersonMappingApi.stubPostMappingDuplicate(
-          DuplicateMappingErrorResponse(
-            moreInfo = DuplicateErrorContentObject(
-              duplicate = PrisonPersonMigrationMappingRequest(
-                nomisPrisonerNumber = "A0001KT",
-                dpsIds = listOf(1L),
-                migrationType = PHYSICAL_ATTRIBUTES,
-                label = "label",
-              ),
-              existing = PrisonPersonMigrationMappingRequest(
-                nomisPrisonerNumber = "A0001KT",
-                dpsIds = listOf(1L),
-                migrationType = PHYSICAL_ATTRIBUTES,
-                label = "label",
-              ),
-            ),
-            status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
-            errorCode = 1409,
-            userMessage = "duplicate",
-          ),
-        )
-
-        migrationResult = webTestClient.performMigration()
-
-        verify(telemetryClient).trackEvent(
-          eq("prisonperson-nomis-migration-duplicate"),
-          check {
-            assertThat(it).containsExactlyInAnyOrderEntriesOf(
-              mapOf(
-                "existingNomisPrisonerNumber" to "A0001KT",
-                "existingDpsIds" to "[1]",
-                "duplicateNomisPrisonerNumber" to "A0001KT",
-                "duplicateDpsIds" to "[1]",
-                "migrationId" to migrationResult.migrationId,
-              ),
-            )
-          },
-          isNull(),
-        )
-      }
     }
 
     @Nested
@@ -255,7 +205,7 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
           offenderNo,
           PhysicalAttributesMigrationResponse(listOf(1.toLong())),
         )
-        prisonPersonMappingApi.stubPostMapping()
+        prisonPersonMappingApi.stubPutMapping()
 
         migrationResult = webTestClient.performMigration(offenderNo)
       }
@@ -294,7 +244,7 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will create mapping`() {
         mappingApi.verify(
-          postRequestedFor(urlEqualTo("/mapping/prisonperson/migration"))
+          putRequestedFor(urlEqualTo("/mapping/prisonperson/migration"))
             .withRequestBodyJsonPath("nomisPrisonerNumber", offenderNo)
             .withRequestBodyJsonPath("migrationType", "PHYSICAL_ATTRIBUTES")
             .withRequestBodyJsonPath("label", migrationResult.migrationId)
