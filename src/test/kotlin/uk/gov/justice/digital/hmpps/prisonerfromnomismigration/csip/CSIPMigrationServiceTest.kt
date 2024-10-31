@@ -857,14 +857,15 @@ internal class CSIPMigrationServiceTest {
       service.migrateNomisEntity(
         MigrationContext(
           type = CSIP,
-          migrationId = "2020-05-23T11:30:00",
+          migrationId = "2020-05-23T11:30",
           estimatedCount = 100_200,
           body = CSIPIdResponse(NOMIS_CSIP_ID),
         ),
       )
 
+      // Actioned by always SYS for migration and actionedAt set to migration Id (holding date/time)
       verify(csipDpsService).migrateCSIP(
-        eq(dpsSyncCsipRequest()),
+        eq(dpsSyncCsipRequest().copy(actionedBy = "SYS", actionedAt = LocalDateTime.parse("2020-05-23T11:30"))),
       )
     }
 
@@ -979,13 +980,13 @@ internal class CSIPMigrationServiceTest {
           service.migrateNomisEntity(
             MigrationContext(
               type = CSIP,
-              migrationId = "2020-05-23T11:30:00",
+              migrationId = "2020-05-24T12:50",
               estimatedCount = 100_200,
               body = CSIPIdResponse(NOMIS_CSIP_ID),
             ),
           )
 
-          verify(csipDpsService).migrateCSIP(eq(dpsSyncCsipRequestMinimal()))
+          verify(csipDpsService).migrateCSIP(eq(dpsSyncCsipRequestMinimal().copy(actionedBy = "SYS", actionedAt = LocalDateTime.parse("2020-05-24T12:50"))))
 
           verify(telemetryClient, times(1)).trackEvent(
             eq("csip-migration-entity-migrated"),

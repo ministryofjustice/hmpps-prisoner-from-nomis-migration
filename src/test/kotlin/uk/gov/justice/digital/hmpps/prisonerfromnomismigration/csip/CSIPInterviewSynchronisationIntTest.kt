@@ -136,8 +136,7 @@ class CSIPInterviewSynchronisationIntTest : SqsIntegrationTestBase() {
               .withRequestBody(matchingJsonPath("prisonNumber", equalTo("A1234BC")))
               .withRequestBody(matchingJsonPath("referral.investigation.interviews[0].legacyId", equalTo("3343")))
               .withRequestBody(matchingJsonPath("actionedAt", equalTo("2024-08-12T11:32:15")))
-              .withRequestBody(matchingJsonPath("actionedBy", equalTo("BB_ADM")))
-              .withRequestBody(matchingJsonPath("actionedByDisplayName", equalTo("Bebe SMITH"))),
+              .withRequestBody(matchingJsonPath("actionedBy", equalTo("BB_ADM"))),
           )
         }
 
@@ -386,8 +385,7 @@ class CSIPInterviewSynchronisationIntTest : SqsIntegrationTestBase() {
               .withRequestBody(matchingJsonPath("prisonNumber", equalTo("A1234BC")))
               .withRequestBody(matchingJsonPath("referral.investigation.interviews[0].legacyId", equalTo("3343")))
               .withRequestBody(matchingJsonPath("actionedAt", equalTo("2024-08-12T11:32:15")))
-              .withRequestBody(matchingJsonPath("actionedBy", equalTo("BB_ADM")))
-              .withRequestBody(matchingJsonPath("actionedByDisplayName", equalTo("Bebe SMITH"))),
+              .withRequestBody(matchingJsonPath("actionedBy", equalTo("BB_ADM"))),
           )
         }
 

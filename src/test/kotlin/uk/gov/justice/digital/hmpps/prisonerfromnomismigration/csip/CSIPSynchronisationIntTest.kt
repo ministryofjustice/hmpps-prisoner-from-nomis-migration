@@ -535,8 +535,7 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
               .withRequestBodyJsonPath("logCode", "ASI-001")
               .withRequestBodyJsonPath("prisonNumber", "A1234BC")
               .withRequestBodyJsonPath("actionedAt", "2024-04-01T10:32:12.867081")
-              .withRequestBodyJsonPath("actionedBy", "JSMITH")
-              .withRequestBodyJsonPath("actionedByDisplayName", "JSMITH"),
+              .withRequestBodyJsonPath("actionedBy", "JSMITH"),
           )
         }
 

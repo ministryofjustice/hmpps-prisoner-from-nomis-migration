@@ -21,6 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationMinutes
+import java.time.LocalDateTime
 
 @Service
 class CSIPMigrationService(
@@ -64,7 +65,9 @@ class CSIPMigrationService(
       }
       ?: run {
         val nomisCSIPResponse = nomisApiService.getCSIP(nomisCSIPReportId)
-        val syncCsipRequest = nomisCSIPResponse.toDPSSyncRequest(actioned = nomisCSIPResponse.toActionDetails())
+        val migrationLabelAsDateTime = LocalDateTime.parse(migrationId)
+        val actionDetails = ActionDetails(actionedAt = migrationLabelAsDateTime, actionedBy = "SYS")
+        val syncCsipRequest = nomisCSIPResponse.toDPSSyncRequest(actioned = actionDetails)
         csipService.migrateCSIP(syncCsipRequest)
           .also { syncResponse ->
             // At this point we need to determine all mappings and call the appropriate mapping endpoint

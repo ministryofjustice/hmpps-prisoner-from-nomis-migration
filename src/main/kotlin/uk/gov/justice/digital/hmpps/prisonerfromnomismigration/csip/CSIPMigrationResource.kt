@@ -34,7 +34,7 @@ class CSIPMigrationResource(
   @PostMapping("")
   @ResponseStatus(value = ACCEPTED)
   @Operation(
-    summary = "Starts an csip migration",
+    summary = "Starts a csip migration",
     description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>MIGRATE_CSIP</b>",
     requestBody = io.swagger.v3.oas.annotations.parameters.RequestBody(
       content = [
