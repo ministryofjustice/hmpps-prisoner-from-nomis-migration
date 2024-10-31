@@ -68,17 +68,8 @@ fun CSIPResponse.toDPSSyncRequest(dpsReportId: String? = null, actioned: ActionD
       decisionAndActions = decision.toDPSSyncDecisionsAndActionsRequest(),
     ),
     plan = toDPSSyncPlanRequest(fullMappingDto),
-
-    createdAt = LocalDateTime.parse(createDateTime),
-    createdBy = createdBy,
-    createdByDisplayName = createdByDisplayName ?: createdBy,
-    lastModifiedAt = lastModifiedDateTime?.let { LocalDateTime.parse(lastModifiedDateTime) },
-    lastModifiedBy = lastModifiedBy,
-    lastModifiedByDisplayName = lastModifiedByDisplayName ?: lastModifiedBy,
-
     actionedAt = actioned.actionedAt,
     actionedBy = actioned.actionedBy,
-    actionedByDisplayName = actioned.actionedByDisplayName,
   )
 
 fun List<CSIPChildMappingDto>.findMatchingDPSChildId(nomisId: Long) =
@@ -87,72 +78,56 @@ fun List<CSIPChildMappingDto>.findMatchingDPSChildId(nomisId: Long) =
 data class ActionDetails(
   val actionedAt: LocalDateTime,
   val actionedBy: String,
-  val actionedByDisplayName: String,
 )
 
 fun CSIPResponse.toActionDetails() = getActionDetails(
   createDateTime,
   createdBy,
-  createdByDisplayName,
   lastModifiedDateTime,
   lastModifiedBy,
-  lastModifiedByDisplayName,
 )
 fun Attendee.toActionDetails() = getActionDetails(
   createDateTime,
   createdBy,
-  createdByDisplayName,
   lastModifiedDateTime,
   lastModifiedBy,
-  lastModifiedByDisplayName,
 )
 fun CSIPFactorResponse.toActionDetails() = getActionDetails(
   createDateTime,
   createdBy,
-  createdByDisplayName,
   lastModifiedDateTime,
   lastModifiedBy,
-  lastModifiedByDisplayName,
 )
 
 fun InterviewDetails.toActionDetails() = getActionDetails(
   createDateTime,
   createdBy,
-  createdByDisplayName,
   lastModifiedDateTime,
   lastModifiedBy,
-  lastModifiedByDisplayName,
 )
 
 fun Plan.toActionDetails() = getActionDetails(
   createDateTime,
   createdBy,
-  createdByDisplayName,
   lastModifiedDateTime,
   lastModifiedBy,
-  lastModifiedByDisplayName,
 )
 fun Review.toActionDetails() = getActionDetails(
   createDateTime,
   createdBy,
-  createdByDisplayName,
   lastModifiedDateTime,
   lastModifiedBy,
-  lastModifiedByDisplayName,
 )
 
 fun getActionDetails(
   createDateTime: String,
   createdBy: String,
-  createdByDisplayName: String?,
   lastModifiedDateTime: String?,
   lastModifiedBy: String?,
-  lastModifiedByDisplayName: String?,
 ) =
   ActionDetails(
     actionedAt = lastModifiedDateTime?.let { LocalDateTime.parse(lastModifiedDateTime) } ?: LocalDateTime.parse(createDateTime),
     actionedBy = lastModifiedBy ?: createdBy,
-    actionedByDisplayName = lastModifiedByDisplayName ?: lastModifiedBy ?: createdByDisplayName ?: createdBy,
   )
 
 fun SaferCustodyScreening.toDPSSyncCSIPSCS() =
@@ -170,12 +145,6 @@ fun CSIPFactorResponse.toDPSSyncContributoryFactorRequest(factorMappings: List<C
     legacyId = id,
     factorTypeCode = type.code,
     comment = comment,
-    createdAt = LocalDateTime.parse(createDateTime),
-    createdBy = createdBy,
-    createdByDisplayName = createdByDisplayName ?: createdBy,
-    lastModifiedAt = lastModifiedDateTime?.let { LocalDateTime.parse(lastModifiedDateTime) },
-    lastModifiedBy = lastModifiedBy,
-    lastModifiedByDisplayName = lastModifiedByDisplayName ?: lastModifiedBy,
   )
 
 fun InvestigationDetails.toDPSSyncInvestigationRequest(interviewMappings: List<CSIPChildMappingDto>?) =
@@ -207,13 +176,6 @@ fun InterviewDetails.toDPSSyncInterviewRequest(interviewMappings: List<CSIPChild
     interviewDate = date,
     intervieweeRoleCode = role.code,
     interviewText = comments,
-
-    createdAt = LocalDateTime.parse(createDateTime),
-    createdBy = createdBy,
-    createdByDisplayName = createdByDisplayName ?: createdBy,
-    lastModifiedAt = lastModifiedDateTime?.let { LocalDateTime.parse(lastModifiedDateTime) },
-    lastModifiedBy = lastModifiedBy,
-    lastModifiedByDisplayName = lastModifiedByDisplayName ?: lastModifiedBy,
   )
 
 fun Decision.toDPSSyncDecisionsAndActionsRequest() =
@@ -293,15 +255,7 @@ fun Plan.toDPSSyncNeedRequest(planMappings: List<CSIPChildMappingDto>?) =
 
     closedDate = closedDate,
     targetDate = targetDate,
-
-    createdAt = LocalDateTime.parse(createDateTime),
-    createdBy = createdBy,
-    createdByDisplayName = createdByDisplayName ?: createdBy,
     createdDate = createdDate,
-
-    lastModifiedAt = lastModifiedDateTime?.let { LocalDateTime.parse(lastModifiedDateTime) },
-    lastModifiedBy = lastModifiedBy,
-    lastModifiedByDisplayName = lastModifiedByDisplayName ?: lastModifiedBy,
   )
 
 fun Review.toDPSSyncReviewRequest(reviewMappings: List<CSIPChildMappingDto>?, attendeeMappings: List<CSIPChildMappingDto>?) =
@@ -317,13 +271,6 @@ fun Review.toDPSSyncReviewRequest(reviewMappings: List<CSIPChildMappingDto>?, at
 
     actions = toSyncReviewActions(),
     attendees = attendees.map { it.toSyncAttendeeRequest(attendeeMappings) },
-
-    createdAt = LocalDateTime.parse(createDateTime),
-    createdBy = createdBy,
-    createdByDisplayName = createdByDisplayName ?: createdBy,
-    lastModifiedAt = lastModifiedDateTime?.let { LocalDateTime.parse(lastModifiedDateTime) },
-    lastModifiedBy = lastModifiedBy,
-    lastModifiedByDisplayName = lastModifiedByDisplayName ?: lastModifiedBy,
   )
 
 fun Review.toSyncReviewActions(): MutableSet<SyncReviewRequest.Actions> {
@@ -346,13 +293,6 @@ fun Attendee.toSyncAttendeeRequest(attendeeMappings: List<CSIPChildMappingDto>?)
     role = role,
     isAttended = attended,
     contribution = contribution,
-
-    createdAt = LocalDateTime.parse(createDateTime),
-    createdBy = createdBy,
-    createdByDisplayName = createdByDisplayName ?: createdBy,
-    lastModifiedAt = lastModifiedDateTime?.let { LocalDateTime.parse(lastModifiedDateTime) },
-    lastModifiedBy = lastModifiedBy,
-    lastModifiedByDisplayName = lastModifiedByDisplayName ?: lastModifiedBy,
   )
 
 fun SyncResponse.filterReport() = mappings.first { it.component == ResponseMapping.Component.RECORD }

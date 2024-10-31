@@ -136,8 +136,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
               .withRequestBody(matchingJsonPath("prisonNumber", equalTo("A1234BC")))
               .withRequestBody(matchingJsonPath("referral.contributoryFactors[0].legacyId", equalTo("43")))
               .withRequestBody(matchingJsonPath("actionedAt", equalTo("2024-04-01T10:00:00")))
-              .withRequestBody(matchingJsonPath("actionedBy", equalTo("CFACTOR")))
-              .withRequestBody(matchingJsonPath("actionedByDisplayName", equalTo("CFACTOR"))),
+              .withRequestBody(matchingJsonPath("actionedBy", equalTo("CFACTOR"))),
           )
         }
 
@@ -380,8 +379,7 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
               .withRequestBody(matchingJsonPath("prisonNumber", equalTo("A1234BC")))
               .withRequestBody(matchingJsonPath("referral.contributoryFactors[0].legacyId", equalTo("43")))
               .withRequestBody(matchingJsonPath("actionedAt", equalTo("2024-04-01T10:00:00")))
-              .withRequestBody(matchingJsonPath("actionedBy", equalTo("CFACTOR")))
-              .withRequestBody(matchingJsonPath("actionedByDisplayName", equalTo("CFACTOR"))),
+              .withRequestBody(matchingJsonPath("actionedBy", equalTo("CFACTOR"))),
           )
         }
 
