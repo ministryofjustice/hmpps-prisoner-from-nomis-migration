@@ -3,7 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
-import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -31,7 +31,7 @@ class PrisonPersonMappingApiServiceTest {
   inner class PostMappings {
     @Test
     internal fun `should pass oath2 token to service`() = runTest {
-      mappingApi.stubPostMapping()
+      mappingApi.stubPutMapping()
 
       apiService.createMapping(
         PrisonPersonMigrationMappingRequest(
@@ -44,13 +44,13 @@ class PrisonPersonMappingApiServiceTest {
       )
 
       mappingApi.verify(
-        postRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+        putRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
     @Test
     internal fun `should pass data to service`() = runTest {
-      mappingApi.stubPostMapping()
+      mappingApi.stubPutMapping()
 
       apiService.createMapping(
         PrisonPersonMigrationMappingRequest(
@@ -63,7 +63,7 @@ class PrisonPersonMappingApiServiceTest {
       )
 
       mappingApi.verify(
-        postRequestedFor(anyUrl())
+        putRequestedFor(anyUrl())
           .withRequestBody(matchingJsonPath("nomisPrisonerNumber", equalTo("A1234AA")))
           .withRequestBody(matchingJsonPath("migrationType", equalTo("PHYSICAL_ATTRIBUTES")))
           .withRequestBody(matchingJsonPath("dpsIds[?(@ == 1)]"))
@@ -74,7 +74,7 @@ class PrisonPersonMappingApiServiceTest {
 
     @Test
     fun `should throw if API calls fail`() = runTest {
-      mappingApi.stubPostMapping(INTERNAL_SERVER_ERROR)
+      mappingApi.stubPutMapping(INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.createMapping(

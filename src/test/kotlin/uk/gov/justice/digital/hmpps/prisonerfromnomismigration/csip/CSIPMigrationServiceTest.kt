@@ -388,6 +388,11 @@ internal class CSIPMigrationServiceTest {
   @Nested
   @DisplayName("migrateStatusCheck")
   inner class MigrateCSIPStatusCheck {
+    @BeforeEach
+    fun setUp(): Unit = runBlocking {
+      whenever(migrationHistoryService.isCancelling(any())).thenReturn(false)
+    }
+
     @Nested
     @DisplayName("when there are still messages on the queue")
     inner class MessagesOnQueue {

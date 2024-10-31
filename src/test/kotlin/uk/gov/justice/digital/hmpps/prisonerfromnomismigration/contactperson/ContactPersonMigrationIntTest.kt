@@ -23,6 +23,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.migrateContactResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.IdPair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
@@ -153,8 +154,8 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
         mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = 2000, mapping = null)
         nomisApiMock.stubGetPerson(1000, contactPerson().copy(personId = 1000, firstName = "JOHN", lastName = "SMITH"))
         nomisApiMock.stubGetPerson(2000, contactPerson().copy(personId = 2000, firstName = "ADDO", lastName = "ABOAGYE"))
-        dpsApiMock.stubMigrateContact(nomisPersonId = 1000, migrateContactResponse().copy(nomisPersonId = 1000, dpsContactId = 10_000))
-        dpsApiMock.stubMigrateContact(nomisPersonId = 2000, migrateContactResponse().copy(nomisPersonId = 2000, dpsContactId = 20_000))
+        dpsApiMock.stubMigrateContact(nomisPersonId = 1000L, migrateContactResponse().copy(contact = IdPair(nomisId = 1000, dpsId = 10_000, elementType = IdPair.ElementType.CONTACT)))
+        dpsApiMock.stubMigrateContact(nomisPersonId = 2000L, migrateContactResponse().copy(contact = IdPair(nomisId = 2000, dpsId = 20_000, elementType = IdPair.ElementType.CONTACT)))
         mappingApiMock.stubCreateMappingsForMigration()
         mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 2)
         migrationResult = performMigration()
@@ -233,7 +234,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
         nomisApiMock.stubGetPersonIdsToMigrate(content = listOf(PersonIdResponse(1000)))
         mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = 1000, mapping = null)
         nomisApiMock.stubGetPerson(1000, contactPerson().copy(personId = 1000, firstName = "JOHN", lastName = "SMITH"))
-        dpsApiMock.stubMigrateContact(migrateContactResponse().copy(nomisPersonId = 1000, dpsContactId = 10_000))
+        dpsApiMock.stubMigrateContact(migrateContactResponse().copy(contact = IdPair(nomisId = 1000, dpsId = 10_000, elementType = IdPair.ElementType.CONTACT)))
         mappingApiMock.stubCreateMappingsForMigrationFailureFollowedBySuccess()
         mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 1)
         migrationResult = performMigration()
@@ -291,7 +292,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
         nomisApiMock.stubGetPersonIdsToMigrate(content = listOf(PersonIdResponse(1000)))
         mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = 1000, mapping = null)
         nomisApiMock.stubGetPerson(1000, contactPerson().copy(personId = 1000, firstName = "JOHN", lastName = "SMITH"))
-        dpsApiMock.stubMigrateContact(migrateContactResponse().copy(nomisPersonId = 1000, dpsContactId = 10_000))
+        dpsApiMock.stubMigrateContact(migrateContactResponse().copy(contact = IdPair(nomisId = 1000, dpsId = 10_000, elementType = IdPair.ElementType.CONTACT)))
         mappingApiMock.stubCreateMappingsForMigration(
           error = DuplicateMappingErrorResponse(
             moreInfo = DuplicateErrorContentObject(

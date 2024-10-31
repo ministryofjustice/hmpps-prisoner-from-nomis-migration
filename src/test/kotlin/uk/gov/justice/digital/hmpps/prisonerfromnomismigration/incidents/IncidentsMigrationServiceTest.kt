@@ -393,6 +393,11 @@ internal class IncidentsMigrationServiceTest {
   @Nested
   @DisplayName("migrateStatusCheck")
   inner class MigrateIncidentsStatusCheck {
+    @BeforeEach
+    fun setUp(): Unit = runBlocking {
+      whenever(migrationHistoryService.isCancelling(any())).thenReturn(false)
+    }
+
     @Nested
     @DisplayName("when there are still messages on the queue")
     inner class MessagesOnQueue {

@@ -12,6 +12,8 @@ import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.AddressAndPhones
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.ContactsAndRestrictions
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.IdPair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateContactResponse
@@ -48,30 +50,29 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       personId = 654321,
       lastName = "KOFI",
       firstName = "KWEKU",
-      remitter = false,
       staff = false,
-      keepBiometrics = false,
       interpreterRequired = false,
       phoneNumbers = emptyList(),
       addresses = emptyList(),
       emailAddresses = emptyList(),
       identifiers = emptyList(),
+      employments = emptyList(),
+      restrictions = emptyList(),
+      contacts = emptyList(),
     )
 
     fun migrateContactResponse(request: MigrateContactRequest = migrateContactRequest()) =
       MigrateContactResponse(
-        nomisPersonId = request.personId,
-        dpsContactId = request.personId * 10,
+        contact = IdPair(elementType = IdPair.ElementType.CONTACT, nomisId = request.personId, dpsId = request.personId * 10),
         lastName = request.lastName,
         dateOfBirth = request.dateOfBirth,
         phoneNumbers = request.phoneNumbers?.map { IdPair(elementType = IdPair.ElementType.PHONE, nomisId = it.phoneId, dpsId = it.phoneId * 10) } ?: emptyList(),
-        addresses = request.addresses?.map { IdPair(elementType = IdPair.ElementType.ADDRESS, nomisId = it.addressId, dpsId = it.addressId * 10) } ?: emptyList(),
+        addresses = request.addresses?.map { AddressAndPhones(address = IdPair(elementType = IdPair.ElementType.ADDRESS, nomisId = it.addressId, dpsId = it.addressId * 10), phones = emptyList()) } ?: emptyList(),
         emailAddresses = request.emailAddresses?.map { IdPair(elementType = IdPair.ElementType.EMAIL, nomisId = it.emailAddressId, dpsId = it.emailAddressId * 10) } ?: emptyList(),
         identities = request.identifiers?.map { IdPair(elementType = IdPair.ElementType.IDENTITY, nomisId = it.sequence, dpsId = it.sequence * 10) } ?: emptyList(),
-        // TODO - not in request yet
-        restrictions = emptyList(),
-        prisonerContacts = emptyList(),
-        prisonerContactRestrictions = emptyList(),
+        employments = request.employments?.map { IdPair(elementType = IdPair.ElementType.EMPLOYMENT, nomisId = it.sequence, dpsId = it.sequence * 10) } ?: emptyList(),
+        restrictions = request.restrictions?.map { IdPair(elementType = IdPair.ElementType.RESTRICTION, nomisId = it.id, dpsId = it.id * 10) } ?: emptyList(),
+        relationships = request.contacts?.map { ContactsAndRestrictions(relationship = IdPair(elementType = IdPair.ElementType.RESTRICTION, nomisId = it.id, dpsId = it.id * 10), restrictions = emptyList()) } ?: emptyList(),
       )
   }
 
