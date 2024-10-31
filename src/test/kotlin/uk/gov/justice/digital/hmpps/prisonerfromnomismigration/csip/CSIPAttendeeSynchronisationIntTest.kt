@@ -136,8 +136,7 @@ class CSIPAttendeeSynchronisationIntTest : SqsIntegrationTestBase() {
               .withRequestBody(matchingJsonPath("prisonNumber", equalTo("A1234BC")))
               .withRequestBody(matchingJsonPath("plan.reviews[0].attendees[0].legacyId", equalTo("221")))
               .withRequestBody(matchingJsonPath("actionedAt", equalTo("2024-08-20T10:33:48.946787")))
-              .withRequestBody(matchingJsonPath("actionedBy", equalTo("DBULL_ADM")))
-              .withRequestBody(matchingJsonPath("actionedByDisplayName", equalTo("DOM BULL"))),
+              .withRequestBody(matchingJsonPath("actionedBy", equalTo("DBULL_ADM"))),
           )
         }
 
@@ -380,8 +379,7 @@ class CSIPAttendeeSynchronisationIntTest : SqsIntegrationTestBase() {
               .withRequestBody(matchingJsonPath("prisonNumber", equalTo("A1234BC")))
               .withRequestBody(matchingJsonPath("plan.reviews[0].attendees[0].legacyId", equalTo("221")))
               .withRequestBody(matchingJsonPath("actionedAt", equalTo("2024-08-20T10:33:48.946787")))
-              .withRequestBody(matchingJsonPath("actionedBy", equalTo("DBULL_ADM")))
-              .withRequestBody(matchingJsonPath("actionedByDisplayName", equalTo("DOM BULL"))),
+              .withRequestBody(matchingJsonPath("actionedBy", equalTo("DBULL_ADM"))),
           )
         }
 

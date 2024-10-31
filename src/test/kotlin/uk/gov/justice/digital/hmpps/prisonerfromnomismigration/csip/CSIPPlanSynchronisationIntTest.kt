@@ -133,8 +133,7 @@ class CSIPPlanSynchronisationIntTest : SqsIntegrationTestBase() {
               .withRequestBody(matchingJsonPath("prisonNumber", equalTo("A1234BC")))
               .withRequestBody(matchingJsonPath("plan.identifiedNeeds[0].legacyId", equalTo("65")))
               .withRequestBody(matchingJsonPath("actionedAt", equalTo("2024-03-16T11:32:15")))
-              .withRequestBody(matchingJsonPath("actionedBy", equalTo("PPLAN")))
-              .withRequestBody(matchingJsonPath("actionedByDisplayName", equalTo("Peter Plan"))),
+              .withRequestBody(matchingJsonPath("actionedBy", equalTo("PPLAN"))),
           )
         }
 
@@ -377,8 +376,7 @@ class CSIPPlanSynchronisationIntTest : SqsIntegrationTestBase() {
               .withRequestBody(matchingJsonPath("prisonNumber", equalTo("A1234BC")))
               .withRequestBody(matchingJsonPath("plan.identifiedNeeds[0].legacyId", equalTo("65")))
               .withRequestBody(matchingJsonPath("actionedAt", equalTo("2024-03-16T11:32:15")))
-              .withRequestBody(matchingJsonPath("actionedBy", equalTo("PPLAN")))
-              .withRequestBody(matchingJsonPath("actionedByDisplayName", equalTo("Peter Plan"))),
+              .withRequestBody(matchingJsonPath("actionedBy", equalTo("PPLAN"))),
           )
         }
 
