@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-10-23.5236.fe63d56"
+    "version": "2024-10-31.5282.234b785"
   },
   "servers": [
     {
@@ -114,6 +114,112 @@
             }
           }
         }
+      }
+    },
+    "/mapping/prisonperson/migration": {
+      "put": {
+        "tags": [
+          "prison-person-resource"
+        ],
+        "summary": "Creates or updates a prison person migration mapping",
+        "description": "Creates or updates a mapping between nomis prisoner numbers and prison person history ids. Requires ROLE_NOMIS_PRISONPERSON",
+        "operationId": "upsertMapping",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrisonPersonMigrationMappingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Mapping created or updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrisonPersonMigrationMapping"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access forbidden for this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "prison-person-resource"
+        ],
+        "summary": "Creates a new prison person migration mapping",
+        "description": "Creates a mapping between nomis alert ids and dps alert id. Requires ROLE_NOMIS_PRISONPERSON",
+        "operationId": "createMapping_2",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrisonPersonMigrationMappingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Mapping created"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access forbidden for this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Indicates a duplicate mapping has been rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateMappingErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": true
       }
     },
     "/mapping/non-associations/merge/from/{oldOffenderNo}/to/{newOffenderNo}": {
@@ -1243,61 +1349,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/mapping/prisonperson/migration": {
-      "post": {
-        "tags": [
-          "prison-person-resource"
-        ],
-        "summary": "Creates a new prison person migration mapping",
-        "description": "Creates a mapping between nomis alert ids and dps alert id. Requires ROLE_NOMIS_PRISONPERSON",
-        "operationId": "createMapping_2",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PrisonPersonMigrationMappingRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Mapping created"
-          },
-          "401": {
-            "description": "Unauthorized to access this endpoint",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Access forbidden for this endpoint",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Indicates a duplicate mapping has been rejected",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DuplicateMappingErrorResponse"
                 }
               }
             }
@@ -9379,6 +9430,91 @@
           }
         }
       },
+      "PrisonPersonMigrationMappingRequest": {
+        "required": [
+          "dpsIds",
+          "label",
+          "migrationType",
+          "nomisPrisonerNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "nomisPrisonerNumber": {
+            "type": "string",
+            "description": "The prisoner number",
+            "example": "A1234AA"
+          },
+          "migrationType": {
+            "type": "string",
+            "description": "The type of migration for this person, e.g. which data is being migrated",
+            "example": "PHYSICAL_ATTRIBUTES",
+            "enum": [
+              "PHYSICAL_ATTRIBUTES",
+              "PROFILE_DETAILS_PHYSICAL_ATTRIBUTES"
+            ]
+          },
+          "dpsIds": {
+            "type": "array",
+            "description": "The ids of entities created in DPS. Held for audit purposes only.",
+            "example": "1, 2, 3",
+            "items": {
+              "type": "integer",
+              "description": "The ids of entities created in DPS. Held for audit purposes only.",
+              "format": "int64"
+            }
+          },
+          "label": {
+            "type": "string",
+            "description": "A unique reference for the migration, usually a timestamp",
+            "example": "2024-06-03T11:18:33"
+          }
+        },
+        "description": "Prison person mapping"
+      },
+      "PrisonPersonMigrationMapping": {
+        "required": [
+          "dpsIds",
+          "id",
+          "isNew",
+          "label",
+          "migrationType",
+          "new",
+          "nomisPrisonerNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "nomisPrisonerNumber": {
+            "type": "string"
+          },
+          "migrationType": {
+            "type": "string",
+            "enum": [
+              "PHYSICAL_ATTRIBUTES",
+              "PROFILE_DETAILS_PHYSICAL_ATTRIBUTES"
+            ]
+          },
+          "dpsIds": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "whenCreated": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "example": "2021-07-05T10:35:17"
+          },
+          "new": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "isNew": {
+            "type": "boolean"
+          }
+        }
+      },
       "CourtChargeBatchUpdateMappingDto": {
         "required": [
           "courtChargesToCreate",
@@ -9988,47 +10124,6 @@
           }
         },
         "description": "Batch of Adjudication punishment (aka award) mappings"
-      },
-      "PrisonPersonMigrationMappingRequest": {
-        "required": [
-          "dpsIds",
-          "label",
-          "migrationType",
-          "nomisPrisonerNumber"
-        ],
-        "type": "object",
-        "properties": {
-          "nomisPrisonerNumber": {
-            "type": "string",
-            "description": "The prisoner number",
-            "example": "A1234AA"
-          },
-          "migrationType": {
-            "type": "string",
-            "description": "The type of migration for this person, e.g. which data is being migrated",
-            "example": "PHYSICAL_ATTRIBUTES",
-            "enum": [
-              "PHYSICAL_ATTRIBUTES",
-              "PROFILE_DETAILS_PHYSICAL_ATTRIBUTES"
-            ]
-          },
-          "dpsIds": {
-            "type": "array",
-            "description": "The ids of entities created in DPS. Held for audit purposes only.",
-            "example": "1, 2, 3",
-            "items": {
-              "type": "integer",
-              "description": "The ids of entities created in DPS. Held for audit purposes only.",
-              "format": "int64"
-            }
-          },
-          "label": {
-            "type": "string",
-            "description": "A unique reference for the migration, usually a timestamp",
-            "example": "2024-06-03T11:18:33"
-          }
-        },
-        "description": "Prison person mapping"
       },
       "NonAssociationMappingDto": {
         "required": [

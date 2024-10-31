@@ -1,7 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.physicalattributes
 
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
-import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
@@ -58,7 +57,7 @@ class PhysicalAttributesMigrationIntTest : SqsIntegrationTestBase() {
         .forEachIndexed { index, offenderNo ->
           physicalAttributesNomisApi.stubGetPhysicalAttributes(offenderNo)
           dpsApi.stubMigratePhysicalAttributes(offenderNo, PhysicalAttributesMigrationResponse(listOf(index + 1.toLong())))
-          prisonPersonMappingApi.stubPostMapping()
+          prisonPersonMappingApi.stubPutMapping()
         }
     }
 
@@ -124,14 +123,14 @@ class PhysicalAttributesMigrationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will create mappings`() {
         mappingApi.verify(
-          postRequestedFor(urlEqualTo("/mapping/prisonperson/migration"))
+          putRequestedFor(urlEqualTo("/mapping/prisonperson/migration"))
             .withRequestBodyJsonPath("nomisPrisonerNumber", "A0001KT")
             .withRequestBodyJsonPath("migrationType", "PHYSICAL_ATTRIBUTES")
             .withRequestBodyJsonPath("label", migrationResult.migrationId)
             .withRequestBody(matchingJsonPath("dpsIds[?(@ == 1)]")),
         )
         mappingApi.verify(
-          postRequestedFor(urlEqualTo("/mapping/prisonperson/migration"))
+          putRequestedFor(urlEqualTo("/mapping/prisonperson/migration"))
             .withRequestBodyJsonPath("nomisPrisonerNumber", "A0002KT")
             .withRequestBodyJsonPath("migrationType", "PHYSICAL_ATTRIBUTES")
             .withRequestBodyJsonPath("label", migrationResult.migrationId)
@@ -149,7 +148,7 @@ class PhysicalAttributesMigrationIntTest : SqsIntegrationTestBase() {
         nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, firstOffenderNo = "A0001KT")
         dpsApi.stubMigratePhysicalAttributes("A0001KT", PhysicalAttributesMigrationResponse(listOf(1, 2, 3, 4)))
         physicalAttributesNomisApi.stubGetPhysicalAttributes("A0001KT", multiBookingMultiPhysicalAttributes("A0001KT"))
-        prisonPersonMappingApi.stubPostMapping()
+        prisonPersonMappingApi.stubPutMapping()
 
         migrationResult = webTestClient.performMigration()
       }
@@ -203,7 +202,7 @@ class PhysicalAttributesMigrationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will create mappings`() {
         mappingApi.verify(
-          postRequestedFor(urlEqualTo("/mapping/prisonperson/migration"))
+          putRequestedFor(urlEqualTo("/mapping/prisonperson/migration"))
             .withRequestBodyJsonPath("nomisPrisonerNumber", "A0001KT")
             .withRequestBodyJsonPath("migrationType", "PHYSICAL_ATTRIBUTES")
             .withRequestBodyJsonPath("label", migrationResult.migrationId)

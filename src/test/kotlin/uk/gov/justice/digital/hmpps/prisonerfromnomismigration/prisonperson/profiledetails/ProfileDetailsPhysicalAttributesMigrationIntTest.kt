@@ -3,7 +3,6 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.pro
 import com.github.tomakehurst.wiremock.client.WireMock.absent
 import com.github.tomakehurst.wiremock.client.WireMock.containing
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
-import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
@@ -55,7 +54,7 @@ class ProfileDetailsPhysicalAttributesMigrationIntTest : SqsIntegrationTestBase(
         .forEachIndexed { index, offenderNo ->
           profileDetailsNomisApi.stubGetProfileDetails(offenderNo)
           dpsApi.stubMigrateProfileDetailsPhysicalAttributes(offenderNo, ProfileDetailsPhysicalAttributesMigrationResponse(listOf(index + 1.toLong())))
-          prisonPersonMappingApi.stubPostMapping()
+          prisonPersonMappingApi.stubPutMapping()
         }
     }
 
@@ -125,14 +124,14 @@ class ProfileDetailsPhysicalAttributesMigrationIntTest : SqsIntegrationTestBase(
       @Test
       fun `will create mappings`() {
         mappingApi.verify(
-          postRequestedFor(urlEqualTo("/mapping/prisonperson/migration"))
+          putRequestedFor(urlEqualTo("/mapping/prisonperson/migration"))
             .withRequestBodyJsonPath("nomisPrisonerNumber", "A0001KT")
             .withRequestBodyJsonPath("migrationType", "PROFILE_DETAILS_PHYSICAL_ATTRIBUTES")
             .withRequestBodyJsonPath("label", migrationId)
             .withRequestBody(matchingJsonPath("dpsIds[?(@ == 1)]")),
         )
         mappingApi.verify(
-          postRequestedFor(urlEqualTo("/mapping/prisonperson/migration"))
+          putRequestedFor(urlEqualTo("/mapping/prisonperson/migration"))
             .withRequestBodyJsonPath("nomisPrisonerNumber", "A0002KT")
             .withRequestBodyJsonPath("migrationType", "PROFILE_DETAILS_PHYSICAL_ATTRIBUTES")
             .withRequestBodyJsonPath("label", migrationId)

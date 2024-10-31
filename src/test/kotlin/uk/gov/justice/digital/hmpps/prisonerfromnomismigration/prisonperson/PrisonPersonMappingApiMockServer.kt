@@ -3,20 +3,18 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
-import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
-import org.springframework.http.HttpStatus.CONFLICT
 import org.springframework.stereotype.Component
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 
 @Component
 class PrisonPersonMappingApiMockServer(private val objectMapper: ObjectMapper) {
-  fun stubPostMapping() {
+  fun stubPutMapping() {
     mappingApi.stubFor(
-      post("/mapping/prisonperson/migration").willReturn(
+      put("/mapping/prisonperson/migration").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(201),
@@ -24,9 +22,9 @@ class PrisonPersonMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubPostMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+  fun stubPutMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     mappingApi.stubFor(
-      post("/mapping/prisonperson/migration").willReturn(
+      put("/mapping/prisonperson/migration").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -35,19 +33,8 @@ class PrisonPersonMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubPostMappingDuplicate(error: DuplicateMappingErrorResponse) {
-    mappingApi.stubFor(
-      post("/mapping/prisonperson/migration").willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(CONFLICT.value())
-          .withBody(objectMapper.writeValueAsString(error)),
-      ),
-    )
-  }
-
-  fun stubPostMappingFailureFollowedBySuccess() {
-    mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/prisonperson/migration")
+  fun stubPutMappingFailureFollowedBySuccess() {
+    mappingApi.stubMappingUpdateFailureFollowedBySuccess(url = "/mapping/prisonperson/migration")
   }
 
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
