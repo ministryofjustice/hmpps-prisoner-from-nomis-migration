@@ -37,7 +37,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactPerson
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonPhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
@@ -254,11 +256,86 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
             domesticStatus = CodeDescription("M", "Married or in civil partnership"),
             deceasedDate = LocalDate.parse("2020-01-23"),
             isStaff = true,
-            audit = contactPerson().audit.copy(
+            audit = NomisAudit(
               modifyUserId = "ADJUA.MENSAH",
               modifyDatetime = "2024-01-02T10:23",
               createUsername = "ADJUA.BEEK",
               createDatetime = "2022-01-02T10:23",
+            ),
+            phoneNumbers = listOf(
+              PersonPhoneNumber(
+                phoneId = 10,
+                number = "0114 555 5555",
+                type = CodeDescription("MOB", "Mobile"),
+                audit = NomisAudit(
+                  modifyUserId = "ADJUA.MENSAH",
+                  modifyDatetime = "2024-02-02T10:23",
+                  createUsername = "ADJUA.BEEK",
+                  createDatetime = "2022-02-02T10:23",
+                ),
+                extension = "ext 5555",
+              ),
+              PersonPhoneNumber(
+                phoneId = 11,
+                number = "0114 1111 1111111",
+                type = CodeDescription("FAX", "Fax"),
+                audit = NomisAudit(
+                  createUsername = "ADJUA.BEEK",
+                  createDatetime = "2022-02-02T10:23",
+                ),
+              ),
+            ),
+            addresses = listOf(
+              PersonAddress(
+                addressId = 101,
+                phoneNumbers = listOf(
+                  PersonPhoneNumber(
+                    phoneId = 101,
+                    number = "0113 555 5555",
+                    type = CodeDescription("HOM", "Home"),
+                    audit = NomisAudit(
+                      modifyUserId = "ADJUA.MENSAH",
+                      modifyDatetime = "2024-04-02T10:23",
+                      createUsername = "ADJUA.BEEK",
+                      createDatetime = "2022-04-02T10:23",
+                    ),
+                    extension = "ext 5555",
+                  ),
+                ),
+                validatedPAF = true,
+                primaryAddress = true,
+                mailAddress = true,
+                audit = NomisAudit(
+                  modifyUserId = "ADJUA.MENSAH",
+                  modifyDatetime = "2024-03-02T10:23",
+                  createUsername = "ADJUA.BEEK",
+                  createDatetime = "2022-03-02T10:23",
+                ),
+                type = CodeDescription("HOME", "Home"),
+                flat = "Flat 1B",
+                premise = "Pudding Court",
+                street = "High Mound",
+                locality = "Broomhill",
+                postcode = "S1 5GG",
+                city = CodeDescription("25343", "Sheffield"),
+                county = CodeDescription("S.YORKSHIRE", "South Yorkshire"),
+                country = CodeDescription("ENG", "England"),
+                noFixedAddress = true,
+                comment = "Use this address",
+                startDate = LocalDate.parse("1987-01-01"),
+                endDate = LocalDate.parse("2024-02-01"),
+              ),
+              PersonAddress(
+                addressId = 102,
+                phoneNumbers = emptyList(),
+                validatedPAF = false,
+                primaryAddress = false,
+                mailAddress = false,
+                audit = NomisAudit(
+                  createUsername = "ADJUA.BEEK",
+                  createDatetime = "2022-03-02T10:23",
+                ),
+              ),
             ),
           ),
           ContactPerson(
@@ -323,6 +400,104 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-01-02T10:23"))
           assertThat(modifyUsername).isNull()
           assertThat(modifyDateTime).isNull()
+          assertThat(phoneNumbers).isEmpty()
+          assertThat(addresses).isEmpty()
+        }
+      }
+
+      @Test
+      fun `will send global phone numbers to DPS`() {
+        with(requests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")) {
+          assertThat(phoneNumbers).hasSize(2)
+          with(phoneNumbers!![0]) {
+            assertThat(phoneId).isEqualTo(10)
+            assertThat(number).isEqualTo("0114 555 5555")
+            assertThat(type.code).isEqualTo("MOB")
+            assertThat(createUsername).isEqualTo("ADJUA.BEEK")
+            assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:23"))
+            assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
+            assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-02-02T10:23"))
+            assertThat(extension).isEqualTo("ext 5555")
+          }
+          with(phoneNumbers!![1]) {
+            assertThat(phoneId).isEqualTo(11)
+            assertThat(number).isEqualTo("0114 1111 1111111")
+            assertThat(type.code).isEqualTo("FAX")
+            assertThat(createUsername).isEqualTo("ADJUA.BEEK")
+            assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:23"))
+            assertThat(modifyUsername).isNull()
+            assertThat(modifyDateTime).isNull()
+            assertThat(extension).isNull()
+          }
+        }
+      }
+
+      @Test
+      fun `will send addresses to DPS`() {
+        val person = requests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
+        assertThat(person.addresses).hasSize(2)
+        val firstAddress = person.addresses!![0]
+        with(firstAddress) {
+          assertThat(addressId).isEqualTo(101)
+          assertThat(type.code).isEqualTo("HOME")
+          assertThat(flat).isEqualTo("Flat 1B")
+          assertThat(premise).isEqualTo("Pudding Court")
+          assertThat(street).isEqualTo("High Mound")
+          assertThat(locality).isEqualTo("Broomhill")
+          assertThat(county?.code).isEqualTo("S.YORKSHIRE")
+          assertThat(country?.code).isEqualTo("ENG")
+          assertThat(validatedPAF).isTrue()
+          assertThat(noFixedAddress).isTrue()
+          assertThat(mailAddress).isTrue()
+          assertThat(comment).isEqualTo("Use this address")
+          assertThat(startDate).isEqualTo(LocalDate.parse("1987-01-01"))
+          assertThat(endDate).isEqualTo(LocalDate.parse("2024-02-01"))
+          assertThat(postCode).isEqualTo("S1 5GG")
+          assertThat(createUsername).isEqualTo("ADJUA.BEEK")
+          assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-03-02T10:23"))
+          assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
+          assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-03-02T10:23"))
+        }
+        val secondAddress = person.addresses!![1]
+        with(secondAddress) {
+          assertThat(addressId).isEqualTo(102)
+          // TODO DPS is incorrectly having this as mandatory
+          // assertThat(type).isNull()
+          assertThat(flat).isNull()
+          assertThat(premise).isNull()
+          assertThat(street).isNull()
+          assertThat(locality).isNull()
+          assertThat(county).isNull()
+          assertThat(country).isNull()
+          assertThat(validatedPAF).isFalse()
+          assertThat(noFixedAddress).isNull()
+          assertThat(mailAddress).isFalse()
+          assertThat(comment).isNull()
+          assertThat(startDate).isNull()
+          assertThat(endDate).isNull()
+          assertThat(postCode).isNull()
+          assertThat(createUsername).isEqualTo("ADJUA.BEEK")
+          assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-03-02T10:23"))
+          assertThat(modifyUsername).isNull()
+          assertThat(modifyDateTime).isNull()
+          assertThat(phoneNumbers).isEmpty()
+        }
+      }
+
+      @Test
+      fun `will send address phone numbers to DPS`() {
+        val person = requests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
+        val firstAddress = person.addresses!![0]
+        assertThat(firstAddress.phoneNumbers).hasSize(1)
+        with(firstAddress.phoneNumbers[0]) {
+          assertThat(phoneId).isEqualTo(101)
+          assertThat(number).isEqualTo("0113 555 5555")
+          assertThat(type.code).isEqualTo("HOM")
+          assertThat(createUsername).isEqualTo("ADJUA.BEEK")
+          assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-04-02T10:23"))
+          assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
+          assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-04-02T10:23"))
+          assertThat(extension).isEqualTo("ext 5555")
         }
       }
     }
