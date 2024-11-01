@@ -24,7 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiExtension.Companion.getRequestBody
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiExtension.Companion.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.migrateContactResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.IdPair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateContactRequest
@@ -36,6 +36,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto.MappingType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactPerson
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
@@ -235,11 +236,11 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class HappyPathNomisToDPSMapping {
-      lateinit var request: MigrateContactRequest
+      private lateinit var requests: List<MigrateContactRequest>
 
       @BeforeAll
       fun setUp() {
-        stubMigrateSinglePerson(
+        stubMigratePersons(
           contactPerson().copy(
             personId = 1000,
             firstName = "JOHN",
@@ -260,13 +261,32 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
               createDatetime = "2022-01-02T10:23",
             ),
           ),
+          ContactPerson(
+            personId = 2000,
+            firstName = "KWAME",
+            lastName = "KOBE",
+            interpreterRequired = false,
+            keepBiometrics = false,
+            audit = NomisAudit(
+              createUsername = "ADJUA.BEEK",
+              createDatetime = "2022-01-02T10:23",
+            ),
+            phoneNumbers = emptyList(),
+            addresses = emptyList(),
+            emailAddresses = emptyList(),
+            employments = emptyList(),
+            identifiers = emptyList(),
+            contacts = emptyList(),
+            restrictions = emptyList(),
+          ),
         )
         performMigration()
-        request = getRequestBody(postRequestedFor(urlPathEqualTo("/migrate/contact")))
+        requests = getRequestBodies(postRequestedFor(urlPathEqualTo("/migrate/contact")))
       }
 
       @Test
-      fun `will send core person data to DPS`() {
+      fun `will send optional core person data to DPS`() {
+        val request = requests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
         assertThat(request.personId).isEqualTo(1000L)
         assertThat(request.firstName).isEqualTo("JOHN")
         assertThat(request.lastName).isEqualTo("SMITH")
@@ -282,6 +302,26 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
         assertThat(request.createDateTime).isEqualTo(LocalDateTime.parse("2022-01-02T10:23"))
         assertThat(request.modifyUsername).isEqualTo("ADJUA.MENSAH")
         assertThat(request.modifyDateTime).isEqualTo(LocalDateTime.parse("2024-01-02T10:23"))
+      }
+
+      @Test
+      fun `will send mandatory core person data to DPS`() {
+        val request = requests.find { it.personId == 2000L } ?: throw AssertionError("Request not found")
+        assertThat(request.personId).isEqualTo(2000L)
+        assertThat(request.firstName).isEqualTo("KWAME")
+        assertThat(request.lastName).isEqualTo("KOBE")
+        assertThat(request.dateOfBirth).isNull()
+        assertThat(request.gender).isNull()
+        assertThat(request.title).isNull()
+        assertThat(request.language).isNull()
+        assertThat(request.interpreterRequired).isFalse()
+        assertThat(request.domesticStatus).isNull()
+        assertThat(request.deceasedDate).isNull()
+        assertThat(request.staff).isFalse()
+        assertThat(request.createUsername).isEqualTo("ADJUA.BEEK")
+        assertThat(request.createDateTime).isEqualTo(LocalDateTime.parse("2022-01-02T10:23"))
+        assertThat(request.modifyUsername).isNull()
+        assertThat(request.modifyDateTime).isNull()
       }
     }
 
@@ -853,12 +893,14 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
       )
     }
 
-  private fun stubMigrateSinglePerson(nomisPersonContact: ContactPerson) {
-    nomisApiMock.stubGetPersonIdsToMigrate(content = listOf(PersonIdResponse(1000)))
-    mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = 1000, mapping = null)
-    nomisApiMock.stubGetPerson(1000, nomisPersonContact)
-    dpsApiMock.stubMigrateContact(nomisPersonId = 1000L, migrateContactResponse().copy(contact = IdPair(nomisId = 1000, dpsId = 10_000, elementType = IdPair.ElementType.CONTACT)))
+  private fun stubMigratePersons(vararg nomisPersonContacts: ContactPerson) {
+    nomisApiMock.stubGetPersonIdsToMigrate(content = nomisPersonContacts.map { PersonIdResponse(it.personId) })
+    nomisPersonContacts.forEach {
+      mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = it.personId, mapping = null)
+      nomisApiMock.stubGetPerson(it.personId, it)
+      dpsApiMock.stubMigrateContact(nomisPersonId = it.personId, migrateContactResponse().copy(contact = IdPair(nomisId = it.personId, dpsId = it.personId * 10, elementType = IdPair.ElementType.CONTACT)))
+    }
     mappingApiMock.stubCreateMappingsForMigration()
-    mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 1)
+    mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = nomisPersonContacts.size)
   }
 }

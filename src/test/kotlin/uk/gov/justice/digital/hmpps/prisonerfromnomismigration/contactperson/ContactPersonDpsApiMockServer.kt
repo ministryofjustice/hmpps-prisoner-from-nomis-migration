@@ -18,6 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.IdPair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateContactResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 
 class ContactPersonDpsApiExtension :
@@ -28,7 +29,10 @@ class ContactPersonDpsApiExtension :
     @JvmField
     val dpsContactPersonServer = ContactPersonDpsApiMockServer()
     lateinit var objectMapper: ObjectMapper
+
+    @Suppress("unused")
     inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = dpsContactPersonServer.getRequestBody(pattern, objectMapper)
+    inline fun <reified T> getRequestBodies(pattern: RequestPatternBuilder): List<T> = dpsContactPersonServer.getRequestBodies(pattern, objectMapper)
   }
 
   override fun beforeAll(context: ExtensionContext) {
