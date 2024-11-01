@@ -15,6 +15,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateEmployment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateIdentifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigratePhoneNumber
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigratePrisonerContactRestriction
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateRelationship
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateRestriction
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
@@ -240,8 +243,51 @@ private fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = 
       modifyUsername = it.audit.modifyUserId,
     )
   },
-  contacts = emptyList(),
-  restrictions = emptyList(),
+  contacts = this.contacts.map {
+    MigrateRelationship(
+      id = it.id,
+      contactType = it.contactType.toCodedValue(),
+      relationshipType = it.relationshipType.toCodedValue(),
+      currentTerm = it.prisoner.bookingSequence == 1L,
+      active = it.active,
+      expiryDate = it.expiryDate,
+      approvedVisitor = it.approvedVisitor,
+      nextOfKin = it.nextOfKin,
+      emergencyContact = it.emergencyContact,
+      comment = it.comment,
+      prisonerNumber = it.prisoner.offenderNo,
+      createDateTime = it.audit.createDatetime.toDateTime(),
+      createUsername = it.audit.createUsername,
+      modifyDateTime = it.audit.modifyDatetime.toDateTime(),
+      modifyUsername = it.audit.modifyUserId,
+      restrictions = it.restrictions.map { restriction ->
+        MigratePrisonerContactRestriction(
+          id = restriction.id,
+          restrictionType = restriction.type.toCodedValue(),
+          startDate = restriction.effectiveDate,
+          expiryDate = restriction.expiryDate,
+          comment = restriction.comment,
+          createDateTime = restriction.audit.createDatetime.toDateTime(),
+          createUsername = restriction.audit.createUsername,
+          modifyDateTime = restriction.audit.modifyDatetime.toDateTime(),
+          modifyUsername = restriction.audit.modifyUserId,
+        )
+      },
+    )
+  },
+  restrictions = this.restrictions.map {
+    MigrateRestriction(
+      id = it.id,
+      type = it.type.toCodedValue(),
+      effectiveDate = it.effectiveDate,
+      expiryDate = it.expiryDate,
+      comment = it.comment,
+      createDateTime = it.audit.createDatetime.toDateTime(),
+      createUsername = it.audit.createUsername,
+      modifyDateTime = it.audit.modifyDatetime.toDateTime(),
+      modifyUsername = it.audit.modifyUserId,
+    )
+  },
   createDateTime = this.audit.createDatetime.toDateTime(),
   createUsername = this.audit.createUsername,
   modifyDateTime = this.audit.modifyDatetime.toDateTime(),
