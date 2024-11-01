@@ -286,42 +286,44 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will send optional core person data to DPS`() {
-        val request = requests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
-        assertThat(request.personId).isEqualTo(1000L)
-        assertThat(request.firstName).isEqualTo("JOHN")
-        assertThat(request.lastName).isEqualTo("SMITH")
-        assertThat(request.dateOfBirth).isEqualTo(LocalDate.parse("1965-07-19"))
-        assertThat(request.gender?.code).isEqualTo("M")
-        assertThat(request.title?.code).isEqualTo("MR")
-        assertThat(request.language?.code).isEqualTo("VIE")
-        assertThat(request.interpreterRequired).isTrue()
-        assertThat(request.domesticStatus?.code).isEqualTo("M")
-        assertThat(request.deceasedDate).isEqualTo(LocalDate.parse("2020-01-23"))
-        assertThat(request.staff).isTrue()
-        assertThat(request.createUsername).isEqualTo("ADJUA.BEEK")
-        assertThat(request.createDateTime).isEqualTo(LocalDateTime.parse("2022-01-02T10:23"))
-        assertThat(request.modifyUsername).isEqualTo("ADJUA.MENSAH")
-        assertThat(request.modifyDateTime).isEqualTo(LocalDateTime.parse("2024-01-02T10:23"))
+        with(requests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")) {
+          assertThat(personId).isEqualTo(1000L)
+          assertThat(firstName).isEqualTo("JOHN")
+          assertThat(lastName).isEqualTo("SMITH")
+          assertThat(dateOfBirth).isEqualTo(LocalDate.parse("1965-07-19"))
+          assertThat(gender?.code).isEqualTo("M")
+          assertThat(title?.code).isEqualTo("MR")
+          assertThat(language?.code).isEqualTo("VIE")
+          assertThat(interpreterRequired).isTrue()
+          assertThat(domesticStatus?.code).isEqualTo("M")
+          assertThat(deceasedDate).isEqualTo(LocalDate.parse("2020-01-23"))
+          assertThat(staff).isTrue()
+          assertThat(createUsername).isEqualTo("ADJUA.BEEK")
+          assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-01-02T10:23"))
+          assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
+          assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-01-02T10:23"))
+        }
       }
 
       @Test
       fun `will send mandatory core person data to DPS`() {
-        val request = requests.find { it.personId == 2000L } ?: throw AssertionError("Request not found")
-        assertThat(request.personId).isEqualTo(2000L)
-        assertThat(request.firstName).isEqualTo("KWAME")
-        assertThat(request.lastName).isEqualTo("KOBE")
-        assertThat(request.dateOfBirth).isNull()
-        assertThat(request.gender).isNull()
-        assertThat(request.title).isNull()
-        assertThat(request.language).isNull()
-        assertThat(request.interpreterRequired).isFalse()
-        assertThat(request.domesticStatus).isNull()
-        assertThat(request.deceasedDate).isNull()
-        assertThat(request.staff).isFalse()
-        assertThat(request.createUsername).isEqualTo("ADJUA.BEEK")
-        assertThat(request.createDateTime).isEqualTo(LocalDateTime.parse("2022-01-02T10:23"))
-        assertThat(request.modifyUsername).isNull()
-        assertThat(request.modifyDateTime).isNull()
+        with(requests.find { it.personId == 2000L } ?: throw AssertionError("Request not found")) {
+          assertThat(personId).isEqualTo(2000L)
+          assertThat(firstName).isEqualTo("KWAME")
+          assertThat(lastName).isEqualTo("KOBE")
+          assertThat(dateOfBirth).isNull()
+          assertThat(gender).isNull()
+          assertThat(title).isNull()
+          assertThat(language).isNull()
+          assertThat(interpreterRequired).isFalse()
+          assertThat(domesticStatus).isNull()
+          assertThat(deceasedDate).isNull()
+          assertThat(staff).isFalse()
+          assertThat(createUsername).isEqualTo("ADJUA.BEEK")
+          assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-01-02T10:23"))
+          assertThat(modifyUsername).isNull()
+          assertThat(modifyDateTime).isNull()
+        }
       }
     }
 
@@ -894,6 +896,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
     }
 
   private fun stubMigratePersons(vararg nomisPersonContacts: ContactPerson) {
+    dpsApiMock.resetAll()
     nomisApiMock.stubGetPersonIdsToMigrate(content = nomisPersonContacts.map { PersonIdResponse(it.personId) })
     nomisPersonContacts.forEach {
       mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = it.personId, mapping = null)
