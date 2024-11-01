@@ -7,8 +7,10 @@ import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.CodedValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.IdPair
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateContactResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigratePhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
@@ -144,8 +146,55 @@ private fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = 
   domesticStatus = this.domesticStatus?.toCodedValue(),
   deceasedDate = this.deceasedDate,
   staff = this.isStaff ?: false,
-  phoneNumbers = emptyList(),
-  addresses = emptyList(),
+  phoneNumbers = this.phoneNumbers.map {
+    MigratePhoneNumber(
+      phoneId = it.phoneId,
+      number = it.number,
+      extension = it.extension,
+      type = it.type.toCodedValue(),
+      createDateTime = it.audit.createDatetime.toDateTime(),
+      createUsername = it.audit.createUsername,
+      modifyDateTime = it.audit.modifyDatetime.toDateTime(),
+      modifyUsername = it.audit.modifyUserId,
+    )
+  },
+  addresses = this.addresses.map {
+    MigrateAddress(
+      addressId = it.addressId,
+      type = it.type?.toCodedValue() ?: CodedValue("HOME", "Home"),
+      flat = it.flat,
+      premise = it.premise,
+      street = it.street,
+      locality = it.locality,
+      postCode = it.postcode,
+      city = it.city?.toCodedValue(),
+      county = it.county?.toCodedValue(),
+      country = it.country?.toCodedValue(),
+      validatedPAF = it.validatedPAF,
+      noFixedAddress = it.noFixedAddress,
+      primaryAddress = it.primaryAddress,
+      mailAddress = it.mailAddress,
+      comment = it.comment,
+      startDate = it.startDate,
+      endDate = it.endDate,
+      phoneNumbers = it.phoneNumbers.map { phone ->
+        MigratePhoneNumber(
+          phoneId = phone.phoneId,
+          number = phone.number,
+          extension = phone.extension,
+          type = phone.type.toCodedValue(),
+          createDateTime = phone.audit.createDatetime.toDateTime(),
+          createUsername = phone.audit.createUsername,
+          modifyDateTime = phone.audit.modifyDatetime.toDateTime(),
+          modifyUsername = phone.audit.modifyUserId,
+        )
+      },
+      createDateTime = it.audit.createDatetime.toDateTime(),
+      createUsername = it.audit.createUsername,
+      modifyDateTime = it.audit.modifyDatetime.toDateTime(),
+      modifyUsername = it.audit.modifyUserId,
+    )
+  },
   emailAddresses = emptyList(),
   employments = emptyList(),
   identifiers = emptyList(),
