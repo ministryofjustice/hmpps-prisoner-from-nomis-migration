@@ -21,6 +21,13 @@ fun WireMockServer.getRequestBodyAsString(pattern: RequestPatternBuilder): Strin
   return request.bodyAsString
 }
 
+fun WireMockServer.getRequestBodiesAsString(pattern: RequestPatternBuilder): List<String> =
+  findAll(pattern).map { it.bodyAsString }
+
 inline fun <reified T> WireMockServer.getRequestBody(pattern: RequestPatternBuilder, objectMapper: ObjectMapper): T = getRequestBodyAsString(pattern).let {
   return objectMapper.readValue<T>(it)
+}
+
+inline fun <reified T> WireMockServer.getRequestBodies(pattern: RequestPatternBuilder, objectMapper: ObjectMapper): List<T> = getRequestBodiesAsString(pattern).map {
+  objectMapper.readValue<T>(it)
 }
