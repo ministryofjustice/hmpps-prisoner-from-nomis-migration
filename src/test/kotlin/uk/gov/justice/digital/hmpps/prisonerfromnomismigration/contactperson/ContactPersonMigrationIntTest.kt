@@ -35,9 +35,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto.MappingType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactForPrisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactPerson
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactRestriction
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactRestrictionEnteredStaff
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonEmailAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonEmployment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonEmploymentCorporate
@@ -366,7 +370,6 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
                 corporate = PersonEmploymentCorporate(id = 120, name = "Police"),
               ),
             ),
-
             identifiers = listOf(
               PersonIdentifier(
                 sequence = 1,
@@ -385,6 +388,105 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
                 sequence = 2,
                 type = CodeDescription("STAFF", "Staff Pass/ Identity Card"),
                 identifier = "6363688",
+                audit = NomisAudit(
+                  createUsername = "ADJUA.BEEK",
+                  createDatetime = "2022-02-02T10:23",
+                ),
+              ),
+            ),
+            restrictions = listOf(
+              ContactRestriction(
+                id = 150,
+                type = CodeDescription("BAN", "Banned"),
+                effectiveDate = LocalDate.parse("2023-01-01"),
+                expiryDate = LocalDate.parse("2026-01-01"),
+                enteredStaff = ContactRestrictionEnteredStaff(
+                  staffId = 87675,
+                  username = "ADJUA.SMITH",
+                ),
+                comment = "Banned for life!",
+                audit = NomisAudit(
+                  modifyUserId = "ADJUA.MENSAH",
+                  modifyDatetime = "2024-02-02T10:23",
+                  createUsername = "ADJUA.BEEK",
+                  createDatetime = "2022-02-02T10:23",
+                ),
+
+              ),
+              ContactRestriction(
+                id = 151,
+                type = CodeDescription("CCTV", "CCTV"),
+                effectiveDate = LocalDate.parse("2023-01-01"),
+                enteredStaff = ContactRestrictionEnteredStaff(
+                  staffId = 87675,
+                  username = "ADJUA.SMITH",
+                ),
+                audit = NomisAudit(
+                  createUsername = "ADJUA.BEEK",
+                  createDatetime = "2022-02-02T10:23",
+                ),
+              ),
+            ),
+            contacts = listOf(
+              PersonContact(
+                id = 190,
+                contactType = CodeDescription("S", "Social/Family"),
+                relationshipType = CodeDescription("BRO", "Brother"),
+                active = true,
+                approvedVisitor = true,
+                nextOfKin = true,
+                emergencyContact = true,
+                prisoner = ContactForPrisoner(
+                  bookingId = 123456,
+                  bookingSequence = 1,
+                  offenderNo = "A1234KT",
+                  lastName = "SMITH",
+                  firstName = "JOHN",
+                ),
+                restrictions = listOf(
+                  ContactRestriction(
+                    id = 160,
+                    type = CodeDescription("BAN", "Banned"),
+                    effectiveDate = LocalDate.parse("2023-01-01"),
+                    expiryDate = LocalDate.parse("2026-01-01"),
+                    enteredStaff = ContactRestrictionEnteredStaff(
+                      staffId = 87675,
+                      username = "ADJUA.SMITH",
+                    ),
+                    comment = "Banned for life!",
+                    audit = NomisAudit(
+                      modifyUserId = "ADJUA.MENSAH",
+                      modifyDatetime = "2024-02-02T10:23",
+                      createUsername = "ADJUA.BEEK",
+                      createDatetime = "2022-02-02T10:23",
+                    ),
+                  ),
+                ),
+                audit = NomisAudit(
+                  modifyUserId = "ADJUA.MENSAH",
+                  modifyDatetime = "2024-02-02T10:23",
+                  createUsername = "ADJUA.BEEK",
+                  createDatetime = "2022-02-02T10:23",
+                ),
+                expiryDate = LocalDate.parse("2030-01-01"),
+                comment = "Banned",
+              ),
+              PersonContact(
+                id = 191,
+                contactType = CodeDescription("S", "Social/Family"),
+                relationshipType = CodeDescription("BRO", "Brother"),
+                active = false,
+                approvedVisitor = false,
+                nextOfKin = false,
+                emergencyContact = false,
+                prisoner = ContactForPrisoner(
+                  bookingId = 98,
+                  bookingSequence = 2,
+                  offenderNo = "A1234KT",
+                  lastName = "SMITH",
+                  firstName = "JOHN",
+                ),
+                restrictions = emptyList(),
                 audit = NomisAudit(
                   createUsername = "ADJUA.BEEK",
                   createDatetime = "2022-02-02T10:23",
@@ -459,6 +561,8 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(employments).isEmpty()
           assertThat(emailAddresses).isEmpty()
           assertThat(identifiers).isEmpty()
+          assertThat(restrictions).isEmpty()
+          assertThat(contacts).isEmpty()
         }
       }
 
@@ -575,7 +679,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
-      fun `will send idenifiers to DPS`() {
+      fun `will send identifiers to DPS`() {
         val person = requests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
         assertThat(person.identifiers).hasSize(2)
         with(person.identifiers!![0]) {
@@ -607,6 +711,97 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
         with(person.emailAddresses!![0]) {
           assertThat(emailAddressId).isEqualTo(130)
           assertThat(email).isEqualTo("test@test.justice.gov.uk")
+          assertThat(createUsername).isEqualTo("ADJUA.BEEK")
+          assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:23"))
+          assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
+          assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-02-02T10:23"))
+        }
+      }
+
+      @Test
+      fun `will send restrictions to DPS`() {
+        val person = requests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
+        assertThat(person.restrictions).hasSize(2)
+        with(person.restrictions!![0]) {
+          assertThat(id).isEqualTo(150)
+          assertThat(type.code).isEqualTo("BAN")
+          assertThat(comment).isEqualTo("Banned for life!")
+          assertThat(effectiveDate).isEqualTo(LocalDate.parse("2023-01-01"))
+          assertThat(expiryDate).isEqualTo(LocalDate.parse("2026-01-01"))
+          // TODO missing staff username
+          assertThat(createUsername).isEqualTo("ADJUA.BEEK")
+          assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:23"))
+          assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
+          assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-02-02T10:23"))
+        }
+        with(person.restrictions!![1]) {
+          assertThat(id).isEqualTo(151)
+          assertThat(type.code).isEqualTo("CCTV")
+          assertThat(comment).isNull()
+          assertThat(effectiveDate).isEqualTo(LocalDate.parse("2023-01-01"))
+          assertThat(expiryDate).isNull()
+          // TODO missing staff username
+          assertThat(createUsername).isEqualTo("ADJUA.BEEK")
+          assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:23"))
+          assertThat(modifyUsername).isNull()
+          assertThat(modifyDateTime).isNull()
+        }
+      }
+
+      @Test
+      fun `will send contacts to DPS`() {
+        val person = requests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
+        assertThat(person.contacts).hasSize(2)
+        with(person.contacts!![0]) {
+          assertThat(id).isEqualTo(190)
+          assertThat(contactType.code).isEqualTo("S")
+          assertThat(relationshipType.code).isEqualTo("BRO")
+          assertThat(currentTerm).isTrue()
+          assertThat(active).isTrue()
+          assertThat(expiryDate).isEqualTo(LocalDate.parse("2030-01-01"))
+          assertThat(approvedVisitor).isTrue()
+          assertThat(nextOfKin).isTrue()
+          assertThat(emergencyContact).isTrue()
+          assertThat(comment).isEqualTo("Banned")
+          assertThat(prisonerNumber).isEqualTo("A1234KT")
+          assertThat(createUsername).isEqualTo("ADJUA.BEEK")
+          assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:23"))
+          assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
+          assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-02-02T10:23"))
+        }
+        with(person.contacts!![1]) {
+          assertThat(id).isEqualTo(191)
+          assertThat(contactType.code).isEqualTo("S")
+          assertThat(relationshipType.code).isEqualTo("BRO")
+          assertThat(currentTerm).isFalse()
+          assertThat(active).isFalse()
+          assertThat(expiryDate).isNull()
+          assertThat(approvedVisitor).isFalse()
+          assertThat(nextOfKin).isFalse()
+          assertThat(emergencyContact).isFalse()
+          assertThat(comment).isNull()
+          assertThat(prisonerNumber).isEqualTo("A1234KT")
+          assertThat(createUsername).isEqualTo("ADJUA.BEEK")
+          assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:23"))
+          assertThat(modifyUsername).isNull()
+          assertThat(modifyDateTime).isNull()
+          assertThat(restrictions).isEmpty()
+        }
+      }
+
+      @Test
+      fun `will send contact restrictions to DPS`() {
+        val person = requests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
+        assertThat(person.contacts).hasSize(2)
+        val contact = person.contacts!![0]
+        assertThat(contact.restrictions).hasSize(1)
+        with(contact.restrictions[0]) {
+          assertThat(id).isEqualTo(160)
+          assertThat(restrictionType.code).isEqualTo("BAN")
+          assertThat(comment).isEqualTo("Banned for life!")
+          assertThat(startDate).isEqualTo(LocalDate.parse("2023-01-01"))
+          assertThat(expiryDate).isEqualTo(LocalDate.parse("2026-01-01"))
+          // TODO missing staff username
           assertThat(createUsername).isEqualTo("ADJUA.BEEK")
           assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:23"))
           assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
