@@ -38,7 +38,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactPerson
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonEmailAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonEmployment
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonEmploymentCorporate
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonIdentifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonPhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
@@ -337,6 +341,56 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
                 ),
               ),
             ),
+            emailAddresses = listOf(
+              PersonEmailAddress(
+                emailAddressId = 130,
+                email = "test@test.justice.gov.uk",
+                audit = NomisAudit(
+                  modifyUserId = "ADJUA.MENSAH",
+                  modifyDatetime = "2024-02-02T10:23",
+                  createUsername = "ADJUA.BEEK",
+                  createDatetime = "2022-02-02T10:23",
+                ),
+              ),
+            ),
+            employments = listOf(
+              PersonEmployment(
+                sequence = 1,
+                active = true,
+                audit = NomisAudit(
+                  modifyUserId = "ADJUA.MENSAH",
+                  modifyDatetime = "2024-02-02T10:23",
+                  createUsername = "ADJUA.BEEK",
+                  createDatetime = "2022-02-02T10:23",
+                ),
+                corporate = PersonEmploymentCorporate(id = 120, name = "Police"),
+              ),
+            ),
+
+            identifiers = listOf(
+              PersonIdentifier(
+                sequence = 1,
+                type = CodeDescription("PNC", "PNC Number"),
+                identifier = "2024/00037373A",
+                issuedAuthority = "Police",
+                audit = NomisAudit(
+                  modifyUserId = "ADJUA.MENSAH",
+                  modifyDatetime = "2024-02-02T10:23",
+                  createUsername = "ADJUA.BEEK",
+                  createDatetime = "2022-02-02T10:23",
+                ),
+
+              ),
+              PersonIdentifier(
+                sequence = 2,
+                type = CodeDescription("STAFF", "Staff Pass/ Identity Card"),
+                identifier = "6363688",
+                audit = NomisAudit(
+                  createUsername = "ADJUA.BEEK",
+                  createDatetime = "2022-02-02T10:23",
+                ),
+              ),
+            ),
           ),
           ContactPerson(
             personId = 2000,
@@ -402,6 +456,9 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(modifyDateTime).isNull()
           assertThat(phoneNumbers).isEmpty()
           assertThat(addresses).isEmpty()
+          assertThat(employments).isEmpty()
+          assertThat(emailAddresses).isEmpty()
+          assertThat(identifiers).isEmpty()
         }
       }
 
@@ -498,6 +555,62 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
           assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-04-02T10:23"))
           assertThat(extension).isEqualTo("ext 5555")
+        }
+      }
+
+      @Test
+      fun `will send employments to DPS`() {
+        val person = requests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
+        assertThat(person.employments).hasSize(1)
+        with(person.employments!![0]) {
+          assertThat(sequence).isEqualTo(1)
+          assertThat(corporate.id).isEqualTo(120)
+          assertThat(corporate.name).isEqualTo("Police")
+          assertThat(active).isTrue()
+          assertThat(createUsername).isEqualTo("ADJUA.BEEK")
+          assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:23"))
+          assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
+          assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-02-02T10:23"))
+        }
+      }
+
+      @Test
+      fun `will send idenifiers to DPS`() {
+        val person = requests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
+        assertThat(person.identifiers).hasSize(2)
+        with(person.identifiers!![0]) {
+          assertThat(sequence).isEqualTo(1)
+          assertThat(type.code).isEqualTo("PNC")
+          assertThat(identifier).isEqualTo("2024/00037373A")
+          assertThat(issuedAuthority).isEqualTo("Police")
+          assertThat(createUsername).isEqualTo("ADJUA.BEEK")
+          assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:23"))
+          assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
+          assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-02-02T10:23"))
+        }
+        with(person.identifiers!![1]) {
+          assertThat(sequence).isEqualTo(2)
+          assertThat(type.code).isEqualTo("STAFF")
+          assertThat(identifier).isEqualTo("6363688")
+          assertThat(issuedAuthority).isNull()
+          assertThat(createUsername).isEqualTo("ADJUA.BEEK")
+          assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:23"))
+          assertThat(modifyUsername).isNull()
+          assertThat(modifyDateTime).isNull()
+        }
+      }
+
+      @Test
+      fun `will send email addresses to DPS`() {
+        val person = requests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
+        assertThat(person.emailAddresses).hasSize(1)
+        with(person.emailAddresses!![0]) {
+          assertThat(emailAddressId).isEqualTo(130)
+          assertThat(email).isEqualTo("test@test.justice.gov.uk")
+          assertThat(createUsername).isEqualTo("ADJUA.BEEK")
+          assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:23"))
+          assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
+          assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-02-02T10:23"))
         }
       }
     }

@@ -6,10 +6,14 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.CodedValue
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.Corporate
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.IdPair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateContactResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateEmailAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateEmployment
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateIdentifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigratePhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
@@ -119,6 +123,7 @@ class ContactPersonMigrationService(
   }
 }
 
+@Suppress("UNNECESSARY_NOT_NULL_ASSERTION")
 private fun MigrateContactResponse.toContactPersonMappingsDto(migrationId: String) = ContactPersonMappingsDto(
   mappingType = ContactPersonMappingsDto.MappingType.MIGRATED,
   label = migrationId,
@@ -126,8 +131,9 @@ private fun MigrateContactResponse.toContactPersonMappingsDto(migrationId: Strin
   personAddressMapping = this.addresses.map { it.address!!.toContactPersonSimpleMappingIdDto() } + this.addresses.flatMap { address -> address.phones.map { it.toContactPersonSimpleMappingIdDto() } },
   personPhoneMapping = phoneNumbers.map { it.toContactPersonSimpleMappingIdDto() },
   personEmailMapping = emailAddresses.map { ContactPersonSimpleMappingIdDto(dpsId = it.dpsId.toString(), nomisId = it.nomisId) },
-  personEmploymentMapping = employments?.map { it.toContactPersonSequenceMappingIdDto(this.contact.nomisId) } ?: emptyList(),
-  personIdentifierMapping = identities.map { it.toContactPersonSequenceMappingIdDto(this.contact.nomisId) },
+  // TODO - getting IntelliJ smart cast error here - so for now use unnecessary  `!!` to avoid rebuilding all the time
+  personEmploymentMapping = employments?.map { it.toContactPersonSequenceMappingIdDto(this.contact!!.nomisId) } ?: emptyList(),
+  personIdentifierMapping = identities.map { it.toContactPersonSequenceMappingIdDto(this.contact!!.nomisId) },
   personRestrictionMapping = restrictions.map { it.toContactPersonSimpleMappingIdDto() },
   personContactMapping = relationships.map { it.relationship!!.toContactPersonSimpleMappingIdDto() },
   personContactRestrictionMapping = relationships.flatMap { it.restrictions.map { it.toContactPersonSimpleMappingIdDto() } },
@@ -195,9 +201,45 @@ private fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = 
       modifyUsername = it.audit.modifyUserId,
     )
   },
-  emailAddresses = emptyList(),
-  employments = emptyList(),
-  identifiers = emptyList(),
+  emailAddresses = this.emailAddresses.map {
+    MigrateEmailAddress(
+      emailAddressId = it.emailAddressId,
+      email = it.email,
+      createDateTime = it.audit.createDatetime.toDateTime(),
+      createUsername = it.audit.createUsername,
+      modifyDateTime = it.audit.modifyDatetime.toDateTime(),
+      modifyUsername = it.audit.modifyUserId,
+    )
+  },
+  employments = this.employments.map {
+    MigrateEmployment(
+      sequence = it.sequence,
+      active = it.active,
+      // TODO - NOMIS API is not quite right with nullability here - needs correcting
+      corporate = it.corporate!!.let { corporate ->
+        Corporate(
+          id = corporate.id,
+          name = corporate.name!!,
+        )
+      },
+      createDateTime = it.audit.createDatetime.toDateTime(),
+      createUsername = it.audit.createUsername,
+      modifyDateTime = it.audit.modifyDatetime.toDateTime(),
+      modifyUsername = it.audit.modifyUserId,
+    )
+  },
+  identifiers = this.identifiers.map {
+    MigrateIdentifier(
+      sequence = it.sequence,
+      type = it.type.toCodedValue(),
+      identifier = it.identifier,
+      issuedAuthority = it.issuedAuthority,
+      createDateTime = it.audit.createDatetime.toDateTime(),
+      createUsername = it.audit.createUsername,
+      modifyDateTime = it.audit.modifyDatetime.toDateTime(),
+      modifyUsername = it.audit.modifyUserId,
+    )
+  },
   contacts = emptyList(),
   restrictions = emptyList(),
   createDateTime = this.audit.createDatetime.toDateTime(),
