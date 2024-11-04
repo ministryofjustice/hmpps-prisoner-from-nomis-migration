@@ -30,6 +30,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
@@ -52,6 +53,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repos
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.Duration
@@ -246,12 +248,14 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class HappyPathNomisToDPSMapping {
-      private lateinit var requests: List<MigrateContactRequest>
+      private lateinit var dpsRequests: List<MigrateContactRequest>
+      private lateinit var mappingRequests: List<ContactPersonMappingsDto>
+      private lateinit var migrationResult: MigrationResult
 
       @BeforeAll
       fun setUp() {
         stubMigratePersons(
-          contactPerson().copy(
+          ContactPerson(
             personId = 1000,
             firstName = "JOHN",
             lastName = "SMITH",
@@ -427,6 +431,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
                 ),
               ),
             ),
+            keepBiometrics = false,
             contacts = listOf(
               PersonContact(
                 id = 190,
@@ -513,13 +518,14 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
             restrictions = emptyList(),
           ),
         )
-        performMigration()
-        requests = getRequestBodies(postRequestedFor(urlPathEqualTo("/migrate/contact")))
+        migrationResult = performMigration()
+        dpsRequests = getRequestBodies(postRequestedFor(urlPathEqualTo("/migrate/contact")))
+        mappingRequests = MappingApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/mapping/contact-person/migrate")))
       }
 
       @Test
       fun `will send optional core person data to DPS`() {
-        with(requests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")) {
+        with(dpsRequests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")) {
           assertThat(personId).isEqualTo(1000L)
           assertThat(firstName).isEqualTo("JOHN")
           assertThat(lastName).isEqualTo("SMITH")
@@ -540,7 +546,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will send mandatory core person data to DPS`() {
-        with(requests.find { it.personId == 2000L } ?: throw AssertionError("Request not found")) {
+        with(dpsRequests.find { it.personId == 2000L } ?: throw AssertionError("Request not found")) {
           assertThat(personId).isEqualTo(2000L)
           assertThat(firstName).isEqualTo("KWAME")
           assertThat(lastName).isEqualTo("KOBE")
@@ -568,7 +574,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will send global phone numbers to DPS`() {
-        with(requests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")) {
+        with(dpsRequests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")) {
           assertThat(phoneNumbers).hasSize(2)
           with(phoneNumbers!![0]) {
             assertThat(phoneId).isEqualTo(10)
@@ -595,10 +601,9 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will send addresses to DPS`() {
-        val person = requests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
+        val person = dpsRequests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
         assertThat(person.addresses).hasSize(2)
-        val firstAddress = person.addresses!![0]
-        with(firstAddress) {
+        with(person.addresses!![0]) {
           assertThat(addressId).isEqualTo(101)
           assertThat(type.code).isEqualTo("HOME")
           assertThat(flat).isEqualTo("Flat 1B")
@@ -619,8 +624,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
           assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-03-02T10:23"))
         }
-        val secondAddress = person.addresses!![1]
-        with(secondAddress) {
+        with(person.addresses!![1]) {
           assertThat(addressId).isEqualTo(102)
           // TODO DPS is incorrectly having this as mandatory
           // assertThat(type).isNull()
@@ -647,7 +651,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will send address phone numbers to DPS`() {
-        val person = requests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
+        val person = dpsRequests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
         val firstAddress = person.addresses!![0]
         assertThat(firstAddress.phoneNumbers).hasSize(1)
         with(firstAddress.phoneNumbers[0]) {
@@ -664,7 +668,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will send employments to DPS`() {
-        val person = requests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
+        val person = dpsRequests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
         assertThat(person.employments).hasSize(1)
         with(person.employments!![0]) {
           assertThat(sequence).isEqualTo(1)
@@ -680,7 +684,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will send identifiers to DPS`() {
-        val person = requests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
+        val person = dpsRequests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
         assertThat(person.identifiers).hasSize(2)
         with(person.identifiers!![0]) {
           assertThat(sequence).isEqualTo(1)
@@ -706,7 +710,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will send email addresses to DPS`() {
-        val person = requests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
+        val person = dpsRequests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
         assertThat(person.emailAddresses).hasSize(1)
         with(person.emailAddresses!![0]) {
           assertThat(emailAddressId).isEqualTo(130)
@@ -720,7 +724,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will send restrictions to DPS`() {
-        val person = requests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
+        val person = dpsRequests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
         assertThat(person.restrictions).hasSize(2)
         with(person.restrictions!![0]) {
           assertThat(id).isEqualTo(150)
@@ -750,7 +754,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will send contacts to DPS`() {
-        val person = requests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
+        val person = dpsRequests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
         assertThat(person.contacts).hasSize(2)
         with(person.contacts!![0]) {
           assertThat(id).isEqualTo(190)
@@ -791,7 +795,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will send contact restrictions to DPS`() {
-        val person = requests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
+        val person = dpsRequests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
         assertThat(person.contacts).hasSize(2)
         val contact = person.contacts!![0]
         assertThat(contact.restrictions).hasSize(1)
@@ -806,6 +810,135 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:23"))
           assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
           assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-02-02T10:23"))
+        }
+      }
+
+      @Test
+      fun `will create mappings for nomis person to dps contact`() {
+        // mock will return a dpsId which is nomisId*10
+
+        with(mappingRequests.find { it.personMapping.nomisId == 1000L } ?: throw AssertionError("Request not found")) {
+          assertThat(mappingType).isEqualTo(ContactPersonMappingsDto.MappingType.MIGRATED)
+          assertThat(label).isEqualTo(migrationResult.migrationId)
+          assertThat(personMapping.nomisId).isEqualTo(1000L)
+          assertThat(personMapping.dpsId).isEqualTo("10000")
+        }
+        with(mappingRequests.find { it.personMapping.nomisId == 2000L } ?: throw AssertionError("Request not found")) {
+          assertThat(mappingType).isEqualTo(ContactPersonMappingsDto.MappingType.MIGRATED)
+          assertThat(label).isEqualTo(migrationResult.migrationId)
+          assertThat(personMapping.nomisId).isEqualTo(2000L)
+          assertThat(personMapping.dpsId).isEqualTo("20000")
+        }
+      }
+
+      @Test
+      fun `will create mappings for nomis addresses to dps address`() {
+        with(mappingRequests.find { it.personMapping.nomisId == 1000L }?.personAddressMapping ?: throw AssertionError("Request not found")) {
+          assertThat(this).hasSize(2)
+          assertThat(this[0].nomisId).isEqualTo(101L)
+          assertThat(this[0].dpsId).isEqualTo("1010")
+          assertThat(this[1].nomisId).isEqualTo(102L)
+          assertThat(this[1].dpsId).isEqualTo("1020")
+        }
+        with(mappingRequests.find { it.personMapping.nomisId == 2000L }?.personAddressMapping ?: throw AssertionError("Request not found")) {
+          assertThat(this).isEmpty()
+        }
+      }
+
+      @Test
+      fun `will create mappings for nomis phones to dps phones including from the addresses`() {
+        with(mappingRequests.find { it.personMapping.nomisId == 1000L }?.personPhoneMapping ?: throw AssertionError("Request not found")) {
+          assertThat(this).hasSize(3)
+          assertThat(this[0].nomisId).isEqualTo(10L)
+          assertThat(this[0].dpsId).isEqualTo("100")
+          assertThat(this[1].nomisId).isEqualTo(11L)
+          assertThat(this[1].dpsId).isEqualTo("110")
+          assertThat(this[2].nomisId).isEqualTo(101L)
+          assertThat(this[2].dpsId).isEqualTo("1010")
+        }
+        with(mappingRequests.find { it.personMapping.nomisId == 2000L }?.personPhoneMapping ?: throw AssertionError("Request not found")) {
+          assertThat(this).isEmpty()
+        }
+      }
+
+      @Test
+      fun `will create mappings for nomis emails to dps emails`() {
+        with(mappingRequests.find { it.personMapping.nomisId == 1000L }?.personEmailMapping ?: throw AssertionError("Request not found")) {
+          assertThat(this).hasSize(1)
+          assertThat(this[0].nomisId).isEqualTo(130L)
+          assertThat(this[0].dpsId).isEqualTo("1300")
+        }
+        with(mappingRequests.find { it.personMapping.nomisId == 2000L }?.personEmailMapping ?: throw AssertionError("Request not found")) {
+          assertThat(this).isEmpty()
+        }
+      }
+
+      @Test
+      fun `will create mappings for nomis employments to dps employments`() {
+        with(mappingRequests.find { it.personMapping.nomisId == 1000L }?.personEmploymentMapping ?: throw AssertionError("Request not found")) {
+          assertThat(this).hasSize(1)
+          assertThat(this[0].nomisSequenceNumber).isEqualTo(1L)
+          assertThat(this[0].nomisPersonId).isEqualTo(1000L)
+          assertThat(this[0].dpsId).isEqualTo("10")
+        }
+        with(mappingRequests.find { it.personMapping.nomisId == 2000L }?.personEmploymentMapping ?: throw AssertionError("Request not found")) {
+          assertThat(this).isEmpty()
+        }
+      }
+
+      @Test
+      fun `will create mappings for nomis identifiers to dps identifiers`() {
+        with(mappingRequests.find { it.personMapping.nomisId == 1000L }?.personIdentifierMapping ?: throw AssertionError("Request not found")) {
+          assertThat(this).hasSize(2)
+          assertThat(this[0].nomisSequenceNumber).isEqualTo(1L)
+          assertThat(this[0].nomisPersonId).isEqualTo(1000L)
+          assertThat(this[0].dpsId).isEqualTo("10")
+          assertThat(this[1].nomisSequenceNumber).isEqualTo(2L)
+          assertThat(this[1].nomisPersonId).isEqualTo(1000L)
+          assertThat(this[1].dpsId).isEqualTo("20")
+        }
+        with(mappingRequests.find { it.personMapping.nomisId == 2000L }?.personIdentifierMapping ?: throw AssertionError("Request not found")) {
+          assertThat(this).isEmpty()
+        }
+      }
+
+      @Test
+      fun `will create mappings for nomis person restrictions to dps global restrictions`() {
+        with(mappingRequests.find { it.personMapping.nomisId == 1000L }?.personRestrictionMapping ?: throw AssertionError("Request not found")) {
+          assertThat(this).hasSize(2)
+          assertThat(this[0].nomisId).isEqualTo(150L)
+          assertThat(this[0].dpsId).isEqualTo("1500")
+          assertThat(this[1].nomisId).isEqualTo(151L)
+          assertThat(this[1].dpsId).isEqualTo("1510")
+        }
+        with(mappingRequests.find { it.personMapping.nomisId == 2000L }?.personRestrictionMapping ?: throw AssertionError("Request not found")) {
+          assertThat(this).isEmpty()
+        }
+      }
+
+      @Test
+      fun `will create mappings for nomis contact to dps contact prisoner relationship`() {
+        with(mappingRequests.find { it.personMapping.nomisId == 1000L }?.personContactMapping ?: throw AssertionError("Request not found")) {
+          assertThat(this).hasSize(2)
+          assertThat(this[0].nomisId).isEqualTo(190L)
+          assertThat(this[0].dpsId).isEqualTo("1900")
+          assertThat(this[1].nomisId).isEqualTo(191L)
+          assertThat(this[1].dpsId).isEqualTo("1910")
+        }
+        with(mappingRequests.find { it.personMapping.nomisId == 2000L }?.personContactMapping ?: throw AssertionError("Request not found")) {
+          assertThat(this).isEmpty()
+        }
+      }
+
+      @Test
+      fun `will create mappings for nomis contact restrictions to dps contact prisoner restrictions`() {
+        with(mappingRequests.find { it.personMapping.nomisId == 1000L }?.personContactRestrictionMapping ?: throw AssertionError("Request not found")) {
+          assertThat(this).hasSize(1)
+          assertThat(this[0].nomisId).isEqualTo(160L)
+          assertThat(this[0].dpsId).isEqualTo("1600")
+        }
+        with(mappingRequests.find { it.personMapping.nomisId == 2000L }?.personContactRestrictionMapping ?: throw AssertionError("Request not found")) {
+          assertThat(this).isEmpty()
         }
       }
     }
@@ -1380,11 +1513,12 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
 
   private fun stubMigratePersons(vararg nomisPersonContacts: ContactPerson) {
     dpsApiMock.resetAll()
+    mappingApiMock.resetAll()
     nomisApiMock.stubGetPersonIdsToMigrate(content = nomisPersonContacts.map { PersonIdResponse(it.personId) })
     nomisPersonContacts.forEach {
       mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = it.personId, mapping = null)
       nomisApiMock.stubGetPerson(it.personId, it)
-      dpsApiMock.stubMigrateContact(nomisPersonId = it.personId, migrateContactResponse().copy(contact = IdPair(nomisId = it.personId, dpsId = it.personId * 10, elementType = IdPair.ElementType.CONTACT)))
+      dpsApiMock.stubMigrateContact(nomisPersonId = it.personId, migrateContactResponse(it.toDpsMigrateContactRequest()))
     }
     mappingApiMock.stubCreateMappingsForMigration()
     mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = nomisPersonContacts.size)
