@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-11-04.9727.9f84213"
+    "version": "2024-11-04.9738.e7a1673"
   },
   "servers": [
     {
@@ -20440,7 +20440,8 @@
       },
       "PersonEmploymentCorporate": {
         "required": [
-          "id"
+          "id",
+          "name"
         ],
         "type": "object",
         "properties": {

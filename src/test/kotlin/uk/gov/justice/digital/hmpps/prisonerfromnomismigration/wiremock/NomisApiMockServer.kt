@@ -30,10 +30,8 @@ class NomisApiExtension :
   BeforeEachCallback,
   AfterEachCallback {
   companion object {
-    const val ADJUDICATIONS_ID_URL = "/adjudications/charges/ids"
     const val VISITS_ID_URL = "/visits/ids"
     const val APPOINTMENTS_ID_URL = "/appointments/ids"
-    const val ADJUSTMENTS_ID_URL = "/adjustments/ids"
     const val ACTIVITIES_ID_URL = "/activities/ids"
     const val ALLOCATIONS_ID_URL = "/allocations/ids"
     const val LOCATIONS_ID_URL = "/locations/ids"
@@ -211,134 +209,6 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }
   }
 
-  fun stubMultipleGetAdjudicationIdCounts(
-    totalElements: Long,
-    pageSize: Long,
-    pagedResponse: (() -> String)? = null,
-  ) {
-    // for each page create a response for each adjudication id starting from 1 up to `totalElements`
-
-    val pages = (totalElements / pageSize) + 1
-    (0..pages).forEach { page ->
-      val startId = (page * pageSize) + 1
-      val endId = min((page * pageSize) + pageSize, totalElements)
-      nomisApi.stubFor(
-        get(
-          urlPathEqualTo("/adjudications/charges/ids"),
-        )
-          .withQueryParam("page", equalTo(page.toString()))
-          .willReturn(
-            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-              .withBody(
-                pagedResponse?.let { pagedResponse() } ?: adjudicationsIdsPagedResponse(
-                  totalElements = totalElements,
-                  ids = (startId..endId).map { it },
-                  pageNumber = page,
-                  pageSize = pageSize,
-                ),
-              ),
-          ),
-      )
-    }
-  }
-
-  fun stubGetSingleAdjudicationId(adjudicationNumber: Long) {
-    nomisApi.stubFor(
-      get(
-        urlPathEqualTo("/adjudications/charges/ids"),
-      )
-        .withQueryParam("page", equalTo("0"))
-        .willReturn(
-          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(
-              adjudicationsIdsPagedResponse(
-                totalElements = 1,
-                ids = listOf(adjudicationNumber),
-                pageNumber = 1,
-                pageSize = 10,
-              ),
-            ),
-        ),
-    )
-  }
-
-  fun stubMultipleGetAdjudications(intProgression: IntProgression) {
-    (intProgression).forEach {
-      nomisApi.stubFor(
-        get(
-          urlPathEqualTo("/adjudications/adjudication-number/$it/charge-sequence/1"),
-        )
-          .willReturn(
-            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-              .withBody(adjudicationResponse(adjudicationNumber = it.toLong())),
-          ),
-      )
-    }
-  }
-
-  fun stubGetAdjudication(
-    adjudicationNumber: Long,
-    chargeSequence: Int = 1,
-    adjudicationResponse: (() -> String)? = null,
-  ) {
-    nomisApi.stubFor(
-      get(
-        urlPathEqualTo("/adjudications/adjudication-number/$adjudicationNumber/charge-sequence/$chargeSequence"),
-      )
-        .willReturn(
-          aResponse().withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.OK.value())
-            .withBody(
-              adjudicationResponse?.let { adjudicationResponse() } ?: adjudicationResponse(
-                adjudicationNumber = 654321,
-                chargeSequence = chargeSequence,
-              ),
-            ),
-        ),
-    )
-  }
-
-  fun stubMultipleGetAdjustmentIdCounts(totalElements: Long, pageSize: Long) {
-    // for each page create a response for each sentence adjustment id starting from 1 up to `totalElements`
-
-    val pages = (totalElements / pageSize) + 1
-    (0..pages).forEach { page ->
-      val startSentenceAdjustmentId = (page * pageSize) + 1
-      val endBSentenceAdjustmentId = min((page * pageSize) + pageSize, totalElements)
-      nomisApi.stubFor(
-        get(
-          urlPathEqualTo("/adjustments/ids"),
-        )
-          .withQueryParam("page", equalTo(page.toString()))
-          .willReturn(
-            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-              .withBody(
-                adjustmentIdsPagedResponse(
-                  totalElements = totalElements,
-                  adjustmentIds = (startSentenceAdjustmentId..endBSentenceAdjustmentId).map { it },
-                  pageNumber = page,
-                  pageSize = pageSize,
-                ),
-              ),
-          ),
-      )
-    }
-  }
-
-  fun stubMultipleGetSentenceAdjustments(intProgression: IntProgression) {
-    (intProgression).forEach {
-      nomisApi.stubFor(
-        get(
-          urlPathEqualTo("/sentence-adjustments/$it"),
-        )
-          .willReturn(
-            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-              .withBody(sentenceAdjustmentResponse(it.toLong())),
-          ),
-      )
-    }
-  }
-
   // //////////////////////////////////// Locations //////////////////////////////////////
 
   fun stubMultipleGetLocationIdCounts(totalElements: Long, pageSize: Long) {
@@ -419,20 +289,6 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   // //////////////////////////////////// Sentencing //////////////////////////////////////
-
-  fun stubMultipleGetKeyDateAdjustments(intProgression: IntProgression) {
-    (intProgression).forEach {
-      nomisApi.stubFor(
-        get(
-          urlPathEqualTo("/key-date-adjustments/$it"),
-        )
-          .willReturn(
-            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-              .withBody(keyDateAdjustmentResponse(it.toLong())),
-          ),
-      )
-    }
-  }
 
   fun stubGetSentenceAdjustment(
     adjustmentId: Long,
@@ -936,18 +792,6 @@ fun adjudicationsIdsPagedResponse(
   }.joinToString { it }
   return pageContent(content, pageSize, pageNumber, totalElements, ids.size)
 }
-
-fun adjudicationsIdsPagedResponse(
-  adjudicationNumber: Long,
-  chargeSequence: Int,
-  offenderNo: String,
-): String = pageContent(
-  """{ "adjudicationNumber": $adjudicationNumber, "chargeSequence": $chargeSequence, "offenderNo": "$offenderNo" }""",
-  pageSize = 10,
-  pageNumber = 0,
-  totalElements = 1,
-  size = 10,
-)
 
 private fun getAdjustmentCategory(it: Long) = if (it % 2L == 0L) "KEY_DATE" else "SENTENCE"
 

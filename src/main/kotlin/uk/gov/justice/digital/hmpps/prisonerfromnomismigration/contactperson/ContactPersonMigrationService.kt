@@ -221,8 +221,7 @@ fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateC
       corporate = it.corporate.let { corporate ->
         Corporate(
           id = corporate.id,
-          // TODO correct this after next version of API is released
-          name = corporate.name!!,
+          name = corporate.name,
         )
       },
       createDateTime = it.audit.createDatetime.toDateTime(),
