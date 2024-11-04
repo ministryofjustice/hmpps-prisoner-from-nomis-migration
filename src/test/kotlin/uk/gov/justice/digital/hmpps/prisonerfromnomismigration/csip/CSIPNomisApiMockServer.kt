@@ -86,11 +86,9 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
               role = CodeDescription(code = "WITNESS", description = "Witness"),
               createDateTime = "2024-04-04T15:12:32.00462",
               createdBy = "AA_ADM",
-              createdByDisplayName = "ADAM SMITH",
               comments = "Saw a pipe in his hand",
               lastModifiedDateTime = "2024-08-12T11:32:15",
               lastModifiedBy = "BB_ADM",
-              lastModifiedByDisplayName = "Bebe SMITH",
             ),
           ),
         ),
@@ -125,7 +123,6 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
             referredBy = "Jason",
             createDateTime = "2024-03-16T11:32:15",
             createdBy = "PPLAN",
-            createdByDisplayName = "Peter Plan",
           ),
         ),
         reviews = listOf(
@@ -141,7 +138,6 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
                 contribution = "talked about things",
                 createDateTime = "2024-08-20T10:33:48.946787",
                 createdBy = "DBULL_ADM",
-                createdByDisplayName = "DOM BULL",
               ),
             ),
             remainOnCSIP = true,
@@ -153,7 +149,6 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
             recordedDate = LocalDate.parse("2024-04-01"),
             createdBy = "FJAMES",
             createDateTime = "2024-04-01T10:00:00",
-            createdByDisplayName = "FRED JAMES",
             recordedBy = "JSMITH",
             recordedByDisplayName = "JOHN SMITH",
           ),
@@ -161,7 +156,6 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
         documents = listOf(),
         createDateTime = "2024-04-01T10:32:12.867081",
         createdBy = "JSMITH",
-        createdByDisplayName = "JSMITH",
         originalAgencyId = "MDI",
         logNumber = "ASI-001",
         incidentDate = LocalDate.parse("2024-06-12"),
@@ -218,7 +212,6 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
         reviews = listOf(),
         createDateTime = "2024-04-01T10:32:12.867081",
         createdBy = "JSMITH",
-        createdByDisplayName = "JSMITH",
       )
 
     fun nomisCSIPFactor(nomisCSIPFactorId: Long = 43) =

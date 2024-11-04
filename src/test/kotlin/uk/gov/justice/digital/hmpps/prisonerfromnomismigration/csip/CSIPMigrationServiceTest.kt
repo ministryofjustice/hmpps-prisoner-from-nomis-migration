@@ -1056,7 +1056,6 @@ internal class CSIPMigrationServiceTest {
             role = CodeDescription(code = "WITNESS", description = "Witness"),
             createDateTime = "2024-04-04T15:12:32.00462",
             createdBy = "AA_ADM",
-            createdByDisplayName = "ADAM SMITH",
             comments = "Saw a pipe in his hand",
           )
           whenever(csipMappingService.getCSIPReportByNomisId(any())).thenReturn(null)
