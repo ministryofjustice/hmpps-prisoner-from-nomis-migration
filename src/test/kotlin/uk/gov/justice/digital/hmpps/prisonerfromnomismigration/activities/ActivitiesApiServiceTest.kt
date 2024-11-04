@@ -87,6 +87,7 @@ internal class ActivitiesApiServiceTest {
             friday = false,
             saturday = false,
             sunday = false,
+            timeSlot = NomisScheduleRule.TimeSlot.AM,
           ),
           NomisScheduleRule(
             startTime = LocalDate.now().atTime(13, 0).toString(),
@@ -98,6 +99,7 @@ internal class ActivitiesApiServiceTest {
             friday = true,
             saturday = false,
             sunday = false,
+            timeSlot = NomisScheduleRule.TimeSlot.PM,
           ),
         ),
         payRates = listOf(
@@ -156,7 +158,8 @@ internal class ActivitiesApiServiceTest {
                   "thursday": false,
                   "friday": false,
                   "saturday": false,
-                  "sunday": false
+                  "sunday": false,
+                  "timeSlot": "AM"
                 },
                 {
                   "startTime": "${LocalDate.now().atTime(13, 0)}",
@@ -167,7 +170,8 @@ internal class ActivitiesApiServiceTest {
                   "thursday": true,
                   "friday": true,
                   "saturday": false,
-                  "sunday": false
+                  "sunday": false,
+                  "timeSlot": "PM"
                 }
               ],
               "payRates":[
@@ -328,7 +332,9 @@ internal class ActivitiesApiServiceTest {
                     "friday": false,
                     "saturday": false,
                     "sunday": false,
-                    "daysOfWeek": ["MONDAY"]
+                    "daysOfWeek": ["MONDAY"],
+                    "customStartTime": null,
+                    "customEndTime": null
                   }
   ]
                 }

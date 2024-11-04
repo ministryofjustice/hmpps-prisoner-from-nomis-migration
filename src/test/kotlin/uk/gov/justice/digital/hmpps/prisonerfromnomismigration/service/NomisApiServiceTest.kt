@@ -545,7 +545,8 @@ internal class NomisApiServiceTest {
                       "thursday": true,
                       "friday": true,
                       "saturday": true,
-                      "sunday": true
+                      "sunday": true,
+                      "slotCategoryCode": "AM"
                     },
                     {
                       "startTime": "13:00",
@@ -556,7 +557,8 @@ internal class NomisApiServiceTest {
                       "thursday": true,
                       "friday": true,
                       "saturday": true,
-                      "sunday": true
+                      "sunday": true,
+                      "slotCategoryCode": "PM"
                     }
                   ],
                   "payRates": [
@@ -824,7 +826,8 @@ internal class NomisApiServiceTest {
                       "thursday": true,
                       "friday": true,
                       "saturday": true,
-                      "sunday": true
+                      "sunday": true,
+                      "slotCategoryCode": "AM"
                     },
                     {
                       "startTime": "13:00",
@@ -835,7 +838,8 @@ internal class NomisApiServiceTest {
                       "thursday": true,
                       "friday": true,
                       "saturday": true,
-                      "sunday": true
+                      "sunday": true,
+                      "slotCategoryCode": "PM"
                     }
                   ]
                 }
