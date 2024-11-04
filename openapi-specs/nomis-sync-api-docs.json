@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-11-04"
+    "version": "2024-11-04.9738.e7a1673"
   },
   "servers": [
     {
@@ -17155,18 +17155,11 @@
       "PageVisitIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "numberOfElements": {
+          "totalPages": {
             "type": "integer",
             "format": "int32"
           },
@@ -17176,13 +17169,17 @@
           "last": {
             "type": "boolean"
           },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
           "content": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/VisitIdResponse"
             }
           },
-          "size": {
+          "number": {
             "type": "integer",
             "format": "int32"
           },
@@ -17192,9 +17189,12 @@
               "$ref": "#/components/schemas/SortObject"
             }
           },
-          "number": {
+          "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -17204,20 +17204,6 @@
       "PageableObject": {
         "type": "object",
         "properties": {
-          "unpaged": {
-            "type": "boolean"
-          },
-          "paged": {
-            "type": "boolean"
-          },
-          "pageNumber": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "pageSize": {
-            "type": "integer",
-            "format": "int32"
-          },
           "offset": {
             "type": "integer",
             "format": "int64"
@@ -17227,6 +17213,20 @@
             "items": {
               "$ref": "#/components/schemas/SortObject"
             }
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "paged": {
+            "type": "boolean"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unpaged": {
+            "type": "boolean"
           }
         }
       },
@@ -17605,18 +17605,11 @@
       "PageQuestionnaireIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "numberOfElements": {
+          "totalPages": {
             "type": "integer",
             "format": "int32"
           },
@@ -17626,13 +17619,17 @@
           "last": {
             "type": "boolean"
           },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
           "content": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/QuestionnaireIdResponse"
             }
           },
-          "size": {
+          "number": {
             "type": "integer",
             "format": "int32"
           },
@@ -17642,9 +17639,12 @@
               "$ref": "#/components/schemas/SortObject"
             }
           },
-          "number": {
+          "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -19427,18 +19427,11 @@
       "PagePrisonerIds": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "numberOfElements": {
+          "totalPages": {
             "type": "integer",
             "format": "int32"
           },
@@ -19448,13 +19441,17 @@
           "last": {
             "type": "boolean"
           },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
           "content": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/PrisonerIds"
             }
           },
-          "size": {
+          "number": {
             "type": "integer",
             "format": "int32"
           },
@@ -19464,9 +19461,12 @@
               "$ref": "#/components/schemas/SortObject"
             }
           },
-          "number": {
+          "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -19497,18 +19497,11 @@
       "PagePrisonerId": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "numberOfElements": {
+          "totalPages": {
             "type": "integer",
             "format": "int32"
           },
@@ -19518,13 +19511,17 @@
           "last": {
             "type": "boolean"
           },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
           "content": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/PrisonerId"
             }
           },
-          "size": {
+          "number": {
             "type": "integer",
             "format": "int32"
           },
@@ -19534,9 +19531,12 @@
               "$ref": "#/components/schemas/SortObject"
             }
           },
-          "number": {
+          "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -20051,7 +20051,6 @@
           "firstName",
           "identifiers",
           "interpreterRequired",
-          "keepBiometrics",
           "lastName",
           "personId",
           "phoneNumbers",
@@ -20108,11 +20107,7 @@
           },
           "isRemitter": {
             "type": "boolean",
-            "description": "No longer used in NOMIS since 2018"
-          },
-          "keepBiometrics": {
-            "type": "boolean",
-            "description": "No longer used in NOMIS since 2019"
+            "description": "Set to true when person created via finance remitter page"
           },
           "audit": {
             "$ref": "#/components/schemas/NomisAudit"
@@ -20420,6 +20415,7 @@
         "required": [
           "active",
           "audit",
+          "corporate",
           "sequence"
         ],
         "type": "object",
@@ -20444,7 +20440,8 @@
       },
       "PersonEmploymentCorporate": {
         "required": [
-          "id"
+          "id",
+          "name"
         ],
         "type": "object",
         "properties": {
@@ -20528,18 +20525,11 @@
       "PagePersonIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "numberOfElements": {
+          "totalPages": {
             "type": "integer",
             "format": "int32"
           },
@@ -20549,13 +20539,17 @@
           "last": {
             "type": "boolean"
           },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
           "content": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/PersonIdResponse"
             }
           },
-          "size": {
+          "number": {
             "type": "integer",
             "format": "int32"
           },
@@ -20565,9 +20559,12 @@
               "$ref": "#/components/schemas/SortObject"
             }
           },
-          "number": {
+          "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -20684,18 +20681,11 @@
       "PageNonAssociationIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "numberOfElements": {
+          "totalPages": {
             "type": "integer",
             "format": "int32"
           },
@@ -20705,13 +20695,17 @@
           "last": {
             "type": "boolean"
           },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
           "content": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/NonAssociationIdResponse"
             }
           },
-          "size": {
+          "number": {
             "type": "integer",
             "format": "int32"
           },
@@ -20721,9 +20715,12 @@
               "$ref": "#/components/schemas/SortObject"
             }
           },
-          "number": {
+          "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -20942,18 +20939,11 @@
       "PageLocationIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "numberOfElements": {
+          "totalPages": {
             "type": "integer",
             "format": "int32"
           },
@@ -20963,13 +20953,17 @@
           "last": {
             "type": "boolean"
           },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
           "content": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/LocationIdResponse"
             }
           },
-          "size": {
+          "number": {
             "type": "integer",
             "format": "int32"
           },
@@ -20979,9 +20973,12 @@
               "$ref": "#/components/schemas/SortObject"
             }
           },
-          "number": {
+          "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -21525,18 +21522,11 @@
       "PageIncidentIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "numberOfElements": {
+          "totalPages": {
             "type": "integer",
             "format": "int32"
           },
@@ -21546,13 +21536,17 @@
           "last": {
             "type": "boolean"
           },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
           "content": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/IncidentIdResponse"
             }
           },
-          "size": {
+          "number": {
             "type": "integer",
             "format": "int32"
           },
@@ -21562,9 +21556,12 @@
               "$ref": "#/components/schemas/SortObject"
             }
           },
-          "number": {
+          "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -21648,18 +21645,11 @@
       "PageIncentiveIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "numberOfElements": {
+          "totalPages": {
             "type": "integer",
             "format": "int32"
           },
@@ -21669,13 +21659,17 @@
           "last": {
             "type": "boolean"
           },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
           "content": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/IncentiveIdResponse"
             }
           },
-          "size": {
+          "number": {
             "type": "integer",
             "format": "int32"
           },
@@ -21685,9 +21679,12 @@
               "$ref": "#/components/schemas/SortObject"
             }
           },
-          "number": {
+          "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -21792,18 +21789,11 @@
       "PageCSIPIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "numberOfElements": {
+          "totalPages": {
             "type": "integer",
             "format": "int32"
           },
@@ -21813,13 +21803,17 @@
           "last": {
             "type": "boolean"
           },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
           "content": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CSIPIdResponse"
             }
           },
-          "size": {
+          "number": {
             "type": "integer",
             "format": "int32"
           },
@@ -21829,9 +21823,12 @@
               "$ref": "#/components/schemas/SortObject"
             }
           },
-          "number": {
+          "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -21855,18 +21852,11 @@
       "PageCourtCaseIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "numberOfElements": {
+          "totalPages": {
             "type": "integer",
             "format": "int32"
           },
@@ -21876,13 +21866,17 @@
           "last": {
             "type": "boolean"
           },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
           "content": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CourtCaseIdResponse"
             }
           },
-          "size": {
+          "number": {
             "type": "integer",
             "format": "int32"
           },
@@ -21892,9 +21886,12 @@
               "$ref": "#/components/schemas/SortObject"
             }
           },
-          "number": {
+          "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -22051,18 +22048,11 @@
       "PageAppointmentIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "numberOfElements": {
+          "totalPages": {
             "type": "integer",
             "format": "int32"
           },
@@ -22072,13 +22062,17 @@
           "last": {
             "type": "boolean"
           },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
           "content": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AppointmentIdResponse"
             }
           },
-          "size": {
+          "number": {
             "type": "integer",
             "format": "int32"
           },
@@ -22088,9 +22082,12 @@
               "$ref": "#/components/schemas/SortObject"
             }
           },
-          "number": {
+          "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -22386,18 +22383,11 @@
       "PageFindActiveAllocationIdsResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "numberOfElements": {
+          "totalPages": {
             "type": "integer",
             "format": "int32"
           },
@@ -22407,13 +22397,17 @@
           "last": {
             "type": "boolean"
           },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
           "content": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/FindActiveAllocationIdsResponse"
             }
           },
-          "size": {
+          "number": {
             "type": "integer",
             "format": "int32"
           },
@@ -22423,9 +22417,12 @@
               "$ref": "#/components/schemas/SortObject"
             }
           },
-          "number": {
+          "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -22454,18 +22451,11 @@
       "PageAdjustmentIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "numberOfElements": {
+          "totalPages": {
             "type": "integer",
             "format": "int32"
           },
@@ -22475,13 +22465,17 @@
           "last": {
             "type": "boolean"
           },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
           "content": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AdjustmentIdResponse"
             }
           },
-          "size": {
+          "number": {
             "type": "integer",
             "format": "int32"
           },
@@ -22491,9 +22485,12 @@
               "$ref": "#/components/schemas/SortObject"
             }
           },
-          "number": {
+          "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -22528,18 +22525,11 @@
       "PageAdjudicationChargeIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "numberOfElements": {
+          "totalPages": {
             "type": "integer",
             "format": "int32"
           },
@@ -22549,13 +22539,17 @@
           "last": {
             "type": "boolean"
           },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
           "content": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AdjudicationChargeIdResponse"
             }
           },
-          "size": {
+          "number": {
             "type": "integer",
             "format": "int32"
           },
@@ -22565,9 +22559,12 @@
               "$ref": "#/components/schemas/SortObject"
             }
           },
-          "number": {
+          "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -22836,18 +22833,11 @@
       "PageFindActiveActivityIdsResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "numberOfElements": {
+          "totalPages": {
             "type": "integer",
             "format": "int32"
           },
@@ -22857,13 +22847,17 @@
           "last": {
             "type": "boolean"
           },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
           "content": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/FindActiveActivityIdsResponse"
             }
           },
-          "size": {
+          "number": {
             "type": "integer",
             "format": "int32"
           },
@@ -22873,9 +22867,12 @@
               "$ref": "#/components/schemas/SortObject"
             }
           },
-          "number": {
+          "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"

@@ -97,7 +97,6 @@ fun contactPerson(): ContactPerson = ContactPerson(
   firstName = "KWAME",
   lastName = "KOBE",
   interpreterRequired = false,
-  keepBiometrics = false,
   audit = nomisAudit(),
   phoneNumbers = listOf(PersonPhoneNumber(phoneId = 1, number = "0114555555", type = CodeDescription(code = "HOME", description = "Home"), audit = nomisAudit())),
   addresses = listOf(PersonAddress(addressId = 1, phoneNumbers = listOf(PersonPhoneNumber(phoneId = 2, number = "0114555555", type = CodeDescription(code = "HOME", description = "Home"), audit = nomisAudit())), validatedPAF = false, primaryAddress = true, mailAddress = true, audit = nomisAudit())),
