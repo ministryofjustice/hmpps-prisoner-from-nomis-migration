@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.NomisPayRate
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.NomisScheduleRule
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.Slot
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.Slot.TimeSlot.AM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension.Companion.activitiesApi
 import java.time.LocalDate
@@ -272,7 +273,7 @@ internal class ActivitiesApiServiceTest {
         exclusions = listOf(
           Slot(
             weekNumber = 1,
-            timeSlot = "AM",
+            timeSlot = AM,
             monday = true,
             tuesday = false,
             wednesday = false,
