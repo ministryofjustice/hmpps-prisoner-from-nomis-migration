@@ -475,7 +475,7 @@ class AllocationsMigrationServiceTest {
             AllocationExclusion(day = TUE, slot = null),
           ),
           scheduleRules = listOf(
-            ScheduleRulesResponse("10:00", "12:00", true, true, true, true, true, false, false),
+            ScheduleRulesResponse("10:00", "12:00", true, true, true, true, true, false, false, slotCategoryCode = "AM"),
           ),
         ),
 
@@ -1254,6 +1254,7 @@ class AllocationsMigrationServiceTest {
         friday = "FRI" in days,
         saturday = "SAT" in days,
         sunday = "SUN" in days,
+        slotCategoryCode = slot,
       )
     }
   }
