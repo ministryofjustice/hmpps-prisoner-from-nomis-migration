@@ -40,7 +40,6 @@ class MappingApiExtension :
     const val ACTIVITIES_GET_MAPPING_URL = "/mapping/activities/migration/nomis-course-activity-id"
     const val ALLOCATIONS_CREATE_MAPPING_URL = "/mapping/allocations/migration"
     const val ALLOCATIONS_GET_MAPPING_URL = "/mapping/allocations/migration/nomis-allocation-id"
-    const val ADJUDICATIONS_GET_MAPPING_URL = "/mapping/adjudications/adjudication-number"
     const val APPOINTMENTS_CREATE_MAPPING_URL = "/mapping/appointments"
     const val APPOINTMENTS_GET_MAPPING_URL = "/mapping/appointments/nomis-event-id"
     const val SENTENCE_ADJUSTMENTS_GET_MAPPING_URL =
@@ -308,24 +307,6 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubSentenceAdjustmentMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 278887) {
-    val content = """{
-      "adjustmentId": 191747,
-      "nomisAdjustmentId": 123,
-      "nomisAdjustmentCategory": "SENTENCE",
-      "label": "2022-02-14T09:58:45",
-      "whenCreated": "$whenCreated",
-      "mappingType": "MIGRATED"
-    }"""
-    stubFor(
-      get(urlPathMatching("/mapping/sentencing/adjustments/migration-id/.*")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withBody(pageContent(content, count)),
-      ),
-    )
-  }
-
   fun stubSentenceAdjustmentMappingCreateConflict(
     existingAdjustmentId: String = "10",
     duplicateAdjustmentId: String = "11",
@@ -386,30 +367,6 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
             equalTo(it),
           ),
         ),
-      )
-    }
-
-  fun verifyCreateMappingSentenceAdjustmentIds(
-    migrationId: String,
-    nomsSentenceAdjustmentIds: Array<String>,
-    times: Int = 1,
-  ) =
-    nomsSentenceAdjustmentIds.forEach {
-      verify(
-        times,
-        postRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments"))
-          .withRequestBody(
-            matchingJsonPath(
-              "adjustmentId",
-              equalTo(it),
-            ),
-          )
-          .withRequestBody(
-            matchingJsonPath(
-              "label",
-              equalTo(migrationId),
-            ),
-          ),
       )
     }
 
@@ -573,73 +530,6 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withRequestBody(matchingJsonPath("nomisAllocationId", equalTo((offset + 1).toString()))),
       )
     }
-
-  fun stubAdjudicationMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 278887) {
-    val content = """{
-      "adjudicationNumber": 191747,
-      "chargeSequence": 1,
-      "chargeNumber": "191747/1",
-      "label": "2022-02-14T09:58:45",
-      "whenCreated": "$whenCreated",
-      "mappingType": "MIGRATED"
-    }"""
-    stubFor(
-      get(urlPathMatching("/mapping/adjudications/migration-id/.*")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withBody(pageContent(content, count)),
-      ),
-    )
-  }
-
-  fun stubFindNomisMapping(adjudicationNumber: Long, chargeSequence: Int) {
-    stubFor(
-      get(urlPathMatching("/mapping/adjudications/adjudication-number/$adjudicationNumber/charge-sequence/$chargeSequence")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withBody(
-            """{
-            "adjudicationNumber": $adjudicationNumber,
-            "chargeSequence": $chargeSequence,
-            "chargeNumber": "$adjudicationNumber-$chargeSequence",
-            "label": "2022-02-14T09:58:45",
-            "mappingType": "MIGRATED"
-          }""",
-          ),
-      ),
-    )
-  }
-
-  fun stubFindNomisMappingWithError(adjudicationNumber: Long, chargeSequence: Int, statusCode: Int) {
-    stubFor(
-      get(urlPathMatching("/mapping/adjudications/adjudication-number/$adjudicationNumber/charge-sequence/$chargeSequence"))
-        .willReturn(
-          aResponse()
-            .withStatus(statusCode)
-            .withHeader("Content-Type", "application/json"),
-        ),
-    )
-  }
-
-  fun verifyCreateMappingAdjudication(
-    adjudicationNumber: Long,
-    chargeSequence: Int,
-    chargeNumber: String,
-    times: Int = 1,
-  ) {
-    verify(
-      times,
-      postRequestedFor(urlPathEqualTo("/mapping/adjudications/all"))
-        .withRequestBody(matchingJsonPath("adjudicationId.adjudicationNumber", equalTo(adjudicationNumber.toString())))
-        .withRequestBody(matchingJsonPath("adjudicationId.chargeSequence", equalTo(chargeSequence.toString())))
-        .withRequestBody(matchingJsonPath("adjudicationId.chargeNumber", equalTo(chargeNumber))),
-    )
-  }
-
-  fun verifyCreateMappingAdjudication(builder: RequestPatternBuilder.() -> RequestPatternBuilder = { this }) =
-    verify(
-      postRequestedFor(urlEqualTo("/mapping/adjudications/all")).builder(),
-    )
 
   fun pageContent(content: String, count: Int) = """
   {
