@@ -431,7 +431,6 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
                 ),
               ),
             ),
-            keepBiometrics = false,
             contacts = listOf(
               PersonContact(
                 id = 190,
@@ -504,7 +503,6 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
             firstName = "KWAME",
             lastName = "KOBE",
             interpreterRequired = false,
-            keepBiometrics = false,
             audit = NomisAudit(
               createUsername = "ADJUA.BEEK",
               createDatetime = "2022-01-02T10:23",

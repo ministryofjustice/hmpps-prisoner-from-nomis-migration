@@ -218,10 +218,10 @@ fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateC
     MigrateEmployment(
       sequence = it.sequence,
       active = it.active,
-      // TODO - NOMIS API is not quite right with nullability here - needs correcting
-      corporate = it.corporate!!.let { corporate ->
+      corporate = it.corporate.let { corporate ->
         Corporate(
           id = corporate.id,
+          // TODO correct this after next version of API is released
           name = corporate.name!!,
         )
       },
