@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.NomisPayRate
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.NomisScheduleRule
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.Slot
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.Slot.TimeSlot.AM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension.Companion.activitiesApi
 import java.time.LocalDate
@@ -86,6 +87,7 @@ internal class ActivitiesApiServiceTest {
             friday = false,
             saturday = false,
             sunday = false,
+            timeSlot = NomisScheduleRule.TimeSlot.AM,
           ),
           NomisScheduleRule(
             startTime = LocalDate.now().atTime(13, 0).toString(),
@@ -97,6 +99,7 @@ internal class ActivitiesApiServiceTest {
             friday = true,
             saturday = false,
             sunday = false,
+            timeSlot = NomisScheduleRule.TimeSlot.PM,
           ),
         ),
         payRates = listOf(
@@ -155,7 +158,8 @@ internal class ActivitiesApiServiceTest {
                   "thursday": false,
                   "friday": false,
                   "saturday": false,
-                  "sunday": false
+                  "sunday": false,
+                  "timeSlot": "AM"
                 },
                 {
                   "startTime": "${LocalDate.now().atTime(13, 0)}",
@@ -166,7 +170,8 @@ internal class ActivitiesApiServiceTest {
                   "thursday": true,
                   "friday": true,
                   "saturday": false,
-                  "sunday": false
+                  "sunday": false,
+                  "timeSlot": "PM"
                 }
               ],
               "payRates":[
@@ -272,7 +277,7 @@ internal class ActivitiesApiServiceTest {
         exclusions = listOf(
           Slot(
             weekNumber = 1,
-            timeSlot = "AM",
+            timeSlot = AM,
             monday = true,
             tuesday = false,
             wednesday = false,
@@ -327,7 +332,9 @@ internal class ActivitiesApiServiceTest {
                     "friday": false,
                     "saturday": false,
                     "sunday": false,
-                    "daysOfWeek": ["MONDAY"]
+                    "daysOfWeek": ["MONDAY"],
+                    "customStartTime": null,
+                    "customEndTime": null
                   }
   ]
                 }

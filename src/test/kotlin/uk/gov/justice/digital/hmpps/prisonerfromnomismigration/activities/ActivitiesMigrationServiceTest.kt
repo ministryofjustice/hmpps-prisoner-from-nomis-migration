@@ -498,6 +498,7 @@ class ActivitiesMigrationServiceTest {
             assertThat(friday).isFalse()
             assertThat(saturday).isFalse()
             assertThat(sunday).isFalse()
+            assertThat(timeSlot!!.value).isEqualTo("AM")
           }
           with(it.scheduleRules[1]) {
             assertThat(startTime).isEqualTo("13:00")
@@ -509,6 +510,7 @@ class ActivitiesMigrationServiceTest {
             assertThat(friday).isTrue()
             assertThat(saturday).isTrue()
             assertThat(sunday).isTrue()
+            assertThat(timeSlot!!.value).isEqualTo("PM")
           }
         },
       )
@@ -523,16 +525,19 @@ class ActivitiesMigrationServiceTest {
               start = "08:00",
               end = "11:00",
               days = listOf("MON", "TUE", "WED", "THU"),
+              slot = "AM",
             ),
             nomisScheduleRulesResponse(
               start = "13:00",
               end = "15:30",
               days = listOf("FRI"),
+              slot = "PM",
             ),
             nomisScheduleRulesResponse(
               start = "19:00",
               end = "20:00",
               days = listOf("SAT", "SUN"),
+              slot = "ED",
             ),
           ),
         ),
@@ -553,6 +558,7 @@ class ActivitiesMigrationServiceTest {
             assertThat(friday).isFalse()
             assertThat(saturday).isFalse()
             assertThat(sunday).isFalse()
+            assertThat(timeSlot!!.value).isEqualTo("AM")
           }
           with(it.scheduleRules[1]) {
             assertThat(startTime).isEqualTo("13:00")
@@ -564,6 +570,7 @@ class ActivitiesMigrationServiceTest {
             assertThat(friday).isTrue()
             assertThat(saturday).isFalse()
             assertThat(sunday).isFalse()
+            assertThat(timeSlot!!.value).isEqualTo("PM")
           }
           with(it.scheduleRules[2]) {
             assertThat(startTime).isEqualTo("19:00")
@@ -575,6 +582,7 @@ class ActivitiesMigrationServiceTest {
             assertThat(friday).isFalse()
             assertThat(saturday).isTrue()
             assertThat(sunday).isTrue()
+            assertThat(timeSlot!!.value).isEqualTo("ED")
           }
         },
       )
@@ -589,16 +597,19 @@ class ActivitiesMigrationServiceTest {
               start = "08:00",
               end = "11:00",
               days = listOf("MON", "TUE", "WED", "THU"),
+              slot = "AM",
             ),
             nomisScheduleRulesResponse(
               start = "09:00",
               end = "11:30",
               days = listOf("FRI"),
+              slot = "AM",
             ),
             nomisScheduleRulesResponse(
               start = "09:00",
               end = "12:00",
               days = listOf("SAT", "SUN"),
+              slot = "AM",
             ),
           ),
         ),
@@ -619,6 +630,7 @@ class ActivitiesMigrationServiceTest {
             assertThat(friday).isFalse()
             assertThat(saturday).isFalse()
             assertThat(sunday).isFalse()
+            assertThat(timeSlot!!.value).isEqualTo("AM")
           }
           with(it.scheduleRules[1]) {
             assertThat(startTime).isEqualTo("09:00")
@@ -630,6 +642,7 @@ class ActivitiesMigrationServiceTest {
             assertThat(friday).isTrue()
             assertThat(saturday).isFalse()
             assertThat(sunday).isFalse()
+            assertThat(timeSlot!!.value).isEqualTo("AM")
           }
           with(it.scheduleRules[2]) {
             assertThat(startTime).isEqualTo("09:00")
@@ -641,6 +654,7 @@ class ActivitiesMigrationServiceTest {
             assertThat(friday).isFalse()
             assertThat(saturday).isTrue()
             assertThat(sunday).isTrue()
+            assertThat(timeSlot!!.value).isEqualTo("AM")
           }
         },
       )
@@ -655,11 +669,13 @@ class ActivitiesMigrationServiceTest {
               start = "13:00",
               end = "15:30",
               days = listOf("SAT", "SUN"),
+              slot = "PM",
             ),
             nomisScheduleRulesResponse(
               start = "13:00",
               end = "15:30",
               days = listOf("SAT", "SUN"),
+              slot = "PM",
             ),
           ),
         ),
@@ -680,6 +696,7 @@ class ActivitiesMigrationServiceTest {
             assertThat(friday).isFalse()
             assertThat(saturday).isTrue()
             assertThat(sunday).isTrue()
+            assertThat(timeSlot!!.value).isEqualTo("PM")
           }
         },
       )
@@ -819,11 +836,13 @@ class ActivitiesMigrationServiceTest {
           start = "08:00",
           end = "11:30",
           days = listOf("MON", "TUE", "WED"),
+          slot = "AM",
         ),
         nomisScheduleRulesResponse(
           start = "13:00",
           end = "16:30",
           days = listOf("WED", "THU", "FRI", "SAT", "SUN"),
+          slot = "PM",
         ),
       ),
     ) = GetActivityResponse(
@@ -856,7 +875,7 @@ class ActivitiesMigrationServiceTest {
       ),
     )
 
-    private fun nomisScheduleRulesResponse(start: String, end: String, days: List<String>) = ScheduleRulesResponse(
+    private fun nomisScheduleRulesResponse(start: String, end: String, slot: String, days: List<String>) = ScheduleRulesResponse(
       startTime = start,
       endTime = end,
       monday = "MON" in days,
@@ -866,6 +885,7 @@ class ActivitiesMigrationServiceTest {
       friday = "FRI" in days,
       saturday = "SAT" in days,
       sunday = "SUN" in days,
+      slotCategoryCode = slot,
     )
 
     private fun migrationContext() =

@@ -1407,7 +1407,8 @@ private fun activitiesResponse(
       "thursday": true,
       "friday": true,
       "saturday": true,
-      "sunday": true
+      "sunday": true,
+      "slotCategoryCode": "AM"
     },
     {
       "startTime": "13:00",
@@ -1418,7 +1419,8 @@ private fun activitiesResponse(
       "thursday": true,
       "friday": true,
       "saturday": false,
-      "sunday": false
+      "sunday": false,
+      "slotCategoryCode": "PM"
     }
   ],
   "payRates": [
@@ -1463,7 +1465,8 @@ private fun allocationsResponse(
             "thursday": true,
             "friday": true,
             "saturday": true,
-            "sunday": true
+            "sunday": true,
+            "slotCategoryCode": "AM"
         },
         {
             "startTime": "13:00",
@@ -1474,7 +1477,8 @@ private fun allocationsResponse(
             "thursday": true,
             "friday": true,
             "saturday": false,
-            "sunday": false
+            "sunday": false,
+            "slotCategoryCode": "PM"
         }
     ]
 }

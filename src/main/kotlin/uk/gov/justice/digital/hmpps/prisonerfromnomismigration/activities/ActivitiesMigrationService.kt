@@ -176,6 +176,7 @@ private fun List<ScheduleRulesResponse>.toNomisScheduleRules(): List<NomisSchedu
       friday = it.friday,
       saturday = it.saturday,
       sunday = it.sunday,
+      timeSlot = it.slot().value.let { slotValue -> NomisScheduleRule.TimeSlot.valueOf(slotValue) },
     )
   }.distinct()
 

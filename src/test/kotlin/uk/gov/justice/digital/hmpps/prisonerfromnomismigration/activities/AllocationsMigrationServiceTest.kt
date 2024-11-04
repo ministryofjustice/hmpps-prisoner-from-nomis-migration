@@ -475,7 +475,7 @@ class AllocationsMigrationServiceTest {
             AllocationExclusion(day = TUE, slot = null),
           ),
           scheduleRules = listOf(
-            ScheduleRulesResponse("10:00", "12:00", true, true, true, true, true, false, false),
+            ScheduleRulesResponse("10:00", "12:00", true, true, true, true, true, false, false, slotCategoryCode = "AM"),
           ),
         ),
 
@@ -531,7 +531,7 @@ class AllocationsMigrationServiceTest {
           assertThat(it.nomisPayBand).isEqualTo("1")
           assertThat(it.endComment).isEqualTo("Ended")
           assertThat(it.exclusions).containsExactlyInAnyOrder(
-            aSlot(timeSlot = "AM", monday = true, tuesday = true, daysOfWeek = setOf(MONDAY, TUESDAY)),
+            aSlot(timeSlot = Slot.TimeSlot.AM, monday = true, tuesday = true, daysOfWeek = setOf(MONDAY, TUESDAY)),
           )
         },
       )
@@ -718,7 +718,7 @@ class AllocationsMigrationServiceTest {
       )
     }
 
-    private fun aSlot(timeSlot: String, monday: Boolean = false, tuesday: Boolean = false, daysOfWeek: Set<Slot.DaysOfWeek> = setOf()) =
+    private fun aSlot(timeSlot: Slot.TimeSlot, monday: Boolean = false, tuesday: Boolean = false, daysOfWeek: Set<Slot.DaysOfWeek> = setOf()) =
       Slot(
         weekNumber = 1,
         timeSlot = timeSlot,
@@ -1047,7 +1047,7 @@ class AllocationsMigrationServiceTest {
       assertThat(exclusions.toDpsExclusions(scheduleRules)).containsExactly(
         Slot(
           weekNumber = 1,
-          timeSlot = "AM",
+          timeSlot = Slot.TimeSlot.AM,
           monday = true,
           tuesday = false,
           wednesday = false,
@@ -1075,7 +1075,7 @@ class AllocationsMigrationServiceTest {
       assertThat(exclusions.toDpsExclusions(scheduleRules)).containsExactlyInAnyOrder(
         Slot(
           weekNumber = 1,
-          timeSlot = "AM",
+          timeSlot = Slot.TimeSlot.AM,
           monday = true,
           tuesday = true,
           wednesday = false,
@@ -1087,7 +1087,7 @@ class AllocationsMigrationServiceTest {
         ),
         Slot(
           weekNumber = 1,
-          timeSlot = "PM",
+          timeSlot = Slot.TimeSlot.PM,
           monday = false,
           tuesday = false,
           wednesday = true,
@@ -1114,7 +1114,7 @@ class AllocationsMigrationServiceTest {
       assertThat(exclusions.toDpsExclusions(scheduleRules)).containsExactlyInAnyOrder(
         Slot(
           weekNumber = 1,
-          timeSlot = "AM",
+          timeSlot = Slot.TimeSlot.AM,
           monday = true,
           tuesday = false,
           wednesday = false,
@@ -1141,7 +1141,7 @@ class AllocationsMigrationServiceTest {
       assertThat(exclusions.toDpsExclusions(scheduleRules)).containsExactlyInAnyOrder(
         Slot(
           weekNumber = 1,
-          timeSlot = "AM",
+          timeSlot = Slot.TimeSlot.AM,
           monday = true,
           tuesday = false,
           wednesday = false,
@@ -1153,7 +1153,7 @@ class AllocationsMigrationServiceTest {
         ),
         Slot(
           weekNumber = 1,
-          timeSlot = "PM",
+          timeSlot = Slot.TimeSlot.PM,
           monday = true,
           tuesday = false,
           wednesday = false,
@@ -1165,7 +1165,7 @@ class AllocationsMigrationServiceTest {
         ),
         Slot(
           weekNumber = 1,
-          timeSlot = "ED",
+          timeSlot = Slot.TimeSlot.ED,
           monday = true,
           tuesday = false,
           wednesday = false,
@@ -1196,7 +1196,7 @@ class AllocationsMigrationServiceTest {
       assertThat(exclusions.toDpsExclusions(scheduleRules)).containsExactlyInAnyOrder(
         Slot(
           weekNumber = 1,
-          timeSlot = "AM",
+          timeSlot = Slot.TimeSlot.AM,
           monday = true,
           tuesday = true,
           wednesday = true,
@@ -1208,7 +1208,7 @@ class AllocationsMigrationServiceTest {
         ),
         Slot(
           weekNumber = 1,
-          timeSlot = "PM",
+          timeSlot = Slot.TimeSlot.PM,
           monday = true,
           tuesday = false,
           wednesday = true,
@@ -1220,7 +1220,7 @@ class AllocationsMigrationServiceTest {
         ),
         Slot(
           weekNumber = 1,
-          timeSlot = "ED",
+          timeSlot = Slot.TimeSlot.ED,
           monday = true,
           tuesday = false,
           wednesday = true,
@@ -1254,6 +1254,7 @@ class AllocationsMigrationServiceTest {
         friday = "FRI" in days,
         saturday = "SAT" in days,
         sunday = "SUN" in days,
+        slotCategoryCode = slot,
       )
     }
   }
