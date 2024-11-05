@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Actions
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Attendee
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPFactorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Decision
@@ -318,6 +319,36 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubGetCSIPFactor(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     nomisApi.stubFor(
       get(urlPathMatching("/csip/factors/[0-9]+"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody(error),
+        ),
+    )
+  }
+
+  fun stubGetCSIPIdsForBooking(bookingId: Long = 2345) {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/csip/booking/$bookingId"))
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+            .withBody(listOf(CSIPIdResponse(1234), CSIPIdResponse(5678))),
+        ),
+    )
+  }
+  fun stubGetCSIPIdsForBookingNoCsips(bookingId: Long = 2345) {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/csip/booking/$bookingId"))
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+            .withBody(listOf<CSIPIdResponse>()),
+        ),
+    )
+  }
+  fun stubGetCSIPIdsForBooking(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    nomisApi.stubFor(
+      get(urlPathMatching("/csip/booking/[0-9]+"))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")

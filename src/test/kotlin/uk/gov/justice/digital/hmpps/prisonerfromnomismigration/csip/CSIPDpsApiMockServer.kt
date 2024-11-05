@@ -18,7 +18,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.CREATED
 import org.springframework.http.HttpStatus.OK
 import org.springframework.test.context.junit.jupiter.SpringExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension.Companion.objectMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPDpsApiExtension.Companion.objectMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ResponseMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncAttendeeRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncContributoryFactorRequest
@@ -37,10 +37,10 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
-class CSIPApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
+class CSIPDpsApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
   companion object {
     @JvmField
-    val csipDpsApi = CSIPApiMockServer()
+    val csipDpsApi = CSIPDpsApiMockServer()
     lateinit var objectMapper: ObjectMapper
   }
 
@@ -58,7 +58,7 @@ class CSIPApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback
   }
 }
 
-class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
+class CSIPDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   companion object {
     private const val WIREMOCK_PORT = 8088
 
@@ -333,6 +333,18 @@ class CSIPApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withStatus(CREATED.value())
           .withBody(dpsCsipReportSyncResponseWithFactor(dpsCSIPFactorId = dpsCSIPFactorId)),
       ),
+    )
+  }
+
+  fun stubMoveOffenderForCSIP() {
+    stubFor(put("/sync/csip-records/move").willReturn(aResponse().withStatus(OK.value())))
+  }
+  fun stubMoveOffenderForCSIP(status: HttpStatus) {
+    stubPutErrorResponse(
+      status = status,
+      url = "/sync/csip-records/move",
+      error =
+      ErrorResponse(status.value(), userMessage = "There was an Error"),
     )
   }
 

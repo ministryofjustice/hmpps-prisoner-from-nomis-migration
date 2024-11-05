@@ -29,7 +29,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsA
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.LocalStackContainer.setLocalStackProperties
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonDpsApiExtension
@@ -62,7 +62,7 @@ import java.util.concurrent.TimeUnit
   SentencingApiExtension::class,
   ActivitiesApiExtension::class,
   IncidentsApiExtension::class,
-  CSIPApiExtension::class,
+  CSIPDpsApiExtension::class,
   LocationsApiExtension::class,
   AlertsDpsApiExtension::class,
   CaseNotesApiExtension::class,

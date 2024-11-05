@@ -8,11 +8,13 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.MappingResponse.MAPPING_FAILED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.DefaultLegacyActioned
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.MoveCsipRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ResponseMapping.Component.ATTENDEE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ResponseMapping.Component.CONTRIBUTORY_FACTOR
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ResponseMapping.Component.IDENTIFIED_NEED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ResponseMapping.Component.INTERVIEW
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.ResponseMapping.Component.REVIEW
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerBookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -22,6 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
+import java.util.UUID
 
 @Service
 class CSIPSynchronisationService(
@@ -308,27 +311,6 @@ class CSIPSynchronisationService(
     }
   }
 
-  /*
-  suspend fun csipFactorUpserted(event: CSIPFactorEvent) {
-    val telemetry =
-      mutableMapOf(
-        "nomisCSIPReportId" to event.csipReportId,
-        "offenderNo" to event.offenderIdDisplay,
-        "nomisCSIPFactorId" to event.csipFactorId,
-      )
-
-    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
-      telemetryClient.trackEvent("csip-factor-synchronisation-skipped", telemetry)
-      return
-    }
-
-    val nomisCSIPResponse = nomisApiService.getCSIP(event.csipReportId)
-
-    val factorResponse = nomisCSIPResponse.reportDetails.factors.find { it.id == event.csipReportId }
-    val actionedDetailsForCSIPFactor = factorResponse!!.toActionDetails()
-  }
-*/
-
   suspend fun csipReportDeleted(event: CSIPReportEvent) {
     val telemetry =
       mapOf(
@@ -464,6 +446,53 @@ class CSIPSynchronisationService(
   }.onFailure { e ->
     telemetryClient.trackEvent("csip-mapping-deleted-failed", mapOf("dpsCSIPId" to dpsCSIPId))
     log.warn("Unable to delete mapping for csip report $dpsCSIPId. Please delete manually", e)
+  }
+
+  suspend fun synchronisePrisonerBookingMoved(bookingMovedEvent: PrisonerBookingMovedDomainEvent) {
+    val (movedToNomsNumber, movedFromNomsNumber, bookingId) = bookingMovedEvent.additionalInformation
+
+    try {
+      val csipIdsToResynchronise = nomisApiService.getCSIPsForBooking(bookingId).map { it.csipId }
+      if (csipIdsToResynchronise.isNotEmpty()) {
+        val dpsCsipIds = mappingApiService.getDpsCsipMappings(csipIdsToResynchronise)
+        csipDpsService.moveCSIPs(
+          MoveCsipRequest(
+            fromPrisonNumber = movedFromNomsNumber,
+            toPrisonNumber = movedToNomsNumber,
+            recordUuids = dpsCsipIds.map { UUID.fromString(it.dpsCSIPReportId) }.toSet(),
+          ),
+        )
+        telemetryClient.trackEvent(
+          "csip-booking-moved-success",
+          mapOf(
+            "bookingId" to bookingId,
+            "movedToNomsNumber" to movedToNomsNumber,
+            "movedFromNomsNumber" to movedFromNomsNumber,
+            "count" to csipIdsToResynchronise.size,
+          ),
+        )
+      } else {
+        telemetryClient.trackEvent(
+          "csip-booking-moved-ignored",
+          mapOf(
+            "bookingId" to bookingId,
+            "movedToNomsNumber" to movedToNomsNumber,
+            "movedFromNomsNumber" to movedFromNomsNumber,
+          ),
+        )
+      }
+    } catch (e: Exception) {
+      telemetryClient.trackEvent(
+        "csip-booking-moved-failed",
+        mapOf(
+          "bookingId" to bookingId,
+          "movedToNomsNumber" to movedToNomsNumber,
+          "movedFromNomsNumber" to movedFromNomsNumber,
+          "error" to (e.message ?: "unknown error"),
+        ),
+      )
+      throw e
+    }
   }
 }
 

@@ -31,9 +31,9 @@ import org.mockito.kotlin.whenever
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsCsipReportSyncResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsSyncCsipRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsSyncCsipRequestMinimal
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPDpsApiMockServer.Companion.dpsCsipReportSyncResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPDpsApiMockServer.Companion.dpsSyncCsipRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPDpsApiMockServer.Companion.dpsSyncCsipRequestMinimal
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPNomisApiMockServer.Companion.nomisCSIPReport
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPNomisApiMockServer.Companion.nomisCSIPReportMinimalData
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext

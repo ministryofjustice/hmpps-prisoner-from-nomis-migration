@@ -2,13 +2,16 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip
 
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpMethod
+import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.DefaultLegacyActioned
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.MoveCsipRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncCsipRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityOrLogAndRethrowBadRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
 
 @Service
@@ -35,5 +38,14 @@ class CSIPDpsApiService(@Qualifier("csipApiWebClient") private val webClient: We
       .body(BodyInserters.fromValue(deleteActioned))
       .retrieve()
       .awaitBodilessEntity()
+  }
+
+  suspend fun moveCSIPs(request: MoveCsipRequest) {
+    webClient.put()
+      .uri("/sync/csip-records/move")
+      .contentType(MediaType.APPLICATION_JSON)
+      .bodyValue(request)
+      .retrieve()
+      .awaitBodilessEntityOrLogAndRethrowBadRequest()
   }
 }

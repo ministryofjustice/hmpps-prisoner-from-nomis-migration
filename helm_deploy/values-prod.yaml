@@ -11,8 +11,7 @@ generic-service:
     APPLICATIONINSIGHTS_CONFIGURATION_FILE: applicationinsights.json
     API_BASE_URL_HMPPS_AUTH: https://sign-in.hmpps.service.justice.gov.uk/auth
     API_BASE_URL_NOMIS: https://nomis-prisoner-api.prison.service.justice.gov.uk
-    # currently set to self for a mock API until real API is ready
-    API_BASE_URL_CSIP: https://prisoner-nomis-migration.hmpps.service.justice.gov.uk
+    API_BASE_URL_CSIP: https://csip-api.hmpps.service.justice.gov.uk
     API_BASE_URL_VISITS: https://visit-scheduler.prison.service.justice.gov.uk
     API_BASE_URL_MAPPING: https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk
     API_BASE_URL_SENTENCING: https://adjustments-api.hmpps.service.justice.gov.uk
@@ -49,6 +48,7 @@ generic-service:
     FEATURE_EVENT_CSIP_FACTORS-UPDATED: false
     FEATURE_EVENT_CSIP_INTVW-INSERTED: false
     FEATURE_EVENT_CSIP_INTVW-UPDATED: false
+    FEATURE_EVENT_PRISON-OFFENDER-EVENTS_PRISONER_BOOKING_MOVED_CSIP: false
     FEATURE_EVENT_OFFENDER_CASE_NOTES-INSERTED: false
     FEATURE_EVENT_OFFENDER_CASE_NOTES-UPDATED: false
     FEATURE_EVENT_OFFENDER_CASE_NOTES-DELETED: false

@@ -28,6 +28,12 @@ class CSIPNomisApiService(@Qualifier("nomisApiWebClient") private val webClient:
       .retrieve()
       .awaitBody()
 
+  suspend fun getCSIPsForBooking(bookingId: Long): List<CSIPIdResponse> =
+    webClient.get()
+      .uri("/csip/booking/{bookingId}", bookingId)
+      .retrieve()
+      .awaitBody()
+
   suspend fun getCSIPIds(
     fromDate: LocalDate?,
     toDate: LocalDate?,

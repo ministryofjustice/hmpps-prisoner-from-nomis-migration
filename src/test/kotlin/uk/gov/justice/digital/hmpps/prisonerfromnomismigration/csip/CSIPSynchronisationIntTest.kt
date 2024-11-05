@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.exactly
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
@@ -29,10 +30,11 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension.Companion.csipDpsApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPDpsApiExtension.Companion.csipDpsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingApiMockServer.Companion.CSIP_CREATE_CHILD_MAPPINGS_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingApiMockServer.Companion.CSIP_CREATE_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingApiMockServer.Companion.CSIP_GET_MAPPING_URL
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
@@ -44,6 +46,7 @@ private const val DPS_CSIP_ID = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5"
 private const val NOMIS_CSIP_ID = 1234L
 private const val NOMIS_API_URL = "/csip/$NOMIS_CSIP_ID"
 private const val NOMIS_MAPPING_API_URL = "$CSIP_GET_MAPPING_URL/$NOMIS_CSIP_ID"
+private const val BOOKING_ID = 2345L
 
 class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
   @Autowired
@@ -687,6 +690,323 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
             }
           }
         }
+      }
+    }
+  }
+
+  @Nested
+  inner class BookingMoved {
+    @Nested
+    inner class HappyPath {
+      val bookingId = BOOKING_ID
+      private val movedToNomsNumber = "A1234KT"
+      private val movedFromNomsNumber = "A1000KT"
+      private val dpsCSIPId1 = "956d4326-b0c3-47ac-ab12-f0165109a6c5"
+      private val dpsCSIPId2 = "f612a10f-4827-4022-be96-d882193dfabd"
+
+      @BeforeEach
+      fun setUp() {
+        csipNomisApi.stubGetCSIPIdsForBooking(bookingId = bookingId)
+        csipMappingApi.stubGetByMappingsNomisId(dpsCSIPId1 = dpsCSIPId1, dpsCSIPId2 = dpsCSIPId2)
+        csipDpsApi.stubMoveOffenderForCSIP()
+
+        awsSqsSentencingOffenderEventsClient.sendMessage(
+          csipQueueOffenderEventsUrl,
+          bookingMovedDomainEvent(
+            bookingId = bookingId,
+            movedFromNomsNumber = movedFromNomsNumber,
+            movedToNomsNumber = movedToNomsNumber,
+          ),
+        )
+        waitForAnyProcessingToComplete("csip-booking-moved-success")
+      }
+
+      @Test
+      fun `will retrieve csip ids for the bookings that has changed`() {
+        csipNomisApi.verify(getRequestedFor(urlPathEqualTo("/csip/booking/$bookingId")))
+      }
+
+      @Test
+      fun `will request dps mappings for NOMIS csip mappings`() {
+        csipMappingApi.verify(
+          getRequestedFor(urlPathEqualTo("/mapping/csip/nomis-csip-id"))
+            .withQueryParam("nomisCSIPId", equalTo("1234"))
+            .withQueryParam("nomisCSIPId", equalTo("5678")),
+        )
+      }
+
+      @Test
+      fun `will send a csip move to DPS`() {
+        csipDpsApi.verify(
+          putRequestedFor(urlPathEqualTo("/sync/csip-records/move"))
+            .withRequestBodyJsonPath("fromPrisonNumber", movedFromNomsNumber)
+            .withRequestBodyJsonPath("toPrisonNumber", movedToNomsNumber)
+            .withRequestBodyJsonPath("recordUuids[0]", dpsCSIPId1)
+            .withRequestBodyJsonPath("recordUuids[1]", dpsCSIPId2),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for the booking move`() {
+        verify(telemetryClient).trackEvent(
+          eq("csip-booking-moved-success"),
+          check {
+            assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["movedToNomsNumber"]).isEqualTo(movedToNomsNumber)
+            assertThat(it["movedFromNomsNumber"]).isEqualTo(movedFromNomsNumber)
+            assertThat(it["count"]).isEqualTo("2")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class HappyPathWithNoCSIPs {
+      private val bookingId = BOOKING_ID
+      private val movedToNomsNumber = "A1234KT"
+      private val movedFromNomsNumber = "A1000KT"
+
+      @BeforeEach
+      fun setUp() {
+        csipNomisApi.stubGetCSIPIdsForBookingNoCsips(bookingId = bookingId)
+
+        awsSqsSentencingOffenderEventsClient.sendMessage(
+          csipQueueOffenderEventsUrl,
+          bookingMovedDomainEvent(
+            bookingId = bookingId,
+            movedFromNomsNumber = movedFromNomsNumber,
+            movedToNomsNumber = movedToNomsNumber,
+          ),
+        )
+        waitForAnyProcessingToComplete("csip-booking-moved-ignored")
+      }
+
+      @Test
+      fun `will retrieve csip ids for the bookings that has changed`() {
+        csipNomisApi.verify(getRequestedFor(urlPathEqualTo("/csip/booking/$bookingId")))
+      }
+
+      @Test
+      fun `will not have any interaction with dps`() {
+        csipDpsApi.verify(0, putRequestedFor(anyUrl()))
+      }
+
+      @Test
+      fun `will not have any interaction with the mapping service`() {
+        csipMappingApi.verify(0, getRequestedFor(anyUrl()))
+      }
+
+      @Test
+      fun `will track telemetry to show moved ignored`() {
+        verify(telemetryClient).trackEvent(
+          eq("csip-booking-moved-ignored"),
+          check {
+            assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["movedToNomsNumber"]).isEqualTo(movedToNomsNumber)
+            assertThat(it["movedFromNomsNumber"]).isEqualTo(movedFromNomsNumber)
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class BookingNotFoundInNomis {
+      val bookingId = BOOKING_ID
+      private val movedToNomsNumber = "A1234KT"
+      private val movedFromNomsNumber = "A1000KT"
+
+      @BeforeEach
+      fun setUp() {
+        csipNomisApi.stubGetCSIPIdsForBooking(NOT_FOUND)
+
+        awsSqsSentencingOffenderEventsClient.sendMessage(
+          csipQueueOffenderEventsUrl,
+          bookingMovedDomainEvent(
+            bookingId = bookingId,
+            movedFromNomsNumber = movedFromNomsNumber,
+            movedToNomsNumber = movedToNomsNumber,
+          ),
+        )
+        await untilCallTo {
+          awsSqsCSIPOffenderEventDlqClient.countAllMessagesOnQueue(csipQueueOffenderEventsDlqUrl).get()
+        } matches { it == 1 }
+      }
+
+      @Test
+      fun `will attempt to retrieve csip ids for the booking that has changed`() {
+        csipNomisApi.verify(getRequestedFor(urlPathEqualTo("/csip/booking/$bookingId")))
+      }
+
+      @Test
+      fun `will not have any interaction with the mapping service`() {
+        csipMappingApi.verify(0, getRequestedFor(anyUrl()))
+      }
+
+      @Test
+      fun `will not have any interaction with dps`() {
+        csipDpsApi.verify(0, putRequestedFor(anyUrl()))
+      }
+
+      @Test
+      fun `will track telemetry to show moved failed - twice allowing for retries`() {
+        verify(telemetryClient, Times(2)).trackEvent(
+          eq("csip-booking-moved-failed"),
+          check {
+            assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["movedToNomsNumber"]).isEqualTo(movedToNomsNumber)
+            assertThat(it["movedFromNomsNumber"]).isEqualTo(movedFromNomsNumber)
+            assertThat(it["error"]).contains("Not Found")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will put the message back on the queue`() {
+        assertThat(
+          awsSqsCSIPOffenderEventDlqClient.countAllMessagesOnQueue(csipQueueOffenderEventsDlqUrl).get(),
+        ).isEqualTo(1)
+      }
+    }
+
+    @Nested
+    inner class MappingsNotFound {
+      val bookingId = BOOKING_ID
+      private val movedToNomsNumber = "A1234KT"
+      private val movedFromNomsNumber = "A1000KT"
+
+      @BeforeEach
+      fun setUp() {
+        csipNomisApi.stubGetCSIPIdsForBooking(bookingId = bookingId)
+        csipMappingApi.stubGetByMappingsNomisId(NOT_FOUND)
+
+        awsSqsSentencingOffenderEventsClient.sendMessage(
+          csipQueueOffenderEventsUrl,
+          bookingMovedDomainEvent(
+            bookingId = bookingId,
+            movedFromNomsNumber = movedFromNomsNumber,
+            movedToNomsNumber = movedToNomsNumber,
+          ),
+        )
+        await untilCallTo {
+          awsSqsCSIPOffenderEventDlqClient.countAllMessagesOnQueue(csipQueueOffenderEventsDlqUrl).get()
+        } matches { it == 1 }
+      }
+
+      @Test
+      fun `will retrieve csip ids for the bookings that has changed`() {
+        csipNomisApi.verify(getRequestedFor(urlPathEqualTo("/csip/booking/$bookingId")))
+      }
+
+      @Test
+      fun `will request dps mappings for NOMIS csip mappings`() {
+        csipMappingApi.verify(
+          getRequestedFor(urlPathEqualTo("/mapping/csip/nomis-csip-id"))
+            .withQueryParam("nomisCSIPId", equalTo("1234"))
+            .withQueryParam("nomisCSIPId", equalTo("5678")),
+        )
+      }
+
+      @Test
+      fun `will not have any interaction with dps`() {
+        csipDpsApi.verify(0, putRequestedFor(anyUrl()))
+      }
+
+      @Test
+      fun `will track telemetry to show moved failed - twice allowing for retries`() {
+        verify(telemetryClient, Times(2)).trackEvent(
+          eq("csip-booking-moved-failed"),
+          check {
+            assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["movedToNomsNumber"]).isEqualTo(movedToNomsNumber)
+            assertThat(it["movedFromNomsNumber"]).isEqualTo(movedFromNomsNumber)
+            assertThat(it["error"]).contains("Not Found")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will put the message back on the queue`() {
+        assertThat(
+          awsSqsCSIPOffenderEventDlqClient.countAllMessagesOnQueue(csipQueueOffenderEventsDlqUrl).get(),
+        ).isEqualTo(1)
+      }
+    }
+
+    @Nested
+    inner class DPSUpdateFailed {
+      val bookingId = BOOKING_ID
+      private val movedToNomsNumber = "A1234KT"
+      private val movedFromNomsNumber = "A1000KT"
+      private val dpsCSIPId1 = "956d4326-b0c3-47ac-ab12-f0165109a6cc"
+      private val dpsCSIPId2 = "f612a10f-4827-4022-be96-d882193dfadd"
+
+      @BeforeEach
+      fun setUp() {
+        csipNomisApi.stubGetCSIPIdsForBooking(bookingId = bookingId)
+        csipMappingApi.stubGetByMappingsNomisId(dpsCSIPId1 = dpsCSIPId1, dpsCSIPId2 = dpsCSIPId2)
+        csipDpsApi.stubMoveOffenderForCSIP(INTERNAL_SERVER_ERROR)
+
+        awsSqsSentencingOffenderEventsClient.sendMessage(
+          csipQueueOffenderEventsUrl,
+          bookingMovedDomainEvent(
+            bookingId = bookingId,
+            movedFromNomsNumber = movedFromNomsNumber,
+            movedToNomsNumber = movedToNomsNumber,
+          ),
+        )
+        await untilCallTo {
+          awsSqsCSIPOffenderEventDlqClient.countAllMessagesOnQueue(csipQueueOffenderEventsDlqUrl).get()
+        } matches { it == 1 }
+      }
+
+      @Test
+      fun `will retrieve csip ids for the bookings that has changed`() {
+        csipNomisApi.verify(getRequestedFor(urlPathEqualTo("/csip/booking/$bookingId")))
+      }
+
+      @Test
+      fun `will request dps mappings for NOMIS csip mappings`() {
+        csipMappingApi.verify(
+          getRequestedFor(urlPathEqualTo("/mapping/csip/nomis-csip-id"))
+            .withQueryParam("nomisCSIPId", equalTo("1234"))
+            .withQueryParam("nomisCSIPId", equalTo("5678")),
+        )
+      }
+
+      @Test
+      fun `will send a csip move to DPS`() {
+        csipDpsApi.verify(
+          putRequestedFor(urlPathEqualTo("/sync/csip-records/move"))
+            .withRequestBodyJsonPath("fromPrisonNumber", movedFromNomsNumber)
+            .withRequestBodyJsonPath("toPrisonNumber", movedToNomsNumber)
+            .withRequestBodyJsonPath("recordUuids[0]", dpsCSIPId1)
+            .withRequestBodyJsonPath("recordUuids[1]", dpsCSIPId2),
+        )
+      }
+
+      @Test
+      fun `will track telemetry to show moved failed - twice allowing for retries`() {
+        verify(telemetryClient, Times(2)).trackEvent(
+          eq("csip-booking-moved-failed"),
+          check {
+            assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["movedToNomsNumber"]).isEqualTo(movedToNomsNumber)
+            assertThat(it["movedFromNomsNumber"]).isEqualTo(movedFromNomsNumber)
+            assertThat(it["error"]).contains("500 Internal Server")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will put the message back on the queue`() {
+        assertThat(
+          awsSqsCSIPOffenderEventDlqClient.countAllMessagesOnQueue(csipQueueOffenderEventsDlqUrl).get(),
+        ).isEqualTo(1)
       }
     }
   }
