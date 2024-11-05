@@ -574,7 +574,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
       fun `will send global phone numbers to DPS`() {
         with(dpsRequests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")) {
           assertThat(phoneNumbers).hasSize(2)
-          with(phoneNumbers!![0]) {
+          with(phoneNumbers[0]) {
             assertThat(phoneId).isEqualTo(10)
             assertThat(number).isEqualTo("0114 555 5555")
             assertThat(type.code).isEqualTo("MOB")
@@ -584,7 +584,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
             assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-02-02T10:23"))
             assertThat(extension).isEqualTo("ext 5555")
           }
-          with(phoneNumbers!![1]) {
+          with(phoneNumbers[1]) {
             assertThat(phoneId).isEqualTo(11)
             assertThat(number).isEqualTo("0114 1111 1111111")
             assertThat(type.code).isEqualTo("FAX")
@@ -601,9 +601,9 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
       fun `will send addresses to DPS`() {
         val person = dpsRequests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
         assertThat(person.addresses).hasSize(2)
-        with(person.addresses!![0]) {
+        with(person.addresses[0]) {
           assertThat(addressId).isEqualTo(101)
-          assertThat(type.code).isEqualTo("HOME")
+          assertThat(type?.code).isEqualTo("HOME")
           assertThat(flat).isEqualTo("Flat 1B")
           assertThat(premise).isEqualTo("Pudding Court")
           assertThat(street).isEqualTo("High Mound")
@@ -622,10 +622,9 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
           assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-03-02T10:23"))
         }
-        with(person.addresses!![1]) {
+        with(person.addresses[1]) {
           assertThat(addressId).isEqualTo(102)
-          // TODO DPS is incorrectly having this as mandatory
-          // assertThat(type).isNull()
+          assertThat(type).isNull()
           assertThat(flat).isNull()
           assertThat(premise).isNull()
           assertThat(street).isNull()
@@ -650,7 +649,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will send address phone numbers to DPS`() {
         val person = dpsRequests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
-        val firstAddress = person.addresses!![0]
+        val firstAddress = person.addresses[0]
         assertThat(firstAddress.phoneNumbers).hasSize(1)
         with(firstAddress.phoneNumbers[0]) {
           assertThat(phoneId).isEqualTo(101)
@@ -668,10 +667,10 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
       fun `will send employments to DPS`() {
         val person = dpsRequests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
         assertThat(person.employments).hasSize(1)
-        with(person.employments!![0]) {
+        with(person.employments[0]) {
           assertThat(sequence).isEqualTo(1)
-          assertThat(corporate.id).isEqualTo(120)
-          assertThat(corporate.name).isEqualTo("Police")
+          assertThat(corporate?.id).isEqualTo(120)
+          assertThat(corporate?.name).isEqualTo("Police")
           assertThat(active).isTrue()
           assertThat(createUsername).isEqualTo("ADJUA.BEEK")
           assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:23"))
@@ -684,7 +683,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
       fun `will send identifiers to DPS`() {
         val person = dpsRequests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
         assertThat(person.identifiers).hasSize(2)
-        with(person.identifiers!![0]) {
+        with(person.identifiers[0]) {
           assertThat(sequence).isEqualTo(1)
           assertThat(type.code).isEqualTo("PNC")
           assertThat(identifier).isEqualTo("2024/00037373A")
@@ -694,7 +693,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
           assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-02-02T10:23"))
         }
-        with(person.identifiers!![1]) {
+        with(person.identifiers[1]) {
           assertThat(sequence).isEqualTo(2)
           assertThat(type.code).isEqualTo("STAFF")
           assertThat(identifier).isEqualTo("6363688")
@@ -710,7 +709,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
       fun `will send email addresses to DPS`() {
         val person = dpsRequests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
         assertThat(person.emailAddresses).hasSize(1)
-        with(person.emailAddresses!![0]) {
+        with(person.emailAddresses[0]) {
           assertThat(emailAddressId).isEqualTo(130)
           assertThat(email).isEqualTo("test@test.justice.gov.uk")
           assertThat(createUsername).isEqualTo("ADJUA.BEEK")
@@ -724,25 +723,25 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
       fun `will send restrictions to DPS`() {
         val person = dpsRequests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
         assertThat(person.restrictions).hasSize(2)
-        with(person.restrictions!![0]) {
+        with(person.restrictions[0]) {
           assertThat(id).isEqualTo(150)
           assertThat(type.code).isEqualTo("BAN")
           assertThat(comment).isEqualTo("Banned for life!")
           assertThat(effectiveDate).isEqualTo(LocalDate.parse("2023-01-01"))
           assertThat(expiryDate).isEqualTo(LocalDate.parse("2026-01-01"))
-          // TODO missing staff username
+          assertThat(staffUsername).isEqualTo("ADJUA.SMITH")
           assertThat(createUsername).isEqualTo("ADJUA.BEEK")
           assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:23"))
           assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
           assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-02-02T10:23"))
         }
-        with(person.restrictions!![1]) {
+        with(person.restrictions[1]) {
           assertThat(id).isEqualTo(151)
           assertThat(type.code).isEqualTo("CCTV")
           assertThat(comment).isNull()
           assertThat(effectiveDate).isEqualTo(LocalDate.parse("2023-01-01"))
           assertThat(expiryDate).isNull()
-          // TODO missing staff username
+          assertThat(staffUsername).isEqualTo("ADJUA.SMITH")
           assertThat(createUsername).isEqualTo("ADJUA.BEEK")
           assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:23"))
           assertThat(modifyUsername).isNull()
@@ -754,7 +753,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
       fun `will send contacts to DPS`() {
         val person = dpsRequests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
         assertThat(person.contacts).hasSize(2)
-        with(person.contacts!![0]) {
+        with(person.contacts[0]) {
           assertThat(id).isEqualTo(190)
           assertThat(contactType.code).isEqualTo("S")
           assertThat(relationshipType.code).isEqualTo("BRO")
@@ -771,7 +770,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
           assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-02-02T10:23"))
         }
-        with(person.contacts!![1]) {
+        with(person.contacts[1]) {
           assertThat(id).isEqualTo(191)
           assertThat(contactType.code).isEqualTo("S")
           assertThat(relationshipType.code).isEqualTo("BRO")
@@ -795,7 +794,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
       fun `will send contact restrictions to DPS`() {
         val person = dpsRequests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
         assertThat(person.contacts).hasSize(2)
-        val contact = person.contacts!![0]
+        val contact = person.contacts[0]
         assertThat(contact.restrictions).hasSize(1)
         with(contact.restrictions[0]) {
           assertThat(id).isEqualTo(160)
@@ -803,7 +802,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(comment).isEqualTo("Banned for life!")
           assertThat(startDate).isEqualTo(LocalDate.parse("2023-01-01"))
           assertThat(expiryDate).isEqualTo(LocalDate.parse("2026-01-01"))
-          // TODO missing staff username
+          assertThat(staffUsername).isEqualTo("ADJUA.SMITH")
           assertThat(createUsername).isEqualTo("ADJUA.BEEK")
           assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:23"))
           assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")

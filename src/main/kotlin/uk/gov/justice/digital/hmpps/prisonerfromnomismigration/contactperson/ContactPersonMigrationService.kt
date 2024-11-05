@@ -155,6 +155,7 @@ fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateC
   domesticStatus = this.domesticStatus?.toCodedValue(),
   deceasedDate = this.deceasedDate,
   staff = this.isStaff ?: false,
+  remitter = this.isRemitter ?: false,
   phoneNumbers = this.phoneNumbers.map {
     MigratePhoneNumber(
       phoneId = it.phoneId,
@@ -170,7 +171,7 @@ fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateC
   addresses = this.addresses.map {
     MigrateAddress(
       addressId = it.addressId,
-      type = it.type?.toCodedValue() ?: CodedValue("HOME", "Home"),
+      type = it.type?.toCodedValue(),
       flat = it.flat,
       premise = it.premise,
       street = it.street,
@@ -270,6 +271,7 @@ fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateC
           createUsername = restriction.audit.createUsername,
           modifyDateTime = restriction.audit.modifyDatetime.toDateTime(),
           modifyUsername = restriction.audit.modifyUserId,
+          staffUsername = restriction.enteredStaff.username,
         )
       },
     )
@@ -281,6 +283,7 @@ fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateC
       effectiveDate = it.effectiveDate,
       expiryDate = it.expiryDate,
       comment = it.comment,
+      staffUsername = it.enteredStaff.username,
       createDateTime = it.audit.createDatetime.toDateTime(),
       createUsername = it.audit.createUsername,
       modifyDateTime = it.audit.modifyDatetime.toDateTime(),
