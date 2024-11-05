@@ -15,9 +15,10 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
 import org.springframework.web.reactive.function.client.WebClientResponseException
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiExtension.Companion.csipDpsApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPApiMockServer.Companion.dpsSyncCsipRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPDpsApiExtension.Companion.csipDpsApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPDpsApiMockServer.Companion.dpsSyncCsipRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.DefaultLegacyActioned
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.MoveCsipRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.LocalDateTime
@@ -133,6 +134,65 @@ internal class CSIPDpsApiServiceTest {
         fun `should throw error when not found`() = runTest {
           assertThrows<WebClientResponseException.NotFound> {
             csipService.deleteCSIP(csipReportId = dpsCSIPId, DefaultLegacyActioned(actionedAt = LocalDateTime.now()))
+          }
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName("PUT /sync/csip-records/move")
+    inner class MoveOffender {
+      private val uuids = setOf(
+        UUID.fromString("17a5aa28-dec1-460d-8260-ac5c8dd7be76"),
+        UUID.fromString("2a19146d-77c6-42e6-918a-89821d3f54eb"),
+      )
+
+      @Nested
+      inner class CSIPExists {
+        @BeforeEach
+        internal fun setUp() {
+          csipDpsApi.stubMoveOffenderForCSIP()
+          runBlocking {
+            csipService.moveCSIPs(
+              MoveCsipRequest(
+                fromPrisonNumber = "A1234BC",
+                toPrisonNumber = "D5678EF",
+                recordUuids = uuids,
+              ),
+            )
+          }
+        }
+
+        @Test
+        fun `should call api with OAuth2 token`() {
+          csipDpsApi.verify(
+            putRequestedFor(urlEqualTo("/sync/csip-records/move"))
+              .withHeader("Authorization", equalTo("Bearer ABCDE"))
+              .withRequestBodyJsonPath("fromPrisonNumber", "A1234BC")
+              .withRequestBodyJsonPath("toPrisonNumber", "D5678EF")
+              .withRequestBodyJsonPath("recordUuids[0]", "17a5aa28-dec1-460d-8260-ac5c8dd7be76")
+              .withRequestBodyJsonPath("recordUuids[1]", "2a19146d-77c6-42e6-918a-89821d3f54eb"),
+          )
+        }
+      }
+
+      @Nested
+      inner class CSIPMoveFailed {
+        @BeforeEach
+        internal fun setUp() {
+          csipDpsApi.stubMoveOffenderForCSIP(HttpStatus.INTERNAL_SERVER_ERROR)
+        }
+
+        @Test
+        fun `should throw error when not found`() = runTest {
+          assertThrows<WebClientResponseException.InternalServerError> {
+            csipService.moveCSIPs(
+              MoveCsipRequest(
+                fromPrisonNumber = "A1234BC",
+                toPrisonNumber = "D5678EF",
+                recordUuids = uuids,
+              ),
+            )
           }
         }
       }

@@ -109,6 +109,38 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
     stubGetErrorResponse(status = status, url = "/mapping/csip/nomis-csip-id/.*")
   }
 
+  fun stubGetByMappingsNomisId(dpsCSIPId1: String, dpsCSIPId2: String) {
+    mappingApi.stubFor(
+      get(urlEqualTo("/mapping/csip/nomis-csip-id?nomisCSIPId=1234&nomisCSIPId=5678"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(
+              listOf(
+                CSIPReportMappingDto(
+                  nomisCSIPReportId = 1234,
+                  dpsCSIPReportId = dpsCSIPId1,
+                  mappingType = CSIPReportMappingDto.MappingType.NOMIS_CREATED,
+                  label = "2022-02-14T09:58:45",
+                  whenCreated = "2020-01-01T11:10:00",
+                ),
+                CSIPReportMappingDto(
+                  nomisCSIPReportId = 5678,
+                  dpsCSIPReportId = dpsCSIPId2,
+                  mappingType = CSIPReportMappingDto.MappingType.DPS_CREATED,
+                  label = "2022-02-15T09:58:45",
+                  whenCreated = "2020-01-01T11:10:00",
+                ),
+              ),
+            ),
+        ),
+    )
+  }
+  fun stubGetByMappingsNomisId(status: HttpStatus) {
+    stubGetErrorResponse(status = status, url = "/mapping/csip/nomis-csip-id?nomisCSIPId=1234&nomisCSIPId=5678")
+  }
+
   fun stubGetFullMappingByDpsReportId(nomisCSIPId: Long = 1234, dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/csip/dps-csip-id/$dpsCSIPId/all"))

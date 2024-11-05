@@ -56,8 +56,7 @@ class CSIPPrisonOffenderEventListener(
               "CSIP_REVIEWS-UPDATED",
               -> csipSynchronisationService.csipReviewUpserted(sqsMessage.Message.fromJson())
 
-              // TODO check if needed
-              // "prison-offender-events.prisoner.merged"
+              "prison-offender-events.prisoner.booking.moved" -> csipSynchronisationService.synchronisePrisonerBookingMoved(sqsMessage.Message.fromJson())
 
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }

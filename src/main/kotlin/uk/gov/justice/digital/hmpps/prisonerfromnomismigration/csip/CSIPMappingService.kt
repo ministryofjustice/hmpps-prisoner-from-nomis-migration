@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip
 
 import kotlinx.coroutines.reactive.awaitFirstOrDefault
+import kotlinx.coroutines.reactive.awaitSingle
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
@@ -15,6 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPChildMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFullMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPReportMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.typeReference
 
 @Service
 class CSIPMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) :
@@ -45,6 +47,16 @@ class CSIPMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient)
       .retrieve()
       .awaitBodyOrNullWhenNotFound()
 
+  suspend fun getDpsCsipMappings(nomisCSIPReportIds: List<Long>): List<CSIPReportMappingDto> =
+    webClient.get().uri {
+      it.path("/mapping/csip/nomis-csip-id")
+        .queryParam("nomisCSIPId", nomisCSIPReportIds)
+        .build()
+    }
+      .retrieve()
+      .bodyToMono(typeReference<List<CSIPReportMappingDto>>())
+      .awaitSingle()
+
   suspend fun getFullMappingByDPSReportId(dpsCSIPReportId: String): CSIPFullMappingDto? =
     webClient.get()
       .uri("/mapping/csip/dps-csip-id/{dpsCSIPReportId}/all", dpsCSIPReportId)
@@ -63,23 +75,6 @@ class CSIPMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient)
       .uri("/mapping/csip/factors/nomis-csip-factor-id/{nomisCSIPFactorId}", nomisCSIPFactorId)
       .retrieve()
       .awaitBodyOrNullWhenNotFound()
-
-  suspend fun createCSIPFactorMapping(
-    mapping: CSIPChildMappingDto,
-  ): CreateMappingResult<CSIPChildMappingDto> {
-    return webClient.post()
-      .uri("/mapping/csip/factors")
-      .bodyValue(
-        mapping,
-      )
-      .retrieve()
-      .bodyToMono(Unit::class.java)
-      .map { CreateMappingResult<CSIPChildMappingDto>() }
-      .onErrorResume(WebClientResponseException.Conflict::class.java) {
-        Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPChildMappingDto>>() {})))
-      }
-      .awaitFirstOrDefault(CreateMappingResult())
-  }
 
   suspend fun getCSIPPlanByNomisId(nomisCSIPPlanId: Long): CSIPChildMappingDto? =
     webClient.get()
