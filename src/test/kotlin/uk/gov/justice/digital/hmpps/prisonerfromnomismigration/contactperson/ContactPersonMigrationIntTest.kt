@@ -31,6 +31,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonPhoneMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
@@ -848,10 +849,13 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(this).hasSize(3)
           assertThat(this[0].nomisId).isEqualTo(10L)
           assertThat(this[0].dpsId).isEqualTo("100")
+          assertThat(this[0].dpsPhoneType).isEqualTo(ContactPersonPhoneMappingIdDto.DpsPhoneType.PERSON)
           assertThat(this[1].nomisId).isEqualTo(11L)
           assertThat(this[1].dpsId).isEqualTo("110")
+          assertThat(this[1].dpsPhoneType).isEqualTo(ContactPersonPhoneMappingIdDto.DpsPhoneType.PERSON)
           assertThat(this[2].nomisId).isEqualTo(101L)
           assertThat(this[2].dpsId).isEqualTo("1010")
+          assertThat(this[2].dpsPhoneType).isEqualTo(ContactPersonPhoneMappingIdDto.DpsPhoneType.ADDRESS)
         }
         with(mappingRequests.find { it.personMapping.nomisId == 2000L }?.personPhoneMapping ?: throw AssertionError("Request not found")) {
           assertThat(this).isEmpty()
