@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-11-01.5327.9349046"
+    "version": "2024-11-06.5380.8ecdb7f"
   },
   "servers": [
     {
@@ -7077,6 +7077,58 @@
         }
       }
     },
+    "/mapping/contact-person/person": {
+      "get": {
+        "tags": [
+          "contact-person-mapping-resource"
+        ],
+        "summary": "Get paged person mappings by migration id",
+        "description": "Retrieve all person mappings. Results are paged. Requires role ROLE_NOMIS_CONTACTPERSONS",
+        "operationId": "getAllPersonMappings",
+        "parameters": [
+          {
+            "name": "pageRequest",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Person mapping page returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagePersonMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/casenotes/nomis-casenote-id/{caseNoteId}": {
       "get": {
         "tags": [
@@ -8594,6 +8646,72 @@
         "responses": {
           "200": {
             "description": "NOMIS to DPS Mapping Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NomisDpsLocationMapping"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access forbidden to this endpoint. Requires role NOMIS_DPS_MAPPING__LOCATIONS__R",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Location id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/locations/dps/{dpsLocationId}": {
+      "get": {
+        "tags": [
+          "DPS to NOMIS Mapping lookup"
+        ],
+        "summary": "Retrieves the NOMIS location id from the DPS location id",
+        "description": "Requires role <b>NOMIS_DPS_MAPPING__LOCATIONS__R</b>",
+        "operationId": "getLocationMappingByDpsId",
+        "parameters": [
+          {
+            "name": "dpsLocationId",
+            "in": "path",
+            "description": "DPS location UUID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "DPS location UUID",
+              "example": "12345678-1234-5678-abcd-1234567890ab"
+            },
+            "example": "12345678-1234-5678-abcd-1234567890ab"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "DPS to NOMIS Mapping Information Returned",
             "content": {
               "application/json": {
                 "schema": {
@@ -11031,12 +11149,6 @@
             "description": "DPS court appearance id",
             "example": "123456"
           },
-          "nomisNextCourtAppearanceId": {
-            "type": "integer",
-            "description": "optional NOMIS next court appearance id",
-            "format": "int64",
-            "example": 123456
-          },
           "label": {
             "maxLength": 20,
             "minLength": 0,
@@ -11185,12 +11297,6 @@
             "description": "DPS court appearance id",
             "example": "123456"
           },
-          "nomisNextCourtAppearanceId": {
-            "type": "integer",
-            "description": "optional NOMIS next court appearance id",
-            "format": "int64",
-            "example": 123456
-          },
           "courtCharges": {
             "type": "array",
             "description": "Court Charge mappings",
@@ -11238,10 +11344,6 @@
             "type": "string"
           },
           "nomisCourtAppearanceId": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "nomisNextCourtAppearanceId": {
             "type": "integer",
             "format": "int64"
           },
@@ -11320,7 +11422,7 @@
             "type": "array",
             "description": "Person phone mapping",
             "items": {
-              "$ref": "#/components/schemas/ContactPersonSimpleMappingIdDto"
+              "$ref": "#/components/schemas/ContactPersonPhoneMappingIdDto"
             }
           },
           "personEmailMapping": {
@@ -11367,6 +11469,34 @@
           }
         },
         "description": "Mappings for a Person and there associated child entities"
+      },
+      "ContactPersonPhoneMappingIdDto": {
+        "required": [
+          "dpsId",
+          "dpsPhoneType",
+          "nomisId"
+        ],
+        "type": "object",
+        "properties": {
+          "nomisId": {
+            "type": "integer",
+            "description": "NOMIS id",
+            "format": "int64"
+          },
+          "dpsId": {
+            "type": "string",
+            "description": "DPS id"
+          },
+          "dpsPhoneType": {
+            "type": "string",
+            "description": "DPS phone type",
+            "enum": [
+              "ADDRESS",
+              "PERSON"
+            ]
+          }
+        },
+        "description": "NOMIS to DPS simple mapping IDs"
       },
       "ContactPersonSequenceMappingIdDto": {
         "required": [

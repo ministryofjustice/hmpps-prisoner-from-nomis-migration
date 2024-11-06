@@ -22,6 +22,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationCon
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonPhoneMappingIdDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonPhoneMappingIdDto.DpsPhoneType.ADDRESS
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonPhoneMappingIdDto.DpsPhoneType.PERSON
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonSequenceMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonSimpleMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
@@ -132,7 +135,8 @@ private fun MigrateContactResponse.toContactPersonMappingsDto(migrationId: Strin
   label = migrationId,
   personMapping = this.contact!!.toContactPersonSimpleMappingIdDto(),
   personAddressMapping = this.addresses.map { it.address!!.toContactPersonSimpleMappingIdDto() },
-  personPhoneMapping = phoneNumbers.map { it.toContactPersonSimpleMappingIdDto() } + this.addresses.flatMap { address -> address.phones.map { it.toContactPersonSimpleMappingIdDto() } },
+  personPhoneMapping = phoneNumbers.map { it.toContactPersonPhoneMappingIdDto(PERSON) } +
+    this.addresses.flatMap { address -> address.phones.map { it.toContactPersonPhoneMappingIdDto(ADDRESS) } },
   personEmailMapping = emailAddresses.map { ContactPersonSimpleMappingIdDto(dpsId = it.dpsId.toString(), nomisId = it.nomisId) },
   // TODO - getting IntelliJ smart cast error here - so for now use unnecessary  `!!` to avoid rebuilding all the time
   personEmploymentMapping = employments?.map { it.toContactPersonSequenceMappingIdDto(this.contact!!.nomisId) } ?: emptyList(),
@@ -298,5 +302,6 @@ fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateC
 
 private fun IdPair.toContactPersonSimpleMappingIdDto() = ContactPersonSimpleMappingIdDto(dpsId = this.dpsId.toString(), nomisId = this.nomisId)
 private fun IdPair.toContactPersonSequenceMappingIdDto(personId: Long) = ContactPersonSequenceMappingIdDto(dpsId = this.dpsId.toString(), nomisSequenceNumber = this.nomisId, nomisPersonId = personId)
+private fun IdPair.toContactPersonPhoneMappingIdDto(phoneType: ContactPersonPhoneMappingIdDto.DpsPhoneType) = ContactPersonPhoneMappingIdDto(dpsId = this.dpsId.toString(), dpsPhoneType = phoneType, nomisId = this.nomisId)
 private fun CodeDescription.toCodedValue() = CodedValue(code = this.code, description = this.description)
 private fun String?.toDateTime() = this?.let { java.time.LocalDateTime.parse(it) }
