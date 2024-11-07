@@ -734,9 +734,15 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
         }
 
         @Test
-        fun `will not create telemetry`() {
+        fun `will create failure telemetry`() { //
           await untilAsserted {
-            verifyNoInteractions(telemetryClient)
+            verify(telemetryClient).trackEvent(
+              eq("locations-deleted-synchronisation-failed"),
+              check {
+                assertThat(it["exception"]).startsWith("500 Internal Server Error from DELETE")
+              },
+              isNull(),
+            )
           }
         }
       }

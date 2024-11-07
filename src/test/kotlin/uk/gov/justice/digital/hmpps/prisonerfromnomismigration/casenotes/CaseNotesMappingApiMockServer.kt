@@ -33,7 +33,7 @@ class CaseNotesMappingApiMockServer(private val objectMapper: ObjectMapper) {
       dpsCaseNoteId = UUID.randomUUID().toString(),
       nomisCaseNoteId = 1234567,
       offenderNo = "A1234KT",
-      mappingType = CaseNoteMappingDto.MappingType.MIGRATED,
+      mappingType = MIGRATED,
     ),
   ) {
     mappingApi.stubFor(
