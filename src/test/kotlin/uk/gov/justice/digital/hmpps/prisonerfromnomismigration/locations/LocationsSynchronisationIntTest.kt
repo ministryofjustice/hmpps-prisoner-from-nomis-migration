@@ -27,6 +27,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
@@ -283,6 +284,7 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
             locationsQueueOffenderEventsUrl,
             locationEvent(eventType = "AGY_INT_LOC_PROFILES-UPDATED"),
           )
+          awsSqsLocationsOffenderEventDlqClient.waitForMessageCountOnQueue(locationsQueueOffenderEventsDlqUrl, 1)
         }
 
         @Test
@@ -348,22 +350,14 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
         }
 
         @Test
-        fun `will not retrieve details about the location from NOMIS`() {
+        fun `will check the mapping but not call any other apis`() {
           await untilAsserted {
+            mappingApi.verify(
+              exactly(1),
+              getRequestedFor(urlPathEqualTo(NOMIS_MAPPING_API_URL)),
+            )
             nomisApi.verify(exactly(0), getRequestedFor(urlEqualTo(NOMIS_API_URL)))
-          }
-        }
-
-        @Test
-        fun `will not create the location in the locations service`() {
-          await untilAsserted {
             locationsApi.verify(exactly(0), postRequestedFor(urlPathEqualTo("/sync/upsert")))
-          }
-        }
-
-        @Test
-        fun `will not create a mapping between the two records`() {
-          await untilAsserted {
             mappingApi.verify(exactly(0), postRequestedFor(urlPathEqualTo("/mapping/locations")))
           }
         }
@@ -572,15 +566,7 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
         }
 
         @Test
-        fun `will be ignored`() {
-          await untilAsserted {
-            nomisApi.verify(exactly(0), anyRequestedFor(anyUrl()))
-            locationsApi.verify(exactly(0), anyRequestedFor(anyUrl()))
-          }
-        }
-
-        @Test
-        fun `will create telemetry tracking the update`() {
+        fun `will create telemetry tracking the update but will be ignored`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
               eq("locations-synchronisation-skipped-ignored-prison"),
@@ -589,6 +575,8 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
               },
               isNull(),
             )
+            nomisApi.verify(exactly(0), anyRequestedFor(anyUrl()))
+            locationsApi.verify(exactly(0), anyRequestedFor(anyUrl()))
           }
         }
       }
@@ -666,6 +654,7 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
             locationsQueueOffenderEventsUrl,
             locationEvent(recordDeleted = true),
           )
+          awsSqsLocationsOffenderEventDlqClient.waitForMessageCountOnQueue(locationsQueueOffenderEventsDlqUrl, 1)
         }
 
         @Test
@@ -704,6 +693,7 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
             locationsQueueOffenderEventsUrl,
             locationEvent(recordDeleted = true),
           )
+          awsSqsLocationsOffenderEventDlqClient.waitForMessageCountOnQueue(locationsQueueOffenderEventsDlqUrl, 1)
         }
 
         @Test
@@ -734,9 +724,9 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
         }
 
         @Test
-        fun `will create failure telemetry`() { //
+        fun `will create failure telemetry`() {
           await untilAsserted {
-            verify(telemetryClient).trackEvent(
+            verify(telemetryClient, times(2)).trackEvent(
               eq("locations-deleted-synchronisation-failed"),
               check {
                 assertThat(it["exception"]).startsWith("500 Internal Server Error from DELETE")
