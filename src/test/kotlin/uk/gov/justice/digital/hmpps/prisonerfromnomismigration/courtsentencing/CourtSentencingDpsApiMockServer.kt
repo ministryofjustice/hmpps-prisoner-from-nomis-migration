@@ -47,6 +47,8 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     courtCaseId: String = UUID.randomUUID().toString(),
     response: CreateCourtCaseResponse = CreateCourtCaseResponse(
       courtCaseUuid = courtCaseId,
+      charges = emptyList(),
+      appearances = emptyList(),
     ),
   ) {
     stubFor(
@@ -62,7 +64,7 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubPostCourtCaseForCreateMigration(
     courtCaseId: String = UUID.randomUUID().toString(),
-    response: CreateCourtCaseMigrationResponse = CreateCourtCaseMigrationResponse(
+    response: CreateCourtCaseResponse = CreateCourtCaseResponse(
       courtCaseUuid = courtCaseId,
       charges = emptyList(),
       appearances = emptyList(),
@@ -83,6 +85,8 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     courtCaseId: String = UUID.randomUUID().toString(),
     response: CreateCourtCaseResponse = CreateCourtCaseResponse(
       courtCaseUuid = courtCaseId,
+      appearances = emptyList(),
+      charges = emptyList(),
     ),
   ) {
     stubFor(
