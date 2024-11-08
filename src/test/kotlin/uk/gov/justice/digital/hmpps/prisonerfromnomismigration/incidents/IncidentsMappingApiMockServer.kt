@@ -72,9 +72,9 @@ class IncidentsMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubGetIncident(nomisIncidentId: Long = 1234) {
+  fun stubGetIncident(nomisIncidentId: Long = 1234, dpsIncidentId: String = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42") {
     val content = """{
-      "dpsIncidentId": "fb4b2e91-91e7-457b-aa17-797f8c5c2f42",
+      "dpsIncidentId": "$dpsIncidentId",
       "nomisIncidentId": $nomisIncidentId,   
       "label": "2022-02-14T09:58:45",
       "whenCreated": "2020-01-01T11:10:00",
