@@ -16,10 +16,10 @@ class IncidentsDataRepairResource(
 ) {
   @PostMapping("/incidents/{incidentId}/repair")
   @ResponseStatus(HttpStatus.OK)
-  @PreAuthorize("hasRole('ROLE_MIGRATE_INCIDENTS')")
+  @PreAuthorize("hasRole('ROLE_MIGRATE_INCIDENT_REPORTS')")
   @Operation(
     summary = "Resynchronises an existing incident from NOMIS back to DPS",
-    description = "Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, so emergency use only. Requires ROLE_MIGRATE_INCIDENTS",
+    description = "Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, so emergency use only. Requires ROLE_MIGRATE_INCIDENT_REPORTS",
   )
   suspend fun repairIncident(@PathVariable incidentId: Long) {
     incidentsSynchronisationService.synchroniseIncidentUpdate(
