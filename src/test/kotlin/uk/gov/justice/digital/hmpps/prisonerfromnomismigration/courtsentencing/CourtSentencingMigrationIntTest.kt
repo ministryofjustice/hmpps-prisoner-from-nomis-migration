@@ -28,6 +28,9 @@ import org.springframework.web.reactive.function.BodyInserter
 import org.springframework.web.reactive.function.BodyInserters
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.dpsCourtSentencingServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearanceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseIdentifierResponse
@@ -48,17 +51,18 @@ import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.UUID
 
 private const val OFFENDER_NO = "AN12345"
 private const val NOMIS_CASE_ID = 1L
 private const val NOMIS_APPEARANCE_1_ID = 11L
 private const val NOMIS_APPEARANCE_2_ID = 22L
-private const val DPS_APPEARANCE_1_ID = "11CA"
-private const val DPS_APPEARANCE_2_ID = "22CA"
+private const val DPS_APPEARANCE_1_ID = "a04f7a8d-61aa-111a-9395-f4dc62f36ab0"
+private const val DPS_APPEARANCE_2_ID = "a04f7a8d-61aa-222a-9395-f4dc62f36ab0"
 private const val NOMIS_CHARGE_1_ID = 111L
 private const val NOMIS_CHARGE_2_ID = 222L
-private const val DPS_CHARGE_1_ID = "111C"
-private const val DPS_CHARGE_2_ID = "222C"
+private const val DPS_CHARGE_1_ID = "a04f7a8d-61aa-111c-9395-f4dc62f36ab0"
+private const val DPS_CHARGE_2_ID = "a04f7a8d-61aa-222c-9395-f4dc62f36ab0"
 private const val DPS_COURT_CASE_ID = "99C"
 
 data class MigrationResult(val migrationId: String)
@@ -923,18 +927,18 @@ fun someMigrationFilter(): BodyInserter<String, ReactiveHttpOutputMessage> = Bod
 )
 
 // charges can be shared across appearances
-fun dpsCourtCaseCreateResponseWithTwoAppearancesAndTwoCharges(): CreateCourtCaseMigrationResponse {
+fun dpsCourtCaseCreateResponseWithTwoAppearancesAndTwoCharges(): CreateCourtCaseResponse {
   val courtCaseUUID: String = DPS_COURT_CASE_ID
-  val courtChargesIds: List<ChargeMapping> =
+  val courtChargesIds: List<CreateChargeResponse> =
     listOf(
-      ChargeMapping(chargeUuid = DPS_CHARGE_2_ID, offenderChargeId = NOMIS_CHARGE_2_ID.toString()),
-      ChargeMapping(chargeUuid = DPS_CHARGE_1_ID, offenderChargeId = NOMIS_CHARGE_1_ID.toString()),
+      CreateChargeResponse(chargeUuid = UUID.fromString(DPS_CHARGE_2_ID), offenderChargeId = NOMIS_CHARGE_2_ID.toString()),
+      CreateChargeResponse(chargeUuid = UUID.fromString(DPS_CHARGE_1_ID), offenderChargeId = NOMIS_CHARGE_1_ID.toString()),
     )
-  val courtAppearancesIds: List<AppearanceMapping> = listOf(
-    AppearanceMapping(appearanceUuid = DPS_APPEARANCE_2_ID, eventId = NOMIS_APPEARANCE_2_ID.toString()),
-    AppearanceMapping(appearanceUuid = DPS_APPEARANCE_1_ID, eventId = NOMIS_APPEARANCE_1_ID.toString()),
+  val courtAppearancesIds: List<CreateCourtAppearanceResponse> = listOf(
+    CreateCourtAppearanceResponse(appearanceUuid = UUID.fromString(DPS_APPEARANCE_2_ID), eventId = NOMIS_APPEARANCE_2_ID.toString()),
+    CreateCourtAppearanceResponse(appearanceUuid = UUID.fromString(DPS_APPEARANCE_1_ID), eventId = NOMIS_APPEARANCE_1_ID.toString()),
   )
-  return CreateCourtCaseMigrationResponse(
+  return CreateCourtCaseResponse(
     courtCaseUuid = courtCaseUUID,
     appearances = courtAppearancesIds,
     charges = courtChargesIds,
