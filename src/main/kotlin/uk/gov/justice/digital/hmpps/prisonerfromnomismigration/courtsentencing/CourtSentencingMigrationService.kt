@@ -6,6 +6,9 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearanceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
@@ -82,7 +85,7 @@ class CourtSentencingMigrationService(
 
   private suspend fun createCourtCaseMapping(
     nomisCourtCase: CourtCaseResponse,
-    dpsCourtCaseCreateResponse: CreateCourtCaseMigrationResponse,
+    dpsCourtCaseCreateResponse: CreateCourtCaseResponse,
     context: MigrationContext<*>,
   ) {
     val mapping = CourtCaseAllMappingDto(
@@ -131,11 +134,11 @@ class CourtSentencingMigrationService(
   }
 
   // dependent on court appearance order back from dps to match nomis
-  private fun buildCourtAppearanceMapping(responseMappings: List<AppearanceMapping>): List<CourtAppearanceMappingDto> {
-    return responseMappings.map { it -> CourtAppearanceMappingDto(nomisCourtAppearanceId = it.eventId.toLong(), dpsCourtAppearanceId = it.appearanceUuid) }
+  private fun buildCourtAppearanceMapping(responseMappings: List<CreateCourtAppearanceResponse>): List<CourtAppearanceMappingDto> {
+    return responseMappings.map { it -> CourtAppearanceMappingDto(nomisCourtAppearanceId = it.eventId!!.toLong(), dpsCourtAppearanceId = it.appearanceUuid.toString()) }
   }
 
-  private fun buildCourtChargeMapping(responseMappings: List<ChargeMapping>): List<CourtChargeMappingDto> {
-    return responseMappings.map { it -> CourtChargeMappingDto(nomisCourtChargeId = it.offenderChargeId.toLong(), dpsCourtChargeId = it.chargeUuid) }
+  private fun buildCourtChargeMapping(responseMappings: List<CreateChargeResponse>): List<CourtChargeMappingDto> {
+    return responseMappings.map { it -> CourtChargeMappingDto(nomisCourtChargeId = it.offenderChargeId!!.toLong(), dpsCourtChargeId = it.chargeUuid.toString()) }
   }
 }

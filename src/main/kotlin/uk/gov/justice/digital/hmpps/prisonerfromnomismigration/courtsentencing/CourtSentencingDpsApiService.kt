@@ -25,7 +25,7 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .awaitBody()
 
   // separating this out for now - DPS may use the same endpoint
-  suspend fun createCourtCaseMigration(courtCase: CreateCourtCase): CreateCourtCaseMigrationResponse =
+  suspend fun createCourtCaseMigration(courtCase: CreateCourtCase): CreateCourtCaseResponse =
     webClient
       .post()
       .uri("/court-case")
@@ -97,7 +97,7 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .retrieve()
       .awaitBodilessEntity()
 
-  // TODO not currently implement in DPS
+  // TODO not currently implemented in DPS
   suspend fun updateCourtCharge(chargeId: String, charge: CreateCharge) =
     webClient
       .put()
@@ -162,25 +162,6 @@ data class CreateSentenceResponse(
   @field:JsonProperty("sentenceUuid")
   val sentenceUuid: String,
 
-)
-
-// TODO request endpoint to provide multiple ids for migration
-// order must be returned to match body
-data class CreateCourtCaseMigrationResponse(
-  val courtCaseUuid: String,
-  val appearances: List<AppearanceMapping>,
-  // charges may span multiple appearances
-  val charges: List<ChargeMapping>,
-)
-
-data class AppearanceMapping(
-  val eventId: String,
-  val appearanceUuid: String,
-)
-
-data class ChargeMapping(
-  val offenderChargeId: String,
-  val chargeUuid: String,
 )
 
 data class CreateCourtCaseMigrationRequest(

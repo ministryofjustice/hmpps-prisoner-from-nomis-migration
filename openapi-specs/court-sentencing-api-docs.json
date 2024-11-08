@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-10-23.2783.cae053f"
+    "version": "2024-11-08.2892.919ea28"
   },
   "servers": [
     {
@@ -318,6 +318,47 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/court-case/{courtCaseUuid}/case-references/refresh": {
+      "put": {
+        "tags": [
+          "court-case-controller"
+        ],
+        "summary": "Refresh case references",
+        "description": "This endpoint will refresh case references",
+        "operationId": "refreshCaseReferences",
+        "parameters": [
+          {
+            "name": "courtCaseUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CourtCaseLegacyData"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token"
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role"
           }
         }
       }
@@ -1895,7 +1936,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "10:44:29.225944632"
+            "example": "14:04:47.889431125"
           },
           "courtCode": {
             "type": "string"
@@ -1986,13 +2027,17 @@
           }
         }
       },
-      "CreateCourtCaseResponse": {
+      "CreateChargeResponse": {
         "required": [
-          "courtCaseUuid"
+          "chargeUuid"
         ],
         "type": "object",
         "properties": {
-          "courtCaseUuid": {
+          "chargeUuid": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "offenderChargeId": {
             "type": "string"
           }
         }
@@ -2006,18 +2051,34 @@
           "appearanceUuid": {
             "type": "string",
             "format": "uuid"
+          },
+          "eventId": {
+            "type": "string"
           }
         }
       },
-      "CreateChargeResponse": {
+      "CreateCourtCaseResponse": {
         "required": [
-          "chargeUuid"
+          "appearances",
+          "charges",
+          "courtCaseUuid"
         ],
         "type": "object",
         "properties": {
-          "chargeUuid": {
-            "type": "string",
-            "format": "uuid"
+          "courtCaseUuid": {
+            "type": "string"
+          },
+          "appearances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateCourtAppearanceResponse"
+            }
+          },
+          "charges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateChargeResponse"
+            }
           }
         }
       },
@@ -2432,7 +2493,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "10:44:29.225944632"
+            "example": "14:04:47.889431125"
           },
           "courtCode": {
             "type": "string"
