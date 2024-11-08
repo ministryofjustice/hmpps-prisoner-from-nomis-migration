@@ -1,5 +1,8 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson
 
+import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -9,36 +12,210 @@ import org.mockito.Mockito.eq
 import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
+import org.springframework.beans.factory.annotation.Autowired
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.contact
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.CreateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
+import java.time.LocalDate
 
 class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
+  @Autowired
+  private lateinit var nomisApiMock: ContactPersonNomisApiMockServer
+
+  private val dpsApiMock = ContactPersonDpsApiExtension.dpsContactPersonServer
+
+  @Autowired
+  private lateinit var mappingApiMock: ContactPersonMappingApiMockServer
+
   @Nested
   @DisplayName("PERSON-INSERTED")
   inner class PersonAdded {
-    private val personId = 123456L
+    private val nomisPersonId = 123456L
+    private val dpsContactId = 123456L
 
-    @BeforeEach
-    fun setUp() {
-      awsSqsContactPersonOffenderEventsClient.sendMessage(
-        contactPersonQueueOffenderEventsUrl,
-        personEvent(
-          eventType = "PERSON-INSERTED",
-          personId = personId,
-        ),
-      ).also { waitForAnyProcessingToComplete() }
+    @Nested
+    inner class WhenCreatedInDps {
+      @BeforeEach
+      fun setUp() {
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personEvent(
+            eventType = "PERSON-INSERTED",
+            personId = nomisPersonId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not create contact in DPS`() {
+        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/sync/contact")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-person-synchronisation-created-skipped"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+          },
+          isNull(),
+        )
+      }
     }
 
-    @Test
-    fun `will track telemetry`() {
-      verify(telemetryClient).trackEvent(
-        eq("contactperson-person-synchronisation-created-success"),
-        check {
-          assertThat(it["personId"]).isEqualTo(personId.toString())
-        },
-        isNull(),
-      )
+    @Nested
+    inner class WhenCreatedInNomis {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = nomisPersonId, mapping = null)
+        nomisApiMock.stubGetPerson(
+          personId = nomisPersonId,
+          person = contactPerson().copy(
+            personId = nomisPersonId,
+            firstName = "JOHN",
+            lastName = "SMITH",
+            middleName = "BOB",
+            interpreterRequired = true,
+            audit = NomisAudit(
+              createUsername = "J.SPEAK",
+              createDatetime = "2024-09-01T13:31",
+            ),
+            dateOfBirth = LocalDate.parse("1965-07-19"),
+            gender = CodeDescription("M", "Male"),
+            title = CodeDescription("MR", "Mr"),
+            language = CodeDescription("EN", "English"),
+            domesticStatus = CodeDescription("MAR", "Married"),
+            isStaff = true,
+            isRemitter = true,
+          ),
+        )
+        dpsApiMock.stubCreateContact(contact().copy(id = dpsContactId))
+        mappingApiMock.stubCreatePersonMapping()
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personEvent(
+            eventType = "PERSON-INSERTED",
+            personId = nomisPersonId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will check if mapping already exists for person`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/contact-person/person/nomis-person-id/$nomisPersonId")))
+      }
+
+      @Test
+      fun `will retrieve the person details from NOMIS`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/persons/$nomisPersonId")))
+      }
+
+      @Test
+      fun `will create the contact in DPS from the person`() {
+        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/contact")))
+        val createContactRequest: CreateContactRequest = ContactPersonDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/sync/contact")))
+        with(createContactRequest) {
+          assertThat(title).isEqualTo("MR")
+          assertThat(lastName).isEqualTo("SMITH")
+          assertThat(firstName).isEqualTo("JOHN")
+          assertThat(middleName).isEqualTo("BOB")
+          assertThat(dateOfBirth).isEqualTo(LocalDate.parse("1965-07-19"))
+          assertThat(estimatedIsOverEighteen).isNull()
+          assertThat(relationship).isNull()
+          // TODO - check why this is in the request
+          assertThat(placeOfBirth).isNull()
+          // TODO - check why this is in the request
+          assertThat(active).isNull()
+          // TODO - check why this is in the request
+          assertThat(suspended).isNull()
+          assertThat(isStaff).isTrue()
+          // TODO - is this a duplicate of the above
+          assertThat(staff).isTrue()
+          assertThat(remitter).isTrue()
+          assertThat(deceasedFlag).isFalse()
+          assertThat(deceasedDate).isNull()
+          assertThat(coronerNumber).isNull()
+          // TODO - not clear is this is a code
+          assertThat(gender).isEqualTo("M")
+          assertThat(domesticStatus).isEqualTo("MAR")
+          assertThat(languageCode).isEqualTo("EN")
+          // TODO - check why this is in the request
+          assertThat(nationalityCode).isNull()
+          assertThat(interpreterRequired).isTrue()
+          assertThat(createdBy).isEqualTo("J.SPEAK")
+          assertThat(createdTime).isEqualTo("2024-09-01T13:31")
+        }
+      }
+
+      @Test
+      fun `will create a mapping between the DPS and NOMIS record`() {
+        mappingApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/contact-person/person"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", dpsContactId)
+            .withRequestBodyJsonPath("nomisId", "$nomisPersonId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-person-synchronisation-created-success"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(dpsContactId.toString())
+          },
+          isNull(),
+        )
+      }
     }
+
+    @Nested
+    inner class WhenAlreadyCreated {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = nomisPersonId, mapping = PersonMappingDto(dpsId = "$dpsContactId", nomisId = nomisPersonId, mappingType = PersonMappingDto.MappingType.NOMIS_CREATED))
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personEvent(
+            eventType = "PERSON-INSERTED",
+            personId = nomisPersonId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not create contact in DPS`() {
+        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/sync/contact")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-person-synchronisation-created-ignored"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(dpsContactId.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+
+    // TODO
+    @Nested
+    inner class WhenDuplicateMapping
+
+    // TODO
+    @Nested
+    inner class MappingCreateFails
   }
 
   @Nested

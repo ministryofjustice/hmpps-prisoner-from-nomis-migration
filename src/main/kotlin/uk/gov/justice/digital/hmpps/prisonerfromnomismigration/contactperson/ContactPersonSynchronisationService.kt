@@ -2,10 +2,16 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson
 
 import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.CreateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactPerson
 
 @Service
 class ContactPersonSynchronisationService(
+  private val mappingApiService: ContactPersonMappingApiService,
+  private val nomisApiService: ContactPersonNomisApiService,
+  private val dpsApiService: ContactPersonDpsApiService,
   private val telemetryClient: TelemetryClient,
 ) {
   suspend fun personRestrictionUpserted(event: PersonRestrictionEvent) {
@@ -69,11 +75,38 @@ class ContactPersonSynchronisationService(
   }
   suspend fun personAdded(event: PersonEvent) {
     val telemetry =
-      mapOf("personId" to event.personId)
-    telemetryClient.trackEvent(
-      "contactperson-person-synchronisation-created-success",
-      telemetry,
-    )
+      mutableMapOf("nomisPersonId" to event.personId)
+    if (event.doesOriginateInDps()) {
+      telemetryClient.trackEvent(
+        "contactperson-person-synchronisation-created-skipped",
+        telemetry,
+      )
+    } else {
+      mappingApiService.getByNomisPersonIdOrNull(nomisPersonId = event.personId)?.also {
+        telemetryClient.trackEvent(
+          "contactperson-person-synchronisation-created-ignored",
+          telemetry + ("dpsContactId" to it.dpsId),
+        )
+      } ?: run {
+        nomisApiService.getPerson(nomisPersonId = event.personId).also { nomisPerson ->
+          val dpsContact = dpsApiService.createContact(nomisPerson.toDpsCreateContactRequest()).also {
+            telemetry["dpsContactId"] = it.id
+          }
+          val mapping = PersonMappingDto(
+            nomisId = event.personId,
+            dpsId = dpsContact.id.toString(),
+            mappingType = PersonMappingDto.MappingType.NOMIS_CREATED,
+          )
+
+          // TODO handle create failures
+          mappingApiService.createPersonMapping(mapping)
+        }
+        telemetryClient.trackEvent(
+          "contactperson-person-synchronisation-created-success",
+          telemetry,
+        )
+      }
+    }
   }
 
   suspend fun personUpdated(event: PersonEvent) {
@@ -251,3 +284,25 @@ class ContactPersonSynchronisationService(
     )
   }
 }
+
+fun ContactPerson.toDpsCreateContactRequest(): CreateContactRequest = CreateContactRequest(
+  lastName = this.lastName,
+  firstName = this.firstName,
+  middleName = this.middleName,
+  dateOfBirth = this.dateOfBirth,
+  isStaff = this.isStaff == true,
+  staff = this.isStaff == true,
+  remitter = this.isRemitter == true,
+  title = this.title?.code,
+  deceasedFlag = this.deceasedDate != null,
+  deceasedDate = this.deceasedDate,
+  gender = this.gender?.code,
+  domesticStatus = this.domesticStatus?.code,
+  languageCode = this.language?.code,
+  interpreterRequired = this.interpreterRequired,
+  createdBy = this.audit.createUsername,
+  createdTime = this.audit.createDatetime.toDateTime(),
+)
+
+private fun String.toDateTime() = this.let { java.time.LocalDateTime.parse(it) }
+private fun PersonEvent.doesOriginateInDps() = this.auditModuleName == "DPS_SYNCHRONISATION"

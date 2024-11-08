@@ -189,6 +189,80 @@ class ContactPersonMappingApiServiceTest {
   }
 
   @Nested
+  inner class CreatePersonMapping {
+    @Test
+    internal fun `will pass oath2 token to create person mapping endpoint`() = runTest {
+      mockServer.stubCreatePersonMapping()
+
+      apiService.createPersonMapping(
+        PersonMappingDto(
+          mappingType = PersonMappingDto.MappingType.NOMIS_CREATED,
+          nomisId = 1234567,
+          dpsId = "1234567",
+        ),
+      )
+
+      mockServer.verify(
+        postRequestedFor(urlPathEqualTo("/mapping/contact-person/person")).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will return success when OK response`() = runTest {
+      mockServer.stubCreatePersonMapping()
+
+      val result = apiService.createPersonMapping(
+        PersonMappingDto(
+          mappingType = PersonMappingDto.MappingType.NOMIS_CREATED,
+          nomisId = 1234567,
+          dpsId = "1234567",
+        ),
+      )
+
+      assertThat(result.isError).isFalse()
+    }
+
+    @Test
+    fun `will return error when 409 conflict`() = runTest {
+      val nomisId = 1234567890L
+      val dpsId = "1234567890"
+      val existingDpsId = "1234567890"
+
+      mockServer.stubCreatePersonMapping(
+        error = DuplicateMappingErrorResponse(
+          moreInfo = DuplicateErrorContentObject(
+            duplicate = PersonMappingDto(
+              dpsId = dpsId,
+              nomisId = nomisId,
+              mappingType = NOMIS_CREATED,
+            ),
+            existing = PersonMappingDto(
+              dpsId = existingDpsId,
+              nomisId = nomisId,
+              mappingType = NOMIS_CREATED,
+            ),
+          ),
+          errorCode = 1409,
+          status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+          userMessage = "Duplicate mapping",
+        ),
+      )
+
+      val result = apiService.createPersonMapping(
+        PersonMappingDto(
+          mappingType = PersonMappingDto.MappingType.NOMIS_CREATED,
+          nomisId = 1234567,
+          dpsId = "1234567",
+        ),
+      )
+
+      assertThat(result.isError).isTrue()
+      assertThat(result.errorResponse!!.moreInfo.duplicate.dpsId).isEqualTo(dpsId)
+      assertThat(result.errorResponse!!.moreInfo.existing.dpsId).isEqualTo(existingDpsId)
+    }
+  }
+
+  @Nested
   inner class GetMigrationDetails {
     @Test
     fun `will call the person mapping endpoint`() = runTest {
