@@ -35,4 +35,16 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
         Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<PersonMappingDto>>() {})))
       }
       .awaitFirstOrDefault(CreateMappingResult())
+
+  suspend fun createPersonMapping(mappings: PersonMappingDto): CreateMappingResult<PersonMappingDto> =
+    webClient.post()
+      .uri("/mapping/contact-person/person")
+      .bodyValue(mappings)
+      .retrieve()
+      .bodyToMono(Unit::class.java)
+      .map { CreateMappingResult<PersonMappingDto>() }
+      .onErrorResume(WebClientResponseException.Conflict::class.java) {
+        Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<PersonMappingDto>>() {})))
+      }
+      .awaitFirstOrDefault(CreateMappingResult())
 }

@@ -14,12 +14,15 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.AddressAndPhones
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.Contact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.ContactsAndRestrictions
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.CreateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.IdPair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateContactResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
+import java.time.LocalDateTime
 
 class ContactPersonDpsApiExtension :
   BeforeAllCallback,
@@ -82,6 +85,27 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         restrictions = request.restrictions.map { IdPair(elementType = IdPair.ElementType.RESTRICTION, nomisId = it.id, dpsId = it.id * 10) },
         relationships = request.contacts.map { ContactsAndRestrictions(relationship = IdPair(elementType = IdPair.ElementType.RESTRICTION, nomisId = it.id, dpsId = it.id * 10), restrictions = it.restrictions.map { restriction -> IdPair(elementType = IdPair.ElementType.RESTRICTION, nomisId = restriction.id, dpsId = restriction.id * 10) }) },
       )
+
+    fun createContactRequest() = CreateContactRequest(
+      lastName = "KOFI",
+      firstName = "KWEKU",
+      isStaff = false,
+      interpreterRequired = false,
+      remitter = false,
+      createdBy = "JANE.SAM",
+      createdTime = LocalDateTime.parse("2024-01-01T12:13"),
+    )
+
+    fun contact() = Contact(
+      id = 12345,
+      lastName = "KOFI",
+      firstName = "KWEKU",
+      isStaff = false,
+      interpreterRequired = false,
+      remitter = false,
+      createdBy = "JANE.SAM",
+      createdTime = LocalDateTime.parse("2024-01-01T12:13"),
+    )
   }
 
   fun stubMigrateContact(response: MigrateContactResponse = migrateContactResponse()) {
@@ -116,6 +140,18 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withBody(if (status == 200) "pong" else "some error")
           .withStatus(status),
       ),
+    )
+  }
+
+  fun stubCreateContact(response: Contact = contact()) {
+    stubFor(
+      post("/sync/contact")
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader("Content-Type", "application/json")
+            .withBody(ContactPersonDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
     )
   }
 }
