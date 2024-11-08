@@ -70,7 +70,7 @@ class IncidentDataRepairResourceIntTest : SqsIntegrationTestBase() {
         incidentsMappingApiMockServer.stubGetIncident(nomisIncidentId, dpsIncidentId = dpsIncidentId)
 
         webTestClient.post().uri("/incidents/$nomisIncidentId/repair")
-          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENTS")))
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
           .exchange()
           .expectStatus().isOk
       }
