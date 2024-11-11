@@ -301,7 +301,7 @@ class ContactPersonSynchronisationService(
     telemetry: Map<String, Any>,
   ) {
     try {
-      mappingApiService.createPersonMapping(mapping)
+      createPersonMapping(mapping)
     } catch (e: Exception) {
       log.error("Failed to create mapping for person id $mapping", e)
       queueService.sendMessage(
@@ -313,8 +313,27 @@ class ContactPersonSynchronisationService(
     }
   }
 
+  private suspend fun createPersonMapping(
+    mapping: PersonMappingDto,
+  ) {
+    mappingApiService.createPersonMapping(mapping).takeIf { it.isError }?.also {
+      with(it.errorResponse!!.moreInfo) {
+        telemetryClient.trackEvent(
+          "from-nomis-synch-contactperson-duplicate",
+          mapOf(
+            "existingNomisPersonId" to existing.nomisId,
+            "existingDpsContactId" to existing.dpsId,
+            "duplicateNomisPersonId" to duplicate.nomisId,
+            "duplicateDpsContactId" to duplicate.dpsId,
+            "type" to "PERSON",
+          ),
+        )
+      }
+    }
+  }
+
   suspend fun retryCreatePersonMapping(retryMessage: InternalMessage<PersonMappingDto>) {
-    mappingApiService.createPersonMapping(retryMessage.body)
+    createPersonMapping(retryMessage.body)
       .also {
         telemetryClient.trackEvent(
           "contactperson-person-mapping-synchronisation-created",
