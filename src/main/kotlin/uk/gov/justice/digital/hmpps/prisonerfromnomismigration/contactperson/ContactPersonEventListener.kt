@@ -6,6 +6,7 @@ import io.awspring.cloud.sqs.annotation.SqsListener
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PERSON_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
@@ -63,6 +64,8 @@ class ContactPersonEventListener(
             log.info("Feature switch is disabled for event {}", eventType)
           }
         }
+
+        RETRY_SYNCHRONISATION_PERSON_MAPPING.name -> service.retryCreatePersonMapping(sqsMessage.Message.fromJson())
       }
     }
   }
@@ -127,3 +130,7 @@ data class PersonIdentifierEvent(
   val identifierSequence: Long,
   val auditModuleName: String,
 )
+
+enum class ContactPersonSynchronisationMessageType {
+  RETRY_SYNCHRONISATION_PERSON_MAPPING,
+}

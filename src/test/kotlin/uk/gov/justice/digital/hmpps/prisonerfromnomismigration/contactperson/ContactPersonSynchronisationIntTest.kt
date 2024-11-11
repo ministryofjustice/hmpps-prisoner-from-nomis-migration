@@ -213,9 +213,54 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
     @Nested
     inner class WhenDuplicateMapping
 
-    // TODO
     @Nested
-    inner class MappingCreateFails
+    inner class MappingCreateFails {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = nomisPersonId, mapping = null)
+        nomisApiMock.stubGetPerson(
+          personId = nomisPersonId,
+          person = contactPerson(),
+        )
+        dpsApiMock.stubCreateContact(contact().copy(id = dpsContactId))
+        mappingApiMock.stubCreatePersonMappingFailureFollowedBySuccess()
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personEvent(
+            eventType = "PERSON-INSERTED",
+            personId = nomisPersonId,
+          ),
+        ).also { waitForAnyProcessingToComplete("contactperson-person-mapping-synchronisation-created") }
+      }
+
+      @Test
+      fun `will create the contact in DPS once`() {
+        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/contact")))
+      }
+
+      @Test
+      fun `will create a mapping between the DPS and NOMIS record`() {
+        mappingApiMock.verify(
+          2,
+          postRequestedFor(urlPathEqualTo("/mapping/contact-person/person"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", dpsContactId)
+            .withRequestBodyJsonPath("nomisId", "$nomisPersonId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-person-synchronisation-created-success"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(dpsContactId.toString())
+          },
+          isNull(),
+        )
+      }
+    }
   }
 
   @Nested

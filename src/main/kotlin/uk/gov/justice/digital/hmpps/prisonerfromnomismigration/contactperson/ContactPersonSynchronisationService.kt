@@ -1,11 +1,19 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson
 
 import com.microsoft.applicationinsights.TelemetryClient
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PERSON_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.CreateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactPerson
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 
 @Service
 class ContactPersonSynchronisationService(
@@ -13,7 +21,12 @@ class ContactPersonSynchronisationService(
   private val nomisApiService: ContactPersonNomisApiService,
   private val dpsApiService: ContactPersonDpsApiService,
   private val telemetryClient: TelemetryClient,
+  private val queueService: SynchronisationQueueService,
 ) {
+  private companion object {
+    val log: Logger = LoggerFactory.getLogger(this::class.java)
+  }
+
   suspend fun personRestrictionUpserted(event: PersonRestrictionEvent) {
     val telemetry =
       mapOf("personRestrictionId" to event.visitorRestrictionId, "personId" to event.personId)
@@ -98,8 +111,7 @@ class ContactPersonSynchronisationService(
             mappingType = PersonMappingDto.MappingType.NOMIS_CREATED,
           )
 
-          // TODO handle create failures
-          mappingApiService.createPersonMapping(mapping)
+          tryToCreateMapping(mapping, telemetry)
         }
         telemetryClient.trackEvent(
           "contactperson-person-synchronisation-created-success",
@@ -282,6 +294,33 @@ class ContactPersonSynchronisationService(
       "contactperson-person-identifier-synchronisation-deleted-success",
       telemetry,
     )
+  }
+
+  private suspend fun tryToCreateMapping(
+    mapping: PersonMappingDto,
+    telemetry: Map<String, Any>,
+  ) {
+    try {
+      mappingApiService.createPersonMapping(mapping)
+    } catch (e: Exception) {
+      log.error("Failed to create mapping for person id $mapping", e)
+      queueService.sendMessage(
+        messageType = RETRY_SYNCHRONISATION_PERSON_MAPPING.name,
+        synchronisationType = SynchronisationType.CONTACTPERSON,
+        message = mapping,
+        telemetryAttributes = telemetry.valuesAsStrings(),
+      )
+    }
+  }
+
+  suspend fun retryCreatePersonMapping(retryMessage: InternalMessage<PersonMappingDto>) {
+    mappingApiService.createPersonMapping(retryMessage.body)
+      .also {
+        telemetryClient.trackEvent(
+          "contactperson-person-mapping-synchronisation-created",
+          retryMessage.telemetryAttributes,
+        )
+      }
   }
 }
 
