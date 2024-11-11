@@ -17,7 +17,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.Con
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.CreateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
@@ -209,9 +212,83 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       }
     }
 
-    // TODO
     @Nested
-    inner class WhenDuplicateMapping
+    inner class WhenDuplicateMapping {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = nomisPersonId, mapping = null)
+        nomisApiMock.stubGetPerson(
+          personId = nomisPersonId,
+          person = contactPerson(),
+        )
+        dpsApiMock.stubCreateContact(contact().copy(id = dpsContactId))
+        mappingApiMock.stubCreatePersonMapping(
+          error = DuplicateMappingErrorResponse(
+            moreInfo = DuplicateErrorContentObject(
+              duplicate = PersonMappingDto(
+                dpsId = dpsContactId.toString(),
+                nomisId = nomisPersonId,
+                mappingType = NOMIS_CREATED,
+              ),
+              existing = PersonMappingDto(
+                dpsId = "9999",
+                nomisId = nomisPersonId,
+                mappingType = NOMIS_CREATED,
+              ),
+            ),
+            errorCode = 1409,
+            status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+            userMessage = "Duplicate mapping",
+          ),
+        )
+
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personEvent(
+            eventType = "PERSON-INSERTED",
+            personId = nomisPersonId,
+          ),
+        ).also { waitForAnyProcessingToComplete("from-nomis-synch-contactperson-duplicate") }
+      }
+
+      @Test
+      fun `will create the contact in DPS once`() {
+        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/contact")))
+      }
+
+      @Test
+      fun `will attempt to create a mapping between the DPS and NOMIS record once`() {
+        mappingApiMock.verify(
+          1,
+          postRequestedFor(urlPathEqualTo("/mapping/contact-person/person"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", dpsContactId)
+            .withRequestBodyJsonPath("nomisId", "$nomisPersonId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for both overall success and duplicate`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-person-synchronisation-created-success"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(dpsContactId.toString())
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("from-nomis-synch-contactperson-duplicate"),
+          check {
+            assertThat(it["existingNomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["existingDpsContactId"]).isEqualTo("9999")
+            assertThat(it["duplicateNomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["duplicateDpsContactId"]).isEqualTo(dpsContactId.toString())
+          },
+          isNull(),
+        )
+      }
+    }
 
     @Nested
     inner class MappingCreateFails {
