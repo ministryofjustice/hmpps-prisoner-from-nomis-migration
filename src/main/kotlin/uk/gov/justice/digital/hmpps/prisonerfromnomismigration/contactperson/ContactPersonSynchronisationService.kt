@@ -319,7 +319,7 @@ class ContactPersonSynchronisationService(
     mappingApiService.createPersonMapping(mapping).takeIf { it.isError }?.also {
       with(it.errorResponse!!.moreInfo) {
         telemetryClient.trackEvent(
-          "from-nomis-synch-contactperson-duplicate",
+          "from-nomis-sync-contactperson-duplicate",
           mapOf(
             "existingNomisPersonId" to existing.nomisId,
             "existingDpsContactId" to existing.dpsId,

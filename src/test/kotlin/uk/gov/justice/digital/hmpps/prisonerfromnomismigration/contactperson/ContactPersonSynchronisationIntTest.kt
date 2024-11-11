@@ -248,7 +248,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
             eventType = "PERSON-INSERTED",
             personId = nomisPersonId,
           ),
-        ).also { waitForAnyProcessingToComplete("from-nomis-synch-contactperson-duplicate") }
+        ).also { waitForAnyProcessingToComplete("from-nomis-sync-contactperson-duplicate") }
       }
 
       @Test
