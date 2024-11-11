@@ -131,8 +131,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(relationship).isNull()
           // TODO - check why this is in the request
           assertThat(placeOfBirth).isNull()
-          // TODO - check why this is in the request
-          assertThat(active).isNull()
+          // TODO - check why this is in the request - currently setting to true
+          assertThat(active).isTrue()
           // TODO - check why this is in the request
           assertThat(suspended).isNull()
           assertThat(isStaff).isTrue()
