@@ -916,9 +916,9 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             dpsCourtSentencingServer.verify(
               1,
               postRequestedFor(urlPathEqualTo("/court-case/$DPS_COURT_CASE_ID/case-references/refresh"))
-                .withRequestBody(matchingJsonPath("$.size()", equalTo("2")))
-                .withRequestBody(matchingJsonPath("[0].reference", equalTo(NOMIS_CASE_IDENTIFIER)))
-                .withRequestBody(matchingJsonPath("[1].reference", equalTo("ref2"))),
+                .withRequestBody(matchingJsonPath("caseReferences.size()", equalTo("2")))
+                .withRequestBody(matchingJsonPath("caseReferences[0].offenderCaseReference", equalTo(NOMIS_CASE_IDENTIFIER)))
+                .withRequestBody(matchingJsonPath("caseReferences[1].offenderCaseReference", equalTo("ref2"))),
             )
           }
         }

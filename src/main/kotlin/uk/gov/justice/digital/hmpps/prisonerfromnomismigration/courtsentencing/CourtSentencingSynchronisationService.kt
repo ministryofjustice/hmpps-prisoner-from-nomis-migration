@@ -8,6 +8,7 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CourtCaseLegacyData
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearanceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
@@ -831,8 +832,10 @@ class CourtSentencingSynchronisationService(
           nomisApiService.getCourtCaseForMigration(courtCaseId = event.caseId)
         dpsApiService.refreshCaseIdentifiers(
           courtCaseId = mapping.dpsCourtCaseId,
-          caseReferences = nomisCourtCase.caseInfoNumbers.filter { it.type == DPS_CASE_REFERENCE }
-            .map { it.toDpsCaseReference() },
+          courtCaseLegacyData = CourtCaseLegacyData(
+            nomisCourtCase.caseInfoNumbers.filter { it.type == DPS_CASE_REFERENCE }
+              .map { it.toDpsCaseReference() },
+          ),
         )
         telemetryClient.trackEvent(
           "case-identifiers-synchronisation-success",
