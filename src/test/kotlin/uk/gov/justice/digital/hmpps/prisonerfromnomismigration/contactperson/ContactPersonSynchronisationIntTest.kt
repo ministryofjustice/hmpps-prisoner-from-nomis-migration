@@ -284,6 +284,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
             assertThat(it["existingDpsContactId"]).isEqualTo("9999")
             assertThat(it["duplicateNomisPersonId"]).isEqualTo(nomisPersonId.toString())
             assertThat(it["duplicateDpsContactId"]).isEqualTo(dpsContactId.toString())
+            assertThat(it["type"]).isEqualTo("PERSON")
           },
           isNull(),
         )
