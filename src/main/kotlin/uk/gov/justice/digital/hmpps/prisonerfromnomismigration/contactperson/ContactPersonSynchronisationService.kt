@@ -302,6 +302,8 @@ fun ContactPerson.toDpsCreateContactRequest(): CreateContactRequest = CreateCont
   interpreterRequired = this.interpreterRequired,
   createdBy = this.audit.createUsername,
   createdTime = this.audit.createDatetime.toDateTime(),
+  // TODO - DPS should remove this flag or we always default to true since NOMIS has no concept of active person
+  active = true,
 )
 
 private fun String.toDateTime() = this.let { java.time.LocalDateTime.parse(it) }
