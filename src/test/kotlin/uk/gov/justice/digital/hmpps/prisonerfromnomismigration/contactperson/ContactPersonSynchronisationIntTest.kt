@@ -278,7 +278,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           isNull(),
         )
         verify(telemetryClient).trackEvent(
-          eq("from-nomis-synch-contactperson-duplicate"),
+          eq("from-nomis-sync-contactperson-duplicate"),
           check {
             assertThat(it["existingNomisPersonId"]).isEqualTo(nomisPersonId.toString())
             assertThat(it["existingDpsContactId"]).isEqualTo("9999")
