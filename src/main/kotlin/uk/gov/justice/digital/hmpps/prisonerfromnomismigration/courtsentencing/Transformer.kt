@@ -81,5 +81,6 @@ fun SentenceResponse.toDpsSentence(offenderNo: String, sentenceChargeIds: List<S
   chargeUuids = sentenceChargeIds.map { UUID.fromString(it) },
 )
 
+// TODO confirm that DPS are no longer using ZoneTimeDate  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
 fun CaseIdentifierResponse.toDpsCaseReference() =
-  CaseReference(reference = this.reference, createDateTime = LocalDateTime.parse(this.createDateTime))
+  CaseReferenceLegacyData(offenderCaseReference = this.reference, updatedDate = this.createDateTime)

@@ -1,18 +1,17 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
-import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import org.springframework.web.reactive.function.client.awaitBody
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CourtCaseLegacyData
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearanceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCaseResponse
-import java.time.LocalDateTime
 
 @Service
 class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") private val webClient: WebClient) {
@@ -130,11 +129,11 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .retrieve()
       .awaitBody()
 
-  suspend fun refreshCaseIdentifiers(courtCaseId: String, caseReferences: List<CaseReference>) {
+  suspend fun refreshCaseIdentifiers(courtCaseId: String, courtCaseLegacyData: CourtCaseLegacyData) {
     webClient
       .post()
       .uri("/court-case/{courtCaseId}/case-references/refresh", courtCaseId)
-      .bodyValue(caseReferences)
+      .bodyValue(courtCaseLegacyData)
       .retrieve()
       .awaitBodilessEntity()
   }
@@ -158,21 +157,6 @@ data class CreateSentenceRequest(
 )
 
 data class CreateSentenceResponse(
-
   @field:JsonProperty("sentenceUuid")
   val sentenceUuid: String,
-
-)
-
-data class CreateCourtCaseMigrationRequest(
-  val prisonerId: String,
-  val appearances: List<CreateCourtAppearance>,
-  val otherCaseReferences: List<CaseReference>,
-)
-
-// TODO presumably they will need the reference and a date time
-data class CaseReference(
-  val reference: String,
-  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-  val createDateTime: LocalDateTime,
 )
