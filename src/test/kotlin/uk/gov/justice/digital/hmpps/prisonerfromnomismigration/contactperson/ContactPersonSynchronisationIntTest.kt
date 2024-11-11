@@ -248,7 +248,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
             eventType = "PERSON-INSERTED",
             personId = nomisPersonId,
           ),
-        ).also { waitForAnyProcessingToComplete("from-nomis-synch-contactperson-duplicate") }
+        ).also { waitForAnyProcessingToComplete("from-nomis-sync-contactperson-duplicate") }
       }
 
       @Test
@@ -278,7 +278,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           isNull(),
         )
         verify(telemetryClient).trackEvent(
-          eq("from-nomis-synch-contactperson-duplicate"),
+          eq("from-nomis-sync-contactperson-duplicate"),
           check {
             assertThat(it["existingNomisPersonId"]).isEqualTo(nomisPersonId.toString())
             assertThat(it["existingDpsContactId"]).isEqualTo("9999")
