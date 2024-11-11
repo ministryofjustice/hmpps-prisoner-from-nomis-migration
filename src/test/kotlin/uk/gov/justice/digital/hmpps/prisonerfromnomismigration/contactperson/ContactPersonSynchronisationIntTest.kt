@@ -133,8 +133,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(placeOfBirth).isNull()
           // TODO - check why this is in the request - currently setting to true
           assertThat(active).isTrue()
-          // TODO - check why this is in the request
-          assertThat(suspended).isNull()
+          // TODO - check why this is in the request - this is always flas in NOMIS
+          assertThat(suspended).isFalse()
           assertThat(isStaff).isTrue()
           // TODO - is this a duplicate of the above
           assertThat(staff).isTrue()
