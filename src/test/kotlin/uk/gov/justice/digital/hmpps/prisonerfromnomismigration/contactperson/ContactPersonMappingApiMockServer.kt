@@ -120,6 +120,8 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
     )
   }
 
+  fun stubCreatePersonMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/contact-person/person")
+
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
   fun verify(count: CountMatchingStrategy, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
