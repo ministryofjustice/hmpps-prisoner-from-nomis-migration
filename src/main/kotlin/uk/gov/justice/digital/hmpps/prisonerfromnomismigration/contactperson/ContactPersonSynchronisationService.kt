@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PERSON_MAPPING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.CreateContactRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
@@ -343,7 +343,8 @@ class ContactPersonSynchronisationService(
   }
 }
 
-fun ContactPerson.toDpsCreateContactRequest(): CreateContactRequest = CreateContactRequest(
+fun ContactPerson.toDpsCreateContactRequest(): SyncCreateContactRequest = SyncCreateContactRequest(
+  personId = this.personId,
   lastName = this.lastName,
   firstName = this.firstName,
   middleName = this.middleName,
@@ -360,10 +361,6 @@ fun ContactPerson.toDpsCreateContactRequest(): CreateContactRequest = CreateCont
   interpreterRequired = this.interpreterRequired,
   createdBy = this.audit.createUsername,
   createdTime = this.audit.createDatetime.toDateTime(),
-  // TODO - DPS should remove this flag or we always default to true since NOMIS has no concept of active person
-  active = true,
-  // TODO - DPS should remove this flag or we always default to false since NOMIS always sets this to false
-  suspended = false,
 )
 
 private fun String.toDateTime() = this.let { java.time.LocalDateTime.parse(it) }
