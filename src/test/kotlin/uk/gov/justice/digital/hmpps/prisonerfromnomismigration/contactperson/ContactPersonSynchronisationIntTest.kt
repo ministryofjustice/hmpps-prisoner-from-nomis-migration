@@ -14,7 +14,7 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.contact
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.CreateContactRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
@@ -123,7 +123,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will create the contact in DPS from the person`() {
         dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/contact")))
-        val createContactRequest: CreateContactRequest = ContactPersonDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/sync/contact")))
+        val createContactRequest: SyncCreateContactRequest = ContactPersonDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/sync/contact")))
         with(createContactRequest) {
           assertThat(title).isEqualTo("MR")
           assertThat(lastName).isEqualTo("SMITH")
@@ -132,25 +132,13 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(dateOfBirth).isEqualTo(LocalDate.parse("1965-07-19"))
           assertThat(estimatedIsOverEighteen).isNull()
           assertThat(relationship).isNull()
-          // TODO - check why this is in the request
-          assertThat(placeOfBirth).isNull()
-          // TODO - check why this is in the request - currently setting to true
-          assertThat(active).isTrue()
-          // TODO - check why this is in the request - this is always flas in NOMIS
-          assertThat(suspended).isFalse()
           assertThat(isStaff).isTrue()
-          // TODO - is this a duplicate of the above
-          assertThat(staff).isTrue()
           assertThat(remitter).isTrue()
           assertThat(deceasedFlag).isFalse()
           assertThat(deceasedDate).isNull()
-          assertThat(coronerNumber).isNull()
-          // TODO - not clear is this is a code
           assertThat(gender).isEqualTo("M")
           assertThat(domesticStatus).isEqualTo("MAR")
           assertThat(languageCode).isEqualTo("EN")
-          // TODO - check why this is in the request
-          assertThat(nationalityCode).isNull()
           assertThat(interpreterRequired).isTrue()
           assertThat(createdBy).isEqualTo("J.SPEAK")
           assertThat(createdTime).isEqualTo("2024-09-01T13:31")
