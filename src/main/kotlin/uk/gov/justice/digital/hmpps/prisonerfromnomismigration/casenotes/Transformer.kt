@@ -74,6 +74,7 @@ fun CaseNoteResponse.toDPSSyncCaseNote(offenderNo: String, id: UUID? = null) = S
   ),
   createdDateTime = LocalDateTime.parse(this.createdDatetime),
   createdByUsername = this.createdUsername,
+  system = SyncCaseNoteRequest.System.valueOf(this.sourceSystem.name),
   amendments = this.amendments.map { a ->
     SyncCaseNoteAmendmentRequest(
       text = a.text,
@@ -84,6 +85,7 @@ fun CaseNoteResponse.toDPSSyncCaseNote(offenderNo: String, id: UUID? = null) = S
         lastName = a.authorLastName ?: "",
       ),
       createdDateTime = LocalDateTime.parse(a.createdDateTime),
+      system = SyncCaseNoteAmendmentRequest.System.valueOf(a.sourceSystem.name),
     )
   }.toSet(),
 )

@@ -155,6 +155,7 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBodyJsonPath("author.userId", equalTo("123456"))
                 .withRequestBodyJsonPath("author.firstName", equalTo("First"))
                 .withRequestBodyJsonPath("author.lastName", equalTo("Last"))
+                .withRequestBodyJsonPath("system", equalTo("NOMIS"))
                 .withRequestBodyJsonPath("createdDateTime", equalTo("2021-02-03T04:05:06"))
                 .withRequestBodyJsonPath("createdByUsername", equalTo("John"))
                 .withRequestBodyJsonPath("amendments[0].createdDateTime", equalTo("2021-02-03T04:05:06"))
@@ -162,7 +163,8 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBodyJsonPath("amendments[0].author.username", equalTo("authorone"))
                 .withRequestBodyJsonPath("amendments[0].author.userId", equalTo("2001"))
                 .withRequestBodyJsonPath("amendments[0].author.firstName", equalTo("AUTHOR"))
-                .withRequestBodyJsonPath("amendments[0].author.lastName", equalTo("ONE")),
+                .withRequestBodyJsonPath("amendments[0].author.lastName", equalTo("ONE"))
+                .withRequestBodyJsonPath("amendments[0].system", equalTo("NOMIS")),
             )
           }
         }
