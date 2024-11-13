@@ -132,6 +132,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     courtCaseId: Long? = 2,
     courtId: String = "MDI",
     eventDateTime: String = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+    nextEventDateTime: String = LocalDateTime.now().plusWeeks(1).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
     response: CourtEventResponse = CourtEventResponse(
       id = courtAppearanceId,
       offenderNo = offenderNo,
@@ -145,6 +146,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       eventStatus = CodeDescription("SCH", "Scheduled (Approved)"),
       eventDateTime = eventDateTime,
       courtOrders = emptyList(),
+      nextEventDateTime = nextEventDateTime,
     ),
   ) {
     nomisApi.stubFor(
