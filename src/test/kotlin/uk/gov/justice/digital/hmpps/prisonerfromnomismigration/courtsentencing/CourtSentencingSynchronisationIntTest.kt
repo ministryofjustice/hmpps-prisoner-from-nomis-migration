@@ -899,7 +899,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             dpsCourtCaseId = DPS_COURT_CASE_ID,
           )
 
-          dpsCourtSentencingServer.stubPostCaseIdentifierRefresh(courtCaseId = DPS_COURT_CASE_ID)
+          dpsCourtSentencingServer.stubPutCaseIdentifierRefresh(courtCaseId = DPS_COURT_CASE_ID)
           awsSqsCourtSentencingOffenderEventsClient.sendMessage(
             courtSentencingQueueOffenderEventsUrl,
             caseIdentifiersEvent(
@@ -915,7 +915,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
               1,
-              postRequestedFor(urlPathEqualTo("/court-case/$DPS_COURT_CASE_ID/case-references/refresh"))
+              putRequestedFor(urlPathEqualTo("/court-case/$DPS_COURT_CASE_ID/case-references/refresh"))
                 .withRequestBody(matchingJsonPath("caseReferences.size()", equalTo("2")))
                 .withRequestBody(matchingJsonPath("caseReferences[0].offenderCaseReference", equalTo(NOMIS_CASE_IDENTIFIER)))
                 .withRequestBody(matchingJsonPath("caseReferences[1].offenderCaseReference", equalTo("ref2"))),
@@ -952,7 +952,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             dpsCourtCaseId = DPS_COURT_CASE_ID,
           )
 
-          dpsCourtSentencingServer.stubPostCaseIdentifierRefresh(courtCaseId = DPS_COURT_CASE_ID)
+          dpsCourtSentencingServer.stubPutCaseIdentifierRefresh(courtCaseId = DPS_COURT_CASE_ID)
           awsSqsCourtSentencingOffenderEventsClient.sendMessage(
             courtSentencingQueueOffenderEventsUrl,
             caseIdentifiersEvent(
@@ -992,7 +992,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             dpsCourtCaseId = DPS_COURT_CASE_ID,
           )
 
-          dpsCourtSentencingServer.stubPostCaseIdentifierRefresh(courtCaseId = DPS_COURT_CASE_ID)
+          dpsCourtSentencingServer.stubPutCaseIdentifierRefresh(courtCaseId = DPS_COURT_CASE_ID)
           awsSqsCourtSentencingOffenderEventsClient.sendMessage(
             courtSentencingQueueOffenderEventsUrl,
             caseIdentifiersEvent(

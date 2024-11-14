@@ -131,7 +131,7 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
 
   suspend fun refreshCaseIdentifiers(courtCaseId: String, courtCaseLegacyData: CourtCaseLegacyData) {
     webClient
-      .post()
+      .put()
       .uri("/court-case/{courtCaseId}/case-references/refresh", courtCaseId)
       .bodyValue(courtCaseLegacyData)
       .retrieve()
