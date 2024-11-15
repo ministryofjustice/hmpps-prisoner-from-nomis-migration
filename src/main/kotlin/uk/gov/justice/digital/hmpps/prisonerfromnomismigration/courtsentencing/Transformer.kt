@@ -56,6 +56,7 @@ fun CourtEventResponse.toDpsCourtAppearance(
     postedDate = LocalDate.now().toString(),
     outcomeDescription = this.outcomeReasonCode?.description,
     nomisOutcomeCode = this.outcomeReasonCode?.code,
+    nextEventDateTime = this.nextEventDateTime?.let { LocalDateTime.parse(this.nextEventDateTime) },
   ),
   charges = this.courtEventCharges.map { charge -> charge.offenderCharge.toDpsCharge(bookingId = bookingId) },
 )

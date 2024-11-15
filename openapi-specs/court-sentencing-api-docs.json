@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-11-08.2892.919ea28"
+    "version": "2024-11-13.3003.01f8f64"
   },
   "servers": [
     {
@@ -318,6 +318,35 @@
                 }
               }
             }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "court-case-controller"
+        ],
+        "summary": "Delete Court case",
+        "description": "This endpoint will delete a court case",
+        "operationId": "deleteCourtCase",
+        "parameters": [
+          {
+            "name": "courtCaseUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token"
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role"
           }
         }
       }
@@ -879,6 +908,58 @@
           },
           "403": {
             "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateChargeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/charge": {
+      "post": {
+        "tags": [
+          "charge-controller"
+        ],
+        "summary": "Create Charge",
+        "description": "This endpoint will create a charge in a given court appearance",
+        "operationId": "createCharge",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCharge"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateChargeResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateChargeResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Returns court case UUID",
             "content": {
               "*/*": {
                 "schema": {
@@ -1679,6 +1760,47 @@
           }
         }
       }
+    },
+    "/court-appearance/{appearanceUuid}/charge/{chargeUuid}": {
+      "delete": {
+        "tags": [
+          "court-appearance-controller"
+        ],
+        "summary": "Disassociate charge with appearance",
+        "description": "This endpoint will disassociate a charge with an appearance",
+        "operationId": "disassociateChargeWithAppearance",
+        "parameters": [
+          {
+            "name": "appearanceUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "chargeUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token"
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1782,6 +1904,10 @@
           },
           "outcomeDescription": {
             "type": "string"
+          },
+          "nextEventDateTime": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -1922,6 +2048,17 @@
           }
         }
       },
+      "CreateFineAmount": {
+        "required": [
+          "fineAmount"
+        ],
+        "type": "object",
+        "properties": {
+          "fineAmount": {
+            "type": "number"
+          }
+        }
+      },
       "CreateNextCourtAppearance": {
         "required": [
           "appearanceDate",
@@ -1936,7 +2073,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "14:04:47.889431125"
+            "example": "09:20:26.676234993"
           },
           "courtCode": {
             "type": "string"
@@ -2024,6 +2161,9 @@
           "convictionDate": {
             "type": "string",
             "format": "date"
+          },
+          "fineAmount": {
+            "$ref": "#/components/schemas/CreateFineAmount"
           }
         }
       },
@@ -2079,6 +2219,17 @@
             "items": {
               "$ref": "#/components/schemas/CreateChargeResponse"
             }
+          }
+        }
+      },
+      "FineAmount": {
+        "required": [
+          "fineAmount"
+        ],
+        "type": "object",
+        "properties": {
+          "fineAmount": {
+            "type": "number"
           }
         }
       },
@@ -2156,6 +2307,9 @@
           "convictionDate": {
             "type": "string",
             "format": "date"
+          },
+          "fineAmount": {
+            "$ref": "#/components/schemas/FineAmount"
           }
         }
       },
@@ -2493,7 +2647,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "14:04:47.889431125"
+            "example": "09:20:26.676234993"
           },
           "courtCode": {
             "type": "string"
