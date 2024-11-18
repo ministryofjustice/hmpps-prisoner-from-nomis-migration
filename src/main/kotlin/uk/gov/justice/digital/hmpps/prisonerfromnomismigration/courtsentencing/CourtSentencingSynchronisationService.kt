@@ -10,7 +10,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CourtCaseLegacyData
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearanceResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCaseResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtCaseCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -63,7 +63,7 @@ class CourtSentencingSynchronisationService(
           telemetry + ("dpsCourtCaseId" to mapping.dpsCourtCaseId),
         )
       } ?: let {
-        dpsApiService.createCourtCase(nomisCourtCase.toDpsCourtCase()).run {
+        dpsApiService.createCourtCase(nomisCourtCase.toLegacyDpsCourtCase()).run {
           tryToCreateMapping(
             nomisCourtCase = nomisCourtCase,
             dpsCourtCaseResponse = this,
@@ -213,7 +213,7 @@ class CourtSentencingSynchronisationService(
 
   private suspend fun tryToCreateMapping(
     nomisCourtCase: CourtCaseResponse,
-    dpsCourtCaseResponse: CreateCourtCaseResponse,
+    dpsCourtCaseResponse: LegacyCourtCaseCreatedResponse,
     telemetry: Map<String, Any>,
   ): MappingResponse {
     val mapping = CourtCaseAllMappingDto(
