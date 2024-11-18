@@ -52,7 +52,7 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     ),
   ) {
     stubFor(
-      post("/court-case")
+      post("/legacy/court-case")
         .willReturn(
           aResponse()
             .withStatus(201)
@@ -294,5 +294,5 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     findAll(WireMock.postRequestedFor(WireMock.urlMatching("/court-case"))).count()
 
   fun createCourtCaseForSynchronisationCount() =
-    findAll(WireMock.postRequestedFor(WireMock.urlMatching("/court-case"))).count()
+    findAll(WireMock.postRequestedFor(WireMock.urlMatching("/legacy/court-case"))).count()
 }

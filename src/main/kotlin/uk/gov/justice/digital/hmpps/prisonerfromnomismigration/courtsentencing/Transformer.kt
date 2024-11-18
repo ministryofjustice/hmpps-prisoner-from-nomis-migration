@@ -7,6 +7,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCourtCase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseIdentifierResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventResponse
@@ -32,6 +33,11 @@ fun CourtCaseResponse.toDpsCourtCase() = CreateCourtCase(
       )
     },
   ),
+)
+
+fun CourtCaseResponse.toLegacyDpsCourtCase() = LegacyCreateCourtCase(
+  prisonerId = this.offenderNo,
+  active = true,
 )
 
 private const val WARRANT_TYPE_DEFAULT = "REMAND"

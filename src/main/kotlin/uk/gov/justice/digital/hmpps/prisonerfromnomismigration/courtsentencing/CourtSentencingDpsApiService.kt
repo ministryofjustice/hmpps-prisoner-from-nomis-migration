@@ -12,13 +12,15 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearanceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCaseResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtCaseCreatedResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCourtCase
 
 @Service
 class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") private val webClient: WebClient) {
-  suspend fun createCourtCase(courtCase: CreateCourtCase): CreateCourtCaseResponse =
+  suspend fun createCourtCase(courtCase: LegacyCreateCourtCase): LegacyCourtCaseCreatedResponse =
     webClient
       .post()
-      .uri("/court-case")
+      .uri("/legacy/court-case")
       .bodyValue(courtCase)
       .retrieve()
       .awaitBody()

@@ -146,7 +146,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create a court case in DPS`() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
-              postRequestedFor(urlPathEqualTo("/court-case"))
+              postRequestedFor(urlPathEqualTo("/legacy/court-case"))
                 .withRequestBody(matchingJsonPath("prisonerId", equalTo(OFFENDER_ID_DISPLAY))),
             )
           }
@@ -265,7 +265,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           fun `will create a court case in DPS`() {
             await untilAsserted {
               dpsCourtSentencingServer.verify(
-                postRequestedFor(urlPathEqualTo("/court-case")),
+                postRequestedFor(urlPathEqualTo("/legacy/court-case")),
               )
             }
           }
@@ -344,7 +344,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             await untilAsserted {
               dpsCourtSentencingServer.verify(
                 1,
-                postRequestedFor(urlPathEqualTo("/court-case")),
+                postRequestedFor(urlPathEqualTo("/legacy/court-case")),
               )
             }
           }
@@ -419,7 +419,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         // doesn't retry
         dpsCourtSentencingServer.verify(
           1,
-          postRequestedFor(urlPathEqualTo("/court-case")),
+          postRequestedFor(urlPathEqualTo("/legacy/court-case")),
         )
 
         await untilAsserted {
