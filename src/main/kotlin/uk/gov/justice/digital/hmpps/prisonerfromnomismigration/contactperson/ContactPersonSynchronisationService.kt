@@ -6,11 +6,14 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PERSON_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.CreatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonContactMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactPerson
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
@@ -46,11 +49,39 @@ class ContactPersonSynchronisationService(
   }
   suspend fun contactAdded(event: ContactEvent) {
     val telemetry =
-      mapOf("offenderNo" to event.offenderIdDisplay, "bookingId" to event.bookingId, "personId" to event.personId, "contactId" to event.contactId)
-    telemetryClient.trackEvent(
-      "contactperson-contact-synchronisation-created-success",
-      telemetry,
-    )
+      mutableMapOf("offenderNo" to event.offenderIdDisplay, "bookingId" to event.bookingId, "nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisContactId" to event.contactId)
+
+    if (event.doesOriginateInDps()) {
+      telemetryClient.trackEvent(
+        "contactperson-contact-synchronisation-created-skipped",
+        telemetry,
+      )
+    } else {
+      mappingApiService.getByNomisContactIdOrNull(nomisContactId = event.contactId)?.also {
+        telemetryClient.trackEvent(
+          "contactperson-contact-synchronisation-created-ignored",
+          telemetry + ("dpsPrisonerContactId" to it.dpsId),
+        )
+      } ?: run {
+        nomisApiService.getPerson(nomisPersonId = event.personId).also { nomisPerson ->
+          val nomisContact = nomisPerson.contacts.find { it.id == event.contactId } ?: throw IllegalStateException("Contact ${event.contactId} for person ${event.personId} not found in NOMIS")
+          val dpsPrisonerContact = dpsApiService.createPrisonerContact(nomisContact.toDpsCreatePrisonerContactRequest(nomisPersonId = event.personId)).also {
+            telemetry["dpsPrisonerContactId"] = it.id
+          }
+          val mapping = PersonContactMappingDto(
+            nomisId = event.contactId,
+            dpsId = dpsPrisonerContact.id.toString(),
+            mappingType = PersonContactMappingDto.MappingType.NOMIS_CREATED,
+          )
+
+          tryToCreateMapping(mapping, telemetry)
+        }
+        telemetryClient.trackEvent(
+          "contactperson-contact-synchronisation-created-success",
+          telemetry,
+        )
+      }
+    }
   }
   suspend fun contactUpdated(event: ContactEvent) {
     val telemetry =
@@ -312,6 +343,22 @@ class ContactPersonSynchronisationService(
       )
     }
   }
+  private suspend fun tryToCreateMapping(
+    mapping: PersonContactMappingDto,
+    telemetry: Map<String, Any>,
+  ) {
+    try {
+      createContactMapping(mapping)
+    } catch (e: Exception) {
+      log.error("Failed to create mapping for contact id $mapping", e)
+      queueService.sendMessage(
+        messageType = ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_CONTACT_MAPPING.name,
+        synchronisationType = SynchronisationType.CONTACTPERSON,
+        message = mapping,
+        telemetryAttributes = telemetry.valuesAsStrings(),
+      )
+    }
+  }
 
   private suspend fun createPersonMapping(
     mapping: PersonMappingDto,
@@ -331,12 +378,39 @@ class ContactPersonSynchronisationService(
       }
     }
   }
+  private suspend fun createContactMapping(
+    mapping: PersonContactMappingDto,
+  ) {
+    mappingApiService.createContactMapping(mapping).takeIf { it.isError }?.also {
+      with(it.errorResponse!!.moreInfo) {
+        telemetryClient.trackEvent(
+          "from-nomis-sync-contactperson-duplicate",
+          mapOf(
+            "existingNomisContactId" to existing.nomisId,
+            "existingDpsPrisonerContactId" to existing.dpsId,
+            "duplicateNomisContactId" to duplicate.nomisId,
+            "duplicateDpsPrisonerContactId" to duplicate.dpsId,
+            "type" to "CONTACT",
+          ),
+        )
+      }
+    }
+  }
 
   suspend fun retryCreatePersonMapping(retryMessage: InternalMessage<PersonMappingDto>) {
     createPersonMapping(retryMessage.body)
       .also {
         telemetryClient.trackEvent(
           "contactperson-person-mapping-synchronisation-created",
+          retryMessage.telemetryAttributes,
+        )
+      }
+  }
+  suspend fun retryCreateContactMapping(retryMessage: InternalMessage<PersonContactMappingDto>) {
+    createContactMapping(retryMessage.body)
+      .also {
+        telemetryClient.trackEvent(
+          "contactperson-contact-mapping-synchronisation-created",
           retryMessage.telemetryAttributes,
         )
       }
@@ -363,5 +437,21 @@ fun ContactPerson.toDpsCreateContactRequest(): SyncCreateContactRequest = SyncCr
   createdTime = this.audit.createDatetime.toDateTime(),
 )
 
+fun PersonContact.toDpsCreatePrisonerContactRequest(nomisPersonId: Long): CreatePrisonerContactRequest = CreatePrisonerContactRequest(
+  contactId = nomisPersonId,
+  prisonerNumber = this.prisoner.offenderNo,
+  contactType = this.contactType.code,
+  relationshipType = this.relationshipType.code,
+  active = this.active,
+  currentTerm = this.prisoner.bookingSequence == 1L,
+  nextOfKin = this.nextOfKin,
+  emergencyContact = this.emergencyContact,
+  approvedVisitor = this.approvedVisitor,
+  comments = this.comment,
+  expiryDate = this.expiryDate,
+  createdBy = this.audit.createUsername,
+  createdTime = this.audit.createDatetime.toDateTime(),
+)
+
 private fun String.toDateTime() = this.let { java.time.LocalDateTime.parse(it) }
-private fun PersonEvent.doesOriginateInDps() = this.auditModuleName == "DPS_SYNCHRONISATION"
+private fun EventAudited.doesOriginateInDps() = this.auditModuleName == "DPS_SYNCHRONISATION"

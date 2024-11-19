@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-11-04.9738.e7a1673"
+    "version": "2024-11-19.9951.ae8549a"
   },
   "servers": [
     {
@@ -5167,6 +5167,101 @@
         }
       }
     },
+    "/prisoners/{offenderNo}/sentencing/court-cases/{caseId}/charges": {
+      "post": {
+        "tags": [
+          "sentencing-resource"
+        ],
+        "summary": "Creates a new Offender Charge",
+        "description": "Required role NOMIS_SENTENCING Creates a new Offender Charge for the offender and latest booking. Will not associate with a Court Event",
+        "operationId": "createCourtCharge",
+        "parameters": [
+          {
+            "name": "offenderNo",
+            "in": "path",
+            "description": "Offender No",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Offender No",
+              "example": "AK1234B"
+            },
+            "example": "AK1234B"
+          },
+          {
+            "name": "caseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCourtCaseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created Charge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OffenderChargeIdResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Supplied data is invalid, for instance missing required fields or invalid values. See schema for details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint when role NOMIS_SENTENCING not present",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Offender does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/prisoners/{offenderNo}/sentencing/court-cases/{caseId}/case-identifiers": {
       "post": {
         "tags": [
@@ -5955,6 +6050,164 @@
           },
           "404": {
             "description": "Booking does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/persons": {
+      "post": {
+        "tags": [
+          "contact-person-resource"
+        ],
+        "summary": "Creates a person",
+        "description": "Creates a person, typically a person who will become a contact of a prisoners. Requires ROLE_NOMIS_CONTACTPERSONS",
+        "operationId": "createPerson",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePersonRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Person ID Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatePersonResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_CONTACTPERSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Person already exists with the same ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/persons/{personId}/contact": {
+      "post": {
+        "tags": [
+          "contact-person-resource"
+        ],
+        "summary": "Creates a person contact",
+        "description": "Creates a person contact; the relationship between a prisoner and a person. Typically a prospective visitor. Requires ROLE_NOMIS_CONTACTPERSONS",
+        "operationId": "createPersonContact",
+        "parameters": [
+          {
+            "name": "personId",
+            "in": "path",
+            "description": "Person Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Person Id",
+              "example": 12345
+            },
+            "example": 12345
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePersonContactRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Person Contact ID Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatePersonContactResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request contains bad for example prisoner does not exist or contact / relationship types do not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_CONTACTPERSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Person does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Contact with the specified relationship and type already exists for this prisoner's latest booking",
             "content": {
               "application/json": {
                 "schema": {
@@ -7170,6 +7423,151 @@
         }
       }
     },
+    "/splash-screens/{moduleName}": {
+      "get": {
+        "tags": [
+          "splash-screen-resource"
+        ],
+        "summary": "Retrieve a list of prisons and their associated screen conditions (if any set) for the screen",
+        "description": "Retrieves all prisons switched on for the screen (module) name, or an empty list if there are none. Requires role NOMIS_SCREEN_ACCESS",
+        "operationId": "getScreenConditions",
+        "parameters": [
+          {
+            "name": "moduleName",
+            "in": "path",
+            "description": "The name of the screen (module)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The name of the screen (module)",
+              "example": "OIDINCRS"
+            },
+            "example": "OIDINCRS"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SplashScreenDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires role NOMIS_SCREEN_ACCESS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/splash-screens/{moduleName}/blocked": {
+      "get": {
+        "tags": [
+          "splash-screen-resource"
+        ],
+        "summary": "Retrieve a list of blocked prison ids for the screen",
+        "description": "Retrieves a list of blocked prison ids for the screen (module) name or **ALL** if all prisons, or an empty list if there are none blocked. Requires role NOMIS_SCREEN_ACCESS",
+        "operationId": "getBlockedPrisons",
+        "parameters": [
+          {
+            "name": "moduleName",
+            "in": "path",
+            "description": "The name of the screen (module)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The name of the screen (module)",
+              "example": "OIDINCRS"
+            },
+            "example": "OIDINCRS"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PrisonDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires role NOMIS_SCREEN_ACCESS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found if the screen (module) name does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/service-prisons/{serviceCode}": {
       "get": {
         "tags": [
@@ -8350,7 +8748,7 @@
           "prisoners-resource"
         ],
         "summary": "Gets the identifier for all prisoners.",
-        "description": "Gets the specified number of prisoners starting after the given id number.\n      Clients can iterate through all prisoners by calling this endpoint using the id from the last call (omit for first call).\n      Requires role SYNCHRONISATION_REPORTING or NOMIS_CASENOTES.",
+        "description": "Gets the specified number of prisoners starting after the given id number.\n      Clients can iterate through all prisoners by calling this endpoint using the id from the last call (omit for first call).\n      Iteration ends when the returned prisonerIds list has size less than the requested page size.\n      Requires role SYNCHRONISATION_REPORTING or NOMIS_CASENOTES.",
         "operationId": "getAllPrisonersFromId",
         "parameters": [
           {
@@ -10426,6 +10824,83 @@
         }
       }
     },
+    "/csip/booking/{bookingId}": {
+      "get": {
+        "tags": [
+          "csip-resource"
+        ],
+        "summary": "Get a list of CSIP Ids for a booking",
+        "description": "Gets a list of all csip ids relating to an offender booking. Requires role NOMIS_CSIP",
+        "operationId": "getCSIPIdsForBooking",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "description": "booking id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "booking id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CSIPIdResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires role NOMIS_CSIP",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/court-cases/{id}": {
       "get": {
         "tags": [
@@ -11828,6 +12303,93 @@
         }
       }
     },
+    "/activities/without-schedule-rules": {
+      "get": {
+        "tags": [
+          "activities-resource"
+        ],
+        "summary": "Find activities without schedule rules",
+        "description": "Searches for course activities that are active with active allocations but no schedule rules. Requires role NOMIS_ACTIVITIES",
+        "operationId": "findActivitiesWithoutScheduleRules",
+        "parameters": [
+          {
+            "name": "prisonId",
+            "in": "query",
+            "description": "Prison id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Prison id"
+            }
+          },
+          {
+            "name": "excludeProgramCode",
+            "in": "query",
+            "description": "Exclude program codes",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Exclude program codes"
+            }
+          },
+          {
+            "name": "courseActivityId",
+            "in": "query",
+            "description": "Course Activity ID",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "Course Activity ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FindActivitiesWithoutScheduleRulesResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires role NOMIS_ACTIVITIES",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/activities/rates-with-unknown-incentives": {
       "get": {
         "tags": [
@@ -12549,9 +13111,9 @@
             "type": "string"
           }
         },
-        "description": "Court Event"
+        "description": "Court Charge"
       },
-      "CreateCourtEventChargesResponse": {
+      "OffenderChargeIdResponse": {
         "required": [
           "offenderChargeId"
         ],
@@ -12562,7 +13124,7 @@
             "format": "int64"
           }
         },
-        "description": "Create adjustment response"
+        "description": "Create offender charge response"
       },
       "UpdateCourtAppearanceResponse": {
         "required": [
@@ -12574,18 +13136,14 @@
           "createdCourtEventChargesIds": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/CreateCourtEventChargesResponse"
+              "$ref": "#/components/schemas/OffenderChargeIdResponse"
             }
           },
           "deletedOffenderChargesIds": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/CreateCourtEventChargesResponse"
+              "$ref": "#/components/schemas/OffenderChargeIdResponse"
             }
-          },
-          "nextCourtAppearanceId": {
-            "type": "integer",
-            "format": "int64"
           }
         },
         "description": "Create adjustment response"
@@ -15203,12 +15761,8 @@
           "courtEventChargesIds": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/CreateCourtEventChargesResponse"
+              "$ref": "#/components/schemas/OffenderChargeIdResponse"
             }
-          },
-          "nextCourtAppearanceId": {
-            "type": "integer",
-            "format": "int64"
           }
         },
         "description": "Create adjustment response"
@@ -16366,6 +16920,152 @@
         },
         "description": "Key date adjustment create request"
       },
+      "CreatePersonResponse": {
+        "required": [
+          "personId"
+        ],
+        "type": "object",
+        "properties": {
+          "personId": {
+            "type": "integer",
+            "description": "The person Id",
+            "format": "int64"
+          }
+        }
+      },
+      "CreatePersonRequest": {
+        "required": [
+          "firstName",
+          "interpreterRequired",
+          "lastName"
+        ],
+        "type": "object",
+        "properties": {
+          "personId": {
+            "type": "integer",
+            "description": "The person id. When non-zero this will be used rather than the auto generated id",
+            "format": "int64",
+            "example": 12345
+          },
+          "firstName": {
+            "type": "string",
+            "description": "First name of the person",
+            "example": "Ashantee"
+          },
+          "lastName": {
+            "type": "string",
+            "description": "Surname name of the person",
+            "example": "Addo"
+          },
+          "middleName": {
+            "type": "string",
+            "description": "Middle name of the person",
+            "example": "Ashwin"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "description": "Date of birth of the person",
+            "format": "date"
+          },
+          "genderCode": {
+            "type": "string",
+            "description": "Gender code of the person",
+            "example": "F"
+          },
+          "titleCode": {
+            "type": "string",
+            "description": "Title code of the person",
+            "example": "DR"
+          },
+          "languageCode": {
+            "type": "string",
+            "description": "Language code of the person",
+            "example": "FRE-FRA"
+          },
+          "interpreterRequired": {
+            "type": "boolean",
+            "description": "True if the person requires an interpreter"
+          },
+          "domesticStatusCode": {
+            "type": "string",
+            "description": "Domestic status code aka marital status of the person",
+            "example": "S"
+          },
+          "isStaff": {
+            "type": "boolean",
+            "description": "True if a staff member"
+          }
+        },
+        "description": "Request to create an person (aka DPS contact) in NOMIS"
+      },
+      "CreatePersonContactResponse": {
+        "required": [
+          "personContactId"
+        ],
+        "type": "object",
+        "properties": {
+          "personContactId": {
+            "type": "integer",
+            "description": "The contact Id",
+            "format": "int64"
+          }
+        }
+      },
+      "CreatePersonContactRequest": {
+        "required": [
+          "active",
+          "approvedVisitor",
+          "contactTypeCode",
+          "emergencyContact",
+          "nextOfKin",
+          "offenderNo",
+          "relationshipTypeCode"
+        ],
+        "type": "object",
+        "properties": {
+          "offenderNo": {
+            "type": "string",
+            "description": "Offender no aka prisoner number. Contact will be added to latest booking",
+            "example": "A1234AA"
+          },
+          "contactTypeCode": {
+            "type": "string",
+            "description": "The contact type",
+            "example": "S"
+          },
+          "relationshipTypeCode": {
+            "type": "string",
+            "description": "The relationship type",
+            "example": "BRO"
+          },
+          "active": {
+            "type": "boolean",
+            "description": "True if active"
+          },
+          "expiryDate": {
+            "type": "string",
+            "description": "Date contact is no longer active",
+            "format": "date"
+          },
+          "approvedVisitor": {
+            "type": "boolean",
+            "description": "True if approved to visit the prisoner"
+          },
+          "nextOfKin": {
+            "type": "boolean",
+            "description": "True if next of kin to the prisoner"
+          },
+          "emergencyContact": {
+            "type": "boolean",
+            "description": "True if emergency contact for the prisoner"
+          },
+          "comment": {
+            "type": "string",
+            "description": "Free format comment text"
+          }
+        },
+        "description": "Request to create a contact (aka DPS prisoner contact) in NOMIS"
+      },
       "CreateNonAssociationRequest": {
         "required": [
           "effectiveDate",
@@ -17218,12 +17918,12 @@
             "type": "integer",
             "format": "int32"
           },
-          "paged": {
-            "type": "boolean"
-          },
           "pageNumber": {
             "type": "integer",
             "format": "int32"
+          },
+          "paged": {
+            "type": "boolean"
           },
           "unpaged": {
             "type": "boolean"
@@ -17263,6 +17963,79 @@
           }
         },
         "description": "Visit id"
+      },
+      "SplashConditionDto": {
+        "required": [
+          "accessBlocked",
+          "prisonId",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "prisonId": {
+            "type": "string",
+            "description": "The prisonId or **ALL**",
+            "example": "MDI but can be **ALL** for all"
+          },
+          "accessBlocked": {
+            "type": "boolean",
+            "description": "Whether access to the screen is blocked",
+            "example": true
+          },
+          "type": {
+            "$ref": "#/components/schemas/CodeDescription"
+          }
+        },
+        "description": "Splash Screen Access Condition details"
+      },
+      "SplashScreenDto": {
+        "required": [
+          "accessBlockedType",
+          "conditions",
+          "moduleName"
+        ],
+        "type": "object",
+        "properties": {
+          "moduleName": {
+            "type": "string",
+            "description": "The name of the module/screen",
+            "example": "OIDINCRS"
+          },
+          "accessBlockedType": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "warningText": {
+            "type": "string",
+            "description": "The text shown when a screen is accessible but will shortly be turned off",
+            "example": "This screen will be turned off next month."
+          },
+          "blockedText": {
+            "type": "string",
+            "description": "The text shown when a screen is blocked",
+            "example": "This screen is no longer accessible, use DPS."
+          },
+          "conditions": {
+            "type": "array",
+            "description": "Prison access conditions",
+            "items": {
+              "$ref": "#/components/schemas/SplashConditionDto"
+            }
+          }
+        },
+        "description": "Splash screen details"
+      },
+      "PrisonDto": {
+        "required": [
+          "prisonId"
+        ],
+        "type": "object",
+        "properties": {
+          "prisonId": {
+            "type": "string",
+            "description": "The prisonId or **ALL**",
+            "example": "MDI but can be **ALL** for all"
+          }
+        }
       },
       "PrisonDetails": {
         "required": [
@@ -22781,6 +23554,27 @@
           }
         },
         "description": "Activity Pay Rates"
+      },
+      "FindActivitiesWithoutScheduleRulesResponse": {
+        "required": [
+          "courseActivityDescription",
+          "courseActivityId"
+        ],
+        "type": "object",
+        "properties": {
+          "courseActivityId": {
+            "type": "integer",
+            "description": "Course Activity ID",
+            "format": "int64",
+            "example": 1234567
+          },
+          "courseActivityDescription": {
+            "type": "string",
+            "description": "Course description",
+            "example": "Kitchens AM"
+          }
+        },
+        "description": "Active activities with allocations but no schedule rules"
       },
       "FindPayRateWithUnknownIncentiveResponse": {
         "required": [
