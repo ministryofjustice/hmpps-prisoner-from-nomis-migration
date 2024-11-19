@@ -3,6 +3,8 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.awspring.cloud.sqs.annotation.SqsListener
+import io.opentelemetry.api.trace.SpanKind
+import io.opentelemetry.instrumentation.annotations.WithSpan
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.Message
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener
@@ -24,6 +26,7 @@ class CSIPMigrationMessageListener(
 ) {
 
   @SqsListener(CSIP_QUEUE_ID, factory = "hmppsQueueContainerFactoryProxy", maxConcurrentMessages = "8", maxMessagesPerPoll = "8")
+  @WithSpan(value = "dps-syscon-migration_csip_queue", kind = SpanKind.SERVER)
   fun onCSIPMessage(message: String, rawMessage: Message): CompletableFuture<Void?> {
     return onMessage(message, rawMessage)
   }
