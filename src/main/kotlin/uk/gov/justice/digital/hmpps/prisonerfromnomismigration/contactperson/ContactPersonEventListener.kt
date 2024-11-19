@@ -6,6 +6,7 @@ import io.awspring.cloud.sqs.annotation.SqsListener
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_CONTACT_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PERSON_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
@@ -66,6 +67,7 @@ class ContactPersonEventListener(
         }
 
         RETRY_SYNCHRONISATION_PERSON_MAPPING.name -> service.retryCreatePersonMapping(sqsMessage.Message.fromJson())
+        RETRY_SYNCHRONISATION_CONTACT_MAPPING.name -> service.retryCreateContactMapping(sqsMessage.Message.fromJson())
       }
     }
   }
@@ -73,64 +75,69 @@ class ContactPersonEventListener(
     objectMapper.readValue(this)
 }
 
+interface EventAudited {
+  val auditModuleName: String
+}
+
 data class PersonRestrictionEvent(
   val visitorRestrictionId: Long,
   val personId: Long,
-  val auditModuleName: String,
-)
+  override val auditModuleName: String,
+) : EventAudited
 
 data class ContactEvent(
   val offenderIdDisplay: String,
   val bookingId: Long,
   val contactId: Long,
   val personId: Long,
-  val auditModuleName: String,
-)
+  override val auditModuleName: String,
+) : EventAudited
 
 data class ContactRestrictionEvent(
   val offenderPersonRestrictionId: Long,
   val offenderIdDisplay: String,
   val personId: Long,
   val contactPersonId: Long,
-  val auditModuleName: String,
-)
+  override val auditModuleName: String,
+) : EventAudited
 
 data class PersonEvent(
   val personId: Long,
-  val auditModuleName: String,
-)
+  override val auditModuleName: String,
+) : EventAudited
 
 data class PersonAddressEvent(
   val personId: Long,
   val addressId: Long,
-  val auditModuleName: String,
-)
+  override val auditModuleName: String,
+) : EventAudited
 
 data class PersonPhoneEvent(
   val personId: Long,
   val phoneId: Long,
-  val auditModuleName: String,
+  override val auditModuleName: String,
   val isAddress: Boolean,
-)
+) : EventAudited
 
 data class PersonInternetAddressEvent(
   val personId: Long,
   val internetAddressId: Long,
-  val auditModuleName: String,
-)
+  override val auditModuleName: String,
+) : EventAudited
 
 data class PersonEmploymentEvent(
   val personId: Long,
   val employmentSequence: Long,
-  val auditModuleName: String,
-)
+  override val auditModuleName: String,
+) : EventAudited
 
 data class PersonIdentifierEvent(
   val personId: Long,
   val identifierSequence: Long,
-  val auditModuleName: String,
-)
+  override val auditModuleName: String,
+) : EventAudited
 
 enum class ContactPersonSynchronisationMessageType {
   RETRY_SYNCHRONISATION_PERSON_MAPPING,
+  RETRY_SYNCHRONISATION_CONTACT_MAPPING,
 }

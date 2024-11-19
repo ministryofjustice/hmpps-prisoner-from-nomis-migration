@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonContactMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
 
 @Service
@@ -20,6 +21,14 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
     .uri(
       "/mapping/contact-person/person/nomis-person-id/{nomisPersonId}",
       nomisPersonId,
+    )
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
+
+  suspend fun getByNomisContactIdOrNull(nomisContactId: Long): PersonContactMappingDto? = webClient.get()
+    .uri(
+      "/mapping/contact-person/contact/nomis-contact-id/{nomisContactId}",
+      nomisContactId,
     )
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
@@ -45,6 +54,18 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
       .map { CreateMappingResult<PersonMappingDto>() }
       .onErrorResume(WebClientResponseException.Conflict::class.java) {
         Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<PersonMappingDto>>() {})))
+      }
+      .awaitFirstOrDefault(CreateMappingResult())
+
+  suspend fun createContactMapping(mappings: PersonContactMappingDto): CreateMappingResult<PersonContactMappingDto> =
+    webClient.post()
+      .uri("/mapping/contact-person/contact")
+      .bodyValue(mappings)
+      .retrieve()
+      .bodyToMono(Unit::class.java)
+      .map { CreateMappingResult<PersonContactMappingDto>() }
+      .onErrorResume(WebClientResponseException.Conflict::class.java) {
+        Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<PersonContactMappingDto>>() {})))
       }
       .awaitFirstOrDefault(CreateMappingResult())
 }
