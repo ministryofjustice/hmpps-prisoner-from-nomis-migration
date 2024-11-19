@@ -5,9 +5,9 @@ import org.jlleitschuh.gradle.ktlint.tasks.KtLintFormatTask
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "6.0.8"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "6.0.9"
   kotlin("plugin.spring") version "2.0.21"
-  id("org.openapi.generator") version "7.9.0"
+  id("org.openapi.generator") version "7.10.0"
 }
 
 configurations {
@@ -32,19 +32,19 @@ dependencies {
   runtimeOnly("org.springframework.boot:spring-boot-starter-jdbc")
   runtimeOnly("org.postgresql:postgresql:42.7.4")
   runtimeOnly("org.flywaydb:flyway-database-postgresql")
-  implementation("io.opentelemetry:opentelemetry-extension-kotlin:1.43.0")
+  implementation("io.opentelemetry:opentelemetry-extension-kotlin:1.44.1")
 
   implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:2.9.0")
 
   testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:1.0.8")
-  testImplementation("io.swagger.parser.v3:swagger-parser:2.1.23") {
+  testImplementation("io.swagger.parser.v3:swagger-parser:2.1.24") {
     exclude(group = "io.swagger.core.v3")
   }
-  testImplementation("io.swagger.core.v3:swagger-core-jakarta:2.2.25")
+  testImplementation("io.swagger.core.v3:swagger-core-jakarta:2.2.26")
 
   testImplementation("org.wiremock:wiremock-standalone:3.9.2")
   testImplementation("org.testcontainers:localstack:1.20.3")
-  testImplementation("com.amazonaws:aws-java-sdk-core:1.12.777")
+  testImplementation("com.amazonaws:aws-java-sdk-core:1.12.778")
   testImplementation("org.awaitility:awaitility-kotlin:4.2.2")
   testImplementation("org.testcontainers:postgresql:1.20.3")
   testImplementation("io.mockk:mockk:1.13.13")
