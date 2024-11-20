@@ -14,14 +14,14 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.AddressAndPhones
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.Contact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.ContactsAndRestrictions
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.CreatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.IdPair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateContactResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.PrisonerContact
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncPrisonerContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.time.LocalDateTime
@@ -99,7 +99,7 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       createdTime = LocalDateTime.parse("2024-01-01T12:13"),
     )
 
-    fun contact() = Contact(
+    fun contact() = SyncContact(
       id = 12345,
       lastName = "KOFI",
       firstName = "KWEKU",
@@ -110,7 +110,7 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       createdTime = LocalDateTime.parse("2024-01-01T12:13"),
     )
 
-    fun createPrisonerContactRequest() = CreatePrisonerContactRequest(
+    fun createPrisonerContactRequest() = SyncCreatePrisonerContactRequest(
       contactId = 654321,
       prisonerNumber = "A1234KT",
       contactType = "S",
@@ -121,7 +121,7 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       createdBy = "J.SMITH",
       createdTime = LocalDateTime.parse("2024-01-01T12:13"),
     )
-    fun prisonerContact() = PrisonerContact(
+    fun prisonerContact() = SyncPrisonerContact(
       id = 12345,
       contactId = 1234567,
       prisonerNumber = "A1234KT",
@@ -172,7 +172,7 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubCreateContact(response: Contact = contact()) {
+  fun stubCreateContact(response: SyncContact = contact()) {
     stubFor(
       post("/sync/contact")
         .willReturn(
@@ -183,7 +183,7 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
     )
   }
-  fun stubCreatePrisonerContact(response: PrisonerContact = prisonerContact()) {
+  fun stubCreatePrisonerContact(response: SyncPrisonerContact = prisonerContact()) {
     stubFor(
       post("/sync/prisoner-contact")
         .willReturn(

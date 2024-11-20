@@ -6,8 +6,8 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PERSON_MAPPING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.CreatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonContactMappingDto
@@ -437,7 +437,7 @@ fun ContactPerson.toDpsCreateContactRequest(): SyncCreateContactRequest = SyncCr
   createdTime = this.audit.createDatetime.toDateTime(),
 )
 
-fun PersonContact.toDpsCreatePrisonerContactRequest(nomisPersonId: Long): CreatePrisonerContactRequest = CreatePrisonerContactRequest(
+fun PersonContact.toDpsCreatePrisonerContactRequest(nomisPersonId: Long): SyncCreatePrisonerContactRequest = SyncCreatePrisonerContactRequest(
   contactId = nomisPersonId,
   prisonerNumber = this.prisoner.offenderNo,
   contactType = this.contactType.code,

@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.contact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.prisonerContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
@@ -1119,7 +1120,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will create the prisoner contact in DPS from the person`() {
         dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/prisoner-contact")))
-        val createPrisonerContactRequest: uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.CreatePrisonerContactRequest = ContactPersonDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/sync/prisoner-contact")))
+        val createPrisonerContactRequest: SyncCreatePrisonerContactRequest = ContactPersonDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/sync/prisoner-contact")))
         with(createPrisonerContactRequest) {
           assertThat(prisonerNumber).isEqualTo(offenderNo)
           assertThat(expiryDate).isEqualTo(LocalDate.parse("2025-01-01"))
