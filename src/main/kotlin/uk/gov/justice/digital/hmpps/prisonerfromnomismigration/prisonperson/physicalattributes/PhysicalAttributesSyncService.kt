@@ -17,16 +17,21 @@ class PhysicalAttributesSyncService(
   private val telemetryClient: TelemetryClient,
 ) {
 
-  suspend fun physicalAttributesChanged(event: PhysicalAttributesChangedEvent) {
-    val offenderNo = event.offenderIdDisplay
-    val bookingId = event.bookingId
+  suspend fun physicalAttributesChangedEvent(event: PhysicalAttributesChangedEvent) =
+    physicalAttributesChanged(event.offenderIdDisplay, event.bookingId)
+
+  suspend fun physicalAttributesChanged(
+    offenderNo: String,
+    bookingId: Long,
+    nomisPhysicalAttributes: PrisonerPhysicalAttributesResponse? = null,
+  ) {
     val telemetry = mutableMapOf(
       "offenderNo" to offenderNo,
       "bookingId" to bookingId.toString(),
     )
 
     val dpsResponse = try {
-      val nomisResponse = nomisApiService.getPhysicalAttributes(offenderNo)
+      val nomisResponse = nomisPhysicalAttributes ?: nomisApiService.getPhysicalAttributes(offenderNo)
 
       val booking = nomisResponse.bookings.find { it.bookingId == bookingId }
         ?: throw PhysicalAttributesChangedException("Booking with physical attributes not found for bookingId=$bookingId")
@@ -46,7 +51,7 @@ class PhysicalAttributesSyncService(
         booking.startDateTime.toLocalDateTime(),
         booking.endDateTime?.toLocalDateTime(),
         booking.latestBooking,
-        (physicalAttributes.modifiedDateTime ?: physicalAttributes.createDateTime).toLocalDateTime(),
+        physicalAttributes.lastModifiedDateTime().toLocalDateTime(),
         physicalAttributes.modifiedDateTime?.let { physicalAttributes.modifiedBy } ?: physicalAttributes.createdBy,
       )
     } catch (e: Exception) {
@@ -82,14 +87,16 @@ class PhysicalAttributesSyncService(
       bookings.first().physicalAttributes.first().weightKilograms == null
 
   private fun PhysicalAttributesResponse.updatedBySync() = auditModuleName == synchronisationUser
-
-  private fun BookingPhysicalAttributesResponse.findLastModifiedPhysicalAttributes() =
-    physicalAttributes
-      .maxBy {
-        (it.modifiedDateTime ?: it.createDateTime).toLocalDateTime()
-      }
-
-  private fun String.toLocalDateTime() = LocalDateTime.parse(this)
 }
 
 class PhysicalAttributesChangedException(message: String) : IllegalArgumentException(message)
+
+internal fun BookingPhysicalAttributesResponse.findLastModifiedPhysicalAttributes() =
+  physicalAttributes
+    .maxBy {
+      (it.modifiedDateTime ?: it.createDateTime).toLocalDateTime()
+    }
+
+internal fun String.toLocalDateTime() = LocalDateTime.parse(this)
+
+internal fun PhysicalAttributesResponse.lastModifiedDateTime() = modifiedDateTime ?: createDateTime

@@ -17,6 +17,7 @@ import java.util.concurrent.CompletableFuture
 class PrisonPersonEventListener(
   private val physicalAttributesSyncService: PhysicalAttributesSyncService,
   private val profileDetailsSyncService: ProfileDetailsSyncService,
+  private val moveBookingService: PrisonPersonMoveBookingService,
   private val objectMapper: ObjectMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
 ) {
@@ -35,8 +36,9 @@ class PrisonPersonEventListener(
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
           if (eventFeatureSwitch.isEnabled(eventType, "prisonperson")) {
             when (eventType) {
-              "OFFENDER_PHYSICAL_ATTRIBUTES-CHANGED" -> physicalAttributesSyncService.physicalAttributesChanged(sqsMessage.Message.fromJson())
+              "OFFENDER_PHYSICAL_ATTRIBUTES-CHANGED" -> physicalAttributesSyncService.physicalAttributesChangedEvent(sqsMessage.Message.fromJson())
               "OFFENDER_PHYSICAL_DETAILS-CHANGED" -> profileDetailsSyncService.profileDetailsChanged(sqsMessage.Message.fromJson())
+              "prison-offender-events.prisoner.booking.moved" -> moveBookingService.bookingMoved(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {

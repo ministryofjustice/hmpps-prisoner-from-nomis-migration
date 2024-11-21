@@ -1,9 +1,11 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson
 
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
 
+@Service
 class PrisonPersonNomisSyncApiService(@Qualifier("nomisSyncApiWebClient") private val webClient: WebClient) {
   suspend fun syncPhysicalAttributes(prisonerNumber: String) =
     webClient.put()
