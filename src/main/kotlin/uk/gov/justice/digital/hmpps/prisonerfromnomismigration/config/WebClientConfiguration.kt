@@ -21,6 +21,7 @@ class WebClientConfiguration(
   @Value("\${api.base.url.nomis}") val nomisApiBaseUri: String,
   @Value("\${api.base.url.hmpps-auth}") val hmppsAuthApiBaseUri: String,
   @Value("\${api.base.url.mapping}") val mappingApiBaseUri: String,
+  @Value("\${api.base.url.nomis-sync}") val nomisSyncApiBaseUri: String,
   @Value("\${api.health-timeout:2s}") val healthTimeout: Duration,
   @Value("\${api.timeout:90s}") val timeout: Duration,
 ) {
@@ -35,12 +36,19 @@ class WebClientConfiguration(
   fun hmppsAuthApiHealthWebClient(builder: WebClient.Builder): WebClient = builder.reactiveHealthWebClient(hmppsAuthApiBaseUri, healthTimeout)
 
   @Bean
+  fun nomisSyncApiHealthWebClient(builder: WebClient.Builder): WebClient = builder.reactiveHealthWebClient(nomisSyncApiBaseUri, healthTimeout)
+
+  @Bean
   fun nomisApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager, builder: WebClient.Builder): WebClient =
     builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "nomis-api", url = nomisApiBaseUri, timeout)
 
   @Bean
   fun mappingApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager, builder: WebClient.Builder): WebClient =
     builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "nomis-mapping-api", url = mappingApiBaseUri, timeout)
+
+  @Bean
+  fun nomisSyncApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager, builder: WebClient.Builder): WebClient =
+    builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "nomis-sync-api", url = nomisSyncApiBaseUri, timeout)
 
   @Bean
   fun reactiveOAuth2AuthorizedClientManagerWithTimeout(

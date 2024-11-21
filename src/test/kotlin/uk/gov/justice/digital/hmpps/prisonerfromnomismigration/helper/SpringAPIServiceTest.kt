@@ -18,6 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.Con
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonDpsApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonNomisSyncApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.HmppsAuthApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.LocationsApiExtension
@@ -54,6 +55,7 @@ import kotlin.annotation.AnnotationTarget.CLASS
   AlertsDpsApiExtension::class,
   PrisonPersonDpsApiExtension::class,
   ContactPersonDpsApiExtension::class,
+  PrisonPersonNomisSyncApiExtension::class,
 )
 @ActiveProfiles("test")
 @EnableWebFlux

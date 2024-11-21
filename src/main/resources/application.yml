@@ -33,6 +33,11 @@ spring:
             client-id: ${nomis.prisoner.api.client.id}
             client-secret: ${nomis.prisoner.api.secret}
             authorization-grant-type: client_credentials
+          nomis-sync-api:
+            provider: hmpps-auth
+            client-id: ${nomis.sync.api.client.id}
+            client-secret: ${nomis.sync.api.client.secret}
+            authorization-grant-type: client_credentials
           visits-api:
             provider: hmpps-auth
             client-id: ${visits.client.id}

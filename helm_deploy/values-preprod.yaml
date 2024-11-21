@@ -11,6 +11,7 @@ generic-service:
     APPLICATIONINSIGHTS_CONFIGURATION_FILE: applicationinsights.dev.json
     API_BASE_URL_HMPPS_AUTH: https://sign-in-preprod.hmpps.service.justice.gov.uk/auth
     API_BASE_URL_NOMIS: https://nomis-prisoner-api-preprod.prison.service.justice.gov.uk
+    API_BASE_URL_NOMIS-SYNC: https://prisoner-to-nomis-update-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_CSIP: https://csip-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_VISITS: https://visit-scheduler-preprod.prison.service.justice.gov.uk
     API_BASE_URL_MAPPING: https://nomis-sync-prisoner-mapping-preprod.hmpps.service.justice.gov.uk
