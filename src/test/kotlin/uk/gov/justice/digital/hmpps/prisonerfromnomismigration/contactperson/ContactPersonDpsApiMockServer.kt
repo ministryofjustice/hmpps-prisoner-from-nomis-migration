@@ -76,19 +76,18 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       contacts = emptyList(),
     )
 
-    fun migrateContactResponse(request: MigrateContactRequest = migrateContactRequest()) =
-      MigrateContactResponse(
-        contact = IdPair(elementType = IdPair.ElementType.CONTACT, nomisId = request.personId, dpsId = request.personId * 10),
-        lastName = request.lastName,
-        dateOfBirth = request.dateOfBirth,
-        phoneNumbers = request.phoneNumbers.map { IdPair(elementType = IdPair.ElementType.PHONE, nomisId = it.phoneId, dpsId = it.phoneId * 10) },
-        addresses = request.addresses.map { AddressAndPhones(address = IdPair(elementType = IdPair.ElementType.ADDRESS, nomisId = it.addressId, dpsId = it.addressId * 10), phones = it.phoneNumbers.map { phone -> IdPair(elementType = IdPair.ElementType.PHONE, nomisId = phone.phoneId, dpsId = phone.phoneId * 10) }) },
-        emailAddresses = request.emailAddresses.map { IdPair(elementType = IdPair.ElementType.EMAIL, nomisId = it.emailAddressId, dpsId = it.emailAddressId * 10) },
-        identities = request.identifiers.map { IdPair(elementType = IdPair.ElementType.IDENTITY, nomisId = it.sequence, dpsId = it.sequence * 10) },
-        employments = request.employments.map { IdPair(elementType = IdPair.ElementType.EMPLOYMENT, nomisId = it.sequence, dpsId = it.sequence * 10) },
-        restrictions = request.restrictions.map { IdPair(elementType = IdPair.ElementType.RESTRICTION, nomisId = it.id, dpsId = it.id * 10) },
-        relationships = request.contacts.map { ContactsAndRestrictions(relationship = IdPair(elementType = IdPair.ElementType.RESTRICTION, nomisId = it.id, dpsId = it.id * 10), restrictions = it.restrictions.map { restriction -> IdPair(elementType = IdPair.ElementType.RESTRICTION, nomisId = restriction.id, dpsId = restriction.id * 10) }) },
-      )
+    fun migrateContactResponse(request: MigrateContactRequest = migrateContactRequest()) = MigrateContactResponse(
+      contact = IdPair(elementType = IdPair.ElementType.CONTACT, nomisId = request.personId, dpsId = request.personId * 10),
+      lastName = request.lastName,
+      dateOfBirth = request.dateOfBirth,
+      phoneNumbers = request.phoneNumbers.map { IdPair(elementType = IdPair.ElementType.PHONE, nomisId = it.phoneId, dpsId = it.phoneId * 10) },
+      addresses = request.addresses.map { AddressAndPhones(address = IdPair(elementType = IdPair.ElementType.ADDRESS, nomisId = it.addressId, dpsId = it.addressId * 10), phones = it.phoneNumbers.map { phone -> IdPair(elementType = IdPair.ElementType.PHONE, nomisId = phone.phoneId, dpsId = phone.phoneId * 10) }) },
+      emailAddresses = request.emailAddresses.map { IdPair(elementType = IdPair.ElementType.EMAIL, nomisId = it.emailAddressId, dpsId = it.emailAddressId * 10) },
+      identities = request.identifiers.map { IdPair(elementType = IdPair.ElementType.IDENTITY, nomisId = it.sequence, dpsId = it.sequence * 10) },
+      employments = request.employments.map { IdPair(elementType = IdPair.ElementType.EMPLOYMENT, nomisId = it.sequence, dpsId = it.sequence * 10) },
+      restrictions = request.restrictions.map { IdPair(elementType = IdPair.ElementType.RESTRICTION, nomisId = it.id, dpsId = it.id * 10) },
+      relationships = request.contacts.map { ContactsAndRestrictions(relationship = IdPair(elementType = IdPair.ElementType.RESTRICTION, nomisId = it.id, dpsId = it.id * 10), restrictions = it.restrictions.map { restriction -> IdPair(elementType = IdPair.ElementType.RESTRICTION, nomisId = restriction.id, dpsId = restriction.id * 10) }) },
+    )
 
     fun createContactRequest() = SyncCreateContactRequest(
       personId = 654321,

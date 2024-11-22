@@ -266,7 +266,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
 
     mappingApi.stubFor(
       post("/mapping/contact-person/address")
-        .inScenario("Retry Mapping Contact Scenario")
+        .inScenario("Retry Mapping Address Scenario")
         .whenScenarioStateIs("Cause Mapping Address Success")
         .willReturn(
           aResponse()
