@@ -21,6 +21,7 @@ api.base.url:
   prison.person: http://localhost:8095
   casenotes: http://localhost:8096
   contact.person: http://localhost:8097
+  nomis-sync: http://localhost:8098
 
 visits:
   page:

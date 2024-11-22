@@ -11,6 +11,7 @@ generic-service:
     APPLICATIONINSIGHTS_CONFIGURATION_FILE: applicationinsights.json
     API_BASE_URL_HMPPS_AUTH: https://sign-in.hmpps.service.justice.gov.uk/auth
     API_BASE_URL_NOMIS: https://nomis-prisoner-api.prison.service.justice.gov.uk
+    API_BASE_URL_NOMIS-SYNC: https://prisoner-to-nomis-update.hmpps.service.justice.gov.uk
     API_BASE_URL_CSIP: https://csip-api.hmpps.service.justice.gov.uk
     API_BASE_URL_VISITS: https://visit-scheduler.prison.service.justice.gov.uk
     API_BASE_URL_MAPPING: https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk
@@ -63,6 +64,7 @@ generic-service:
     FEATURE_EVENT_CONTACTPERSON_PERSON_IDENTIFIERS-INSERTED: false
     FEATURE_EVENT_CONTACTPERSON_PERSON_IDENTIFIERS-UPDATED: false
     FEATURE_EVENT_CONTACTPERSON_PERSON_IDENTIFIERS-DELETED: false
+    FEATURE_EVENT_PRISONPERSON_PRISON-OFFENDER-EVENTS_PRISONER_BOOKING_MOVED: false
 
 generic-prometheus-alerts:
   rdsAlertsDatabases:
