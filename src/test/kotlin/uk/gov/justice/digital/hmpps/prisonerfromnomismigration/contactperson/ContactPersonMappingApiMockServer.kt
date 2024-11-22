@@ -273,7 +273,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
             .withHeader("Content-Type", "application/json")
             .withStatus(201),
 
-          ).willSetStateTo(Scenario.STARTED),
+        ).willSetStateTo(Scenario.STARTED),
     )
   }
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)

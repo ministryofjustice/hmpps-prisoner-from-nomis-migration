@@ -99,6 +99,7 @@ class ContactPersonDpsApiServiceTest {
       )
     }
   }
+
   @Nested
   inner class CreateContactAddress {
     @Test

@@ -133,6 +133,7 @@ class ContactPersonMappingApiServiceTest {
       assertThat(apiService.getByNomisContactIdOrNull(nomisContactId = 1234567))
     }
   }
+
   @Nested
   inner class GetByNomisAddressIdOrNull {
     @Test

@@ -42,8 +42,6 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
-
-
   suspend fun createMappingsForMigration(mappings: ContactPersonMappingsDto): CreateMappingResult<PersonMappingDto> =
     webClient.post()
       .uri("/mapping/contact-person/migrate")
