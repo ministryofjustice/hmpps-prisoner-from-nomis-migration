@@ -8,6 +8,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.phys
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.physicalattributes.PhysicalAttributesSyncService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.physicalattributes.findLastModifiedPhysicalAttributes
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.physicalattributes.lastModifiedDateTime
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.profiledetails.ProfileDetailsNomisApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.profiledetails.ProfileDetailsSyncService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.profiledetails.isPhysicalAttributesProfileType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.profiledetails.lastModifiedDateTime
 
 @Service
 class PrisonPersonMoveBookingService(
@@ -15,6 +19,8 @@ class PrisonPersonMoveBookingService(
   private val physicalAttributesSyncService: PhysicalAttributesSyncService,
   private val physicalAttributesNomisApiService: PhysicalAttributesNomisApiService,
   private val prisonPersonNomisSyncApiService: PrisonPersonNomisSyncApiService,
+  private val profileDetailsNomisApiService: ProfileDetailsNomisApiService,
+  private val profileDetailsSyncService: ProfileDetailsSyncService,
 ) {
 
   suspend fun bookingMoved(bookingMovedEvent: PrisonerBookingMovedDomainEvent) {
@@ -30,7 +36,7 @@ class PrisonPersonMoveBookingService(
     try {
       syncFromOffenderDps(fromOffenderNo, telemetry)
 
-      syncToOffenderDps(toOffenderNo, telemetry)
+      syncToOffenderDpsIfChanged(toOffenderNo, bookingId, telemetry)
 
       syncToOffenderNomis(toOffenderNo, telemetry)
 
@@ -47,30 +53,63 @@ class PrisonPersonMoveBookingService(
 
   private suspend fun syncFromOffenderDps(fromOffenderNo: String, telemetry: MutableMap<String, String>) {
     physicalAttributesNomisApiService.getPhysicalAttributes(fromOffenderNo).also { nomisResponse ->
-      val latestBooking = nomisResponse.bookings.find { booking -> booking.latestBooking }
-      if (latestBooking != null) {
-        physicalAttributesSyncService.physicalAttributesChanged(fromOffenderNo, latestBooking.bookingId, nomisResponse)
-        telemetry += "syncFromOffenderDps_HEIGHT" to "true"
-        telemetry += "syncFromOffenderDps_WEIGHT" to "true"
-      }
+      nomisResponse.bookings
+        .find { it.latestBooking }
+        ?.also { latestBooking ->
+          physicalAttributesSyncService.physicalAttributesChanged(fromOffenderNo, latestBooking.bookingId, nomisResponse)
+          telemetry += "syncFromOffenderDps_HEIGHT" to "true"
+          telemetry += "syncFromOffenderDps_WEIGHT" to "true"
+        }
     }
 
-    // TODO SDIT-2200 sync all profile details for from offender
+    profileDetailsNomisApiService.getProfileDetails(fromOffenderNo).also { nomisResponse ->
+      nomisResponse.bookings
+        .find { it.latestBooking }
+        ?.also { latestBooking ->
+          latestBooking.profileDetails
+            .filter { it.type.isPhysicalAttributesProfileType() }
+            .forEach { profileDetail ->
+              profileDetailsSyncService.profileDetailsPhysicalAttributesChanged(profileDetail.type, fromOffenderNo, latestBooking.bookingId, nomisResponse)
+              telemetry += "syncFromOffenderDps_${profileDetail.type}" to "true"
+            }
+        }
+    }
   }
 
-  private suspend fun syncToOffenderDps(toOffenderNo: String, telemetry: MutableMap<String, String>) {
+  private suspend fun syncToOffenderDpsIfChanged(toOffenderNo: String, bookingId: Long, telemetry: MutableMap<String, String>) {
     physicalAttributesNomisApiService.getPhysicalAttributes(toOffenderNo).also { nomisResponse ->
-      val latestBooking = nomisResponse.bookings.find { booking -> booking.latestBooking }
-      if (latestBooking != null &&
-        latestBooking.findLastModifiedPhysicalAttributes().lastModifiedDateTime() > latestBooking.startDateTime
-      ) {
-        physicalAttributesSyncService.physicalAttributesChanged(toOffenderNo, latestBooking.bookingId, nomisResponse)
-        telemetry += "syncToOffenderDps_HEIGHT" to "true"
-        telemetry += "syncToOffenderDps_WEIGHT" to "true"
-      }
+      nomisResponse.bookings
+        .find { it.bookingId == bookingId }
+        ?.takeIf { it.latestBooking }
+        ?.also { latestBooking ->
+          if (latestBooking.findLastModifiedPhysicalAttributes().lastModifiedDateTime() > latestBooking.startDateTime) {
+            physicalAttributesSyncService.physicalAttributesChanged(toOffenderNo, latestBooking.bookingId, nomisResponse)
+            telemetry += "syncToOffenderDps_HEIGHT" to "true"
+            telemetry += "syncToOffenderDps_WEIGHT" to "true"
+          }
+        }
     }
 
-    // TODO SDIT-2200 sync profile details that have been updated since the booking started
+    profileDetailsNomisApiService.getProfileDetails(toOffenderNo).also { nomisResponse ->
+      nomisResponse.bookings
+        .find { it.bookingId == bookingId }
+        ?.takeIf { it.latestBooking }
+        ?.also { latestBooking ->
+          latestBooking.profileDetails
+            .filter { it.type.isPhysicalAttributesProfileType() }
+            .forEach { profileDetail ->
+              if (profileDetail.lastModifiedDateTime() > latestBooking.startDateTime) {
+                profileDetailsSyncService.profileDetailsPhysicalAttributesChanged(
+                  profileDetail.type,
+                  toOffenderNo,
+                  latestBooking.bookingId,
+                  nomisResponse,
+                )
+                telemetry += "syncToOffenderDps_${profileDetail.type}" to "true"
+              }
+            }
+        }
+    }
   }
 
   private suspend fun syncToOffenderNomis(toOffenderNo: String, telemetry: MutableMap<String, String>) {
