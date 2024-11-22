@@ -30,6 +30,9 @@ import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiExtension.Companion.caseNotesApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse.SourceSystem
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
@@ -97,9 +100,13 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         nomisApi.stubGetPrisonIds(totalElements = 2, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
         caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(offenderNo = OFFENDER_NUMBER1, currentCaseNoteCount = 1)
-        caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(offenderNo = OFFENDER_NUMBER2, currentCaseNoteCount = 1, type = "CNOTE")
-        caseNotesApi.stubMigrateCaseNotes(OFFENDER_NUMBER1, listOf(1 to "00000000-0000-0000-0000-000000000001"))
-        caseNotesApi.stubMigrateCaseNotes(OFFENDER_NUMBER2, listOf(1 to "00000000-0000-0000-0000-000000000002"))
+        caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(
+          offenderNo = OFFENDER_NUMBER2,
+          currentCaseNoteCount = 1,
+          type = "CNOTE",
+        )
+        caseNotesApi.stubMigrateCaseNotes(OFFENDER_NUMBER1, listOf(1L to "00000000-0000-0000-0000-000000000001"))
+        caseNotesApi.stubMigrateCaseNotes(OFFENDER_NUMBER2, listOf(1L to "00000000-0000-0000-0000-000000000002"))
         caseNotesMappingApiMockServer.stubGetMappings(listOf())
         caseNotesMappingApiMockServer.stubPostBatchMappings(OFFENDER_NUMBER1)
         caseNotesMappingApiMockServer.stubPostBatchMappings(OFFENDER_NUMBER2)
@@ -134,7 +141,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
             .withRequestBodyJsonPath("$[0].locationId", equalTo("SWI"))
             .withRequestBodyJsonPath("$[0].type", equalTo("GEN"))
             .withRequestBodyJsonPath("$[0].subType", equalTo("OUTCOME"))
-            .withRequestBodyJsonPath("$[0].text", equalTo("text"))
+            .withRequestBodyJsonPath("$[0].text", equalTo("text 0"))
             .withRequestBodyJsonPath("$[0].systemGenerated", equalTo("false"))
             .withRequestBodyJsonPath("$[0].createdDateTime", equalTo("2021-02-03T04:05:06"))
             .withRequestBodyJsonPath("$[0].createdByUsername", equalTo("John"))
@@ -151,7 +158,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
             .withRequestBodyJsonPath("$[0].locationId", equalTo("SWI"))
             .withRequestBodyJsonPath("$[0].type", equalTo("APP"))
             .withRequestBodyJsonPath("$[0].subType", equalTo("OUTCOME"))
-            .withRequestBodyJsonPath("$[0].text", equalTo("text"))
+            .withRequestBodyJsonPath("$[0].text", equalTo("text 0"))
             .withRequestBodyJsonPath("$[0].systemGenerated", equalTo("false"))
             .withRequestBodyJsonPath("$[0].createdDateTime", equalTo("2021-02-03T04:05:06"))
             .withRequestBodyJsonPath("$[0].createdByUsername", equalTo("John"))
@@ -190,11 +197,11 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
       fun `will transform NOMIS case note to DPS case note`() {
         caseNotesApi.verify(
           postRequestedFor(urlPathEqualTo("/migrate/case-notes/$OFFENDER_NUMBER1"))
-            .withRequestBodyJsonPath("$[0].text", "text"),
+            .withRequestBodyJsonPath("$[0].text", "text 0"),
         )
         caseNotesApi.verify(
           postRequestedFor(urlPathEqualTo("/migrate/case-notes/$OFFENDER_NUMBER2"))
-            .withRequestBodyJsonPath("$[0].text", "text"),
+            .withRequestBodyJsonPath("$[0].text", "text 0"),
         )
       }
     }
@@ -205,7 +212,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
         caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(offenderNo = OFFENDER_NUMBER1, currentCaseNoteCount = 1)
-        caseNotesApi.stubMigrateCaseNotes(OFFENDER_NUMBER1, listOf(1 to "00000000-0000-0000-0000-000000000001"))
+        caseNotesApi.stubMigrateCaseNotes(OFFENDER_NUMBER1, listOf(1L to "00000000-0000-0000-0000-000000000001"))
         caseNotesMappingApiMockServer.stubPostBatchMappingsFailureFollowedBySuccess(OFFENDER_NUMBER1)
         performMigration()
       }
@@ -238,7 +245,10 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
       fun `will POST the casenotes to DPS twice as per dlqMaxReceiveCount, but not mappings`() {
         await untilAsserted {
           caseNotesApi.verify(2, postRequestedFor(urlPathEqualTo("/migrate/case-notes/$OFFENDER_NUMBER1")))
-          caseNotesMappingApiMockServer.verify(0, postRequestedFor(urlPathEqualTo("/mapping/casenotes/$OFFENDER_NUMBER1/all")))
+          caseNotesMappingApiMockServer.verify(
+            0,
+            postRequestedFor(urlPathEqualTo("/mapping/casenotes/$OFFENDER_NUMBER1/all")),
+          )
         }
       }
 
@@ -248,7 +258,10 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
           eq("casenotes-migration-entity-failed"),
           check {
             assertThat(it).containsEntry("offenderNo", OFFENDER_NUMBER1)
-            assertThat(it).containsEntry("error", "400 Bad Request from POST http://localhost:8096/migrate/case-notes/$OFFENDER_NUMBER1")
+            assertThat(it).containsEntry(
+              "error",
+              "400 Bad Request from POST http://localhost:8096/migrate/case-notes/$OFFENDER_NUMBER1",
+            )
           },
           isNull(),
         )
@@ -259,6 +272,325 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
         await untilCallTo {
           awsSqsCaseNotesOffenderMigrationDlqClient.countMessagesOnQueue(caseNotesQueueOffenderMigrationDlqUrl).get()
         } matches { it == 1 }
+      }
+    }
+
+    @Nested
+    inner class MigrateMerge {
+      private lateinit var migrationResult: MigrationResult
+
+      @BeforeEach
+      fun setUp() {
+        nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
+        caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(
+          offenderNo = OFFENDER_NUMBER1,
+          listOf(
+            caseNoteTemplate(1, 1, "text 1"),
+            caseNoteTemplate(2, 1, "text 2"),
+            caseNoteTemplate(3, 1, "text 3"),
+            caseNoteTemplate(11, 2, "text 1", "MERGE"),
+            caseNoteTemplate(12, 2, "text 2", "MERGE"),
+            caseNoteTemplate(13, 2, "text 3", "MERGE"),
+          ),
+        )
+        caseNotesApi.stubMigrateCaseNotes(
+          OFFENDER_NUMBER1,
+          listOf(
+            1L to "00000000-0000-0000-0000-000000000001",
+            2L to "00000000-0000-0000-0000-000000000002",
+            3L to "00000000-0000-0000-0000-000000000003",
+          ),
+        )
+
+        caseNotesMappingApiMockServer.stubGetMappings(listOf())
+        caseNotesMappingApiMockServer.stubPostBatchMappings(OFFENDER_NUMBER1)
+        migrationResult = performMigration()
+      }
+
+      @Test
+      fun `will POST 3 casenotes, not merge copies, to DPS for the prisoner`() {
+        caseNotesApi.verify(
+          postRequestedFor(urlPathEqualTo("/migrate/case-notes/$OFFENDER_NUMBER1"))
+            .withRequestBodyJsonPath("$.size()", "3")
+            .withRequestBodyJsonPath("$[0].legacyId", "1")
+            .withRequestBodyJsonPath("$[0].text", equalTo("text 1"))
+            .withRequestBodyJsonPath("$[1].legacyId", "2")
+            .withRequestBodyJsonPath("$[1].text", equalTo("text 2"))
+            .withRequestBodyJsonPath("$[2].legacyId", "3")
+            .withRequestBodyJsonPath("$[2].text", equalTo("text 3")),
+        )
+      }
+
+      @Test
+      fun `will POST 6 mappings for casenotes originally created for the prisoner and for merges`() {
+        caseNotesMappingApiMockServer.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/casenotes/$OFFENDER_NUMBER1/all"))
+            .withRequestBodyJsonPath("$.mappings.size()", "3")
+            // the mappings are shuffled by the map they were in so we can't predict the order
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '1' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000001')].nomisBookingId",
+              "1",
+            )
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '2' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000002')].nomisBookingId",
+              "1",
+            )
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '3' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000003')].nomisBookingId",
+              "1",
+            ),
+        )
+        caseNotesMappingApiMockServer.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/casenotes/$OFFENDER_NUMBER1/all"))
+            .withRequestBodyJsonPath("$.mappings.size()", "3")
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '11' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000001')].nomisBookingId",
+              "2",
+            )
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '12' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000002')].nomisBookingId",
+              "2",
+            )
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '13' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000003')].nomisBookingId",
+              "2",
+            ),
+        )
+      }
+    }
+
+    @Nested
+    inner class MigrateDoubleMergeBothToLatestBooking {
+      private lateinit var migrationResult: MigrationResult
+
+      @BeforeEach
+      fun setUp() {
+        nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
+        caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(
+          offenderNo = OFFENDER_NUMBER1,
+          listOf(
+            caseNoteTemplate(1, 1, "text 1"),
+            caseNoteTemplate(2, 1, "text 2"),
+            caseNoteTemplate(3, 1, "text 3"),
+            caseNoteTemplate(6, 2, "text 6"),
+            caseNoteTemplate(7, 2, "text 7"),
+            caseNoteTemplate(8, 2, "text 8"),
+            caseNoteTemplate(11, 3, "text 1", "MERGE"),
+            caseNoteTemplate(12, 3, "text 2", "MERGE"),
+            caseNoteTemplate(13, 3, "text 3", "MERGE"),
+            caseNoteTemplate(16, 3, "text 6", "MERGE"),
+            caseNoteTemplate(17, 3, "text 7", "MERGE"),
+            caseNoteTemplate(18, 3, "text 8", "MERGE"),
+          ),
+        )
+        caseNotesApi.stubMigrateCaseNotes(
+          OFFENDER_NUMBER1,
+          listOf(
+            1L to "00000000-0000-0000-0000-000000000001",
+            2L to "00000000-0000-0000-0000-000000000002",
+            3L to "00000000-0000-0000-0000-000000000003",
+            6L to "00000000-0000-0000-0000-000000000006",
+            7L to "00000000-0000-0000-0000-000000000007",
+            8L to "00000000-0000-0000-0000-000000000008",
+          ),
+        )
+
+        caseNotesMappingApiMockServer.stubGetMappings(listOf())
+        caseNotesMappingApiMockServer.stubPostBatchMappings(OFFENDER_NUMBER1)
+        migrationResult = performMigration()
+      }
+
+      @Test
+      fun `will POST 6 casenotes, not merge copies, to DPS for the prisoner`() {
+        caseNotesApi.verify(
+          postRequestedFor(urlPathEqualTo("/migrate/case-notes/$OFFENDER_NUMBER1"))
+            .withRequestBodyJsonPath("$.size()", "6")
+            .withRequestBodyJsonPath("$[0].legacyId", "1")
+            .withRequestBodyJsonPath("$[1].legacyId", "2")
+            .withRequestBodyJsonPath("$[2].legacyId", "3")
+            .withRequestBodyJsonPath("$[3].legacyId", "6")
+            .withRequestBodyJsonPath("$[4].legacyId", "7")
+            .withRequestBodyJsonPath("$[5].legacyId", "8"),
+        )
+      }
+
+      @Test
+      fun `will POST 12 mappings for casenotes originally created for the prisoner and for merges`() {
+        caseNotesMappingApiMockServer.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/casenotes/$OFFENDER_NUMBER1/all"))
+            .withRequestBodyJsonPath("$.mappings.size()", "6")
+            // the mappings are shuffled by the map they were in so we can't predict the order
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '1' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000001')].nomisBookingId",
+              "1",
+            )
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '2' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000002')].nomisBookingId",
+              "1",
+            )
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '3' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000003')].nomisBookingId",
+              "1",
+            )
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '6' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000006')].nomisBookingId",
+              "2",
+            )
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '7' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000007')].nomisBookingId",
+              "2",
+            )
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '8' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000008')].nomisBookingId",
+              "2",
+            ),
+        )
+        caseNotesMappingApiMockServer.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/casenotes/$OFFENDER_NUMBER1/all"))
+            .withRequestBodyJsonPath("$.mappings.size()", "6")
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '11' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000001')].nomisBookingId",
+              "3",
+            )
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '12' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000002')].nomisBookingId",
+              "3",
+            )
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '13' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000003')].nomisBookingId",
+              "3",
+            )
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '16' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000006')].nomisBookingId",
+              "3",
+            )
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '17' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000007')].nomisBookingId",
+              "3",
+            )
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '18' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000008')].nomisBookingId",
+              "3",
+            ),
+        )
+      }
+    }
+
+    @Nested
+    inner class MigrateDoubleMergeToLatestTwoBookings {
+      private lateinit var migrationResult: MigrationResult
+
+      @BeforeEach
+      fun setUp() {
+        nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
+        caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(
+          offenderNo = OFFENDER_NUMBER1,
+          listOf(
+            caseNoteTemplate(1, 1, "text 1"),
+            caseNoteTemplate(2, 1, "text 2"),
+
+            caseNoteTemplate(6, 2, "text 6"),
+            caseNoteTemplate(7, 2, "text 7"),
+            caseNoteTemplate(8, 2, "text 1", "MERGE"),
+            caseNoteTemplate(9, 2, "text 2", "MERGE"),
+
+            caseNoteTemplate(11, 3, "text 11"),
+            caseNoteTemplate(12, 3, "text 12"),
+            caseNoteTemplate(13, 3, "text 1", "MERGE"),
+            caseNoteTemplate(14, 3, "text 2", "MERGE"),
+            caseNoteTemplate(15, 3, "text 6", "MERGE"),
+            caseNoteTemplate(16, 3, "text 7", "MERGE"),
+          ),
+        )
+        caseNotesApi.stubMigrateCaseNotes(
+          OFFENDER_NUMBER1,
+          listOf(
+            1L to "00000000-0000-0000-0000-000000000001",
+            2L to "00000000-0000-0000-0000-000000000002",
+            6L to "00000000-0000-0000-0000-000000000006",
+            7L to "00000000-0000-0000-0000-000000000007",
+            11L to "00000000-0000-0000-0000-000000000011",
+            12L to "00000000-0000-0000-0000-000000000012",
+          ),
+        )
+        caseNotesMappingApiMockServer.stubGetMappings(listOf())
+        caseNotesMappingApiMockServer.stubPostBatchMappings(OFFENDER_NUMBER1)
+        migrationResult = performMigration()
+      }
+
+      @Test
+      fun `will POST 6 casenotes, not merge copies, to DPS for the prisoner`() {
+        caseNotesApi.verify(
+          postRequestedFor(urlPathEqualTo("/migrate/case-notes/$OFFENDER_NUMBER1"))
+            .withRequestBodyJsonPath("$.size()", "6")
+            .withRequestBodyJsonPath("$[0].legacyId", "1")
+            .withRequestBodyJsonPath("$[1].legacyId", "2")
+            .withRequestBodyJsonPath("$[2].legacyId", "6")
+            .withRequestBodyJsonPath("$[3].legacyId", "7")
+            .withRequestBodyJsonPath("$[4].legacyId", "11")
+            .withRequestBodyJsonPath("$[5].legacyId", "12"),
+        )
+      }
+
+      @Test
+      fun `will POST 12 mappings for casenotes originally created for the prisoner and for merges`() {
+        caseNotesMappingApiMockServer.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/casenotes/$OFFENDER_NUMBER1/all"))
+            .withRequestBodyJsonPath("$.mappings.size()", "6")
+            // the mappings are shuffled by the map they were in so we can't predict the order
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '1' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000001')].nomisBookingId",
+              "1",
+            )
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '2' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000002')].nomisBookingId",
+              "1",
+            )
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '6' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000006')].nomisBookingId",
+              "2",
+            )
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '7' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000007')].nomisBookingId",
+              "2",
+            )
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '11' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000011')].nomisBookingId",
+              "3",
+            )
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '12' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000012')].nomisBookingId",
+              "3",
+            ),
+        )
+        caseNotesMappingApiMockServer.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/casenotes/$OFFENDER_NUMBER1/all"))
+            .withRequestBodyJsonPath("$.mappings.size()", "6")
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '8' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000001')].nomisBookingId",
+              "2",
+            )
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '9' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000002')].nomisBookingId",
+              "2",
+            )
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '13' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000001')].nomisBookingId",
+              "3",
+            )
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '14' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000002')].nomisBookingId",
+              "3",
+            )
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '15' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000006')].nomisBookingId",
+              "3",
+            )
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '16' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000007')].nomisBookingId",
+              "3",
+            ),
+        )
       }
     }
   }
@@ -659,3 +991,29 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
       )
     }
 }
+
+fun caseNoteTemplate(
+  caseNoteId: Long,
+  bookingId: Long,
+  text: String = "text",
+  auditModuleName: String = "OIDCXXXX",
+  type: String = "GEN",
+) = CaseNoteResponse(
+  caseNoteId = caseNoteId,
+  bookingId = bookingId,
+  caseNoteText = text,
+  caseNoteType = CodeDescription(type, "desc"),
+  auditModuleName = auditModuleName,
+  caseNoteSubType = CodeDescription("OUTCOME", "desc"),
+  authorUsername = "me",
+  authorStaffId = 123456L,
+  authorFirstName = "First",
+  authorLastName = "Last",
+  amendments = emptyList(),
+  createdDatetime = "2021-02-03T04:05:06",
+  createdUsername = "John",
+  noteSourceCode = CaseNoteResponse.NoteSourceCode.INST,
+  occurrenceDateTime = "2021-02-03T04:05:06",
+  prisonId = "SWI",
+  sourceSystem = SourceSystem.NOMIS,
+)
