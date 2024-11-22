@@ -42,16 +42,6 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
-  suspend fun getByNomisAddressIdOrNull(nomisAddressId: Long): PersonAddressMappingDto? = webClient.get()
-    .uri(
-      "/mapping/contact-person/address/nomis-address-id/{nomisAddressId}",
-      nomisAddressId,
-    )
-    .retrieve()
-    .awaitBodyOrNullWhenNotFound()
-
-
-
   suspend fun createMappingsForMigration(mappings: ContactPersonMappingsDto): CreateMappingResult<PersonMappingDto> =
     webClient.post()
       .uri("/mapping/contact-person/migrate")
