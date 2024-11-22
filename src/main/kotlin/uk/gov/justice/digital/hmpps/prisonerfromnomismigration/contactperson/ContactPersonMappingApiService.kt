@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonContactMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
 
@@ -29,6 +30,14 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
     .uri(
       "/mapping/contact-person/contact/nomis-contact-id/{nomisContactId}",
       nomisContactId,
+    )
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
+
+  suspend fun getByNomisAddressIdOrNull(nomisAddressId: Long): PersonAddressMappingDto? = webClient.get()
+    .uri(
+      "/mapping/contact-person/address/nomis-address-id/{nomisAddressId}",
+      nomisAddressId,
     )
     .retrieve()
     .awaitBodyOrNullWhenNotFound()

@@ -19,6 +19,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateContactResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncContact
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncContactAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncPrisonerContact
@@ -135,6 +137,24 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       createdBy = "JANE.SAM",
       createdTime = LocalDateTime.parse("2024-01-01T12:13"),
     )
+    fun createContactAddressRequest() = SyncCreateContactAddressRequest(
+      contactId = 1234567,
+      addressType = "MOB",
+      primaryAddress = true,
+      createdBy = "JANE.SAM",
+      createdTime = LocalDateTime.parse("2024-01-01T12:13"),
+    )
+
+    fun contactAddress() = SyncContactAddress(
+      contactAddressId = 1234567,
+      contactId = 12345,
+      primaryAddress = true,
+      verified = false,
+      mailFlag = false,
+      noFixedAddress = false,
+      createdBy = "JANE.SAM",
+      createdTime = LocalDateTime.parse("2024-01-01T12:13"),
+    )
   }
 
   fun stubMigrateContact(response: MigrateContactResponse = migrateContactResponse()) {
@@ -186,6 +206,17 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubCreatePrisonerContact(response: SyncPrisonerContact = prisonerContact()) {
     stubFor(
       post("/sync/prisoner-contact")
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader("Content-Type", "application/json")
+            .withBody(ContactPersonDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+  fun stubCreateContactAddress(response: SyncContactAddress = contactAddress()) {
+    stubFor(
+      post("/sync/contact-address")
         .willReturn(
           aResponse()
             .withStatus(201)

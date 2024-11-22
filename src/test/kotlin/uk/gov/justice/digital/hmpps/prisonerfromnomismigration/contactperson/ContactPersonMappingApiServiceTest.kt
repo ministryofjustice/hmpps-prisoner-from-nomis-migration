@@ -16,6 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonSimpleMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonContactMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto.MappingType.MIGRATED
@@ -130,6 +131,57 @@ class ContactPersonMappingApiServiceTest {
       )
 
       assertThat(apiService.getByNomisContactIdOrNull(nomisContactId = 1234567))
+    }
+  }
+
+  @Nested
+  inner class GetByNomisAddressIdOrNull {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubGetByNomisAddressIdOrNull(nomisAddressId = 1234567)
+
+      apiService.getByNomisAddressIdOrNull(nomisAddressId = 1234567)
+
+      mockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass NOMIS id to service`() = runTest {
+      mockServer.stubGetByNomisAddressIdOrNull(nomisAddressId = 1234567)
+
+      apiService.getByNomisAddressIdOrNull(nomisAddressId = 1234567)
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/mapping/contact-person/address/nomis-address-id/1234567")),
+      )
+    }
+
+    @Test
+    fun `will return dpsId when mapping exists`() = runTest {
+      mockServer.stubGetByNomisAddressIdOrNull(
+        nomisAddressId = 1234567,
+        mapping = PersonAddressMappingDto(
+          dpsId = "7654321",
+          nomisId = 1234567,
+          mappingType = PersonAddressMappingDto.MappingType.MIGRATED,
+        ),
+      )
+
+      val mapping = apiService.getByNomisAddressIdOrNull(nomisAddressId = 1234567)
+
+      assertThat(mapping?.dpsId).isEqualTo("7654321")
+    }
+
+    @Test
+    fun `will return null if mapping does not exist`() = runTest {
+      mockServer.stubGetByNomisAddressIdOrNull(
+        nomisAddressId = 1234567,
+        mapping = null,
+      )
+
+      assertThat(apiService.getByNomisAddressIdOrNull(nomisAddressId = 1234567))
     }
   }
 
