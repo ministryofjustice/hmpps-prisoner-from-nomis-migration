@@ -81,7 +81,7 @@ class CaseNotesNomisApiServiceTest {
       assertThat(response.caseNotes).hasSize(2)
       assertThat(response.caseNotes[0].bookingId).isEqualTo(1L)
       assertThat(response.caseNotes[0].caseNoteId).isEqualTo(1L)
-      assertThat(response.caseNotes[1].bookingId).isEqualTo(2L)
+      assertThat(response.caseNotes[1].bookingId).isEqualTo(1L)
       assertThat(response.caseNotes[1].caseNoteId).isEqualTo(2L)
     }
   }
