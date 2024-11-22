@@ -42,39 +42,47 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
-  suspend fun createMappingsForMigration(mappings: ContactPersonMappingsDto): CreateMappingResult<PersonMappingDto> =
-    webClient.post()
-      .uri("/mapping/contact-person/migrate")
-      .bodyValue(mappings)
-      .retrieve()
-      .bodyToMono(Unit::class.java)
-      .map { CreateMappingResult<PersonMappingDto>() }
-      .onErrorResume(WebClientResponseException.Conflict::class.java) {
-        Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<PersonMappingDto>>() {})))
-      }
-      .awaitFirstOrDefault(CreateMappingResult())
+  suspend fun createMappingsForMigration(mappings: ContactPersonMappingsDto): CreateMappingResult<PersonMappingDto> = webClient.post()
+    .uri("/mapping/contact-person/migrate")
+    .bodyValue(mappings)
+    .retrieve()
+    .bodyToMono(Unit::class.java)
+    .map { CreateMappingResult<PersonMappingDto>() }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<PersonMappingDto>>() {})))
+    }
+    .awaitFirstOrDefault(CreateMappingResult())
 
-  suspend fun createPersonMapping(mappings: PersonMappingDto): CreateMappingResult<PersonMappingDto> =
-    webClient.post()
-      .uri("/mapping/contact-person/person")
-      .bodyValue(mappings)
-      .retrieve()
-      .bodyToMono(Unit::class.java)
-      .map { CreateMappingResult<PersonMappingDto>() }
-      .onErrorResume(WebClientResponseException.Conflict::class.java) {
-        Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<PersonMappingDto>>() {})))
-      }
-      .awaitFirstOrDefault(CreateMappingResult())
+  suspend fun createPersonMapping(mappings: PersonMappingDto): CreateMappingResult<PersonMappingDto> = webClient.post()
+    .uri("/mapping/contact-person/person")
+    .bodyValue(mappings)
+    .retrieve()
+    .bodyToMono(Unit::class.java)
+    .map { CreateMappingResult<PersonMappingDto>() }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<PersonMappingDto>>() {})))
+    }
+    .awaitFirstOrDefault(CreateMappingResult())
 
-  suspend fun createContactMapping(mappings: PersonContactMappingDto): CreateMappingResult<PersonContactMappingDto> =
-    webClient.post()
-      .uri("/mapping/contact-person/contact")
-      .bodyValue(mappings)
-      .retrieve()
-      .bodyToMono(Unit::class.java)
-      .map { CreateMappingResult<PersonContactMappingDto>() }
-      .onErrorResume(WebClientResponseException.Conflict::class.java) {
-        Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<PersonContactMappingDto>>() {})))
-      }
-      .awaitFirstOrDefault(CreateMappingResult())
+  suspend fun createContactMapping(mappings: PersonContactMappingDto): CreateMappingResult<PersonContactMappingDto> = webClient.post()
+    .uri("/mapping/contact-person/contact")
+    .bodyValue(mappings)
+    .retrieve()
+    .bodyToMono(Unit::class.java)
+    .map { CreateMappingResult<PersonContactMappingDto>() }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<PersonContactMappingDto>>() {})))
+    }
+    .awaitFirstOrDefault(CreateMappingResult())
+
+  suspend fun createAddressMapping(mappings: PersonAddressMappingDto): CreateMappingResult<PersonAddressMappingDto> = webClient.post()
+    .uri("/mapping/contact-person/address")
+    .bodyValue(mappings)
+    .retrieve()
+    .bodyToMono(Unit::class.java)
+    .map { CreateMappingResult<PersonAddressMappingDto>() }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<PersonAddressMappingDto>>() {})))
+    }
+    .awaitFirstOrDefault(CreateMappingResult())
 }

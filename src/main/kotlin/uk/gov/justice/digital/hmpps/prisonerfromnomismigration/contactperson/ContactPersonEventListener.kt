@@ -6,6 +6,7 @@ import io.awspring.cloud.sqs.annotation.SqsListener
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_ADDRESS_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_CONTACT_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PERSON_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
@@ -66,13 +67,19 @@ class ContactPersonEventListener(
           }
         }
 
-        RETRY_SYNCHRONISATION_PERSON_MAPPING.name -> service.retryCreatePersonMapping(sqsMessage.Message.fromJson())
-        RETRY_SYNCHRONISATION_CONTACT_MAPPING.name -> service.retryCreateContactMapping(sqsMessage.Message.fromJson())
+        else -> retryMapping(sqsMessage.Type, sqsMessage.Message)
       }
     }
   }
-  private inline fun <reified T> String.fromJson(): T =
-    objectMapper.readValue(this)
+  private inline fun <reified T> String.fromJson(): T = objectMapper.readValue(this)
+
+  private suspend fun retryMapping(mappingName: String, message: String) {
+    when (ContactPersonSynchronisationMessageType.valueOf(mappingName)) {
+      RETRY_SYNCHRONISATION_PERSON_MAPPING -> service.retryCreatePersonMapping(message.fromJson())
+      RETRY_SYNCHRONISATION_CONTACT_MAPPING -> service.retryCreateContactMapping(message.fromJson())
+      RETRY_SYNCHRONISATION_ADDRESS_MAPPING -> service.retryCreateAddressMapping(message.fromJson())
+    }
+  }
 }
 
 interface EventAudited {
@@ -140,4 +147,5 @@ data class PersonIdentifierEvent(
 enum class ContactPersonSynchronisationMessageType {
   RETRY_SYNCHRONISATION_PERSON_MAPPING,
   RETRY_SYNCHRONISATION_CONTACT_MAPPING,
+  RETRY_SYNCHRONISATION_ADDRESS_MAPPING,
 }
