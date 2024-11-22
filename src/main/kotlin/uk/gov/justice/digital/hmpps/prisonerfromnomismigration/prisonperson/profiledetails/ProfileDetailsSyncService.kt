@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.pro
 import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.ProfileDetailsChangedEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.atPrisonPersonZone
@@ -18,13 +19,10 @@ class ProfileDetailsSyncService(
   private val telemetryClient: TelemetryClient,
 ) {
 
-  private fun String.isPhysicalAttributesProfileType() =
-    listOf("BUILD", "FACE", "L_EYE_C", "R_EYE_C", "HAIR", "FACIAL_HAIR", "SHOESIZE").contains(this)
-
   suspend fun profileDetailsChanged(event: ProfileDetailsChangedEvent) {
     val profileType = event.profileType
     when {
-      profileType.isPhysicalAttributesProfileType() -> profileDetailsPhysicalAttributesChanged(event)
+      profileType.isPhysicalAttributesProfileType() -> profileDetailsPhysicalAttributesChangedEvent(event)
       else -> {
         telemetryClient.trackEvent(
           "profile-details-synchronisation-ignored",
@@ -39,10 +37,19 @@ class ProfileDetailsSyncService(
     }
   }
 
-  suspend fun profileDetailsPhysicalAttributesChanged(event: ProfileDetailsChangedEvent) {
-    val profileType = event.profileType
-    val offenderNo = event.offenderIdDisplay
-    val bookingId = event.bookingId
+  suspend fun profileDetailsPhysicalAttributesChangedEvent(event: ProfileDetailsChangedEvent) =
+    profileDetailsPhysicalAttributesChanged(
+      profileType = event.profileType,
+      offenderNo = event.offenderIdDisplay,
+      bookingId = event.bookingId,
+    )
+
+  suspend fun profileDetailsPhysicalAttributesChanged(
+    profileType: String,
+    offenderNo: String,
+    bookingId: Long,
+    nomisProfileDetails: PrisonerProfileDetailsResponse? = null,
+  ) {
     val telemetry = mutableMapOf(
       "offenderNo" to offenderNo,
       "bookingId" to bookingId.toString(),
@@ -50,7 +57,7 @@ class ProfileDetailsSyncService(
     )
 
     val dpsResponse = try {
-      val nomisResponse = nomisApiService.getProfileDetails(offenderNo)
+      val nomisResponse = nomisProfileDetails ?: nomisApiService.getProfileDetails(offenderNo)
 
       val booking = nomisResponse.bookings.find { it.bookingId == bookingId }
         ?: throw ProfileDetailsChangedException("Booking with requested bookingId not found")
@@ -121,3 +128,8 @@ class ProfileDetailsSyncService(
 }
 
 class ProfileDetailsChangedException(message: String) : IllegalArgumentException(message)
+
+internal fun String.isPhysicalAttributesProfileType() =
+  listOf("BUILD", "FACE", "L_EYE_C", "R_EYE_C", "HAIR", "FACIAL_HAIR", "SHOESIZE").contains(this)
+
+internal fun ProfileDetailsResponse.lastModifiedDateTime() = modifiedDateTime ?: createDateTime
