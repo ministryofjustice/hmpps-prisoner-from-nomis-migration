@@ -52,9 +52,13 @@ class PhysicalAttributesNomisApiMockServer(private val objectMapper: ObjectMappe
     ),
   )
 
-  fun stubGetPhysicalAttributes(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+  fun stubGetPhysicalAttributes(
+    offenderNo: String = "A1234AA",
+    status: HttpStatus,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
     nomisApi.stubFor(
-      get(urlPathMatching("/prisoners/\\w+/physical-attributes")).willReturn(
+      get(urlPathMatching("/prisoners/$offenderNo/physical-attributes")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())

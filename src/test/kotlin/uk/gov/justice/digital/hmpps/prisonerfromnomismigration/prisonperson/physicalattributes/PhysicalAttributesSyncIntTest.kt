@@ -426,7 +426,7 @@ class PhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `should put message on DLQ if NOMIS returns error`() = runTest {
-        nomisApi.stubGetPhysicalAttributes(NOT_FOUND)
+        nomisApi.stubGetPhysicalAttributes(status = NOT_FOUND)
 
         sendPhysicalAttributesChangedEvent()
 

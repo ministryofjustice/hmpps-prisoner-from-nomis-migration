@@ -73,7 +73,7 @@ class PhysicalAttributesNomisApiServiceTest {
 
     @Test
     fun `will throw error when bookings do not exist`() = runTest {
-      nomisApi.stubGetPhysicalAttributes(NOT_FOUND)
+      nomisApi.stubGetPhysicalAttributes(status = NOT_FOUND)
 
       assertThrows<WebClientResponseException.NotFound> {
         apiService.getPhysicalAttributes("A1234AA")
@@ -82,7 +82,7 @@ class PhysicalAttributesNomisApiServiceTest {
 
     @Test
     fun `will throw error when API returns an error`() = runTest {
-      nomisApi.stubGetPhysicalAttributes(INTERNAL_SERVER_ERROR)
+      nomisApi.stubGetPhysicalAttributes(status = INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.getPhysicalAttributes("A1234AA")

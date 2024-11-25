@@ -69,7 +69,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
-        dpsApi.stubSyncProfileDetailsPhysicalAttributes(dpsResponse())
+        dpsApi.stubSyncProfileDetailsPhysicalAttributes(response = dpsResponse())
 
         sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "SHOESIZE")
 
@@ -117,7 +117,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
-        dpsApi.stubSyncProfileDetailsPhysicalAttributes(dpsResponse())
+        dpsApi.stubSyncProfileDetailsPhysicalAttributes(response = dpsResponse())
 
         sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "SHOESIZE")
 
@@ -216,7 +216,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
-        dpsApi.stubSyncProfileDetailsPhysicalAttributes(dpsResponse())
+        dpsApi.stubSyncProfileDetailsPhysicalAttributes(response = dpsResponse())
 
         sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "SHOESIZE")
 
@@ -253,7 +253,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
-        dpsApi.stubSyncProfileDetailsPhysicalAttributes(dpsResponse())
+        dpsApi.stubSyncProfileDetailsPhysicalAttributes(response = dpsResponse())
 
         sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "SHOESIZE")
 
@@ -274,7 +274,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
     inner class Errors {
       @Test
       fun `should put message on DLQ if call to NOMIS fails`() = runTest {
-        nomisApi.stubGetProfileDetails(NOT_FOUND)
+        nomisApi.stubGetProfileDetails(status = NOT_FOUND)
 
         sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "SHOESIZE")
           .also { waitForDlqMessage() }
@@ -287,7 +287,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
       @Test
       fun `should put message on DLQ if call to DPS fails`() = runTest {
         nomisApi.stubGetProfileDetails("A1234AA", nomisResponse())
-        dpsApi.stubSyncProfileDetailsPhysicalAttributes(INTERNAL_SERVER_ERROR)
+        dpsApi.stubSyncProfileDetailsPhysicalAttributes(status = INTERNAL_SERVER_ERROR)
 
         sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "SHOESIZE")
           .also { waitForDlqMessage() }
@@ -352,7 +352,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
       @Test
       fun `should sync profile types we are interested in`() = runTest {
         nomisApi.stubGetProfileDetails("A1234AA", nomisResponse())
-        dpsApi.stubSyncProfileDetailsPhysicalAttributes(dpsResponse())
+        dpsApi.stubSyncProfileDetailsPhysicalAttributes(response = dpsResponse())
 
         sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "SHOESIZE")
 

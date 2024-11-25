@@ -111,7 +111,7 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will put message on DLQ if call to NOMIS fails`() {
         nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, firstOffenderNo = "A0001KT")
-        physicalAttributesNomisApi.stubGetPhysicalAttributes(INTERNAL_SERVER_ERROR)
+        physicalAttributesNomisApi.stubGetPhysicalAttributes("A0001KT", INTERNAL_SERVER_ERROR)
 
         migrationResult = webTestClient.performMigration()
 
@@ -259,7 +259,7 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will put message on DLQ if prisoner doesn't exist in NOMIS`() {
-        physicalAttributesNomisApi.stubGetPhysicalAttributes(NOT_FOUND)
+        physicalAttributesNomisApi.stubGetPhysicalAttributes(offenderNo, NOT_FOUND)
 
         migrationResult = webTestClient.performMigration(offenderNo)
 
