@@ -47,13 +47,15 @@ class CaseNotesNomisApiMockServer(private val objectMapper: ObjectMapper) {
 
   fun stubGetCaseNotesToMigrate(
     offenderNo: String,
+    currentCaseNoteStart: Long = 1,
     currentCaseNoteCount: Long = 1,
     auditModuleName: String = "OIDNOMIS",
     type: String = "GEN",
+    bookingId: Long = 1L,
     caseNote: CaseNoteResponse = CaseNoteResponse(
-      bookingId = 0,
+      bookingId = bookingId,
       caseNoteId = 0,
-      caseNoteText = "text",
+      caseNoteText = "will be overwritten below",
       caseNoteType = CodeDescription(type, "desc"),
       caseNoteSubType = CodeDescription("OUTCOME", "desc"),
       authorUsername = "me",
@@ -71,8 +73,25 @@ class CaseNotesNomisApiMockServer(private val objectMapper: ObjectMapper) {
     ),
   ) {
     val response = PrisonerCaseNotesResponse(
-      caseNotes = (1..currentCaseNoteCount).map { caseNote.copy(bookingId = it, caseNoteId = it) },
+      caseNotes = (0..currentCaseNoteCount - 1).map {
+        caseNote.copy(
+          caseNoteId = it + currentCaseNoteStart,
+          caseNoteText = "text $it",
+        )
+      },
     )
+    nomisApi.stubFor(
+      get(urlEqualTo("/prisoners/$offenderNo/casenotes")).willReturn(
+        okJson(objectMapper.writeValueAsString(response)),
+      ),
+    )
+  }
+
+  fun stubGetCaseNotesToMigrate(
+    offenderNo: String,
+    caseNotes: List<CaseNoteResponse>,
+  ) {
+    val response = PrisonerCaseNotesResponse(caseNotes = caseNotes)
     nomisApi.stubFor(
       get(urlEqualTo("/prisoners/$offenderNo/casenotes")).willReturn(
         okJson(objectMapper.writeValueAsString(response)),
