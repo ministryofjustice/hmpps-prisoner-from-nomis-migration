@@ -59,9 +59,13 @@ class ProfileDetailsNomisApiMockServer(private val objectMapper: ObjectMapper) {
     ),
   )
 
-  fun stubGetProfileDetails(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+  fun stubGetProfileDetails(
+    offenderNo: String = "A1234AA",
+    status: HttpStatus,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
     nomisApi.stubFor(
-      get(urlPathMatching("/prisoners/\\w+/profile-details")).willReturn(
+      get(urlPathMatching("/prisoners/$offenderNo/profile-details")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())

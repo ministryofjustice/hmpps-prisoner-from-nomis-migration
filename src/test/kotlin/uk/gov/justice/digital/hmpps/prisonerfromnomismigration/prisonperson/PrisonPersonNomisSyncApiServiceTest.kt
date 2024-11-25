@@ -47,7 +47,7 @@ class PrisonPersonNomisSyncApiServiceTest {
 
     @Test
     fun `will throw error when API returns an error`() = runTest {
-      nomisSyncApi.stubSyncPhysicalAttributes(BAD_GATEWAY)
+      nomisSyncApi.stubSyncPhysicalAttributes(status = BAD_GATEWAY)
 
       assertThrows<WebClientResponseException.BadGateway> {
         apiService.syncPhysicalAttributes("A1234AA")

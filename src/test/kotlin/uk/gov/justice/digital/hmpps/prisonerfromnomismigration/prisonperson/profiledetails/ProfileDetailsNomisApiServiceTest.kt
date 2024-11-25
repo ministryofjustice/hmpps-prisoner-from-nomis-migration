@@ -76,7 +76,7 @@ class ProfileDetailsNomisApiServiceTest {
 
     @Test
     fun `will throw error when bookings do not exist`() = runTest {
-      profileDetailsNomisApi.stubGetProfileDetails(NOT_FOUND)
+      profileDetailsNomisApi.stubGetProfileDetails(status = NOT_FOUND)
 
       assertThrows<WebClientResponseException.NotFound> {
         apiService.getProfileDetails(offenderNo = "A1234AA")
@@ -85,7 +85,7 @@ class ProfileDetailsNomisApiServiceTest {
 
     @Test
     fun `will throw error when API returns an error`() = runTest {
-      profileDetailsNomisApi.stubGetProfileDetails(INTERNAL_SERVER_ERROR)
+      profileDetailsNomisApi.stubGetProfileDetails(status = INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.getProfileDetails(offenderNo = "A1234AA")
