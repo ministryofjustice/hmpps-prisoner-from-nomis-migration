@@ -46,7 +46,7 @@ class PrisonPersonNomisSyncApiMockServer : WireMockServer(WIREMOCK_PORT) {
     private const val WIREMOCK_PORT = 8098
   }
 
-  fun stubSyncPhysicalAttributes(prisonerNumber: String) {
+  fun stubSyncPhysicalAttributes(prisonerNumber: String = "A1234AA") {
     stubFor(
       put(urlPathMatching("/prisonperson/$prisonerNumber/physical-attributes"))
         .withQueryParam("fields", havingExactly("HEIGHT", "WEIGHT", "BUILD", "FACE", "FACIAL_HAIR", "HAIR", "LEFT_EYE_COLOUR", "RIGHT_EYE_COLOUR", "SHOE_SIZE"))
@@ -58,9 +58,12 @@ class PrisonPersonNomisSyncApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubSyncPhysicalAttributes(status: HttpStatus) {
+  fun stubSyncPhysicalAttributes(
+    prisonerNumber: String = "A1234AA",
+    status: HttpStatus,
+  ) {
     stubFor(
-      put(urlPathMatching("/prisonperson/.*/physical-attributes"))
+      put(urlPathMatching("/prisonperson/$prisonerNumber/physical-attributes"))
         .withQueryParam("fields", havingExactly("HEIGHT", "WEIGHT", "BUILD", "FACE", "FACIAL_HAIR", "HAIR", "LEFT_EYE_COLOUR", "RIGHT_EYE_COLOUR", "SHOE_SIZE"))
         .willReturn(
           aResponse()

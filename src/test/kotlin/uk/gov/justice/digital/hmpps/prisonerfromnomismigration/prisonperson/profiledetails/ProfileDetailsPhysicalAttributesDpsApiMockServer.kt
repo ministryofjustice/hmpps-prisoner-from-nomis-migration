@@ -16,10 +16,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.mode
 class ProfileDetailsPhysicalAttributesDpsApiMockServer {
 
   fun stubSyncProfileDetailsPhysicalAttributes(
+    offenderNo: String = "A1234AA",
     response: ProfileDetailsPhysicalAttributesSyncResponse,
   ) {
     dpsPrisonPersonApi.stubFor(
-      put(urlPathMatching("/sync/prisoners/.*/profile-details-physical-attributes"))
+      put(urlPathMatching("/sync/prisoners/$offenderNo/profile-details-physical-attributes"))
         .willReturn(
           aResponse()
             .withStatus(200)
@@ -29,9 +30,13 @@ class ProfileDetailsPhysicalAttributesDpsApiMockServer {
     )
   }
 
-  fun stubSyncProfileDetailsPhysicalAttributes(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+  fun stubSyncProfileDetailsPhysicalAttributes(
+    offenderNo: String = "A1234AA",
+    status: HttpStatus,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
     dpsPrisonPersonApi.stubFor(
-      put(urlPathMatching("/sync/prisoners/.*/profile-details-physical-attributes"))
+      put(urlPathMatching("/sync/prisoners/$offenderNo/profile-details-physical-attributes"))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
