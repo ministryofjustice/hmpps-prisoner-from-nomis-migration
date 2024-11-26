@@ -22,7 +22,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 
 @Component
 class CaseNotesMappingApiMockServer(private val objectMapper: ObjectMapper) {
@@ -33,7 +33,7 @@ class CaseNotesMappingApiMockServer(private val objectMapper: ObjectMapper) {
       dpsCaseNoteId = UUID.randomUUID().toString(),
       nomisCaseNoteId = 1234567,
       offenderNo = "A1234KT",
-      mappingType = CaseNoteMappingDto.MappingType.MIGRATED,
+      mappingType = MIGRATED,
     ),
   ) {
     mappingApi.stubFor(
@@ -114,10 +114,6 @@ class CaseNotesMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubPostBatchMappingsFailureFollowedBySuccess() {
-    mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/casenotes/batch")
-  }
-
   fun stubMigrationCount(recordsMigrated: Long) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/casenotes/migration-id/.*/grouped-by-booking")).willReturn(
@@ -155,15 +151,20 @@ class CaseNotesMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubPostMappingsFailureFollowedBySuccess(offenderNo: String) =
-    mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/casenotes/batch")
-
   fun stubDeleteMapping() {
     mappingApi.stubFor(
       delete(urlPathMatching("/mapping/casenotes/dps-casenote-id/.*")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.NO_CONTENT.value()),
+      ),
+    )
+  }
+
+  fun stubGetByDpsId(dpsId: String, mappings: List<CaseNoteMappingDto>) {
+    mappingApi.stubFor(
+      get("/mapping/casenotes/dps-casenote-id/$dpsId/all").willReturn(
+        okJson(objectMapper.writeValueAsString(mappings)),
       ),
     )
   }

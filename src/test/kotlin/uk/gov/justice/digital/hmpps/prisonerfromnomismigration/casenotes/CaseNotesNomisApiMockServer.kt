@@ -3,8 +3,11 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.okJson
+import com.github.tomakehurst.wiremock.client.WireMock.put
+import com.github.tomakehurst.wiremock.client.WireMock.status
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
+import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse.SourceSystem
@@ -96,6 +99,15 @@ class CaseNotesNomisApiMockServer(private val objectMapper: ObjectMapper) {
       get(urlEqualTo("/prisoners/$offenderNo/casenotes")).willReturn(
         okJson(objectMapper.writeValueAsString(response)),
       ),
+    )
+  }
+
+  fun stubPutCaseNote(
+    caseNoteId: Long,
+    status: HttpStatus = HttpStatus.OK,
+  ) {
+    nomisApi.stubFor(
+      put(urlEqualTo("/casenotes/$caseNoteId")).willReturn(status(status.value())),
     )
   }
 

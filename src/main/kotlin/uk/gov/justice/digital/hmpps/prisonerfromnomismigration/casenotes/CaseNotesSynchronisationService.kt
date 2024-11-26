@@ -17,6 +17,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Synchro
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.UpdateAmendment
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.UpdateCaseNoteRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.CASENOTES
@@ -71,36 +73,80 @@ class CaseNotesSynchronisationService(
       telemetryClient.trackEvent("casenotes-synchronisation-updated-skipped", event.toTelemetryProperties())
       return
     }
-    val mapping =
-      try {
-        caseNotesMappingService.getMappingGivenNomisIdOrNull(event.caseNoteId)
-          ?.also { mapping ->
-            caseNotesService.upsertCaseNote(
-              nomisCaseNote.toDPSSyncCaseNote(
-                event.offenderIdDisplay,
-                UUID.fromString(mapping.dpsCaseNoteId),
-              ),
-            )
-            telemetryClient.trackEvent(
-              "casenotes-synchronisation-updated-success",
-              event.toTelemetryProperties(mapping.dpsCaseNoteId),
-            )
-          }
-      } catch (e: Exception) {
+
+    try {
+      updateDps(event, nomisCaseNote)
+        ?.also { mapping ->
+          updateRelatedNomisCaseNotes(mapping, event, nomisCaseNote)
+          // Note that if this fails, the queue retry will update DPS again as well as retrying the related Nomis CNs,
+          // but this is idempotent so is ok
+
+          telemetryClient.trackEvent(
+            "casenotes-synchronisation-updated-success",
+            event.toTelemetryProperties(mapping.dpsCaseNoteId),
+          )
+        }
+    } catch (e: Exception) {
+      telemetryClient.trackEvent(
+        "casenotes-synchronisation-updated-failed",
+        event.toTelemetryProperties() + mapOf("error" to (e.message ?: "unknown error")),
+      )
+      throw e
+    }
+      ?: run {
         telemetryClient.trackEvent(
-          "casenotes-synchronisation-updated-failed",
-          event.toTelemetryProperties() + mapOf("error" to (e.message ?: "unknown error")),
+          "casenotes-synchronisation-updated-mapping-failed",
+          event.toTelemetryProperties(),
         )
-        throw e
+        throw IllegalStateException("NO mapping found updating $nomisCaseNote")
+      }
+  }
+
+  private suspend fun updateDps(
+    event: CaseNotesEvent,
+    nomisCaseNote: CaseNoteResponse,
+  ): CaseNoteMappingDto? =
+    caseNotesMappingService.getMappingGivenNomisIdOrNull(event.caseNoteId)
+      ?.also { mapping ->
+        caseNotesService.upsertCaseNote(
+          nomisCaseNote.toDPSSyncCaseNote(
+            event.offenderIdDisplay,
+            UUID.fromString(mapping.dpsCaseNoteId),
+          ),
+        )
       }
 
-    if (mapping == null) {
-      telemetryClient.trackEvent(
-        "casenotes-synchronisation-updated-mapping-failed",
-        event.toTelemetryProperties(),
-      )
-      throw IllegalStateException("NO mapping found updating $nomisCaseNote")
-    }
+  private suspend fun updateRelatedNomisCaseNotes(
+    mapping: CaseNoteMappingDto,
+    event: CaseNotesEvent,
+    nomisCaseNote: CaseNoteResponse,
+  ) {
+    caseNotesMappingService.getByDpsId(mapping.dpsCaseNoteId)
+      .filter { it.nomisCaseNoteId != event.caseNoteId }
+      .map { otherNomisCaseNote ->
+        nomisApiService.updateCaseNote(
+          otherNomisCaseNote.nomisCaseNoteId,
+          UpdateCaseNoteRequest(
+            text = nomisCaseNote.caseNoteText,
+            amendments = nomisCaseNote.amendments.map {
+              UpdateAmendment(
+                text = it.text,
+                authorUsername = it.authorUsername,
+                createdDateTime = it.createdDateTime,
+              )
+            },
+          ),
+        )
+        telemetryClient.trackEvent(
+          "casenotes-synchronisation-updated-related-success",
+          mapOf(
+            "nomisCaseNoteId" to otherNomisCaseNote.nomisCaseNoteId.toString(),
+            "offenderNo" to event.offenderIdDisplay,
+            "bookingId" to otherNomisCaseNote.nomisBookingId.toString(),
+            "dpsCaseNoteId" to mapping.dpsCaseNoteId,
+          ),
+        )
+      }
   }
 
   suspend fun caseNoteDeleted(event: CaseNotesEvent) {
