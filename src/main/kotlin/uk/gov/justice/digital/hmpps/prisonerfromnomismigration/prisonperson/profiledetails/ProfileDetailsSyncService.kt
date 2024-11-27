@@ -49,6 +49,7 @@ class ProfileDetailsSyncService(
     offenderNo: String,
     bookingId: Long,
     nomisProfileDetails: PrisonerProfileDetailsResponse? = null,
+    forceSync: Boolean = false,
   ) {
     val telemetry = mutableMapOf(
       "offenderNo" to offenderNo,
@@ -64,12 +65,14 @@ class ProfileDetailsSyncService(
       val profileDetails = booking.profileDetails.firstOrNull { it.type == profileType }
         ?: throw ProfileDetailsChangedException("Profile details for requested profileType not found")
 
-      getIgnoreReason(nomisResponse.bookings.size, profileDetails)
-        ?.let { ignoreReason ->
-          telemetry["reason"] = ignoreReason
-          telemetryClient.trackEvent("profile-details-physical-attributes-synchronisation-ignored", telemetry)
-          return
-        }
+      if (!forceSync) {
+        getIgnoreReason(nomisResponse.bookings.size, profileDetails)
+          ?.let { ignoreReason ->
+            telemetry["reason"] = ignoreReason
+            telemetryClient.trackEvent("profile-details-physical-attributes-synchronisation-ignored", telemetry)
+            return
+          }
+      }
 
       dpsApiService.syncProfileDetailsPhysicalAttributes(
         prisonerNumber = offenderNo,

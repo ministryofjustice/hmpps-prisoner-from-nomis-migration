@@ -83,7 +83,12 @@ class PrisonPersonMoveBookingService(
         ?.takeIf { it.latestBooking }
         ?.also { latestBooking ->
           if (latestBooking.findLastModifiedPhysicalAttributes().lastModifiedDateTime() > latestBooking.startDateTime) {
-            physicalAttributesSyncService.physicalAttributesChanged(toOffenderNo, latestBooking.bookingId, nomisResponse)
+            physicalAttributesSyncService.physicalAttributesChanged(
+              offenderNo = toOffenderNo,
+              bookingId = latestBooking.bookingId,
+              nomisPhysicalAttributes = nomisResponse,
+              forceSync = true,
+            )
             telemetry += "syncToOffenderDps_HEIGHT" to "true"
             telemetry += "syncToOffenderDps_WEIGHT" to "true"
           }
@@ -100,10 +105,11 @@ class PrisonPersonMoveBookingService(
             .forEach { profileDetail ->
               if (profileDetail.lastModifiedDateTime() > latestBooking.startDateTime) {
                 profileDetailsSyncService.profileDetailsPhysicalAttributesChanged(
-                  profileDetail.type,
-                  toOffenderNo,
-                  latestBooking.bookingId,
-                  nomisResponse,
+                  profileType = profileDetail.type,
+                  offenderNo = toOffenderNo,
+                  bookingId = latestBooking.bookingId,
+                  nomisProfileDetails = nomisResponse,
+                  forceSync = true,
                 )
                 telemetry += "syncToOffenderDps_${profileDetail.type}" to "true"
               }
