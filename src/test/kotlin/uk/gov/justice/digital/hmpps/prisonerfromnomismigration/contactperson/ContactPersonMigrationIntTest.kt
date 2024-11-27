@@ -730,7 +730,8 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(comment).isEqualTo("Banned for life!")
           assertThat(effectiveDate).isEqualTo(LocalDate.parse("2023-01-01"))
           assertThat(expiryDate).isEqualTo(LocalDate.parse("2026-01-01"))
-          assertThat(staffUsername).isEqualTo("ADJUA.SMITH")
+          // DPS Might put this back in again
+//          assertThat(staffUsername).isEqualTo("ADJUA.SMITH")
           assertThat(createUsername).isEqualTo("ADJUA.BEEK")
           assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:23"))
           assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
@@ -742,7 +743,8 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(comment).isNull()
           assertThat(effectiveDate).isEqualTo(LocalDate.parse("2023-01-01"))
           assertThat(expiryDate).isNull()
-          assertThat(staffUsername).isEqualTo("ADJUA.SMITH")
+          // DPS Might put this back in again
+//          assertThat(staffUsername).isEqualTo("ADJUA.SMITH")
           assertThat(createUsername).isEqualTo("ADJUA.BEEK")
           assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:23"))
           assertThat(modifyUsername).isNull()
@@ -803,7 +805,8 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(comment).isEqualTo("Banned for life!")
           assertThat(startDate).isEqualTo(LocalDate.parse("2023-01-01"))
           assertThat(expiryDate).isEqualTo(LocalDate.parse("2026-01-01"))
-          assertThat(staffUsername).isEqualTo("ADJUA.SMITH")
+          // DPS Might put this back in again
+//          assertThat(staffUsername).isEqualTo("ADJUA.SMITH")
           assertThat(createUsername).isEqualTo("ADJUA.BEEK")
           assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:23"))
           assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
@@ -1492,25 +1495,23 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
     }
   }
 
-  private fun performMigration(body: ContactPersonMigrationFilter = ContactPersonMigrationFilter()): MigrationResult =
-    webTestClient.post().uri("/migrate/contactperson")
-      .headers(setAuthorisation(roles = listOf("MIGRATE_CONTACTPERSON")))
-      .contentType(MediaType.APPLICATION_JSON)
-      .bodyValue(body)
-      .exchange()
-      .expectStatus().isAccepted.returnResult<MigrationResult>().responseBody.blockFirst()!!
-      .also {
-        waitUntilCompleted()
-      }
-
-  private fun waitUntilCompleted() =
-    await atMost Duration.ofSeconds(60) untilAsserted {
-      verify(telemetryClient).trackEvent(
-        eq("contactperson-migration-completed"),
-        any(),
-        isNull(),
-      )
+  private fun performMigration(body: ContactPersonMigrationFilter = ContactPersonMigrationFilter()): MigrationResult = webTestClient.post().uri("/migrate/contactperson")
+    .headers(setAuthorisation(roles = listOf("MIGRATE_CONTACTPERSON")))
+    .contentType(MediaType.APPLICATION_JSON)
+    .bodyValue(body)
+    .exchange()
+    .expectStatus().isAccepted.returnResult<MigrationResult>().responseBody.blockFirst()!!
+    .also {
+      waitUntilCompleted()
     }
+
+  private fun waitUntilCompleted() = await atMost Duration.ofSeconds(60) untilAsserted {
+    verify(telemetryClient).trackEvent(
+      eq("contactperson-migration-completed"),
+      any(),
+      isNull(),
+    )
+  }
 
   private fun stubMigratePersons(vararg nomisPersonContacts: ContactPerson) {
     dpsApiMock.resetAll()

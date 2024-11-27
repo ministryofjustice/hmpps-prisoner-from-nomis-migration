@@ -88,10 +88,9 @@ class ContactPersonMigrationService(
     }
   }
 
-  override suspend fun retryCreateMapping(context: MigrationContext<ContactPersonMappingsDto>) =
-    createMappingOrOnFailureDo(context, context.body) {
-      throw it
-    }
+  override suspend fun retryCreateMapping(context: MigrationContext<ContactPersonMappingsDto>) = createMappingOrOnFailureDo(context, context.body) {
+    throw it
+  }
 
   suspend fun createMappingOrOnFailureDo(
     context: MigrationContext<*>,
@@ -275,7 +274,8 @@ fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateC
           createUsername = restriction.audit.createUsername,
           modifyDateTime = restriction.audit.modifyDatetime.toDateTime(),
           modifyUsername = restriction.audit.modifyUserId,
-          staffUsername = restriction.enteredStaff.username,
+          // DPS Might put this back in again
+          // staffUsername = restriction.enteredStaff.username,
         )
       },
     )
@@ -287,7 +287,8 @@ fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateC
       effectiveDate = it.effectiveDate,
       expiryDate = it.expiryDate,
       comment = it.comment,
-      staffUsername = it.enteredStaff.username,
+      // DPS Might put this back in again
+      // staffUsername = it.enteredStaff.username,
       createDateTime = it.audit.createDatetime.toDateTime(),
       createUsername = it.audit.createUsername,
       modifyDateTime = it.audit.modifyDatetime.toDateTime(),
