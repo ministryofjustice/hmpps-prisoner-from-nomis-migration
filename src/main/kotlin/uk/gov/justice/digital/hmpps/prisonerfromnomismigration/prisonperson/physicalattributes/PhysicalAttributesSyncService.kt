@@ -24,6 +24,7 @@ class PhysicalAttributesSyncService(
     offenderNo: String,
     bookingId: Long,
     nomisPhysicalAttributes: PrisonerPhysicalAttributesResponse? = null,
+    forceSync: Boolean = false,
   ) {
     val telemetry = mutableMapOf(
       "offenderNo" to offenderNo,
@@ -38,10 +39,12 @@ class PhysicalAttributesSyncService(
       val physicalAttributes = booking.findLastModifiedPhysicalAttributes()
       telemetry["attributeSequence"] = physicalAttributes.attributeSequence.toString()
 
-      getIgnoreReason(nomisResponse, physicalAttributes)?.let { ignoreReason ->
-        telemetry["reason"] = ignoreReason
-        telemetryClient.trackEvent("physical-attributes-synchronisation-ignored", telemetry)
-        return
+      if (!forceSync) {
+        getIgnoreReason(nomisResponse, physicalAttributes)?.let { ignoreReason ->
+          telemetry["reason"] = ignoreReason
+          telemetryClient.trackEvent("physical-attributes-synchronisation-ignored", telemetry)
+          return
+        }
       }
 
       dpsApiService.syncPhysicalAttributes(

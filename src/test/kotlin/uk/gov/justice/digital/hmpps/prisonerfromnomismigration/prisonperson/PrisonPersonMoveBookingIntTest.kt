@@ -189,6 +189,56 @@ class PrisonPersonMoveBookingIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
+      fun `offender physical attributes re-entered in DPS`() {
+        // the moved booking has height/weight re-entered
+        stubGetPhysicalAttributes(fromOffenderNo, nomisPhysicalAttributesFromOffender(fromOffenderNo))
+        stubGetPhysicalAttributes(toOffenderNo, nomisPhysicalAttributesToOffenderRemeasured(toOffenderNo, movedBookingId, updatedInNomis = false))
+        physicalAttributesDpsApi.stubSyncPhysicalAttributes(syncPhysicalAttributesResponse())
+        nomisSyncApi.stubSyncPhysicalAttributes(toOffenderNo)
+
+        // process event
+        sendBookingMovedEvent().also {
+          waitForAnyProcessingToComplete("prisonperson-booking-moved")
+        }
+
+        // the from offender is sync'd from NOMIS to DPS
+        physicalAttributesDpsApi.verify(
+          putRequestedFor(urlPathEqualTo("/sync/prisoners/$fromOffenderNo/physical-attributes")),
+        )
+
+        // the to offender IS sync'd from NOMIS to DPS
+        physicalAttributesDpsApi.verify(
+          count = 1,
+          putRequestedFor(urlPathEqualTo("/sync/prisoners/$toOffenderNo/physical-attributes")),
+        )
+
+        // the to offender is also sync'd back from DPS to NOMIS
+        nomisSyncApi.verify(
+          putRequestedFor(urlPathEqualTo("/prisonperson/$toOffenderNo/physical-attributes")),
+        )
+
+        // telemetry
+        verify(telemetryClient).trackEvent(
+          eq("prisonperson-booking-moved"),
+          check {
+            assertThat(it).containsExactlyInAnyOrderEntriesOf(
+              mapOf(
+                "bookingId" to movedBookingId.toString(),
+                "toOffenderNo" to toOffenderNo,
+                "fromOffenderNo" to fromOffenderNo,
+                "syncFromOffenderDps_HEIGHT" to "true",
+                "syncFromOffenderDps_WEIGHT" to "true",
+                "syncToOffenderDps_HEIGHT" to "true",
+                "syncToOffenderDps_WEIGHT" to "true",
+                "syncToOffenderNomis" to "true",
+              ),
+            )
+          },
+          isNull(),
+        )
+      }
+
+      @Test
       fun `offender profile details not re-entered in NOMIS`() {
         // the moved booking has BUILD as copied from the booking of the from offender
         stubGetProfileDetails(fromOffenderNo, nomisProfileDetailsFromOffender(fromOffenderNo))
@@ -242,6 +292,57 @@ class PrisonPersonMoveBookingIntTest : SqsIntegrationTestBase() {
         // the moved booking has BUILD re-entered in NOMIS
         stubGetProfileDetails(fromOffenderNo, nomisProfileDetailsFromOffender(fromOffenderNo))
         stubGetProfileDetails(toOffenderNo, nomisProfileDetailsToOffenderReentered(toOffenderNo, movedBookingId))
+        profileDetailsDpsApi.stubSyncProfileDetailsPhysicalAttributes(fromOffenderNo, syncProfileDetailsResponse())
+        profileDetailsDpsApi.stubSyncProfileDetailsPhysicalAttributes(toOffenderNo, syncProfileDetailsResponse())
+        nomisSyncApi.stubSyncPhysicalAttributes(toOffenderNo)
+
+        // process event
+        sendBookingMovedEvent().also {
+          waitForAnyProcessingToComplete("prisonperson-booking-moved")
+        }
+
+        // the from offender is sync'd from NOMIS to DPS
+        physicalAttributesDpsApi.verify(
+          putRequestedFor(urlPathEqualTo("/sync/prisoners/$fromOffenderNo/profile-details-physical-attributes"))
+            .withRequestBodyJsonPath("build.value", "MEDIUM"),
+        )
+
+        // the to offender IS sync'd from NOMIS to DPS
+        physicalAttributesDpsApi.verify(
+          count = 1,
+          putRequestedFor(urlPathEqualTo("/sync/prisoners/$toOffenderNo/profile-details-physical-attributes"))
+            .withRequestBodyJsonPath("build.value", "LARGE"),
+        )
+
+        // the to offender is also sync'd back from DPS to NOMIS
+        nomisSyncApi.verify(
+          putRequestedFor(urlPathEqualTo("/prisonperson/$toOffenderNo/physical-attributes")),
+        )
+
+        // telemetry
+        verify(telemetryClient).trackEvent(
+          eq("prisonperson-booking-moved"),
+          check {
+            assertThat(it).containsExactlyInAnyOrderEntriesOf(
+              mapOf(
+                "bookingId" to movedBookingId.toString(),
+                "toOffenderNo" to toOffenderNo,
+                "fromOffenderNo" to fromOffenderNo,
+                "syncFromOffenderDps_BUILD" to "true",
+                "syncToOffenderDps_BUILD" to "true",
+                "syncToOffenderNomis" to "true",
+              ),
+            )
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `offender profile details re-entered in DPS`() {
+        // the moved booking has BUILD re-entered in NOMIS
+        stubGetProfileDetails(fromOffenderNo, nomisProfileDetailsFromOffender(fromOffenderNo))
+        stubGetProfileDetails(toOffenderNo, nomisProfileDetailsToOffenderReentered(toOffenderNo, movedBookingId, updatedInNomis = false))
         profileDetailsDpsApi.stubSyncProfileDetailsPhysicalAttributes(fromOffenderNo, syncProfileDetailsResponse())
         profileDetailsDpsApi.stubSyncProfileDetailsPhysicalAttributes(toOffenderNo, syncProfileDetailsResponse())
         nomisSyncApi.stubSyncPhysicalAttributes(toOffenderNo)
@@ -642,6 +743,7 @@ fun nomisPhysicalAttributesToOffenderNotRemeasured(
 fun nomisPhysicalAttributesToOffenderRemeasured(
   offenderNo: String,
   bookingId: Long,
+  updatedInNomis: Boolean = true,
   bookingStartTime: LocalDateTime = LocalDateTime.now().minusDays(1),
 ) =
   prisonerPhysicalAttributes(
@@ -672,6 +774,7 @@ fun nomisPhysicalAttributesToOffenderRemeasured(
             weight = 90,
             createDateTime = bookingStartTime.minusDays(7),
             modifiedDateTime = bookingStartTime.plusDays(1),
+            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
           ),
         ),
       ),
@@ -683,6 +786,7 @@ fun physicalAttributes(
   weight: Int,
   createDateTime: LocalDateTime,
   modifiedDateTime: LocalDateTime?,
+  auditModuleName: String = "A_NOMIS_USER",
 ) = PhysicalAttributesResponse(
   attributeSequence = 1,
   heightCentimetres = height,
@@ -691,7 +795,7 @@ fun physicalAttributes(
   createDateTime = "$createDateTime",
   modifiedBy = modifiedDateTime?.let { "ANOTHER_USER" },
   modifiedDateTime = modifiedDateTime?.toString(),
-  auditModuleName = "MODULE",
+  auditModuleName = auditModuleName,
 )
 
 fun bookingPhysicalAttributes(
@@ -777,6 +881,7 @@ fun nomisProfileDetailsToOffenderNotReentered(
 fun nomisProfileDetailsToOffenderReentered(
   offenderNo: String,
   bookingId: Long,
+  updatedInNomis: Boolean = true,
   bookingStartTime: LocalDateTime = LocalDateTime.now().minusDays(1),
 ) =
   prisonerProfileDetails(
@@ -796,7 +901,7 @@ fun nomisProfileDetailsToOffenderReentered(
           ),
         ),
       ),
-      // The to offender's new booking has build changed in NOMIS hence modified time after booking start time
+      // The to offender's new booking has build changed hence modified time after booking start time
       bookingProfileDetails(
         bookingId = bookingId,
         activeBooking = true,
@@ -807,6 +912,7 @@ fun nomisProfileDetailsToOffenderReentered(
             code = "LARGE",
             createDateTime = bookingStartTime.minusDays(7),
             modifiedDateTime = bookingStartTime.plusDays(1),
+            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
           ),
         ),
       ),
@@ -851,6 +957,7 @@ fun nomisProfileDetailsFromOffenderSomeReentered(
 fun nomisProfileDetailsToOffenderSomeReentered(
   offenderNo: String,
   bookingId: Long,
+  updatedInNomis: Boolean = true,
   bookingStartTime: LocalDateTime = LocalDateTime.now().minusDays(1),
 ) =
   prisonerProfileDetails(
@@ -893,12 +1000,14 @@ fun nomisProfileDetailsToOffenderSomeReentered(
             code = "LARGE",
             createDateTime = bookingStartTime.minusDays(7),
             modifiedDateTime = bookingStartTime.plusDays(1),
+            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
           ),
           profileDetails(
             type = "FACE",
             code = "ROUND",
             createDateTime = bookingStartTime.minusDays(7),
             modifiedDateTime = bookingStartTime.plusDays(1),
+            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
           ),
           profileDetails(
             type = "SHOESIZE",
@@ -916,6 +1025,7 @@ private fun profileDetails(
   code: String,
   createDateTime: LocalDateTime,
   modifiedDateTime: LocalDateTime?,
+  auditModuleName: String = "A_NOMIS_USER",
 ) = ProfileDetailsResponse(
   type = type,
   code = code,
@@ -923,7 +1033,7 @@ private fun profileDetails(
   createdBy = "A_USER",
   modifiedDateTime = modifiedDateTime?.toString(),
   modifiedBy = modifiedDateTime?.let { "ANOTHER_USER" },
-  auditModuleName = "MODULE",
+  auditModuleName = auditModuleName,
 )
 
 private fun bookingProfileDetails(
