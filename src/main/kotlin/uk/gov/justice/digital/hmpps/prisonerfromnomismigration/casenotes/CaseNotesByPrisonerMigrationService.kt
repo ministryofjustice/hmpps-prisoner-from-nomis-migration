@@ -84,9 +84,12 @@ class CaseNotesByPrisonerMigrationService(
             isMergeDuplicate(it, mergeCopiedCaseNote)
           }
           if (originals.isEmpty()) {
-            log.warn("No duplicates found for offenderNo: $offenderNo, merged case note ${mergeCopiedCaseNote.caseNoteId}")
+            log.warn("No original found for offenderNo: $offenderNo, merged case note ${mergeCopiedCaseNote.caseNoteId}")
           } else {
             copiedNomisIdSet.add(mergeCopiedCaseNote.caseNoteId)
+          }
+          if (originals.size > 1) {
+            log.warn("More than 1 originals found for offenderNo: $offenderNo, merged case note ${mergeCopiedCaseNote.caseNoteId}")
           }
           originals.forEach { o ->
             originalNomisIdToCopiesMap.getOrPut(o.caseNoteId) { mutableListOf() }

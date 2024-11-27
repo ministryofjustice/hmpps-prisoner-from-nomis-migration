@@ -41,11 +41,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
+import java.util.*
 import java.util.AbstractMap.SimpleEntry
-import java.util.UUID
 
 private const val BOOKING_ID = 1234L
 private const val NOMIS_CASE_NOTE_ID = 2345678L
+private const val NOMIS_CASE_NOTE_ID2 = 2345699L
 private const val OFFENDER_ID_DISPLAY = "A3864DZ"
 private const val DPS_CASE_NOTE_ID = "a04f7a8d-61aa-400c-9395-f4dc62f36ab0"
 
@@ -501,17 +502,17 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @BeforeEach
         fun setUp() {
-          caseNotesMappingApiMockServer.stubGetByNomisId(
-            caseNoteId = NOMIS_CASE_NOTE_ID,
-            CaseNoteMappingDto(
-              nomisBookingId = BOOKING_ID,
-              nomisCaseNoteId = NOMIS_CASE_NOTE_ID,
-              dpsCaseNoteId = DPS_CASE_NOTE_ID,
-              offenderNo = OFFENDER_ID_DISPLAY,
-              mappingType = MIGRATED,
-            ),
+          val mapping = CaseNoteMappingDto(
+            nomisBookingId = BOOKING_ID,
+            nomisCaseNoteId = NOMIS_CASE_NOTE_ID,
+            dpsCaseNoteId = DPS_CASE_NOTE_ID,
+            offenderNo = OFFENDER_ID_DISPLAY,
+            mappingType = MIGRATED,
           )
+          caseNotesMappingApiMockServer.stubGetByNomisId(NOMIS_CASE_NOTE_ID, mapping)
           caseNotesApi.stubPutCaseNote(dpsCaseNote())
+          caseNotesMappingApiMockServer.stubGetByDpsId(DPS_CASE_NOTE_ID, listOf(mapping))
+
           awsSqsCaseNoteOffenderEventsClient.sendMessage(
             caseNotesQueueOffenderEventsUrl,
             caseNoteEvent(
@@ -550,6 +551,105 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBodyJsonPath("amendments[0].author.firstName", equalTo("AUTHOR"))
                 .withRequestBodyJsonPath("amendments[0].author.lastName", equalTo("ONE"))
                 .withRequestBodyJsonPath("occurrenceDateTime", equalTo("2021-02-03T04:05:06")),
+            )
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("casenotes-synchronisation-updated-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+                assertThat(it["nomisCaseNoteId"]).isEqualTo(NOMIS_CASE_NOTE_ID.toString())
+                assertThat(it["dpsCaseNoteId"]).isEqualTo(DPS_CASE_NOTE_ID)
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("When mapping does exist with merge")
+      inner class MappingExistsWithMerge {
+
+        @BeforeEach
+        fun setUp() {
+          val mapping1 = CaseNoteMappingDto(
+            nomisBookingId = BOOKING_ID,
+            nomisCaseNoteId = NOMIS_CASE_NOTE_ID,
+            dpsCaseNoteId = DPS_CASE_NOTE_ID,
+            offenderNo = OFFENDER_ID_DISPLAY,
+            mappingType = MIGRATED,
+          )
+          val mapping2 = CaseNoteMappingDto(
+            nomisBookingId = 876543L,
+            nomisCaseNoteId = NOMIS_CASE_NOTE_ID2,
+            dpsCaseNoteId = DPS_CASE_NOTE_ID,
+            offenderNo = OFFENDER_ID_DISPLAY,
+            mappingType = MIGRATED,
+          )
+          caseNotesMappingApiMockServer.stubGetByNomisId(NOMIS_CASE_NOTE_ID, mapping1)
+          caseNotesMappingApiMockServer.stubGetByNomisId(NOMIS_CASE_NOTE_ID2, mapping2)
+          caseNotesApi.stubPutCaseNote(dpsCaseNote())
+          caseNotesMappingApiMockServer.stubGetByDpsId(DPS_CASE_NOTE_ID, listOf(mapping1, mapping2))
+          caseNotesNomisApiMockServer.stubPutCaseNote(NOMIS_CASE_NOTE_ID2)
+
+          awsSqsCaseNoteOffenderEventsClient.sendMessage(
+            caseNotesQueueOffenderEventsUrl,
+            caseNoteEvent(
+              eventType = "OFFENDER_CASE_NOTES-UPDATED",
+              bookingId = BOOKING_ID,
+              caseNoteId = NOMIS_CASE_NOTE_ID,
+              offenderNo = OFFENDER_ID_DISPLAY,
+            ),
+          )
+        }
+
+        @Test
+        fun `will update DPS with the changes`() {
+          await untilAsserted {
+            caseNotesApi.verify(
+              1,
+              putRequestedFor(urlPathEqualTo("/sync/case-notes"))
+                .withRequestBodyJsonPath("id", equalTo(DPS_CASE_NOTE_ID))
+                .withRequestBodyJsonPath("legacyId", equalTo(NOMIS_CASE_NOTE_ID.toString()))
+                .withRequestBodyJsonPath("personIdentifier", equalTo(OFFENDER_ID_DISPLAY))
+                .withRequestBodyJsonPath("locationId", equalTo(nomisCaseNote.prisonId))
+                .withRequestBodyJsonPath("type", equalTo("XNR"))
+                .withRequestBodyJsonPath("subType", equalTo("X"))
+                .withRequestBodyJsonPath("text", equalTo("the actual casenote"))
+                .withRequestBodyJsonPath("systemGenerated", equalTo("false"))
+                .withRequestBodyJsonPath("createdDateTime", equalTo("2021-02-03T04:05:06"))
+                .withRequestBodyJsonPath("createdByUsername", equalTo("John"))
+                .withRequestBodyJsonPath("author.username", equalTo("me"))
+                .withRequestBodyJsonPath("author.userId", equalTo("123456"))
+                .withRequestBodyJsonPath("author.firstName", equalTo("First"))
+                .withRequestBodyJsonPath("author.lastName", equalTo("Last"))
+                .withRequestBodyJsonPath("amendments[0].createdDateTime", equalTo("2021-02-03T04:05:06"))
+                .withRequestBodyJsonPath("amendments[0].text", equalTo("amendment text"))
+                .withRequestBodyJsonPath("amendments[0].author.username", equalTo("authorone"))
+                .withRequestBodyJsonPath("amendments[0].author.userId", equalTo("2001"))
+                .withRequestBodyJsonPath("amendments[0].author.firstName", equalTo("AUTHOR"))
+                .withRequestBodyJsonPath("amendments[0].author.lastName", equalTo("ONE"))
+                .withRequestBodyJsonPath("occurrenceDateTime", equalTo("2021-02-03T04:05:06")),
+            )
+          }
+        }
+
+        @Test
+        fun `will update the other Nomis record with the changes`() {
+          await untilAsserted {
+            caseNotesNomisApiMockServer.verify(
+              1,
+              putRequestedFor(urlPathEqualTo("/casenotes/$NOMIS_CASE_NOTE_ID2"))
+                .withRequestBodyJsonPath("text", equalTo("the actual casenote"))
+                .withRequestBodyJsonPath("amendments[0].text", equalTo("amendment text"))
+                .withRequestBodyJsonPath("amendments[0].authorUsername", equalTo("authorone"))
+                .withRequestBodyJsonPath("amendments[0].createdDateTime", equalTo("2021-02-03T04:05:06")),
             )
           }
         }
@@ -612,6 +712,73 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
                 assertThat(it["error"]).isEqualTo("500 Internal Server Error from PUT http://localhost:8096/sync/case-notes")
               },
               isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("When Nomis api POST fails for merged record")
+      inner class NomisApiFail {
+
+        @BeforeEach
+        fun setUp() {
+          val mapping1 = CaseNoteMappingDto(
+            nomisBookingId = BOOKING_ID,
+            nomisCaseNoteId = NOMIS_CASE_NOTE_ID,
+            dpsCaseNoteId = DPS_CASE_NOTE_ID,
+            offenderNo = OFFENDER_ID_DISPLAY,
+            mappingType = MIGRATED,
+          )
+          val mapping2 = CaseNoteMappingDto(
+            nomisBookingId = 876543L,
+            nomisCaseNoteId = NOMIS_CASE_NOTE_ID2,
+            dpsCaseNoteId = DPS_CASE_NOTE_ID,
+            offenderNo = OFFENDER_ID_DISPLAY,
+            mappingType = MIGRATED,
+          )
+          caseNotesMappingApiMockServer.stubGetByNomisId(NOMIS_CASE_NOTE_ID, mapping1)
+          caseNotesMappingApiMockServer.stubGetByNomisId(NOMIS_CASE_NOTE_ID2, mapping2)
+          caseNotesApi.stubPutCaseNote(dpsCaseNote())
+          caseNotesMappingApiMockServer.stubGetByDpsId(DPS_CASE_NOTE_ID, listOf(mapping1, mapping2))
+          caseNotesNomisApiMockServer.stubPutCaseNote(NOMIS_CASE_NOTE_ID2, INTERNAL_SERVER_ERROR)
+
+          awsSqsCaseNoteOffenderEventsClient.sendMessage(
+            caseNotesQueueOffenderEventsUrl,
+            caseNoteEvent(
+              eventType = "OFFENDER_CASE_NOTES-UPDATED",
+              bookingId = BOOKING_ID,
+              caseNoteId = NOMIS_CASE_NOTE_ID,
+              offenderNo = OFFENDER_ID_DISPLAY,
+            ),
+          )
+        }
+
+        @Test
+        fun `will track a telemetry event for failure`() {
+          await untilAsserted {
+            verify(telemetryClient, atLeast(1)).trackEvent(
+              eq("casenotes-synchronisation-updated-failed"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+                assertThat(it["nomisCaseNoteId"]).isEqualTo(NOMIS_CASE_NOTE_ID.toString())
+                assertThat(it["error"]).isEqualTo("500 Internal Server Error from PUT http://localhost:8081/casenotes/2345699")
+              },
+              isNull(),
+            )
+          }
+        }
+
+        @Test
+        fun `will update DPS twice`() {
+          await untilAsserted {
+            caseNotesApi.verify(
+              2,
+              putRequestedFor(urlPathEqualTo("/sync/case-notes"))
+                .withRequestBodyJsonPath("id", equalTo(DPS_CASE_NOTE_ID))
+                .withRequestBodyJsonPath("legacyId", equalTo(NOMIS_CASE_NOTE_ID.toString()))
+                .withRequestBodyJsonPath("personIdentifier", equalTo(OFFENDER_ID_DISPLAY)),
             )
           }
         }

@@ -19,15 +19,17 @@ class CaseNotesMappingApiService(@Qualifier("mappingApiWebClient") webClient: We
       .awaitBodilessEntity()
   }
 
-  suspend fun getMappingGivenNomisId(caseNoteId: Long): CaseNoteMappingDto =
-    webClient.get()
-      .uri("/mapping/casenotes/nomis-casenote-id/$caseNoteId")
-      .retrieve()
-      .awaitBody()
+  suspend fun getByDpsId(caseNoteId: String): List<CaseNoteMappingDto> = webClient.get()
+    .uri(
+      "/mapping/casenotes/dps-casenote-id/{casenoteId}/all",
+      caseNoteId,
+    )
+    .retrieve()
+    .awaitBody()
 
   suspend fun getMappingGivenNomisIdOrNull(caseNoteId: Long): CaseNoteMappingDto? =
     webClient.get()
-      .uri("/mapping/casenotes/nomis-casenote-id/$caseNoteId")
+      .uri("/mapping/casenotes/nomis-casenote-id/{caseNoteId}", caseNoteId)
       .retrieve()
       .awaitBodyOrNullWhenNotFound()
 
