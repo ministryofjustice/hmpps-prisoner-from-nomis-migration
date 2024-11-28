@@ -56,7 +56,12 @@ class PrisonPersonMoveBookingService(
       nomisResponse.bookings
         .find { it.latestBooking }
         ?.also { latestBooking ->
-          physicalAttributesSyncService.physicalAttributesChanged(fromOffenderNo, latestBooking.bookingId, nomisResponse)
+          physicalAttributesSyncService.physicalAttributesChanged(
+            offenderNo = fromOffenderNo,
+            bookingId = latestBooking.bookingId,
+            nomisPhysicalAttributes = nomisResponse,
+            forceSync = true,
+          )
           telemetry += "syncFromOffenderDps_HEIGHT" to "true"
           telemetry += "syncFromOffenderDps_WEIGHT" to "true"
         }
@@ -69,7 +74,13 @@ class PrisonPersonMoveBookingService(
           latestBooking.profileDetails
             .filter { it.type.isPhysicalAttributesProfileType() }
             .forEach { profileDetail ->
-              profileDetailsSyncService.profileDetailsPhysicalAttributesChanged(profileDetail.type, fromOffenderNo, latestBooking.bookingId, nomisResponse)
+              profileDetailsSyncService.profileDetailsPhysicalAttributesChanged(
+                profileType = profileDetail.type,
+                offenderNo = fromOffenderNo,
+                bookingId = latestBooking.bookingId,
+                nomisProfileDetails = nomisResponse,
+                forceSync = true,
+              )
               telemetry += "syncFromOffenderDps_${profileDetail.type}" to "true"
             }
         }
