@@ -7,16 +7,19 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PERSON_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactAddressRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactEmailRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonContactMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonEmailMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactPerson
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonContact
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonEmailAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
@@ -279,11 +282,39 @@ class ContactPersonSynchronisationService(
 
   suspend fun personEmailAdded(event: PersonInternetAddressEvent) {
     val telemetry =
-      mapOf("personId" to event.personId, "internetAddressId" to event.internetAddressId)
-    telemetryClient.trackEvent(
-      "contactperson-person-email-synchronisation-created-success",
-      telemetry,
-    )
+      mutableMapOf("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisInternetAddressId" to event.internetAddressId)
+
+    if (event.doesOriginateInDps()) {
+      telemetryClient.trackEvent(
+        "contactperson-email-synchronisation-created-skipped",
+        telemetry,
+      )
+    } else {
+      mappingApiService.getByNomisEmailIdOrNull(nomisInternetAddressId = event.internetAddressId)?.also {
+        telemetryClient.trackEvent(
+          "contactperson-email-synchronisation-created-ignored",
+          telemetry + ("dpsContactEmailId" to it.dpsId),
+        )
+      } ?: run {
+        nomisApiService.getPerson(nomisPersonId = event.personId).also { nomisPerson ->
+          val nomisAddress = nomisPerson.emailAddresses.find { it.emailAddressId == event.internetAddressId } ?: throw IllegalStateException("Email ${event.internetAddressId} for person ${event.personId} not found in NOMIS")
+          val dpsEmail = dpsApiService.createContactEmail(nomisAddress.toDpsCreateContactEmailRequest(nomisPersonId = event.personId)).also {
+            telemetry["dpsContactEmailId"] = it.contactEmailId
+          }
+          val mapping = PersonEmailMappingDto(
+            nomisId = event.internetAddressId,
+            dpsId = dpsEmail.contactEmailId.toString(),
+            mappingType = PersonEmailMappingDto.MappingType.NOMIS_CREATED,
+          )
+
+          tryToCreateMapping(mapping, telemetry)
+        }
+        telemetryClient.trackEvent(
+          "contactperson-email-synchronisation-created-success",
+          telemetry,
+        )
+      }
+    }
   }
 
   suspend fun personEmailUpdated(event: PersonInternetAddressEvent) {
@@ -406,6 +437,22 @@ class ContactPersonSynchronisationService(
       )
     }
   }
+  private suspend fun tryToCreateMapping(
+    mapping: PersonEmailMappingDto,
+    telemetry: Map<String, Any>,
+  ) {
+    try {
+      createEmailMapping(mapping)
+    } catch (e: Exception) {
+      log.error("Failed to create mapping for email id $mapping", e)
+      queueService.sendMessage(
+        messageType = ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_EMAIL_MAPPING.name,
+        synchronisationType = SynchronisationType.CONTACTPERSON,
+        message = mapping,
+        telemetryAttributes = telemetry.valuesAsStrings(),
+      )
+    }
+  }
 
   private suspend fun createPersonMapping(
     mapping: PersonMappingDto,
@@ -461,6 +508,24 @@ class ContactPersonSynchronisationService(
       }
     }
   }
+  private suspend fun createEmailMapping(
+    mapping: PersonEmailMappingDto,
+  ) {
+    mappingApiService.createEmailMapping(mapping).takeIf { it.isError }?.also {
+      with(it.errorResponse!!.moreInfo) {
+        telemetryClient.trackEvent(
+          "from-nomis-sync-contactperson-duplicate",
+          mapOf(
+            "existingNomisInternetAddressId" to existing.nomisId,
+            "existingDpsContactEmailId" to existing.dpsId,
+            "duplicateNomisInternetAddressId" to duplicate.nomisId,
+            "duplicateDpsContactEmailId" to duplicate.dpsId,
+            "type" to "EMAIL",
+          ),
+        )
+      }
+    }
+  }
 
   suspend fun retryCreatePersonMapping(retryMessage: InternalMessage<PersonMappingDto>) {
     createPersonMapping(retryMessage.body)
@@ -485,6 +550,15 @@ class ContactPersonSynchronisationService(
       .also {
         telemetryClient.trackEvent(
           "contactperson-address-mapping-synchronisation-created",
+          retryMessage.telemetryAttributes,
+        )
+      }
+  }
+  suspend fun retryCreateEmailMapping(retryMessage: InternalMessage<PersonEmailMappingDto>) {
+    createEmailMapping(retryMessage.body)
+      .also {
+        telemetryClient.trackEvent(
+          "contactperson-email-mapping-synchronisation-created",
           retryMessage.telemetryAttributes,
         )
       }
@@ -547,6 +621,13 @@ fun PersonAddress.toDpsCreateContactAddressRequest(nomisPersonId: Long) = SyncCr
   noFixedAddress = this.noFixedAddress,
   comments = this.comment,
   createdBy = this.audit.createUsername,
+  createdTime = this.audit.createDatetime.toDateTime(),
+)
+
+fun PersonEmailAddress.toDpsCreateContactEmailRequest(nomisPersonId: Long) = SyncCreateContactEmailRequest(
+  contactId = nomisPersonId,
+  createdBy = this.audit.createUsername,
+  emailAddress = this.email,
   createdTime = this.audit.createDatetime.toDateTime(),
 )
 

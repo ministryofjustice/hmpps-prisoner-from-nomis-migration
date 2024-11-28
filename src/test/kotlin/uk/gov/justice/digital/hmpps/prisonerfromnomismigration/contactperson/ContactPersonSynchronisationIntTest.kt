@@ -15,8 +15,10 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.contact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.contactAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.contactEmail
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.prisonerContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactAddressRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactEmailRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
@@ -25,6 +27,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonContactMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonEmailMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
@@ -32,6 +35,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonContact
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonEmailAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.LocalDate
@@ -1024,31 +1028,313 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
   @Nested
   @DisplayName("INTERNET_ADDRESSES_PERSON-INSERTED")
   inner class PersonEmailAdded {
-    private val personId = 123456L
-    private val internetAddressId = 76543L
+    private val nomisInternetAddressId = 3456L
+    private val nomisPersonId = 123456L
+    private val dpsContactEmailId = 937373L
 
-    @BeforeEach
-    fun setUp() {
-      awsSqsContactPersonOffenderEventsClient.sendMessage(
-        contactPersonQueueOffenderEventsUrl,
-        personInternetAddressEvent(
-          eventType = "INTERNET_ADDRESSES_PERSON-INSERTED",
-          personId = personId,
-          internetAddressId = internetAddressId,
-        ),
-      ).also { waitForAnyProcessingToComplete() }
+    @Nested
+    inner class WhenCreatedInDps {
+      @BeforeEach
+      fun setUp() {
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personInternetAddressEvent(
+            eventType = "INTERNET_ADDRESSES_PERSON-INSERTED",
+            personId = nomisPersonId,
+            internetAddressId = nomisInternetAddressId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not create email in DPS`() {
+        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/sync/contact-email")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-email-synchronisation-created-skipped"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisInternetAddressId"]).isEqualTo(nomisInternetAddressId.toString())
+          },
+          isNull(),
+        )
+      }
     }
 
-    @Test
-    fun `will track telemetry`() {
-      verify(telemetryClient).trackEvent(
-        eq("contactperson-person-email-synchronisation-created-success"),
-        check {
-          assertThat(it["personId"]).isEqualTo(personId.toString())
-          assertThat(it["internetAddressId"]).isEqualTo(internetAddressId.toString())
-        },
-        isNull(),
-      )
+    @Nested
+    inner class WhenCreatedInNomis {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisEmailIdOrNull(nomisInternetAddressId = nomisInternetAddressId, mapping = null)
+        nomisApiMock.stubGetPerson(
+          personId = nomisPersonId,
+          person = contactPerson().copy(
+            personId = nomisPersonId,
+            emailAddresses = listOf(
+              PersonEmailAddress(
+                emailAddressId = nomisInternetAddressId,
+                email = "test@test.com",
+                audit = NomisAudit(
+                  createUsername = "J.SPEAK",
+                  createDatetime = "2024-09-01T13:31",
+                ),
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubCreateContactEmail(contactEmail().copy(contactEmailId = dpsContactEmailId))
+        mappingApiMock.stubCreateEmailMapping()
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personInternetAddressEvent(
+            eventType = "INTERNET_ADDRESSES_PERSON-INSERTED",
+            personId = nomisPersonId,
+            internetAddressId = nomisInternetAddressId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will check if mapping already exists`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/contact-person/email/nomis-internet-address-id/$nomisInternetAddressId")))
+      }
+
+      @Test
+      fun `will retrieve the details from NOMIS`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/persons/$nomisPersonId")))
+      }
+
+      @Test
+      fun `will create the email in DPS from the person`() {
+        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/contact-email")))
+        val request: SyncCreateContactEmailRequest = ContactPersonDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/sync/contact-email")))
+        with(request) {
+          // DPS and NOMIS contact/person id are the same
+          assertThat(contactId).isEqualTo(nomisPersonId)
+          assertThat(emailAddress).isEqualTo("test@test.com")
+          assertThat(createdBy).isEqualTo("J.SPEAK")
+          assertThat(createdTime).isEqualTo("2024-09-01T13:31")
+        }
+      }
+
+      @Test
+      fun `will create a mapping between the DPS and NOMIS record`() {
+        mappingApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/contact-person/email"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", dpsContactEmailId)
+            .withRequestBodyJsonPath("nomisId", "$nomisInternetAddressId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-email-synchronisation-created-success"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisInternetAddressId"]).isEqualTo(nomisInternetAddressId.toString())
+            assertThat(it["dpsContactEmailId"]).isEqualTo(dpsContactEmailId.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenAlreadyCreated {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisEmailIdOrNull(nomisInternetAddressId = nomisInternetAddressId, mapping = PersonEmailMappingDto(dpsId = "$dpsContactEmailId", nomisId = nomisInternetAddressId, mappingType = PersonEmailMappingDto.MappingType.NOMIS_CREATED))
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personInternetAddressEvent(
+            eventType = "INTERNET_ADDRESSES_PERSON-INSERTED",
+            personId = nomisPersonId,
+            internetAddressId = nomisInternetAddressId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not create email in DPS`() {
+        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/sync/contact-email")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-email-synchronisation-created-ignored"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisInternetAddressId"]).isEqualTo(nomisInternetAddressId.toString())
+            assertThat(it["dpsContactEmailId"]).isEqualTo(dpsContactEmailId.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenDuplicateMapping {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisEmailIdOrNull(nomisInternetAddressId = nomisInternetAddressId, mapping = null)
+        nomisApiMock.stubGetPerson(
+          personId = nomisPersonId,
+          person = contactPerson().copy(
+            personId = nomisPersonId,
+            emailAddresses = listOf(
+              PersonEmailAddress(
+                emailAddressId = nomisInternetAddressId,
+                email = "test@test.com",
+                audit = NomisAudit(
+                  createUsername = "J.SPEAK",
+                  createDatetime = "2024-09-01T13:31",
+                ),
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubCreateContactEmail(contactEmail().copy(contactEmailId = dpsContactEmailId))
+        mappingApiMock.stubCreateEmailMapping(
+          error = DuplicateMappingErrorResponse(
+            moreInfo = DuplicateErrorContentObject(
+              duplicate = PersonEmailMappingDto(
+                dpsId = dpsContactEmailId.toString(),
+                nomisId = nomisInternetAddressId,
+                mappingType = PersonEmailMappingDto.MappingType.NOMIS_CREATED,
+              ),
+              existing = PersonEmailMappingDto(
+                dpsId = "9999",
+                nomisId = nomisInternetAddressId,
+                mappingType = PersonEmailMappingDto.MappingType.NOMIS_CREATED,
+              ),
+            ),
+            errorCode = 1409,
+            status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+            userMessage = "Duplicate mapping",
+          ),
+        )
+
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personInternetAddressEvent(
+            eventType = "INTERNET_ADDRESSES_PERSON-INSERTED",
+            personId = nomisPersonId,
+            internetAddressId = nomisInternetAddressId,
+          ),
+        ).also { waitForAnyProcessingToComplete("from-nomis-sync-contactperson-duplicate") }
+      }
+
+      @Test
+      fun `will create the email in DPS once`() {
+        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/contact-email")))
+      }
+
+      @Test
+      fun `will attempt to create a mapping between the DPS and NOMIS record once`() {
+        mappingApiMock.verify(
+          1,
+          postRequestedFor(urlPathEqualTo("/mapping/contact-person/email"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", dpsContactEmailId)
+            .withRequestBodyJsonPath("nomisId", "$nomisInternetAddressId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for both overall success and duplicate`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-email-synchronisation-created-success"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisInternetAddressId"]).isEqualTo(nomisInternetAddressId.toString())
+            assertThat(it["dpsContactEmailId"]).isEqualTo(dpsContactEmailId.toString())
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("from-nomis-sync-contactperson-duplicate"),
+          check {
+            assertThat(it["existingNomisInternetAddressId"]).isEqualTo(nomisInternetAddressId.toString())
+            assertThat(it["existingDpsContactEmailId"]).isEqualTo("9999")
+            assertThat(it["duplicateNomisInternetAddressId"]).isEqualTo(nomisInternetAddressId.toString())
+            assertThat(it["duplicateDpsContactEmailId"]).isEqualTo(dpsContactEmailId.toString())
+            assertThat(it["type"]).isEqualTo("EMAIL")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class MappingCreateFails {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisEmailIdOrNull(nomisInternetAddressId = nomisInternetAddressId, mapping = null)
+        nomisApiMock.stubGetPerson(
+          personId = nomisPersonId,
+          person = contactPerson().copy(
+            personId = nomisPersonId,
+            emailAddresses = listOf(
+              PersonEmailAddress(
+                emailAddressId = nomisInternetAddressId,
+                email = "test@test.com",
+                audit = NomisAudit(
+                  createUsername = "J.SPEAK",
+                  createDatetime = "2024-09-01T13:31",
+                ),
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubCreateContactEmail(contactEmail().copy(contactEmailId = dpsContactEmailId))
+        mappingApiMock.stubCreateEmailMappingFollowedBySuccess()
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personInternetAddressEvent(
+            eventType = "INTERNET_ADDRESSES_PERSON-INSERTED",
+            personId = nomisPersonId,
+            internetAddressId = nomisInternetAddressId,
+          ),
+        ).also { waitForAnyProcessingToComplete("contactperson-email-mapping-synchronisation-created") }
+      }
+
+      @Test
+      fun `will create the email in DPS once`() {
+        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/contact-email")))
+      }
+
+      @Test
+      fun `will create a mapping between the DPS and NOMIS record`() {
+        mappingApiMock.verify(
+          2,
+          postRequestedFor(urlPathEqualTo("/mapping/contact-person/email"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", dpsContactEmailId)
+            .withRequestBodyJsonPath("nomisId", "$nomisInternetAddressId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-email-synchronisation-created-success"),
+          check {
+            assertThat(it["nomisInternetAddressId"]).isEqualTo(nomisInternetAddressId.toString())
+            assertThat(it["dpsContactEmailId"]).isEqualTo(dpsContactEmailId.toString())
+          },
+          isNull(),
+        )
+      }
     }
   }
 

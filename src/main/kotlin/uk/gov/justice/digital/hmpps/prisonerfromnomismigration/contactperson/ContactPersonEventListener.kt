@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_ADDRESS_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_CONTACT_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_EMAIL_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PERSON_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
@@ -78,6 +79,7 @@ class ContactPersonEventListener(
       RETRY_SYNCHRONISATION_PERSON_MAPPING -> service.retryCreatePersonMapping(message.fromJson())
       RETRY_SYNCHRONISATION_CONTACT_MAPPING -> service.retryCreateContactMapping(message.fromJson())
       RETRY_SYNCHRONISATION_ADDRESS_MAPPING -> service.retryCreateAddressMapping(message.fromJson())
+      RETRY_SYNCHRONISATION_EMAIL_MAPPING -> service.retryCreateEmailMapping(message.fromJson())
     }
   }
 }
@@ -148,4 +150,5 @@ enum class ContactPersonSynchronisationMessageType {
   RETRY_SYNCHRONISATION_PERSON_MAPPING,
   RETRY_SYNCHRONISATION_CONTACT_MAPPING,
   RETRY_SYNCHRONISATION_ADDRESS_MAPPING,
+  RETRY_SYNCHRONISATION_EMAIL_MAPPING,
 }
