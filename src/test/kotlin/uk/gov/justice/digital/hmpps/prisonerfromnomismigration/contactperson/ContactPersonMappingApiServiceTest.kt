@@ -80,7 +80,7 @@ class ContactPersonMappingApiServiceTest {
         mapping = null,
       )
 
-      assertThat(apiService.getByNomisPersonIdOrNull(nomisPersonId = 1234567))
+      assertThat(apiService.getByNomisPersonIdOrNull(nomisPersonId = 1234567)).isNull()
     }
   }
 
@@ -131,7 +131,7 @@ class ContactPersonMappingApiServiceTest {
         mapping = null,
       )
 
-      assertThat(apiService.getByNomisContactIdOrNull(nomisContactId = 1234567))
+      assertThat(apiService.getByNomisContactIdOrNull(nomisContactId = 1234567)).isNull()
     }
   }
 
@@ -182,7 +182,7 @@ class ContactPersonMappingApiServiceTest {
         mapping = null,
       )
 
-      assertThat(apiService.getByNomisAddressIdOrNull(nomisAddressId = 1234567))
+      assertThat(apiService.getByNomisAddressIdOrNull(nomisAddressId = 1234567)).isNull()
     }
   }
 
@@ -233,7 +233,7 @@ class ContactPersonMappingApiServiceTest {
         mapping = null,
       )
 
-      assertThat(apiService.getByNomisEmailIdOrNull(nomisInternetAddressId = 1234567))
+      assertThat(apiService.getByNomisEmailIdOrNull(nomisInternetAddressId = 1234567)).isNull()
     }
   }
 
