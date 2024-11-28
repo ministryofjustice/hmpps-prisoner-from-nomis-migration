@@ -48,7 +48,7 @@ class CaseNotesNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubGetCaseNotesToMigrate(
+  fun stubGetCaseNotesForPrisoner(
     offenderNo: String,
     currentCaseNoteStart: Long = 1,
     currentCaseNoteCount: Long = 1,
@@ -90,7 +90,7 @@ class CaseNotesNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubGetCaseNotesToMigrate(
+  fun stubGetCaseNotesForPrisoner(
     offenderNo: String,
     caseNotes: List<CaseNoteResponse>,
   ) {

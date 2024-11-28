@@ -12,11 +12,17 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.U
 
 @Service
 class CaseNotesNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
-  suspend fun getCaseNotesToMigrate(offenderNo: String): PrisonerCaseNotesResponse? =
+  suspend fun getCaseNotesForPrisonerOrNull(offenderNo: String): PrisonerCaseNotesResponse? =
     webClient.get()
       .uri("/prisoners/{offenderNo}/casenotes", offenderNo)
       .retrieve()
       .awaitBodyOrNullWhenNotFound()
+
+  suspend fun getCaseNotesForPrisoner(offenderNo: String): PrisonerCaseNotesResponse =
+    webClient.get()
+      .uri("/prisoners/{offenderNo}/casenotes", offenderNo)
+      .retrieve()
+      .awaitBody()
 
   suspend fun getCaseNote(caseNoteId: Long): CaseNoteResponse =
     webClient.get()

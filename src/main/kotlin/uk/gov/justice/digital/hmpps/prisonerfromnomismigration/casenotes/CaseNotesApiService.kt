@@ -5,6 +5,8 @@ import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
+import org.springframework.web.reactive.function.client.awaitBody
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.CaseNote
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.MigrateCaseNoteRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.MoveCaseNotesRequest
@@ -46,4 +48,10 @@ class CaseNotesApiService(@Qualifier("caseNotesApiWebClient") private val webCli
       .retrieve()
       .awaitBodilessEntityOrLogAndRethrowBadRequest()
   }
+
+  suspend fun getCaseNotesForPrisoner(offenderIdentifier: String): List<CaseNote> =
+    webClient.get()
+      .uri("/sync/case-notes/{offenderIdentifier}", offenderIdentifier)
+      .retrieve()
+      .awaitBody()
 }

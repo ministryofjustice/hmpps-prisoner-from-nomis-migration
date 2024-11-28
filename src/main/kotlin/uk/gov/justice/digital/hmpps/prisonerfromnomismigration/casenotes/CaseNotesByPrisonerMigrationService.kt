@@ -69,7 +69,7 @@ class CaseNotesByPrisonerMigrationService(
       "migrationType" to "CASENOTES",
     )
     try {
-      val nomisCaseNotes = caseNotesNomisService.getCaseNotesToMigrate(offenderNo)
+      val nomisCaseNotes = caseNotesNomisService.getCaseNotesForPrisonerOrNull(offenderNo)
         ?: PrisonerCaseNotesResponse(emptyList())
 
       val originalNomisIdToCopiesMap = mutableMapOf<Long, MutableList<CaseNoteResponse>>()
@@ -154,7 +154,7 @@ class CaseNotesByPrisonerMigrationService(
     }
   }
 
-  private suspend fun createMapping(
+  suspend fun createMapping(
     offenderNo: String,
     prisonerMappings: PrisonerCaseNoteMappingsDto,
     context: MigrationContext<PrisonerId>,
@@ -211,7 +211,7 @@ data class CaseNoteMigrationMapping(
   val offenderNo: String,
 )
 
-private fun isMergeDuplicate(
+fun isMergeDuplicate(
   response: CaseNoteResponse,
   mergeCopiedCaseNote: CaseNoteResponse,
 ): Boolean = response.creationDateTime == mergeCopiedCaseNote.creationDateTime &&
