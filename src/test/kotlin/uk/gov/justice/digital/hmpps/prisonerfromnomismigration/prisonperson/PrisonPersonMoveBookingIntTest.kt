@@ -191,7 +191,7 @@ class PrisonPersonMoveBookingIntTest : SqsIntegrationTestBase() {
       @Test
       fun `offender physical attributes re-entered in DPS`() {
         // the moved booking has height/weight re-entered
-        stubGetPhysicalAttributes(fromOffenderNo, nomisPhysicalAttributesFromOffender(fromOffenderNo))
+        stubGetPhysicalAttributes(fromOffenderNo, nomisPhysicalAttributesFromOffender(fromOffenderNo, updatedInNomis = false))
         stubGetPhysicalAttributes(toOffenderNo, nomisPhysicalAttributesToOffenderRemeasured(toOffenderNo, movedBookingId, updatedInNomis = false))
         physicalAttributesDpsApi.stubSyncPhysicalAttributes(syncPhysicalAttributesResponse())
         nomisSyncApi.stubSyncPhysicalAttributes(toOffenderNo)
@@ -341,7 +341,7 @@ class PrisonPersonMoveBookingIntTest : SqsIntegrationTestBase() {
       @Test
       fun `offender profile details re-entered in DPS`() {
         // the moved booking has BUILD re-entered in NOMIS
-        stubGetProfileDetails(fromOffenderNo, nomisProfileDetailsFromOffender(fromOffenderNo))
+        stubGetProfileDetails(fromOffenderNo, nomisProfileDetailsFromOffender(fromOffenderNo, updatedInNomis = false))
         stubGetProfileDetails(toOffenderNo, nomisProfileDetailsToOffenderReentered(toOffenderNo, movedBookingId, updatedInNomis = false))
         profileDetailsDpsApi.stubSyncProfileDetailsPhysicalAttributes(fromOffenderNo, syncProfileDetailsResponse())
         profileDetailsDpsApi.stubSyncProfileDetailsPhysicalAttributes(toOffenderNo, syncProfileDetailsResponse())
@@ -679,6 +679,7 @@ class PrisonPersonMoveBookingIntTest : SqsIntegrationTestBase() {
 
 fun nomisPhysicalAttributesFromOffender(
   offenderNo: String,
+  updatedInNomis: Boolean = true,
   bookingStartTime: LocalDateTime = LocalDateTime.now().minusDays(1),
 ) =
   prisonerPhysicalAttributes(
@@ -695,6 +696,7 @@ fun nomisPhysicalAttributesFromOffender(
             weight = 80,
             createDateTime = bookingStartTime.minusDays(7),
             modifiedDateTime = null,
+            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
           ),
         ),
       ),
@@ -704,6 +706,7 @@ fun nomisPhysicalAttributesFromOffender(
 fun nomisPhysicalAttributesToOffenderNotRemeasured(
   offenderNo: String,
   movedBookingId: Long,
+  updatedInNomis: Boolean = true,
   bookingStartTime: LocalDateTime = LocalDateTime.now().minusDays(1),
 ) =
   PrisonerPhysicalAttributesResponse(
@@ -720,6 +723,7 @@ fun nomisPhysicalAttributesToOffenderNotRemeasured(
             weight = 70,
             createDateTime = bookingStartTime.minusDays(7),
             modifiedDateTime = null,
+            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
           ),
         ),
       ),
@@ -734,6 +738,7 @@ fun nomisPhysicalAttributesToOffenderNotRemeasured(
             weight = 80,
             createDateTime = bookingStartTime.minusDays(7),
             modifiedDateTime = null,
+            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
           ),
         ),
       ),
@@ -760,6 +765,7 @@ fun nomisPhysicalAttributesToOffenderRemeasured(
             weight = 70,
             createDateTime = bookingStartTime.minusDays(7),
             modifiedDateTime = null,
+            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
           ),
         ),
       ),
@@ -818,6 +824,7 @@ fun prisonerPhysicalAttributes(
 
 fun nomisProfileDetailsFromOffender(
   offenderNo: String,
+  updatedInNomis: Boolean = true,
   bookingStartTime: LocalDateTime = LocalDateTime.now().minusDays(1),
 ) =
   prisonerProfileDetails(
@@ -833,6 +840,7 @@ fun nomisProfileDetailsFromOffender(
             code = "MEDIUM",
             createDateTime = bookingStartTime.minusDays(7),
             modifiedDateTime = null,
+            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
           ),
         ),
       ),
@@ -898,6 +906,7 @@ fun nomisProfileDetailsToOffenderReentered(
             code = "MEDIUM",
             createDateTime = bookingStartTime.minusDays(7),
             modifiedDateTime = null,
+            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
           ),
         ),
       ),
@@ -921,6 +930,7 @@ fun nomisProfileDetailsToOffenderReentered(
 
 fun nomisProfileDetailsFromOffenderSomeReentered(
   offenderNo: String,
+  updatedInNomis: Boolean = true,
   bookingStartTime: LocalDateTime = LocalDateTime.now().minusDays(1),
 ) =
   prisonerProfileDetails(
@@ -936,18 +946,21 @@ fun nomisProfileDetailsFromOffenderSomeReentered(
             code = "MEDIUM",
             createDateTime = bookingStartTime.minusDays(7),
             modifiedDateTime = null,
+            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
           ),
           profileDetails(
             type = "FACE",
             code = "OVAL",
             createDateTime = bookingStartTime.minusDays(7),
             modifiedDateTime = null,
+            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
           ),
           profileDetails(
             type = "SHOESIZE",
             code = "8.5",
             createDateTime = bookingStartTime.minusDays(7),
             modifiedDateTime = null,
+            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
           ),
         ),
       ),
@@ -974,18 +987,21 @@ fun nomisProfileDetailsToOffenderSomeReentered(
             code = "MEDIUM",
             createDateTime = bookingStartTime.minusDays(7),
             modifiedDateTime = null,
+            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
           ),
           profileDetails(
             type = "FACE",
             code = "OVAL",
             createDateTime = bookingStartTime.minusDays(7),
             modifiedDateTime = null,
+            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
           ),
           profileDetails(
             type = "SHOESIZE",
             code = "8.5",
             createDateTime = bookingStartTime.minusDays(7),
             modifiedDateTime = null,
+            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
           ),
         ),
       ),
