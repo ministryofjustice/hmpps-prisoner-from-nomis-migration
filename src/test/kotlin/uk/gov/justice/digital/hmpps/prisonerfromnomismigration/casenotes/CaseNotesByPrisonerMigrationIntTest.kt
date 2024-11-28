@@ -99,8 +99,8 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         nomisApi.stubGetPrisonIds(totalElements = 2, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
-        caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(offenderNo = OFFENDER_NUMBER1, currentCaseNoteCount = 1)
-        caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(
+        caseNotesNomisApiMockServer.stubGetCaseNotesForPrisoner(offenderNo = OFFENDER_NUMBER1, currentCaseNoteCount = 1)
+        caseNotesNomisApiMockServer.stubGetCaseNotesForPrisoner(
           offenderNo = OFFENDER_NUMBER2,
           currentCaseNoteCount = 1,
           type = "CNOTE",
@@ -211,7 +211,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
-        caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(offenderNo = OFFENDER_NUMBER1, currentCaseNoteCount = 1)
+        caseNotesNomisApiMockServer.stubGetCaseNotesForPrisoner(offenderNo = OFFENDER_NUMBER1, currentCaseNoteCount = 1)
         caseNotesApi.stubMigrateCaseNotes(OFFENDER_NUMBER1, listOf(1L to "00000000-0000-0000-0000-000000000001"))
         caseNotesMappingApiMockServer.stubPostBatchMappingsFailureFollowedBySuccess(OFFENDER_NUMBER1)
         performMigration()
@@ -236,7 +236,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
-        caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(offenderNo = OFFENDER_NUMBER1, currentCaseNoteCount = 1)
+        caseNotesNomisApiMockServer.stubGetCaseNotesForPrisoner(offenderNo = OFFENDER_NUMBER1, currentCaseNoteCount = 1)
         caseNotesApi.stubMigrateCaseNotesFailure(OFFENDER_NUMBER1)
         performMigration()
       }
@@ -282,7 +282,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
-        caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(
+        caseNotesNomisApiMockServer.stubGetCaseNotesForPrisoner(
           offenderNo = OFFENDER_NUMBER1,
           listOf(
             caseNoteTemplate(1, 1, "text 1"),
@@ -366,7 +366,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
-        caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(
+        caseNotesNomisApiMockServer.stubGetCaseNotesForPrisoner(
           offenderNo = OFFENDER_NUMBER1,
           listOf(
             caseNoteTemplate(1, 1, "text 1"),
@@ -483,7 +483,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
-        caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(
+        caseNotesNomisApiMockServer.stubGetCaseNotesForPrisoner(
           offenderNo = OFFENDER_NUMBER1,
           listOf(
             caseNoteTemplate(1, 1, "text 1"),
@@ -938,8 +938,8 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     fun `will terminate a running migration`() {
       nomisApi.stubGetPrisonIds(totalElements = 2, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
-      caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(offenderNo = OFFENDER_NUMBER1, currentCaseNoteCount = 1)
-      caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(offenderNo = OFFENDER_NUMBER1, currentCaseNoteCount = 1)
+      caseNotesNomisApiMockServer.stubGetCaseNotesForPrisoner(offenderNo = OFFENDER_NUMBER1, currentCaseNoteCount = 1)
+      caseNotesNomisApiMockServer.stubGetCaseNotesForPrisoner(offenderNo = OFFENDER_NUMBER1, currentCaseNoteCount = 1)
 
       val migrationId = performMigration().migrationId
 
@@ -998,6 +998,7 @@ fun caseNoteTemplate(
   text: String = "text",
   auditModuleName: String = "OIDCXXXX",
   type: String = "GEN",
+  createdDatetime: String = "2021-02-03T04:05:06",
 ) = CaseNoteResponse(
   caseNoteId = caseNoteId,
   bookingId = bookingId,
@@ -1010,7 +1011,7 @@ fun caseNoteTemplate(
   authorFirstName = "First",
   authorLastName = "Last",
   amendments = emptyList(),
-  createdDatetime = "2021-02-03T04:05:06",
+  createdDatetime = createdDatetime,
   createdUsername = "John",
   noteSourceCode = CaseNoteResponse.NoteSourceCode.INST,
   occurrenceDateTime = "2021-02-03T04:05:06",

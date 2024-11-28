@@ -1,10 +1,13 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data
 
+import java.time.OffsetDateTime
+
 data class NomisPrisonerMergeEvent(
   val bookingId: Long,
 )
 
 data class PrisonerMergeDomainEvent(
+  val occurredAt: OffsetDateTime,
   val additionalInformation: MergeAdditionalInformationEvent,
 )
 
