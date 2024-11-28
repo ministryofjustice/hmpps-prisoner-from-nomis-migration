@@ -30,9 +30,9 @@ class CaseNotesNomisApiServiceTest {
   inner class GetDpsCaseNotesToMigrate {
     @Test
     fun `will pass oath2 token to service`() = runTest {
-      caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(offenderNo = OFFENDER_NUMBER)
+      caseNotesNomisApiMockServer.stubGetCaseNotesForPrisoner(offenderNo = OFFENDER_NUMBER)
 
-      apiService.getCaseNotesToMigrate(OFFENDER_NUMBER)
+      apiService.getCaseNotesForPrisonerOrNull(OFFENDER_NUMBER)
 
       caseNotesNomisApiMockServer.verify(
         getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -41,9 +41,9 @@ class CaseNotesNomisApiServiceTest {
 
     @Test
     fun `will pass NOMIS ids to service`() = runTest {
-      caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(offenderNo = OFFENDER_NUMBER)
+      caseNotesNomisApiMockServer.stubGetCaseNotesForPrisoner(offenderNo = OFFENDER_NUMBER)
 
-      apiService.getCaseNotesToMigrate(OFFENDER_NUMBER)
+      apiService.getCaseNotesForPrisonerOrNull(OFFENDER_NUMBER)
 
       caseNotesNomisApiMockServer.verify(
         getRequestedFor(urlPathEqualTo("/prisoners/$OFFENDER_NUMBER/casenotes")),
@@ -52,7 +52,7 @@ class CaseNotesNomisApiServiceTest {
 
     @Test
     fun `will return caseNotes`() = runTest {
-      caseNotesNomisApiMockServer.stubGetCaseNotesToMigrate(
+      caseNotesNomisApiMockServer.stubGetCaseNotesForPrisoner(
         offenderNo = OFFENDER_NUMBER,
         currentCaseNoteCount = 2,
         caseNote = CaseNoteResponse(
@@ -76,7 +76,7 @@ class CaseNotesNomisApiServiceTest {
         ),
       )
 
-      val response = apiService.getCaseNotesToMigrate(OFFENDER_NUMBER)!!
+      val response = apiService.getCaseNotesForPrisonerOrNull(OFFENDER_NUMBER)!!
 
       assertThat(response.caseNotes).hasSize(2)
       assertThat(response.caseNotes[0].bookingId).isEqualTo(1L)

@@ -10,6 +10,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.ok
 import com.github.tomakehurst.wiremock.client.WireMock.okJson
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.put
+import com.github.tomakehurst.wiremock.client.WireMock.status
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
@@ -166,6 +167,12 @@ class CaseNotesMappingApiMockServer(private val objectMapper: ObjectMapper) {
       get("/mapping/casenotes/dps-casenote-id/$dpsId/all").willReturn(
         okJson(objectMapper.writeValueAsString(mappings)),
       ),
+    )
+  }
+
+  fun stubPostMappingsBatch(status: HttpStatus = HttpStatus.CREATED) {
+    mappingApi.stubFor(
+      post("/mapping/casenotes/batch").willReturn(status(status.value())),
     )
   }
 
