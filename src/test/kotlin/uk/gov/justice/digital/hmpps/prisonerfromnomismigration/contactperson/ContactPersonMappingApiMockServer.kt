@@ -231,6 +231,26 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
     }
   }
 
+  fun stubGetByNomisAddressId(
+    nomisAddressId: Long = 123456,
+    mapping: PersonAddressMappingDto = PersonAddressMappingDto(
+      nomisId = 123456,
+      dpsId = "654321",
+      mappingType = PersonAddressMappingDto.MappingType.MIGRATED,
+    ),
+  ) {
+    mapping.apply {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/contact-person/address/nomis-address-id/$nomisAddressId")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(objectMapper.writeValueAsString(mapping)),
+        ),
+      )
+    }
+  }
+
   fun stubCreateAddressMapping() {
     mappingApi.stubFor(
       post("/mapping/contact-person/address").willReturn(

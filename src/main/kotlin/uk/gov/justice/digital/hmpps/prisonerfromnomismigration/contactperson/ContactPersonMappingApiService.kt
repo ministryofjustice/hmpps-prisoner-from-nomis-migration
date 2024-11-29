@@ -7,6 +7,7 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
+import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
@@ -43,6 +44,14 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
     )
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
+
+  suspend fun getByNomisAddressId(nomisAddressId: Long): PersonAddressMappingDto = webClient.get()
+    .uri(
+      "/mapping/contact-person/address/nomis-address-id/{nomisAddressId}",
+      nomisAddressId,
+    )
+    .retrieve()
+    .awaitBody()
 
   suspend fun getByNomisEmailIdOrNull(nomisInternetAddressId: Long): PersonEmailMappingDto? = webClient.get()
     .uri(

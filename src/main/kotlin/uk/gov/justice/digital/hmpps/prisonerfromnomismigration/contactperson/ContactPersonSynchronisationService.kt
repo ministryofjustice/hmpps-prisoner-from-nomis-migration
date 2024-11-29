@@ -6,8 +6,10 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PERSON_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactEmailRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
@@ -20,6 +22,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonEmailAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonPhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
@@ -233,19 +236,86 @@ class ContactPersonSynchronisationService(
 
   suspend fun personPhoneAdded(event: PersonPhoneEvent) {
     val telemetry =
-      mapOf("personId" to event.personId, "phoneId" to event.phoneId)
+      mutableMapOf<String, Any>("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisPhoneId" to event.phoneId)
 
-    if (event.isAddress) {
+    if (event.doesOriginateInDps()) {
       telemetryClient.trackEvent(
-        "contactperson-person-address-phone-synchronisation-created-todo",
+        "contactperson-phone-synchronisation-created-skipped",
         telemetry,
       )
     } else {
-      telemetryClient.trackEvent(
-        "contactperson-person-phone-synchronisation-created-success",
-        telemetry,
-      )
+      mappingApiService.getByNomisPhoneIdOrNull(nomisPhoneId = event.phoneId)?.also {
+        telemetryClient.trackEvent(
+          "contactperson-phone-synchronisation-created-ignored",
+          telemetry + ("dpsContactPhoneId" to it.dpsId),
+        )
+      } ?: run {
+        nomisApiService.getPerson(nomisPersonId = event.personId).also { nomisPerson ->
+          val mapping = if (event.isAddress && event.addressId != null) {
+            createContactAddressPhone(
+              nomisPerson = nomisPerson,
+              personId = event.personId,
+              addressId = event.addressId,
+              phoneId = event.phoneId,
+              telemetry = telemetry,
+            )
+          } else {
+            createContactPhone(
+              nomisPerson = nomisPerson,
+              personId = event.personId,
+              phoneId = event.phoneId,
+              telemetry = telemetry,
+            )
+          }
+          tryToCreateMapping(mapping, telemetry)
+          telemetryClient.trackEvent(
+            "contactperson-phone-synchronisation-created-success",
+            telemetry,
+          )
+        }
+      }
     }
+  }
+
+  suspend fun createContactPhone(nomisPerson: ContactPerson, personId: Long, phoneId: Long, telemetry: MutableMap<String, Any>): PersonPhoneMappingDto {
+    val nomisPhone = nomisPerson.phoneNumbers.find { it.phoneId == phoneId }
+      ?: throw IllegalStateException("Phone $phoneId for person $personId not found in NOMIS")
+    val dpsPhone =
+      dpsApiService.createContactPhone(nomisPhone.toDpsCreateContactPhoneRequest(nomisPersonId = personId))
+        .also {
+          telemetry["dpsContactPhoneId"] = it.contactPhoneId
+        }
+    return PersonPhoneMappingDto(
+      nomisId = phoneId,
+      dpsId = dpsPhone.contactPhoneId.toString(),
+      dpsPhoneType = PersonPhoneMappingDto.DpsPersonPhoneType.PERSON,
+      mappingType = PersonPhoneMappingDto.MappingType.NOMIS_CREATED,
+    )
+  }
+
+  suspend fun createContactAddressPhone(nomisPerson: ContactPerson, personId: Long, addressId: Long, phoneId: Long, telemetry: MutableMap<String, Any>): PersonPhoneMappingDto {
+    val nomisAddress = nomisPerson.addresses.find { it.addressId == addressId }
+      ?: throw IllegalStateException("Address $addressId for person $personId not found in NOMIS")
+
+    val dpsAddressId = mappingApiService.getByNomisAddressId(addressId).dpsId.toLong().also {
+      telemetry["dpsContactAddressId"] = it
+      telemetry["nomisAddressId"] = addressId
+    }
+
+    val nomisPhone = nomisAddress.phoneNumbers.find { it.phoneId == phoneId }
+      ?: throw IllegalStateException("Phone $phoneId for person $personId on address $addressId not found in NOMIS")
+
+    val dpsPhone =
+      dpsApiService.createContactAddressPhone(nomisPhone.toDpsCreateContactAddressPhoneRequest(dpsAddressId = dpsAddressId))
+        .also {
+          telemetry["dpsContactAddressPhoneId"] = it.contactAddressPhoneId
+        }
+    return PersonPhoneMappingDto(
+      nomisId = phoneId,
+      dpsId = dpsPhone.contactAddressPhoneId.toString(),
+      dpsPhoneType = PersonPhoneMappingDto.DpsPersonPhoneType.ADDRESS,
+      mappingType = PersonPhoneMappingDto.MappingType.NOMIS_CREATED,
+    )
   }
 
   suspend fun personPhoneUpdated(event: PersonPhoneEvent) {
@@ -438,6 +508,22 @@ class ContactPersonSynchronisationService(
     }
   }
   private suspend fun tryToCreateMapping(
+    mapping: PersonPhoneMappingDto,
+    telemetry: Map<String, Any>,
+  ) {
+    try {
+      createPhoneMapping(mapping)
+    } catch (e: Exception) {
+      log.error("Failed to create mapping for phone id $mapping", e)
+      queueService.sendMessage(
+        messageType = ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PHONE_MAPPING.name,
+        synchronisationType = SynchronisationType.CONTACTPERSON,
+        message = mapping,
+        telemetryAttributes = telemetry.valuesAsStrings(),
+      )
+    }
+  }
+  private suspend fun tryToCreateMapping(
     mapping: PersonEmailMappingDto,
     telemetry: Map<String, Any>,
   ) {
@@ -508,6 +594,24 @@ class ContactPersonSynchronisationService(
       }
     }
   }
+  private suspend fun createPhoneMapping(
+    mapping: PersonPhoneMappingDto,
+  ) {
+    mappingApiService.createPhoneMapping(mapping).takeIf { it.isError }?.also {
+      with(it.errorResponse!!.moreInfo) {
+        telemetryClient.trackEvent(
+          "from-nomis-sync-contactperson-duplicate",
+          mapOf(
+            "existingNomisPhoneId" to existing.nomisId,
+            "existingDpsContactPhoneId" to existing.dpsId,
+            "duplicateNomisPhoneId" to duplicate.nomisId,
+            "duplicateDpsContactPhoneId" to duplicate.dpsId,
+            "type" to "PHONE",
+          ),
+        )
+      }
+    }
+  }
   private suspend fun createEmailMapping(
     mapping: PersonEmailMappingDto,
   ) {
@@ -559,6 +663,15 @@ class ContactPersonSynchronisationService(
       .also {
         telemetryClient.trackEvent(
           "contactperson-email-mapping-synchronisation-created",
+          retryMessage.telemetryAttributes,
+        )
+      }
+  }
+  suspend fun retryCreatePhoneMapping(retryMessage: InternalMessage<PersonPhoneMappingDto>) {
+    createPhoneMapping(retryMessage.body)
+      .also {
+        telemetryClient.trackEvent(
+          "contactperson-phone-mapping-synchronisation-created",
           retryMessage.telemetryAttributes,
         )
       }
@@ -628,6 +741,22 @@ fun PersonEmailAddress.toDpsCreateContactEmailRequest(nomisPersonId: Long) = Syn
   contactId = nomisPersonId,
   createdBy = this.audit.createUsername,
   emailAddress = this.email,
+  createdTime = this.audit.createDatetime.toDateTime(),
+)
+fun PersonPhoneNumber.toDpsCreateContactPhoneRequest(nomisPersonId: Long) = SyncCreateContactPhoneRequest(
+  contactId = nomisPersonId,
+  createdBy = this.audit.createUsername,
+  phoneNumber = this.number,
+  extNumber = this.extension,
+  phoneType = this.type.code,
+  createdTime = this.audit.createDatetime.toDateTime(),
+)
+fun PersonPhoneNumber.toDpsCreateContactAddressPhoneRequest(dpsAddressId: Long) = SyncCreateContactAddressPhoneRequest(
+  contactAddressId = dpsAddressId,
+  createdBy = this.audit.createUsername,
+  phoneNumber = this.number,
+  extNumber = this.extension,
+  phoneType = this.type.code,
   createdTime = this.audit.createDatetime.toDateTime(),
 )
 

@@ -15,10 +15,14 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.contact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.contactAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.contactAddressPhone
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.contactEmail
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.contactPhone
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.prisonerContact
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactEmailRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
@@ -36,6 +40,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.N
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonEmailAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonPhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.LocalDate
@@ -839,31 +844,333 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
   @Nested
   @DisplayName("PHONES_PERSON-INSERTED")
   inner class PersonPhoneAdded {
-    private val personId = 123456L
-    private val phoneId = 76543L
+    private val nomisPhoneId = 3456L
+    private val nomisPersonId = 123456L
+    private val dpsContactPhoneId = 937373L
 
-    @BeforeEach
-    fun setUp() {
-      awsSqsContactPersonOffenderEventsClient.sendMessage(
-        contactPersonQueueOffenderEventsUrl,
-        personPhoneEvent(
-          eventType = "PHONES_PERSON-INSERTED",
-          personId = personId,
-          phoneId = phoneId,
-        ),
-      ).also { waitForAnyProcessingToComplete() }
+    @Nested
+    inner class WhenCreatedInDps {
+      @BeforeEach
+      fun setUp() {
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personPhoneEvent(
+            eventType = "PHONES_PERSON-INSERTED",
+            personId = nomisPersonId,
+            phoneId = nomisPhoneId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not create phone in DPS`() {
+        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/sync/contact-phone")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-phone-synchronisation-created-skipped"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisPhoneId"]).isEqualTo(nomisPhoneId.toString())
+          },
+          isNull(),
+        )
+      }
     }
 
-    @Test
-    fun `will track telemetry`() {
-      verify(telemetryClient).trackEvent(
-        eq("contactperson-person-phone-synchronisation-created-success"),
-        check {
-          assertThat(it["personId"]).isEqualTo(personId.toString())
-          assertThat(it["phoneId"]).isEqualTo(phoneId.toString())
-        },
-        isNull(),
-      )
+    @Nested
+    inner class WhenCreatedInNomis {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisPhoneIdOrNull(nomisPhoneId = nomisPhoneId, mapping = null)
+        nomisApiMock.stubGetPerson(
+          personId = nomisPersonId,
+          person = contactPerson().copy(
+            personId = nomisPersonId,
+            phoneNumbers = listOf(
+              PersonPhoneNumber(
+                phoneId = nomisPhoneId,
+                number = "07973 555 555",
+                type = CodeDescription("MOB", "Mobile"),
+                extension = "x555",
+                audit = NomisAudit(
+                  createUsername = "J.SPEAK",
+                  createDatetime = "2024-09-01T13:31",
+                ),
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubCreateContactPhone(contactPhone().copy(contactPhoneId = dpsContactPhoneId))
+        mappingApiMock.stubCreatePhoneMapping()
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personPhoneEvent(
+            eventType = "PHONES_PERSON-INSERTED",
+            personId = nomisPersonId,
+            phoneId = nomisPhoneId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will check if mapping already exists`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/contact-person/phone/nomis-phone-id/$nomisPhoneId")))
+      }
+
+      @Test
+      fun `will retrieve the details from NOMIS`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/persons/$nomisPersonId")))
+      }
+
+      @Test
+      fun `will create the phone in DPS from the person`() {
+        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/contact-phone")))
+        val request: SyncCreateContactPhoneRequest = ContactPersonDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/sync/contact-phone")))
+        with(request) {
+          // DPS and NOMIS contact/person id are the same
+          assertThat(contactId).isEqualTo(nomisPersonId)
+          assertThat(phoneType).isEqualTo("MOB")
+          assertThat(phoneNumber).isEqualTo("07973 555 555")
+          assertThat(extNumber).isEqualTo("x555")
+          assertThat(createdBy).isEqualTo("J.SPEAK")
+          assertThat(createdTime).isEqualTo("2024-09-01T13:31")
+        }
+      }
+
+      @Test
+      fun `will create a mapping between the DPS and NOMIS record`() {
+        mappingApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/contact-person/phone"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", dpsContactPhoneId)
+            .withRequestBodyJsonPath("dpsPhoneType", "PERSON")
+            .withRequestBodyJsonPath("nomisId", "$nomisPhoneId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-phone-synchronisation-created-success"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisPhoneId"]).isEqualTo(nomisPhoneId.toString())
+            assertThat(it["dpsContactPhoneId"]).isEqualTo(dpsContactPhoneId.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenAlreadyCreated {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisPhoneIdOrNull(
+          nomisPhoneId = nomisPhoneId,
+          mapping = PersonPhoneMappingDto(
+            dpsId = "$dpsContactPhoneId",
+            nomisId = nomisPhoneId,
+            dpsPhoneType = PersonPhoneMappingDto.DpsPersonPhoneType.PERSON,
+            mappingType = PersonPhoneMappingDto.MappingType.NOMIS_CREATED,
+          ),
+        )
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personPhoneEvent(
+            eventType = "PHONES_PERSON-INSERTED",
+            personId = nomisPersonId,
+            phoneId = nomisPhoneId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not create phone in DPS`() {
+        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/sync/contact-phone")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-phone-synchronisation-created-ignored"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisPhoneId"]).isEqualTo(nomisPhoneId.toString())
+            assertThat(it["dpsContactPhoneId"]).isEqualTo(dpsContactPhoneId.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenDuplicateMapping {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisPhoneIdOrNull(nomisPhoneId = nomisPhoneId, mapping = null)
+        nomisApiMock.stubGetPerson(
+          personId = nomisPersonId,
+          person = contactPerson().copy(
+            personId = nomisPersonId,
+            phoneNumbers = listOf(
+              PersonPhoneNumber(
+                phoneId = nomisPhoneId,
+                number = "07973 555 555",
+                type = CodeDescription("MOB", "Mobile"),
+                extension = "x555",
+                audit = NomisAudit(
+                  createUsername = "J.SPEAK",
+                  createDatetime = "2024-09-01T13:31",
+                ),
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubCreateContactPhone(contactPhone().copy(contactPhoneId = dpsContactPhoneId))
+        mappingApiMock.stubCreatePhoneMapping(
+          error = DuplicateMappingErrorResponse(
+            moreInfo = DuplicateErrorContentObject(
+              duplicate = PersonPhoneMappingDto(
+                dpsId = dpsContactPhoneId.toString(),
+                nomisId = nomisPhoneId,
+                dpsPhoneType = PersonPhoneMappingDto.DpsPersonPhoneType.PERSON,
+                mappingType = PersonPhoneMappingDto.MappingType.NOMIS_CREATED,
+              ),
+              existing = PersonPhoneMappingDto(
+                dpsId = "9999",
+                nomisId = nomisPhoneId,
+                dpsPhoneType = PersonPhoneMappingDto.DpsPersonPhoneType.PERSON,
+                mappingType = PersonPhoneMappingDto.MappingType.NOMIS_CREATED,
+              ),
+            ),
+            errorCode = 1409,
+            status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+            userMessage = "Duplicate mapping",
+          ),
+        )
+
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personPhoneEvent(
+            eventType = "PHONES_PERSON-INSERTED",
+            personId = nomisPersonId,
+            phoneId = nomisPhoneId,
+          ),
+        ).also { waitForAnyProcessingToComplete("from-nomis-sync-contactperson-duplicate") }
+      }
+
+      @Test
+      fun `will create the phone in DPS once`() {
+        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/contact-phone")))
+      }
+
+      @Test
+      fun `will attempt to create a mapping between the DPS and NOMIS record once`() {
+        mappingApiMock.verify(
+          1,
+          postRequestedFor(urlPathEqualTo("/mapping/contact-person/phone"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsPhoneType", "PERSON")
+            .withRequestBodyJsonPath("dpsId", dpsContactPhoneId)
+            .withRequestBodyJsonPath("nomisId", "$nomisPhoneId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for both overall success and duplicate`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-phone-synchronisation-created-success"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisPhoneId"]).isEqualTo(nomisPhoneId.toString())
+            assertThat(it["dpsContactPhoneId"]).isEqualTo(dpsContactPhoneId.toString())
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("from-nomis-sync-contactperson-duplicate"),
+          check {
+            assertThat(it["existingNomisPhoneId"]).isEqualTo(nomisPhoneId.toString())
+            assertThat(it["existingDpsContactPhoneId"]).isEqualTo("9999")
+            assertThat(it["duplicateNomisPhoneId"]).isEqualTo(nomisPhoneId.toString())
+            assertThat(it["duplicateDpsContactPhoneId"]).isEqualTo(dpsContactPhoneId.toString())
+            assertThat(it["type"]).isEqualTo("PHONE")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class MappingCreateFails {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisPhoneIdOrNull(nomisPhoneId = nomisPhoneId, mapping = null)
+        nomisApiMock.stubGetPerson(
+          personId = nomisPersonId,
+          person = contactPerson().copy(
+            personId = nomisPersonId,
+            phoneNumbers = listOf(
+              PersonPhoneNumber(
+                phoneId = nomisPhoneId,
+                number = "07973 555 555",
+                type = CodeDescription("MOB", "Mobile"),
+                extension = "x555",
+                audit = NomisAudit(
+                  createUsername = "J.SPEAK",
+                  createDatetime = "2024-09-01T13:31",
+                ),
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubCreateContactPhone(contactPhone().copy(contactPhoneId = dpsContactPhoneId))
+        mappingApiMock.stubCreatePhoneMappingFollowedBySuccess()
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personPhoneEvent(
+            eventType = "PHONES_PERSON-INSERTED",
+            personId = nomisPersonId,
+            phoneId = nomisPhoneId,
+          ),
+        ).also { waitForAnyProcessingToComplete("contactperson-phone-mapping-synchronisation-created") }
+      }
+
+      @Test
+      fun `will create the phone in DPS once`() {
+        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/contact-phone")))
+      }
+
+      @Test
+      fun `will create a mapping between the DPS and NOMIS record`() {
+        mappingApiMock.verify(
+          2,
+          postRequestedFor(urlPathEqualTo("/mapping/contact-person/phone"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", dpsContactPhoneId)
+            .withRequestBodyJsonPath("nomisId", "$nomisPhoneId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-phone-synchronisation-created-success"),
+          check {
+            assertThat(it["nomisPhoneId"]).isEqualTo(nomisPhoneId.toString())
+            assertThat(it["dpsContactPhoneId"]).isEqualTo(dpsContactPhoneId.toString())
+          },
+          isNull(),
+        )
+      }
     }
   }
 
@@ -932,32 +1239,406 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
   @Nested
   @DisplayName("PHONES_PERSON-INSERTED - address")
   inner class PersonAddressPhoneAdded {
-    private val personId = 123456L
-    private val phoneId = 76543L
+    private val nomisPhoneId = 3456L
+    private val nomisPersonId = 123456L
+    private val nomisAddressId = 652882L
+    private val dpsContactAddressId = 637373L
+    private val dpsContactAddressPhoneId = 937373L
 
-    @BeforeEach
-    fun setUp() {
-      awsSqsContactPersonOffenderEventsClient.sendMessage(
-        contactPersonQueueOffenderEventsUrl,
-        personPhoneEvent(
-          eventType = "PHONES_PERSON-INSERTED",
-          personId = personId,
-          phoneId = phoneId,
-          isAddress = true,
-        ),
-      ).also { waitForAnyProcessingToComplete() }
+    @Nested
+    inner class WhenCreatedInDps {
+      @BeforeEach
+      fun setUp() {
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personAddressPhoneEvent(
+            eventType = "PHONES_PERSON-INSERTED",
+            personId = nomisPersonId,
+            phoneId = nomisPhoneId,
+            addressId = nomisAddressId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not create phone in DPS`() {
+        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/sync/contact-address-phone")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-phone-synchronisation-created-skipped"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisPhoneId"]).isEqualTo(nomisPhoneId.toString())
+          },
+          isNull(),
+        )
+      }
     }
 
-    @Test
-    fun `will track telemetry`() {
-      verify(telemetryClient).trackEvent(
-        eq("contactperson-person-address-phone-synchronisation-created-todo"),
-        check {
-          assertThat(it["personId"]).isEqualTo(personId.toString())
-          assertThat(it["phoneId"]).isEqualTo(phoneId.toString())
-        },
-        isNull(),
-      )
+    @Nested
+    inner class WhenCreatedInNomis {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisPhoneIdOrNull(nomisPhoneId = nomisPhoneId, mapping = null)
+        mappingApiMock.stubGetByNomisAddressId(
+          nomisAddressId = nomisAddressId,
+          PersonAddressMappingDto(
+            nomisId = nomisAddressId,
+            dpsId = dpsContactAddressId.toString(),
+            mappingType = PersonAddressMappingDto.MappingType.MIGRATED,
+          ),
+        )
+        nomisApiMock.stubGetPerson(
+          personId = nomisPersonId,
+          person = contactPerson().copy(
+            personId = nomisPersonId,
+            addresses = listOf(
+              PersonAddress(
+                addressId = nomisAddressId,
+                phoneNumbers = listOf(
+                  PersonPhoneNumber(
+                    phoneId = nomisPhoneId,
+                    number = "07973 555 555",
+                    type = CodeDescription("MOB", "Mobile"),
+                    extension = "x555",
+                    audit = NomisAudit(
+                      createUsername = "J.SPEAK",
+                      createDatetime = "2024-09-01T13:31",
+                    ),
+                  ),
+                ),
+                mailAddress = true,
+                primaryAddress = true,
+                validatedPAF = true,
+                audit = NomisAudit(
+                  createUsername = "J.SPEAK",
+                  createDatetime = "2024-09-01T13:31",
+                ),
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubCreateContactAddressPhone(contactAddressPhone().copy(contactAddressPhoneId = dpsContactAddressPhoneId))
+        mappingApiMock.stubCreatePhoneMapping()
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personAddressPhoneEvent(
+            eventType = "PHONES_PERSON-INSERTED",
+            personId = nomisPersonId,
+            phoneId = nomisPhoneId,
+            addressId = nomisAddressId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will check if mapping already exists`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/contact-person/phone/nomis-phone-id/$nomisPhoneId")))
+      }
+
+      @Test
+      fun `will retrieve the address mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/contact-person/address/nomis-address-id/$nomisAddressId")))
+      }
+
+      @Test
+      fun `will retrieve the details from NOMIS`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/persons/$nomisPersonId")))
+      }
+
+      @Test
+      fun `will create the address phone in DPS from the person`() {
+        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/contact-address-phone")))
+        val request: SyncCreateContactAddressPhoneRequest = ContactPersonDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/sync/contact-address-phone")))
+        with(request) {
+          assertThat(contactAddressId).isEqualTo(dpsContactAddressId)
+          assertThat(phoneType).isEqualTo("MOB")
+          assertThat(phoneNumber).isEqualTo("07973 555 555")
+          assertThat(extNumber).isEqualTo("x555")
+          assertThat(createdBy).isEqualTo("J.SPEAK")
+          assertThat(createdTime).isEqualTo("2024-09-01T13:31")
+        }
+      }
+
+      @Test
+      fun `will create a mapping between the DPS and NOMIS record`() {
+        mappingApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/contact-person/phone"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", dpsContactAddressPhoneId)
+            .withRequestBodyJsonPath("dpsPhoneType", "ADDRESS")
+            .withRequestBodyJsonPath("nomisId", "$nomisPhoneId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-phone-synchronisation-created-success"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisPhoneId"]).isEqualTo(nomisPhoneId.toString())
+            assertThat(it["nomisAddressId"]).isEqualTo(nomisAddressId.toString())
+            assertThat(it["dpsContactAddressId"]).isEqualTo(dpsContactAddressId.toString())
+            assertThat(it["dpsContactAddressPhoneId"]).isEqualTo(dpsContactAddressPhoneId.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenAlreadyCreated {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisPhoneIdOrNull(
+          nomisPhoneId = nomisPhoneId,
+          mapping = PersonPhoneMappingDto(
+            dpsId = "$dpsContactAddressPhoneId",
+            nomisId = nomisPhoneId,
+            dpsPhoneType = PersonPhoneMappingDto.DpsPersonPhoneType.ADDRESS,
+            mappingType = PersonPhoneMappingDto.MappingType.NOMIS_CREATED,
+          ),
+        )
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personAddressPhoneEvent(
+            eventType = "PHONES_PERSON-INSERTED",
+            personId = nomisPersonId,
+            phoneId = nomisPhoneId,
+            addressId = nomisAddressId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not create phone in DPS`() {
+        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/sync/contact-address-phone")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-phone-synchronisation-created-ignored"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisPhoneId"]).isEqualTo(nomisPhoneId.toString())
+            assertThat(it["dpsContactPhoneId"]).isEqualTo(dpsContactAddressPhoneId.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenDuplicateMapping {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisPhoneIdOrNull(nomisPhoneId = nomisPhoneId, mapping = null)
+        mappingApiMock.stubGetByNomisAddressId(
+          nomisAddressId = nomisAddressId,
+          PersonAddressMappingDto(
+            nomisId = nomisAddressId,
+            dpsId = dpsContactAddressId.toString(),
+            mappingType = PersonAddressMappingDto.MappingType.MIGRATED,
+          ),
+        )
+        nomisApiMock.stubGetPerson(
+          personId = nomisPersonId,
+          person = contactPerson().copy(
+            personId = nomisPersonId,
+            addresses = listOf(
+              PersonAddress(
+                addressId = nomisAddressId,
+                phoneNumbers = listOf(
+                  PersonPhoneNumber(
+                    phoneId = nomisPhoneId,
+                    number = "07973 555 555",
+                    type = CodeDescription("MOB", "Mobile"),
+                    extension = "x555",
+                    audit = NomisAudit(
+                      createUsername = "J.SPEAK",
+                      createDatetime = "2024-09-01T13:31",
+                    ),
+                  ),
+                ),
+                mailAddress = true,
+                primaryAddress = true,
+                validatedPAF = true,
+                audit = NomisAudit(
+                  createUsername = "J.SPEAK",
+                  createDatetime = "2024-09-01T13:31",
+                ),
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubCreateContactAddressPhone(contactAddressPhone().copy(contactAddressPhoneId = dpsContactAddressPhoneId))
+        mappingApiMock.stubCreatePhoneMapping(
+          error = DuplicateMappingErrorResponse(
+            moreInfo = DuplicateErrorContentObject(
+              duplicate = PersonPhoneMappingDto(
+                dpsId = dpsContactAddressPhoneId.toString(),
+                nomisId = nomisPhoneId,
+                dpsPhoneType = PersonPhoneMappingDto.DpsPersonPhoneType.ADDRESS,
+                mappingType = PersonPhoneMappingDto.MappingType.NOMIS_CREATED,
+              ),
+              existing = PersonPhoneMappingDto(
+                dpsId = "9999",
+                nomisId = nomisPhoneId,
+                dpsPhoneType = PersonPhoneMappingDto.DpsPersonPhoneType.ADDRESS,
+                mappingType = PersonPhoneMappingDto.MappingType.NOMIS_CREATED,
+              ),
+            ),
+            errorCode = 1409,
+            status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+            userMessage = "Duplicate mapping",
+          ),
+        )
+
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personAddressPhoneEvent(
+            eventType = "PHONES_PERSON-INSERTED",
+            personId = nomisPersonId,
+            phoneId = nomisPhoneId,
+            addressId = nomisAddressId,
+          ),
+        ).also { waitForAnyProcessingToComplete("from-nomis-sync-contactperson-duplicate") }
+      }
+
+      @Test
+      fun `will create the phone in DPS once`() {
+        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/contact-address-phone")))
+      }
+
+      @Test
+      fun `will attempt to create a mapping between the DPS and NOMIS record once`() {
+        mappingApiMock.verify(
+          1,
+          postRequestedFor(urlPathEqualTo("/mapping/contact-person/phone"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsPhoneType", "ADDRESS")
+            .withRequestBodyJsonPath("dpsId", dpsContactAddressPhoneId)
+            .withRequestBodyJsonPath("nomisId", "$nomisPhoneId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for both overall success and duplicate`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-phone-synchronisation-created-success"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisPhoneId"]).isEqualTo(nomisPhoneId.toString())
+            assertThat(it["dpsContactAddressPhoneId"]).isEqualTo(dpsContactAddressPhoneId.toString())
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("from-nomis-sync-contactperson-duplicate"),
+          check {
+            assertThat(it["existingNomisPhoneId"]).isEqualTo(nomisPhoneId.toString())
+            assertThat(it["existingDpsContactPhoneId"]).isEqualTo("9999")
+            assertThat(it["duplicateNomisPhoneId"]).isEqualTo(nomisPhoneId.toString())
+            assertThat(it["duplicateDpsContactPhoneId"]).isEqualTo(dpsContactAddressPhoneId.toString())
+            assertThat(it["type"]).isEqualTo("PHONE")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class MappingCreateFails {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisPhoneIdOrNull(nomisPhoneId = nomisPhoneId, mapping = null)
+        mappingApiMock.stubGetByNomisAddressId(
+          nomisAddressId = nomisAddressId,
+          PersonAddressMappingDto(
+            nomisId = nomisAddressId,
+            dpsId = dpsContactAddressId.toString(),
+            mappingType = PersonAddressMappingDto.MappingType.MIGRATED,
+          ),
+        )
+        nomisApiMock.stubGetPerson(
+          personId = nomisPersonId,
+          person = contactPerson().copy(
+            personId = nomisPersonId,
+            addresses = listOf(
+              PersonAddress(
+                addressId = nomisAddressId,
+                phoneNumbers = listOf(
+                  PersonPhoneNumber(
+                    phoneId = nomisPhoneId,
+                    number = "07973 555 555",
+                    type = CodeDescription("MOB", "Mobile"),
+                    extension = "x555",
+                    audit = NomisAudit(
+                      createUsername = "J.SPEAK",
+                      createDatetime = "2024-09-01T13:31",
+                    ),
+                  ),
+                ),
+                mailAddress = true,
+                primaryAddress = true,
+                validatedPAF = true,
+                audit = NomisAudit(
+                  createUsername = "J.SPEAK",
+                  createDatetime = "2024-09-01T13:31",
+                ),
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubCreateContactAddressPhone(contactAddressPhone().copy(contactAddressPhoneId = dpsContactAddressPhoneId))
+        mappingApiMock.stubCreatePhoneMappingFollowedBySuccess()
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personAddressPhoneEvent(
+            eventType = "PHONES_PERSON-INSERTED",
+            personId = nomisPersonId,
+            phoneId = nomisPhoneId,
+            addressId = nomisAddressId,
+          ),
+        ).also { waitForAnyProcessingToComplete("contactperson-phone-mapping-synchronisation-created") }
+      }
+
+      @Test
+      fun `will create the phone in DPS once`() {
+        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/contact-address-phone")))
+      }
+
+      @Test
+      fun `will create a mapping between the DPS and NOMIS record`() {
+        mappingApiMock.verify(
+          2,
+          postRequestedFor(urlPathEqualTo("/mapping/contact-person/phone"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", dpsContactAddressPhoneId)
+            .withRequestBodyJsonPath("nomisId", "$nomisPhoneId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-phone-synchronisation-created-success"),
+          check {
+            assertThat(it["nomisPhoneId"]).isEqualTo(nomisPhoneId.toString())
+            assertThat(it["dpsContactAddressPhoneId"]).isEqualTo(dpsContactAddressPhoneId.toString())
+          },
+          isNull(),
+        )
+      }
     }
   }
 
@@ -2223,6 +2904,27 @@ fun personPhoneEvent(
   """{
     "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
     "Message": "{\"eventId\":\"5958295\",\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"phoneId\": \"$phoneId\",\"personId\": \"$personId\",\"isAddress\": \"$isAddress\",\"auditModuleName\":\"$auditModuleName\",\"nomisEventType\":\"$eventType\" }",
+    "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
+    "MessageAttributes": {
+      "eventType": {"Type": "String", "Value": "$eventType"}, 
+      "id": {"Type": "String", "Value": "8b07cbd9-0820-0a0f-c32f-a9429b618e0b"}, 
+      "contentType": {"Type": "String", "Value": "text/plain;charset=UTF-8"}, 
+      "timestamp": {"Type": "Number.java.lang.Long", "Value": "1571666478344"}
+    }
+}
+  """.trimIndent()
+
+fun personAddressPhoneEvent(
+  eventType: String,
+  personId: Long,
+  phoneId: Long,
+  addressId: Long,
+  auditModuleName: String = "OCDGNUMB",
+  isAddress: Boolean = true,
+) = // language=JSON
+  """{
+    "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
+    "Message": "{\"eventId\":\"5958295\",\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"phoneId\": \"$phoneId\",\"personId\": \"$personId\",\"addressId\": \"$addressId\",\"isAddress\": \"$isAddress\",\"auditModuleName\":\"$auditModuleName\",\"nomisEventType\":\"$eventType\" }",
     "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
     "MessageAttributes": {
       "eventType": {"Type": "String", "Value": "$eventType"}, 
