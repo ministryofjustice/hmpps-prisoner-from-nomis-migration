@@ -83,6 +83,60 @@ class IncidentsNomisApiServiceTest {
   }
 
   @Nested
+  @DisplayName("GET /incidents/{nomisIncidentId}")
+  inner class GetIncidentOrNull {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      incidentsNomisApiMockServer.stubGetIncident()
+
+      nomisApiService.getIncidentOrNull(1234L)
+
+      incidentsNomisApiMockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass NOMIS ids to service`() = runTest {
+      incidentsNomisApiMockServer.stubGetIncident()
+
+      nomisApiService.getIncidentOrNull(1234L)
+
+      incidentsNomisApiMockServer.verify(
+        getRequestedFor(urlPathEqualTo("/incidents/1234")),
+      )
+    }
+
+    @Test
+    fun `will return an incident`() = runTest {
+      incidentsNomisApiMockServer.stubGetIncident()
+
+      val incident = nomisApiService.getIncidentOrNull(1234L)!!
+
+      assertThat(incident.incidentId).isEqualTo(1234)
+      assertThat(incident.status.code).isEqualTo("AWAN")
+      assertThat(incident.incidentDateTime).isEqualTo("2017-04-12T16:45:00")
+    }
+
+    @Test
+    fun `will not throw error when incident does not exist`() = runTest {
+      incidentsNomisApiMockServer.stubGetIncident(NOT_FOUND)
+
+      val incident = nomisApiService.getIncidentOrNull(1234L)
+      assertThat(incident).isNull()
+    }
+
+    @Test
+    fun `will throw error when API returns an error`() = runTest {
+      incidentsNomisApiMockServer.stubGetIncident(INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        nomisApiService.getIncidentOrNull(1234L)
+      }
+    }
+  }
+
+  @Nested
   @DisplayName("GET /incidents/ids")
   inner class GetIncidentsToMigrate {
     @Test

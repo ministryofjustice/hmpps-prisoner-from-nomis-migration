@@ -304,8 +304,14 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         }
 
         @Test
-        fun `will not create telemetry tracking`() {
-          verify(telemetryClient, Times(0)).trackEvent(any(), any(), isNull())
+        fun `will create telemetry tracking`() {
+          verify(telemetryClient, Mockito.atLeastOnce()).trackEvent(
+            eq("incidents-synchronisation-updated-failed"),
+            check {
+              assertThat(it["nomisIncidentId"]).isEqualTo("1234")
+            },
+            isNull(),
+          )
         }
       }
 
