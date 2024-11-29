@@ -6,9 +6,9 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateChargeResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearanceResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCaseResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtAppearanceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
@@ -67,7 +67,7 @@ class CourtSentencingMigrationService(
           courtCaseId = nomisCaseId,
         )
 
-      courtSentencingDpsService.createCourtCaseMigration(nomisCourtCase.toDpsCourtCase()).also { dpsCourtCaseCreateResponse ->
+      courtSentencingDpsService.createCourtCaseMigration(nomisCourtCase.toMigrationDpsCourtCase()).also { dpsCourtCaseCreateResponse ->
         createCourtCaseMapping(nomisCourtCase = nomisCourtCase, dpsCourtCaseCreateResponse = dpsCourtCaseCreateResponse, context)
         telemetryClient.trackEvent(
           "court-sentencing-migration-entity-migrated",
@@ -85,7 +85,7 @@ class CourtSentencingMigrationService(
 
   private suspend fun createCourtCaseMapping(
     nomisCourtCase: CourtCaseResponse,
-    dpsCourtCaseCreateResponse: CreateCourtCaseResponse,
+    dpsCourtCaseCreateResponse: MigrationCreateCourtCaseResponse,
     context: MigrationContext<*>,
   ) {
     val mapping = CourtCaseAllMappingDto(
@@ -134,11 +134,11 @@ class CourtSentencingMigrationService(
   }
 
   // dependent on court appearance order back from dps to match nomis
-  private fun buildCourtAppearanceMapping(responseMappings: List<CreateCourtAppearanceResponse>): List<CourtAppearanceMappingDto> {
-    return responseMappings.map { it -> CourtAppearanceMappingDto(nomisCourtAppearanceId = it.eventId!!.toLong(), dpsCourtAppearanceId = it.appearanceUuid.toString()) }
+  private fun buildCourtAppearanceMapping(responseMappings: List<MigrationCreateCourtAppearanceResponse>): List<CourtAppearanceMappingDto> {
+    return responseMappings.map { it -> CourtAppearanceMappingDto(nomisCourtAppearanceId = it.eventId.toLong(), dpsCourtAppearanceId = it.lifetimeUuid.toString()) }
   }
 
-  private fun buildCourtChargeMapping(responseMappings: List<CreateChargeResponse>): List<CourtChargeMappingDto> {
-    return responseMappings.map { it -> CourtChargeMappingDto(nomisCourtChargeId = it.offenderChargeId!!.toLong(), dpsCourtChargeId = it.chargeUuid.toString()) }
+  private fun buildCourtChargeMapping(responseMappings: List<MigrationCreateChargeResponse>): List<CourtChargeMappingDto> {
+    return responseMappings.map { it -> CourtChargeMappingDto(nomisCourtChargeId = it.chargeNOMISId.toLong(), dpsCourtChargeId = it.lifetimeChargeUuid.toString()) }
   }
 }

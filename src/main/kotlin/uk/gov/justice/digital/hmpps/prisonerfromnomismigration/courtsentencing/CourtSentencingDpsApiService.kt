@@ -10,10 +10,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearanceResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCase
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtCaseCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCourtCase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
 
 @Service
 class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") private val webClient: WebClient) {
@@ -26,26 +26,26 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .awaitBody()
 
   // separating this out for now - DPS may use the same endpoint
-  suspend fun createCourtCaseMigration(courtCase: CreateCourtCase): CreateCourtCaseResponse =
+  suspend fun createCourtCaseMigration(courtCase: MigrationCreateCourtCase): MigrationCreateCourtCaseResponse =
     webClient
       .post()
-      .uri("/court-case")
+      .uri("/legacy/court-case/migration")
       .bodyValue(courtCase)
       .retrieve()
       .awaitBody()
 
-  suspend fun updateCourtCase(courtCaseId: String, courtCase: CreateCourtCase): CreateCourtCaseResponse =
+  suspend fun updateCourtCase(courtCaseId: String, courtCase: LegacyCreateCourtCase) =
     webClient
       .put()
-      .uri("/court-case/{courtCaseId}", courtCaseId)
+      .uri("/legacy/court-case/{courtCaseId}", courtCaseId)
       .bodyValue(courtCase)
       .retrieve()
-      .awaitBody()
+      .awaitBodilessEntity()
 
   suspend fun deleteCourtCase(courtCaseId: String) =
     webClient
       .delete()
-      .uri("/court-case/{courtCaseId}", courtCaseId)
+      .uri("/legacy/court-case/{courtCaseId}", courtCaseId)
       .retrieve()
       .awaitBodilessEntity()
 

@@ -16,6 +16,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearanceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtCaseCreatedResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
 import java.util.UUID
 
 class CourtSentencingDpsApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
@@ -63,14 +64,14 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubPostCourtCaseForCreateMigration(
     courtCaseId: String = UUID.randomUUID().toString(),
-    response: CreateCourtCaseResponse = CreateCourtCaseResponse(
+    response: MigrationCreateCourtCaseResponse = MigrationCreateCourtCaseResponse(
       courtCaseUuid = courtCaseId,
       charges = emptyList(),
       appearances = emptyList(),
     ),
   ) {
     stubFor(
-      post("/court-case")
+      post("/legacy/court-case/migration")
         .willReturn(
           aResponse()
             .withStatus(201)
@@ -89,7 +90,7 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     ),
   ) {
     stubFor(
-      put("/court-case/$courtCaseId")
+      put("/legacy/court-case/$courtCaseId")
         .willReturn(
           aResponse()
             .withStatus(200)
@@ -116,7 +117,7 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     courtCaseId: String = UUID.randomUUID().toString(),
   ) {
     stubFor(
-      delete("/court-case/$courtCaseId")
+      delete("/legacy/court-case/$courtCaseId")
         .willReturn(
           aResponse()
             .withStatus(204)
@@ -290,7 +291,7 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun createCourtCaseMigrationCount() =
-    findAll(WireMock.postRequestedFor(WireMock.urlMatching("/court-case"))).count()
+    findAll(WireMock.postRequestedFor(WireMock.urlMatching("/legacy/court-case/migration"))).count()
 
   fun createCourtCaseForSynchronisationCount() =
     findAll(WireMock.postRequestedFor(WireMock.urlMatching("/legacy/court-case"))).count()
