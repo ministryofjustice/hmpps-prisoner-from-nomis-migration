@@ -352,6 +352,84 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
         ).willSetStateTo(Scenario.STARTED),
     )
   }
+
+  fun stubCreatePhoneMapping() {
+    mappingApi.stubFor(
+      post("/mapping/contact-person/phone").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
+  fun stubCreatePhoneMapping(error: DuplicateMappingErrorResponse) {
+    mappingApi.stubFor(
+      post("/mapping/contact-person/phone").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(409)
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubCreatePhoneMappingFollowedBySuccess(status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      post("/mapping/contact-person/phone")
+        .inScenario("Retry Mapping Phone Scenario")
+        .whenScenarioStateIs(Scenario.STARTED)
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody(objectMapper.writeValueAsString(error)),
+        ).willSetStateTo("Cause Mapping Phone Success"),
+    )
+
+    mappingApi.stubFor(
+      post("/mapping/contact-person/phone")
+        .inScenario("Retry Mapping Phone Scenario")
+        .whenScenarioStateIs("Cause Mapping Phone Success")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(201),
+
+        ).willSetStateTo(Scenario.STARTED),
+    )
+  }
+
+  fun stubGetByNomisPhoneIdOrNull(
+    nomisPhoneId: Long = 123456,
+    mapping: PersonPhoneMappingDto? = PersonPhoneMappingDto(
+      nomisId = 123456,
+      dpsId = "654321",
+      dpsPhoneType = PersonPhoneMappingDto.DpsPersonPhoneType.PERSON,
+      mappingType = PersonPhoneMappingDto.MappingType.MIGRATED,
+    ),
+  ) {
+    mapping?.apply {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/contact-person/phone/nomis-phone-id/$nomisPhoneId")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(objectMapper.writeValueAsString(mapping)),
+        ),
+      )
+    } ?: run {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/contact-person/phone/nomis-phone-id/$nomisPhoneId")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NOT_FOUND.value())
+            .withBody(objectMapper.writeValueAsString(ErrorResponse(status = 404))),
+        ),
+      )
+    }
+  }
+
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
   fun verify(count: CountMatchingStrategy, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)

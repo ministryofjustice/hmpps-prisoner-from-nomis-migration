@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import kotlinx.coroutines.reactive.awaitFirstOrDefault
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.core.ParameterizedTypeReference
@@ -47,6 +48,14 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
     .uri(
       "/mapping/contact-person/email/nomis-internet-address-id/{nomisAddressId}",
       nomisInternetAddressId,
+    )
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
+
+  suspend fun getByNomisPhoneIdOrNull(nomisPhoneId: Long): PersonPhoneMappingDto? = webClient.get()
+    .uri(
+      "/mapping/contact-person/phone/nomis-phone-id/{nomisPhoneId}",
+      nomisPhoneId,
     )
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
@@ -105,4 +114,70 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
       Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<PersonEmailMappingDto>>() {})))
     }
     .awaitFirstOrDefault(CreateMappingResult())
+
+  suspend fun createPhoneMapping(mappings: PersonPhoneMappingDto): CreateMappingResult<PersonPhoneMappingDto> = webClient.post()
+    .uri("/mapping/contact-person/phone")
+    .bodyValue(mappings)
+    .retrieve()
+    .bodyToMono(Unit::class.java)
+    .map { CreateMappingResult<PersonPhoneMappingDto>() }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<PersonPhoneMappingDto>>() {})))
+    }
+    .awaitFirstOrDefault(CreateMappingResult())
+}
+
+// TODO replace with generated DTO once other PR is merged
+data class PersonPhoneMappingDto(
+
+  /* DPS id */
+  @get:JsonProperty("dpsId")
+  val dpsId: String,
+
+  /* NOMIS id */
+  @get:JsonProperty("nomisId")
+  val nomisId: Long,
+
+  @get:JsonProperty("mappingType")
+  val mappingType: MappingType,
+
+  @get:JsonProperty("dpsPhoneType")
+  val dpsPhoneType: DpsPersonPhoneType,
+
+  @get:JsonProperty("label")
+  val label: String? = null,
+
+  @get:JsonProperty("whenCreated")
+  val whenCreated: String? = null,
+
+) {
+
+  /**
+   *
+   *
+   * Values: MIGRATED,DPS_CREATED,NOMIS_CREATED
+   */
+  enum class MappingType(val value: String) {
+    @JsonProperty(value = "MIGRATED")
+    MIGRATED("MIGRATED"),
+
+    @JsonProperty(value = "DPS_CREATED")
+    DPS_CREATED("DPS_CREATED"),
+
+    @JsonProperty(value = "NOMIS_CREATED")
+    NOMIS_CREATED("NOMIS_CREATED"),
+  }
+
+  /**
+   *
+   *
+   * Values: PERSON,ADDRESS
+   */
+  enum class DpsPersonPhoneType(val value: String) {
+    @JsonProperty(value = "PERSON")
+    PERSON("PERSON"),
+
+    @JsonProperty(value = "ADDRESS")
+    ADDRESS("ADDRESS"),
+  }
 }
