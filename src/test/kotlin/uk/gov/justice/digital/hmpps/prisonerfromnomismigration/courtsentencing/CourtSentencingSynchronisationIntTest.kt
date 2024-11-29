@@ -512,7 +512,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
               1,
-              deleteRequestedFor(urlPathEqualTo("/court-case/$DPS_COURT_CASE_ID")),
+              deleteRequestedFor(urlPathEqualTo("/legacy/court-case/$DPS_COURT_CASE_ID")),
               // TODO DPS to implement this endpoint
             )
           }
@@ -579,7 +579,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
               1,
-              deleteRequestedFor(urlPathEqualTo("/court-case/$DPS_COURT_CASE_ID")),
+              deleteRequestedFor(urlPathEqualTo("/legacy/court-case/$DPS_COURT_CASE_ID")),
               // TODO DPS to implement this endpoint
             )
           }
@@ -746,7 +746,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
               1,
-              putRequestedFor(urlPathEqualTo("/court-case/$DPS_COURT_CASE_ID")),
+              putRequestedFor(urlPathEqualTo("/legacy/court-case/$DPS_COURT_CASE_ID")),
             )
           }
         }

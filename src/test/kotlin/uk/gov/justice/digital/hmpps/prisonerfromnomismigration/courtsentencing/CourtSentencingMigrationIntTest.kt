@@ -28,9 +28,9 @@ import org.springframework.web.reactive.function.BodyInserter
 import org.springframework.web.reactive.function.BodyInserters
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.dpsCourtSentencingServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateChargeResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearanceResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCaseResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtAppearanceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseIdentifierResponse
@@ -210,26 +210,20 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
       await untilAsserted {
         dpsCourtSentencingServer.verify(
           1,
-          WireMock.postRequestedFor(WireMock.urlPathEqualTo("/court-case"))
+          WireMock.postRequestedFor(WireMock.urlPathEqualTo("/legacy/court-case/migration"))
             .withRequestBody(
               WireMock.matchingJsonPath(
-                "legacyData.caseReferences[0].offenderCaseReference",
+                "courtCaseLegacyData.caseReferences[0].offenderCaseReference",
                 WireMock.equalTo("YY12345678"),
               ),
             )
             .withRequestBody(
               WireMock.matchingJsonPath(
-                "legacyData.caseReferences[1].offenderCaseReference",
+                "courtCaseLegacyData.caseReferences[1].offenderCaseReference",
                 WireMock.equalTo("XX12345678"),
               ),
             )
             .withRequestBody(WireMock.matchingJsonPath("appearances.size()", WireMock.equalTo("1")))
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "appearances[0].courtCaseReference",
-                WireMock.equalTo("caseRef1"),
-              ),
-            )
             .withRequestBody(
               WireMock.matchingJsonPath(
                 "appearances[0].legacyData.eventId",
@@ -275,13 +269,7 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
             )
             .withRequestBody(
               WireMock.matchingJsonPath(
-                "appearances[0].charges[0].legacyData.bookingId",
-                WireMock.equalTo("3"),
-              ),
-            )
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "appearances[0].charges[0].legacyData.offenderChargeId",
+                "appearances[0].charges[0].chargeNOMISId",
                 WireMock.equalTo("3934645"),
               ),
             )
@@ -927,18 +915,18 @@ fun someMigrationFilter(): BodyInserter<String, ReactiveHttpOutputMessage> = Bod
 )
 
 // charges can be shared across appearances
-fun dpsCourtCaseCreateResponseWithTwoAppearancesAndTwoCharges(): CreateCourtCaseResponse {
+fun dpsCourtCaseCreateResponseWithTwoAppearancesAndTwoCharges(): MigrationCreateCourtCaseResponse {
   val courtCaseUUID: String = DPS_COURT_CASE_ID
-  val courtChargesIds: List<CreateChargeResponse> =
+  val courtChargesIds: List<MigrationCreateChargeResponse> =
     listOf(
-      CreateChargeResponse(chargeUuid = UUID.fromString(DPS_CHARGE_2_ID), offenderChargeId = NOMIS_CHARGE_2_ID.toString()),
-      CreateChargeResponse(chargeUuid = UUID.fromString(DPS_CHARGE_1_ID), offenderChargeId = NOMIS_CHARGE_1_ID.toString()),
+      MigrationCreateChargeResponse(lifetimeChargeUuid = UUID.fromString(DPS_CHARGE_2_ID), chargeNOMISId = NOMIS_CHARGE_2_ID.toString()),
+      MigrationCreateChargeResponse(lifetimeChargeUuid = UUID.fromString(DPS_CHARGE_1_ID), chargeNOMISId = NOMIS_CHARGE_1_ID.toString()),
     )
-  val courtAppearancesIds: List<CreateCourtAppearanceResponse> = listOf(
-    CreateCourtAppearanceResponse(appearanceUuid = UUID.fromString(DPS_APPEARANCE_2_ID), eventId = NOMIS_APPEARANCE_2_ID.toString()),
-    CreateCourtAppearanceResponse(appearanceUuid = UUID.fromString(DPS_APPEARANCE_1_ID), eventId = NOMIS_APPEARANCE_1_ID.toString()),
+  val courtAppearancesIds: List<MigrationCreateCourtAppearanceResponse> = listOf(
+    MigrationCreateCourtAppearanceResponse(lifetimeUuid = UUID.fromString(DPS_APPEARANCE_2_ID), eventId = NOMIS_APPEARANCE_2_ID.toString()),
+    MigrationCreateCourtAppearanceResponse(lifetimeUuid = UUID.fromString(DPS_APPEARANCE_1_ID), eventId = NOMIS_APPEARANCE_1_ID.toString()),
   )
-  return CreateCourtCaseResponse(
+  return MigrationCreateCourtCaseResponse(
     courtCaseUuid = courtCaseUUID,
     appearances = courtAppearancesIds,
     charges = courtChargesIds,

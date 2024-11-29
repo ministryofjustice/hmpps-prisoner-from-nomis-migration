@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-11-18.3082.fdc5fb8"
+    "version": "2024-11-29.3564.5545ee8"
   },
   "servers": [
     {
@@ -29,16 +29,32 @@
   ],
   "tags": [
     {
+      "name": "legacy-court-appearance-controller",
+      "description": "CRUD operations for syncing court appearance data from NOMIS Court Events into remand and sentencing api database."
+    },
+    {
       "name": "legacy-court-case-controller",
       "description": "CRUD operations for syncing court case data from NOMIS into remand and sentencing api database."
     },
     {
-      "name": "recall-controller",
-      "description": "Recall"
-    },
-    {
       "name": "sentence-type-controller",
       "description": "Sentence Type"
+    },
+    {
+      "name": "migration-controller",
+      "description": "Create operation for migrating court case data from NOMIS into remand and sentencing api database."
+    },
+    {
+      "name": "charge-outcome-controller",
+      "description": "Charge outcome"
+    },
+    {
+      "name": "sentence-controller",
+      "description": "Sentences"
+    },
+    {
+      "name": "recall-controller",
+      "description": "Recall"
     },
     {
       "name": "court-appearance-controller",
@@ -53,16 +69,20 @@
       "description": "Get person details"
     },
     {
-      "name": "charge-outcome-controller",
-      "description": "Charge outcome"
-    },
-    {
       "name": "charge-controller",
       "description": "Charges"
     },
     {
-      "name": "sentence-controller",
-      "description": "Sentences"
+      "name": "draft-court-appearance-controller",
+      "description": "Draft Court appearance"
+    },
+    {
+      "name": "legacy-charge-controller",
+      "description": "CRUD operations for syncing charge data from NOMIS Offender charges into remand and sentencing api database."
+    },
+    {
+      "name": "draft-court-case-controller",
+      "description": "Draft Court case"
     },
     {
       "name": "court-case-controller",
@@ -190,6 +210,595 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/legacy/court-case/{courtCaseUuid}": {
+      "get": {
+        "tags": [
+          "legacy-court-case-controller"
+        ],
+        "summary": "Retrieve court case details",
+        "description": "This endpoint will retrieve court case details",
+        "operationId": "get",
+        "parameters": [
+          {
+            "name": "courtCaseUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns court case details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyCourtCase"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyCourtCase"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyCourtCase"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found if no court case at uuid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyCourtCase"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "legacy-court-case-controller"
+        ],
+        "summary": "Updates a court case",
+        "description": "Synchronise an update of court case from NOMIS into remand and sentencing API.",
+        "operationId": "update",
+        "parameters": [
+          {
+            "name": "courtCaseUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LegacyCreateCourtCase"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "court case updated"
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token"
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "legacy-court-case-controller"
+        ],
+        "summary": "Deletes a court case",
+        "description": "Synchronise a deletion of court case from NOMIS into remand and sentencing API.",
+        "operationId": "delete",
+        "parameters": [
+          {
+            "name": "courtCaseUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token"
+          },
+          "200": {
+            "description": "court case deleted"
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role"
+          }
+        }
+      }
+    },
+    "/legacy/court-appearance/{lifetimeUuid}": {
+      "get": {
+        "tags": [
+          "legacy-court-appearance-controller"
+        ],
+        "summary": "Retrieve court appearance details",
+        "description": "This endpoint will retrieve court appearance details",
+        "operationId": "get_1",
+        "parameters": [
+          {
+            "name": "lifetimeUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns court appearance details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyCourtAppearance"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyCourtAppearance"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyCourtAppearance"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found if no court appearance at uuid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyCourtAppearance"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "legacy-court-appearance-controller"
+        ],
+        "summary": "Updates a court appearance",
+        "description": "Synchronise an update of court appearance from NOMIS court events into remand and sentencing API.",
+        "operationId": "update_1",
+        "parameters": [
+          {
+            "name": "lifetimeUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LegacyCreateCourtAppearance"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token"
+          },
+          "200": {
+            "description": "court appearance updated"
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "legacy-court-appearance-controller"
+        ],
+        "summary": "Delete Appearance",
+        "description": "Synchronise a deletion of court appearance from NOMIS court events into remand and sentencing API.",
+        "operationId": "delete_1",
+        "parameters": [
+          {
+            "name": "lifetimeUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token"
+          },
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role"
+          }
+        }
+      }
+    },
+    "/legacy/court-appearance/{lifetimeUuid}/charge/{chargeLifetimeUuid}": {
+      "put": {
+        "tags": [
+          "legacy-court-appearance-controller"
+        ],
+        "summary": "link Appearance with Charge",
+        "description": "Synchronise a link between court appearance and charge from NOMIS into remand and sentencing API.",
+        "operationId": "linkAppearanceWithCharge",
+        "parameters": [
+          {
+            "name": "lifetimeUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "chargeLifetimeUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token"
+          },
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "legacy-court-appearance-controller"
+        ],
+        "summary": "Delete Appearance Charge link",
+        "description": "Synchronise a deletion of link between court appearance and charge from NOMIS into remand and sentencing API.",
+        "operationId": "unlinkAppearanceWithCharge",
+        "parameters": [
+          {
+            "name": "lifetimeUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "chargeLifetimeUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token"
+          },
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role"
+          }
+        }
+      }
+    },
+    "/legacy/charge/{lifetimeUuid}": {
+      "get": {
+        "tags": [
+          "legacy-charge-controller"
+        ],
+        "summary": "retrieve a charge",
+        "description": "This endpoint will retrieve charge details.",
+        "operationId": "get_2",
+        "parameters": [
+          {
+            "name": "lifetimeUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyCharge"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Returns charge details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyCharge"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyCharge"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "legacy-charge-controller"
+        ],
+        "summary": "Update a charge",
+        "description": "Synchronise an update of charge from NOMIS Offender charges into remand and sentencing API.",
+        "operationId": "update_2",
+        "parameters": [
+          {
+            "name": "lifetimeUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LegacyCreateCharge"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token"
+          },
+          "200": {
+            "description": "charge updated"
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "legacy-charge-controller"
+        ],
+        "summary": "Delete Charge",
+        "description": "Synchronise a deletion of charge from NOMIS offender charges into remand and sentencing API.",
+        "operationId": "delete_2",
+        "parameters": [
+          {
+            "name": "lifetimeUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token"
+          },
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role"
+          }
+        }
+      }
+    },
+    "/draft/court-appearance/{draftUuid}": {
+      "get": {
+        "tags": [
+          "draft-court-appearance-controller"
+        ],
+        "summary": "Retrieves a draft court appearance",
+        "description": "Retrieves a draft court appearance",
+        "operationId": "get_3",
+        "parameters": [
+          {
+            "name": "draftUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftCourtAppearance"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "court appearance updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftCourtAppearance"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftCourtAppearance"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "draft-court-appearance-controller"
+        ],
+        "summary": "Updates a draft court appearance",
+        "description": "Updates a draft court appearance for when a user wants to pause inputting a warrant and come back later",
+        "operationId": "update_3",
+        "parameters": [
+          {
+            "name": "draftUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftCreateCourtAppearance"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token"
+          },
+          "200": {
+            "description": "court appearance updated"
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "draft-court-appearance-controller"
+        ],
+        "summary": "deletes a draft court appearance",
+        "description": "deletes a draft court appearance",
+        "operationId": "delete_3",
+        "parameters": [
+          {
+            "name": "draftUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token"
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role"
+          },
+          "200": {
+            "description": "court appearance deleted"
           }
         }
       }
@@ -397,67 +1006,6 @@
       }
     },
     "/court-appearance/{lifetimeUuid}/lifetime": {
-      "get": {
-        "tags": [
-          "court-appearance-controller"
-        ],
-        "summary": "Retrieve court appearance details",
-        "description": "This endpoint will retrieve court appearance details",
-        "operationId": "getCourtAppearanceDetailsByLifetime",
-        "parameters": [
-          {
-            "name": "lifetimeUuid",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Returns court appearance details",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/CourtAppearance"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorised, requires a valid Oauth2 token",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/CourtAppearance"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/CourtAppearance"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found if no court appearance at uuid",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/CourtAppearance"
-                }
-              }
-            }
-          }
-        }
-      },
       "put": {
         "tags": [
           "court-appearance-controller"
@@ -516,36 +1064,6 @@
                 }
               }
             }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "court-appearance-controller"
-        ],
-        "summary": "Delete Appearance",
-        "description": "This endpoint will delete an appearance",
-        "operationId": "deleteAppearanceByLifetime",
-        "parameters": [
-          {
-            "name": "lifetimeUuid",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "No Content"
-          },
-          "401": {
-            "description": "Unauthorised, requires a valid Oauth2 token"
-          },
-          "403": {
-            "description": "Forbidden, requires an appropriate role"
           }
         }
       }
@@ -711,7 +1229,7 @@
         ],
         "summary": "Retrieve charge details",
         "description": "This endpoint will retrieve charge details",
-        "operationId": "getChargeDetails_1",
+        "operationId": "getChargeDetails",
         "parameters": [
           {
             "name": "chargeUuid",
@@ -962,6 +1480,276 @@
         }
       }
     },
+    "/legacy/court-case/migration": {
+      "post": {
+        "tags": [
+          "migration-controller"
+        ],
+        "summary": "Creates a court case",
+        "description": "Migrates a court case, court appearance and charge from NOMIS into remand and sentencing API.",
+        "operationId": "create_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MigrationCreateCourtCase"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MigrationCreateCourtCaseResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MigrationCreateCourtCaseResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "court case created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MigrationCreateCourtCaseResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/legacy/court-appearance": {
+      "post": {
+        "tags": [
+          "legacy-court-appearance-controller"
+        ],
+        "summary": "Create a court appearance",
+        "description": "Synchronise a creation of court appearance from NOMIS court events into remand and sentencing API.",
+        "operationId": "create_2",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LegacyCreateCourtAppearance"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyCourtAppearanceCreatedResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "court appearance created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyCourtAppearanceCreatedResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyCourtAppearanceCreatedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/legacy/charge": {
+      "post": {
+        "tags": [
+          "legacy-charge-controller"
+        ],
+        "summary": "Create a charge",
+        "description": "Synchronise a creation of charge from NOMIS Offender charges into remand and sentencing API.",
+        "operationId": "create_3",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LegacyCreateCharge"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "charge created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyChargeCreatedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyChargeCreatedResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyChargeCreatedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/draft/court-case": {
+      "post": {
+        "tags": [
+          "draft-court-case-controller"
+        ],
+        "summary": "Create a draft court case",
+        "description": "Creates a draft court case for when a user wants to pause inputting a warrant and come back later",
+        "operationId": "create_4",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftCreateCourtCase"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftCourtCaseCreatedResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftCourtCaseCreatedResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "court case created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftCourtCaseCreatedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/draft/court-case/{courtCaseUuid}/appearance": {
+      "post": {
+        "tags": [
+          "draft-court-case-controller"
+        ],
+        "summary": "Create a draft court appearance in court case",
+        "description": "Creates a draft draft court appearance in court case for when a user wants to pause inputting a warrant and come back later",
+        "operationId": "createDraftAppearanceInCourtCase",
+        "parameters": [
+          {
+            "name": "courtCaseUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftCreateCourtAppearance"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftCourtAppearanceCreatedResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftCourtAppearanceCreatedResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "draft court appearance created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftCourtAppearanceCreatedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/court-case": {
       "post": {
         "tags": [
@@ -1066,69 +1854,6 @@
         }
       }
     },
-    "/court-appearance/{appearanceUuid}/charge": {
-      "post": {
-        "tags": [
-          "court-appearance-controller"
-        ],
-        "summary": "Create Charge in appearance",
-        "description": "This endpoint will create a charge in a given court appearance",
-        "operationId": "createChargeInAppearance",
-        "parameters": [
-          {
-            "name": "appearanceUuid",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateCharge"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Returns charge UUID",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/CreateChargeResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorised, requires a valid Oauth2 token",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/CreateChargeResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/CreateChargeResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/charge": {
       "post": {
         "tags": [
@@ -1188,7 +1913,7 @@
         ],
         "summary": "Retrieve sentence details",
         "description": "This endpoint will retrieve sentence details",
-        "operationId": "getChargeDetails",
+        "operationId": "getChargeDetails_1",
         "parameters": [
           {
             "name": "sentenceUuid",
@@ -1549,68 +2274,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PersonDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/legacy/court-case/{courtCaseUuid}": {
-      "get": {
-        "tags": [
-          "legacy-court-case-controller"
-        ],
-        "summary": "Retrieve court case details",
-        "description": "This endpoint will retrieve court case details",
-        "operationId": "get",
-        "parameters": [
-          {
-            "name": "courtCaseUuid",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Returns court case details",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LegacyCourtCase"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorised, requires a valid Oauth2 token",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LegacyCourtCase"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LegacyCourtCase"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found if no court case at uuid",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LegacyCourtCase"
                 }
               }
             }
@@ -2032,47 +2695,6 @@
           }
         }
       }
-    },
-    "/court-appearance/{appearanceUuid}/charge/{chargeUuid}": {
-      "delete": {
-        "tags": [
-          "court-appearance-controller"
-        ],
-        "summary": "Disassociate charge with appearance",
-        "description": "This endpoint will disassociate a charge with an appearance",
-        "operationId": "disassociateChargeWithAppearance",
-        "parameters": [
-          {
-            "name": "appearanceUuid",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "chargeUuid",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "No Content"
-          },
-          "401": {
-            "description": "Unauthorised, requires a valid Oauth2 token"
-          },
-          "403": {
-            "description": "Forbidden, requires an appropriate role"
-          }
-        }
-      }
     }
   },
   "components": {
@@ -2106,7 +2728,9 @@
               "STANDARD_RECALL",
               "HDC_STANDARD_RECALL",
               "HDC_FOURTEEN_DAY_RECALL",
-              "HDC_TWENTY_EIGHT_DAY_RECALL"
+              "HDC_TWENTY_EIGHT_DAY_RECALL",
+              "HDC_CURFEW_VIOLATION_RECALL",
+              "HDC_INABILITY_TO_MONITOR_RECALL"
             ]
           },
           "createdByUsername": {
@@ -2126,38 +2750,18 @@
           }
         }
       },
-      "CaseReferenceLegacyData": {
+      "LegacyCreateCourtCase": {
         "required": [
-          "offenderCaseReference",
-          "updatedDate"
+          "active",
+          "prisonerId"
         ],
         "type": "object",
         "properties": {
-          "offenderCaseReference": {
+          "prisonerId": {
             "type": "string"
           },
-          "updatedDate": {
-            "type": "string"
-          }
-        }
-      },
-      "ChargeLegacyData": {
-        "type": "object",
-        "properties": {
-          "offenderChargeId": {
-            "type": "string"
-          },
-          "bookingId": {
-            "type": "string"
-          },
-          "postedDate": {
-            "type": "string"
-          },
-          "nomisOutcomeCode": {
-            "type": "string"
-          },
-          "outcomeDescription": {
-            "type": "string"
+          "active": {
+            "type": "boolean"
           }
         }
       },
@@ -2180,6 +2784,107 @@
             "type": "string"
           },
           "nextEventDateTime": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "LegacyCreateCourtAppearance": {
+        "required": [
+          "appearanceDate",
+          "courtCaseUuid",
+          "courtCode",
+          "legacyData"
+        ],
+        "type": "object",
+        "properties": {
+          "courtCaseUuid": {
+            "type": "string"
+          },
+          "courtCode": {
+            "type": "string"
+          },
+          "appearanceDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "legacyData": {
+            "$ref": "#/components/schemas/CourtAppearanceLegacyData"
+          }
+        }
+      },
+      "ChargeLegacyData": {
+        "type": "object",
+        "properties": {
+          "postedDate": {
+            "type": "string"
+          },
+          "nomisOutcomeCode": {
+            "type": "string"
+          },
+          "outcomeDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "LegacyCreateCharge": {
+        "required": [
+          "active",
+          "appearanceLifetimeUuid",
+          "legacyData",
+          "offenceCode",
+          "offenceStartDate"
+        ],
+        "type": "object",
+        "properties": {
+          "appearanceLifetimeUuid": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "offenceCode": {
+            "type": "string"
+          },
+          "offenceStartDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "offenceEndDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "legacyData": {
+            "$ref": "#/components/schemas/ChargeLegacyData"
+          }
+        }
+      },
+      "DraftCreateCourtAppearance": {
+        "required": [
+          "sessionBlob"
+        ],
+        "type": "object",
+        "properties": {
+          "sessionBlob": {
+            "$ref": "#/components/schemas/JsonNode"
+          }
+        }
+      },
+      "JsonNode": {
+        "type": "object"
+      },
+      "CaseReferenceLegacyData": {
+        "required": [
+          "offenderCaseReference",
+          "updatedDate"
+        ],
+        "type": "object",
+        "properties": {
+          "offenderCaseReference": {
+            "type": "string"
+          },
+          "updatedDate": {
             "type": "string",
             "format": "date-time"
           }
@@ -2351,7 +3056,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "09:56:19.713655372"
+            "example": "10:18:41.214405004"
           },
           "courtCode": {
             "type": "string"
@@ -2454,9 +3159,6 @@
           "chargeUuid": {
             "type": "string",
             "format": "uuid"
-          },
-          "offenderChargeId": {
-            "type": "string"
           }
         }
       },
@@ -2500,9 +3202,81 @@
           }
         }
       },
-      "LegacyCreateCourtCase": {
+      "LegacyCourtCaseCreatedResponse": {
+        "required": [
+          "courtCaseUuid"
+        ],
+        "type": "object",
+        "properties": {
+          "courtCaseUuid": {
+            "type": "string"
+          }
+        }
+      },
+      "MigrationCreateCharge": {
         "required": [
           "active",
+          "chargeNOMISId",
+          "legacyData",
+          "offenceCode",
+          "offenceStartDate"
+        ],
+        "type": "object",
+        "properties": {
+          "chargeNOMISId": {
+            "type": "string"
+          },
+          "offenceCode": {
+            "type": "string"
+          },
+          "offenceStartDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "offenceEndDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "legacyData": {
+            "$ref": "#/components/schemas/ChargeLegacyData"
+          }
+        }
+      },
+      "MigrationCreateCourtAppearance": {
+        "required": [
+          "appearanceDate",
+          "charges",
+          "courtCode",
+          "legacyData"
+        ],
+        "type": "object",
+        "properties": {
+          "courtCode": {
+            "type": "string"
+          },
+          "appearanceDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "legacyData": {
+            "$ref": "#/components/schemas/CourtAppearanceLegacyData"
+          },
+          "charges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MigrationCreateCharge"
+            }
+          }
+        }
+      },
+      "MigrationCreateCourtCase": {
+        "required": [
+          "active",
+          "appearances",
+          "courtCaseLegacyData",
           "prisonerId"
         ],
         "type": "object",
@@ -2512,17 +3286,160 @@
           },
           "active": {
             "type": "boolean"
+          },
+          "courtCaseLegacyData": {
+            "$ref": "#/components/schemas/CourtCaseLegacyData"
+          },
+          "appearances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MigrationCreateCourtAppearance"
+            }
           }
         }
       },
-      "LegacyCourtCaseCreatedResponse": {
+      "MigrationCreateChargeResponse": {
         "required": [
+          "chargeNOMISId",
+          "lifetimeChargeUuid"
+        ],
+        "type": "object",
+        "properties": {
+          "lifetimeChargeUuid": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "chargeNOMISId": {
+            "type": "string"
+          }
+        }
+      },
+      "MigrationCreateCourtAppearanceResponse": {
+        "required": [
+          "eventId",
+          "lifetimeUuid"
+        ],
+        "type": "object",
+        "properties": {
+          "lifetimeUuid": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "eventId": {
+            "type": "string"
+          }
+        }
+      },
+      "MigrationCreateCourtCaseResponse": {
+        "required": [
+          "appearances",
+          "charges",
           "courtCaseUuid"
         ],
         "type": "object",
         "properties": {
           "courtCaseUuid": {
             "type": "string"
+          },
+          "appearances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MigrationCreateCourtAppearanceResponse"
+            }
+          },
+          "charges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MigrationCreateChargeResponse"
+            }
+          }
+        }
+      },
+      "LegacyCourtAppearanceCreatedResponse": {
+        "required": [
+          "courtCaseUuid",
+          "lifetimeUuid",
+          "prisonerId"
+        ],
+        "type": "object",
+        "properties": {
+          "lifetimeUuid": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "courtCaseUuid": {
+            "type": "string"
+          },
+          "prisonerId": {
+            "type": "string"
+          }
+        }
+      },
+      "LegacyChargeCreatedResponse": {
+        "required": [
+          "courtCaseUuid",
+          "lifetimeUuid",
+          "prisonerId"
+        ],
+        "type": "object",
+        "properties": {
+          "lifetimeUuid": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "courtCaseUuid": {
+            "type": "string"
+          },
+          "prisonerId": {
+            "type": "string"
+          }
+        }
+      },
+      "DraftCreateCourtCase": {
+        "required": [
+          "draftAppearances",
+          "prisonerId"
+        ],
+        "type": "object",
+        "properties": {
+          "prisonerId": {
+            "type": "string"
+          },
+          "draftAppearances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DraftCreateCourtAppearance"
+            }
+          }
+        }
+      },
+      "DraftCourtAppearanceCreatedResponse": {
+        "required": [
+          "draftUuid"
+        ],
+        "type": "object",
+        "properties": {
+          "draftUuid": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "DraftCourtCaseCreatedResponse": {
+        "required": [
+          "courtCaseUuid",
+          "draftAppearances"
+        ],
+        "type": "object",
+        "properties": {
+          "courtCaseUuid": {
+            "type": "string"
+          },
+          "draftAppearances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DraftCourtAppearanceCreatedResponse"
+            }
           }
         }
       },
@@ -2646,6 +3563,9 @@
               "LEGACY",
               "NON_CUSTODIAL"
             ]
+          },
+          "hintText": {
+            "type": "string"
           }
         }
       },
@@ -2684,7 +3604,9 @@
               "STANDARD_RECALL",
               "HDC_STANDARD_RECALL",
               "HDC_FOURTEEN_DAY_RECALL",
-              "HDC_TWENTY_EIGHT_DAY_RECALL"
+              "HDC_TWENTY_EIGHT_DAY_RECALL",
+              "HDC_CURFEW_VIOLATION_RECALL",
+              "HDC_INABILITY_TO_MONITOR_RECALL"
             ]
           },
           "createdAt": {
@@ -2735,6 +3657,7 @@
       "LegacyCourtCase": {
         "required": [
           "active",
+          "caseReferences",
           "courtCaseUuid",
           "prisonerId"
         ],
@@ -2748,6 +3671,139 @@
           },
           "active": {
             "type": "boolean"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "courtId": {
+            "type": "string"
+          },
+          "caseReference": {
+            "type": "string"
+          },
+          "caseReferences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaseReferenceLegacyData"
+            }
+          }
+        }
+      },
+      "LegacyCharge": {
+        "required": [
+          "courtCaseUuid",
+          "lifetimeUuid",
+          "offenceCode",
+          "offenceStartDate",
+          "prisonerId"
+        ],
+        "type": "object",
+        "properties": {
+          "prisonerId": {
+            "type": "string"
+          },
+          "courtCaseUuid": {
+            "type": "string"
+          },
+          "lifetimeUuid": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nomisOutcomeCode": {
+            "type": "string"
+          },
+          "offenceCode": {
+            "type": "string"
+          },
+          "offenceStartDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "offenceEndDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "legacyData": {
+            "$ref": "#/components/schemas/ChargeLegacyData"
+          }
+        }
+      },
+      "LegacyCourtAppearance": {
+        "required": [
+          "appearanceDate",
+          "charges",
+          "courtCaseUuid",
+          "courtCode",
+          "lifetimeUuid",
+          "prisonerId"
+        ],
+        "type": "object",
+        "properties": {
+          "lifetimeUuid": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "courtCaseUuid": {
+            "type": "string"
+          },
+          "prisonerId": {
+            "type": "string"
+          },
+          "nomisOutcomeCode": {
+            "type": "string"
+          },
+          "courtCode": {
+            "type": "string"
+          },
+          "appearanceDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "charges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LegacyCharge"
+            }
+          },
+          "nextCourtAppearance": {
+            "$ref": "#/components/schemas/LegacyNextCourtAppearance"
+          }
+        }
+      },
+      "LegacyNextCourtAppearance": {
+        "required": [
+          "appearanceDate",
+          "courtId"
+        ],
+        "type": "object",
+        "properties": {
+          "appearanceDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "appearanceTime": {
+            "type": "string",
+            "example": "10:18:41.214405004"
+          },
+          "courtId": {
+            "type": "string"
+          }
+        }
+      },
+      "DraftCourtAppearance": {
+        "required": [
+          "draftUuid",
+          "sessionBlob"
+        ],
+        "type": "object",
+        "properties": {
+          "draftUuid": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sessionBlob": {
+            "$ref": "#/components/schemas/JsonNode"
           }
         }
       },
@@ -2931,7 +3987,9 @@
         "required": [
           "appearances",
           "courtCaseUuid",
-          "prisonerId"
+          "draftAppearances",
+          "prisonerId",
+          "status"
         ],
         "type": "object",
         "properties": {
@@ -2940,6 +3998,16 @@
           },
           "courtCaseUuid": {
             "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE",
+              "EDITED",
+              "DELETED",
+              "DRAFT"
+            ]
           },
           "latestAppearance": {
             "$ref": "#/components/schemas/CourtAppearance"
@@ -2952,11 +4020,14 @@
           },
           "legacyData": {
             "$ref": "#/components/schemas/JsonNode"
+          },
+          "draftAppearances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DraftCourtAppearance"
+            }
           }
         }
-      },
-      "JsonNode": {
-        "type": "object"
       },
       "NextCourtAppearance": {
         "required": [
@@ -2972,7 +4043,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "09:56:19.713655372"
+            "example": "10:18:41.214405004"
           },
           "courtCode": {
             "type": "string"
@@ -3035,10 +4106,7 @@
             "format": "int32"
           },
           "sort": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SortObject"
-            }
+            "$ref": "#/components/schemas/SortObject"
           },
           "numberOfElements": {
             "type": "integer",
@@ -3060,23 +4128,20 @@
             "format": "int64"
           },
           "sort": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SortObject"
-            }
+            "$ref": "#/components/schemas/SortObject"
           },
           "pageSize": {
             "type": "integer",
             "format": "int32"
           },
-          "unpaged": {
+          "paged": {
             "type": "boolean"
           },
           "pageNumber": {
             "type": "integer",
             "format": "int32"
           },
-          "paged": {
+          "unpaged": {
             "type": "boolean"
           }
         }
@@ -3084,19 +4149,13 @@
       "SortObject": {
         "type": "object",
         "properties": {
-          "direction": {
-            "type": "string"
-          },
-          "nullHandling": {
-            "type": "string"
-          },
-          "ascending": {
+          "empty": {
             "type": "boolean"
           },
-          "property": {
-            "type": "string"
+          "sorted": {
+            "type": "boolean"
           },
-          "ignoreCase": {
+          "unsorted": {
             "type": "boolean"
           }
         }
