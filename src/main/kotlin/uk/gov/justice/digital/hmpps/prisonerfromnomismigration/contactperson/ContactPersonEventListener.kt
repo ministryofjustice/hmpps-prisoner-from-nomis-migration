@@ -10,6 +10,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.Con
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_CONTACT_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_EMAIL_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PERSON_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PHONE_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
@@ -80,6 +81,7 @@ class ContactPersonEventListener(
       RETRY_SYNCHRONISATION_CONTACT_MAPPING -> service.retryCreateContactMapping(message.fromJson())
       RETRY_SYNCHRONISATION_ADDRESS_MAPPING -> service.retryCreateAddressMapping(message.fromJson())
       RETRY_SYNCHRONISATION_EMAIL_MAPPING -> service.retryCreateEmailMapping(message.fromJson())
+      RETRY_SYNCHRONISATION_PHONE_MAPPING -> service.retryCreatePhoneMapping(message.fromJson())
     }
   }
 }
@@ -124,6 +126,7 @@ data class PersonAddressEvent(
 data class PersonPhoneEvent(
   val personId: Long,
   val phoneId: Long,
+  val addressId: Long?,
   override val auditModuleName: String,
   val isAddress: Boolean,
 ) : EventAudited
@@ -151,4 +154,5 @@ enum class ContactPersonSynchronisationMessageType {
   RETRY_SYNCHRONISATION_CONTACT_MAPPING,
   RETRY_SYNCHRONISATION_ADDRESS_MAPPING,
   RETRY_SYNCHRONISATION_EMAIL_MAPPING,
+  RETRY_SYNCHRONISATION_PHONE_MAPPING,
 }
