@@ -7,9 +7,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateContactResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncContactAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncContactAddressPhone
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncContactEmail
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncContactPhone
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactEmailRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncPrisonerContact
@@ -41,9 +45,21 @@ class ContactPersonDpsApiService(@Qualifier("contactPersonApiWebClient") private
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
-  suspend fun createContactEmail(contactAddress: SyncCreateContactEmailRequest): SyncContactEmail = webClient.post()
+  suspend fun createContactEmail(contactEmail: SyncCreateContactEmailRequest): SyncContactEmail = webClient.post()
     .uri("/sync/contact-email")
-    .bodyValue(contactAddress)
+    .bodyValue(contactEmail)
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun createContactPhone(contactPhone: SyncCreateContactPhoneRequest): SyncContactPhone = webClient.post()
+    .uri("/sync/contact-phone")
+    .bodyValue(contactPhone)
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun createContactAddressPhone(contactAddressPhone: SyncCreateContactAddressPhoneRequest): SyncContactAddressPhone = webClient.post()
+    .uri("/sync/contact-address-phone")
+    .bodyValue(contactAddressPhone)
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 }
