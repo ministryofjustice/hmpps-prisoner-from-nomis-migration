@@ -6,6 +6,7 @@ import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisCode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisHistoryQuestion
@@ -48,6 +49,12 @@ class IncidentsNomisApiService(@Qualifier("nomisApiWebClient") private val webCl
       .retrieve()
       .bodyToMono(IncidentResponse::class.java)
       .awaitSingle()
+
+  suspend fun getIncidentOrNull(incidentId: Long): IncidentResponse? =
+    webClient.get()
+      .uri("/incidents/{incidentId}", incidentId)
+      .retrieve()
+      .awaitBodyOrNullWhenNotFound()
 
   suspend fun getIncidentIds(
     fromDate: LocalDate?,

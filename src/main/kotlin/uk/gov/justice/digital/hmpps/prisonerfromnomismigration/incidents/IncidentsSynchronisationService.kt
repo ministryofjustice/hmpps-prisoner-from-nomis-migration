@@ -77,29 +77,36 @@ class IncidentsSynchronisationService(
       return
     }
 
-    val nomisIncident = nomisApiService.getIncident(event.incidentCaseId)
-    incidentsMappingService.findByNomisId(
-      nomisIncidentId = event.incidentCaseId,
-    )?.let {
-      // For an update - this is the happy path - the mapping exists
-      incidentsService.upsertIncident(
-        NomisSyncRequest(
-          id = UUID.fromString(it.dpsIncidentId),
-          initialMigration = false,
-          incidentReport = nomisIncident.toNomisIncidentReport(),
-        ),
-      )
-      telemetryClient.trackEvent(
-        "incidents-synchronisation-updated-success",
-        event.toTelemetryProperties(it.dpsIncidentId),
-      )
+    nomisApiService.getIncidentOrNull(event.incidentCaseId)?.let { nomisIncident ->
+      incidentsMappingService.findByNomisId(
+        nomisIncidentId = event.incidentCaseId,
+      )?.let {
+        // For an update - this is the happy path - the mapping exists
+        incidentsService.upsertIncident(
+          NomisSyncRequest(
+            id = UUID.fromString(it.dpsIncidentId),
+            initialMigration = false,
+            incidentReport = nomisIncident.toNomisIncidentReport(),
+          ),
+        )
+        telemetryClient.trackEvent(
+          "incidents-synchronisation-updated-success",
+          event.toTelemetryProperties(it.dpsIncidentId),
+        )
+      } ?: let {
+        // The mapping does not exist, fail gracefully
+        telemetryClient.trackEvent(
+          "incidents-synchronisation-updated-failed",
+          event.toTelemetryProperties(),
+        )
+        throw IllegalStateException("Received UPDATED event for incident that does not exist in mapping table")
+      }
     } ?: let {
-      // The mapping does not exist, fail gracefully - yes we are
       telemetryClient.trackEvent(
         "incidents-synchronisation-updated-failed",
         event.toTelemetryProperties(),
       )
-      throw IllegalStateException("Received UPDATED event for incident that has never been created")
+      throw IllegalStateException("Received UPDATED event for incident that does not exist in Nomis")
     }
   }
 
