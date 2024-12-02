@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto
@@ -21,7 +22,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationMinutes
-import kotlin.collections.filter
 
 @Service
 class CaseNotesByPrisonerMigrationService(
@@ -123,26 +123,26 @@ class CaseNotesByPrisonerMigrationService(
 
           if (originalNomisIdToCopiesMap.isNotEmpty()) {
             // Additional mappings for dps uuids to nomis case notes which are copies (MERGE)
-            createMapping(
-              offenderNo = offenderNo,
-              PrisonerCaseNoteMappingsDto(
-                label = context.migrationId,
-                mappingType = PrisonerCaseNoteMappingsDto.MappingType.MIGRATED,
-                mappings = migrationResultList
-                  .filter { m -> originalNomisIdToCopiesMap.containsKey(m.legacyId) }
-                  .flatMap { original ->
-                    originalNomisIdToCopiesMap[original.legacyId]!!
-                      .map { mergeCopiedCaseNote ->
-                        CaseNoteMappingIdDto(
-                          nomisBookingId = mergeCopiedCaseNote.bookingId,
-                          nomisCaseNoteId = mergeCopiedCaseNote.caseNoteId,
-                          dpsCaseNoteId = original.id.toString(),
-                        )
-                      }
-                  },
-              ),
-              context = context,
-            )
+            caseNotesMappingService.createMappings(
+              migrationResultList
+                .filter { m -> originalNomisIdToCopiesMap.containsKey(m.legacyId) }
+                .flatMap { original ->
+                  originalNomisIdToCopiesMap[original.legacyId]!!
+                    .map { mergeCopiedCaseNote ->
+                      CaseNoteMappingDto(
+                        nomisBookingId = mergeCopiedCaseNote.bookingId,
+                        nomisCaseNoteId = mergeCopiedCaseNote.caseNoteId,
+                        dpsCaseNoteId = original.id.toString(),
+                        offenderNo = offenderNo,
+                        mappingType = CaseNoteMappingDto.MappingType.MIGRATED,
+                        label = context.migrationId,
+                      )
+                    }
+                },
+              object : ParameterizedTypeReference<DuplicateErrorResponse<CaseNoteMappingDto>>() {},
+            ).also {
+              checkForDuplicateError(it, context)
+            }
           }
           telemetry["caseNoteCount"] = migrationResultList.size.toString()
           telemetryClient.trackEvent("casenotes-migration-entity-migrated", telemetry)
@@ -164,24 +164,7 @@ class CaseNotesByPrisonerMigrationService(
       prisonerMappings,
       object : ParameterizedTypeReference<DuplicateErrorResponse<CaseNoteMappingDto>>() {},
     ).also {
-      if (it.isError) {
-        val duplicateErrorDetails = (it.errorResponse!!).moreInfo
-        telemetryClient.trackEvent(
-          "nomis-migration-casenotes-duplicate",
-          mapOf<String, String>(
-            "offenderNo" to context.body.offenderNo,
-            "migrationId" to context.migrationId,
-            "duplicateDpsCaseNoteId" to duplicateErrorDetails.duplicate.dpsCaseNoteId,
-            "duplicateNomisBookingId" to duplicateErrorDetails.duplicate.nomisBookingId.toString(),
-            "duplicateNomisCaseNoteId" to duplicateErrorDetails.duplicate.nomisCaseNoteId.toString(),
-            "existingDpsCaseNoteId" to duplicateErrorDetails.existing.dpsCaseNoteId,
-            "existingNomisBookingId" to duplicateErrorDetails.existing.nomisBookingId.toString(),
-            "existingNomisCaseNoteId" to duplicateErrorDetails.existing.nomisCaseNoteId.toString(),
-            "durationMinutes" to context.durationMinutes().toString(),
-          ),
-          null,
-        )
-      }
+      checkForDuplicateError(it, context)
     }
   } catch (e: Exception) {
     log.error(
@@ -195,6 +178,29 @@ class CaseNotesByPrisonerMigrationService(
         body = CaseNoteMigrationMapping(prisonerMappings, offenderNo = offenderNo),
       ),
     )
+  }
+
+  private fun checkForDuplicateError(
+    result: CreateMappingResult<CaseNoteMappingDto>,
+    context: MigrationContext<PrisonerId>,
+  ) {
+    if (result.isError) {
+      val duplicateErrorDetails = (result.errorResponse!!).moreInfo
+      telemetryClient.trackEvent(
+        "nomis-migration-casenotes-duplicate",
+        mapOf<String, String>(
+          "offenderNo" to context.body.offenderNo,
+          "migrationId" to context.migrationId,
+          "duplicateDpsCaseNoteId" to duplicateErrorDetails.duplicate.dpsCaseNoteId,
+          "duplicateNomisBookingId" to duplicateErrorDetails.duplicate.nomisBookingId.toString(),
+          "duplicateNomisCaseNoteId" to duplicateErrorDetails.duplicate.nomisCaseNoteId.toString(),
+          "existingDpsCaseNoteId" to duplicateErrorDetails.existing.dpsCaseNoteId,
+          "existingNomisBookingId" to duplicateErrorDetails.existing.nomisBookingId.toString(),
+          "existingNomisCaseNoteId" to duplicateErrorDetails.existing.nomisCaseNoteId.toString(),
+          "durationMinutes" to context.durationMinutes().toString(),
+        ),
+      )
+    }
   }
 
   override suspend fun retryCreateMapping(context: MigrationContext<CaseNoteMigrationMapping>) {

@@ -43,7 +43,7 @@ class CaseNotesMappingApiServiceTest {
     @Test
     fun `will pass oath2 token to service`() {
       runTest {
-        caseNotesMappingApiMockServer.stubPostBatchMappings(OFFENDER_NUMBER)
+        caseNotesMappingApiMockServer.stubPostMappingsByPrisoner(OFFENDER_NUMBER)
 
         apiService.createMapping(
           offenderNo = OFFENDER_NUMBER,
@@ -70,7 +70,7 @@ class CaseNotesMappingApiServiceTest {
     fun `will pass ids to service`() = runTest {
       val dpsCaseNoteId1 = "a04f7a8d-61aa-400c-9395-f4dc62f36ab0"
       val dpsCaseNoteId2 = "cb3bf3b9-c23c-4787-9450-59259ab62b06"
-      caseNotesMappingApiMockServer.stubPostBatchMappings(OFFENDER_NUMBER)
+      caseNotesMappingApiMockServer.stubPostMappingsByPrisoner(OFFENDER_NUMBER)
 
       apiService.createMapping(
         offenderNo = OFFENDER_NUMBER,
@@ -109,7 +109,7 @@ class CaseNotesMappingApiServiceTest {
 
     @Test
     fun `will return success when no errors`() = runTest {
-      caseNotesMappingApiMockServer.stubPostBatchMappings(OFFENDER_NUMBER)
+      caseNotesMappingApiMockServer.stubPostMappingsByPrisoner(OFFENDER_NUMBER)
 
       val result = apiService.createMapping(
         offenderNo = OFFENDER_NUMBER,
@@ -134,7 +134,7 @@ class CaseNotesMappingApiServiceTest {
       val dpsCaseNoteId = UUID.fromString("956d4326-b0c3-47ac-ab12-f0165109a6c5")
       val existingCaseNoteId = UUID.fromString("f612a10f-4827-4022-be96-d882193dfabd")
 
-      caseNotesMappingApiMockServer.stubPostBatchMappings(
+      caseNotesMappingApiMockServer.stubPostMappingsByPrisoner(
         offenderNo = OFFENDER_NUMBER,
         error = DuplicateMappingErrorResponse(
           moreInfo = DuplicateErrorContentObject(
@@ -175,7 +175,7 @@ class CaseNotesMappingApiServiceTest {
       )
       assertThat(result.isError).isTrue()
       assertThat(result.errorResponse!!.moreInfo.duplicate.dpsCaseNoteId).isEqualTo(dpsCaseNoteId.toString())
-      assertThat(result.errorResponse!!.moreInfo.existing.dpsCaseNoteId).isEqualTo(existingCaseNoteId.toString())
+      assertThat(result.errorResponse.moreInfo.existing.dpsCaseNoteId).isEqualTo(existingCaseNoteId.toString())
     }
   }
 }

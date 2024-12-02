@@ -21,8 +21,8 @@ class CaseNotesByPrisonerMigrationMappingApiService(@Qualifier("mappingApiWebCli
     offenderNo: String,
     prisonerMapping: PrisonerCaseNoteMappingsDto,
     errorJavaClass: ParameterizedTypeReference<DuplicateErrorResponse<CaseNoteMappingDto>>,
-  ): CreateMappingResult<CaseNoteMappingDto> {
-    return webClient.post()
+  ): CreateMappingResult<CaseNoteMappingDto> =
+    webClient.post()
       .uri("/mapping/casenotes/{offenderNo}/all", offenderNo)
       .bodyValue(
         prisonerMapping,
@@ -34,14 +34,29 @@ class CaseNotesByPrisonerMigrationMappingApiService(@Qualifier("mappingApiWebCli
         Mono.just(CreateMappingResult(it.getResponseBodyAs(errorJavaClass)))
       }
       .awaitFirstOrDefault(CreateMappingResult())
-  }
 
-  override suspend fun getMigrationCount(migrationId: String): Long = webClient.get()
-    .uri("$domainUrl/migration-id/{migrationId}/count-by-prisoner", migrationId)
-    .retrieve()
-    .bodyToMono(Long::class.java)
-    .onErrorResume(WebClientResponseException.NotFound::class.java) {
-      Mono.empty()
-    }
-    .awaitSingleOrNull() ?: 0
+  suspend fun createMappings(
+    mappings: List<CaseNoteMappingDto>,
+    errorJavaClass: ParameterizedTypeReference<DuplicateErrorResponse<CaseNoteMappingDto>>,
+  ): CreateMappingResult<CaseNoteMappingDto> =
+    webClient.post()
+      .uri("/mapping/casenotes/batch")
+      .bodyValue(mappings)
+      .retrieve()
+      .bodyToMono(Unit::class.java)
+      .map { CreateMappingResult<CaseNoteMappingDto>() }
+      .onErrorResume(WebClientResponseException.Conflict::class.java) {
+        Mono.just(CreateMappingResult(it.getResponseBodyAs(errorJavaClass)))
+      }
+      .awaitFirstOrDefault(CreateMappingResult())
+
+  override suspend fun getMigrationCount(migrationId: String): Long =
+    webClient.get()
+      .uri("$domainUrl/migration-id/{migrationId}/count-by-prisoner", migrationId)
+      .retrieve()
+      .bodyToMono(Long::class.java)
+      .onErrorResume(WebClientResponseException.NotFound::class.java) {
+        Mono.empty()
+      }
+      .awaitSingleOrNull() ?: 0
 }
