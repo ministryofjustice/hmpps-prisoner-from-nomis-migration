@@ -90,7 +90,7 @@ class CaseNotesMappingApiMockServer(private val objectMapper: ObjectMapper) {
     mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/casenotes")
   }
 
-  fun stubPostBatchMappings(offenderNo: String) {
+  fun stubPostMappingsByPrisoner(offenderNo: String) {
     mappingApi.stubFor(
       post("/mapping/casenotes/$offenderNo/all").willReturn(
         aResponse()
@@ -100,11 +100,11 @@ class CaseNotesMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubPostBatchMappingsFailureFollowedBySuccess(offenderNo: String) {
+  fun stubPostMappingsByPrisonerFailureFollowedBySuccess(offenderNo: String) {
     mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/casenotes/$offenderNo/all")
   }
 
-  fun stubPostBatchMappings(offenderNo: String, error: DuplicateMappingErrorResponse) {
+  fun stubPostMappingsByPrisoner(offenderNo: String, error: DuplicateMappingErrorResponse) {
     mappingApi.stubFor(
       post("/mapping/casenotes/$offenderNo/all").willReturn(
         aResponse()

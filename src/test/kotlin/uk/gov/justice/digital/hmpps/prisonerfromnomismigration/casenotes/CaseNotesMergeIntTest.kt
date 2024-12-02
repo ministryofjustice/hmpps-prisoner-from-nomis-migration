@@ -252,11 +252,12 @@ class CaseNotesMergeIntTest : SqsIntegrationTestBase() {
 
       await untilAsserted {
         verify(telemetryClient, times(2)).trackEvent(
-          eq("casenotes-prisoner-merge-not-ready"),
+          eq("casenotes-prisoner-merge-failed"),
           check {
             assertThat(it["offenderNo"]).isEqualTo("A1234BB")
             assertThat(it["removedOffenderNo"]).isEqualTo("A1234AA")
             assertThat(it["bookingId"]).isEqualTo("1")
+            assertThat(it["error"]).isEqualTo("Merge data not ready for A1234BB")
           },
           isNull(),
         )

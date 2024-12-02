@@ -23,12 +23,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.CASENOTES
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 
 @Service
 class CaseNotesSynchronisationService(
   private val nomisApiService: CaseNotesNomisApiService,
   private val caseNotesMappingService: CaseNotesMappingApiService,
+  private val caseNotesByPrisonerMigrationMappingApiService: CaseNotesByPrisonerMigrationMappingApiService,
   private val caseNotesService: CaseNotesApiService,
   private val telemetryClient: TelemetryClient,
   private val queueService: SynchronisationQueueService,
@@ -171,7 +172,10 @@ class CaseNotesSynchronisationService(
         "casenotes-synchronisation-deleted-failed",
         event.toTelemetryProperties() + mapOf("error" to (e.message ?: "unknown error")),
       )
-      log.warn("Unable to delete mapping for prisoner ${event.offenderIdDisplay} nomisCaseNoteId=${event.caseNoteId}. Please delete manually", e)
+      log.warn(
+        "Unable to delete mapping for prisoner ${event.offenderIdDisplay} nomisCaseNoteId=${event.caseNoteId}. Please delete manually",
+        e,
+      )
     }
   }
 
@@ -194,17 +198,11 @@ Also add new mappings for the new booking id for the copied case notes, which po
         .filter {
           isMergeCaseNoteRecentlyCreated(it, prisonerMergeEvent)
         }
-      if (freshlyMergedNomisCaseNotes.isEmpty()) {
-        telemetryClient.trackEvent(
-          "casenotes-prisoner-merge-not-ready",
-          mapOf(
-            "offenderNo" to nomsNumber,
-            "removedOffenderNo" to removedNomsNumber,
-            "bookingId" to bookingId,
-          ),
-        )
-        throw IllegalStateException("Merge data not ready for $nomsNumber")
-      }
+        .apply {
+          if (isEmpty()) {
+            throw IllegalStateException("Merge data not ready for $nomsNumber")
+          }
+        }
 
       val existingMappings = caseNotesMappingService.getMappings(nomisCaseNotes.map { it.caseNoteId })
 
@@ -244,7 +242,7 @@ Also add new mappings for the new booking id for the copied case notes, which po
           )
         }
 
-      caseNotesMappingService.createMappings(
+      caseNotesByPrisonerMigrationMappingApiService.createMappings(
         newMappings,
         object : ParameterizedTypeReference<DuplicateErrorResponse<CaseNoteMappingDto>>() {},
       ).also {
@@ -291,9 +289,10 @@ Also add new mappings for the new booking id for the copied case notes, which po
   private fun isMergeCaseNoteRecentlyCreated(
     response: CaseNoteResponse,
     prisonerMergeEvent: PrisonerMergeDomainEvent,
-  ): Boolean = response.auditModuleName == "MERGE" &&
-    LocalDateTime.parse(response.createdDatetime)
-      .isAfter(prisonerMergeEvent.occurredAt.toLocalDateTime().minusMinutes(30))
+  ): Boolean =
+    response.auditModuleName == "MERGE" &&
+      LocalDateTime.parse(response.createdDatetime)
+        .isAfter(prisonerMergeEvent.occurredAt.toLocalDateTime().minusMinutes(30))
 
   suspend fun synchronisePrisonerBookingMoved(prisonerMergeEvent: PrisonerBookingMovedDomainEvent) {
     val (movedToNomsNumber, movedFromNomsNumber, bookingId) = prisonerMergeEvent.additionalInformation

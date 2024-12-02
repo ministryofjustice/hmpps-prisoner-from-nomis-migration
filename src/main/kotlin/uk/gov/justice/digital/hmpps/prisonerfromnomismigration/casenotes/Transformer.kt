@@ -35,7 +35,7 @@ fun CaseNoteResponse.toDPSCreateCaseNote(offenderNo: String) = MigrateCaseNoteRe
     firstName = this.authorFirstName ?: "",
     lastName = this.authorLastName,
   ),
-  createdDateTime = LocalDateTime.parse(this.createdDatetime),
+  createdDateTime = LocalDateTime.parse(this.creationDateTime!!),
   createdByUsername = this.createdUsername,
   system = MigrateCaseNoteRequest.System.valueOf(this.sourceSystem.name),
   amendments = this.amendments.map { a ->
@@ -72,7 +72,7 @@ fun CaseNoteResponse.toDPSSyncCaseNote(offenderNo: String, id: UUID? = null) = S
     firstName = this.authorFirstName ?: "",
     lastName = this.authorLastName,
   ),
-  createdDateTime = LocalDateTime.parse(this.createdDatetime),
+  createdDateTime = LocalDateTime.parse(this.creationDateTime!!),
   createdByUsername = this.createdUsername,
   system = SyncCaseNoteRequest.System.valueOf(this.sourceSystem.name),
   amendments = this.amendments.map { a ->
