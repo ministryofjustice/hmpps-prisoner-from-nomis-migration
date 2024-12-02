@@ -12,10 +12,13 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
+import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.IdentifyingMarkMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.IdentifyingMarkMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonConfiguration
@@ -23,7 +26,11 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 @SpringAPIServiceTest
-@Import(IdentifyingMarksMappingApiService::class, IdentifyingMarksMappingApiMockServer::class, PrisonPersonConfiguration::class)
+@Import(
+  IdentifyingMarksMappingApiService::class,
+  IdentifyingMarksMappingApiMockServer::class,
+  PrisonPersonConfiguration::class,
+)
 class IdentifyingMarksMappingApiServiceTest {
   @Autowired
   private lateinit var apiService: IdentifyingMarksMappingApiService
@@ -173,6 +180,26 @@ class IdentifyingMarksMappingApiServiceTest {
       mappingApi.stubCreateMapping(INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.createMapping(aMapping())
+      }
+    }
+
+    @Test
+    fun `will throw error when 409 conflict`() = runTest {
+      mappingApi.stubCreateMapping(
+        HttpStatus.CONFLICT,
+        DuplicateMappingErrorResponse(
+          status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+          errorCode = 1409,
+          userMessage = "Duplicate mapping",
+          moreInfo = DuplicateErrorContentObject(
+            existing = aMapping().copy(dpsId = UUID.randomUUID()),
+            duplicate = aMapping(),
+          ),
+        ),
+      )
+
+      assertThrows<WebClientResponseException.Conflict> {
         apiService.createMapping(aMapping())
       }
     }
