@@ -108,8 +108,8 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
         caseNotesApi.stubMigrateCaseNotes(OFFENDER_NUMBER1, listOf(1L to "00000000-0000-0000-0000-000000000001"))
         caseNotesApi.stubMigrateCaseNotes(OFFENDER_NUMBER2, listOf(1L to "00000000-0000-0000-0000-000000000002"))
         caseNotesMappingApiMockServer.stubGetMappings(listOf())
-        caseNotesMappingApiMockServer.stubPostBatchMappings(OFFENDER_NUMBER1)
-        caseNotesMappingApiMockServer.stubPostBatchMappings(OFFENDER_NUMBER2)
+        caseNotesMappingApiMockServer.stubPostMappingsByPrisoner(OFFENDER_NUMBER1)
+        caseNotesMappingApiMockServer.stubPostMappingsByPrisoner(OFFENDER_NUMBER2)
         caseNotesMappingApiMockServer.stubMigrationCount(recordsMigrated = 2)
         migrationResult = performMigration()
       }
@@ -213,7 +213,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
         nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
         caseNotesNomisApiMockServer.stubGetCaseNotesForPrisoner(offenderNo = OFFENDER_NUMBER1, currentCaseNoteCount = 1)
         caseNotesApi.stubMigrateCaseNotes(OFFENDER_NUMBER1, listOf(1L to "00000000-0000-0000-0000-000000000001"))
-        caseNotesMappingApiMockServer.stubPostBatchMappingsFailureFollowedBySuccess(OFFENDER_NUMBER1)
+        caseNotesMappingApiMockServer.stubPostMappingsByPrisonerFailureFollowedBySuccess(OFFENDER_NUMBER1)
         performMigration()
       }
 
@@ -303,7 +303,8 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
         )
 
         caseNotesMappingApiMockServer.stubGetMappings(listOf())
-        caseNotesMappingApiMockServer.stubPostBatchMappings(OFFENDER_NUMBER1)
+        caseNotesMappingApiMockServer.stubPostMappingsByPrisoner(OFFENDER_NUMBER1)
+        caseNotesMappingApiMockServer.stubPostMappingsBatch()
         migrationResult = performMigration()
       }
 
@@ -341,18 +342,18 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
             ),
         )
         caseNotesMappingApiMockServer.verify(
-          postRequestedFor(urlPathEqualTo("/mapping/casenotes/$OFFENDER_NUMBER1/all"))
-            .withRequestBodyJsonPath("$.mappings.size()", "3")
+          postRequestedFor(urlPathEqualTo("/mapping/casenotes/batch"))
+            .withRequestBodyJsonPath("$.size()", "3")
             .withRequestBodyJsonPath(
-              "$.mappings[?(@.nomisCaseNoteId == '11' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000001')].nomisBookingId",
+              "$[?(@.nomisCaseNoteId == '11' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000001')].nomisBookingId",
               "2",
             )
             .withRequestBodyJsonPath(
-              "$.mappings[?(@.nomisCaseNoteId == '12' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000002')].nomisBookingId",
+              "$[?(@.nomisCaseNoteId == '12' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000002')].nomisBookingId",
               "2",
             )
             .withRequestBodyJsonPath(
-              "$.mappings[?(@.nomisCaseNoteId == '13' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000003')].nomisBookingId",
+              "$[?(@.nomisCaseNoteId == '13' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000003')].nomisBookingId",
               "2",
             ),
         )
@@ -396,7 +397,8 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
         )
 
         caseNotesMappingApiMockServer.stubGetMappings(listOf())
-        caseNotesMappingApiMockServer.stubPostBatchMappings(OFFENDER_NUMBER1)
+        caseNotesMappingApiMockServer.stubPostMappingsByPrisoner(OFFENDER_NUMBER1)
+        caseNotesMappingApiMockServer.stubPostMappingsBatch()
         migrationResult = performMigration()
       }
 
@@ -446,30 +448,30 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
             ),
         )
         caseNotesMappingApiMockServer.verify(
-          postRequestedFor(urlPathEqualTo("/mapping/casenotes/$OFFENDER_NUMBER1/all"))
-            .withRequestBodyJsonPath("$.mappings.size()", "6")
+          postRequestedFor(urlPathEqualTo("/mapping/casenotes/batch"))
+            .withRequestBodyJsonPath("$.size()", "6")
             .withRequestBodyJsonPath(
-              "$.mappings[?(@.nomisCaseNoteId == '11' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000001')].nomisBookingId",
+              "$[?(@.nomisCaseNoteId == '11' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000001')].nomisBookingId",
               "3",
             )
             .withRequestBodyJsonPath(
-              "$.mappings[?(@.nomisCaseNoteId == '12' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000002')].nomisBookingId",
+              "$[?(@.nomisCaseNoteId == '12' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000002')].nomisBookingId",
               "3",
             )
             .withRequestBodyJsonPath(
-              "$.mappings[?(@.nomisCaseNoteId == '13' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000003')].nomisBookingId",
+              "$[?(@.nomisCaseNoteId == '13' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000003')].nomisBookingId",
               "3",
             )
             .withRequestBodyJsonPath(
-              "$.mappings[?(@.nomisCaseNoteId == '16' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000006')].nomisBookingId",
+              "$[?(@.nomisCaseNoteId == '16' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000006')].nomisBookingId",
               "3",
             )
             .withRequestBodyJsonPath(
-              "$.mappings[?(@.nomisCaseNoteId == '17' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000007')].nomisBookingId",
+              "$[?(@.nomisCaseNoteId == '17' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000007')].nomisBookingId",
               "3",
             )
             .withRequestBodyJsonPath(
-              "$.mappings[?(@.nomisCaseNoteId == '18' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000008')].nomisBookingId",
+              "$[?(@.nomisCaseNoteId == '18' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000008')].nomisBookingId",
               "3",
             ),
         )
@@ -514,7 +516,8 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
           ),
         )
         caseNotesMappingApiMockServer.stubGetMappings(listOf())
-        caseNotesMappingApiMockServer.stubPostBatchMappings(OFFENDER_NUMBER1)
+        caseNotesMappingApiMockServer.stubPostMappingsByPrisoner(OFFENDER_NUMBER1)
+        caseNotesMappingApiMockServer.stubPostMappingsBatch()
         migrationResult = performMigration()
       }
 
@@ -564,30 +567,30 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
             ),
         )
         caseNotesMappingApiMockServer.verify(
-          postRequestedFor(urlPathEqualTo("/mapping/casenotes/$OFFENDER_NUMBER1/all"))
-            .withRequestBodyJsonPath("$.mappings.size()", "6")
+          postRequestedFor(urlPathEqualTo("/mapping/casenotes/batch"))
+            .withRequestBodyJsonPath("$.size()", "6")
             .withRequestBodyJsonPath(
-              "$.mappings[?(@.nomisCaseNoteId == '8' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000001')].nomisBookingId",
+              "[?(@.nomisCaseNoteId == '8' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000001')].nomisBookingId",
               "2",
             )
             .withRequestBodyJsonPath(
-              "$.mappings[?(@.nomisCaseNoteId == '9' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000002')].nomisBookingId",
+              "[?(@.nomisCaseNoteId == '9' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000002')].nomisBookingId",
               "2",
             )
             .withRequestBodyJsonPath(
-              "$.mappings[?(@.nomisCaseNoteId == '13' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000001')].nomisBookingId",
+              "[?(@.nomisCaseNoteId == '13' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000001')].nomisBookingId",
               "3",
             )
             .withRequestBodyJsonPath(
-              "$.mappings[?(@.nomisCaseNoteId == '14' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000002')].nomisBookingId",
+              "[?(@.nomisCaseNoteId == '14' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000002')].nomisBookingId",
               "3",
             )
             .withRequestBodyJsonPath(
-              "$.mappings[?(@.nomisCaseNoteId == '15' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000006')].nomisBookingId",
+              "[?(@.nomisCaseNoteId == '15' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000006')].nomisBookingId",
               "3",
             )
             .withRequestBodyJsonPath(
-              "$.mappings[?(@.nomisCaseNoteId == '16' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000007')].nomisBookingId",
+              "[?(@.nomisCaseNoteId == '16' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000007')].nomisBookingId",
               "3",
             ),
         )
@@ -1012,6 +1015,7 @@ fun caseNoteTemplate(
   authorLastName = "Last",
   amendments = emptyList(),
   createdDatetime = createdDatetime,
+  creationDateTime = "2023-04-05T06:07:08",
   createdUsername = "John",
   noteSourceCode = CaseNoteResponse.NoteSourceCode.INST,
   occurrenceDateTime = "2021-02-03T04:05:06",
