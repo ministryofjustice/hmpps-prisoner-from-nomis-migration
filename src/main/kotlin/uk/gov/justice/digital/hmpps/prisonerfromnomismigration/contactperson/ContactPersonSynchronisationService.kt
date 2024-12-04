@@ -9,6 +9,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.Con
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactEmailRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactIdentityRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRequest
@@ -17,12 +18,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonContactMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonEmailMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonIdentifierMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonPhoneMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactPerson
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonEmailAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonIdentifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonPhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
@@ -435,11 +438,40 @@ class ContactPersonSynchronisationService(
 
   suspend fun personIdentifierAdded(event: PersonIdentifierEvent) {
     val telemetry =
-      mapOf("personId" to event.personId, "identifierSequence" to event.identifierSequence)
-    telemetryClient.trackEvent(
-      "contactperson-person-identifier-synchronisation-created-success",
-      telemetry,
-    )
+      mutableMapOf("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisSequenceNumber" to event.identifierSequence)
+
+    if (event.doesOriginateInDps()) {
+      telemetryClient.trackEvent(
+        "contactperson-identifier-synchronisation-created-skipped",
+        telemetry,
+      )
+    } else {
+      mappingApiService.getByNomisIdentifierIdsOrNull(nomisPersonId = event.personId, nomisSequenceNumber = event.identifierSequence)?.also {
+        telemetryClient.trackEvent(
+          "contactperson-identifier-synchronisation-created-ignored",
+          telemetry + ("dpsContactIdentityId" to it.dpsId),
+        )
+      } ?: run {
+        nomisApiService.getPerson(nomisPersonId = event.personId).also { nomisPerson ->
+          val nomisIdenitifier = nomisPerson.identifiers.find { it.sequence == event.identifierSequence } ?: throw IllegalStateException("Identifier ${event.identifierSequence} for person ${event.personId} not found in NOMIS")
+          val dpsIdentity = dpsApiService.createContactIdentity(nomisIdenitifier.toDpsCreateContactIdentityRequest(nomisPersonId = event.personId)).also {
+            telemetry["dpsContactIdentityId"] = it.contactIdentityId
+          }
+          val mapping = PersonIdentifierMappingDto(
+            nomisPersonId = event.personId,
+            nomisSequenceNumber = event.identifierSequence,
+            dpsId = dpsIdentity.contactIdentityId.toString(),
+            mappingType = PersonIdentifierMappingDto.MappingType.NOMIS_CREATED,
+          )
+
+          tryToCreateMapping(mapping, telemetry)
+        }
+        telemetryClient.trackEvent(
+          "contactperson-identifier-synchronisation-created-success",
+          telemetry,
+        )
+      }
+    }
   }
 
   suspend fun personIdentifierUpdated(event: PersonIdentifierEvent) {
@@ -540,6 +572,22 @@ class ContactPersonSynchronisationService(
       )
     }
   }
+  private suspend fun tryToCreateMapping(
+    mapping: PersonIdentifierMappingDto,
+    telemetry: Map<String, Any>,
+  ) {
+    try {
+      createIdentifierMapping(mapping)
+    } catch (e: Exception) {
+      log.error("Failed to create mapping for identifier id $mapping", e)
+      queueService.sendMessage(
+        messageType = ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_IDENTIFIER_MAPPING.name,
+        synchronisationType = SynchronisationType.CONTACTPERSON,
+        message = mapping,
+        telemetryAttributes = telemetry.valuesAsStrings(),
+      )
+    }
+  }
 
   private suspend fun createPersonMapping(
     mapping: PersonMappingDto,
@@ -631,6 +679,26 @@ class ContactPersonSynchronisationService(
       }
     }
   }
+  private suspend fun createIdentifierMapping(
+    mapping: PersonIdentifierMappingDto,
+  ) {
+    mappingApiService.createIdentifierMapping(mapping).takeIf { it.isError }?.also {
+      with(it.errorResponse!!.moreInfo) {
+        telemetryClient.trackEvent(
+          "from-nomis-sync-contactperson-duplicate",
+          mapOf(
+            "existingNomisPersonId" to existing.nomisPersonId,
+            "existingNomisSequenceNumber" to existing.nomisSequenceNumber,
+            "existingDpsContactIdentityId" to existing.dpsId,
+            "duplicateNomisPersonId" to duplicate.nomisPersonId,
+            "duplicateNomisSequenceNumber" to duplicate.nomisSequenceNumber,
+            "duplicateDpsContactIdentityId" to duplicate.dpsId,
+            "type" to "IDENTIFIER",
+          ),
+        )
+      }
+    }
+  }
 
   suspend fun retryCreatePersonMapping(retryMessage: InternalMessage<PersonMappingDto>) {
     createPersonMapping(retryMessage.body)
@@ -673,6 +741,15 @@ class ContactPersonSynchronisationService(
       .also {
         telemetryClient.trackEvent(
           "contactperson-phone-mapping-synchronisation-created",
+          retryMessage.telemetryAttributes,
+        )
+      }
+  }
+  suspend fun retryCreateIdentifierMapping(retryMessage: InternalMessage<PersonIdentifierMappingDto>) {
+    createIdentifierMapping(retryMessage.body)
+      .also {
+        telemetryClient.trackEvent(
+          "contactperson-identifier-mapping-synchronisation-created",
           retryMessage.telemetryAttributes,
         )
       }
@@ -758,6 +835,14 @@ fun PersonPhoneNumber.toDpsCreateContactAddressPhoneRequest(dpsAddressId: Long) 
   phoneNumber = this.number,
   extNumber = this.extension,
   phoneType = this.type.code,
+  createdTime = this.audit.createDatetime.toDateTime(),
+)
+fun PersonIdentifier.toDpsCreateContactIdentityRequest(nomisPersonId: Long) = SyncCreateContactIdentityRequest(
+  contactId = nomisPersonId,
+  createdBy = this.audit.createUsername,
+  identityValue = this.identifier,
+  identityType = this.type.code,
+  issuingAuthority = this.issuedAuthority,
   createdTime = this.audit.createDatetime.toDateTime(),
 )
 
