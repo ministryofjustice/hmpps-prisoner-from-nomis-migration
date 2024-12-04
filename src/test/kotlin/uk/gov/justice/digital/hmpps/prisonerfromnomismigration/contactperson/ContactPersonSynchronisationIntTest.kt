@@ -34,6 +34,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonEmailMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto.MappingType.NOMIS_CREATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonPhoneMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactForPrisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
@@ -976,7 +977,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           mapping = PersonPhoneMappingDto(
             dpsId = "$dpsContactPhoneId",
             nomisId = nomisPhoneId,
-            dpsPhoneType = PersonPhoneMappingDto.DpsPersonPhoneType.PERSON,
+            dpsPhoneType = PersonPhoneMappingDto.DpsPhoneType.PERSON,
             mappingType = PersonPhoneMappingDto.MappingType.NOMIS_CREATED,
           ),
         )
@@ -1040,13 +1041,13 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
               duplicate = PersonPhoneMappingDto(
                 dpsId = dpsContactPhoneId.toString(),
                 nomisId = nomisPhoneId,
-                dpsPhoneType = PersonPhoneMappingDto.DpsPersonPhoneType.PERSON,
+                dpsPhoneType = PersonPhoneMappingDto.DpsPhoneType.PERSON,
                 mappingType = PersonPhoneMappingDto.MappingType.NOMIS_CREATED,
               ),
               existing = PersonPhoneMappingDto(
                 dpsId = "9999",
                 nomisId = nomisPhoneId,
-                dpsPhoneType = PersonPhoneMappingDto.DpsPersonPhoneType.PERSON,
+                dpsPhoneType = PersonPhoneMappingDto.DpsPhoneType.PERSON,
                 mappingType = PersonPhoneMappingDto.MappingType.NOMIS_CREATED,
               ),
             ),
@@ -1401,7 +1402,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           mapping = PersonPhoneMappingDto(
             dpsId = "$dpsContactAddressPhoneId",
             nomisId = nomisPhoneId,
-            dpsPhoneType = PersonPhoneMappingDto.DpsPersonPhoneType.ADDRESS,
+            dpsPhoneType = PersonPhoneMappingDto.DpsPhoneType.ADDRESS,
             mappingType = PersonPhoneMappingDto.MappingType.NOMIS_CREATED,
           ),
         )
@@ -1486,13 +1487,13 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
               duplicate = PersonPhoneMappingDto(
                 dpsId = dpsContactAddressPhoneId.toString(),
                 nomisId = nomisPhoneId,
-                dpsPhoneType = PersonPhoneMappingDto.DpsPersonPhoneType.ADDRESS,
+                dpsPhoneType = PersonPhoneMappingDto.DpsPhoneType.ADDRESS,
                 mappingType = PersonPhoneMappingDto.MappingType.NOMIS_CREATED,
               ),
               existing = PersonPhoneMappingDto(
                 dpsId = "9999",
                 nomisId = nomisPhoneId,
-                dpsPhoneType = PersonPhoneMappingDto.DpsPersonPhoneType.ADDRESS,
+                dpsPhoneType = PersonPhoneMappingDto.DpsPhoneType.ADDRESS,
                 mappingType = PersonPhoneMappingDto.MappingType.NOMIS_CREATED,
               ),
             ),
