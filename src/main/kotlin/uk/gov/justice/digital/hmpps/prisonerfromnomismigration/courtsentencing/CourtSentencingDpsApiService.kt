@@ -7,10 +7,11 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CourtCaseLegacyData
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCharge
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearance
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearanceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyChargeCreatedResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtAppearanceCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtCaseCreatedResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCharge
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCourtAppearance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCourtCase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
@@ -25,7 +26,6 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .retrieve()
       .awaitBody()
 
-  // separating this out for now - DPS may use the same endpoint
   suspend fun createCourtCaseMigration(courtCase: MigrationCreateCourtCase): MigrationCreateCourtCaseResponse =
     webClient
       .post()
@@ -49,60 +49,57 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .retrieve()
       .awaitBodilessEntity()
 
-  suspend fun createCourtAppearance(courtAppearance: CreateCourtAppearance): CreateCourtAppearanceResponse =
+  suspend fun createCourtAppearance(courtAppearance: LegacyCreateCourtAppearance): LegacyCourtAppearanceCreatedResponse =
     webClient
       .post()
-      .uri("/court-appearance")
+      .uri("/legacy/court-appearance")
       .bodyValue(courtAppearance)
       .retrieve()
       .awaitBody()
 
-  suspend fun updateCourtAppearance(courtAppearanceId: String, courtAppearance: CreateCourtAppearance): CreateCourtAppearanceResponse =
+  suspend fun updateCourtAppearance(courtAppearanceId: String, courtAppearance: LegacyCreateCourtAppearance) =
     webClient
       .put()
-      .uri("/court-appearance/{courtAppearanceId}", courtAppearanceId)
+      .uri("/legacy/court-appearance/{courtAppearanceId}", courtAppearanceId)
       .bodyValue(courtAppearance)
       .retrieve()
-      .awaitBody()
+      .awaitBodilessEntity()
 
   suspend fun deleteCourtAppearance(courtAppearanceId: String) =
     webClient
       .delete()
-      .uri("/court-appearance/{courtAppearanceId}", courtAppearanceId)
+      .uri("/legacy/court-appearance/{courtAppearanceId}", courtAppearanceId)
       .retrieve()
       .awaitBodilessEntity()
 
-  // sensible to assume that this endpoint could also update the charge
-  suspend fun associateExistingCourtCharge(courtAppearanceId: String, charge: CreateCharge) =
+  suspend fun associateExistingCourtCharge(courtAppearanceId: String, chargeId: String) =
     webClient
       .put()
-      .uri("/court-appearance/{courtAppearanceId}/charge/{chargeId}", courtAppearanceId, charge.chargeUuid.toString())
-      .bodyValue(charge)
+      .uri("/legacy/court-appearance/{courtAppearanceId}/charge/{chargeId}", courtAppearanceId, chargeId)
       .retrieve()
       .awaitBodilessEntity()
 
   // add a court charge and associate it with the given appearance (will create sync mapping)
-  suspend fun addNewCourtCharge(courtAppearanceId: String, charge: CreateCharge): CreateNewChargeResponse =
+  suspend fun addNewCourtCharge(charge: LegacyCreateCharge): LegacyChargeCreatedResponse =
     webClient
       .post()
-      .uri("/court-appearance/{courtAppearanceId}/charge", courtAppearanceId)
+      .uri("/legacy/charge")
       .bodyValue(charge)
       .retrieve()
       .awaitBody()
 
-  // remove association between court appearance and charge TODO determine whether DPS will delete any orphaned charges with no need to delete an unused charge explicitly
-  suspend fun removeCourtCharge(courtAppearanceId: String, chargeId: String) =
+  // remove association between court appearance and charge
+  suspend fun removeCourtChargeAssociation(courtAppearanceId: String, chargeId: String) =
     webClient
       .delete()
-      .uri("/court-appearance/{courtAppearanceId}/charge/{chargeId}", courtAppearanceId, chargeId)
+      .uri("/legacy/court-appearance/{courtAppearanceId}/charge/{chargeId}", courtAppearanceId, chargeId)
       .retrieve()
       .awaitBodilessEntity()
 
-  // TODO not currently implemented in DPS
-  suspend fun updateCourtCharge(chargeId: String, charge: CreateCharge) =
+  suspend fun updateCourtCharge(chargeId: String, charge: LegacyCreateCharge) =
     webClient
       .put()
-      .uri("/charge/{chargeId}", chargeId)
+      .uri("/legacy/charge/{chargeId}", chargeId)
       .bodyValue(charge)
       .retrieve()
       .awaitBodilessEntity()
@@ -140,13 +137,6 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .awaitBodilessEntity()
   }
 }
-
-data class CreateNewChargeResponse(
-
-  @field:JsonProperty("chargeUuid")
-  val chargeUuid: java.util.UUID,
-
-)
 
 data class CreateSentenceRequest(
 

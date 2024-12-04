@@ -4,14 +4,15 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.ChargeLegacyData
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CourtAppearanceLegacyData
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CourtCaseLegacyData
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCharge
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearance
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCharge
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCourtAppearance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCourtCase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtAppearance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseIdentifierResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SentenceResponse
@@ -44,16 +45,12 @@ private const val WARRANT_TYPE_DEFAULT = "REMAND"
 private const val OUTCOME_DEFAULT = "3034"
 
 fun CourtEventResponse.toDpsCourtAppearance(
-  dpsCaseId: String? = null,
   caseReference: String? = null,
-) = CreateCourtAppearance(
+  dpsCaseId: String,
+) = LegacyCreateCourtAppearance(
   courtCode = this.courtId,
-  // Only handling appearances associated with a case
   courtCaseUuid = dpsCaseId,
-  // case references are not associated with an appearance on NOMIS, using latest (or possibly the version on OffenderCase) for all appearances
-  courtCaseReference = caseReference,
   appearanceDate = LocalDateTime.parse(this.eventDateTime).toLocalDate(),
-  warrantType = WARRANT_TYPE_DEFAULT,
   legacyData =
   CourtAppearanceLegacyData(
     eventId = this.id.toString(),
@@ -62,7 +59,6 @@ fun CourtEventResponse.toDpsCourtAppearance(
     outcomeDescription = this.outcomeReasonCode?.description,
     nomisOutcomeCode = this.outcomeReasonCode?.code,
   ),
-  charges = this.courtEventCharges.map { charge -> charge.offenderCharge.toDpsCharge() },
 )
 
 fun CourtEventResponse.toMigrationDpsCourtAppearance() = MigrationCreateCourtAppearance(
@@ -79,9 +75,8 @@ fun CourtEventResponse.toMigrationDpsCourtAppearance() = MigrationCreateCourtApp
   charges = this.courtEventCharges.map { charge -> charge.offenderCharge.toDpsMigrationCharge(chargeId = charge.offenderCharge.id) },
 )
 
-fun OffenderChargeResponse.toDpsCharge(chargeId: String? = null) = CreateCharge(
+fun OffenderChargeResponse.toDpsCharge(appearanceId: String) = LegacyCreateCharge(
   offenceCode = this.offence.offenceCode,
-  // TODO determine if this is ever optional on NOMIS
   offenceStartDate = this.offenceDate!!,
   legacyData =
   ChargeLegacyData(
@@ -90,7 +85,22 @@ fun OffenderChargeResponse.toDpsCharge(chargeId: String? = null) = CreateCharge(
     nomisOutcomeCode = this.resultCode1?.code,
   ),
   offenceEndDate = this.offenceEndDate,
-  chargeUuid = chargeId?.let { UUID.fromString(chargeId) },
+  active = this.chargeStatus?.code == "A",
+  appearanceLifetimeUuid = UUID.fromString(appearanceId),
+)
+
+fun CourtEventChargeResponse.toDpsCharge(appearanceId: String) = LegacyCreateCharge(
+  offenceCode = this.offenderCharge.offence.offenceCode,
+  offenceStartDate = this.offenceDate!!,
+  legacyData =
+  ChargeLegacyData(
+    postedDate = LocalDate.now().toString(),
+    outcomeDescription = this.resultCode1?.description,
+    nomisOutcomeCode = this.resultCode1?.code,
+  ),
+  offenceEndDate = this.offenceEndDate,
+  active = this.offenderCharge.chargeStatus?.code == "A",
+  appearanceLifetimeUuid = UUID.fromString(appearanceId),
 )
 
 fun OffenderChargeResponse.toDpsMigrationCharge(chargeId: Long) = MigrationCreateCharge(

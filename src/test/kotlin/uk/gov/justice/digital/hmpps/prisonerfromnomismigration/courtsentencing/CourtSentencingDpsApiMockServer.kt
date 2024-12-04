@@ -15,6 +15,8 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearanceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCaseResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyChargeCreatedResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtAppearanceCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtCaseCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
 import java.util.UUID
@@ -128,12 +130,15 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubPostCourtAppearanceForCreate(
     courtAppearanceId: UUID = UUID.randomUUID(),
-    response: CreateCourtAppearanceResponse = CreateCourtAppearanceResponse(
-      appearanceUuid = courtAppearanceId,
+    courtCaseId: String = "12345",
+    response: LegacyCourtAppearanceCreatedResponse = LegacyCourtAppearanceCreatedResponse(
+      lifetimeUuid = courtAppearanceId,
+      courtCaseUuid = courtCaseId,
+      prisonerId = "A1234AA",
     ),
   ) {
     stubFor(
-      post("/court-appearance")
+      post("/legacy/court-appearance")
         .willReturn(
           aResponse()
             .withStatus(201)
@@ -150,7 +155,7 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     ),
   ) {
     stubFor(
-      put("/court-appearance/$courtAppearanceId")
+      put("/legacy/court-appearance/$courtAppearanceId")
         .willReturn(
           aResponse()
             .withStatus(200)
@@ -164,7 +169,7 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     courtAppearanceId: String = UUID.randomUUID().toString(),
   ) {
     stubFor(
-      delete("/court-appearance/$courtAppearanceId")
+      delete("/legacy/court-appearance/$courtAppearanceId")
         .willReturn(
           aResponse()
             .withStatus(204)
@@ -175,13 +180,16 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubPostCourtChargeForCreate(
     courtChargeId: String = UUID.randomUUID().toString(),
-    courtAppearanceId: String = UUID.randomUUID().toString(),
-    response: CreateNewChargeResponse = CreateNewChargeResponse(
-      chargeUuid = UUID.fromString(courtChargeId),
+    courtCaseId: String = UUID.randomUUID().toString(),
+    offenderNo: String,
+    response: LegacyChargeCreatedResponse = LegacyChargeCreatedResponse(
+      lifetimeUuid = UUID.fromString(courtChargeId),
+      courtCaseUuid = courtCaseId,
+      prisonerId = offenderNo,
     ),
   ) {
     stubFor(
-      post("/court-appearance/$courtAppearanceId/charge")
+      post("/legacy/charge")
         .willReturn(
           aResponse()
             .withStatus(201)
@@ -196,7 +204,7 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     courtAppearanceId: String = UUID.randomUUID().toString(),
   ) {
     stubFor(
-      delete("/court-appearance/$courtAppearanceId/charge/$chargeId")
+      delete("/legacy/court-appearance/$courtAppearanceId/charge/$chargeId")
         .willReturn(
           aResponse()
             .withStatus(204)
@@ -210,7 +218,7 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     courtAppearanceId: String = UUID.randomUUID().toString(),
   ) {
     stubFor(
-      put("/court-appearance/$courtAppearanceId/charge/$courtChargeId")
+      put("/legacy/court-appearance/$courtAppearanceId/charge/$courtChargeId")
         .willReturn(
           aResponse()
             .withStatus(201)
@@ -223,7 +231,7 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     chargeId: UUID = UUID.randomUUID(),
   ) {
     stubFor(
-      put("/charge/$chargeId")
+      put("/legacy/charge/$chargeId")
         .willReturn(
           aResponse()
             .withStatus(200)
