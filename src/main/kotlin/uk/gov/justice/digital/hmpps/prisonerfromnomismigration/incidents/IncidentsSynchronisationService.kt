@@ -76,7 +76,6 @@ class IncidentsSynchronisationService(
       )
       return
     }
-
     nomisApiService.getIncidentOrNull(event.incidentCaseId)?.let { nomisIncident ->
       incidentsMappingService.findByNomisId(
         nomisIncidentId = event.incidentCaseId,
@@ -107,6 +106,48 @@ class IncidentsSynchronisationService(
         event.toTelemetryProperties(),
       )
       throw IllegalStateException("Received UPDATED event for incident that does not exist in Nomis")
+    }
+  }
+
+  suspend fun synchroniseIncidentUpdateDelete(event: IncidentsOffenderEvent) {
+    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      telemetryClient.trackEvent(
+        "incidents-synchronisation-skipped",
+        event.toTelemetryProperties(),
+      )
+      return
+    }
+
+    nomisApiService.getIncidentOrNull(event.incidentCaseId)?.let { nomisIncident ->
+      incidentsMappingService.findByNomisId(
+        nomisIncidentId = event.incidentCaseId,
+      )?.let {
+        incidentsService.upsertIncident(
+          NomisSyncRequest(
+            id = UUID.fromString(it.dpsIncidentId),
+            initialMigration = false,
+            incidentReport = nomisIncident.toNomisIncidentReport(),
+          ),
+        )
+        telemetryClient.trackEvent(
+          "incidents-synchronisation-deleted-child-success",
+          event.toTelemetryProperties(it.dpsIncidentId),
+        )
+      } ?: let {
+        telemetryClient.trackEvent(
+          "incidents-synchronisation-deleted-child-failed",
+          event.toTelemetryProperties(),
+        )
+        throw IllegalStateException("Received DELETED event for incident that does not exist in mapping table")
+      }
+    } ?: let {
+      // This can happen if the incident has been deleted in NOMIS but the message for a child table is still in
+      // the queue due to the delay in the queue processing.
+      // We can ignore this as the top level incident has been deleted
+      telemetryClient.trackEvent(
+        "incidents-synchronisation-deleted-child-failed",
+        event.toTelemetryProperties(),
+      )
     }
   }
 

@@ -42,11 +42,14 @@ class IncidentsPrisonOffenderEventListener(
               "INCIDENT-CHANGED-PARTIES",
               "INCIDENT-CHANGED-RESPONSES",
               "INCIDENT-CHANGED-REQUIREMENTS",
+              ->
+                incidentsSynchronisationService.synchroniseIncidentUpdate(sqsMessage.Message.fromJson())
+
               // Deleting from a child table is just an update on the top level incident
               "INCIDENT-DELETED-PARTIES",
               "INCIDENT-DELETED-RESPONSES",
               "INCIDENT-DELETED-REQUIREMENTS",
-              -> incidentsSynchronisationService.synchroniseIncidentUpdate(sqsMessage.Message.fromJson())
+              -> incidentsSynchronisationService.synchroniseIncidentUpdateDelete(sqsMessage.Message.fromJson())
 
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
