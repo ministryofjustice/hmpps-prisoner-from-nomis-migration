@@ -11,6 +11,7 @@ import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SentenceResponse
@@ -49,6 +50,15 @@ class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val
   suspend fun getOffenderCharge(offenderNo: String, offenderChargeId: Long): OffenderChargeResponse = webClient.get()
     .uri(
       "/prisoners/{offenderNo}/sentencing/offender-charges/{offenderChargeId}",
+      offenderNo,
+      offenderChargeId,
+    )
+    .retrieve()
+    .awaitBody()
+
+  suspend fun geLastModifiedCourtAppearanceCharge(offenderNo: String, offenderChargeId: Long): CourtEventChargeResponse = webClient.get()
+    .uri(
+      "/prisoners/{offenderNo}/sentencing/court-event-charges/{offenderChargeId}/last-modified",
       offenderNo,
       offenderChargeId,
     )

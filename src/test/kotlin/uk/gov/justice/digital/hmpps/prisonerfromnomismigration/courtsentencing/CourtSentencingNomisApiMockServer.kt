@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseIdentifierResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtOrderResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenceResponse
@@ -192,6 +193,45 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
   fun stubGetOffenderCharge(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     nomisApi.stubFor(
       get(WireMock.urlPathMatching("/prisoners/\\S+/sentencing/offender-charges/\\d+")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubGetLastModifiedCourtEventCharge(
+    offenderNo: String = "A3864DZ",
+    offenderChargeId: Long = 3,
+    courtAppearanceId: Long = 3,
+    response: CourtEventChargeResponse = CourtEventChargeResponse(
+      offenderCharge = OffenderChargeResponse(
+        id = offenderChargeId,
+        offence = OffenceResponse(offenceCode = "RI64006", statuteCode = "RI64", description = "Offender description"),
+        mostSeriousFlag = true,
+        offenceDate = LocalDate.now(),
+        plea = CodeDescription("NG", "Not Guilty"),
+      ),
+      mostSeriousFlag = true,
+      offenceDate = LocalDate.now(),
+      plea = CodeDescription("NG", "Not Guilty"),
+      eventId = courtAppearanceId,
+    ),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/prisoners/$offenderNo/sentencing/court-event-charges/$offenderChargeId/last-modified")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(objectMapper.writeValueAsString(response)),
+      ),
+    )
+  }
+
+  fun stubGetLastModifiedCourtEventCharge(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    nomisApi.stubFor(
+      get(WireMock.urlPathMatching("/prisoners/\\S+/sentencing/court-event-charges/\\d+/last-modified/")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())

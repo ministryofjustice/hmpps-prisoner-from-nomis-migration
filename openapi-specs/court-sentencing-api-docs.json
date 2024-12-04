@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-11-29.3564.5545ee8"
+    "version": "2024-12-03.3595.f5a3f0d"
   },
   "servers": [
     {
@@ -3056,7 +3056,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "10:18:41.214405004"
+            "example": "14:50:07.175598568"
           },
           "courtCode": {
             "type": "string"
@@ -3784,7 +3784,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "10:18:41.214405004"
+            "example": "14:50:07.175598568"
           },
           "courtId": {
             "type": "string"
@@ -4006,7 +4006,8 @@
               "INACTIVE",
               "EDITED",
               "DELETED",
-              "DRAFT"
+              "DRAFT",
+              "FUTURE"
             ]
           },
           "latestAppearance": {
@@ -4043,7 +4044,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "10:18:41.214405004"
+            "example": "14:50:07.175598568"
           },
           "courtCode": {
             "type": "string"

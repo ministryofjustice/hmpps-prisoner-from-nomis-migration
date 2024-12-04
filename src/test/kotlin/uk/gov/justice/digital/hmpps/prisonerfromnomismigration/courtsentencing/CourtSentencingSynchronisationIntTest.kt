@@ -1098,6 +1098,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             courtAppearanceId = UUID.fromString(
               DPS_COURT_APPEARANCE_ID,
             ),
+            courtCaseId = DPS_COURT_CASE_ID,
           )
           courtSentencingMappingApiMockServer.stubPostCourtAppearanceMapping()
           awsSqsCourtSentencingOffenderEventsClient.sendMessage(
@@ -1112,7 +1113,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create a court appearance in DPS`() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
-              postRequestedFor(urlPathEqualTo("/court-appearance"))
+              postRequestedFor(urlPathEqualTo("/legacy/court-appearance"))
                 .withRequestBody(matchingJsonPath("legacyData.eventId", equalTo(NOMIS_COURT_APPEARANCE_ID.toString())))
                 .withRequestBody(matchingJsonPath("legacyData.nomisOutcomeCode", equalTo("4506")))
                 .withRequestBody(matchingJsonPath("legacyData.caseId", equalTo(NOMIS_COURT_CASE_ID.toString())))
@@ -1120,8 +1121,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBody(matchingJsonPath("legacyData.postedDate", WireMock.not(WireMock.absent())))
                 .withRequestBody(matchingJsonPath("courtCode", equalTo("MDI")))
                 .withRequestBody(matchingJsonPath("courtCaseUuid", equalTo(DPS_COURT_CASE_ID)))
-                .withRequestBody(matchingJsonPath("appearanceDate", equalTo("2020-01-02")))
-                .withRequestBody(matchingJsonPath("warrantType", equalTo("REMAND"))),
+                .withRequestBody(matchingJsonPath("appearanceDate", equalTo("2020-01-02"))),
             )
           }
         }
@@ -1322,7 +1322,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           fun `will create a court case in DPS`() {
             await untilAsserted {
               dpsCourtSentencingServer.verify(
-                postRequestedFor(urlPathEqualTo("/court-appearance")),
+                postRequestedFor(urlPathEqualTo("/legacy/court-appearance")),
               )
             }
           }
@@ -1408,7 +1408,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             await untilAsserted {
               dpsCourtSentencingServer.verify(
                 1,
-                postRequestedFor(urlPathEqualTo("/court-appearance")),
+                postRequestedFor(urlPathEqualTo("/legacy/court-appearance")),
               )
             }
           }
@@ -1495,7 +1495,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         // doesn't retry
         dpsCourtSentencingServer.verify(
           1,
-          postRequestedFor(urlPathEqualTo("/court-appearance")),
+          postRequestedFor(urlPathEqualTo("/legacy/court-appearance")),
         )
 
         await untilAsserted {
@@ -1649,7 +1649,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
               1,
-              putRequestedFor(urlPathEqualTo("/court-appearance/$DPS_COURT_APPEARANCE_ID")),
+              putRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_COURT_APPEARANCE_ID")),
             )
           }
         }
@@ -1830,7 +1830,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
               1,
-              deleteRequestedFor(urlPathEqualTo("/court-appearance/$DPS_COURT_APPEARANCE_ID")),
+              deleteRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_COURT_APPEARANCE_ID")),
               // TODO DPS to implement this endpoint
             )
           }
@@ -1896,7 +1896,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
               1,
-              deleteRequestedFor(urlPathEqualTo("/court-appearance/$DPS_COURT_APPEARANCE_ID")),
+              deleteRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_COURT_APPEARANCE_ID")),
               // TODO DPS to implement this endpoint
             )
           }
@@ -2010,7 +2010,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
           dpsCourtSentencingServer.stubPostCourtChargeForCreate(
             courtChargeId = DPS_CHARGE_ID,
-            courtAppearanceId = DPS_COURT_APPEARANCE_ID,
+            courtCaseId = DPS_COURT_CASE_ID,
+            offenderNo = OFFENDER_ID_DISPLAY,
           )
           courtSentencingMappingApiMockServer.stubPostCourtChargeMapping()
           awsSqsCourtSentencingOffenderEventsClient.sendMessage(
@@ -2025,7 +2026,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create a court charge and associate with an appearance in DPS`() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
-              postRequestedFor(urlPathEqualTo("/court-appearance/${DPS_COURT_APPEARANCE_ID}/charge")),
+              postRequestedFor(urlPathEqualTo("/legacy/charge")),
               // TODO assert once DPS team have defined their dto
             )
           }
@@ -2095,7 +2096,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `the existing offender charge is added to the appearance on DPS rather than created`() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
-              putRequestedFor(urlPathEqualTo("/court-appearance/${DPS_COURT_APPEARANCE_ID}/charge/$DPS_CHARGE_ID")),
+              putRequestedFor(urlPathEqualTo("/legacy/court-appearance/${DPS_COURT_APPEARANCE_ID}/charge/$DPS_CHARGE_ID")),
               // TODO assert once DPS team have defined their dto
             )
           }
@@ -2139,7 +2140,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
           dpsCourtSentencingServer.stubPostCourtChargeForCreate(
             courtChargeId = DPS_CHARGE_ID,
-            courtAppearanceId = DPS_COURT_APPEARANCE_ID,
+            courtCaseId = DPS_COURT_CASE_ID,
+            offenderNo = OFFENDER_ID_DISPLAY,
           )
         }
 
@@ -2161,7 +2163,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           fun `will create a court case in DPS`() {
             await untilAsserted {
               dpsCourtSentencingServer.verify(
-                postRequestedFor(urlPathEqualTo("/court-appearance/${DPS_COURT_APPEARANCE_ID}/charge")),
+                postRequestedFor(urlPathEqualTo("/legacy/charge")),
               )
             }
           }
@@ -2246,7 +2248,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           fun `will create and associate a charge in DPS`() {
             await untilAsserted {
               dpsCourtSentencingServer.verify(
-                postRequestedFor(urlPathEqualTo("/court-appearance/${DPS_COURT_APPEARANCE_ID}/charge")),
+                postRequestedFor(urlPathEqualTo("/legacy/charge")),
               )
             }
           }
@@ -2302,7 +2304,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
         dpsCourtSentencingServer.stubPostCourtChargeForCreate(
           courtChargeId = DPS_CHARGE_ID,
-          courtAppearanceId = DPS_COURT_APPEARANCE_ID,
+          courtCaseId = DPS_COURT_CASE_ID,
+          offenderNo = OFFENDER_ID_DISPLAY,
         )
 
         courtSentencingMappingApiMockServer.stubCourtChargeMappingCreateConflict(
@@ -2329,7 +2332,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         // doesn't retry
         dpsCourtSentencingServer.verify(
           1,
-          postRequestedFor(urlPathEqualTo("/court-appearance/$DPS_COURT_APPEARANCE_ID/charge")),
+          postRequestedFor(urlPathEqualTo("/legacy/charge")),
         )
 
         await untilAsserted {
@@ -2475,7 +2478,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
               1,
-              deleteRequestedFor(urlPathEqualTo("/court-appearance/$DPS_COURT_APPEARANCE_ID/charge/$DPS_CHARGE_ID")),
+              deleteRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_COURT_APPEARANCE_ID/charge/$DPS_CHARGE_ID")),
               // TODO DPS to implement this endpoint
             )
           }
@@ -2623,14 +2626,15 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
-        courtSentencingNomisApiMockServer.stubGetOffenderCharge(
+        courtSentencingNomisApiMockServer.stubGetLastModifiedCourtEventCharge(
           offenderChargeId = NOMIS_OFFENDER_CHARGE_ID,
+          courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
           offenderNo = OFFENDER_ID_DISPLAY,
         )
       }
 
       @Nested
-      @DisplayName("When mapping doesn't exist")
+      @DisplayName("When charge mapping doesn't exist")
       inner class MappingDoesNotExist {
         @BeforeEach
         fun setUp() {
@@ -2651,6 +2655,53 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               check {
                 assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
                 assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["reason"]).isEqualTo("charge is not mapped")
+                assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+              },
+              isNull(),
+            )
+          }
+        }
+
+        @Test
+        fun `the event is placed on dead letter queue`() {
+          await untilAsserted {
+            assertThat(
+              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
+                courtSentencingQueueOffenderEventsDlqUrl,
+              ).get(),
+            ).isEqualTo(1)
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("When appearance mapping doesn't exist")
+      inner class AppearanceMappingDoesNotExist {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
+            nomisCourtChargeId = NOMIS_OFFENDER_CHARGE_ID,
+            dpsCourtChargeId = DPS_CHARGE_ID,
+          )
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(status = NOT_FOUND)
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            offenderChargeEvent(
+              eventType = "OFFENDER_CHARGES-UPDATED",
+            ),
+          )
+        }
+
+        @Test
+        fun `telemetry added to track the failure`() {
+          await untilAsserted {
+            verify(telemetryClient, Mockito.atLeastOnce()).trackEvent(
+              eq("court-charge-synchronisation-updated-failed"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["reason"]).isEqualTo("associated court appearance is not mapped")
                 assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
               },
               isNull(),
@@ -2680,6 +2731,11 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             dpsCourtChargeId = DPS_CHARGE_ID,
           )
 
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+            dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
+          )
+
           dpsCourtSentencingServer.stubPutChargeForUpdate(
             chargeId = UUID.fromString(
               DPS_CHARGE_ID,
@@ -2698,7 +2754,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
               1,
-              putRequestedFor(urlPathEqualTo("/charge/$DPS_CHARGE_ID")),
+              putRequestedFor(urlPathEqualTo("/legacy/charge/$DPS_CHARGE_ID")),
             )
           }
         }
