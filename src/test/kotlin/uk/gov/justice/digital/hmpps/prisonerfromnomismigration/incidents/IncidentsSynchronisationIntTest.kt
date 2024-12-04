@@ -254,7 +254,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         awsSqsIncidentsOffenderEventsClient.sendMessage(
           incidentsQueueOffenderEventsUrl,
-          incidentEvent(eventType = "INCIDENT-INSERTED", auditModuleName = "DPS_SYNCHRONISATION"),
+          incidentEvent(eventType = "INCIDENT-CHANGED-PARTIES", auditModuleName = "DPS_SYNCHRONISATION"),
         )
       }
 
@@ -404,6 +404,184 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
               eq("incidents-synchronisation-updated-success"),
+              check {
+                assertThat(it["dpsIncidentId"]).isEqualTo(DPS_INCIDENT_ID)
+                assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+    }
+  }
+
+  @Nested
+  inner class IncidentChildDelete {
+
+    @Nested
+    inner class WhenUpdateByDPS {
+      @BeforeEach
+      fun setUp() {
+        awsSqsIncidentsOffenderEventsClient.sendMessage(
+          incidentsQueueOffenderEventsUrl,
+          incidentEvent(eventType = "INCIDENT-DELETED-PARTIES", auditModuleName = "DPS_SYNCHRONISATION"),
+        )
+      }
+
+      @Test
+      fun `the event is ignored`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            eq("incidents-synchronisation-skipped"),
+            check {
+              assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
+              assertThat(it["dpsIncidentId"]).isNull()
+            },
+            isNull(),
+          )
+        }
+        nomisApi.verify(exactly(0), getRequestedFor(anyUrl()))
+        mappingApi.verify(exactly(0), getRequestedFor(anyUrl()))
+        incidentsApi.verify(exactly(0), anyRequestedFor(anyUrl()))
+      }
+    }
+
+    @Nested
+    @DisplayName("When there is a new Delete Child for Incident event")
+    inner class WhenUpdateByNomis {
+
+      @Nested
+      inner class WhenNomisHasNoIncident {
+        @BeforeEach
+        fun setUp() {
+          incidentsNomisApi.stubGetIncidentNotFound()
+
+          awsSqsIncidentsOffenderEventsClient.sendMessage(
+            incidentsQueueOffenderEventsUrl,
+            incidentEvent("INCIDENT-DELETED-PARTIES"),
+          )
+          waitForAnyProcessingToComplete()
+        }
+
+        @Test
+        fun `will not create the incident in the incidents service`() {
+          incidentsApi.verify(exactly(0), anyRequestedFor(anyUrl()))
+        }
+
+        @Test
+        fun `will not attempt to get mapping data`() {
+          incidentsMappingApi.verify(exactly(0), getRequestedFor(anyUrl()))
+        }
+
+        @Test
+        fun `will create telemetry tracking`() {
+          verify(telemetryClient, Mockito.atLeastOnce()).trackEvent(
+            eq("incidents-synchronisation-deleted-child-failed"),
+            check {
+              assertThat(it["nomisIncidentId"]).isEqualTo("1234")
+            },
+            isNull(),
+          )
+        }
+
+        @Test
+        fun `will not put the message on the dlq`() {
+          assertThat(
+            awsSqsIncidentsOffenderEventDlqClient.countAllMessagesOnQueue(incidentsQueueOffenderEventsDlqUrl).get(),
+          ).isEqualTo(0)
+        }
+      }
+
+      @Nested
+      @DisplayName("When mapping doesn't exist")
+      inner class MappingDoesNotExist {
+        @BeforeEach
+        fun setUp() {
+          incidentsNomisApi.stubGetIncident()
+          incidentsMappingApi.stubGetAnyIncidentNotFound()
+          awsSqsIncidentsOffenderEventsClient.sendMessage(
+            incidentsQueueOffenderEventsUrl,
+            incidentEvent(eventType = "INCIDENT-DELETED-RESPONSES"),
+          )
+          awsSqsIncidentsOffenderEventDlqClient.waitForMessageCountOnQueue(incidentsQueueOffenderEventsDlqUrl, 1)
+        }
+
+        @Test
+        fun `telemetry added to track the failure`() {
+          await untilAsserted {
+            verify(telemetryClient, Mockito.atLeastOnce()).trackEvent(
+              eq("incidents-synchronisation-deleted-child-failed"),
+              check {
+                assertThat(it["nomisIncidentId"]).isEqualTo("1234")
+              },
+              isNull(),
+            )
+          }
+        }
+
+        @Test
+        fun `the event is placed on dead letter queue`() {
+          await untilAsserted {
+            assertThat(
+              awsSqsIncidentsOffenderEventDlqClient.countAllMessagesOnQueue(incidentsQueueOffenderEventsDlqUrl).get(),
+            ).isEqualTo(1)
+          }
+        }
+      }
+
+      @Nested
+      inner class HappyPath {
+        @BeforeEach
+        fun setUp() {
+          incidentsNomisApi.stubGetIncident()
+          incidentsMappingApi.stubGetIncident()
+          incidentsApi.stubIncidentUpsert()
+
+          awsSqsIncidentsOffenderEventsClient.sendMessage(
+            incidentsQueueOffenderEventsUrl,
+            incidentEvent("INCIDENT-DELETED-PARTIES"),
+          )
+          waitForAnyProcessingToComplete("incidents-synchronisation-deleted-child-success")
+        }
+
+        @Test
+        fun `will retrieve details about the incident from NOMIS`() {
+          await untilAsserted {
+            nomisApi.verify(getRequestedFor(urlEqualTo(NOMIS_API_URL)))
+          }
+        }
+
+        @Test
+        fun `will retrieve mapping to check if this is a new incident`() {
+          await untilAsserted {
+            mappingApi.verify(getRequestedFor(urlPathEqualTo(NOMIS_MAPPING_API_URL)))
+          }
+        }
+
+        @Test
+        fun `will send the update to the incident in the incidents service`() {
+          await untilAsserted {
+            incidentsApi.verify(
+              postRequestedFor(urlPathEqualTo("/sync/upsert"))
+                .withRequestBodyJsonPath("id", "fb4b2e91-91e7-457b-aa17-797f8c5c2f42"),
+            )
+          }
+        }
+
+        @Test
+        fun `will not add a new mapping between the two records`() {
+          await untilAsserted {
+            verify(telemetryClient, Times(1)).trackEvent(any(), any(), isNull())
+            mappingApi.verify(exactly(0), postRequestedFor(anyUrl()))
+          }
+        }
+
+        @Test
+        fun `will create telemetry tracking the create`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("incidents-synchronisation-deleted-child-success"),
               check {
                 assertThat(it["dpsIncidentId"]).isEqualTo(DPS_INCIDENT_ID)
                 assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
