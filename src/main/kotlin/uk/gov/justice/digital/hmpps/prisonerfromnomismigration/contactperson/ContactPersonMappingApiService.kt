@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import kotlinx.coroutines.reactive.awaitFirstOrDefault
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.core.ParameterizedTypeReference
@@ -17,7 +16,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonContactMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonEmailMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonIdentifierMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonPhoneMappingDto
 
 @Service
 class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<ContactPersonMappingsDto>(domainUrl = "/mapping/contact-person/person", webClient) {
@@ -65,6 +66,15 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
     .uri(
       "/mapping/contact-person/phone/nomis-phone-id/{nomisPhoneId}",
       nomisPhoneId,
+    )
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
+
+  suspend fun getByNomisIdentifierIdsOrNull(nomisPersonId: Long, nomisSequenceNumber: Long): PersonIdentifierMappingDto? = webClient.get()
+    .uri(
+      "/mapping/contact-person/identifier/nomis-person-id/{nomisPersonId}/nomis-sequence-number/{nomisSequenceNumber}",
+      nomisPersonId,
+      nomisSequenceNumber,
     )
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
@@ -134,59 +144,15 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
       Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<PersonPhoneMappingDto>>() {})))
     }
     .awaitFirstOrDefault(CreateMappingResult())
-}
 
-// TODO replace with generated DTO once other PR is merged
-data class PersonPhoneMappingDto(
-
-  /* DPS id */
-  @get:JsonProperty("dpsId")
-  val dpsId: String,
-
-  /* NOMIS id */
-  @get:JsonProperty("nomisId")
-  val nomisId: Long,
-
-  @get:JsonProperty("mappingType")
-  val mappingType: MappingType,
-
-  @get:JsonProperty("dpsPhoneType")
-  val dpsPhoneType: DpsPersonPhoneType,
-
-  @get:JsonProperty("label")
-  val label: String? = null,
-
-  @get:JsonProperty("whenCreated")
-  val whenCreated: String? = null,
-
-) {
-
-  /**
-   *
-   *
-   * Values: MIGRATED,DPS_CREATED,NOMIS_CREATED
-   */
-  enum class MappingType(val value: String) {
-    @JsonProperty(value = "MIGRATED")
-    MIGRATED("MIGRATED"),
-
-    @JsonProperty(value = "DPS_CREATED")
-    DPS_CREATED("DPS_CREATED"),
-
-    @JsonProperty(value = "NOMIS_CREATED")
-    NOMIS_CREATED("NOMIS_CREATED"),
-  }
-
-  /**
-   *
-   *
-   * Values: PERSON,ADDRESS
-   */
-  enum class DpsPersonPhoneType(val value: String) {
-    @JsonProperty(value = "PERSON")
-    PERSON("PERSON"),
-
-    @JsonProperty(value = "ADDRESS")
-    ADDRESS("ADDRESS"),
-  }
+  suspend fun createIdentifierMapping(mappings: PersonIdentifierMappingDto): CreateMappingResult<PersonIdentifierMappingDto> = webClient.post()
+    .uri("/mapping/contact-person/identifier")
+    .bodyValue(mappings)
+    .retrieve()
+    .bodyToMono(Unit::class.java)
+    .map { CreateMappingResult<PersonIdentifierMappingDto>() }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<PersonIdentifierMappingDto>>() {})))
+    }
+    .awaitFirstOrDefault(CreateMappingResult())
 }

@@ -16,7 +16,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonContactMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonEmailMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonIdentifierMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonPhoneMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.time.LocalDateTime
@@ -425,7 +427,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
     mapping: PersonPhoneMappingDto? = PersonPhoneMappingDto(
       nomisId = 123456,
       dpsId = "654321",
-      dpsPhoneType = PersonPhoneMappingDto.DpsPersonPhoneType.PERSON,
+      dpsPhoneType = PersonPhoneMappingDto.DpsPhoneType.PERSON,
       mappingType = PersonPhoneMappingDto.MappingType.MIGRATED,
     ),
   ) {
@@ -441,6 +443,84 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
     } ?: run {
       mappingApi.stubFor(
         get(urlEqualTo("/mapping/contact-person/phone/nomis-phone-id/$nomisPhoneId")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NOT_FOUND.value())
+            .withBody(objectMapper.writeValueAsString(ErrorResponse(status = 404))),
+        ),
+      )
+    }
+  }
+
+  fun stubCreateIdentifierMapping() {
+    mappingApi.stubFor(
+      post("/mapping/contact-person/identifier").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
+  fun stubCreateIdentifierMapping(error: DuplicateMappingErrorResponse) {
+    mappingApi.stubFor(
+      post("/mapping/contact-person/identifier").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(409)
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubCreateIdentifierMappingFollowedBySuccess(status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      post("/mapping/contact-person/identifier")
+        .inScenario("Retry Mapping Identifier Scenario")
+        .whenScenarioStateIs(Scenario.STARTED)
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody(objectMapper.writeValueAsString(error)),
+        ).willSetStateTo("Cause Mapping Identifier Success"),
+    )
+
+    mappingApi.stubFor(
+      post("/mapping/contact-person/identifier")
+        .inScenario("Retry Mapping Identifier Scenario")
+        .whenScenarioStateIs("Cause Mapping Identifier Success")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(201),
+
+        ).willSetStateTo(Scenario.STARTED),
+    )
+  }
+
+  fun stubGetByNomisIdentifierIdsOrNull(
+    nomisPersonId: Long = 123456,
+    nomisSequenceNumber: Long = 4,
+    mapping: PersonIdentifierMappingDto? = PersonIdentifierMappingDto(
+      nomisPersonId = 123456,
+      nomisSequenceNumber = 4,
+      dpsId = "654321",
+      mappingType = PersonIdentifierMappingDto.MappingType.MIGRATED,
+    ),
+  ) {
+    mapping?.apply {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/contact-person/identifier/nomis-person-id/$nomisPersonId/nomis-sequence-number/$nomisSequenceNumber")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(objectMapper.writeValueAsString(mapping)),
+        ),
+      )
+    } ?: run {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/contact-person/identifier/nomis-person-id/$nomisPersonId/nomis-sequence-number/$nomisSequenceNumber")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())

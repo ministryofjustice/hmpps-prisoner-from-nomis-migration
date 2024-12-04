@@ -18,6 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonContactMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonEmailMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonPhoneMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactPerson
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonContact
@@ -288,7 +289,7 @@ class ContactPersonSynchronisationService(
     return PersonPhoneMappingDto(
       nomisId = phoneId,
       dpsId = dpsPhone.contactPhoneId.toString(),
-      dpsPhoneType = PersonPhoneMappingDto.DpsPersonPhoneType.PERSON,
+      dpsPhoneType = PersonPhoneMappingDto.DpsPhoneType.PERSON,
       mappingType = PersonPhoneMappingDto.MappingType.NOMIS_CREATED,
     )
   }
@@ -313,7 +314,7 @@ class ContactPersonSynchronisationService(
     return PersonPhoneMappingDto(
       nomisId = phoneId,
       dpsId = dpsPhone.contactAddressPhoneId.toString(),
-      dpsPhoneType = PersonPhoneMappingDto.DpsPersonPhoneType.ADDRESS,
+      dpsPhoneType = PersonPhoneMappingDto.DpsPhoneType.ADDRESS,
       mappingType = PersonPhoneMappingDto.MappingType.NOMIS_CREATED,
     )
   }
