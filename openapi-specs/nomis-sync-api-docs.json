@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-12-03.10149.3bf485f"
+    "version": "2024-12-04.10160.f63e00b"
   },
   "servers": [
     {
@@ -6444,6 +6444,93 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CreatePersonPhoneResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request data, e.g type is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_CONTACTPERSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Person does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/persons/{personId}/identifier": {
+      "post": {
+        "tags": [
+          "contact-person-resource"
+        ],
+        "summary": "Creates a person identifier",
+        "description": "Creates a person identifier in NOMIS. Requires ROLE_NOMIS_CONTACTPERSONS",
+        "operationId": "createPersonIdentifier",
+        "parameters": [
+          {
+            "name": "personId",
+            "in": "path",
+            "description": "Person Id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Person Id",
+              "format": "int64",
+              "example": 12345
+            },
+            "example": 12345
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePersonIdentifierRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Person Identifier sequence returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatePersonIdentifierResponse"
                 }
               }
             }
@@ -17993,6 +18080,42 @@
             "type": "string",
             "description": "Phone type code",
             "example": "MOB"
+          }
+        }
+      },
+      "CreatePersonIdentifierResponse": {
+        "required": [
+          "sequence"
+        ],
+        "type": "object",
+        "properties": {
+          "sequence": {
+            "type": "integer",
+            "description": "Unique NOMIS sequence for this identifier for this person",
+            "format": "int64"
+          }
+        }
+      },
+      "CreatePersonIdentifierRequest": {
+        "required": [
+          "identifier",
+          "typeCode"
+        ],
+        "type": "object",
+        "properties": {
+          "typeCode": {
+            "type": "string",
+            "description": "The identifier type code"
+          },
+          "identifier": {
+            "type": "string",
+            "description": "The identifier value",
+            "example": "NE121212T"
+          },
+          "issuedAuthority": {
+            "type": "string",
+            "description": "The issued authority",
+            "example": "Police"
           }
         }
       },
