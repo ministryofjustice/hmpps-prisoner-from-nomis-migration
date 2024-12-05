@@ -31,7 +31,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncPrisonerContact
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncPrisonerContactRestriction
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.time.LocalDateTime
@@ -231,6 +233,21 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       createdBy = "JANE.SAM",
       createdTime = LocalDateTime.parse("2024-01-01T12:13"),
     )
+
+    fun prisonerContactRestriction() = SyncPrisonerContactRestriction(
+      contactId = 1234567,
+      prisonerContactId = 654321,
+      prisonerContactRestrictionId = 209876,
+      prisonerNumber = "A1234KT",
+
+    )
+
+    fun createPrisonerContactRestrictionRequest() = SyncCreatePrisonerContactRestrictionRequest(
+      prisonerContactId = 654321,
+      restrictionType = "BAN",
+      createdBy = "J.SMITH",
+      createdTime = LocalDateTime.parse("2024-01-01T12:13"),
+    )
   }
 
   fun stubMigrateContact(response: MigrateContactResponse = migrateContactResponse()) {
@@ -337,6 +354,17 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubCreateContactIdentity(response: SyncContactIdentity = contactIdentity()) {
     stubFor(
       post("/sync/contact-identity")
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader("Content-Type", "application/json")
+            .withBody(ContactPersonDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+  fun stubCreatePrisonerContactRestriction(response: SyncPrisonerContactRestriction = prisonerContactRestriction()) {
+    stubFor(
+      post("/sync/prisoner-contact-restriction")
         .willReturn(
           aResponse()
             .withStatus(201)

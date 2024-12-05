@@ -17,6 +17,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.Con
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.createContactPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.createContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.createPrisonerContactRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.createPrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.migrateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 
@@ -230,6 +231,32 @@ class ContactPersonDpsApiServiceTest {
 
       dpsContactPersonServer.verify(
         postRequestedFor(urlPathEqualTo("/sync/contact-identity")),
+      )
+    }
+  }
+
+  @Nested
+  inner class CreatePrisonerContactRestriction {
+    @Test
+    internal fun `will pass oath2 token to prisoner contact endpoint`() = runTest {
+      dpsContactPersonServer.stubCreatePrisonerContactRestriction()
+
+      apiService.createPrisonerContactRestriction(createPrisonerContactRestrictionRequest())
+
+      dpsContactPersonServer.verify(
+        postRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the create sync endpoint`() = runTest {
+      dpsContactPersonServer.stubCreatePrisonerContactRestriction()
+
+      apiService.createPrisonerContactRestriction(createPrisonerContactRestrictionRequest())
+
+      dpsContactPersonServer.verify(
+        postRequestedFor(urlPathEqualTo("/sync/prisoner-contact-restriction")),
       )
     }
   }
