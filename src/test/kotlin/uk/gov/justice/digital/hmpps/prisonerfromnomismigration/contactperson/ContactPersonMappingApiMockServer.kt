@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonContactMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonContactRestrictionMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonEmailMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonIdentifierMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
@@ -156,6 +157,15 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
       )
     }
   }
+
+  fun stubGetByNomisContactId(
+    nomisContactId: Long = 123456,
+    mapping: PersonContactMappingDto = PersonContactMappingDto(
+      nomisId = 123456,
+      dpsId = "654321",
+      mappingType = PersonContactMappingDto.MappingType.MIGRATED,
+    ),
+  ) = stubGetByNomisContactIdOrNull(nomisContactId, mapping)
 
   fun stubCreateContactMapping() {
     mappingApi.stubFor(
@@ -528,6 +538,82 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
         ),
       )
     }
+  }
+
+  fun stubGetByNomisContactRestrictionIdOrNull(
+    nomisContactRestrictionId: Long = 123456,
+    mapping: PersonContactRestrictionMappingDto? = PersonContactRestrictionMappingDto(
+      nomisId = 123456,
+      dpsId = "654321",
+      mappingType = PersonContactRestrictionMappingDto.MappingType.MIGRATED,
+    ),
+  ) {
+    mapping?.apply {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/contact-person/contact-restriction/nomis-contact-restriction-id/$nomisContactRestrictionId")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(objectMapper.writeValueAsString(mapping)),
+        ),
+      )
+    } ?: run {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/contact-person/contact-restriction/nomis-contact-restriction-id/$nomisContactRestrictionId")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NOT_FOUND.value())
+            .withBody(objectMapper.writeValueAsString(ErrorResponse(status = 404))),
+        ),
+      )
+    }
+  }
+
+  fun stubCreateContactRestrictionMapping() {
+    mappingApi.stubFor(
+      post("/mapping/contact-person/contact-restriction").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
+  fun stubCreateContactRestrictionMapping(error: DuplicateMappingErrorResponse) {
+    mappingApi.stubFor(
+      post("/mapping/contact-person/contact-restriction").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(409)
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubCreateContactRestrictionMappingFollowedBySuccess(status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      post("/mapping/contact-person/contact-restriction")
+        .inScenario("Retry Mapping Contact Restriction Scenario")
+        .whenScenarioStateIs(Scenario.STARTED)
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody(objectMapper.writeValueAsString(error)),
+        ).willSetStateTo("Cause Mapping Contact Restriction Success"),
+    )
+
+    mappingApi.stubFor(
+      post("/mapping/contact-person/contact-restriction")
+        .inScenario("Retry Mapping Contact Restriction Scenario")
+        .whenScenarioStateIs("Cause Mapping Contact Restriction Success")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(201),
+
+        ).willSetStateTo(Scenario.STARTED),
+    )
   }
 
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
