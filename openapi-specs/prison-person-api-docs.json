@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-09-18.1142.fb7e173"
+    "version": "2024-12-03.1926.b6d7798"
   },
   "servers": [
     {
@@ -60,12 +60,12 @@
       "description": "Endpoints to facilitate migration of data from NOMIS to the Prison Person database"
     },
     {
-      "name": "Identifying marks",
-      "description": "Identifying marks linked to a prisoner"
-    },
-    {
       "name": "Reference Data Codes",
       "description": "Reference Data Codes for Prison Person data"
+    },
+    {
+      "name": "Distinguishing marks",
+      "description": "Distinguishing marks linked to a prisoner"
     }
   ],
   "paths": {
@@ -76,7 +76,7 @@
           "Sync with NOMIS"
         ],
         "summary": "SYNC endpoint to sync changes to profile details physical attributes made in NOMIS",
-        "description": "This endpoint <b>SHOULD ONLY BE USED IN ORDER TO SYNC CHANGES MADE IN NOMIS.</b> There is a separate endpoint for normal editing of the Physical Attributes.<br/><br/>Requires role `ROLE_PRISON_PERSON_API__PROFILE_DETAILS_PHYSICAL_ATTRIBUTES_SYNC__RW`<br/><br/>Edits can be made to profile details physical attributes in NOMIS to both the current booking and to old bookings. This sync API can handle both by accepting the `appliesFrom` and `appliesTo` timestamps.  For edits to the current booking, `appliesFrom` should be equal to the point in time that the edit happened, and `appliesTo` should be null.  For edits to historical bookings `appliesFrom` should be equal to the booking start date and and `appliesTo` should be equal to the booking end date. The `lastModifiedAt` date should always be the point in time that the user made the edit.",
+        "description": "This endpoint <b>SHOULD ONLY BE USED IN ORDER TO SYNC CHANGES MADE IN NOMIS.</b> There is a separate endpoint for normal editing of the Physical Attributes.<br/><br/>Requires role `ROLE_PRISON_PERSON_API__PROFILE_DETAILS_PHYSICAL_ATTRIBUTES_SYNC__RW`<br/><br/>Edits can be made to profile details physical attributes in NOMIS to both the current booking and to old bookings. This sync API can handle both by accepting the `appliesFrom` and `appliesTo` timestamps - `appliesFrom` should be equal to the point in time that the edit happened, and `appliesTo` should be null.  For edits to historical bookings `appliesFrom` should be equal to the booking start date and and `appliesTo` should be equal to the booking end date. The `lastModifiedAt` date should always be the point in time that the user made the edit.",
         "operationId": "syncPhysicalAttributes",
         "parameters": [
           {
@@ -157,13 +157,78 @@
       }
     },
     "/sync/prisoners/{prisonerNumber}/physical-attributes": {
+      "get": {
+        "tags": [
+          "Physical Attributes",
+          "Sync with NOMIS"
+        ],
+        "summary": "GET endpoint for the physical attributes NOMIS sync",
+        "description": "This endpoint <b>SHOULD ONLY BE USED TO GET PHYSICAL ATTRIBUTES AS PART OF THE NOMIS SYNC.</b> There is a separate endpoint for normal GET of the Physical Attributes.<br/><br/>Requires role `ROLE_PRISON_PERSON_API__PHYSICAL_ATTRIBUTES_SYNC__RW`",
+        "operationId": "getPhysicalAttributes",
+        "parameters": [
+          {
+            "name": "prisonerNumber",
+            "in": "path",
+            "description": "The prisoner number",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The prisoner number",
+              "example": "A1234AA"
+            },
+            "example": "A1234AA"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns the prisoner's physical attributes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhysicalAttributesSyncDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires ROLE_PRISON_PERSON_API__PHYSICAL_ATTRIBUTES_SYNC__RW",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
       "put": {
         "tags": [
           "Physical Attributes",
           "Sync with NOMIS"
         ],
         "summary": "SYNC endpoint to sync changes to physical attributes made in NOMIS",
-        "description": "This endpoint <b>SHOULD ONLY BE USED IN ORDER TO SYNC CHANGES MADE IN NOMIS.</b> There is a separate endpoint for normal editing of the Physical Attributes.<br/><br/>Requires role `ROLE_PRISON_PERSON_API__PHYSICAL_ATTRIBUTES_SYNC__RW`<br/><br/>Edits can be made to physical attributes in NOMIS to both the current booking and to old bookings. This sync API can handle both by accepting the `appliesFrom` and `appliesTo` timestamps.  For edits to the current booking, `appliesFrom` should be equal to the point in time that the edit happened, and `appliesTo` should be null.  For edits to historical bookings `appliesFrom` should be equal to the booking start date and and `appliesTo` should be equal to the booking end date. The `createdAt` date should always be the point in time that the user made the edit.",
+        "description": "This endpoint <b>SHOULD ONLY BE USED IN ORDER TO SYNC CHANGES MADE IN NOMIS.</b> There is a separate endpoint for normal editing of the Physical Attributes.<br/><br/>Requires role `ROLE_PRISON_PERSON_API__PHYSICAL_ATTRIBUTES_SYNC__RW`<br/><br/>Edits can be made to physical attributes in NOMIS to both the current booking and to old bookings. This sync API can handle both by accepting the `appliesFrom` and `appliesTo` timestamps - `appliesFrom` should be equal to the booking start date and and `appliesTo` should be equal to the booking end date. The `createdAt` date should always be the point in time that the user made the edit.",
         "operationId": "syncPhysicalAttributes_1",
         "parameters": [
           {
@@ -236,6 +301,344 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PhysicalAttributesSyncResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sync/prisoners/{prisonerNumber}/distinguishing-marks/{distinguishingMarkId}": {
+      "put": {
+        "tags": [
+          "Distinguishing marks",
+          "Sync with NOMIS"
+        ],
+        "summary": "SYNC endpoint to sync changes to distinguishing marks made in NOMIS",
+        "description": "This endpoint <b>SHOULD ONLY BE USED IN ORDER TO SYNC CHANGES MADE IN NOMIS.</b> There is a separate endpoint for normal editing of the distinguishing marks.<br/><br/>Requires role `ROLE_PRISON_PERSON_API__DISTINGUISHING_MARKS_SYNC__RW`<br/><br/>Edits can be made to distinguishing marks in NOMIS to both the current booking and to old bookings. This sync API can handle both by accepting the `appliesFrom` and `appliesTo` timestamps - `appliesFrom` should be equal to the booking start date and and `appliesTo` should be equal to the booking end date. The `createdAt` date should always be the point in time that the user made the edit.",
+        "operationId": "syncUpdateDistinguishingMark",
+        "parameters": [
+          {
+            "name": "prisonerNumber",
+            "in": "path",
+            "description": "The prisoner number",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "A1234AA"
+          },
+          {
+            "name": "distinguishingMarkId",
+            "in": "path",
+            "description": "The UUID of the distinguishing mark to delete",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "22198ef9-445d-449a-b016-0521ebfb5c2d"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DistinguishingMarkUpdateSyncRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Returns ID of the edited distinguishing mark",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistinguishingMarkSyncResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires ROLE_PRISON_PERSON_API__DISTINGUISHING_MARKS_SYNC__RW",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Distinguishing marks",
+          "Sync with NOMIS"
+        ],
+        "summary": "SYNC endpoint to sync distinguishing mark deletions made in NOMIS",
+        "description": "This endpoint <b>SHOULD ONLY BE USED IN ORDER TO SYNC CHANGES MADE IN NOMIS.</b> There is a separate endpoint for normal editing of the distinguishing marks.<br/><br/>Requires role `ROLE_PRISON_PERSON_API__DISTINGUISHING_MARKS_SYNC__RW`<br/><br/>Edits can be made to distinguishing marks in NOMIS to both the current booking and to old bookings. This sync API can handle both by accepting the `appliesFrom` and `appliesTo` timestamps - `appliesFrom` should be equal to the booking start date and and `appliesTo` should be equal to the booking end date. The `createdAt` date should always be the point in time that the user made the edit.",
+        "operationId": "syncDeleteDistinguishingMark",
+        "parameters": [
+          {
+            "name": "prisonerNumber",
+            "in": "path",
+            "description": "The prisoner number",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "A1234AA"
+          },
+          {
+            "name": "distinguishingMarkId",
+            "in": "path",
+            "description": "The UUID of the distinguishing mark to delete",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "22198ef9-445d-449a-b016-0521ebfb5c2d"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns ID of the deleted distinguishing mark",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistinguishingMarkSyncResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires ROLE_PRISON_PERSON_API__DISTINGUISHING_MARKS_SYNC__RW",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sync/prisoners/{prisonerNumber}/distinguishing-marks/{distinguishingMarkId}/images/{imageId}": {
+      "put": {
+        "tags": [
+          "Distinguishing marks",
+          "Sync with NOMIS"
+        ],
+        "summary": "SYNC endpoint to sync distinguishing mark image edits made in NOMIS",
+        "description": "This endpoint <b>SHOULD ONLY BE USED IN ORDER TO SYNC CHANGES MADE IN NOMIS.</b> There is a separate endpoint for normal editing of the distinguishing mark images.<br/><br/>Requires role `ROLE_PRISON_PERSON_API__DISTINGUISHING_MARKS_SYNC__RW`<br/><br/>Distinguishing mark images can be edited in NOMIS on both the current booking and to old bookings. This sync API can handle both by accepting the `appliesFrom` and `appliesTo` timestamps - `appliesFrom` should be equal to the booking start date and and `appliesTo` should be equal to the booking end date. The `createdAt` date should always be the point in time that the user made the edit.",
+        "operationId": "syncUpdateDistinguishingMarkImage",
+        "parameters": [
+          {
+            "name": "prisonerNumber",
+            "in": "path",
+            "description": "The prisoner number",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "A1234AA"
+          },
+          {
+            "name": "distinguishingMarkId",
+            "in": "path",
+            "description": "The ID of the distinguishing mark",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "3b47dc4c-5d61-434e-ae7c-29e10718e780"
+          },
+          {
+            "name": "imageId",
+            "in": "path",
+            "description": "The ID of the image being updated",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "3b47dc4c-5d61-434e-ae7c-29e10718e780"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DistinguishingMarkImageUpdateSyncRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Returns UUID of updated distinguishing mark image",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistinguishingMarkImageSyncResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires ROLE_PRISON_PERSON_API__DISTINGUISHING_MARKS_SYNC__RW",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Distinguishing marks",
+          "Sync with NOMIS"
+        ],
+        "summary": "SYNC endpoint to sync distinguishing mark image deletions made in NOMIS",
+        "description": "This endpoint <b>SHOULD ONLY BE USED IN ORDER TO SYNC CHANGES MADE IN NOMIS.</b> There is a separate endpoint for normal deletion of the distinguishing mark images.<br/><br/>Requires role `ROLE_PRISON_PERSON_API__DISTINGUISHING_MARKS_SYNC__RW`<br/><br/>Distinguishing mark images can be deleted in NOMIS on both the current booking and to old bookings. This sync API can handle both by accepting the `appliesFrom` and `appliesTo` timestamps - `appliesFrom` should be equal to the booking start date and and `appliesTo` should be equal to the booking end date. The `createdAt` date should always be the point in time that the user made the edit.",
+        "operationId": "syncDeleteDistinguishingMarkImage",
+        "parameters": [
+          {
+            "name": "prisonerNumber",
+            "in": "path",
+            "description": "The prisoner number",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "A1234AA"
+          },
+          {
+            "name": "distinguishingMarkId",
+            "in": "path",
+            "description": "The ID of the distinguishing mark",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "3b47dc4c-5d61-434e-ae7c-29e10718e780"
+          },
+          {
+            "name": "imageId",
+            "in": "path",
+            "description": "The ID of the image being updated",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "3b47dc4c-5d61-434e-ae7c-29e10718e780"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns UUID of created distinguishing mark image",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistinguishingMarkImageSyncResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires ROLE_PRISON_PERSON_API__DISTINGUISHING_MARKS_SYNC__RW",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -508,6 +911,195 @@
         }
       }
     },
+    "/sync/prisoners/{prisonerNumber}/distinguishing-marks": {
+      "post": {
+        "tags": [
+          "Distinguishing marks",
+          "Sync with NOMIS"
+        ],
+        "summary": "SYNC endpoint to sync new distinguishing marks made in NOMIS",
+        "description": "This endpoint <b>SHOULD ONLY BE USED IN ORDER TO SYNC CHANGES MADE IN NOMIS.</b> There is a separate endpoint for normal creation of the distinguishing marks.<br/><br/>Requires role `ROLE_PRISON_PERSON_API__DISTINGUISHING_MARKS_SYNC__RW`<br/><br/>Distinguishing marks can be added to both current and prior bookings. This sync API can handle both by accepting the `appliesFrom` and `appliesTo` timestamps - `appliesFrom` should be equal to the booking start date and and `appliesTo` should be equal to the booking end date. The `createdAt` date should always be the point in time that the user made the edit.",
+        "operationId": "createNewDistinguishingMark",
+        "parameters": [
+          {
+            "name": "prisonerNumber",
+            "in": "path",
+            "description": "The prisoner number",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "A1234AA"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DistinguishingMarkCreationSyncRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Returns ID of created distinguishing mark",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistinguishingMarkSyncResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires ROLE_PRISON_PERSON_API__DISTINGUISHING_MARKS_SYNC__RW",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sync/prisoners/{prisonerNumber}/distinguishing-marks/{distinguishingMarkId}/images": {
+      "post": {
+        "tags": [
+          "Distinguishing marks",
+          "Sync with NOMIS"
+        ],
+        "summary": "SYNC endpoint to sync distinguishing mark image creations made in NOMIS",
+        "description": "This endpoint <b>SHOULD ONLY BE USED IN ORDER TO SYNC CHANGES MADE IN NOMIS.</b> There is a separate endpoint for normal creation of the distinguishing mark images.<br/><br/>Requires role `ROLE_PRISON_PERSON_API__DISTINGUISHING_MARKS_SYNC__RW`<br/><br/>Images can be added to distinguishing marks in NOMIS to both the current booking and to old bookings. This sync API can handle both by accepting the `appliesFrom` and `appliesTo` timestamps - `appliesFrom` should be equal to the booking start date and and `appliesTo` should be equal to the booking end date. The `createdAt` date should always be the point in time that the user made the edit.",
+        "operationId": "syncCreateDistinguishingMarkImage",
+        "parameters": [
+          {
+            "name": "prisonerNumber",
+            "in": "path",
+            "description": "The prisoner number",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "A1234AA"
+          },
+          {
+            "name": "distinguishingMarkId",
+            "in": "path",
+            "description": "The UUID of the distinguishing mark to add the image to",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "22198ef9-445d-449a-b016-0521ebfb5c2d"
+          },
+          {
+            "name": "distinguishingMarkImageCreateSyncRequest",
+            "in": "query",
+            "description": "The distinguishing mark image request",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DistinguishingMarkImageCreateSyncRequest"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": [
+                  "file"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "description": "File part of the multipart request",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Returns UUID of created distinguishing mark image",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistinguishingMarkImageSyncResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires ROLE_PRISON_PERSON_API__DISTINGUISHING_MARKS_SYNC__RW",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistinguishingMarkImageSyncResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/photographs/prisoner-profile": {
       "post": {
         "tags": [
@@ -584,22 +1176,22 @@
         }
       }
     },
-    "/identifying-marks/mark": {
+    "/distinguishing-marks/mark": {
       "post": {
         "tags": [
-          "Identifying marks"
+          "Distinguishing marks"
         ],
-        "summary": "Post an identifying mark",
-        "description": "description = \"Stores a new identifying mark entry in the database. Optionally stores an image file supplied on the file attribute of a multipart/form-date submission  \nreturns the identifying mark detail\"\nRequires role `ROLE_PRISON_PERSON_API__PRISON_PERSON_DATA__RW`",
-        "operationId": "putIdentifyingMark",
+        "summary": "Post an distinguishing mark",
+        "description": "description = \"Stores a new distinguishing mark entry in the database. Optionally stores an image file supplied on the file attribute of a multipart/form-date submission  \nreturns the distinguishing mark detail\"\nRequires role `ROLE_PRISON_PERSON_API__PRISON_PERSON_DATA__RW`",
+        "operationId": "putDistinguishingMark",
         "parameters": [
           {
-            "name": "identifyingMarkRequest",
+            "name": "distinguishingMarkRequest",
             "in": "query",
-            "description": "The identifying mark request",
+            "description": "The distinguishing mark request",
             "required": true,
             "schema": {
-              "$ref": "#/components/schemas/IdentifyingMarkRequest"
+              "$ref": "#/components/schemas/DistinguishingMarkRequest"
             }
           }
         ],
@@ -628,7 +1220,92 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IdentifyingMarkDto"
+                  "$ref": "#/components/schemas/DistinguishingMarkDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires ROLE_PRISON_PERSON_API__PRISON_PERSON_DATA__RW",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/distinguishing-marks/mark/{uuid}/photo": {
+      "post": {
+        "tags": [
+          "Distinguishing marks"
+        ],
+        "summary": "Add a new photo for the distinguishing mark",
+        "description": "Stores a new distinguishing mark photo and sets it to the current photo for the distinguishing mark.The image file supplied on the file attribute of a multipart/form-date submission.  \nReturns the distinguishing mark detail\nRequires role `ROLE_PRISON_PERSON_API__PRISON_PERSON_DATA__RW`",
+        "operationId": "updateDistinguishingMarkPhoto",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "description": "The UUID of the mark",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The UUID of the mark",
+              "example": "3946f7d9-25d0-449f-bf17-1ade41559391"
+            },
+            "example": "3946f7d9-25d0-449f-bf17-1ade41559391"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": [
+                  "file"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "description": "File part of the multipart request",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Returns uploaded photograph document data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistinguishingMarkDto"
                 }
               }
             }
@@ -672,7 +1349,7 @@
           "Physical Attributes"
         ],
         "description": "Requires role `ROLE_PRISON_PERSON_API__PRISON_PERSON_DATA__RO`",
-        "operationId": "getPhysicalAttributes",
+        "operationId": "getPhysicalAttributes_1",
         "parameters": [
           {
             "name": "prisonerNumber",
@@ -901,6 +1578,144 @@
         }
       }
     },
+    "/distinguishing-marks/mark/{uuid}": {
+      "get": {
+        "tags": [
+          "Distinguishing marks"
+        ],
+        "summary": "Get distinguishing mark by id",
+        "description": "description = \"Returns the distinguishing mark requested.Images associated with the distinguishing mark must be downloaded separatelyRequires role `ROLE_PRISON_PERSON_API__PRISON_PERSON_DATA__RW`",
+        "operationId": "getDistinguishingMarkById",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "description": "The uuid of the distinguishing mark",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns distinguishing marks for the prisoner",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistinguishingMarkDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires ROLE_PRISON_PERSON_API__PRISON_PERSON_DATA__RW",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Distinguishing marks"
+        ],
+        "summary": "Updates the distinguishing mark",
+        "description": "Requires role `ROLE_PRISON_PERSON_API__PRISON_PERSON_DATA__RW`",
+        "operationId": "updateDistinguishingMark",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "description": "The UUID of the mark",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The UUID of the mark",
+              "example": "3946f7d9-25d0-449f-bf17-1ade41559391"
+            },
+            "example": "3946f7d9-25d0-449f-bf17-1ade41559391"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DistinguishingMarkUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Returns prisoner's distinguishing mark",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistinguishingMarkDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires ROLE_PRISON_PERSON_API__PRISON_PERSON_DATA__RW",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/reference-data/domains": {
       "get": {
         "tags": [
@@ -914,6 +1729,15 @@
             "name": "includeInactive",
             "in": "query",
             "description": "Include inactive reference data domains. Defaults to false.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "includeSubDomains",
+            "in": "query",
+            "description": "Include sub-domains at the top level. Defaults to false",
             "required": false,
             "schema": {
               "type": "boolean"
@@ -1308,6 +2132,70 @@
         }
       }
     },
+    "/photographs/{uuid}/file": {
+      "get": {
+        "tags": [
+          "Prison Person Photographs"
+        ],
+        "summary": "Get a document file from documents service using document uuid.",
+        "description": "Get a document from documents service using document uuid. Requires ROLE_CVL_ADMIN.",
+        "operationId": "getDocumentFileByUUI",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "description": "The uuid of the photograph required",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns uploaded photograph",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires ROLE_PRISON_PERSON_API__PRISON_PERSON_DATA__RO",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/photographs/{prisonerNumber}/all": {
       "get": {
         "tags": [
@@ -1375,14 +2263,14 @@
         }
       }
     },
-    "/identifying-marks/prisoner/{prisonerNumber}": {
+    "/distinguishing-marks/prisoner/{prisonerNumber}": {
       "get": {
         "tags": [
-          "Identifying marks"
+          "Distinguishing marks"
         ],
-        "summary": "Get all identifying marks for a prisoner",
-        "description": "description = \"Returns a list of identifying marks for a prisoner.Images associated with the identifying marks must be downloaded separatelyRequires role `ROLE_PRISON_PERSON_API__PRISON_PERSON_DATA__RW`",
-        "operationId": "getIdentifyingMarksForPrisoner",
+        "summary": "Get all distinguishing marks for a prisoner",
+        "description": "description = \"Returns a list of distinguishing marks for a prisoner.Images associated with the distinguishing marks must be downloaded separatelyRequires role `ROLE_PRISON_PERSON_API__PRISON_PERSON_DATA__RW`",
+        "operationId": "getDistinguishingMarksForPrisoner",
         "parameters": [
           {
             "name": "prisonerNumber",
@@ -1397,77 +2285,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Returns identifying marks for the prisoner",
+            "description": "Returns distinguishing marks for the prisoner",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/IdentifyingMarkDto"
+                    "$ref": "#/components/schemas/DistinguishingMarkDto"
                   }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized to access this endpoint",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Missing required role. Requires ROLE_PRISON_PERSON_API__PRISON_PERSON_DATA__RW",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Data not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/identifying-marks/mark/{uuid}": {
-      "get": {
-        "tags": [
-          "Identifying marks"
-        ],
-        "summary": "Get identifying mark by id",
-        "description": "description = \"Returns the identifying mark requested.Images associated with the identifying mark must be downloaded separatelyRequires role `ROLE_PRISON_PERSON_API__PRISON_PERSON_DATA__RW`",
-        "operationId": "getIdentifyingMarkById",
-        "parameters": [
-          {
-            "name": "uuid",
-            "in": "path",
-            "description": "The uuid of the identifying mark",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Returns identifying marks for the prisoner",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/IdentifyingMarkDto"
                 }
               }
             }
@@ -1701,6 +2526,158 @@
         },
         "description": "Physical Attributes Sync Response"
       },
+      "DistinguishingMarkUpdateSyncRequest": {
+        "required": [
+          "appliesFrom",
+          "bodyPart",
+          "createdAt",
+          "createdBy",
+          "markType",
+          "uuid"
+        ],
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "The UUID of the distinguishing mark to update.",
+            "format": "uuid",
+            "writeOnly": true,
+            "example": "af168736-d276-46a1-8038-e2cb84da4cdf"
+          },
+          "markType": {
+            "type": "string",
+            "description": "Type of distinguishing mark. `ReferenceDataCode.id`.",
+            "example": "MARK_TYPE_SCAR"
+          },
+          "bodyPart": {
+            "type": "string",
+            "description": "Part of body the distinguishing mark is on. `ReferenceDataCode.id`.",
+            "example": "BODY_PART_HEAD"
+          },
+          "imageUpdated": {
+            "type": "boolean",
+            "description": "Whether or not the image for the distinguishing mark has been updated, to inform us if we should update our stored image.",
+            "example": true
+          },
+          "side": {
+            "type": "string",
+            "description": "Side of the body part the mark is on. `ReferenceDataCode.id`. May be left null if unentered.",
+            "example": "SIDE_R"
+          },
+          "partOrientation": {
+            "type": "string",
+            "description": "Orientation of the mark on the body part. `ReferenceDataCode.id`. May be left null if unentered.",
+            "example": "PART_ORIENT_CENTR"
+          },
+          "comment": {
+            "type": "string",
+            "description": "Comment about the distinguishing mark. May be left null if unentered.",
+            "example": "Long healed scar from an old fight"
+          },
+          "appliesFrom": {
+            "type": "string",
+            "description": "The timestamp indicating from when this mark was valid for the prisoner. For edits to the current booking, this should be equal to the 'createdAt' date. For edits to historical bookings, this should be equal to the booking start date.",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+0100"
+          },
+          "appliesTo": {
+            "type": "string",
+            "description": "The timestamp of when this mark should no longer be considered applicable. For edits to the current booking, this should be left null. For edits to historical bookings, this should be equal to the booking end date.",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+0100"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "The timestamp indicating when this record was last edited in NOMIS.",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+0100"
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "The username of who last edited the record in NOMIS",
+            "example": "USER1"
+          },
+          "latestBooking": {
+            "type": "boolean",
+            "description": "An indication of whether the edit was performed to the latest booking. If this is not the latest booking, the edit will be inserted into field history but the distinguishing marks table will not be updated.",
+            "example": true
+          }
+        },
+        "description": "Request object for syncing a prisoner's distinguishing marks"
+      },
+      "DistinguishingMarkSyncResponse": {
+        "required": [
+          "uuid"
+        ],
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "The UUID of the distinguishing mark updated",
+            "format": "uuid",
+            "example": "22198ef9-445d-449a-b016-0521ebfb5c2d"
+          }
+        },
+        "description": "Distinguishing Mark Sync Response"
+      },
+      "DistinguishingMarkImageUpdateSyncRequest": {
+        "required": [
+          "appliesFrom",
+          "createdAt",
+          "createdBy",
+          "default"
+        ],
+        "type": "object",
+        "properties": {
+          "default": {
+            "type": "boolean",
+            "description": "Whether the default flag is checked in NOMIS"
+          },
+          "appliesFrom": {
+            "type": "string",
+            "description": "The timestamp indicating from when this mark was valid for the prisoner. For edits to the current booking, this should be equal to the 'createdAt' date. For edits to historical bookings, this should be equal to the booking start date.",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+0100"
+          },
+          "appliesTo": {
+            "type": "string",
+            "description": "The timestamp of when this mark should no longer be considered applicable. For edits to the current booking, this should be left null. For edits to historical bookings, this should be equal to the booking end date.",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+0100"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "The timestamp indicating when this record was last edited in NOMIS.",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+0100"
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "The username of who last edited the record in NOMIS",
+            "example": "USER1"
+          },
+          "latestBooking": {
+            "type": "boolean",
+            "description": "An indication of whether the edit was performed to the latest booking. If this is not the latest booking, the edit will be inserted into field history but the distinguishing marks table will not be updated.",
+            "example": true
+          }
+        },
+        "description": "The distinguishing mark image request"
+      },
+      "DistinguishingMarkImageSyncResponse": {
+        "required": [
+          "uuid"
+        ],
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "The UUID of the distinguishing mark image updated",
+            "format": "uuid",
+            "example": "22198ef9-445d-449a-b016-0521ebfb5c2d"
+          }
+        }
+      },
       "RetryDlqResult": {
         "required": [
           "messagesFoundCount"
@@ -1792,7 +2769,7 @@
           },
           "latestBooking": {
             "type": "boolean",
-            "description": "Indicates that this is the latest booking",
+            "description": "A flag to indicate this is the latest booking.",
             "example": true
           }
         },
@@ -1868,7 +2845,7 @@
           },
           "latestBooking": {
             "type": "boolean",
-            "description": "Latest booking",
+            "description": "A flag to indicate this is the latest booking.",
             "example": true
           }
         },
@@ -1896,6 +2873,117 @@
         },
         "description": "Physical Attributes Migration Response"
       },
+      "DistinguishingMarkCreationSyncRequest": {
+        "required": [
+          "appliesFrom",
+          "bodyPart",
+          "createdAt",
+          "createdBy",
+          "markType"
+        ],
+        "type": "object",
+        "properties": {
+          "markType": {
+            "type": "string",
+            "description": "Type of distinguishing mark. `ReferenceDataCode.id`.",
+            "example": "MARK_TYPE_SCAR"
+          },
+          "bodyPart": {
+            "type": "string",
+            "description": "Part of body the distinguishing mark is on. `ReferenceDataCode.id`.",
+            "example": "BODY_PART_HEAD"
+          },
+          "side": {
+            "type": "string",
+            "description": "Side of the body part the mark is on. `ReferenceDataCode.id`. May be left null if unentered.",
+            "example": "SIDE_R"
+          },
+          "partOrientation": {
+            "type": "string",
+            "description": "Orientation of the mark on the body part. `ReferenceDataCode.id`. May be left null if unentered.",
+            "example": "PART_ORIENT_CENTR"
+          },
+          "comment": {
+            "type": "string",
+            "description": "Comment about the distinguishing mark. May be left null if unentered.",
+            "example": "Long healed scar from an old fight"
+          },
+          "appliesFrom": {
+            "type": "string",
+            "description": "The timestamp indicating from when this mark was valid for the prisoner. For edits to the current booking, this should be equal to the 'createdAt' date. For edits to historical bookings, this should be equal to the booking start date.",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+0100"
+          },
+          "appliesTo": {
+            "type": "string",
+            "description": "The timestamp of when this mark should no longer be considered applicable. For edits to the current booking, this should be left null. For edits to historical bookings, this should be equal to the booking end date.",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+0100"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "The timestamp indicating when this record was last edited in NOMIS.",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+0100"
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "The username of who last edited the record in NOMIS",
+            "example": "USER1"
+          },
+          "latestBooking": {
+            "type": "boolean",
+            "description": "An indication of whether the edit was performed to the latest booking. If this is not the latest booking, the edit will be inserted into field history but the distinguishing marks table will not be updated.",
+            "example": true
+          }
+        },
+        "description": "Request object for syncing a prisoner's distinguishing marks"
+      },
+      "DistinguishingMarkImageCreateSyncRequest": {
+        "required": [
+          "appliesFrom",
+          "createdAt",
+          "createdBy",
+          "imageSource"
+        ],
+        "type": "object",
+        "properties": {
+          "imageSource": {
+            "type": "string",
+            "description": "Source of the image (e.g. LIVE, WEB)",
+            "example": "LIVE"
+          },
+          "appliesFrom": {
+            "type": "string",
+            "description": "The timestamp indicating from when this image was valid for the prisoner. For edits to the current booking, this should be equal to the 'createdAt' date. For edits to historical bookings, this should be equal to the booking start date.",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+0100"
+          },
+          "appliesTo": {
+            "type": "string",
+            "description": "The timestamp of when this image should no longer be considered applicable. For edits to the current booking, this should be left null. For edits to historical bookings, this should be equal to the booking end date.",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+0100"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "The timestamp indicating when this record was last edited in NOMIS.",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+0100"
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "The username of who last edited the record in NOMIS",
+            "example": "USER1"
+          },
+          "latestBooking": {
+            "type": "boolean",
+            "description": "An indication of whether the edit was performed to the latest booking. If this is not the latest booking, the edit will be inserted into field history but the distinguishing marks table will not be updated.",
+            "example": true
+          }
+        },
+        "description": "Request object for creating a an image for a prisoner's distinguishing mark"
+      },
       "DocumentDto": {
         "required": [
           "createdByServiceName",
@@ -1919,7 +3007,7 @@
             "type": "string",
             "enum": [
               "PRISONER_PROFILE_PICTURE",
-              "PHYSICAL_IDENTIFIER_PICTURE"
+              "DISTINGUISHING_MARK_IMAGE"
             ]
           },
           "documentFilename": {
@@ -1958,7 +3046,7 @@
           }
         }
       },
-      "IdentifyingMarkRequest": {
+      "DistinguishingMarkRequest": {
         "required": [
           "bodyPart",
           "markType",
@@ -1968,17 +3056,17 @@
         "properties": {
           "prisonerNumber": {
             "type": "string",
-            "description": "The prisoner number of the prisoner this identifying mark is associated with.",
+            "description": "The prisoner number of the prisoner this distinguishing mark is associated with.",
             "example": "A1234AA"
           },
           "markType": {
             "type": "string",
-            "description": "Type of identifying mark. `ReferenceDataCode.id`.",
+            "description": "Type of distinguishing mark. `ReferenceDataCode.id`.",
             "example": "MARK_TYPE_SCAR"
           },
           "bodyPart": {
             "type": "string",
-            "description": "Part of body the identifying mark is on. `ReferenceDataCode.id`.",
+            "description": "Part of body the distinguishing mark is on. `ReferenceDataCode.id`.",
             "example": "BODY_PART_HEAD"
           },
           "side": {
@@ -1993,13 +3081,13 @@
           },
           "comment": {
             "type": "string",
-            "description": "Comment about the identifying mark.",
+            "description": "Comment about the distinguishing mark.",
             "example": "Long healed scar from an old fight"
           }
         },
-        "description": "Request object for creating an identifying mark for a prisoner."
+        "description": "Request object for creating an distinguishing mark for a prisoner."
       },
-      "IdentifyingMarkDto": {
+      "DistinguishingMarkDto": {
         "required": [
           "bodyPart",
           "createdAt",
@@ -2013,11 +3101,11 @@
         "properties": {
           "id": {
             "type": "string",
-            "description": "The id of the identifying mark"
+            "description": "The id of the distinguishing mark"
           },
           "prisonerNumber": {
             "type": "string",
-            "description": "The prisoner number of the prisoner this identifying mark is associated with",
+            "description": "The prisoner number of the prisoner this distinguishing mark is associated with",
             "example": "A1234AA"
           },
           "bodyPart": {
@@ -2034,14 +3122,13 @@
           },
           "comment": {
             "type": "string",
-            "description": "Comment about the identifying mark"
+            "description": "Comment about the distinguishing mark"
           },
           "photographUuids": {
             "type": "array",
-            "description": "List of photograph UUIDs associated with this identifying mark",
+            "description": "List of photograph UUIDs associated with this distinguishing mark",
             "items": {
-              "type": "string",
-              "description": "List of photograph UUIDs associated with this identifying mark"
+              "$ref": "#/components/schemas/DistinguishingMarkImageDto"
             }
           },
           "createdAt": {
@@ -2056,7 +3143,25 @@
             "example": "USER1"
           }
         },
-        "description": "Identifying Mark"
+        "description": "Distinguishing mark"
+      },
+      "DistinguishingMarkImageDto": {
+        "required": [
+          "id",
+          "latest"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The uuid of the distinguishing mark"
+          },
+          "latest": {
+            "type": "boolean",
+            "description": "Whether the distinguishing mark is the latest one or not"
+          }
+        },
+        "description": "Distinguishing mark image"
       },
       "ReferenceDataSimpleDto": {
         "required": [
@@ -2261,6 +3366,30 @@
         },
         "description": "Shoe size"
       },
+      "Defined": {
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/NullishListString"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": "object"
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/NullishString"
+          }
+        ]
+      },
+      "NullishListString": {
+        "type": "object",
+        "description": "The medical dietary requirements the prisoner has. A list of `ReferenceDataCode`.`id`",
+        "example": "[MEDICAL_DIET_LOW_FAT, FREE_FROM_EGG]"
+      },
       "PrisonerHealthUpdateRequest": {
         "type": "object",
         "properties": {
@@ -2269,18 +3398,195 @@
             "description": "Smoker or vaper. `ReferenceDataCode`.`id`.",
             "nullable": true,
             "example": "SMOKE_NO"
+          },
+          "foodAllergies": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Defined"
+              },
+              {
+                "$ref": "#/components/schemas/Undefined"
+              }
+            ]
+          },
+          "medicalDietaryRequirements": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Defined"
+              },
+              {
+                "$ref": "#/components/schemas/Undefined"
+              }
+            ]
           }
         },
         "description": "Request object for updating a prisoner's health information. Can include one or multiple fields. If an attribute is provided and set to 'null' it will be updated equal to 'null'. If it is not provided it is not updated"
+      },
+      "Undefined": {
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/NullishListString"
+          },
+          {
+            "$ref": "#/components/schemas/NullishString"
+          }
+        ]
       },
       "HealthDto": {
         "type": "object",
         "properties": {
           "smokerOrVaper": {
             "$ref": "#/components/schemas/ValueWithMetadataReferenceDataSimpleDto"
+          },
+          "foodAllergies": {
+            "$ref": "#/components/schemas/ValueWithMetadataListReferenceDataSimpleDto"
+          },
+          "medicalDietaryRequirements": {
+            "$ref": "#/components/schemas/ValueWithMetadataListReferenceDataSimpleDto"
           }
         },
         "description": "Prison person health"
+      },
+      "ValueWithMetadataListReferenceDataSimpleDto": {
+        "required": [
+          "lastModifiedAt",
+          "lastModifiedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "array",
+            "description": "Value",
+            "items": {
+              "$ref": "#/components/schemas/ReferenceDataSimpleDto"
+            }
+          },
+          "lastModifiedAt": {
+            "type": "string",
+            "description": "Timestamp this field was last modified",
+            "format": "yyyy-MM-dd'T'HH:mm:ssX",
+            "example": "2024-06-14T10:35:17+0100"
+          },
+          "lastModifiedBy": {
+            "type": "string",
+            "description": "Username of the user that last modified this field",
+            "example": "USER1"
+          }
+        },
+        "description": "Medical dietary requirements"
+      },
+      "DistinguishingMarkUpdateRequest": {
+        "required": [
+          "bodyPart",
+          "comment",
+          "markType",
+          "partOrientation",
+          "side"
+        ],
+        "type": "object",
+        "properties": {
+          "markType": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Defined"
+              },
+              {
+                "$ref": "#/components/schemas/Undefined"
+              }
+            ]
+          },
+          "bodyPart": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Defined"
+              },
+              {
+                "$ref": "#/components/schemas/Undefined"
+              }
+            ]
+          },
+          "side": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Defined"
+              },
+              {
+                "$ref": "#/components/schemas/Undefined"
+              }
+            ]
+          },
+          "partOrientation": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Defined"
+              },
+              {
+                "$ref": "#/components/schemas/Undefined"
+              }
+            ]
+          },
+          "comment": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Defined"
+              },
+              {
+                "$ref": "#/components/schemas/Undefined"
+              }
+            ]
+          }
+        },
+        "description": "Request object for updating a prisoner's distinguishing mark. Can include one or multiple fields. If an attribute is provided and set to 'null' it will be updated equal to 'null'. If it is not provided it is not updated"
+      },
+      "NullishString": {
+        "type": "object",
+        "description": "Comment about the distinguishing mark.",
+        "example": "Long healed scar from an old fight"
+      },
+      "PhysicalAttributesSyncDto": {
+        "type": "object",
+        "properties": {
+          "height": {
+            "type": "integer",
+            "description": "Height (in centimetres)",
+            "format": "int32"
+          },
+          "weight": {
+            "type": "integer",
+            "description": "Weight (in kilograms)",
+            "format": "int32"
+          },
+          "hair": {
+            "type": "string",
+            "description": "Hair type or colour"
+          },
+          "facialHair": {
+            "type": "string",
+            "description": "Facial hair type"
+          },
+          "face": {
+            "type": "string",
+            "description": "Face shape"
+          },
+          "build": {
+            "type": "string",
+            "description": "Build"
+          },
+          "leftEyeColour": {
+            "type": "string",
+            "description": "Left eye colour"
+          },
+          "rightEyeColour": {
+            "type": "string",
+            "description": "Right eye colour"
+          },
+          "shoeSize": {
+            "type": "string",
+            "description": "Shoe size"
+          }
+        },
+        "description": "Physical Attributes"
       },
       "ReferenceDataCodeDto": {
         "required": [
@@ -2370,7 +3676,8 @@
           "description",
           "isActive",
           "listSequence",
-          "referenceDataCodes"
+          "referenceDataCodes",
+          "subDomains"
         ],
         "type": "object",
         "properties": {
@@ -2433,6 +3740,13 @@
             "description": "The reference data codes associated with this reference data domain",
             "items": {
               "$ref": "#/components/schemas/ReferenceDataCodeDto"
+            }
+          },
+          "subDomains": {
+            "type": "array",
+            "description": "Reference data domains that are considered sub-domains of this domain",
+            "items": {
+              "$ref": "#/components/schemas/ReferenceDataDomainDto"
             }
           }
         },
@@ -2504,6 +3818,7 @@
       },
       "FieldHistoryDto": {
         "required": [
+          "anomalous",
           "appliesFrom",
           "createdAt",
           "createdBy",
@@ -2531,7 +3846,9 @@
               "LEFT_EYE_COLOUR",
               "RIGHT_EYE_COLOUR",
               "SHOE_SIZE",
-              "SMOKER_OR_VAPER"
+              "SMOKER_OR_VAPER",
+              "FOOD_ALLERGY",
+              "MEDICAL_DIET"
             ]
           },
           "valueInt": {
@@ -2589,6 +3906,10 @@
           "source": {
             "type": "string",
             "description": "The source of the change, either DPS or NOMIS. Will be NOMIS if the record was either migrated or synced from NOMIS"
+          },
+          "anomalous": {
+            "type": "boolean",
+            "description": "A flag to indicate that when the data was migrated from NOMIS, the booking it was taken from was historical and the booking start and/or end dates did not align sequentially into the timeline of other bookings for the same prisoner"
           }
         },
         "description": "Field History"
