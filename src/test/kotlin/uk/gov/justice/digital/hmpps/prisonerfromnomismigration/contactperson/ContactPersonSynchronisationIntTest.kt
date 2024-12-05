@@ -20,6 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.Con
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.contactIdentity
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.contactPhone
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.prisonerContact
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.prisonerContactRestriction
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactEmailRequest
@@ -27,12 +28,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonContactMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonContactRestrictionMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonEmailMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonIdentifierMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
@@ -40,6 +43,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonPhoneMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactForPrisoner
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactRestriction
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactRestrictionEnteredStaff
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonContact
@@ -3097,37 +3102,411 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
   @Nested
   @DisplayName("PERSON_RESTRICTION-UPSERTED")
   inner class ContactRestrictionUpserted {
-    private val restrictionId = 9876L
-    private val personId = 123456L
-    private val contactId = 3456L
+    private val nomisContactRestrictionId = 3456L
+    private val nomisPersonId = 123456L
+    private val nomisContactId = 652882L
+    private val dpsPrisonerContactId = 637373L
+    private val dpsPrisonerContactRestrictionId = 937373L
     private val offenderNo = "A1234KT"
 
-    @BeforeEach
-    fun setUp() {
-      awsSqsContactPersonOffenderEventsClient.sendMessage(
-        contactPersonQueueOffenderEventsUrl,
-        contactRestrictionEvent(
-          eventType = "PERSON_RESTRICTION-UPSERTED",
-          personId = personId,
-          restrictionId = restrictionId,
-          contactId = contactId,
-          offenderNo = offenderNo,
-        ),
-      ).also { waitForAnyProcessingToComplete() }
+    @Nested
+    inner class WhenCreatedInDps {
+      @BeforeEach
+      fun setUp() {
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          contactRestrictionEvent(
+            eventType = "PERSON_RESTRICTION-UPSERTED",
+            personId = nomisPersonId,
+            restrictionId = nomisContactRestrictionId,
+            contactId = nomisContactId,
+            offenderNo = offenderNo,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not create restriction in DPS`() {
+        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/sync/prisoner-contact-restriction")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-contact-restriction-synchronisation-created-skipped"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisContactId"]).isEqualTo(nomisContactId.toString())
+            assertThat(it["nomisContactRestrictionId"]).isEqualTo(nomisContactRestrictionId.toString())
+          },
+          isNull(),
+        )
+      }
     }
 
-    @Test
-    fun `will track telemetry`() {
-      verify(telemetryClient).trackEvent(
-        eq("contactperson-contact-restriction-synchronisation-created-success"),
-        check {
-          assertThat(it["contactRestrictionId"]).isEqualTo(restrictionId.toString())
-          assertThat(it["personId"]).isEqualTo(personId.toString())
-          assertThat(it["contactId"]).isEqualTo(contactId.toString())
-          assertThat(it["offenderNo"]).isEqualTo(offenderNo)
-        },
-        isNull(),
-      )
+    @Nested
+    inner class WhenCreatedInNomis {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisContactRestrictionIdOrNull(nomisContactRestrictionId = nomisContactRestrictionId, mapping = null)
+        mappingApiMock.stubGetByNomisContactId(
+          nomisContactId = nomisContactId,
+          PersonContactMappingDto(
+            nomisId = nomisContactId,
+            dpsId = dpsPrisonerContactId.toString(),
+            mappingType = PersonContactMappingDto.MappingType.MIGRATED,
+          ),
+        )
+        nomisApiMock.stubGetPerson(
+          personId = nomisPersonId,
+          person = contactPerson().copy(
+            personId = nomisPersonId,
+            contacts = listOf(
+              PersonContact(
+                id = nomisContactId,
+                relationshipType = CodeDescription(code = "BOF", description = "Boyfriend"),
+                contactType = CodeDescription(code = "S", description = "Social/ Family"),
+                active = true,
+                emergencyContact = true,
+                nextOfKin = false,
+                approvedVisitor = false,
+                prisoner = ContactForPrisoner(bookingId = 1, offenderNo = offenderNo, lastName = "SMITH", firstName = "JOHN", bookingSequence = 1),
+                restrictions = listOf(
+                  ContactRestriction(
+                    id = nomisContactRestrictionId,
+                    type = CodeDescription(code = "BAN", description = "Banned"),
+                    enteredStaff = ContactRestrictionEnteredStaff(staffId = 1, username = "Q1251T"),
+                    effectiveDate = LocalDate.parse("2020-01-01"),
+                    expiryDate = LocalDate.parse("2026-01-01"),
+                    comment = "Banned for life",
+                    audit = nomisAudit().copy(createDatetime = "2024-09-01T13:31"),
+                  ),
+                ),
+                audit = nomisAudit(),
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubCreatePrisonerContactRestriction(prisonerContactRestriction().copy(prisonerContactRestrictionId = dpsPrisonerContactRestrictionId))
+        mappingApiMock.stubCreateContactRestrictionMapping()
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          contactRestrictionEvent(
+            eventType = "PERSON_RESTRICTION-UPSERTED",
+            personId = nomisPersonId,
+            restrictionId = nomisContactRestrictionId,
+            contactId = nomisContactId,
+            offenderNo = offenderNo,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will check if mapping already exists`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/contact-person/contact-restriction/nomis-contact-restriction-id/$nomisContactRestrictionId")))
+      }
+
+      @Test
+      fun `will retrieve the contact mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/contact-person/contact/nomis-contact-id/$nomisContactId")))
+      }
+
+      @Test
+      fun `will retrieve the details from NOMIS`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/persons/$nomisPersonId")))
+      }
+
+      @Test
+      fun `will create the contact restriction DPS`() {
+        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/prisoner-contact-restriction")))
+        val request: SyncCreatePrisonerContactRestrictionRequest = ContactPersonDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/sync/prisoner-contact-restriction")))
+        with(request) {
+          assertThat(prisonerContactId).isEqualTo(dpsPrisonerContactId)
+          assertThat(restrictionType).isEqualTo("BAN")
+          assertThat(comments).isEqualTo("Banned for life")
+          assertThat(startDate).isEqualTo("2020-01-01")
+          assertThat(expiryDate).isEqualTo("2026-01-01")
+          // the entered staff username
+          assertThat(createdBy).isEqualTo("Q1251T")
+          assertThat(createdTime).isEqualTo("2024-09-01T13:31")
+        }
+      }
+
+      @Test
+      fun `will create a mapping between the DPS and NOMIS record`() {
+        mappingApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/contact-person/contact-restriction"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", dpsPrisonerContactRestrictionId)
+            .withRequestBodyJsonPath("nomisId", "$nomisContactRestrictionId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-contact-restriction-synchronisation-created-success"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisContactRestrictionId"]).isEqualTo(nomisContactRestrictionId.toString())
+            assertThat(it["nomisContactId"]).isEqualTo(nomisContactId.toString())
+            assertThat(it["dpsPrisonerContactId"]).isEqualTo(dpsPrisonerContactId.toString())
+            assertThat(it["dpsPrisonerContactRestrictionId"]).isEqualTo(dpsPrisonerContactRestrictionId.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenAlreadyCreated {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisContactRestrictionIdOrNull(
+          nomisContactRestrictionId = nomisContactRestrictionId,
+          mapping = PersonContactRestrictionMappingDto(
+            dpsId = "$dpsPrisonerContactRestrictionId",
+            nomisId = nomisContactRestrictionId,
+            mappingType = PersonContactRestrictionMappingDto.MappingType.NOMIS_CREATED,
+          ),
+        )
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          contactRestrictionEvent(
+            eventType = "PERSON_RESTRICTION-UPSERTED",
+            personId = nomisPersonId,
+            restrictionId = nomisContactRestrictionId,
+            contactId = nomisContactId,
+            offenderNo = offenderNo,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not create phone in DPS`() {
+        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/sync/prisoner-contact-restriction")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-contact-restriction-synchronisation-created-ignored"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisContactRestrictionId"]).isEqualTo(nomisContactRestrictionId.toString())
+            assertThat(it["dpsPrisonerContactRestrictionId"]).isEqualTo(dpsPrisonerContactRestrictionId.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenDuplicateMapping {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisContactRestrictionIdOrNull(nomisContactRestrictionId = nomisContactRestrictionId, mapping = null)
+        mappingApiMock.stubGetByNomisContactId(
+          nomisContactId = nomisContactId,
+          PersonContactMappingDto(
+            nomisId = nomisContactId,
+            dpsId = dpsPrisonerContactId.toString(),
+            mappingType = PersonContactMappingDto.MappingType.MIGRATED,
+          ),
+        )
+        nomisApiMock.stubGetPerson(
+          personId = nomisPersonId,
+          person = contactPerson().copy(
+            personId = nomisPersonId,
+            contacts = listOf(
+              PersonContact(
+                id = nomisContactId,
+                relationshipType = CodeDescription(code = "BOF", description = "Boyfriend"),
+                contactType = CodeDescription(code = "S", description = "Social/ Family"),
+                active = true,
+                emergencyContact = true,
+                nextOfKin = false,
+                approvedVisitor = false,
+                prisoner = ContactForPrisoner(bookingId = 1, offenderNo = offenderNo, lastName = "SMITH", firstName = "JOHN", bookingSequence = 1),
+                restrictions = listOf(
+                  ContactRestriction(
+                    id = nomisContactRestrictionId,
+                    type = CodeDescription(code = "BAN", description = "Banned"),
+                    enteredStaff = ContactRestrictionEnteredStaff(staffId = 1, username = "Q1251T"),
+                    effectiveDate = LocalDate.parse("2020-01-01"),
+                    expiryDate = LocalDate.parse("2026-01-01"),
+                    comment = "Banned for life",
+                    audit = nomisAudit().copy(createDatetime = "2024-09-01T13:31"),
+                  ),
+                ),
+                audit = nomisAudit(),
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubCreatePrisonerContactRestriction(prisonerContactRestriction().copy(prisonerContactRestrictionId = dpsPrisonerContactRestrictionId))
+        mappingApiMock.stubCreateContactRestrictionMapping(
+          error = DuplicateMappingErrorResponse(
+            moreInfo = DuplicateErrorContentObject(
+              duplicate = PersonContactRestrictionMappingDto(
+                dpsId = dpsPrisonerContactRestrictionId.toString(),
+                nomisId = nomisContactRestrictionId,
+                mappingType = PersonContactRestrictionMappingDto.MappingType.NOMIS_CREATED,
+              ),
+              existing = PersonContactRestrictionMappingDto(
+                dpsId = "9999",
+                nomisId = nomisContactRestrictionId,
+                mappingType = PersonContactRestrictionMappingDto.MappingType.NOMIS_CREATED,
+              ),
+            ),
+            errorCode = 1409,
+            status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+            userMessage = "Duplicate mapping",
+          ),
+        )
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          contactRestrictionEvent(
+            eventType = "PERSON_RESTRICTION-UPSERTED",
+            personId = nomisPersonId,
+            restrictionId = nomisContactRestrictionId,
+            contactId = nomisContactId,
+            offenderNo = offenderNo,
+          ),
+        ).also { waitForAnyProcessingToComplete("from-nomis-sync-contactperson-duplicate") }
+      }
+
+      @Test
+      fun `will create the prisoner contact restriction in DPS once`() {
+        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/prisoner-contact-restriction")))
+      }
+
+      @Test
+      fun `will attempt to create a mapping between the DPS and NOMIS record once`() {
+        mappingApiMock.verify(
+          1,
+          postRequestedFor(urlPathEqualTo("/mapping/contact-person/contact-restriction"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", dpsPrisonerContactRestrictionId)
+            .withRequestBodyJsonPath("nomisId", "$nomisContactRestrictionId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for both overall success and duplicate`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-contact-restriction-synchronisation-created-success"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisContactRestrictionId"]).isEqualTo(nomisContactRestrictionId.toString())
+            assertThat(it["dpsPrisonerContactRestrictionId"]).isEqualTo(dpsPrisonerContactRestrictionId.toString())
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("from-nomis-sync-contactperson-duplicate"),
+          check {
+            assertThat(it["existingNomisContactRestrictionId"]).isEqualTo(nomisContactRestrictionId.toString())
+            assertThat(it["existingDpsPrisonerContactRestrictionId"]).isEqualTo("9999")
+            assertThat(it["duplicateNomisContactRestrictionId"]).isEqualTo(nomisContactRestrictionId.toString())
+            assertThat(it["duplicateDpsPrisonerContactRestrictionId"]).isEqualTo(dpsPrisonerContactRestrictionId.toString())
+            assertThat(it["type"]).isEqualTo("CONTACT_RESTRICTION")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class MappingCreateFails {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisContactRestrictionIdOrNull(nomisContactRestrictionId = nomisContactRestrictionId, mapping = null)
+        mappingApiMock.stubGetByNomisContactId(
+          nomisContactId = nomisContactId,
+          PersonContactMappingDto(
+            nomisId = nomisContactId,
+            dpsId = dpsPrisonerContactId.toString(),
+            mappingType = PersonContactMappingDto.MappingType.MIGRATED,
+          ),
+        )
+        nomisApiMock.stubGetPerson(
+          personId = nomisPersonId,
+          person = contactPerson().copy(
+            personId = nomisPersonId,
+            contacts = listOf(
+              PersonContact(
+                id = nomisContactId,
+                relationshipType = CodeDescription(code = "BOF", description = "Boyfriend"),
+                contactType = CodeDescription(code = "S", description = "Social/ Family"),
+                active = true,
+                emergencyContact = true,
+                nextOfKin = false,
+                approvedVisitor = false,
+                prisoner = ContactForPrisoner(bookingId = 1, offenderNo = offenderNo, lastName = "SMITH", firstName = "JOHN", bookingSequence = 1),
+                restrictions = listOf(
+                  ContactRestriction(
+                    id = nomisContactRestrictionId,
+                    type = CodeDescription(code = "BAN", description = "Banned"),
+                    enteredStaff = ContactRestrictionEnteredStaff(staffId = 1, username = "Q1251T"),
+                    effectiveDate = LocalDate.parse("2020-01-01"),
+                    expiryDate = LocalDate.parse("2026-01-01"),
+                    comment = "Banned for life",
+                    audit = nomisAudit().copy(createDatetime = "2024-09-01T13:31"),
+                  ),
+                ),
+                audit = nomisAudit(),
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubCreatePrisonerContactRestriction(prisonerContactRestriction().copy(prisonerContactRestrictionId = dpsPrisonerContactRestrictionId))
+        mappingApiMock.stubCreateContactRestrictionMappingFollowedBySuccess()
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          contactRestrictionEvent(
+            eventType = "PERSON_RESTRICTION-UPSERTED",
+            personId = nomisPersonId,
+            restrictionId = nomisContactRestrictionId,
+            contactId = nomisContactId,
+            offenderNo = offenderNo,
+          ),
+        ).also { waitForAnyProcessingToComplete("contactperson-contact-restriction-mapping-synchronisation-created") }
+      }
+
+      @Test
+      fun `will create the prisoner contact restriction in DPS once`() {
+        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/prisoner-contact-restriction")))
+      }
+
+      @Test
+      fun `will eventual to create a mapping between the DPS and NOMIS record`() {
+        mappingApiMock.verify(
+          2,
+          postRequestedFor(urlPathEqualTo("/mapping/contact-person/contact-restriction"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", dpsPrisonerContactRestrictionId)
+            .withRequestBodyJsonPath("nomisId", "$nomisContactRestrictionId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-contact-restriction-synchronisation-created-success"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisContactRestrictionId"]).isEqualTo(nomisContactRestrictionId.toString())
+            assertThat(it["dpsPrisonerContactRestrictionId"]).isEqualTo(dpsPrisonerContactRestrictionId.toString())
+          },
+          isNull(),
+        )
+      }
     }
   }
 
