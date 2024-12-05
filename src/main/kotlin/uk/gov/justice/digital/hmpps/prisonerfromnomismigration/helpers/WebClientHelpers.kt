@@ -44,3 +44,5 @@ data class DuplicateErrorContent(
   val duplicate: Map<String, *>,
   val existing: Map<String, *>? = null,
 )
+
+class ParentEntityNotFoundRetry(message: String) : RuntimeException(message)
