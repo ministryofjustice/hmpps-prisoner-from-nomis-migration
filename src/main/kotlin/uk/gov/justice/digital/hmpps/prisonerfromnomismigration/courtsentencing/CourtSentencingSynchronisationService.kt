@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyChargeCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtAppearanceCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtCaseCreatedResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.ParentEntityNotFoundRetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -108,19 +109,19 @@ class CourtSentencingSynchronisationService(
         // only dealing with appearances associated with a court case, COURT_EVENTS are created by movements also
         if (isAppearancePartOfACourtCase(nomisCourtAppearance)) {
           mappingApiService.getCourtCaseOrNullByNomisId(nomisCourtAppearance.caseId!!)?.let { courtCaseMapping ->
-            telemetry.put("nomisCourtCaseId", courtCaseMapping.nomisCourtCaseId.toString())
-            telemetry.put("dpsCourtCaseId", courtCaseMapping.dpsCourtCaseId)
+            telemetry["nomisCourtCaseId"] = courtCaseMapping.nomisCourtCaseId.toString()
+            telemetry["dpsCourtCaseId"] = courtCaseMapping.dpsCourtCaseId
             // TODO wire up caseref from list of identifiers when implemented
             dpsApiService.createCourtAppearance(
               nomisCourtAppearance.toDpsCourtAppearance(dpsCaseId = courtCaseMapping.dpsCourtCaseId),
             ).run {
-              telemetry.put("dpsCourtAppearanceId", this.lifetimeUuid.toString())
+              telemetry["dpsCourtAppearanceId"] = this.lifetimeUuid.toString()
               tryToCreateCourtAppearanceMapping(
                 nomisCourtAppearance = nomisCourtAppearance,
                 dpsCourtAppearanceResponse = this,
                 telemetry,
               ).also { mappingCreateResult ->
-                if (mappingCreateResult == MappingResponse.MAPPING_FAILED) telemetry.put("mapping", "initial-failure")
+                if (mappingCreateResult == MappingResponse.MAPPING_FAILED) telemetry["mapping"] = "initial-failure"
                 telemetryClient.trackEvent(
                   "court-appearance-synchronisation-created-success",
                   telemetry,
@@ -132,7 +133,7 @@ class CourtSentencingSynchronisationService(
               "court-appearance-synchronisation-created-failed",
               telemetry + ("nomisCourtCaseId" to nomisCourtAppearance.caseId.toString()) + ("reason" to "associated court case is not mapped"),
             )
-            throw IllegalStateException("Received COURT_EVENTS_INSERTED for court case that has never been created/mapped")
+            throw ParentEntityNotFoundRetry("Received COURT_EVENTS_INSERTED for court case ${nomisCourtAppearance.caseId} that has never been created/mapped")
           }
         } else {
           telemetryClient.trackEvent(
@@ -469,7 +470,7 @@ class CourtSentencingSynchronisationService(
     } else {
       // Check court appearance is mapped and throw exception to retry if not
       mappingApiService.getCourtAppearanceOrNullByNomisId(event.eventId)?.let { courtAppearanceMapping ->
-        telemetry.put("dpsCourtAppearanceId", courtAppearanceMapping.dpsCourtAppearanceId)
+        telemetry["dpsCourtAppearanceId"] = courtAppearanceMapping.dpsCourtAppearanceId
         val nomisOffenderCharge =
           nomisApiService.getOffenderCharge(
             offenderNo = event.offenderIdDisplay,
@@ -478,25 +479,25 @@ class CourtSentencingSynchronisationService(
 
         mappingApiService.getOffenderChargeOrNullByNomisId(event.chargeId)?.let { mapping ->
           // mapping means this is an existing offender charge to be applied to the appearance
-          telemetry.put("dpsChargeId", mapping.dpsCourtChargeId)
-          telemetry.put("existingDpsCharge", "true")
+          telemetry["dpsChargeId"] = mapping.dpsCourtChargeId
+          telemetry["existingDpsCharge"] = "true"
           dpsApiService.associateExistingCourtCharge(
             courtAppearanceMapping.dpsCourtAppearanceId,
             mapping.dpsCourtChargeId,
           )
         } ?: let {
           // no mapping means this is a new offender charge to be created and applied to the appearance
-          telemetry.put("existingDpsCharge", "false")
+          telemetry["existingDpsCharge"] = "false"
           dpsApiService.addNewCourtCharge(
             nomisOffenderCharge.toDpsCharge(courtAppearanceMapping.dpsCourtAppearanceId),
           ).run {
-            telemetry.put("dpsChargeId", this.lifetimeUuid.toString())
+            telemetry["dpsChargeId"] = this.lifetimeUuid.toString()
             tryToCreateChargeMapping(
               nomisOffenderCharge = nomisOffenderCharge,
               dpsChargeResponse = this,
               telemetry,
             ).also { mappingCreateResult ->
-              if (mappingCreateResult == MappingResponse.MAPPING_FAILED) telemetry.put("mapping", "initial-failure")
+              if (mappingCreateResult == MappingResponse.MAPPING_FAILED) telemetry["mapping"] = "initial-failure"
             }
           }
         }
@@ -507,12 +508,10 @@ class CourtSentencingSynchronisationService(
       } ?: let {
         telemetryClient.trackEvent(
           "court-charge-synchronisation-created-failed",
-          telemetry,
+          telemetry + ("reason" to "court appearance is not mapped"),
         )
-        if (hasMigratedAllData) {
-          // after migration has run this should not happen so make sure this message goes in DLQ
-          throw IllegalStateException("Received COURT_EVENT_CHARGES-INSERTED for court appearance ${event.eventId} that has never been created")
-        }
+        // after migration has run this should not happen so make sure this message goes in DLQ
+        throw ParentEntityNotFoundRetry("Received COURT_EVENT_CHARGES-INSERTED for court appearance ${event.eventId} that has never been created")
       }
     }
   }
@@ -533,7 +532,7 @@ class CourtSentencingSynchronisationService(
         telemetry["dpsCourtAppearanceId"] = courtAppearanceMapping.dpsCourtAppearanceId
 
         mappingApiService.getOffenderChargeOrNullByNomisId(event.chargeId)?.let { chargeMapping ->
-          telemetry.put("dpsChargeId", chargeMapping.dpsCourtChargeId)
+          telemetry["dpsChargeId"] = chargeMapping.dpsCourtChargeId
           dpsApiService.removeCourtChargeAssociation(
             courtAppearanceId = courtAppearanceMapping.dpsCourtAppearanceId,
             chargeId = chargeMapping.dpsCourtChargeId,
@@ -542,9 +541,7 @@ class CourtSentencingSynchronisationService(
             nomisApiService.getOffenderChargeOrNull(
               offenderNo = event.offenderIdDisplay,
               offenderChargeId = event.chargeId,
-            ) ?: let {
-              tryToDeleteCourtChargeMapping(chargeMapping)
-            }
+            ) ?: tryToDeleteCourtChargeMapping(chargeMapping)
           }
           telemetryClient.trackEvent(
             "court-charge-synchronisation-deleted-success",
@@ -552,18 +549,18 @@ class CourtSentencingSynchronisationService(
           )
         } ?: let {
           // TODO determine whether retry is the best option here
-          logFailureAndThrowError(
-            telemetry,
+          telemetryClient.trackEvent(
             "court-charge-synchronisation-deleted-failed",
-            "Received COURT_EVENT_CHARGES-DELETED for court charge ${event.chargeId} that does not have a mapping",
+            telemetry,
           )
+          throw ParentEntityNotFoundRetry("Received COURT_EVENT_CHARGES-DELETED for court charge ${event.chargeId} that does not have a mapping")
         }
       } ?: let {
-        logFailureAndThrowError(
-          telemetry,
+        telemetryClient.trackEvent(
           "court-charge-synchronisation-deleted-failed",
-          "Received COURT_EVENT_CHARGES-DELETED for court appearance ${event.eventId} without an appearance mapping",
+          telemetry,
         )
+        throw ParentEntityNotFoundRetry("Received COURT_EVENT_CHARGES-DELETED for court appearance ${event.eventId} without an appearance mapping")
       }
     }
   }
@@ -600,7 +597,7 @@ class CourtSentencingSynchronisationService(
               "court-charge-synchronisation-updated-failed",
               telemetry + ("dpsChargeId" to chargeMapping.dpsCourtChargeId) + ("nomisCourtAppearanceId" to nomisCourtAppearanceCharge.eventId.toString()) + ("reason" to "associated court appearance is not mapped"),
             )
-            throw IllegalStateException("Received OFFENDER_CHARGES_UPDATED with court appearance ${nomisCourtAppearanceCharge.eventId} that has never been created/mapped")
+            throw ParentEntityNotFoundRetry("Received OFFENDER_CHARGES_UPDATED with court appearance ${nomisCourtAppearanceCharge.eventId} that has never been created/mapped")
           }
         }
       } ?: let {
@@ -608,24 +605,8 @@ class CourtSentencingSynchronisationService(
           "court-charge-synchronisation-updated-failed",
           telemetry + ("nomisOffenderChargeId" to event.chargeId.toString()) + ("reason" to "charge is not mapped"),
         )
-        throw IllegalStateException("Received OFFENDER_CHARGES_UPDATED for charge ${event.chargeId} has never been mapped")
+        throw ParentEntityNotFoundRetry("Received OFFENDER_CHARGES_UPDATED for charge ${event.chargeId} has never been mapped")
       }
-    }
-  }
-
-  private fun logFailureAndThrowError(
-    telemetry: MutableMap<String, String>,
-    eventName: String,
-    errorMessage: String,
-    overrideMigrationFlag: Boolean = true,
-  ) {
-    telemetryClient.trackEvent(
-      eventName,
-      telemetry,
-    )
-    if (overrideMigrationFlag || hasMigratedAllData) {
-      // after migration has run this should not happen so make sure this message goes in DLQ
-      throw IllegalStateException(errorMessage)
     }
   }
 
@@ -710,10 +691,10 @@ class CourtSentencingSynchronisationService(
       val nomisSentence =
         nomisApiService.getOffenderSentence(bookingId = event.bookingId, sentenceSequence = event.sentenceSequence)
       mappingApiService.getSentenceOrNullByNomisId(event.bookingId, sentenceSequence = event.sentenceSequence)
-        ?.let { mapping ->
+        ?.let {
           telemetryClient.trackEvent(
             "sentence-synchronisation-created-ignored",
-            telemetry,
+            telemetry + ("reason" to "sentence mapping exists"),
           )
         } ?: let {
         // retrieve offence mappings (created as part of the court appearance flow)
