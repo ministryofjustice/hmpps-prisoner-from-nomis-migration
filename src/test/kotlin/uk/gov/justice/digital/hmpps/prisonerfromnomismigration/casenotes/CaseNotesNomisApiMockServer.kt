@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.okJson
 import com.github.tomakehurst.wiremock.client.WireMock.put
@@ -110,6 +111,14 @@ class CaseNotesNomisApiMockServer(private val objectMapper: ObjectMapper) {
   ) {
     nomisApi.stubFor(
       put(urlEqualTo("/casenotes/$caseNoteId")).willReturn(status(status.value())),
+    )
+  }
+
+  fun stubDeleteCaseNote(
+    caseNoteId: Long,
+  ) {
+    nomisApi.stubFor(
+      delete(urlEqualTo("/casenotes/$caseNoteId")).willReturn(status(HttpStatus.NO_CONTENT.value())),
     )
   }
 
