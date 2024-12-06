@@ -20,6 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonIdentifierMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonPhoneMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonRestrictionMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.time.LocalDateTime
@@ -607,6 +608,82 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
       post("/mapping/contact-person/contact-restriction")
         .inScenario("Retry Mapping Contact Restriction Scenario")
         .whenScenarioStateIs("Cause Mapping Contact Restriction Success")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(201),
+
+        ).willSetStateTo(Scenario.STARTED),
+    )
+  }
+
+  fun stubGetByNomisPersonRestrictionIdOrNull(
+    nomisPersonRestrictionId: Long = 123456,
+    mapping: PersonRestrictionMappingDto? = PersonRestrictionMappingDto(
+      nomisId = 123456,
+      dpsId = "654321",
+      mappingType = PersonRestrictionMappingDto.MappingType.MIGRATED,
+    ),
+  ) {
+    mapping?.apply {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/contact-person/person-restriction/nomis-person-restriction-id/$nomisPersonRestrictionId")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(objectMapper.writeValueAsString(mapping)),
+        ),
+      )
+    } ?: run {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/contact-person/person-restriction/nomis-person-restriction-id/$nomisPersonRestrictionId")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NOT_FOUND.value())
+            .withBody(objectMapper.writeValueAsString(ErrorResponse(status = 404))),
+        ),
+      )
+    }
+  }
+
+  fun stubCreatePersonRestrictionMapping() {
+    mappingApi.stubFor(
+      post("/mapping/contact-person/person-restriction").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
+  fun stubCreatePersonRestrictionMapping(error: DuplicateMappingErrorResponse) {
+    mappingApi.stubFor(
+      post("/mapping/contact-person/person-restriction").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(409)
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubCreatePersonRestrictionMappingFollowedBySuccess(status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      post("/mapping/contact-person/person-restriction")
+        .inScenario("Retry Mapping Person Restriction Scenario")
+        .whenScenarioStateIs(Scenario.STARTED)
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody(objectMapper.writeValueAsString(error)),
+        ).willSetStateTo("Cause Mapping Person Restriction Success"),
+    )
+
+    mappingApi.stubFor(
+      post("/mapping/contact-person/person-restriction")
+        .inScenario("Retry Mapping Person Restriction Scenario")
+        .whenScenarioStateIs("Cause Mapping Person Restriction Success")
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
