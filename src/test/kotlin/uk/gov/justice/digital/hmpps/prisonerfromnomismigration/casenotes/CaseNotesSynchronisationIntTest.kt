@@ -840,6 +840,18 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
               mappingType = MIGRATED,
             ),
           )
+          caseNotesMappingApiMockServer.stubGetByDpsId(
+            DPS_CASE_NOTE_ID,
+            listOf(
+              CaseNoteMappingDto(
+                nomisBookingId = BOOKING_ID,
+                nomisCaseNoteId = NOMIS_CASE_NOTE_ID,
+                dpsCaseNoteId = DPS_CASE_NOTE_ID,
+                offenderNo = "A1234KT",
+                mappingType = MIGRATED,
+              ),
+            ),
+          )
           caseNotesApi.stubDeleteCaseNote()
           caseNotesMappingApiMockServer.stubDeleteMapping()
           awsSqsCaseNoteOffenderEventsClient.sendMessage(
@@ -891,6 +903,112 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Nested
+      @DisplayName("When merge duplicate exists")
+      inner class MergeExists {
+        @BeforeEach
+        fun setUp() {
+          caseNotesMappingApiMockServer.stubGetByNomisId(
+            caseNoteId = NOMIS_CASE_NOTE_ID,
+            CaseNoteMappingDto(
+              nomisBookingId = BOOKING_ID,
+              nomisCaseNoteId = NOMIS_CASE_NOTE_ID,
+              dpsCaseNoteId = DPS_CASE_NOTE_ID,
+              offenderNo = "A1234KT",
+              mappingType = MIGRATED,
+            ),
+          )
+          caseNotesMappingApiMockServer.stubGetByDpsId(
+            DPS_CASE_NOTE_ID,
+            listOf(
+              CaseNoteMappingDto(
+                nomisBookingId = BOOKING_ID,
+                nomisCaseNoteId = NOMIS_CASE_NOTE_ID,
+                dpsCaseNoteId = DPS_CASE_NOTE_ID,
+                offenderNo = "A1234KT",
+                mappingType = MIGRATED,
+              ),
+              CaseNoteMappingDto(
+                nomisBookingId = BOOKING_ID,
+                nomisCaseNoteId = NOMIS_CASE_NOTE_ID2,
+                dpsCaseNoteId = DPS_CASE_NOTE_ID,
+                offenderNo = "A1234KT",
+                mappingType = MIGRATED,
+              ),
+            ),
+          )
+          caseNotesApi.stubDeleteCaseNote()
+          caseNotesNomisApiMockServer.stubDeleteCaseNote(NOMIS_CASE_NOTE_ID2)
+          caseNotesMappingApiMockServer.stubDeleteMapping()
+
+          awsSqsCaseNoteOffenderEventsClient.sendMessage(
+            caseNotesQueueOffenderEventsUrl,
+            caseNoteEvent(
+              eventType = "OFFENDER_CASE_NOTES-DELETED",
+              bookingId = BOOKING_ID,
+              caseNoteId = NOMIS_CASE_NOTE_ID,
+              offenderNo = OFFENDER_ID_DISPLAY,
+            ),
+          )
+        }
+
+        @Test
+        fun `will delete CaseNote in DPS`() {
+          await untilAsserted {
+            caseNotesApi.verify(
+              1,
+              deleteRequestedFor(urlPathEqualTo("/sync/case-notes/$DPS_CASE_NOTE_ID")),
+            )
+          }
+        }
+
+        @Test
+        fun `will delete related CaseNote in Nomis`() {
+          await untilAsserted {
+            caseNotesNomisApiMockServer.verify(
+              1,
+              deleteRequestedFor(urlPathEqualTo("/casenotes/$NOMIS_CASE_NOTE_ID2")),
+            )
+          }
+        }
+
+        @Test
+        fun `will delete CaseNote mapping`() {
+          await untilAsserted {
+            caseNotesMappingApiMockServer.verify(
+              1,
+              deleteRequestedFor(urlPathEqualTo("/mapping/casenotes/dps-casenote-id/$DPS_CASE_NOTE_ID")),
+            )
+          }
+        }
+
+        @Test
+        fun `will track 2 telemetry events for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("casenotes-synchronisation-deleted-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+                assertThat(it["nomisCaseNoteId"]).isEqualTo(NOMIS_CASE_NOTE_ID.toString())
+                assertThat(it["dpsCaseNoteId"]).isEqualTo(DPS_CASE_NOTE_ID)
+              },
+              isNull(),
+            )
+            verify(telemetryClient).trackEvent(
+              eq("casenotes-synchronisation-deleted-related-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+                assertThat(it["nomisCaseNoteId"]).isEqualTo(NOMIS_CASE_NOTE_ID2.toString())
+                assertThat(it["dpsCaseNoteId"]).isEqualTo(DPS_CASE_NOTE_ID)
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
       @DisplayName("When mapping fails to be deleted")
       inner class MappingDeleteFails {
         @BeforeEach
@@ -903,6 +1021,18 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
               dpsCaseNoteId = DPS_CASE_NOTE_ID,
               offenderNo = "A1234KT",
               mappingType = MIGRATED,
+            ),
+          )
+          caseNotesMappingApiMockServer.stubGetByDpsId(
+            DPS_CASE_NOTE_ID,
+            listOf(
+              CaseNoteMappingDto(
+                nomisBookingId = BOOKING_ID,
+                nomisCaseNoteId = NOMIS_CASE_NOTE_ID,
+                dpsCaseNoteId = DPS_CASE_NOTE_ID,
+                offenderNo = "A1234KT",
+                mappingType = MIGRATED,
+              ),
             ),
           )
           caseNotesApi.stubDeleteCaseNote()
@@ -959,6 +1089,18 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
               dpsCaseNoteId = DPS_CASE_NOTE_ID,
               offenderNo = "A1234KT",
               mappingType = MIGRATED,
+            ),
+          )
+          caseNotesMappingApiMockServer.stubGetByDpsId(
+            DPS_CASE_NOTE_ID,
+            listOf(
+              CaseNoteMappingDto(
+                nomisBookingId = BOOKING_ID,
+                nomisCaseNoteId = NOMIS_CASE_NOTE_ID,
+                dpsCaseNoteId = DPS_CASE_NOTE_ID,
+                offenderNo = "A1234KT",
+                mappingType = MIGRATED,
+              ),
             ),
           )
           caseNotesApi.stubDeleteCaseNoteFailure()
