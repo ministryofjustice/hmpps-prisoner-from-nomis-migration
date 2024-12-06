@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-12-04.10160.f63e00b"
+    "version": "2024-12-06.10180.32f68c5"
   },
   "servers": [
     {
@@ -636,6 +636,88 @@
           },
           "404": {
             "description": "Court appearance does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "sentencing-resource"
+        ],
+        "summary": "Updates Court Appearance",
+        "description": "Required role NOMIS_SENTENCING Deletes s Court Appearance for the offender.",
+        "operationId": "deleteCourtAppearance",
+        "parameters": [
+          {
+            "name": "offenderNo",
+            "in": "path",
+            "description": "Offender no",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Offender no",
+              "example": "AB1234A"
+            },
+            "example": "AB1234A"
+          },
+          {
+            "name": "caseId",
+            "in": "path",
+            "description": "Case Id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Case Id",
+              "format": "int64",
+              "example": 34565
+            },
+            "example": 34565
+          },
+          {
+            "name": "eventId",
+            "in": "path",
+            "description": "Case appearance Id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Case appearance Id",
+              "format": "int64",
+              "example": 34565
+            },
+            "example": 34565
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CourtAppearanceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Court Appearance deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint when role NOMIS_SENTENCING not present",
             "content": {
               "application/json": {
                 "schema": {
@@ -6404,6 +6486,93 @@
         }
       }
     },
+    "/persons/{personId}/restriction": {
+      "post": {
+        "tags": [
+          "contact-person-resource"
+        ],
+        "summary": "Creates a global person restriction",
+        "description": "Creates a person restriction; the restriction is estate wide. Requires ROLE_NOMIS_CONTACTPERSONS",
+        "operationId": "createPersonRestriction",
+        "parameters": [
+          {
+            "name": "personId",
+            "in": "path",
+            "description": "Person Id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Person Id",
+              "format": "int64",
+              "example": 12345
+            },
+            "example": 12345
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateContactPersonRestrictionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Person Contact ID Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateContactPersonRestrictionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request contains bad data for example restriction type does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_CONTACTPERSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Person does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/persons/{personId}/phone": {
       "post": {
         "tags": [
@@ -6741,6 +6910,106 @@
           },
           "409": {
             "description": "Contact with the specified relationship and type already exists for this prisoner's latest booking",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/persons/{personId}/contact/{contactId}/restriction": {
+      "post": {
+        "tags": [
+          "contact-person-resource"
+        ],
+        "summary": "Creates a person contact restriction for a specific relationship",
+        "description": "Creates a person contact restriction; the restriction is for a specific relationship between a prisoner and a person. Requires ROLE_NOMIS_CONTACTPERSONS",
+        "operationId": "createPersonContactRestriction",
+        "parameters": [
+          {
+            "name": "personId",
+            "in": "path",
+            "description": "Person Id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Person Id",
+              "format": "int64",
+              "example": 12345
+            },
+            "example": 12345
+          },
+          {
+            "name": "contactId",
+            "in": "path",
+            "description": "Contact Id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Contact Id",
+              "format": "int64",
+              "example": 67899
+            },
+            "example": 67899
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateContactPersonRestrictionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Person Contact ID Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateContactPersonRestrictionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request contains bad data for example restriction type does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_CONTACTPERSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Person or contact does not exist",
             "content": {
               "application/json": {
                 "schema": {
@@ -8939,6 +9208,66 @@
           },
           "404": {
             "description": "Offender not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "sentencing-resource"
+        ],
+        "summary": "delete a court case",
+        "description": "Requires role NOMIS_SENTENCING. Deletes a court case by id",
+        "operationId": "deleteCourtCase",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Court case id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Court case id",
+              "format": "int64",
+              "example": 12345
+            },
+            "example": 12345
+          },
+          {
+            "name": "offenderNo",
+            "in": "path",
+            "description": "Offender No",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Offender No",
+              "example": "AB2134"
+            },
+            "example": "AB2134"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "court case deleted"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint when role NOMIS_SENTENCING not present",
             "content": {
               "application/json": {
                 "schema": {
@@ -18045,6 +18374,52 @@
           }
         },
         "description": "Request to create an person (aka DPS contact) in NOMIS"
+      },
+      "CreateContactPersonRestrictionResponse": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Unique NOMIS Id of the restriction",
+            "format": "int64"
+          }
+        }
+      },
+      "CreateContactPersonRestrictionRequest": {
+        "required": [
+          "effectiveDate",
+          "enteredStaffUsername",
+          "typeCode"
+        ],
+        "type": "object",
+        "properties": {
+          "typeCode": {
+            "type": "string",
+            "description": "Restriction type"
+          },
+          "comment": {
+            "type": "string",
+            "description": "Free format comment text"
+          },
+          "effectiveDate": {
+            "type": "string",
+            "description": "Date restriction became active",
+            "format": "date"
+          },
+          "expiryDate": {
+            "type": "string",
+            "description": "Date restriction is no longer active",
+            "format": "date"
+          },
+          "enteredStaffUsername": {
+            "type": "string",
+            "description": "Username Staff member who created the restriction"
+          }
+        },
+        "description": "Request to create a contact restriction in NOMIS for either global or against a specific relationship"
       },
       "CreatePersonPhoneResponse": {
         "required": [
