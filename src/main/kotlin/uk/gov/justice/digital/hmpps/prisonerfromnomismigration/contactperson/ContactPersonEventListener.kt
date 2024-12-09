@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.Con
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_EMAIL_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_IDENTIFIER_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PERSON_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PERSON_RESTRICTION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PHONE_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
@@ -86,6 +87,7 @@ class ContactPersonEventListener(
       RETRY_SYNCHRONISATION_PHONE_MAPPING -> service.retryCreatePhoneMapping(message.fromJson())
       RETRY_SYNCHRONISATION_IDENTIFIER_MAPPING -> service.retryCreateIdentifierMapping(message.fromJson())
       RETRY_SYNCHRONISATION_CONTACT_RESTRICTION_MAPPING -> service.retryCreateContactRestrictionMapping(message.fromJson())
+      RETRY_SYNCHRONISATION_PERSON_RESTRICTION_MAPPING -> service.retryCreatePersonRestrictionMapping(message.fromJson())
     }
   }
 }
@@ -161,4 +163,5 @@ enum class ContactPersonSynchronisationMessageType {
   RETRY_SYNCHRONISATION_PHONE_MAPPING,
   RETRY_SYNCHRONISATION_IDENTIFIER_MAPPING,
   RETRY_SYNCHRONISATION_CONTACT_RESTRICTION_MAPPING,
+  RETRY_SYNCHRONISATION_PERSON_RESTRICTION_MAPPING,
 }

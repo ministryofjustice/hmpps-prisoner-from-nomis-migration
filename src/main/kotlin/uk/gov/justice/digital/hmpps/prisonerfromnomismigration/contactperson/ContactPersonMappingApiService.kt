@@ -20,6 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonIdentifierMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonPhoneMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonRestrictionMappingDto
 
 @Service
 class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<ContactPersonMappingsDto>(domainUrl = "/mapping/contact-person/person", webClient) {
@@ -92,6 +93,14 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
     .uri(
       "/mapping/contact-person/contact-restriction/nomis-contact-restriction-id/{nomisContactRestrictionId}",
       nomisContactRestrictionId,
+    )
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
+
+  suspend fun getByNomisPersonRestrictionIdOrNull(nomisPersonRestrictionId: Long): PersonRestrictionMappingDto? = webClient.get()
+    .uri(
+      "/mapping/contact-person/person-restriction/nomis-person-restriction-id/{nomisPersonRestrictionId}",
+      nomisPersonRestrictionId,
     )
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
@@ -181,6 +190,17 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
     .map { CreateMappingResult<PersonContactRestrictionMappingDto>() }
     .onErrorResume(WebClientResponseException.Conflict::class.java) {
       Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<PersonContactRestrictionMappingDto>>() {})))
+    }
+    .awaitFirstOrDefault(CreateMappingResult())
+
+  suspend fun createPersonRestrictionMapping(mappings: PersonRestrictionMappingDto): CreateMappingResult<PersonRestrictionMappingDto> = webClient.post()
+    .uri("/mapping/contact-person/person-restriction")
+    .bodyValue(mappings)
+    .retrieve()
+    .bodyToMono(Unit::class.java)
+    .map { CreateMappingResult<PersonRestrictionMappingDto>() }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<PersonRestrictionMappingDto>>() {})))
     }
     .awaitFirstOrDefault(CreateMappingResult())
 }

@@ -44,6 +44,9 @@ class ContactPersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
       ),
     )
   }
+  fun stubGetPerson(
+    person: ContactPerson = contactPerson(),
+  ) = stubGetPerson(personId = person.personId, person)
 
   fun stubGetPerson(
     personId: Long = 123456,
@@ -92,8 +95,8 @@ class ContactPersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
   )
 }
 
-fun contactPerson(): ContactPerson = ContactPerson(
-  personId = 123456,
+fun contactPerson(personId: Long = 123456): ContactPerson = ContactPerson(
+  personId = personId,
   firstName = "KWAME",
   lastName = "KOBE",
   interpreterRequired = false,
@@ -126,6 +129,44 @@ fun contactPerson(): ContactPerson = ContactPerson(
     ),
   ),
   restrictions = listOf(ContactRestriction(id = 2, type = CodeDescription(code = "BAN", description = "Banned"), enteredStaff = ContactRestrictionEnteredStaff(staffId = 1, username = "Q1251T"), effectiveDate = LocalDate.parse("2020-01-01"), audit = nomisAudit())),
+)
+
+fun ContactPerson.withAddress(address: PersonAddress): ContactPerson = copy(addresses = listOf(address))
+fun ContactPerson.withAddress(addressId: Long, phone: PersonPhoneNumber): ContactPerson = copy(
+  addresses = listOf(
+    PersonAddress(
+      addressId = addressId,
+      phoneNumbers = listOf(phone),
+      mailAddress = true,
+      primaryAddress = true,
+      validatedPAF = true,
+      audit = NomisAudit(
+        createUsername = "J.SPEAK",
+        createDatetime = "2024-09-01T13:31",
+      ),
+    ),
+  ),
+)
+fun ContactPerson.withPhoneNumber(phone: PersonPhoneNumber): ContactPerson = copy(phoneNumbers = listOf(phone))
+fun ContactPerson.withEmailAddress(phone: PersonEmailAddress): ContactPerson = copy(emailAddresses = listOf(phone))
+fun ContactPerson.withIdentifier(identifier: PersonIdentifier): ContactPerson = copy(identifiers = listOf(identifier))
+fun ContactPerson.withContactRestriction(restriction: ContactRestriction): ContactPerson = copy(restrictions = listOf(restriction))
+fun ContactPerson.withContact(contact: PersonContact): ContactPerson = copy(contacts = listOf(contact))
+fun ContactPerson.withContact(contactId: Long, offenderNo: String, restriction: ContactRestriction): ContactPerson = copy(
+  contacts = listOf(
+    PersonContact(
+      id = contactId,
+      relationshipType = CodeDescription(code = "BOF", description = "Boyfriend"),
+      contactType = CodeDescription(code = "S", description = "Social/ Family"),
+      active = true,
+      emergencyContact = true,
+      nextOfKin = false,
+      approvedVisitor = false,
+      prisoner = ContactForPrisoner(bookingId = 1, offenderNo = offenderNo, lastName = "SMITH", firstName = "JOHN", bookingSequence = 1),
+      restrictions = listOf(restriction),
+      audit = nomisAudit(),
+    ),
+  ),
 )
 
 fun nomisAudit() = NomisAudit(
