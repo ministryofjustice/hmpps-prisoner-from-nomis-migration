@@ -16,6 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdatePrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonAddressMappingDto
@@ -53,11 +54,10 @@ class ContactPersonSynchronisationService(
   suspend fun personRestrictionUpserted(event: PersonRestrictionEvent) {
     val telemetry =
       mutableMapOf<String, Any>("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisPersonRestrictionId" to event.visitorRestrictionId)
-    val telemetrySuffix = "contactperson-person-restriction-synchronisation"
 
     if (event.doesOriginateInDps()) {
       telemetryClient.trackEvent(
-        "$telemetrySuffix-upserted-skipped",
+        "contactperson-person-restriction-synchronisation-upserted-skipped",
         telemetry,
       )
     } else {
@@ -69,7 +69,7 @@ class ContactPersonSynchronisationService(
           telemetry["dpsContactRestrictionId"] = it.dpsId
           dpsApiService.updateContactRestriction(contactRestrictionId = it.dpsId.toLong(), nomisRestriction.toDpsUpdateContactRestrictionRequest(dpsContactId = event.personId))
           telemetryClient.trackEvent(
-            "$telemetrySuffix-updated-success",
+            "contactperson-person-restriction-synchronisation-updated-success",
             telemetry,
           )
         } ?: run {
@@ -84,13 +84,13 @@ class ContactPersonSynchronisationService(
 
           tryToCreateMapping(mapping, telemetry)
           telemetryClient.trackEvent(
-            "$telemetrySuffix-created-success",
+            "contactperson-person-restriction-synchronisation-created-success",
             telemetry,
           )
         }
       } catch (e: Exception) {
         telemetry["error"] = e.message.toString()
-        telemetryClient.trackEvent("$telemetrySuffix-error", telemetry)
+        telemetryClient.trackEvent("contactperson-person-restriction-synchronisation-error", telemetry)
         throw e
       }
     }
@@ -161,21 +161,24 @@ class ContactPersonSynchronisationService(
 
     if (event.doesOriginateInDps()) {
       telemetryClient.trackEvent(
-        "contactperson-contact-restriction-synchronisation-created-skipped",
+        "contactperson-contact-restriction-synchronisation-upserted-skipped",
         telemetry,
       )
     } else {
-      mappingApiService.getByNomisContactRestrictionIdOrNull(nomisContactRestrictionId = event.offenderPersonRestrictionId)?.also {
-        // TODO - since this is an upsert we need to update the restriction in DPS - for now ignore the update
-        telemetryClient.trackEvent(
-          "contactperson-contact-restriction-synchronisation-created-ignored",
-          telemetry + ("dpsPrisonerContactRestrictionId" to it.dpsId),
-        )
-      } ?: run {
-        nomisApiService.getPerson(nomisPersonId = event.personId).also { nomisPerson ->
-          val nomisContact = nomisPerson.contacts.find { it.id == event.contactPersonId } ?: throw IllegalStateException("Contact ${event.contactPersonId} for person ${event.personId} not found in NOMIS")
-          val dpsPrisonerContactId = mappingApiService.getByNomisContactId(nomisContact.id).dpsId.toLong()
-          val nomisRestriction = nomisContact.restrictions.find { it.id == event.offenderPersonRestrictionId } ?: throw IllegalStateException("Contact Restriction ${event.offenderPersonRestrictionId} for person ${event.personId} for contact ${event.contactPersonId} not found in NOMIS")
+      try {
+        val nomisPerson = nomisApiService.getPerson(nomisPersonId = event.personId)
+        val nomisContact = nomisPerson.contacts.find { it.id == event.contactPersonId } ?: throw IllegalStateException("Contact ${event.contactPersonId} for person ${event.personId} not found in NOMIS")
+        val nomisRestriction = nomisContact.restrictions.find { it.id == event.offenderPersonRestrictionId } ?: throw IllegalStateException("Contact Restriction ${event.offenderPersonRestrictionId} for person ${event.personId} for contact ${event.contactPersonId} not found in NOMIS")
+        val dpsPrisonerContactId = mappingApiService.getByNomisContactId(nomisContact.id).dpsId.toLong()
+        mappingApiService.getByNomisContactRestrictionIdOrNull(nomisContactRestrictionId = event.offenderPersonRestrictionId)?.also {
+          telemetry["dpsPrisonerContactRestrictionId"] = it.dpsId
+          telemetry["dpsPrisonerContactId"] = dpsPrisonerContactId
+          dpsApiService.updatePrisonerContactRestriction(prisonerContactRestrictionId = it.dpsId.toLong(), nomisRestriction.toDpsUpdatePrisonerContactRestrictionRequest())
+          telemetryClient.trackEvent(
+            "contactperson-contact-restriction-synchronisation-updated-success",
+            telemetry,
+          )
+        } ?: run {
           val dpsPrisonerContactRestriction = dpsApiService.createPrisonerContactRestriction(nomisRestriction.toDpsCreatePrisonerContactRestrictionRequest(dpsPrisonerContactId = dpsPrisonerContactId)).also {
             telemetry["dpsPrisonerContactRestrictionId"] = it.prisonerContactRestrictionId
             telemetry["dpsPrisonerContactId"] = dpsPrisonerContactId
@@ -187,11 +190,15 @@ class ContactPersonSynchronisationService(
           )
 
           tryToCreateMapping(mapping, telemetry)
+          telemetryClient.trackEvent(
+            "contactperson-contact-restriction-synchronisation-created-success",
+            telemetry,
+          )
         }
-        telemetryClient.trackEvent(
-          "contactperson-contact-restriction-synchronisation-created-success",
-          telemetry,
-        )
+      } catch (e: Exception) {
+        telemetry["error"] = e.message.toString()
+        telemetryClient.trackEvent("contactperson-contact-restriction-synchronisation-error", telemetry)
+        throw e
       }
     }
   }
@@ -1013,7 +1020,7 @@ fun ContactRestriction.toDpsCreatePrisonerContactRestrictionRequest(dpsPrisonerC
   comments = this.comment,
   startDate = this.effectiveDate,
   expiryDate = this.expiryDate,
-  // DPS use the enteredBy username since they use the createdBy as business data along as audit
+  // DPS use the enteredBy username since they use the createdBy as business data as well as audit
   createdBy = this.enteredStaff.username,
   createdTime = this.audit.createDatetime.toDateTime(),
 )
@@ -1024,7 +1031,7 @@ fun ContactRestriction.toDpsCreateContactRestrictionRequest(dpsContactId: Long) 
   comments = this.comment,
   startDate = this.effectiveDate,
   expiryDate = this.expiryDate,
-  // DPS use the enteredBy username since they use the createdBy as business data along as audit
+  // DPS use the enteredBy username since they use the createdBy as business data as well as audit
   createdBy = this.enteredStaff.username,
   createdTime = this.audit.createDatetime.toDateTime(),
 )
@@ -1035,7 +1042,17 @@ fun ContactRestriction.toDpsUpdateContactRestrictionRequest(dpsContactId: Long) 
   comments = this.comment,
   startDate = this.effectiveDate,
   expiryDate = this.expiryDate,
-  // DPS use the enteredBy username since they use the updatedBy as business data along as audit
+  // DPS use the enteredBy username since they use the updatedBy as business data as well as audit
+  updatedBy = this.enteredStaff.username,
+  updatedTime = this.audit.modifyDatetime?.toDateTime() ?: LocalDateTime.now(),
+)
+
+fun ContactRestriction.toDpsUpdatePrisonerContactRestrictionRequest() = SyncUpdatePrisonerContactRestrictionRequest(
+  restrictionType = this.type.code,
+  comments = this.comment,
+  startDate = this.effectiveDate,
+  expiryDate = this.expiryDate,
+  // DPS use the enteredBy username since they use the updatedBy as business data as well as audit
   updatedBy = this.enteredStaff.username,
   updatedTime = this.audit.modifyDatetime?.toDateTime() ?: LocalDateTime.now(),
 )

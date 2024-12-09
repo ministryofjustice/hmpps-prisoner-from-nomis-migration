@@ -22,6 +22,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.Con
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.createPrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.migrateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.updateContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.updatePrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 
 @SpringAPIServiceTest
@@ -260,6 +261,34 @@ class ContactPersonDpsApiServiceTest {
 
       dpsContactPersonServer.verify(
         postRequestedFor(urlPathEqualTo("/sync/prisoner-contact-restriction")),
+      )
+    }
+  }
+
+  @Nested
+  inner class UpdatePrisonerContactRestriction {
+    private val prisonerContactRestrictionId = 12345L
+
+    @Test
+    internal fun `will pass oath2 token to prisoner contact restriction endpoint`() = runTest {
+      dpsContactPersonServer.stubUpdatePrisonerContactRestriction(prisonerContactRestrictionId)
+
+      apiService.updatePrisonerContactRestriction(prisonerContactRestrictionId, updatePrisonerContactRestrictionRequest())
+
+      dpsContactPersonServer.verify(
+        putRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the update sync endpoint`() = runTest {
+      dpsContactPersonServer.stubUpdatePrisonerContactRestriction(prisonerContactRestrictionId)
+
+      apiService.updatePrisonerContactRestriction(prisonerContactRestrictionId, updatePrisonerContactRestrictionRequest())
+
+      dpsContactPersonServer.verify(
+        putRequestedFor(urlPathEqualTo("/sync/prisoner-contact-restriction/$prisonerContactRestrictionId")),
       )
     }
   }

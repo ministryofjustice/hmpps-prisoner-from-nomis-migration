@@ -38,6 +38,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncPrisonerContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncPrisonerContactRestriction
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdatePrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.time.LocalDate
@@ -254,6 +255,12 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       createdTime = LocalDateTime.parse("2024-01-01T12:13"),
     )
 
+    fun updatePrisonerContactRestrictionRequest() = SyncUpdatePrisonerContactRestrictionRequest(
+      restrictionType = "BAN",
+      updatedBy = "J.SMITH",
+      updatedTime = LocalDateTime.parse("2024-01-01T12:13"),
+    )
+
     fun contactRestriction() = SyncContactRestriction(
       contactId = 1234567,
       contactRestrictionId = 209876,
@@ -402,6 +409,19 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
     )
   }
+
+  fun stubUpdatePrisonerContactRestriction(dpsPrisonerContactRestrictionId: Long, response: SyncPrisonerContactRestriction = prisonerContactRestriction()) {
+    stubFor(
+      put("/sync/prisoner-contact-restriction/$dpsPrisonerContactRestrictionId")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(ContactPersonDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
   fun stubCreateContactRestriction(response: SyncContactRestriction = contactRestriction()) {
     stubFor(
       post("/sync/contact-restriction")
