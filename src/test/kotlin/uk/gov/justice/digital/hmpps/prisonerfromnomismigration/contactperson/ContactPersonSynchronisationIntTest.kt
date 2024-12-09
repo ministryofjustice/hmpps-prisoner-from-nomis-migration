@@ -110,7 +110,6 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = nomisPersonId, mapping = null)
         nomisApiMock.stubGetPerson(
-          personId = nomisPersonId,
           person = contactPerson().copy(
             personId = nomisPersonId,
             firstName = "JOHN",
@@ -237,8 +236,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = nomisPersonId, mapping = null)
         nomisApiMock.stubGetPerson(
-          personId = nomisPersonId,
-          person = contactPerson(),
+          person = contactPerson(nomisPersonId),
         )
         dpsApiMock.stubCreateContact(contact().copy(id = dpsContactId))
         mappingApiMock.stubCreatePersonMapping(
@@ -316,8 +314,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = nomisPersonId, mapping = null)
         nomisApiMock.stubGetPerson(
-          personId = nomisPersonId,
-          person = contactPerson(),
+          person = contactPerson(nomisPersonId),
         )
         dpsApiMock.stubCreateContact(contact().copy(id = dpsContactId))
         mappingApiMock.stubCreatePersonMappingFailureFollowedBySuccess()
@@ -462,10 +459,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisAddressIdOrNull(nomisAddressId = nomisAddressId, mapping = null)
         nomisApiMock.stubGetPerson(
-          personId = nomisPersonId,
-          person = contactPerson().copy(
-            personId = nomisPersonId,
-            addresses = listOf(
+          person = contactPerson(nomisPersonId)
+            .withAddress(
               PersonAddress(
                 addressId = nomisAddressId,
                 phoneNumbers = emptyList(),
@@ -491,7 +486,6 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 ),
               ),
             ),
-          ),
         )
         dpsApiMock.stubCreateContactAddress(contactAddress().copy(contactAddressId = dpsContactAddressId))
         mappingApiMock.stubCreateAddressMapping()
@@ -609,10 +603,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisAddressIdOrNull(nomisAddressId = nomisAddressId, mapping = null)
         nomisApiMock.stubGetPerson(
-          personId = nomisPersonId,
-          person = contactPerson().copy(
-            personId = nomisPersonId,
-            addresses = listOf(
+          person = contactPerson(nomisPersonId)
+            .withAddress(
               PersonAddress(
                 addressId = nomisAddressId,
                 phoneNumbers = emptyList(),
@@ -638,7 +630,6 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 ),
               ),
             ),
-          ),
         )
         dpsApiMock.stubCreateContactAddress(contactAddress().copy(contactAddressId = dpsContactAddressId))
         mappingApiMock.stubCreateAddressMapping(
@@ -719,10 +710,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisAddressIdOrNull(nomisAddressId = nomisAddressId, mapping = null)
         nomisApiMock.stubGetPerson(
-          personId = nomisPersonId,
-          person = contactPerson().copy(
-            personId = nomisPersonId,
-            addresses = listOf(
+          person = contactPerson(nomisPersonId)
+            .withAddress(
               PersonAddress(
                 addressId = nomisAddressId,
                 phoneNumbers = emptyList(),
@@ -748,7 +737,6 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 ),
               ),
             ),
-          ),
         )
         dpsApiMock.stubCreateContactAddress(contactAddress().copy(contactAddressId = dpsContactAddressId))
         mappingApiMock.stubCreateAddressMappingFollowedBySuccess()
@@ -900,10 +888,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisPhoneIdOrNull(nomisPhoneId = nomisPhoneId, mapping = null)
         nomisApiMock.stubGetPerson(
-          personId = nomisPersonId,
-          person = contactPerson().copy(
-            personId = nomisPersonId,
-            phoneNumbers = listOf(
+          person = contactPerson(nomisPersonId)
+            .withPhoneNumber(
               PersonPhoneNumber(
                 phoneId = nomisPhoneId,
                 number = "07973 555 555",
@@ -915,7 +901,6 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 ),
               ),
             ),
-          ),
         )
         dpsApiMock.stubCreateContactPhone(contactPhone().copy(contactPhoneId = dpsContactPhoneId))
         mappingApiMock.stubCreatePhoneMapping()
@@ -1029,10 +1014,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisPhoneIdOrNull(nomisPhoneId = nomisPhoneId, mapping = null)
         nomisApiMock.stubGetPerson(
-          personId = nomisPersonId,
-          person = contactPerson().copy(
-            personId = nomisPersonId,
-            phoneNumbers = listOf(
+          person = contactPerson(nomisPersonId)
+            .withPhoneNumber(
               PersonPhoneNumber(
                 phoneId = nomisPhoneId,
                 number = "07973 555 555",
@@ -1044,7 +1027,6 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 ),
               ),
             ),
-          ),
         )
         dpsApiMock.stubCreateContactPhone(contactPhone().copy(contactPhoneId = dpsContactPhoneId))
         mappingApiMock.stubCreatePhoneMapping(
@@ -1128,10 +1110,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisPhoneIdOrNull(nomisPhoneId = nomisPhoneId, mapping = null)
         nomisApiMock.stubGetPerson(
-          personId = nomisPersonId,
-          person = contactPerson().copy(
-            personId = nomisPersonId,
-            phoneNumbers = listOf(
+          person = contactPerson(nomisPersonId)
+            .withPhoneNumber(
               PersonPhoneNumber(
                 phoneId = nomisPhoneId,
                 number = "07973 555 555",
@@ -1143,7 +1123,6 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 ),
               ),
             ),
-          ),
         )
         dpsApiMock.stubCreateContactPhone(contactPhone().copy(contactPhoneId = dpsContactPhoneId))
         mappingApiMock.stubCreatePhoneMappingFollowedBySuccess()
@@ -1306,34 +1285,20 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           ),
         )
         nomisApiMock.stubGetPerson(
-          personId = nomisPersonId,
-          person = contactPerson().copy(
-            personId = nomisPersonId,
-            addresses = listOf(
-              PersonAddress(
-                addressId = nomisAddressId,
-                phoneNumbers = listOf(
-                  PersonPhoneNumber(
-                    phoneId = nomisPhoneId,
-                    number = "07973 555 555",
-                    type = CodeDescription("MOB", "Mobile"),
-                    extension = "x555",
-                    audit = NomisAudit(
-                      createUsername = "J.SPEAK",
-                      createDatetime = "2024-09-01T13:31",
-                    ),
-                  ),
-                ),
-                mailAddress = true,
-                primaryAddress = true,
-                validatedPAF = true,
+          person = contactPerson(nomisPersonId)
+            .withAddress(
+              nomisAddressId,
+              PersonPhoneNumber(
+                phoneId = nomisPhoneId,
+                number = "07973 555 555",
+                type = CodeDescription("MOB", "Mobile"),
+                extension = "x555",
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
                   createDatetime = "2024-09-01T13:31",
                 ),
               ),
             ),
-          ),
         )
         dpsApiMock.stubCreateContactAddressPhone(contactAddressPhone().copy(contactAddressPhoneId = dpsContactAddressPhoneId))
         mappingApiMock.stubCreatePhoneMapping()
@@ -1463,34 +1428,20 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           ),
         )
         nomisApiMock.stubGetPerson(
-          personId = nomisPersonId,
-          person = contactPerson().copy(
-            personId = nomisPersonId,
-            addresses = listOf(
-              PersonAddress(
-                addressId = nomisAddressId,
-                phoneNumbers = listOf(
-                  PersonPhoneNumber(
-                    phoneId = nomisPhoneId,
-                    number = "07973 555 555",
-                    type = CodeDescription("MOB", "Mobile"),
-                    extension = "x555",
-                    audit = NomisAudit(
-                      createUsername = "J.SPEAK",
-                      createDatetime = "2024-09-01T13:31",
-                    ),
-                  ),
-                ),
-                mailAddress = true,
-                primaryAddress = true,
-                validatedPAF = true,
+          person = contactPerson(nomisPersonId)
+            .withAddress(
+              nomisAddressId,
+              PersonPhoneNumber(
+                phoneId = nomisPhoneId,
+                number = "07973 555 555",
+                type = CodeDescription("MOB", "Mobile"),
+                extension = "x555",
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
                   createDatetime = "2024-09-01T13:31",
                 ),
               ),
             ),
-          ),
         )
         dpsApiMock.stubCreateContactAddressPhone(contactAddressPhone().copy(contactAddressPhoneId = dpsContactAddressPhoneId))
         mappingApiMock.stubCreatePhoneMapping(
@@ -1583,34 +1534,20 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           ),
         )
         nomisApiMock.stubGetPerson(
-          personId = nomisPersonId,
-          person = contactPerson().copy(
-            personId = nomisPersonId,
-            addresses = listOf(
-              PersonAddress(
-                addressId = nomisAddressId,
-                phoneNumbers = listOf(
-                  PersonPhoneNumber(
-                    phoneId = nomisPhoneId,
-                    number = "07973 555 555",
-                    type = CodeDescription("MOB", "Mobile"),
-                    extension = "x555",
-                    audit = NomisAudit(
-                      createUsername = "J.SPEAK",
-                      createDatetime = "2024-09-01T13:31",
-                    ),
-                  ),
-                ),
-                mailAddress = true,
-                primaryAddress = true,
-                validatedPAF = true,
+          person = contactPerson(nomisPersonId)
+            .withAddress(
+              nomisAddressId,
+              PersonPhoneNumber(
+                phoneId = nomisPhoneId,
+                number = "07973 555 555",
+                type = CodeDescription("MOB", "Mobile"),
+                extension = "x555",
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
                   createDatetime = "2024-09-01T13:31",
                 ),
               ),
             ),
-          ),
         )
         dpsApiMock.stubCreateContactAddressPhone(contactAddressPhone().copy(contactAddressPhoneId = dpsContactAddressPhoneId))
         mappingApiMock.stubCreatePhoneMappingFollowedBySuccess()
@@ -1765,10 +1702,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisEmailIdOrNull(nomisInternetAddressId = nomisInternetAddressId, mapping = null)
         nomisApiMock.stubGetPerson(
-          personId = nomisPersonId,
-          person = contactPerson().copy(
-            personId = nomisPersonId,
-            emailAddresses = listOf(
+          person = contactPerson(nomisPersonId)
+            .withEmailAddress(
               PersonEmailAddress(
                 emailAddressId = nomisInternetAddressId,
                 email = "test@test.com",
@@ -1778,7 +1713,6 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 ),
               ),
             ),
-          ),
         )
         dpsApiMock.stubCreateContactEmail(contactEmail().copy(contactEmailId = dpsContactEmailId))
         mappingApiMock.stubCreateEmailMapping()
@@ -1881,10 +1815,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisEmailIdOrNull(nomisInternetAddressId = nomisInternetAddressId, mapping = null)
         nomisApiMock.stubGetPerson(
-          personId = nomisPersonId,
-          person = contactPerson().copy(
-            personId = nomisPersonId,
-            emailAddresses = listOf(
+          person = contactPerson(nomisPersonId)
+            .withEmailAddress(
               PersonEmailAddress(
                 emailAddressId = nomisInternetAddressId,
                 email = "test@test.com",
@@ -1894,7 +1826,6 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 ),
               ),
             ),
-          ),
         )
         dpsApiMock.stubCreateContactEmail(contactEmail().copy(contactEmailId = dpsContactEmailId))
         mappingApiMock.stubCreateEmailMapping(
@@ -1975,10 +1906,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisEmailIdOrNull(nomisInternetAddressId = nomisInternetAddressId, mapping = null)
         nomisApiMock.stubGetPerson(
-          personId = nomisPersonId,
-          person = contactPerson().copy(
-            personId = nomisPersonId,
-            emailAddresses = listOf(
+          person = contactPerson(nomisPersonId)
+            .withEmailAddress(
               PersonEmailAddress(
                 emailAddressId = nomisInternetAddressId,
                 email = "test@test.com",
@@ -1988,7 +1917,6 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 ),
               ),
             ),
-          ),
         )
         dpsApiMock.stubCreateContactEmail(contactEmail().copy(contactEmailId = dpsContactEmailId))
         mappingApiMock.stubCreateEmailMappingFollowedBySuccess()
@@ -2233,10 +2161,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisIdentifierIdsOrNull(nomisPersonId = nomisPersonId, nomisSequenceNumber = nomisSequenceNumber, mapping = null)
         nomisApiMock.stubGetPerson(
-          personId = nomisPersonId,
-          person = contactPerson().copy(
-            personId = nomisPersonId,
-            identifiers = listOf(
+          person = contactPerson(nomisPersonId)
+            .withIdentifier(
               PersonIdentifier(
                 sequence = nomisSequenceNumber,
                 identifier = "SMITH777788",
@@ -2248,7 +2174,6 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 ),
               ),
             ),
-          ),
         )
         dpsApiMock.stubCreateContactIdentity(contactIdentity().copy(contactIdentityId = dpsContactIdentityId))
         mappingApiMock.stubCreateIdentifierMapping()
@@ -2363,10 +2288,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisIdentifierIdsOrNull(nomisPersonId = nomisPersonId, nomisSequenceNumber = nomisSequenceNumber, mapping = null)
         nomisApiMock.stubGetPerson(
-          personId = nomisPersonId,
-          person = contactPerson().copy(
-            personId = nomisPersonId,
-            identifiers = listOf(
+          person = contactPerson(nomisPersonId)
+            .withIdentifier(
               PersonIdentifier(
                 sequence = nomisSequenceNumber,
                 identifier = "SMITH777788",
@@ -2378,7 +2301,6 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 ),
               ),
             ),
-          ),
         )
         dpsApiMock.stubCreateContactIdentity(contactIdentity().copy(contactIdentityId = dpsContactIdentityId))
         mappingApiMock.stubCreateIdentifierMapping(
@@ -2464,10 +2386,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisIdentifierIdsOrNull(nomisPersonId = nomisPersonId, nomisSequenceNumber = nomisSequenceNumber, mapping = null)
         nomisApiMock.stubGetPerson(
-          personId = nomisPersonId,
-          person = contactPerson().copy(
-            personId = nomisPersonId,
-            identifiers = listOf(
+          person = contactPerson(nomisPersonId)
+            .withIdentifier(
               PersonIdentifier(
                 sequence = nomisSequenceNumber,
                 identifier = "SMITH777788",
@@ -2479,7 +2399,6 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 ),
               ),
             ),
-          ),
         )
         dpsApiMock.stubCreateContactIdentity(contactIdentity().copy(contactIdentityId = dpsContactIdentityId))
         mappingApiMock.stubCreateIdentifierMappingFollowedBySuccess()
@@ -2633,10 +2552,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisPersonRestrictionIdOrNull(nomisPersonRestrictionId = nomisPersonRestrictionId, mapping = null)
         nomisApiMock.stubGetPerson(
-          personId = nomisPersonId,
-          person = contactPerson().copy(
-            personId = nomisPersonId,
-            restrictions = listOf(
+          person = contactPerson()
+            .withContactRestriction(
               ContactRestriction(
                 id = nomisPersonRestrictionId,
                 comment = "Banned for life",
@@ -2653,7 +2570,6 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 ),
               ),
             ),
-          ),
         )
         dpsApiMock.stubCreateContactRestriction(contactRestriction().copy(contactRestrictionId = dpsContactRestrictionId))
         mappingApiMock.stubCreatePersonRestrictionMapping()
@@ -2759,13 +2675,11 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisPersonRestrictionIdOrNull(nomisPersonRestrictionId = nomisPersonRestrictionId, mapping = null)
         nomisApiMock.stubGetPerson(
-          personId = nomisPersonId,
-          person = contactPerson().copy(
-            personId = nomisPersonId,
-            restrictions = listOf(
+          person = contactPerson()
+            .withContactRestriction(
               ContactRestriction(
                 id = nomisPersonRestrictionId,
-                comment = "Banned for lifer",
+                comment = "Banned for life",
                 type = CodeDescription("BAN", "Banned"),
                 effectiveDate = LocalDate.parse("2021-01-01"),
                 expiryDate = LocalDate.parse("2025-01-01"),
@@ -2779,7 +2693,6 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 ),
               ),
             ),
-          ),
         )
         dpsApiMock.stubCreateContactRestriction(contactRestriction().copy(contactRestrictionId = dpsContactRestrictionId))
         mappingApiMock.stubCreatePersonRestrictionMapping(
@@ -2860,13 +2773,11 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisPersonRestrictionIdOrNull(nomisPersonRestrictionId = nomisPersonRestrictionId, mapping = null)
         nomisApiMock.stubGetPerson(
-          personId = nomisPersonId,
-          person = contactPerson().copy(
-            personId = nomisPersonId,
-            restrictions = listOf(
+          person = contactPerson()
+            .withContactRestriction(
               ContactRestriction(
                 id = nomisPersonRestrictionId,
-                comment = "Banned for lifer",
+                comment = "Banned for life",
                 type = CodeDescription("BAN", "Banned"),
                 effectiveDate = LocalDate.parse("2021-01-01"),
                 expiryDate = LocalDate.parse("2025-01-01"),
@@ -2880,7 +2791,6 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 ),
               ),
             ),
-          ),
         )
         dpsApiMock.stubCreateContactRestriction(contactRestriction().copy(contactRestrictionId = dpsContactRestrictionId))
         mappingApiMock.stubCreatePersonRestrictionMappingFollowedBySuccess()
@@ -3005,10 +2915,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisContactIdOrNull(nomisContactId = nomisContactId, mapping = null)
         nomisApiMock.stubGetPerson(
-          personId = nomisPersonId,
-          person = contactPerson().copy(
-            personId = nomisPersonId,
-            contacts = listOf(
+          person = contactPerson(nomisPersonId)
+            .withContact(
               PersonContact(
                 id = nomisContactId,
                 contactType = CodeDescription("S", "Social/Family"),
@@ -3033,7 +2941,6 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 restrictions = emptyList(),
               ),
             ),
-          ),
         )
         dpsApiMock.stubCreatePrisonerContact(prisonerContact().copy(id = dpsPrisonerContactId))
         mappingApiMock.stubCreateContactMapping()
@@ -3149,10 +3056,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisContactIdOrNull(nomisContactId = nomisContactId, mapping = null)
         nomisApiMock.stubGetPerson(
-          personId = nomisPersonId,
-          person = contactPerson().copy(
-            personId = nomisPersonId,
-            contacts = listOf(
+          person = contactPerson(nomisPersonId)
+            .withContact(
               PersonContact(
                 id = nomisContactId,
                 contactType = CodeDescription("S", "Social/Family"),
@@ -3177,7 +3082,6 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 restrictions = emptyList(),
               ),
             ),
-          ),
         )
         dpsApiMock.stubCreatePrisonerContact(prisonerContact().copy(id = dpsPrisonerContactId))
         mappingApiMock.stubCreateContactMapping(
@@ -3260,10 +3164,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisContactIdOrNull(nomisContactId = nomisContactId, mapping = null)
         nomisApiMock.stubGetPerson(
-          personId = nomisPersonId,
-          person = contactPerson().copy(
-            personId = nomisPersonId,
-            contacts = listOf(
+          person = contactPerson(nomisPersonId)
+            .withContact(
               PersonContact(
                 id = nomisContactId,
                 contactType = CodeDescription("S", "Social/Family"),
@@ -3288,7 +3190,6 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 restrictions = emptyList(),
               ),
             ),
-          ),
         )
         dpsApiMock.stubCreatePrisonerContact(prisonerContact().copy(id = dpsPrisonerContactId))
         mappingApiMock.stubCreateContactMappingFollowedBySuccess()
@@ -3468,35 +3369,22 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           ),
         )
         nomisApiMock.stubGetPerson(
-          personId = nomisPersonId,
-          person = contactPerson().copy(
-            personId = nomisPersonId,
-            contacts = listOf(
-              PersonContact(
-                id = nomisContactId,
-                relationshipType = CodeDescription(code = "BOF", description = "Boyfriend"),
-                contactType = CodeDescription(code = "S", description = "Social/ Family"),
-                active = true,
-                emergencyContact = true,
-                nextOfKin = false,
-                approvedVisitor = false,
-                prisoner = ContactForPrisoner(bookingId = 1, offenderNo = offenderNo, lastName = "SMITH", firstName = "JOHN", bookingSequence = 1),
-                restrictions = listOf(
-                  ContactRestriction(
-                    id = nomisContactRestrictionId,
-                    type = CodeDescription(code = "BAN", description = "Banned"),
-                    enteredStaff = ContactRestrictionEnteredStaff(staffId = 1, username = "Q1251T"),
-                    effectiveDate = LocalDate.parse("2020-01-01"),
-                    expiryDate = LocalDate.parse("2026-01-01"),
-                    comment = "Banned for life",
-                    audit = nomisAudit().copy(createDatetime = "2024-09-01T13:31"),
-                  ),
-                ),
-                audit = nomisAudit(),
+          person = contactPerson(nomisPersonId)
+            .withContact(
+              contactId = nomisContactId,
+              offenderNo = offenderNo,
+              restriction = ContactRestriction(
+                id = nomisContactRestrictionId,
+                type = CodeDescription(code = "BAN", description = "Banned"),
+                enteredStaff = ContactRestrictionEnteredStaff(staffId = 1, username = "Q1251T"),
+                effectiveDate = LocalDate.parse("2020-01-01"),
+                expiryDate = LocalDate.parse("2026-01-01"),
+                comment = "Banned for life",
+                audit = nomisAudit().copy(createDatetime = "2024-09-01T13:31"),
               ),
             ),
-          ),
         )
+
         dpsApiMock.stubCreatePrisonerContactRestriction(prisonerContactRestriction().copy(prisonerContactRestrictionId = dpsPrisonerContactRestrictionId))
         mappingApiMock.stubCreateContactRestrictionMapping()
         awsSqsContactPersonOffenderEventsClient.sendMessage(
@@ -3627,34 +3515,20 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           ),
         )
         nomisApiMock.stubGetPerson(
-          personId = nomisPersonId,
-          person = contactPerson().copy(
-            personId = nomisPersonId,
-            contacts = listOf(
-              PersonContact(
-                id = nomisContactId,
-                relationshipType = CodeDescription(code = "BOF", description = "Boyfriend"),
-                contactType = CodeDescription(code = "S", description = "Social/ Family"),
-                active = true,
-                emergencyContact = true,
-                nextOfKin = false,
-                approvedVisitor = false,
-                prisoner = ContactForPrisoner(bookingId = 1, offenderNo = offenderNo, lastName = "SMITH", firstName = "JOHN", bookingSequence = 1),
-                restrictions = listOf(
-                  ContactRestriction(
-                    id = nomisContactRestrictionId,
-                    type = CodeDescription(code = "BAN", description = "Banned"),
-                    enteredStaff = ContactRestrictionEnteredStaff(staffId = 1, username = "Q1251T"),
-                    effectiveDate = LocalDate.parse("2020-01-01"),
-                    expiryDate = LocalDate.parse("2026-01-01"),
-                    comment = "Banned for life",
-                    audit = nomisAudit().copy(createDatetime = "2024-09-01T13:31"),
-                  ),
-                ),
-                audit = nomisAudit(),
+          person = contactPerson(nomisPersonId)
+            .withContact(
+              contactId = nomisContactId,
+              offenderNo = offenderNo,
+              restriction = ContactRestriction(
+                id = nomisContactRestrictionId,
+                type = CodeDescription(code = "BAN", description = "Banned"),
+                enteredStaff = ContactRestrictionEnteredStaff(staffId = 1, username = "Q1251T"),
+                effectiveDate = LocalDate.parse("2020-01-01"),
+                expiryDate = LocalDate.parse("2026-01-01"),
+                comment = "Banned for life",
+                audit = nomisAudit().copy(createDatetime = "2024-09-01T13:31"),
               ),
             ),
-          ),
         )
         dpsApiMock.stubCreatePrisonerContactRestriction(prisonerContactRestriction().copy(prisonerContactRestrictionId = dpsPrisonerContactRestrictionId))
         mappingApiMock.stubCreateContactRestrictionMapping(
@@ -3744,34 +3618,20 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           ),
         )
         nomisApiMock.stubGetPerson(
-          personId = nomisPersonId,
-          person = contactPerson().copy(
-            personId = nomisPersonId,
-            contacts = listOf(
-              PersonContact(
-                id = nomisContactId,
-                relationshipType = CodeDescription(code = "BOF", description = "Boyfriend"),
-                contactType = CodeDescription(code = "S", description = "Social/ Family"),
-                active = true,
-                emergencyContact = true,
-                nextOfKin = false,
-                approvedVisitor = false,
-                prisoner = ContactForPrisoner(bookingId = 1, offenderNo = offenderNo, lastName = "SMITH", firstName = "JOHN", bookingSequence = 1),
-                restrictions = listOf(
-                  ContactRestriction(
-                    id = nomisContactRestrictionId,
-                    type = CodeDescription(code = "BAN", description = "Banned"),
-                    enteredStaff = ContactRestrictionEnteredStaff(staffId = 1, username = "Q1251T"),
-                    effectiveDate = LocalDate.parse("2020-01-01"),
-                    expiryDate = LocalDate.parse("2026-01-01"),
-                    comment = "Banned for life",
-                    audit = nomisAudit().copy(createDatetime = "2024-09-01T13:31"),
-                  ),
-                ),
-                audit = nomisAudit(),
+          person = contactPerson(nomisPersonId)
+            .withContact(
+              contactId = nomisContactId,
+              offenderNo = offenderNo,
+              restriction = ContactRestriction(
+                id = nomisContactRestrictionId,
+                type = CodeDescription(code = "BAN", description = "Banned"),
+                enteredStaff = ContactRestrictionEnteredStaff(staffId = 1, username = "Q1251T"),
+                effectiveDate = LocalDate.parse("2020-01-01"),
+                expiryDate = LocalDate.parse("2026-01-01"),
+                comment = "Banned for life",
+                audit = nomisAudit().copy(createDatetime = "2024-09-01T13:31"),
               ),
             ),
-          ),
         )
         dpsApiMock.stubCreatePrisonerContactRestriction(prisonerContactRestriction().copy(prisonerContactRestrictionId = dpsPrisonerContactRestrictionId))
         mappingApiMock.stubCreateContactRestrictionMappingFollowedBySuccess()
