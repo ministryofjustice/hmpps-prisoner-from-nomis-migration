@@ -195,19 +195,12 @@ class CourtSentencingSynchronisationService(
       )
     } else {
       dpsApiService.deleteCourtCase(courtCaseId = mapping.dpsCourtCaseId)
-      tryToDeleteCourtCaseMapping(mapping.dpsCourtCaseId)
+      mappingApiService.deleteCourtCaseMappingByDpsId(mapping.dpsCourtCaseId)
       telemetryClient.trackEvent(
         "court-case-synchronisation-deleted-success",
         telemetry + ("dpsCourtCaseId" to mapping.dpsCourtCaseId),
       )
     }
-  }
-
-  private suspend fun tryToDeleteCourtCaseMapping(dpsCourtCaseId: String) = runCatching {
-    mappingApiService.deleteCourtCaseMappingByDpsId(dpsCourtCaseId)
-  }.onFailure { e ->
-    telemetryClient.trackEvent("court-case-mapping-deleted-failed", mapOf("dpsCourtCaseId" to dpsCourtCaseId))
-    log.warn("Unable to delete mapping for court case $dpsCourtCaseId. Please delete manually", e)
   }
 
   private suspend fun tryToCreateMapping(
@@ -446,7 +439,7 @@ class CourtSentencingSynchronisationService(
       )
     } else {
       dpsApiService.deleteCourtAppearance(courtAppearanceId = mapping.dpsCourtAppearanceId)
-      tryToDeleteCourtAppearanceMapping(mapping.dpsCourtAppearanceId)
+      mappingApiService.deleteCourtAppearanceMappingByDpsId(mapping.dpsCourtAppearanceId)
       telemetryClient.trackEvent(
         "court-appearance-synchronisation-deleted-success",
         telemetry + ("dpsCourtAppearanceId" to mapping.dpsCourtAppearanceId),
@@ -608,16 +601,6 @@ class CourtSentencingSynchronisationService(
         throw ParentEntityNotFoundRetry("Received OFFENDER_CHARGES_UPDATED for charge ${event.chargeId} has never been mapped")
       }
     }
-  }
-
-  private suspend fun tryToDeleteCourtAppearanceMapping(dpsCourtAppearanceId: String) = runCatching {
-    mappingApiService.deleteCourtAppearanceMappingByDpsId(dpsCourtAppearanceId)
-  }.onFailure { e ->
-    telemetryClient.trackEvent(
-      "court-appearance-mapping-deleted-failed",
-      mapOf("dpsCourtAppearanceId" to dpsCourtAppearanceId),
-    )
-    log.warn("Unable to delete mapping for court appearance $dpsCourtAppearanceId. Please delete manually", e)
   }
 
   private suspend fun getDpsChargeMappings(nomisSentence: SentenceResponse): List<String> {

@@ -36,6 +36,13 @@ suspend inline fun WebClient.ResponseSpec.awaitBodilessEntityOrLogAndRethrowBadR
     }
     .awaitSingle()
 
+suspend inline fun WebClient.ResponseSpec.awaitBodilessEntityIgnoreNotFound() =
+  this.toBodilessEntity()
+    .onErrorResume(WebClientResponseException.NotFound::class.java) {
+      Mono.empty()
+    }
+    .awaitSingle()
+
 class DuplicateErrorResponse(
   val moreInfo: DuplicateErrorContent,
 )

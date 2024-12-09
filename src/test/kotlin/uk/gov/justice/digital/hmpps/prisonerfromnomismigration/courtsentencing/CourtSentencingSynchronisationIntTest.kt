@@ -544,79 +544,6 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           }
         }
       }
-
-      @Nested
-      @DisplayName("When mapping fails to be deleted")
-      inner class MappingCourtCaseDeleteFails {
-        @BeforeEach
-        fun setUp() {
-          courtSentencingMappingApiMockServer.stubGetByNomisId(
-            nomisCourtCaseId = NOMIS_COURT_CASE_ID,
-            dpsCourtCaseId = DPS_COURT_CASE_ID,
-            mapping = CourtCaseMappingDto(
-              nomisCourtCaseId = NOMIS_COURT_CASE_ID,
-              dpsCourtCaseId = DPS_COURT_CASE_ID,
-            ),
-          )
-
-          courtSentencingMappingApiMockServer.stubDeleteCourtCaseMappingByDpsId(status = HttpStatus.INTERNAL_SERVER_ERROR)
-          dpsCourtSentencingServer.stubDeleteCourtCase(DPS_COURT_CASE_ID)
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
-            courtCaseEvent(
-              eventType = "OFFENDER_CASES-DELETED",
-              bookingId = NOMIS_BOOKING_ID,
-              caseId = NOMIS_COURT_CASE_ID,
-              offenderNo = OFFENDER_ID_DISPLAY,
-            ),
-          ).also {
-            waitForTelemetry()
-          }
-        }
-
-        @Test
-        fun `will delete a court case in DPS`() {
-          await untilAsserted {
-            dpsCourtSentencingServer.verify(
-              1,
-              deleteRequestedFor(urlPathEqualTo("/legacy/court-case/$DPS_COURT_CASE_ID")),
-              // TODO DPS to implement this endpoint
-            )
-          }
-        }
-
-        @Test
-        fun `will try to delete Alert mapping once and record failure`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("court-case-mapping-deleted-failed"),
-              any(),
-              isNull(),
-            )
-
-            courtSentencingMappingApiMockServer.verify(
-              1,
-              deleteRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases/dps-court-case-id/$DPS_COURT_CASE_ID")),
-            )
-          }
-        }
-
-        @Test
-        fun `will track a telemetry event for success`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("court-case-synchronisation-deleted-success"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-                assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
-              },
-              isNull(),
-            )
-          }
-        }
-      }
     }
   }
 
@@ -1831,7 +1758,6 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             dpsCourtSentencingServer.verify(
               1,
               deleteRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_COURT_APPEARANCE_ID")),
-              // TODO DPS to implement this endpoint
             )
           }
         }
@@ -1839,78 +1765,6 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will delete mapping between DPS and NOMIS ids`() {
           await untilAsserted {
-            courtSentencingMappingApiMockServer.verify(
-              1,
-              deleteRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-appearances/dps-court-appearance-id/$DPS_COURT_APPEARANCE_ID")),
-            )
-          }
-        }
-
-        @Test
-        fun `will track a telemetry event for success`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("court-appearance-synchronisation-deleted-success"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-                assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
-              },
-              isNull(),
-            )
-          }
-        }
-      }
-
-      @Nested
-      @DisplayName("When mapping fails to be deleted")
-      inner class MappingCourtAppearanceDeleteFails {
-        @BeforeEach
-        fun setUp() {
-          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
-            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
-            dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
-            mapping = CourtAppearanceAllMappingDto(
-              nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
-              dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
-              courtCharges = emptyList(),
-            ),
-          )
-
-          courtSentencingMappingApiMockServer.stubDeleteCourtAppearanceMappingByDpsId(status = HttpStatus.INTERNAL_SERVER_ERROR)
-          dpsCourtSentencingServer.stubDeleteCourtAppearance(DPS_COURT_APPEARANCE_ID)
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
-            courtAppearanceEvent(
-              eventType = "COURT_EVENTS-DELETED",
-              bookingId = NOMIS_BOOKING_ID,
-              courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
-              offenderNo = OFFENDER_ID_DISPLAY,
-            ),
-          )
-        }
-
-        @Test
-        fun `will delete a court appearance in DPS`() {
-          await untilAsserted {
-            dpsCourtSentencingServer.verify(
-              1,
-              deleteRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_COURT_APPEARANCE_ID")),
-              // TODO DPS to implement this endpoint
-            )
-          }
-        }
-
-        @Test
-        fun `will try to delete court appearance mapping once and record failure`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("court-appearance-mapping-deleted-failed"),
-              any(),
-              isNull(),
-            )
-
             courtSentencingMappingApiMockServer.verify(
               1,
               deleteRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-appearances/dps-court-appearance-id/$DPS_COURT_APPEARANCE_ID")),
