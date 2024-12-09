@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCourtCase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityIgnoreNotFound
 
 @Service
 class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") private val webClient: WebClient) {
@@ -47,7 +48,7 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .delete()
       .uri("/legacy/court-case/{courtCaseId}", courtCaseId)
       .retrieve()
-      .awaitBodilessEntity()
+      .awaitBodilessEntityIgnoreNotFound()
 
   suspend fun createCourtAppearance(courtAppearance: LegacyCreateCourtAppearance): LegacyCourtAppearanceCreatedResponse =
     webClient
@@ -70,7 +71,7 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .delete()
       .uri("/legacy/court-appearance/{courtAppearanceId}", courtAppearanceId)
       .retrieve()
-      .awaitBodilessEntity()
+      .awaitBodilessEntityIgnoreNotFound()
 
   suspend fun associateExistingCourtCharge(courtAppearanceId: String, chargeId: String) =
     webClient
@@ -118,7 +119,7 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .delete()
       .uri("/sentence/{sentenceId}", sentenceId)
       .retrieve()
-      .awaitBodilessEntity()
+      .awaitBodilessEntityIgnoreNotFound()
 
   suspend fun updateSentence(sentenceId: String, sentence: CreateSentenceRequest): CreateSentenceResponse =
     webClient
