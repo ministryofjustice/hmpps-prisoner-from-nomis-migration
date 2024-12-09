@@ -155,6 +155,21 @@ class CaseNotesSynchronisationService(
     try {
       caseNotesMappingService.getMappingGivenNomisIdOrNull(event.caseNoteId)
         ?.also { mapping ->
+          caseNotesMappingService.getByDpsId(mapping.dpsCaseNoteId)
+            .filter { it.nomisCaseNoteId != event.caseNoteId }
+            .forEach { it ->
+              nomisApiService.deleteCaseNote(it.nomisCaseNoteId)
+              telemetryClient.trackEvent(
+                "casenotes-synchronisation-deleted-related-success",
+                mapOf(
+                  "offenderNo" to event.offenderIdDisplay,
+                  "dpsCaseNoteId" to mapping.dpsCaseNoteId,
+                  "nomisCaseNoteId" to it.nomisCaseNoteId.toString(),
+                  "bookingId" to it.nomisBookingId.toString(),
+                ),
+              )
+            }
+
           caseNotesService.deleteCaseNote(mapping.dpsCaseNoteId)
           caseNotesMappingService.deleteMappingGivenDpsId(mapping.dpsCaseNoteId)
           // Some syncs have separate telemetry for mapping failure but casenotes deletions are extremely rare

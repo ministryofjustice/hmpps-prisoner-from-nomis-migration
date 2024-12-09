@@ -37,4 +37,11 @@ class CaseNotesNomisApiService(@Qualifier("nomisApiWebClient") private val webCl
       .retrieve()
       .awaitBodilessEntity()
   }
+
+  suspend fun deleteCaseNote(caseNoteId: Long) {
+    webClient.delete()
+      .uri("/casenotes/{caseNoteId}", caseNoteId)
+      .retrieve()
+      .awaitBodilessEntity()
+  }
 }
