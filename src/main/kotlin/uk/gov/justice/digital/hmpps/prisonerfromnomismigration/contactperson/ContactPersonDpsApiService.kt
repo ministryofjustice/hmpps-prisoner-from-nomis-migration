@@ -23,6 +23,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncPrisonerContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncPrisonerContactRestriction
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
 
 @Service
@@ -83,6 +84,12 @@ class ContactPersonDpsApiService(@Qualifier("contactPersonApiWebClient") private
 
   suspend fun createContactRestriction(contactRestriction: SyncCreateContactRestrictionRequest): SyncContactRestriction = webClient.post()
     .uri("/sync/contact-restriction")
+    .bodyValue(contactRestriction)
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun updateContactRestriction(contactRestrictionId: Long, contactRestriction: SyncUpdateContactRestrictionRequest): SyncContactRestriction = webClient.put()
+    .uri("/sync/contact-restriction/{contactRestrictionId}", contactRestrictionId)
     .bodyValue(contactRestriction)
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
