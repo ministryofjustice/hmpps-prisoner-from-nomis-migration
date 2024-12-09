@@ -245,6 +245,12 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
             )
             .withRequestBody(
               WireMock.matchingJsonPath(
+                "appearances[0].legacyData.nextEventDateTime",
+                WireMock.equalTo("2020-02-01T00:00:00"),
+              ),
+            )
+            .withRequestBody(
+              WireMock.matchingJsonPath(
                 "appearances[0].legacyData.postedDate",
                 WireMock.not(WireMock.absent()),
               ),
@@ -942,6 +948,7 @@ fun buildCourtEventResponseCourtEventResponse(
   courtCaseId: Long = NOMIS_CASE_ID,
   courtId: String = "DER",
   eventDateTime: String = "2020-01-01T00:00:00",
+  nextEventDateTime: String = "2020-02-01T00:00:00",
   courtEventCharges: List<CourtEventChargeResponse> = listOf(
     CourtEventChargeResponse(
       eventId = NOMIS_APPEARANCE_1_ID,
@@ -980,4 +987,5 @@ fun buildCourtEventResponseCourtEventResponse(
     eventStatus = CodeDescription("SCH", "Scheduled (Approved)"),
     eventDateTime = eventDateTime,
     courtOrders = emptyList(),
+    nextEventDateTime = nextEventDateTime,
   )
