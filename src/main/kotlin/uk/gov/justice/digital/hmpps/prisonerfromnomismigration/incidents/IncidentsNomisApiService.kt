@@ -153,6 +153,7 @@ fun Staff.toUpsertStaff() =
 fun StaffParty.toUpsertStaffParty() =
   NomisStaffParty(
     staff = staff.toUpsertStaff(),
+    sequence = sequence,
     role = role.toUpsertCodeDescription(),
     comment = comment,
     createdBy = createdBy,
@@ -164,6 +165,7 @@ fun StaffParty.toUpsertStaffParty() =
 fun OffenderParty.toUpsertOffenderParty() =
   NomisOffenderParty(
     offender = offender.toUpsertOffender(),
+    sequence = sequence,
     role = role.toUpsertCodeDescription(),
     outcome = outcome?.toUpsertCodeDescription(),
     comment = comment,
@@ -186,6 +188,7 @@ fun Requirement.toUpsertRequirement() =
     staff = staff.toUpsertStaff(),
     prisonId = agencyId,
     comment = comment,
+    sequence = sequence,
     createdBy = createdBy,
     createDateTime = createDateTime,
     lastModifiedBy = lastModifiedBy,
