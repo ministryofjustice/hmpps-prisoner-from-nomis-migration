@@ -20,6 +20,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.I
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentsReconciliationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Offender
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderParty
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Question
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Requirement
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Response
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Staff
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
@@ -70,12 +73,23 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
     offenderParty: String = "A1234BC",
     status: String = "AWAN",
     type: String = "ATT_ESC_E",
+    clearStaff: Boolean = false,
+    clearQuestions: Boolean = false,
   ) {
     nomisApi.stubFor(
       get(urlPathEqualTo("/incidents/$nomisIncidentId"))
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(incidentResponse(nomisIncidentId = nomisIncidentId, offenderParty = offenderParty, status = status, type = type)),
+            .withBody(
+              incidentResponse(
+                nomisIncidentId = nomisIncidentId,
+                offenderParty = offenderParty,
+                status = status,
+                type = type,
+                clearQuestions = clearQuestions,
+                clearStaff = clearStaff,
+              ),
+            ),
         ),
     )
   }
@@ -204,6 +218,8 @@ private fun incidentResponse(
   offenderParty: String = "A1234BC",
   status: String = "AWAN",
   type: String = "ATT_ESC_E",
+  clearQuestions: Boolean = false,
+  clearStaff: Boolean = false,
 ): IncidentResponse =
   IncidentResponse(
     incidentId = nomisIncidentId,
@@ -244,9 +260,56 @@ private fun incidentResponse(
         role = CodeDescription("ABS", "Absconder"),
         createDateTime = "2024-02-06T12:36:00",
         createdBy = "JIM",
+        sequence = 1,
       ),
     ),
-    requirements = listOf(),
-    questions = listOf(),
+    requirements = listOf(
+      Requirement(
+        agencyId = "ASI",
+        staff = Staff(
+          username = "DJONES",
+          staffId = 485577,
+          firstName = "DAVE",
+          lastName = "JONES",
+        ),
+        sequence = 1,
+        comment = "Complete the incident report",
+        createDateTime = "2021-07-05T10:35:17",
+        createdBy = "JSMITH",
+        date = LocalDate.parse("2021-07-06"),
+      ),
+    ),
+    questions = if (clearQuestions) {
+      listOf()
+    } else {
+      listOf(
+        Question(
+          questionId = 1234,
+          sequence = 4,
+          question = "Was anybody hurt?",
+          answers = listOf(
+            Response(
+              sequence = 1,
+              recordingStaff = Staff(
+                username = "JSMITH",
+                staffId = 485572,
+                firstName = "JIM",
+                lastName = "SMITH",
+              ),
+              createDateTime = "2021-07-05T10:35:17",
+              createdBy = "JSMITH",
+              questionResponseId = null,
+              answer = "Yes",
+              responseDate = null,
+              comment = null,
+
+            ),
+          ),
+          createDateTime = "2021-07-05T10:35:17",
+          createdBy = "JSMITH",
+
+        ),
+      )
+    },
     history = listOf(),
   )

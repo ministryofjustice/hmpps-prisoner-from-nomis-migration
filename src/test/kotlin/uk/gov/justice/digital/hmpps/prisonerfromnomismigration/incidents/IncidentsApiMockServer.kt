@@ -78,6 +78,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         type = ReportWithDetails.Type.ATTEMPTED_ESCAPE_FROM_ESCORT,
         incidentDateAndTime = "2021-07-05T10:35:17",
         prisonId = "ASI",
+        location = "ASI",
         title = "There was an incident in the exercise yard",
         description = "Fred and Jimmy were fighting outside.",
         nomisType = "ATT_ESC_E",
@@ -87,6 +88,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           eventReference = nomisIncidentId,
           eventDateAndTime = "2021-07-05T10:35:17",
           prisonId = "ASI",
+          location = "ASI",
           title = "There was a problem",
           description = "Fighting was happening",
           createdAt = "2021-07-23T10:35:17",
@@ -107,9 +109,11 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
                 recordedBy = "JSMITH",
                 recordedAt = "2021-07-05T10:35:17",
                 additionalInformation = null,
+                sequence = 1,
               ),
             ),
             additionalInformation = null,
+            sequence = 1,
           ),
         ),
         history = listOf(
@@ -124,12 +128,14 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
                 responses = listOf(
                   HistoricalResponse(
                     response = "Yes",
+                    sequence = 1,
                     recordedBy = "Fred Jones",
                     recordedAt = "2021-07-05T10:35:17",
                     additionalInformation = "more info",
                   ),
                 ),
                 additionalInformation = "some info",
+                sequence = 1,
               ),
             ),
           ),
@@ -169,6 +175,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         modifiedAt = "2021-07-15T10:35:17",
         modifiedBy = "JSMITH",
         createdInNomis = true,
+        lastModifiedInNomis = true,
       )
 
     fun dpsBasicIncidentReport(dpsIncidentId: String = DPS_INCIDENT_ID, prisonId: String = "ASI") =
@@ -178,6 +185,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         type = ReportBasic.Type.SELF_HARM,
         incidentDateAndTime = "2021-07-05T10:35:17",
         prisonId = prisonId,
+        location = prisonId,
         title = "There was an incident in the exercise yard",
         description = "Fred and Jimmy were fighting outside.",
         reportedBy = "JSMITH",
@@ -188,6 +196,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         modifiedAt = "2021-07-05T10:35:17",
         modifiedBy = "JSMITH",
         createdInNomis = true,
+        lastModifiedInNomis = true,
       )
   }
 

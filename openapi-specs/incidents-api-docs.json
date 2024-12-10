@@ -10,7 +10,7 @@
     "license": {
       "name": "MIT"
     },
-    "version": "2024-10-11.3165.9686870"
+    "version": "2024-12-09.3758.680eaf8"
   },
   "servers": [
     {
@@ -139,6 +139,248 @@
         }
       }
     },
+    "/incident-reports/{reportId}/questions": {
+      "get": {
+        "tags": [
+          "Questions and responses forming an incident report"
+        ],
+        "summary": "Returns all non-historic questions in an incident report with their responses",
+        "description": "Requires role VIEW_INCIDENT_REPORTS",
+        "operationId": "getQuestionsAndResponses",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "description": "The incident report id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The incident report id",
+              "format": "uuid",
+              "example": "11111111-2222-3333-4444-555555555555"
+            },
+            "example": "11111111-2222-3333-4444-555555555555"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns all questions and responses in report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Question"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the VIEW_INCIDENT_REPORTS role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Questions and responses forming an incident report"
+        ],
+        "summary": "Add new questions with responses to the end of the current list or update them in place if question codes match",
+        "description": "Requires role MAINTAIN_INCIDENT_REPORTS and write scope. Authentication token must provide a username which is recorded as the report’s modifier.",
+        "operationId": "addOrUpdateQuestionsWithResponses",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "description": "The incident report id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The incident report id",
+              "format": "uuid",
+              "example": "11111111-2222-3333-4444-555555555555"
+            },
+            "example": "11111111-2222-3333-4444-555555555555"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "maxItems": 2147483647,
+                "minItems": 1,
+                "type": "array",
+                "description": "List of question and responses to add or update in place",
+                "items": {
+                  "$ref": "#/components/schemas/AddOrUpdateQuestionWithResponses"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Returns all questions and responses in report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Question"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the MAINTAIN_INCIDENT_REPORTS role with write scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Questions and responses forming an incident report"
+        ],
+        "summary": "Deletes the last question from an incident report along with its responses",
+        "description": "Requires role MAINTAIN_INCIDENT_REPORTS and write scope. Authentication token must provide a username which is recorded as the report’s modifier.",
+        "operationId": "deleteLastQuestionAndResponses",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "description": "The incident report id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The incident report id",
+              "format": "uuid",
+              "example": "11111111-2222-3333-4444-555555555555"
+            },
+            "example": "11111111-2222-3333-4444-555555555555"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns all questions and responses in report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Question"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing required role. Requires the MAINTAIN_INCIDENT_REPORTS role with write scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/sync/upsert": {
       "post": {
         "tags": [
@@ -151,19 +393,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "description": "Incident report created/updated in NOMIS",
-                "writeOnly": true,
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/NomisSyncRequest"
-                  },
-                  {
-                    "$ref": "#/components/schemas/NomisSyncCreateRequest"
-                  },
-                  {
-                    "$ref": "#/components/schemas/NomisSyncUpdateRequest"
-                  }
-                ]
+                "$ref": "#/components/schemas/NomisSyncRequest"
               }
             }
           },
@@ -243,17 +473,36 @@
         "operationId": "getBasicReports",
         "parameters": [
           {
+            "name": "location",
+            "in": "query",
+            "description": "Filter by given locations, typically prison IDs",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "maxLength": 20,
+                "minLength": 2,
+                "type": "string",
+                "example": "MDI"
+              },
+              "default": null
+            },
+            "example": "LEI,MDI"
+          },
+          {
             "name": "prisonId",
             "in": "query",
-            "description": "Filter by given prison ID",
+            "description": "Filter by given location, typically a prison ID. Ignored if `location` is also used.",
             "required": false,
+            "deprecated": true,
             "schema": {
               "maxLength": 6,
               "minLength": 2,
               "type": "string",
-              "description": "Filter by given prison ID",
+              "description": "Filter by given location, typically a prison ID. Ignored if `location` is also used.",
               "nullable": true,
               "example": "MDI",
+              "deprecated": true,
               "default": "null"
             },
             "example": "MDI"
@@ -311,7 +560,6 @@
                 "ATTEMPTED_ESCAPE_FROM_ESCORT",
                 "BOMB_THREAT",
                 "BREACH_OF_SECURITY",
-                "DAMAGE",
                 "DEATH_IN_CUSTODY",
                 "DEATH_OTHER",
                 "DISORDER",
@@ -330,6 +578,7 @@
                 "SELF_HARM",
                 "TEMPORARY_RELEASE_FAILURE",
                 "TOOL_LOSS",
+                "DAMAGE",
                 "OLD_ASSAULT",
                 "OLD_ASSAULT1",
                 "OLD_ASSAULT2",
@@ -411,6 +660,22 @@
               "example": "2024-05-31"
             },
             "example": "2024-05-31"
+          },
+          {
+            "name": "reportedByUsername",
+            "in": "query",
+            "description": "Filter for incidents reported by username",
+            "required": false,
+            "schema": {
+              "maxLength": 2147483647,
+              "minLength": 3,
+              "type": "string",
+              "description": "Filter for incidents reported by username",
+              "nullable": true,
+              "example": "abc12a",
+              "default": "null"
+            },
+            "example": "abc12a"
           },
           {
             "name": "involvingStaffUsername",
@@ -613,6 +878,7 @@
             "schema": {
               "type": "string",
               "description": "The incident report id",
+              "format": "uuid",
               "example": "11111111-2222-3333-4444-555555555555"
             },
             "example": "11111111-2222-3333-4444-555555555555"
@@ -680,6 +946,7 @@
             "schema": {
               "type": "string",
               "description": "The incident report id",
+              "format": "uuid",
               "example": "11111111-2222-3333-4444-555555555555"
             },
             "example": "11111111-2222-3333-4444-555555555555"
@@ -752,239 +1019,6 @@
         }
       }
     },
-    "/incident-reports/{reportId}/questions": {
-      "get": {
-        "tags": [
-          "Questions and responses forming an incident report"
-        ],
-        "summary": "Returns all non-historic questions in an incident report with their responses",
-        "description": "Requires role VIEW_INCIDENT_REPORTS",
-        "operationId": "getQuestionsAndResponses",
-        "parameters": [
-          {
-            "name": "reportId",
-            "in": "path",
-            "description": "The incident report id",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "The incident report id",
-              "example": "11111111-2222-3333-4444-555555555555"
-            },
-            "example": "11111111-2222-3333-4444-555555555555"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Returns all questions and responses in report",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Question"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized to access this endpoint",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Missing required role. Requires the VIEW_INCIDENT_REPORTS role",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Data not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Questions and responses forming an incident report"
-        ],
-        "summary": "Adds a new question with responses to the end of the list",
-        "description": "Requires role MAINTAIN_INCIDENT_REPORTS and write scope. Authentication token must provide a username which is recorded as the report’s modifier.",
-        "operationId": "addQuestionWithResponses",
-        "parameters": [
-          {
-            "name": "reportId",
-            "in": "path",
-            "description": "The incident report id",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "The incident report id",
-              "example": "11111111-2222-3333-4444-555555555555"
-            },
-            "example": "11111111-2222-3333-4444-555555555555"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AddQuestionWithResponses"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Returns all questions and responses in report",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Question"
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized to access this endpoint",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Missing required role. Requires the MAINTAIN_INCIDENT_REPORTS role with write scope.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Data not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Questions and responses forming an incident report"
-        ],
-        "summary": "Deletes the last question from an incident report along with its responses",
-        "description": "Requires role MAINTAIN_INCIDENT_REPORTS and write scope. Authentication token must provide a username which is recorded as the report’s modifier.",
-        "operationId": "deleteLastQuestionAndResponses",
-        "parameters": [
-          {
-            "name": "reportId",
-            "in": "path",
-            "description": "The incident report id",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "The incident report id",
-              "example": "11111111-2222-3333-4444-555555555555"
-            },
-            "example": "11111111-2222-3333-4444-555555555555"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Returns all questions and responses in report",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Question"
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized to access this endpoint",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Missing required role. Requires the MAINTAIN_INCIDENT_REPORTS role with write scope.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Data not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/incident-reports/{reportId}/prisoners-involved": {
       "get": {
         "tags": [
@@ -1002,6 +1036,7 @@
             "schema": {
               "type": "string",
               "description": "The incident report id",
+              "format": "uuid",
               "example": "11111111-2222-3333-4444-555555555555"
             },
             "example": "11111111-2222-3333-4444-555555555555"
@@ -1057,7 +1092,7 @@
         "tags": [
           "Objects related to incident reports"
         ],
-        "summary": "Adds an invovled prisoner to this incident report",
+        "summary": "Adds an involved prisoner to this incident report",
         "description": "Requires role MAINTAIN_INCIDENT_REPORTS and write scope. Authentication token must provide a username which is recorded as the report’s modifier.",
         "operationId": "addObject_1",
         "parameters": [
@@ -1069,6 +1104,7 @@
             "schema": {
               "type": "string",
               "description": "The incident report id",
+              "format": "uuid",
               "example": "11111111-2222-3333-4444-555555555555"
             },
             "example": "11111111-2222-3333-4444-555555555555"
@@ -1158,6 +1194,7 @@
             "schema": {
               "type": "string",
               "description": "The incident report id",
+              "format": "uuid",
               "example": "11111111-2222-3333-4444-555555555555"
             },
             "example": "11111111-2222-3333-4444-555555555555"
@@ -1225,6 +1262,7 @@
             "schema": {
               "type": "string",
               "description": "The incident report id",
+              "format": "uuid",
               "example": "11111111-2222-3333-4444-555555555555"
             },
             "example": "11111111-2222-3333-4444-555555555555"
@@ -1314,6 +1352,7 @@
             "schema": {
               "type": "string",
               "description": "The incident report id",
+              "format": "uuid",
               "example": "11111111-2222-3333-4444-555555555555"
             },
             "example": "11111111-2222-3333-4444-555555555555"
@@ -1324,8 +1363,9 @@
             "description": "The index of the object to delete (starts from 1)",
             "required": true,
             "schema": {
-              "type": "string",
+              "type": "integer",
               "description": "The index of the object to delete (starts from 1)",
+              "format": "int32",
               "example": 1
             },
             "example": 1
@@ -1393,6 +1433,7 @@
             "schema": {
               "type": "string",
               "description": "The incident report id",
+              "format": "uuid",
               "example": "11111111-2222-3333-4444-555555555555"
             },
             "example": "11111111-2222-3333-4444-555555555555"
@@ -1403,8 +1444,9 @@
             "description": "The index of the object to update (starts from 1)",
             "required": true,
             "schema": {
-              "type": "string",
+              "type": "integer",
               "description": "The index of the object to update (starts from 1)",
+              "format": "int32",
               "example": 1
             },
             "example": 1
@@ -1494,6 +1536,7 @@
             "schema": {
               "type": "string",
               "description": "The incident report id",
+              "format": "uuid",
               "example": "11111111-2222-3333-4444-555555555555"
             },
             "example": "11111111-2222-3333-4444-555555555555"
@@ -1504,8 +1547,9 @@
             "description": "The index of the object to delete (starts from 1)",
             "required": true,
             "schema": {
-              "type": "string",
+              "type": "integer",
               "description": "The index of the object to delete (starts from 1)",
+              "format": "int32",
               "example": 1
             },
             "example": 1
@@ -1573,6 +1617,7 @@
             "schema": {
               "type": "string",
               "description": "The incident report id",
+              "format": "uuid",
               "example": "11111111-2222-3333-4444-555555555555"
             },
             "example": "11111111-2222-3333-4444-555555555555"
@@ -1583,8 +1628,9 @@
             "description": "The index of the object to update (starts from 1)",
             "required": true,
             "schema": {
-              "type": "string",
+              "type": "integer",
               "description": "The index of the object to update (starts from 1)",
+              "format": "int32",
               "example": 1
             },
             "example": 1
@@ -1674,6 +1720,7 @@
             "schema": {
               "type": "string",
               "description": "The incident report id",
+              "format": "uuid",
               "example": "11111111-2222-3333-4444-555555555555"
             },
             "example": "11111111-2222-3333-4444-555555555555"
@@ -1684,8 +1731,9 @@
             "description": "The index of the object to delete (starts from 1)",
             "required": true,
             "schema": {
-              "type": "string",
+              "type": "integer",
               "description": "The index of the object to delete (starts from 1)",
+              "format": "int32",
               "example": 1
             },
             "example": 1
@@ -1753,6 +1801,7 @@
             "schema": {
               "type": "string",
               "description": "The incident report id",
+              "format": "uuid",
               "example": "11111111-2222-3333-4444-555555555555"
             },
             "example": "11111111-2222-3333-4444-555555555555"
@@ -1763,8 +1812,9 @@
             "description": "The index of the object to update (starts from 1)",
             "required": true,
             "schema": {
-              "type": "string",
+              "type": "integer",
               "description": "The index of the object to update (starts from 1)",
+              "format": "int32",
               "example": 1
             },
             "example": 1
@@ -1854,6 +1904,7 @@
             "schema": {
               "type": "string",
               "description": "The incident report id",
+              "format": "uuid",
               "example": "11111111-2222-3333-4444-555555555555"
             },
             "example": "11111111-2222-3333-4444-555555555555"
@@ -1918,6 +1969,7 @@
             "schema": {
               "type": "string",
               "description": "The incident report id",
+              "format": "uuid",
               "example": "11111111-2222-3333-4444-555555555555"
             },
             "example": "11111111-2222-3333-4444-555555555555"
@@ -1928,10 +1980,10 @@
             "description": "Whether orphaned events should also be deleted",
             "required": false,
             "schema": {
-              "type": "string",
+              "type": "boolean",
               "description": "Whether orphaned events should also be deleted",
               "example": false,
-              "default": "true"
+              "default": true
             },
             "example": false
           }
@@ -2005,6 +2057,7 @@
             "schema": {
               "type": "string",
               "description": "The internal ID of the report to update",
+              "format": "uuid",
               "example": "11111111-2222-3333-4444-555555555555"
             },
             "example": "11111111-2222-3333-4444-555555555555"
@@ -2091,6 +2144,7 @@
             "schema": {
               "type": "string",
               "description": "The internal ID of the report to update",
+              "format": "uuid",
               "example": "11111111-2222-3333-4444-555555555555"
             },
             "example": "11111111-2222-3333-4444-555555555555"
@@ -2177,6 +2231,7 @@
             "schema": {
               "type": "string",
               "description": "The internal ID of the report to update",
+              "format": "uuid",
               "example": "11111111-2222-3333-4444-555555555555"
             },
             "example": "11111111-2222-3333-4444-555555555555"
@@ -2295,6 +2350,16 @@
           }
         ],
         "responses": {
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "204": {
             "description": "Request successfully processed - no content found",
             "content": {
@@ -2331,16 +2396,6 @@
               "application/json": {
                 "schema": {
                   "type": "object"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -2415,6 +2470,7 @@
             "schema": {
               "type": "string",
               "description": "The incident report id",
+              "format": "uuid",
               "example": "11111111-2222-3333-4444-555555555555"
             },
             "example": "11111111-2222-3333-4444-555555555555"
@@ -2481,7 +2537,7 @@
             "schema": {
               "type": "string",
               "description": "The incident report reference",
-              "example": 2342341242
+              "example": "2342341242"
             },
             "example": 2342341242
           }
@@ -2547,7 +2603,7 @@
             "schema": {
               "type": "string",
               "description": "The incident report reference",
-              "example": 2342341242
+              "example": "2342341242"
             },
             "example": 2342341242
           }
@@ -2606,20 +2662,21 @@
         "operationId": "getEvents",
         "parameters": [
           {
-            "name": "prisonId",
+            "name": "location",
             "in": "query",
-            "description": "Filter by given prison ID",
+            "description": "Filter by given locations, typically prison IDs",
             "required": false,
             "schema": {
-              "maxLength": 6,
-              "minLength": 2,
-              "type": "string",
-              "description": "Filter by given prison ID",
-              "nullable": true,
-              "example": "MDI",
-              "default": "null"
+              "type": "array",
+              "items": {
+                "maxLength": 20,
+                "minLength": 2,
+                "type": "string",
+                "example": "MDI"
+              },
+              "default": null
             },
-            "example": "MDI"
+            "example": "LEI,MDI"
           },
           {
             "name": "eventDateFrom",
@@ -2748,6 +2805,7 @@
             "schema": {
               "type": "string",
               "description": "The event id",
+              "format": "uuid",
               "example": "11111111-2222-3333-4444-555555555555"
             },
             "example": "11111111-2222-3333-4444-555555555555"
@@ -2814,7 +2872,7 @@
             "schema": {
               "type": "string",
               "description": "The event reference",
-              "example": 2342341242
+              "example": "2342341242"
             },
             "example": 2342341242
           }
@@ -2926,7 +2984,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/ConstantDescription"
+                    "$ref": "#/components/schemas/StaffRoleConstantDescription"
                   }
                 }
               }
@@ -2974,7 +3032,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/ConstantDescription"
+                    "$ref": "#/components/schemas/PrisonerOutcomeConstantDescription"
                   }
                 }
               }
@@ -3122,6 +3180,161 @@
           }
         },
         "description": "Error response",
+        "readOnly": true
+      },
+      "AddOrUpdateQuestionResponse": {
+        "minLength": 1,
+        "required": [
+          "response"
+        ],
+        "type": "object",
+        "properties": {
+          "response": {
+            "maxLength": 2147483647,
+            "minLength": 1,
+            "type": "string",
+            "description": "The response text as seen by downstream data consumers"
+          },
+          "responseDate": {
+            "type": "string",
+            "description": "Optional response as a date",
+            "format": "date",
+            "nullable": true,
+            "example": "2024-04-29"
+          },
+          "additionalInformation": {
+            "type": "string",
+            "description": "Optional additional information",
+            "nullable": true,
+            "default": "null"
+          }
+        },
+        "description": "A response to a question",
+        "writeOnly": true
+      },
+      "AddOrUpdateQuestionWithResponses": {
+        "required": [
+          "code",
+          "question",
+          "responses"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "maxLength": 60,
+            "minLength": 1,
+            "type": "string",
+            "description": "The question code; used as a unique identifier within one report"
+          },
+          "question": {
+            "maxLength": 2147483647,
+            "minLength": 1,
+            "type": "string",
+            "description": "The question text as seen by downstream data consumers"
+          },
+          "responses": {
+            "minLength": 1,
+            "maxItems": 2147483647,
+            "minItems": 1,
+            "type": "array",
+            "description": "The responses to this question",
+            "items": {
+              "$ref": "#/components/schemas/AddOrUpdateQuestionResponse"
+            }
+          },
+          "additionalInformation": {
+            "type": "string",
+            "description": "Optional additional information",
+            "nullable": true,
+            "default": "null"
+          }
+        },
+        "description": "Payload to add question with responses to an incident report or, if the question code exists in the report, update the question and overwrite responses",
+        "writeOnly": true
+      },
+      "Question": {
+        "required": [
+          "code",
+          "question",
+          "responses",
+          "sequence"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The question code; used as a unique identifier within one report and typically refers to a specific question for an incident type"
+          },
+          "question": {
+            "type": "string",
+            "description": "The question text as seen by downstream data consumers"
+          },
+          "sequence": {
+            "type": "integer",
+            "description": "Sequence of the questions",
+            "format": "int32",
+            "deprecated": true
+          },
+          "responses": {
+            "type": "array",
+            "description": "The responses to this question",
+            "items": {
+              "$ref": "#/components/schemas/Response"
+            }
+          },
+          "additionalInformation": {
+            "type": "string",
+            "description": "Optional additional information",
+            "nullable": true
+          }
+        },
+        "description": "Question with responses making up an incident report",
+        "readOnly": true
+      },
+      "Response": {
+        "required": [
+          "recordedAt",
+          "recordedBy",
+          "response",
+          "sequence"
+        ],
+        "type": "object",
+        "properties": {
+          "response": {
+            "type": "string",
+            "description": "The response text as seen by downstream data consumers"
+          },
+          "sequence": {
+            "type": "integer",
+            "description": "Sequence of the responses",
+            "format": "int32",
+            "deprecated": true
+          },
+          "responseDate": {
+            "type": "string",
+            "description": "Optional response as a date",
+            "format": "date",
+            "nullable": true,
+            "example": "2024-04-29"
+          },
+          "additionalInformation": {
+            "type": "string",
+            "description": "Optional additional information",
+            "nullable": true,
+            "default": "null"
+          },
+          "recordedBy": {
+            "type": "string",
+            "description": "Username of person who responded to the question"
+          },
+          "recordedAt": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "When the response was made",
+            "example": "2021-07-05T10:35:17"
+          }
+        },
+        "description": "Response to a question making up an incident report",
         "readOnly": true
       },
       "NomisCode": {
@@ -3297,6 +3510,11 @@
         "properties": {
           "offender": {
             "$ref": "#/components/schemas/NomisOffender"
+          },
+          "sequence": {
+            "type": "integer",
+            "description": "The sequence number providing an order for a list of offender parties",
+            "format": "int32"
           },
           "role": {
             "$ref": "#/components/schemas/NomisCode"
@@ -3517,6 +3735,11 @@
         ],
         "type": "object",
         "properties": {
+          "sequence": {
+            "type": "integer",
+            "description": "The sequence number providing an order for a list of requirements",
+            "format": "int32"
+          },
           "comment": {
             "type": "string",
             "description": "The update required to the incident report"
@@ -3655,6 +3878,11 @@
           "staff": {
             "$ref": "#/components/schemas/NomisStaff"
           },
+          "sequence": {
+            "type": "integer",
+            "description": "The sequence number providing an order for a list of staff parties",
+            "format": "int32"
+          },
           "role": {
             "$ref": "#/components/schemas/NomisCode"
           },
@@ -3703,36 +3931,6 @@
         },
         "description": "Status details"
       },
-      "NomisSyncRequest": {
-        "required": [
-          "id",
-          "incidentReport",
-          "initialMigration"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "Incident report ID, required for updates and must be omitted for initial migration",
-            "format": "uuid",
-            "nullable": true,
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-          },
-          "initialMigration": {
-            "type": "boolean",
-            "description": "Set to true for initial migration, omit or set to false for updates",
-            "example": true,
-            "enum": [
-              true
-            ]
-          },
-          "incidentReport": {
-            "$ref": "#/components/schemas/NomisReport"
-          }
-        },
-        "description": "Incident report created or updated in NOMIS",
-        "writeOnly": true
-      },
       "NomisSyncCreateRequest": {
         "required": [
           "incidentReport",
@@ -3755,9 +3953,48 @@
         "description": "Incident report created in NOMIS",
         "writeOnly": true
       },
+      "NomisSyncRequest": {
+        "required": [
+          "incidentReport"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Incident report ID, required for updates and must be omitted for initial migration",
+            "format": "uuid",
+            "nullable": true,
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "initialMigration": {
+            "type": "boolean",
+            "description": "Set to true for initial migration, omit or set to false for updates",
+            "example": true,
+            "default": false,
+            "enum": [
+              true
+            ]
+          },
+          "incidentReport": {
+            "$ref": "#/components/schemas/NomisReport"
+          }
+        },
+        "description": "Incident report created/updated in NOMIS",
+        "writeOnly": true,
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/NomisSyncRequest"
+          },
+          {
+            "$ref": "#/components/schemas/NomisSyncCreateRequest"
+          },
+          {
+            "$ref": "#/components/schemas/NomisSyncUpdateRequest"
+          }
+        ]
+      },
       "NomisSyncUpdateRequest": {
         "required": [
-          "id",
           "incidentReport"
         ],
         "type": "object",
@@ -3802,7 +4039,7 @@
         "required": [
           "description",
           "incidentDateAndTime",
-          "prisonId",
+          "location",
           "title",
           "type"
         ],
@@ -3818,7 +4055,6 @@
               "ATTEMPTED_ESCAPE_FROM_ESCORT",
               "BOMB_THREAT",
               "BREACH_OF_SECURITY",
-              "DAMAGE",
               "DEATH_IN_CUSTODY",
               "DEATH_OTHER",
               "DISORDER",
@@ -3837,6 +4073,7 @@
               "SELF_HARM",
               "TEMPORARY_RELEASE_FAILURE",
               "TOOL_LOSS",
+              "DAMAGE",
               "OLD_ASSAULT",
               "OLD_ASSAULT1",
               "OLD_ASSAULT2",
@@ -3867,11 +4104,11 @@
             "description": "When the incident took place",
             "example": "2021-07-05T10:35:17"
           },
-          "prisonId": {
-            "maxLength": 6,
+          "location": {
+            "maxLength": 20,
             "minLength": 2,
             "type": "string",
-            "description": "The NOMIS id of the prison where incident took place",
+            "description": "The location where incident took place, typically a NOMIS prison ID",
             "example": "MDI"
           },
           "title": {
@@ -3946,6 +4183,7 @@
           "eventDateAndTime",
           "eventReference",
           "id",
+          "location",
           "modifiedAt",
           "modifiedBy",
           "prisonId",
@@ -3968,9 +4206,9 @@
             "description": "When the incident took place",
             "example": "2021-07-05T10:35:17"
           },
-          "prisonId": {
+          "location": {
             "type": "string",
-            "description": "The NOMIS id of the prison where incident took place",
+            "description": "The location where incident took place, typically a NOMIS prison ID",
             "example": "MDI"
           },
           "title": {
@@ -3996,6 +4234,12 @@
           "modifiedBy": {
             "type": "string",
             "description": "Username of the person who last changed this event"
+          },
+          "prisonId": {
+            "type": "string",
+            "description": "The location where incident took place, typically a NOMIS prison ID",
+            "example": "MDI",
+            "deprecated": true
           }
         },
         "description": "Event linking multiple incident reports",
@@ -4005,17 +4249,24 @@
         "required": [
           "code",
           "question",
-          "responses"
+          "responses",
+          "sequence"
         ],
         "type": "object",
         "properties": {
           "code": {
             "type": "string",
-            "description": "The question code"
+            "description": "The question code; used as a unique identifier within one report and typically refers to a specific question for an incident type"
           },
           "question": {
             "type": "string",
-            "description": "The question"
+            "description": "The question text as seen by downstream data consumers"
+          },
+          "sequence": {
+            "type": "integer",
+            "description": "Sequence of the questions",
+            "format": "int32",
+            "deprecated": true
           },
           "responses": {
             "type": "array",
@@ -4037,13 +4288,20 @@
         "required": [
           "recordedAt",
           "recordedBy",
-          "response"
+          "response",
+          "sequence"
         ],
         "type": "object",
         "properties": {
           "response": {
             "type": "string",
-            "description": "The response"
+            "description": "The response text as seen by downstream data consumers"
+          },
+          "sequence": {
+            "type": "integer",
+            "description": "Sequence of the responses",
+            "format": "int32",
+            "deprecated": true
           },
           "responseDate": {
             "type": "string",
@@ -4090,7 +4348,6 @@
               "ATTEMPTED_ESCAPE_FROM_ESCORT",
               "BOMB_THREAT",
               "BREACH_OF_SECURITY",
-              "DAMAGE",
               "DEATH_IN_CUSTODY",
               "DEATH_OTHER",
               "DISORDER",
@@ -4109,6 +4366,7 @@
               "SELF_HARM",
               "TEMPORARY_RELEASE_FAILURE",
               "TOOL_LOSS",
+              "DAMAGE",
               "OLD_ASSAULT",
               "OLD_ASSAULT1",
               "OLD_ASSAULT2",
@@ -4228,38 +4486,6 @@
         "description": "Prisoner involved in an incident",
         "readOnly": true
       },
-      "Question": {
-        "required": [
-          "code",
-          "question",
-          "responses"
-        ],
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "string",
-            "description": "The question code"
-          },
-          "question": {
-            "type": "string",
-            "description": "The question"
-          },
-          "responses": {
-            "type": "array",
-            "description": "The responses to this question",
-            "items": {
-              "$ref": "#/components/schemas/Response"
-            }
-          },
-          "additionalInformation": {
-            "type": "string",
-            "description": "Optional additional information",
-            "nullable": true
-          }
-        },
-        "description": "Question with responses making up an incident report",
-        "readOnly": true
-      },
       "ReportWithDetails": {
         "required": [
           "correctionRequests",
@@ -4271,6 +4497,8 @@
           "historyOfStatuses",
           "id",
           "incidentDateAndTime",
+          "lastModifiedInNomis",
+          "location",
           "modifiedAt",
           "modifiedBy",
           "prisonId",
@@ -4302,7 +4530,6 @@
               "ATTEMPTED_ESCAPE_FROM_ESCORT",
               "BOMB_THREAT",
               "BREACH_OF_SECURITY",
-              "DAMAGE",
               "DEATH_IN_CUSTODY",
               "DEATH_OTHER",
               "DISORDER",
@@ -4321,6 +4548,7 @@
               "SELF_HARM",
               "TEMPORARY_RELEASE_FAILURE",
               "TOOL_LOSS",
+              "DAMAGE",
               "OLD_ASSAULT",
               "OLD_ASSAULT1",
               "OLD_ASSAULT2",
@@ -4350,7 +4578,7 @@
             "type": "string",
             "example": "2021-07-05T10:35:17"
           },
-          "prisonId": {
+          "location": {
             "type": "string"
           },
           "title": {
@@ -4398,6 +4626,9 @@
             "type": "string"
           },
           "createdInNomis": {
+            "type": "boolean"
+          },
+          "lastModifiedInNomis": {
             "type": "boolean"
           },
           "event": {
@@ -4456,48 +4687,15 @@
             "description": "NOMIS incident report type code, which may be null for newer incident types",
             "nullable": true,
             "deprecated": true
+          },
+          "prisonId": {
+            "type": "string",
+            "description": "The location where incident took place, typically a NOMIS prison ID",
+            "example": "MDI",
+            "deprecated": true
           }
         },
         "description": "Incident report with all related information",
-        "readOnly": true
-      },
-      "Response": {
-        "required": [
-          "recordedAt",
-          "recordedBy",
-          "response"
-        ],
-        "type": "object",
-        "properties": {
-          "response": {
-            "type": "string",
-            "description": "The response"
-          },
-          "responseDate": {
-            "type": "string",
-            "description": "Optional response as a date",
-            "format": "date",
-            "nullable": true,
-            "example": "2024-04-29"
-          },
-          "additionalInformation": {
-            "type": "string",
-            "description": "Optional additional information",
-            "nullable": true,
-            "default": "null"
-          },
-          "recordedBy": {
-            "type": "string",
-            "description": "Username of person who responded to the question"
-          },
-          "recordedAt": {
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
-            "type": "string",
-            "description": "When the response was made",
-            "example": "2021-07-05T10:35:17"
-          }
-        },
-        "description": "Response to a question making up an incident report",
         "readOnly": true
       },
       "StaffInvolvement": {
@@ -4630,76 +4828,6 @@
           }
         },
         "description": "Add an involved member of staff to an incident report",
-        "writeOnly": true
-      },
-      "AddQuestionResponse": {
-        "minLength": 1,
-        "required": [
-          "response"
-        ],
-        "type": "object",
-        "properties": {
-          "response": {
-            "maxLength": 2147483647,
-            "minLength": 1,
-            "type": "string",
-            "description": "The response"
-          },
-          "responseDate": {
-            "type": "string",
-            "description": "Optional response as a date",
-            "format": "date",
-            "nullable": true,
-            "example": "2024-04-29"
-          },
-          "additionalInformation": {
-            "type": "string",
-            "description": "Optional additional information",
-            "nullable": true,
-            "default": "null"
-          }
-        },
-        "description": "A response to a question",
-        "writeOnly": true
-      },
-      "AddQuestionWithResponses": {
-        "required": [
-          "code",
-          "question",
-          "responses"
-        ],
-        "type": "object",
-        "properties": {
-          "code": {
-            "maxLength": 60,
-            "minLength": 1,
-            "type": "string",
-            "description": "The question code"
-          },
-          "question": {
-            "maxLength": 2147483647,
-            "minLength": 1,
-            "type": "string",
-            "description": "The question"
-          },
-          "responses": {
-            "minLength": 1,
-            "maxItems": 2147483647,
-            "minItems": 1,
-            "type": "array",
-            "description": "The responses to this question",
-            "items": {
-              "$ref": "#/components/schemas/AddQuestionResponse"
-            }
-          },
-          "additionalInformation": {
-            "type": "string",
-            "description": "Optional additional information",
-            "nullable": true,
-            "default": "null"
-          }
-        },
-        "description": "Payload to add question with responses to an incident report",
         "writeOnly": true
       },
       "AddPrisonerInvolvement": {
@@ -4954,11 +5082,11 @@
             "description": "When the incident took place",
             "example": "2021-07-05T10:35:17"
           },
-          "prisonId": {
-            "maxLength": 6,
+          "location": {
+            "maxLength": 20,
             "minLength": 2,
             "type": "string",
-            "description": "The NOMIS id of the prison where incident took place",
+            "description": "The location where incident took place, typically a NOMIS prison ID",
             "nullable": true,
             "example": "MDI",
             "default": "null"
@@ -4996,6 +5124,8 @@
           "description",
           "id",
           "incidentDateAndTime",
+          "lastModifiedInNomis",
+          "location",
           "modifiedAt",
           "modifiedBy",
           "prisonId",
@@ -5027,7 +5157,6 @@
               "ATTEMPTED_ESCAPE_FROM_ESCORT",
               "BOMB_THREAT",
               "BREACH_OF_SECURITY",
-              "DAMAGE",
               "DEATH_IN_CUSTODY",
               "DEATH_OTHER",
               "DISORDER",
@@ -5046,6 +5175,7 @@
               "SELF_HARM",
               "TEMPORARY_RELEASE_FAILURE",
               "TOOL_LOSS",
+              "DAMAGE",
               "OLD_ASSAULT",
               "OLD_ASSAULT1",
               "OLD_ASSAULT2",
@@ -5076,9 +5206,9 @@
             "description": "When the incident took place",
             "example": "2021-07-05T10:35:17"
           },
-          "prisonId": {
+          "location": {
             "type": "string",
-            "description": "The NOMIS id of the prison where incident took place",
+            "description": "The location where incident took place, typically a NOMIS prison ID",
             "example": "MDI"
           },
           "title": {
@@ -5138,6 +5268,15 @@
           },
           "createdInNomis": {
             "type": "boolean"
+          },
+          "lastModifiedInNomis": {
+            "type": "boolean"
+          },
+          "prisonId": {
+            "type": "string",
+            "description": "The location where incident took place, typically a NOMIS prison ID",
+            "example": "MDI",
+            "deprecated": true
           }
         },
         "description": "Incident report with only key information",
@@ -5160,7 +5299,6 @@
               "ATTEMPTED_ESCAPE_FROM_ESCORT",
               "BOMB_THREAT",
               "BREACH_OF_SECURITY",
-              "DAMAGE",
               "DEATH_IN_CUSTODY",
               "DEATH_OTHER",
               "DISORDER",
@@ -5179,6 +5317,7 @@
               "SELF_HARM",
               "TEMPORARY_RELEASE_FAILURE",
               "TOOL_LOSS",
+              "DAMAGE",
               "OLD_ASSAULT",
               "OLD_ASSAULT1",
               "OLD_ASSAULT2",
@@ -5360,6 +5499,7 @@
           "eventDateAndTime",
           "eventReference",
           "id",
+          "location",
           "modifiedAt",
           "modifiedBy",
           "prisonId",
@@ -5380,7 +5520,7 @@
             "type": "string",
             "example": "2021-07-05T10:35:17"
           },
-          "prisonId": {
+          "location": {
             "type": "string"
           },
           "title": {
@@ -5408,6 +5548,12 @@
             "items": {
               "$ref": "#/components/schemas/ReportBasic"
             }
+          },
+          "prisonId": {
+            "type": "string",
+            "description": "The location where incident took place, typically a NOMIS prison ID",
+            "example": "MDI",
+            "deprecated": true
           }
         },
         "description": "Event linking multiple incident reports (including key report information)",
@@ -5542,25 +5688,38 @@
         "description": "Report status constant",
         "readOnly": true
       },
-      "ConstantDescription": {
+      "StaffRoleConstantDescription": {
         "required": [
           "code",
-          "description"
+          "description",
+          "nomisCodes"
         ],
         "type": "object",
         "properties": {
           "code": {
             "type": "string",
             "description": "Machine-readable identifier of this value",
-            "example": "VICTIM"
+            "example": "ACTIVELY_INVOLVED"
           },
           "description": {
             "type": "string",
             "description": "Human-readable description of this value",
-            "example": "Victim"
+            "example": "Actively involved"
+          },
+          "nomisCodes": {
+            "type": "array",
+            "description": "Machine-readable NOMIS identifiers of this value, which may be empty for newer staff roles",
+            "example": "[AI, INV]",
+            "deprecated": true,
+            "items": {
+              "type": "string",
+              "description": "Machine-readable NOMIS identifiers of this value, which may be empty for newer staff roles",
+              "example": "[AI, INV]",
+              "deprecated": true
+            }
           }
         },
-        "description": "Code and description of a constant or enumeration member",
+        "description": "Staff role constant",
         "readOnly": true
       },
       "PrisonerRoleConstantDescription": {
@@ -5589,6 +5748,55 @@
           }
         },
         "description": "Prisoner role constant",
+        "readOnly": true
+      },
+      "PrisonerOutcomeConstantDescription": {
+        "required": [
+          "code",
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Machine-readable identifier of this value",
+            "example": "POLICE_INVESTIGATION"
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description of this value",
+            "example": "Investigation (Police)"
+          },
+          "nomisCode": {
+            "type": "string",
+            "description": "Machine-readable NOMIS identifier of this value, which may be null for newer prisoner outcomes",
+            "nullable": true,
+            "example": "IPOL",
+            "deprecated": true
+          }
+        },
+        "description": "Prisoner outcome constant",
+        "readOnly": true
+      },
+      "ConstantDescription": {
+        "required": [
+          "code",
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Machine-readable identifier of this value",
+            "example": "VICTIM"
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description of this value",
+            "example": "Victim"
+          }
+        },
+        "description": "Code and description of a constant or enumeration member",
         "readOnly": true
       }
     },
