@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-12-06.10180.32f68c5"
+    "version": "2024-12-09.10190.3e34b91"
   },
   "servers": [
     {
@@ -23635,12 +23635,18 @@
           "createDateTime",
           "createdBy",
           "offender",
-          "role"
+          "role",
+          "sequence"
         ],
         "type": "object",
         "properties": {
           "offender": {
             "$ref": "#/components/schemas/Offender"
+          },
+          "sequence": {
+            "type": "integer",
+            "description": "The sequence number of the offender party for this incident",
+            "format": "int32"
           },
           "role": {
             "$ref": "#/components/schemas/CodeDescription"
@@ -23726,6 +23732,7 @@
           "createDateTime",
           "createdBy",
           "date",
+          "sequence",
           "staff"
         ],
         "type": "object",
@@ -23733,6 +23740,11 @@
           "comment": {
             "type": "string",
             "description": "The update required to the incident report"
+          },
+          "sequence": {
+            "type": "integer",
+            "description": "The sequence number of the requirement for this incident",
+            "format": "int32"
           },
           "date": {
             "type": "string",
@@ -23832,12 +23844,18 @@
           "createDateTime",
           "createdBy",
           "role",
+          "sequence",
           "staff"
         ],
         "type": "object",
         "properties": {
           "staff": {
             "$ref": "#/components/schemas/Staff"
+          },
+          "sequence": {
+            "type": "integer",
+            "description": "The sequence number of the staff party for this incident",
+            "format": "int32"
           },
           "role": {
             "$ref": "#/components/schemas/CodeDescription"
