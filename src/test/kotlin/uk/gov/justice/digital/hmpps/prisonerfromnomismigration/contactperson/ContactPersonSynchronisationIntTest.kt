@@ -14,6 +14,7 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiExtension.Companion.dpsContactPersonServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.contact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.contactAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.contactAddressPhone
@@ -33,6 +34,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdatePrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
@@ -64,7 +66,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
   @Autowired
   private lateinit var nomisApiMock: ContactPersonNomisApiMockServer
 
-  private val dpsApiMock = ContactPersonDpsApiExtension.dpsContactPersonServer
+  private val dpsApiMock = dpsContactPersonServer
 
   @Autowired
   private lateinit var mappingApiMock: ContactPersonMappingApiMockServer
@@ -3356,7 +3358,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
     private val offenderNo = "A1234KT"
 
     @Nested
-    inner class WhenCreatedInDps {
+    inner class WhenCreatedOrUpdatedInDps {
       @BeforeEach
       fun setUp() {
         awsSqsContactPersonOffenderEventsClient.sendMessage(
@@ -3380,7 +3382,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
-          eq("contactperson-contact-restriction-synchronisation-created-skipped"),
+          eq("contactperson-contact-restriction-synchronisation-upserted-skipped"),
           check {
             assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
             assertThat(it["nomisContactId"]).isEqualTo(nomisContactId.toString())
@@ -3505,6 +3507,31 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
             mappingType = PersonContactRestrictionMappingDto.MappingType.NOMIS_CREATED,
           ),
         )
+        mappingApiMock.stubGetByNomisContactId(
+          nomisContactId = nomisContactId,
+          PersonContactMappingDto(
+            nomisId = nomisContactId,
+            dpsId = dpsPrisonerContactId.toString(),
+            mappingType = PersonContactMappingDto.MappingType.MIGRATED,
+          ),
+        )
+        nomisApiMock.stubGetPerson(
+          person = contactPerson(nomisPersonId)
+            .withContact(
+              contactId = nomisContactId,
+              offenderNo = offenderNo,
+              restriction = ContactRestriction(
+                id = nomisContactRestrictionId,
+                type = CodeDescription(code = "BAN", description = "Banned"),
+                enteredStaff = ContactRestrictionEnteredStaff(staffId = 1, username = "J.SMITH"),
+                effectiveDate = LocalDate.parse("2020-01-01"),
+                expiryDate = LocalDate.parse("2026-01-01"),
+                comment = "Banned for life",
+                audit = nomisAudit().copy(modifyDatetime = "2024-09-01T13:31", modifyUserId = "J.SPEAK"),
+              ),
+            ),
+        )
+        dpsContactPersonServer.stubUpdatePrisonerContactRestriction(dpsPrisonerContactRestrictionId)
         awsSqsContactPersonOffenderEventsClient.sendMessage(
           contactPersonQueueOffenderEventsUrl,
           contactRestrictionEvent(
@@ -3518,14 +3545,24 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
-      fun `will not create phone in DPS`() {
-        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/sync/prisoner-contact-restriction")))
+      fun `will update the restriction in DPS`() {
+        dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/prisoner-contact-restriction/$dpsPrisonerContactRestrictionId")))
+        val request: SyncUpdatePrisonerContactRestrictionRequest =
+          ContactPersonDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/prisoner-contact-restriction/$dpsPrisonerContactRestrictionId")))
+        with(request) {
+          assertThat(restrictionType).isEqualTo("BAN")
+          assertThat(startDate).isEqualTo(LocalDate.parse("2020-01-01"))
+          assertThat(expiryDate).isEqualTo(LocalDate.parse("2026-01-01"))
+          assertThat(comments).isEqualTo("Banned for life")
+          assertThat(updatedBy).isEqualTo("J.SMITH")
+          assertThat(updatedTime).isEqualTo("2024-09-01T13:31")
+        }
       }
 
       @Test
-      fun `will track telemetry`() {
+      fun `will track telemetry for update success`() {
         verify(telemetryClient).trackEvent(
-          eq("contactperson-contact-restriction-synchronisation-created-ignored"),
+          eq("contactperson-contact-restriction-synchronisation-updated-success"),
           check {
             assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
             assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
