@@ -139,6 +139,18 @@ class CaseNotesMergeIntTest : SqsIntegrationTestBase() {
           putRequestedFor(urlPathEqualTo("/mapping/casenotes/merge/from/A1234AA/to/A1234BB")),
         )
       }
+      // ensure the process has finished before the test ends by checking the telemetry
+      await untilAsserted {
+        verify(telemetryClient).trackEvent(
+          eq("casenotes-prisoner-merge"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BB")
+            assertThat(it["removedOffenderNo"]).isEqualTo("A1234AA")
+            assertThat(it["bookingId"]).isEqualTo("1")
+          },
+          isNull(),
+        )
+      }
     }
 
     @Test
@@ -157,22 +169,6 @@ class CaseNotesMergeIntTest : SqsIntegrationTestBase() {
             .withRequestBodyJsonPath("[1].offenderNo", survivorOffenderNo)
             .withRequestBodyJsonPath("[1].nomisBookingId", 1)
             .withRequestBodyJsonPath("[1].mappingType", "NOMIS_CREATED"),
-        )
-      }
-    }
-
-    @Test
-    fun `will track telemetry for the merge`() {
-      sendMergeMessage()
-      await untilAsserted {
-        verify(telemetryClient).trackEvent(
-          eq("casenotes-prisoner-merge"),
-          check {
-            assertThat(it["offenderNo"]).isEqualTo("A1234BB")
-            assertThat(it["removedOffenderNo"]).isEqualTo("A1234AA")
-            assertThat(it["bookingId"]).isEqualTo("1")
-          },
-          isNull(),
         )
       }
     }
@@ -361,6 +357,19 @@ class CaseNotesMergeIntTest : SqsIntegrationTestBase() {
           putRequestedFor(urlPathEqualTo("/mapping/casenotes/merge/booking-id/12/to/A1234BB")),
         )
       }
+      // ensure the process has finished before the test ends by checking the telemetry
+      await untilAsserted {
+        verify(telemetryClient).trackEvent(
+          eq("casenotes-booking-moved"),
+          check {
+            assertThat(it["bookingId"]).isEqualTo("12")
+            assertThat(it["movedToNomsNumber"]).isEqualTo("A1234BB")
+            assertThat(it["movedFromNomsNumber"]).isEqualTo("A1234AA")
+            assertThat(it["count"]).isEqualTo("2")
+          },
+          isNull(),
+        )
+      }
     }
 
     @Test
@@ -374,10 +383,7 @@ class CaseNotesMergeIntTest : SqsIntegrationTestBase() {
             .withRequestBodyJsonPath("caseNoteIds[1]", uuid2),
         )
       }
-    }
-
-    @Test
-    fun `will track telemetry for the merge`() {
+      // ensure the process has finished before the test ends by checking the telemetry
       await untilAsserted {
         verify(telemetryClient).trackEvent(
           eq("casenotes-booking-moved"),
