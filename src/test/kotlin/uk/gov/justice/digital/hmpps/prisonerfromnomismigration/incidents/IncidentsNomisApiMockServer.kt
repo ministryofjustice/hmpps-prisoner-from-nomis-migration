@@ -24,6 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Q
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Requirement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Response
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Staff
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.StaffParty
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.lang.Long.min
@@ -73,8 +74,6 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
     offenderParty: String = "A1234BC",
     status: String = "AWAN",
     type: String = "ATT_ESC_E",
-    clearStaff: Boolean = false,
-    clearQuestions: Boolean = false,
   ) {
     nomisApi.stubFor(
       get(urlPathEqualTo("/incidents/$nomisIncidentId"))
@@ -86,9 +85,38 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
                 offenderParty = offenderParty,
                 status = status,
                 type = type,
-                clearQuestions = clearQuestions,
-                clearStaff = clearStaff,
               ),
+            ),
+        ),
+    )
+  }
+
+  fun stubGetMismatchIncident() {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/incidents/33"))
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+            .withBody(
+              incidentResponse(
+                status = "INREQ",
+                offenderParty = "Z4321YX",
+                nomisIncidentId = 33,
+              )
+                .copy(
+                  questions =
+                  listOf(
+                    Question(
+                      questionId = 1234,
+                      sequence = 4,
+                      question = "Was anybody hurt?",
+                      answers = listOf(),
+                      createDateTime = "2021-07-05T10:35:17",
+                      createdBy = "JSMITH",
+                    ),
+                  ),
+                  requirements = listOf(),
+                  staffParties = listOf(),
+                ),
             ),
         ),
     )
@@ -125,7 +153,7 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
         get(urlPathEqualTo("/incidents/$it"))
           .willReturn(
             aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-              .withBody(incidentResponse(nomisIncidentId = it.toLong())),
+              .withBody(incidentResponse().copy(incidentId = it.toLong())),
           ),
       )
     }
@@ -218,8 +246,6 @@ private fun incidentResponse(
   offenderParty: String = "A1234BC",
   status: String = "AWAN",
   type: String = "ATT_ESC_E",
-  clearQuestions: Boolean = false,
-  clearStaff: Boolean = false,
 ): IncidentResponse =
   IncidentResponse(
     incidentId = nomisIncidentId,
@@ -252,15 +278,40 @@ private fun incidentResponse(
     lastModifiedBy = "JIM_ADM",
     lastModifiedDateTime = "2021-07-23T10:35:17",
     reportedDateTime = "2024-02-06T12:36:00",
-    staffParties = listOf(),
+    staffParties =
+    listOf(
+      StaffParty(
+        staff = Staff(
+          username = "DJONES",
+          staffId = 485577,
+          firstName = "DAVE",
+          lastName = "JONES",
+        ),
+        sequence = 1,
+        role = CodeDescription("ACT", "Actively Involved"),
+        comment = "Dave was hit",
+        createDateTime = "2021-07-23T10:35:17",
+        createdBy = "JIM SMITH",
+      ),
+    ),
     offenderParties = listOf(
       OffenderParty(
         offender =
         Offender(offenderParty, firstName = "Fred", lastName = "smith"),
+        sequence = 1,
         role = CodeDescription("ABS", "Absconder"),
         createDateTime = "2024-02-06T12:36:00",
         createdBy = "JIM",
-        sequence = 1,
+        comment = "This is a comment",
+        outcome = CodeDescription("AAA", "SOME OUTCOME"),
+      ),
+      OffenderParty(
+        offender =
+        Offender(offenderParty, firstName = "Fred", lastName = "smith"),
+        sequence = 2,
+        role = CodeDescription("ABS", "Absconder"),
+        createDateTime = "2024-02-06T12:46:00",
+        createdBy = "JIM",
       ),
     ),
     requirements = listOf(
@@ -279,37 +330,33 @@ private fun incidentResponse(
         date = LocalDate.parse("2021-07-06"),
       ),
     ),
-    questions = if (clearQuestions) {
-      listOf()
-    } else {
-      listOf(
-        Question(
-          questionId = 1234,
-          sequence = 4,
-          question = "Was anybody hurt?",
-          answers = listOf(
-            Response(
-              sequence = 1,
-              recordingStaff = Staff(
-                username = "JSMITH",
-                staffId = 485572,
-                firstName = "JIM",
-                lastName = "SMITH",
-              ),
-              createDateTime = "2021-07-05T10:35:17",
-              createdBy = "JSMITH",
-              questionResponseId = null,
-              answer = "Yes",
-              responseDate = null,
-              comment = null,
-
+    questions =
+    listOf(
+      Question(
+        questionId = 1234,
+        sequence = 4,
+        question = "Was anybody hurt?",
+        answers = listOf(
+          Response(
+            sequence = 1,
+            recordingStaff = Staff(
+              username = "JSMITH",
+              staffId = 485572,
+              firstName = "JIM",
+              lastName = "SMITH",
             ),
-          ),
-          createDateTime = "2021-07-05T10:35:17",
-          createdBy = "JSMITH",
+            createDateTime = "2021-07-05T10:35:17",
+            createdBy = "JSMITH",
+            questionResponseId = null,
+            answer = "Yes",
+            responseDate = null,
+            comment = null,
 
+          ),
         ),
-      )
-    },
+        createDateTime = "2021-07-05T10:35:17",
+        createdBy = "JSMITH",
+      ),
+    ),
     history = listOf(),
   )

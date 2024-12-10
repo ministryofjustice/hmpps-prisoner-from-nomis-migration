@@ -177,10 +177,13 @@ class IncidentsReconciliationService(
     // and therefore the values will be out of sync
     if (nomis.reportingStaff.username != dps.reportedBy) return "Reporting Staff mismatch"
     if (nomis.offenderParties.size != dps.prisonersInvolved.size) return "Offender parties mismatch"
+    if (nomis.staffParties.size != dps.staffInvolved.size) return "Staff parties mismatch"
     if (nomis.type != dps.nomisType) return "type mismatch"
     if (nomis.status.code != dps.nomisStatus) return "status mismatch"
     val offendersDifference = nomis.offenderParties.map { it.offender.offenderNo }.compare(dps.prisonersInvolved.map { it.prisonerNumber })
     if (offendersDifference.isNotEmpty()) return "offender parties mismatch $offendersDifference"
+    if (nomis.questions.size != dps.questions.size) return "questions mismatch"
+    if (nomis.requirements.size != dps.correctionRequests.size) return "requirements mismatch"
     return null
   }
 
@@ -211,6 +214,9 @@ data class IncidentReportDetail(
   val status: String? = null,
   val reportedBy: String,
   val offenderParties: List<String>? = null,
+  val totalStaffParties: Int? = null,
+  val totalQuestions: Int? = null,
+  val totalRequirements: Int? = null,
 )
 
 fun IncidentResponse.toReportDetail() =
@@ -219,6 +225,9 @@ fun IncidentResponse.toReportDetail() =
     status.code,
     reportingStaff.username,
     offenderParties.map { it.offender.offenderNo },
+    staffParties.size,
+    questions.size,
+    requirements.size,
   )
 
 fun ReportWithDetails.toReportDetail() =
@@ -227,4 +236,7 @@ fun ReportWithDetails.toReportDetail() =
     nomisStatus,
     reportedBy,
     prisonersInvolved.map { it.prisonerNumber },
+    staffInvolved.size,
+    questions.size,
+    correctionRequests.size,
   )

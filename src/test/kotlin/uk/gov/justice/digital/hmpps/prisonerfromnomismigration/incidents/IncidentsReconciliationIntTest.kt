@@ -280,8 +280,8 @@ class IncidentsReconciliationIntTest : SqsIntegrationTestBase() {
             assertThat(it).containsEntry("nomisId", "33")
             assertThat(it).containsKey("dpsId")
             assertThat(it).containsEntry("verdict", "type mismatch")
-            assertThat(it).containsEntry("nomis", "IncidentReportDetail(type=ABSCOND, status=INREQ, reportedBy=FSTAFF_GEN, offenderParties=[Z4321YX])")
-            assertThat(it).containsEntry("dps", "IncidentReportDetail(type=ATT_ESC_E, status=AWAN, reportedBy=FSTAFF_GEN, offenderParties=[A1234BC])")
+            assertThat(it).containsEntry("nomis", "IncidentReportDetail(type=ABSCOND, status=INREQ, reportedBy=FSTAFF_GEN, offenderParties=[Z4321YX, Z4321YX], totalStaffParties=1, totalQuestions=1, totalRequirements=1)")
+            assertThat(it).containsEntry("dps", "IncidentReportDetail(type=ATT_ESC_E, status=AWAN, reportedBy=FSTAFF_GEN, offenderParties=[A1234BC, A1234BC], totalStaffParties=1, totalQuestions=1, totalRequirements=1)")
           },
           isNull(),
         )
@@ -289,7 +289,7 @@ class IncidentsReconciliationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will show status mismatch differences in report`() {
-        incidentsNomisApi.stubGetIncident(33, offenderParty = "Z4321YX", status = "INREQ")
+        incidentsNomisApi.stubGetMismatchIncident()
 
         webTestClient.put().uri("/incidents/reports/reconciliation")
           .exchange()
@@ -320,9 +320,9 @@ class IncidentsReconciliationIntTest : SqsIntegrationTestBase() {
           check {
             assertThat(it).containsEntry("nomisId", "33")
             assertThat(it).containsKey("dpsId")
-            assertThat(it).containsEntry("verdict", "status mismatch")
-            assertThat(it).containsEntry("nomis", "IncidentReportDetail(type=ATT_ESC_E, status=INREQ, reportedBy=FSTAFF_GEN, offenderParties=[Z4321YX])")
-            assertThat(it).containsEntry("dps", "IncidentReportDetail(type=ATT_ESC_E, status=AWAN, reportedBy=FSTAFF_GEN, offenderParties=[A1234BC])")
+            assertThat(it).containsEntry("verdict", "Staff parties mismatch")
+            assertThat(it).containsEntry("nomis", "IncidentReportDetail(type=ATT_ESC_E, status=INREQ, reportedBy=FSTAFF_GEN, offenderParties=[Z4321YX, Z4321YX], totalStaffParties=0, totalQuestions=1, totalRequirements=0)")
+            assertThat(it).containsEntry("dps", "IncidentReportDetail(type=ATT_ESC_E, status=AWAN, reportedBy=FSTAFF_GEN, offenderParties=[A1234BC, A1234BC], totalStaffParties=1, totalQuestions=1, totalRequirements=1)")
           },
           isNull(),
         )

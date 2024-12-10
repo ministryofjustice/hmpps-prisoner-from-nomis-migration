@@ -161,8 +161,12 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             outcome = PrisonerInvolvement.Outcome.PLACED_ON_REPORT,
             comment = "There were issues",
           ),
+          PrisonerInvolvement(
+            prisonerNumber = "A1234BC",
+            prisonerRole = PrisonerInvolvement.PrisonerRole.ABSCONDER,
+            outcome = PrisonerInvolvement.Outcome.PLACED_ON_REPORT,
+          ),
         ),
-
         correctionRequests = listOf(
           CorrectionRequest(
             reason = CorrectionRequest.Reason.MISTAKE,
