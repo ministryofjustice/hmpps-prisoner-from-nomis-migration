@@ -32,6 +32,14 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
+  suspend fun getByNomisPersonId(nomisPersonId: Long): PersonMappingDto = webClient.get()
+    .uri(
+      "/mapping/contact-person/person/nomis-person-id/{nomisPersonId}",
+      nomisPersonId,
+    )
+    .retrieve()
+    .awaitBody()
+
   suspend fun getByNomisContactIdOrNull(nomisContactId: Long): PersonContactMappingDto? = webClient.get()
     .uri(
       "/mapping/contact-person/contact/nomis-contact-id/{nomisContactId}",

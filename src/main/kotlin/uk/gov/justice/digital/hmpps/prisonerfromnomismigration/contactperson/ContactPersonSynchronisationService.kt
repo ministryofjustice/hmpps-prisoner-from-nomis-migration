@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdatePrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
@@ -37,7 +38,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.P
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.Period
 
 @Service
 class ContactPersonSynchronisationService(
@@ -249,11 +252,23 @@ class ContactPersonSynchronisationService(
 
   suspend fun personUpdated(event: PersonEvent) {
     val telemetry =
-      mapOf("personId" to event.personId)
-    telemetryClient.trackEvent(
-      "contactperson-person-synchronisation-updated-success",
-      telemetry,
-    )
+      mutableMapOf("nomisPersonId" to event.personId)
+    if (event.doesOriginateInDps()) {
+      telemetryClient.trackEvent(
+        "contactperson-person-synchronisation-updated-skipped",
+        telemetry,
+      )
+    } else {
+      val contactId = mappingApiService.getByNomisPersonId(nomisPersonId = event.personId).dpsId.toLong().also {
+        telemetry["dpsContactId"] = it
+      }
+      val nomisPerson = nomisApiService.getPerson(nomisPersonId = event.personId)
+      dpsApiService.updateContact(contactId, nomisPerson.toDpsUpdateContactRequest())
+      telemetryClient.trackEvent(
+        "contactperson-person-synchronisation-updated-success",
+        telemetry,
+      )
+    }
   }
 
   suspend fun personDeleted(event: PersonEvent) {
@@ -930,6 +945,7 @@ fun ContactPerson.toDpsCreateContactRequest() = SyncCreateContactRequest(
   firstName = this.firstName,
   middleName = this.middleName,
   dateOfBirth = this.dateOfBirth,
+  estimatedIsOverEighteen = this.dateOfBirth.asEstimatedOver18ForCreate(),
   isStaff = this.isStaff == true,
   staff = this.isStaff == true,
   remitter = this.isRemitter == true,
@@ -943,6 +959,41 @@ fun ContactPerson.toDpsCreateContactRequest() = SyncCreateContactRequest(
   createdBy = this.audit.createUsername,
   createdTime = this.audit.createDatetime.toDateTime(),
 )
+fun ContactPerson.toDpsUpdateContactRequest() = SyncUpdateContactRequest(
+  lastName = this.lastName,
+  firstName = this.firstName,
+  middleName = this.middleName,
+  dateOfBirth = this.dateOfBirth,
+  estimatedIsOverEighteen = this.dateOfBirth.asEstimatedOver18ForUpdate(),
+  isStaff = this.isStaff == true,
+  staff = this.isStaff == true,
+  remitter = this.isRemitter == true,
+  title = this.title?.code,
+  deceasedFlag = this.deceasedDate != null,
+  deceasedDate = this.deceasedDate,
+  gender = this.gender?.code,
+  domesticStatus = this.domesticStatus?.code,
+  languageCode = this.language?.code,
+  interpreterRequired = this.interpreterRequired,
+  updatedBy = this.audit.modifyUserId!!,
+  updatedTime = this.audit.modifyDatetime!!.toDateTime(),
+)
+
+fun LocalDate?.asEstimatedOver18ForUpdate() = this?.let {
+  if (Period.between(this, LocalDate.now()).years >= 18L) {
+    SyncUpdateContactRequest.EstimatedIsOverEighteen.YES
+  } else {
+    SyncUpdateContactRequest.EstimatedIsOverEighteen.NO
+  }
+} ?: SyncUpdateContactRequest.EstimatedIsOverEighteen.DO_NOT_KNOW
+
+fun LocalDate?.asEstimatedOver18ForCreate() = this?.let {
+  if (Period.between(this, LocalDate.now()).years >= 18L) {
+    SyncCreateContactRequest.EstimatedIsOverEighteen.YES
+  } else {
+    SyncCreateContactRequest.EstimatedIsOverEighteen.NO
+  }
+} ?: SyncCreateContactRequest.EstimatedIsOverEighteen.DO_NOT_KNOW
 
 fun PersonContact.toDpsCreatePrisonerContactRequest(nomisPersonId: Long) = SyncCreatePrisonerContactRequest(
   contactId = nomisPersonId,
