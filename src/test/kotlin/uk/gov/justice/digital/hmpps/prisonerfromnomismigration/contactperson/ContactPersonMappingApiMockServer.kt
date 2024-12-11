@@ -58,6 +58,15 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
     }
   }
 
+  fun stubGetByNomisPersonId(
+    nomisPersonId: Long = 123456,
+    mapping: PersonMappingDto = PersonMappingDto(
+      nomisId = 123456,
+      dpsId = UUID.randomUUID().toString(),
+      mappingType = PersonMappingDto.MappingType.MIGRATED,
+    ),
+  ) = stubGetByNomisPersonIdOrNull(nomisPersonId, mapping)
+
   fun stubCreateMappingsForMigration() {
     mappingApi.stubFor(
       post("/mapping/contact-person/migrate").willReturn(

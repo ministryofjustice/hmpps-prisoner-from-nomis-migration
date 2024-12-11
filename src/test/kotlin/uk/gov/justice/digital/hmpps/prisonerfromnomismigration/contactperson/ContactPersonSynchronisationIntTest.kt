@@ -4,6 +4,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -33,6 +34,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdatePrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
@@ -45,6 +47,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonEmailMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonIdentifierMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto.MappingType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonPhoneMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonRestrictionMappingDto
@@ -124,7 +127,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
               createUsername = "J.SPEAK",
               createDatetime = "2024-09-01T13:31",
             ),
-            dateOfBirth = LocalDate.parse("1965-07-19"),
+            dateOfBirth = LocalDate.parse("2024-07-19"),
             gender = CodeDescription("M", "Male"),
             title = CodeDescription("MR", "Mr"),
             language = CodeDescription("EN", "English"),
@@ -163,8 +166,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(lastName).isEqualTo("SMITH")
           assertThat(firstName).isEqualTo("JOHN")
           assertThat(middleName).isEqualTo("BOB")
-          assertThat(dateOfBirth).isEqualTo(LocalDate.parse("1965-07-19"))
-          assertThat(estimatedIsOverEighteen).isNull()
+          assertThat(dateOfBirth).isEqualTo(LocalDate.parse("2024-07-19"))
+          assertThat(estimatedIsOverEighteen).isEqualTo(SyncCreateContactRequest.EstimatedIsOverEighteen.NO)
           assertThat(relationship).isNull()
           assertThat(isStaff).isTrue()
           assertThat(remitter).isTrue()
@@ -364,28 +367,117 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
   @Nested
   @DisplayName("PERSON-UPDATED")
   inner class PersonUpdated {
-    private val personId = 123456L
+    private val nomisPersonId = 123456L
+    private val dpsContactId = 123456L
 
-    @BeforeEach
-    fun setUp() {
-      awsSqsContactPersonOffenderEventsClient.sendMessage(
-        contactPersonQueueOffenderEventsUrl,
-        personEvent(
-          eventType = "PERSON-UPDATED",
-          personId = personId,
-        ),
-      ).also { waitForAnyProcessingToComplete() }
+    @Nested
+    inner class WhenUpdatedInDps {
+      @BeforeEach
+      fun setUp() {
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personEvent(
+            eventType = "PERSON-UPDATED",
+            personId = nomisPersonId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not updated contact in DPS`() {
+        dpsApiMock.verify(0, putRequestedFor(urlPathMatching("/sync/contact/.*")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-person-synchronisation-updated-skipped"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+          },
+          isNull(),
+        )
+      }
     }
 
-    @Test
-    fun `will track telemetry`() {
-      verify(telemetryClient).trackEvent(
-        eq("contactperson-person-synchronisation-updated-success"),
-        check {
-          assertThat(it["personId"]).isEqualTo(personId.toString())
-        },
-        isNull(),
-      )
+    @Nested
+    inner class WhenUpdatedInNomis {
+
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisPersonId(
+          nomisPersonId = nomisPersonId,
+          mapping = PersonMappingDto(dpsId = dpsContactId.toString(), nomisId = nomisPersonId, mappingType = MIGRATED),
+        )
+        nomisApiMock.stubGetPerson(
+          person = contactPerson().copy(
+            personId = nomisPersonId,
+            firstName = "JOHN",
+            lastName = "SMITH",
+            middleName = "BOB",
+            interpreterRequired = true,
+            audit = NomisAudit(
+              createUsername = "J.SPEAK",
+              createDatetime = "2024-09-01T13:31",
+              modifyUserId = "T.SMITH",
+              modifyDatetime = "2024-10-01T13:31",
+            ),
+            dateOfBirth = LocalDate.parse("1965-07-19"),
+            gender = CodeDescription("M", "Male"),
+            title = CodeDescription("MR", "Mr"),
+            language = CodeDescription("EN", "English"),
+            domesticStatus = CodeDescription("MAR", "Married"),
+            isStaff = true,
+            isRemitter = true,
+          ),
+        )
+        dpsApiMock.stubUpdateContact(contactId = dpsContactId)
+
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personEvent(
+            eventType = "PERSON-UPDATED",
+            personId = nomisPersonId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-person-synchronisation-updated-success"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(dpsContactId.toString())
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will update the contact in DPS from the NOMIS person`() {
+        dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/contact/$dpsContactId")))
+        val createContactRequest: SyncUpdateContactRequest = ContactPersonDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/contact/$dpsContactId")))
+        with(createContactRequest) {
+          assertThat(title).isEqualTo("MR")
+          assertThat(lastName).isEqualTo("SMITH")
+          assertThat(firstName).isEqualTo("JOHN")
+          assertThat(middleName).isEqualTo("BOB")
+          assertThat(dateOfBirth).isEqualTo(LocalDate.parse("1965-07-19"))
+          assertThat(estimatedIsOverEighteen).isEqualTo(SyncUpdateContactRequest.EstimatedIsOverEighteen.YES)
+          assertThat(isStaff).isTrue()
+          assertThat(remitter).isTrue()
+          assertThat(deceasedFlag).isFalse()
+          assertThat(deceasedDate).isNull()
+          assertThat(gender).isEqualTo("M")
+          assertThat(domesticStatus).isEqualTo("MAR")
+          assertThat(languageCode).isEqualTo("EN")
+          assertThat(interpreterRequired).isTrue()
+          assertThat(updatedBy).isEqualTo("T.SMITH")
+          assertThat(updatedTime).isEqualTo("2024-10-01T13:31")
+        }
+      }
     }
   }
 
