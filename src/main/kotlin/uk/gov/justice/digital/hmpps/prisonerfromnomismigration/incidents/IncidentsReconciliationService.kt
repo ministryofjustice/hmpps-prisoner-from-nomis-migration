@@ -184,6 +184,17 @@ class IncidentsReconciliationService(
     if (offendersDifference.isNotEmpty()) return "offender parties mismatch $offendersDifference"
     if (nomis.questions.size != dps.questions.size) return "questions mismatch"
     if (nomis.requirements.size != dps.correctionRequests.size) return "requirements mismatch"
+
+    nomis.questions.forEach { nomisQuestion ->
+      dps.questions.find {
+        it.code == nomisQuestion.questionId.toString() && it.sequence == nomisQuestion.sequence
+      }
+        ?.let { dpsQuestion ->
+          if (nomisQuestion.answers.size != dpsQuestion.responses.size) return "responses mismatch for question: ${nomisQuestion.questionId}"
+        }
+        ?: return "responses mismatch for question: ${nomisQuestion.questionId}"
+    }
+
     return null
   }
 
@@ -217,6 +228,7 @@ data class IncidentReportDetail(
   val totalStaffParties: Int? = null,
   val totalQuestions: Int? = null,
   val totalRequirements: Int? = null,
+  val totalResponses: Int? = null,
 )
 
 fun IncidentResponse.toReportDetail() =
@@ -228,6 +240,7 @@ fun IncidentResponse.toReportDetail() =
     staffParties.size,
     questions.size,
     requirements.size,
+    questions.flatMap { it.answers }.size,
   )
 
 fun ReportWithDetails.toReportDetail() =
@@ -239,4 +252,5 @@ fun ReportWithDetails.toReportDetail() =
     staffInvolved.size,
     questions.size,
     correctionRequests.size,
+    questions.flatMap { it.responses }.size,
   )

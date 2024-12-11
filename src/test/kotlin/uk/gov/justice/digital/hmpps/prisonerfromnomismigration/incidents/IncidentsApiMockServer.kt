@@ -101,8 +101,10 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         assignedTo = "BJONES",
         questions = listOf(
           Question(
-            code = "Q1",
+            code = "1234",
             question = "Was anybody hurt?",
+            additionalInformation = null,
+            sequence = 1,
             responses = listOf(
               Response(
                 response = "Yes",
@@ -112,8 +114,6 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
                 sequence = 1,
               ),
             ),
-            additionalInformation = null,
-            sequence = 1,
           ),
         ),
         history = listOf(

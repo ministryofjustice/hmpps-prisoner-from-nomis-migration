@@ -122,6 +122,32 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
+  fun stubGetMismatchResponsesForIncident() {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/incidents/33"))
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
+            .withBody(
+              incidentResponse()
+                .copy(
+                  incidentId = 33,
+                  questions =
+                  listOf(
+                    Question(
+                      questionId = 1234,
+                      sequence = 1,
+                      question = "Was anybody hurt?",
+                      answers = listOf(),
+                      createDateTime = "2021-07-05T10:35:17",
+                      createdBy = "JSMITH",
+                    ),
+                  ),
+                ),
+            ),
+        ),
+    )
+  }
+
   fun stubGetIncident(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     nomisApi.stubFor(
       get(urlPathMatching("/incidents/\\d+")).willReturn(
@@ -334,7 +360,7 @@ private fun incidentResponse(
     listOf(
       Question(
         questionId = 1234,
-        sequence = 4,
+        sequence = 1,
         question = "Was anybody hurt?",
         answers = listOf(
           Response(
