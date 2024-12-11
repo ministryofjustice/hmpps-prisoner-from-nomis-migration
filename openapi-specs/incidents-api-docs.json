@@ -10,7 +10,7 @@
     "license": {
       "name": "MIT"
     },
-    "version": "2024-12-09.3758.680eaf8"
+    "version": "2024-12-10.3783.4f3d88b"
   },
   "servers": [
     {
@@ -390,10 +390,22 @@
         "description": "Requires role MIGRATE_INCIDENT_REPORTS and write scope",
         "operationId": "upsertIncidentReport",
         "requestBody": {
+          "description": "Incident report created or updated in NOMIS",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NomisSyncRequest"
+                "writeOnly": true,
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/NomisSyncRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/NomisSyncCreateRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/NomisSyncUpdateRequest"
+                  }
+                ]
               }
             }
           },
@@ -2350,12 +2362,12 @@
           }
         ],
         "responses": {
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
+          "200": {
+            "description": "Request successfully processed - content found",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "$ref": "#/components/schemas/HmppsSubjectAccessRequestContent"
                 }
               }
             }
@@ -2380,6 +2392,16 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Unexpected error occurred",
             "content": {
@@ -2396,16 +2418,6 @@
               "application/json": {
                 "schema": {
                   "type": "object"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "Request successfully processed - content found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HmppsSubjectAccessRequestContent"
                 }
               }
             }
@@ -2537,9 +2549,9 @@
             "schema": {
               "type": "string",
               "description": "The incident report reference",
-              "example": "2342341242"
+              "example": "\"2342341242\""
             },
-            "example": 2342341242
+            "example": "2342341242"
           }
         ],
         "responses": {
@@ -2603,9 +2615,9 @@
             "schema": {
               "type": "string",
               "description": "The incident report reference",
-              "example": "2342341242"
+              "example": "\"2342341242\""
             },
-            "example": 2342341242
+            "example": "2342341242"
           }
         ],
         "responses": {
@@ -2872,9 +2884,9 @@
             "schema": {
               "type": "string",
               "description": "The event reference",
-              "example": "2342341242"
+              "example": "\"2342341242\""
             },
-            "example": 2342341242
+            "example": "2342341242"
           }
         ],
         "responses": {
@@ -3931,28 +3943,6 @@
         },
         "description": "Status details"
       },
-      "NomisSyncCreateRequest": {
-        "required": [
-          "incidentReport",
-          "initialMigration"
-        ],
-        "type": "object",
-        "properties": {
-          "initialMigration": {
-            "type": "boolean",
-            "description": "Set to true for initial migration",
-            "example": true,
-            "enum": [
-              true
-            ]
-          },
-          "incidentReport": {
-            "$ref": "#/components/schemas/NomisReport"
-          }
-        },
-        "description": "Incident report created in NOMIS",
-        "writeOnly": true
-      },
       "NomisSyncRequest": {
         "required": [
           "incidentReport"
@@ -3979,22 +3969,35 @@
             "$ref": "#/components/schemas/NomisReport"
           }
         },
-        "description": "Incident report created/updated in NOMIS",
-        "writeOnly": true,
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/NomisSyncRequest"
+        "description": "Incident report created or updated in NOMIS",
+        "writeOnly": true
+      },
+      "NomisSyncCreateRequest": {
+        "required": [
+          "incidentReport"
+        ],
+        "type": "object",
+        "properties": {
+          "initialMigration": {
+            "type": "boolean",
+            "description": "Set to true for initial migration",
+            "example": true,
+            "default": false,
+            "enum": [
+              true,
+              false
+            ]
           },
-          {
-            "$ref": "#/components/schemas/NomisSyncCreateRequest"
-          },
-          {
-            "$ref": "#/components/schemas/NomisSyncUpdateRequest"
+          "incidentReport": {
+            "$ref": "#/components/schemas/NomisReport"
           }
-        ]
+        },
+        "description": "Incident report created in NOMIS",
+        "writeOnly": true
       },
       "NomisSyncUpdateRequest": {
         "required": [
+          "id",
           "incidentReport"
         ],
         "type": "object",
