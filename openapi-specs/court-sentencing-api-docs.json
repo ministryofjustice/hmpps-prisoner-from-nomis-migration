@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-12-03.3595.f5a3f0d"
+    "version": "2024-12-13.3827.7d086cc"
   },
   "servers": [
     {
@@ -87,6 +87,10 @@
     {
       "name": "court-case-controller",
       "description": "Court case"
+    },
+    {
+      "name": "appearance-type-controller",
+      "description": "Appearance Type"
     }
   ],
   "paths": {
@@ -478,6 +482,66 @@
       }
     },
     "/legacy/court-appearance/{lifetimeUuid}/charge/{chargeLifetimeUuid}": {
+      "get": {
+        "tags": [
+          "legacy-court-appearance-controller"
+        ],
+        "summary": "Get latest charge at appearance",
+        "description": "This endpoint will retrieve the latest charge at a court appearance",
+        "operationId": "getChargeAtAppearance",
+        "parameters": [
+          {
+            "name": "lifetimeUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "chargeLifetimeUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyCharge"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyCharge"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyCharge"
+                }
+              }
+            }
+          }
+        }
+      },
       "put": {
         "tags": [
           "legacy-court-appearance-controller"
@@ -2582,6 +2646,97 @@
         }
       }
     },
+    "/appearance-type/{appearanceTypeUuid}": {
+      "get": {
+        "tags": [
+          "appearance-type-controller"
+        ],
+        "summary": "Get appearance type by uuid",
+        "description": "This endpoint will get appearance type by uuid",
+        "operationId": "getAppearanceTypeById",
+        "parameters": [
+          {
+            "name": "appearanceTypeUuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppearanceType"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Appearance type not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppearanceType"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Returns appearance type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppearanceType"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/appearance-type/all": {
+      "get": {
+        "tags": [
+          "appearance-type-controller"
+        ],
+        "summary": "Get all appearance types",
+        "description": "This endpoint will get all appearance types",
+        "operationId": "getAllAppearanceTypes",
+        "responses": {
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AppearanceType"
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Returns appearance types",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AppearanceType"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/appearance-outcome/{outcomeUuid}": {
       "get": {
         "tags": [
@@ -2919,6 +3074,10 @@
             "type": "string",
             "format": "uuid"
           },
+          "lifetimeChargeUuid": {
+            "type": "string",
+            "format": "uuid"
+          },
           "offenceCode": {
             "type": "string"
           },
@@ -3045,7 +3204,7 @@
       "CreateNextCourtAppearance": {
         "required": [
           "appearanceDate",
-          "appearanceType",
+          "appearanceTypeUuid",
           "courtCode"
         ],
         "type": "object",
@@ -3056,13 +3215,14 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "14:50:07.175598568"
+            "example": "10:16:20.727592829"
           },
           "courtCode": {
             "type": "string"
           },
-          "appearanceType": {
-            "type": "string"
+          "appearanceTypeUuid": {
+            "type": "string",
+            "format": "uuid"
           }
         }
       },
@@ -3107,7 +3267,6 @@
       },
       "CreateSentence": {
         "required": [
-          "chargeNumber",
           "periodLengths",
           "sentenceServeType",
           "sentenceTypeId"
@@ -3495,7 +3654,6 @@
       },
       "Sentence": {
         "required": [
-          "chargeNumber",
           "periodLengths",
           "sentenceServeType",
           "sentenceType",
@@ -3784,7 +3942,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "14:50:07.175598568"
+            "example": "10:16:20.727592829"
           },
           "courtId": {
             "type": "string"
@@ -3804,6 +3962,27 @@
           },
           "sessionBlob": {
             "$ref": "#/components/schemas/JsonNode"
+          }
+        }
+      },
+      "AppearanceType": {
+        "required": [
+          "appearanceTypeUuid",
+          "description",
+          "displayOrder"
+        ],
+        "type": "object",
+        "properties": {
+          "appearanceTypeUuid": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": {
+            "type": "string"
+          },
+          "displayOrder": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -4044,13 +4223,13 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "14:50:07.175598568"
+            "example": "10:16:20.727592829"
           },
           "courtCode": {
             "type": "string"
           },
           "appearanceType": {
-            "type": "string"
+            "$ref": "#/components/schemas/AppearanceType"
           }
         }
       },
@@ -4109,12 +4288,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"

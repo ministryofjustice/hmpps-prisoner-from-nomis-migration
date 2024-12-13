@@ -107,7 +107,8 @@ fun CourtEventChargeResponse.toDpsCharge(appearanceId: String) = LegacyCreateCha
 
 fun OffenderChargeResponse.toDpsMigrationCharge(chargeId: Long) = MigrationCreateCharge(
   offenceCode = this.offence.offenceCode,
-  offenceStartDate = this.offenceDate!!,
+  // TODO remove temporary date when RaS have corrected the dto
+  offenceStartDate = this.offenceDate ?: LocalDate.MIN,
   legacyData =
   ChargeLegacyData(
     postedDate = LocalDate.now().toString(),
