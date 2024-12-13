@@ -21,6 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.Con
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.createPrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.createPrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.migrateContactRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.updateContactAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.updateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.updateContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.updatePrisonerContactRequest
@@ -189,6 +190,34 @@ class ContactPersonDpsApiServiceTest {
 
       dpsContactPersonServer.verify(
         postRequestedFor(urlPathEqualTo("/sync/contact-address")),
+      )
+    }
+  }
+
+  @Nested
+  inner class UpdateContactAddress {
+    val addressId = 27272L
+
+    @Test
+    internal fun `will pass oath2 token to endpoint`() = runTest {
+      dpsContactPersonServer.stubUpdateContactAddress(addressId)
+
+      apiService.updateContactAddress(addressId, updateContactAddressRequest())
+
+      dpsContactPersonServer.verify(
+        putRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the update sync endpoint`() = runTest {
+      dpsContactPersonServer.stubUpdateContactAddress(addressId)
+
+      apiService.updateContactAddress(addressId, updateContactAddressRequest())
+
+      dpsContactPersonServer.verify(
+        putRequestedFor(urlPathEqualTo("/sync/contact-address/$addressId")),
       )
     }
   }
