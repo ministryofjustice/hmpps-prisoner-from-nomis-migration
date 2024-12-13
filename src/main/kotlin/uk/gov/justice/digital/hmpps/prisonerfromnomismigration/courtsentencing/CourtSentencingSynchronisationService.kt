@@ -569,7 +569,7 @@ class CourtSentencingSynchronisationService(
       telemetryClient.trackEvent("court-charge-synchronisation-updated-skipped", telemetry)
     } else {
       mappingApiService.getOffenderChargeOrNullByNomisId(event.chargeId)?.let { chargeMapping ->
-
+        // TODO it may be an updated OFFENCE so might have to update all appearance charges in DPS
         nomisApiService.geLastModifiedCourtAppearanceCharge(
           offenderNo = event.offenderIdDisplay,
           offenderChargeId = event.chargeId,
