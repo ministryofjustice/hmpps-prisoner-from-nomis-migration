@@ -13,6 +13,9 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.History
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.HistoryQuestion
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.HistoryResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentAgencyId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentStatus
@@ -384,5 +387,42 @@ private fun incidentResponse(
         createdBy = "JSMITH",
       ),
     ),
-    history = listOf(),
+    history = listOf(
+      History(
+        questionnaireId = 1234,
+        type = "ATT_ESC_E",
+        description = "Escape Attempt",
+        incidentChangeDateTime = "2021-07-05T10:35:17",
+        incidentChangeStaff = Staff(
+          username = "JSMITH",
+          staffId = 485572,
+          firstName = "JIM",
+          lastName = "SMITH",
+        ),
+        createDateTime = "2021-07-05T10:35:17",
+        createdBy = "JSMITH",
+        questions = listOf(
+          HistoryQuestion(
+            questionId = 1234,
+            sequence = 1,
+            question = "Was anybody hurt?",
+            answers = listOf(
+              HistoryResponse(
+                responseSequence = 1,
+                recordingStaff = Staff(
+                  username = "JSMITH",
+                  staffId = 485572,
+                  firstName = "JIM",
+                  lastName = "SMITH",
+                ),
+                questionResponseId = null,
+                answer = "Yes",
+                responseDate = null,
+                comment = null,
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
   )
