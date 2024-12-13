@@ -34,6 +34,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdatePrisonerContactRequest
@@ -880,31 +881,136 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
   @Nested
   @DisplayName("ADDRESSES_PERSON-UPDATED")
   inner class PersonAddressUpdated {
-    private val personId = 123456L
-    private val addressId = 76543L
+    private val nomisPersonId = 123456L
+    private val nomisAddressId = 76543L
+    private val dpsContactAddressId = 8847L
 
-    @BeforeEach
-    fun setUp() {
-      awsSqsContactPersonOffenderEventsClient.sendMessage(
-        contactPersonQueueOffenderEventsUrl,
-        personAddressEvent(
-          eventType = "ADDRESSES_PERSON-UPDATED",
-          personId = personId,
-          addressId = addressId,
-        ),
-      ).also { waitForAnyProcessingToComplete() }
+    @Nested
+    inner class WhenUpdatedInDps {
+      @BeforeEach
+      fun setUp() {
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personAddressEvent(
+            eventType = "ADDRESSES_PERSON-UPDATED",
+            personId = nomisPersonId,
+            addressId = nomisAddressId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not update address in DPS`() {
+        dpsApiMock.verify(0, putRequestedFor(urlPathMatching("/sync/contact-address/.*")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-person-address-synchronisation-updated-skipped"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+          },
+          isNull(),
+        )
+      }
     }
 
-    @Test
-    fun `will track telemetry`() {
-      verify(telemetryClient).trackEvent(
-        eq("contactperson-person-address-synchronisation-updated-success"),
-        check {
-          assertThat(it["personId"]).isEqualTo(personId.toString())
-          assertThat(it["addressId"]).isEqualTo(addressId.toString())
-        },
-        isNull(),
-      )
+    @Nested
+    inner class WhenUpdatedInNomis {
+
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisAddressId(
+          nomisAddressId = nomisAddressId,
+          mapping = PersonAddressMappingDto(dpsId = dpsContactAddressId.toString(), nomisId = nomisAddressId, mappingType = PersonAddressMappingDto.MappingType.MIGRATED),
+        )
+        nomisApiMock.stubGetPerson(
+          person = contactPerson(nomisPersonId)
+            .withAddress(
+              PersonAddress(
+                addressId = nomisAddressId,
+                phoneNumbers = emptyList(),
+                comment = "nice area",
+                validatedPAF = false,
+                primaryAddress = true,
+                mailAddress = true,
+                noFixedAddress = false,
+                type = CodeDescription("HOME", "Home Address"),
+                flat = "Flat 1",
+                premise = "Brown Court",
+                locality = "Broomhill",
+                street = "Broomhill Street",
+                postcode = "S1 6GG",
+                city = CodeDescription("12345", "Sheffield"),
+                county = CodeDescription("S.YORKSHIRE", "South Yorkshire"),
+                country = CodeDescription("GBR", "United Kingdom"),
+                startDate = LocalDate.parse("2021-01-01"),
+                endDate = LocalDate.parse("2025-01-01"),
+                audit = NomisAudit(
+                  createUsername = "J.SPEAK",
+                  createDatetime = "2024-09-01T13:31",
+                  modifyUserId = "T.SMITH",
+                  modifyDatetime = "2024-10-01T13:31",
+                ),
+              ),
+            ),
+        )
+        dpsApiMock.stubUpdateContactAddress(addressId = dpsContactAddressId)
+
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personAddressEvent(
+            eventType = "ADDRESSES_PERSON-UPDATED",
+            personId = nomisPersonId,
+            addressId = nomisAddressId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-person-address-synchronisation-updated-success"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisAddressId"]).isEqualTo(nomisAddressId.toString())
+            assertThat(it["dpsContactAddressId"]).isEqualTo(dpsContactAddressId.toString())
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will update the contact address in DPS from the NOMIS address`() {
+        dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/contact-address/$dpsContactAddressId")))
+        val request: SyncUpdateContactAddressRequest = ContactPersonDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/contact-address/$dpsContactAddressId")))
+        with(request) {
+          // DPS and NOMIS contact/person id are the same
+          assertThat(contactId).isEqualTo(nomisPersonId)
+          assertThat(addressType).isEqualTo("HOME")
+          assertThat(primaryAddress).isTrue()
+          assertThat(flat).isEqualTo("Flat 1")
+          assertThat(property).isEqualTo("Brown Court")
+          assertThat(street).isEqualTo("Broomhill Street")
+          assertThat(area).isEqualTo("Broomhill")
+          assertThat(cityCode).isEqualTo("12345")
+          assertThat(countyCode).isEqualTo("S.YORKSHIRE")
+          assertThat(countryCode).isEqualTo("GBR")
+          assertThat(postcode).isEqualTo("S1 6GG")
+          assertThat(verified).isFalse()
+          assertThat(mailFlag).isTrue()
+          assertThat(startDate).isEqualTo(LocalDate.parse("2021-01-01"))
+          assertThat(endDate).isEqualTo(LocalDate.parse("2025-01-01"))
+          assertThat(noFixedAddress).isFalse()
+          assertThat(comments).isEqualTo("nice area")
+          assertThat(updatedBy).isEqualTo("T.SMITH")
+          assertThat(updatedTime).isEqualTo("2024-10-01T13:31")
+        }
+      }
     }
   }
 
