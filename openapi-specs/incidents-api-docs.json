@@ -10,7 +10,7 @@
     "license": {
       "name": "MIT"
     },
-    "version": "2024-12-10.3783.4f3d88b"
+    "version": "2024-12-13.3881.8cad791"
   },
   "servers": [
     {
@@ -2362,16 +2362,6 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Request successfully processed - content found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HmppsSubjectAccessRequestContent"
-                }
-              }
-            }
-          },
           "204": {
             "description": "Request successfully processed - no content found",
             "content": {
@@ -2384,16 +2374,6 @@
           },
           "401": {
             "description": "The client does not have authorisation to make this request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden, requires an appropriate role",
             "content": {
               "application/json": {
                 "schema": {
@@ -2418,6 +2398,26 @@
               "application/json": {
                 "schema": {
                   "type": "object"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Request successfully processed - content found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HmppsSubjectAccessRequestContent"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires an appropriate role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -3371,7 +3371,6 @@
         "required": [
           "createDateTime",
           "createdBy",
-          "incidentChangeDate",
           "incidentChangeStaff",
           "questionnaireId",
           "questions",
@@ -3403,6 +3402,12 @@
             "type": "string",
             "description": "When the questionnaire was changed",
             "format": "date"
+          },
+          "incidentChangeDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "When the questionnaire was changed with time",
+            "example": "2021-07-05T10:35:17"
           },
           "incidentChangeStaff": {
             "$ref": "#/components/schemas/NomisStaff"
@@ -3516,7 +3521,8 @@
           "createDateTime",
           "createdBy",
           "offender",
-          "role"
+          "role",
+          "sequence"
         ],
         "type": "object",
         "properties": {
@@ -3743,6 +3749,7 @@
           "createdBy",
           "date",
           "prisonId",
+          "sequence",
           "staff"
         ],
         "type": "object",
@@ -3883,6 +3890,7 @@
           "createDateTime",
           "createdBy",
           "role",
+          "sequence",
           "staff"
         ],
         "type": "object",
@@ -4146,10 +4154,17 @@
           "correctionRequestedAt",
           "correctionRequestedBy",
           "descriptionOfChange",
-          "reason"
+          "reason",
+          "sequence"
         ],
         "type": "object",
         "properties": {
+          "sequence": {
+            "type": "integer",
+            "description": "Sequence of the correction requests for this report",
+            "format": "int32",
+            "deprecated": true
+          },
           "reason": {
             "type": "string",
             "description": "Why the correction is needed",
@@ -4424,13 +4439,30 @@
       "PrisonerInvolvement": {
         "required": [
           "prisonerNumber",
-          "prisonerRole"
+          "prisonerRole",
+          "sequence"
         ],
         "type": "object",
         "properties": {
+          "sequence": {
+            "type": "integer",
+            "description": "Sequence of the prisoner involvement for this report",
+            "format": "int32",
+            "deprecated": true
+          },
           "prisonerNumber": {
             "type": "string",
             "description": "Prisoner’s NOMIS number"
+          },
+          "firstName": {
+            "type": "string",
+            "description": "First name (will become non-null in future)",
+            "nullable": true
+          },
+          "lastName": {
+            "type": "string",
+            "description": "Surname (will become non-null in future)",
+            "nullable": true
           },
           "prisonerRole": {
             "type": "string",
@@ -4703,14 +4735,31 @@
       },
       "StaffInvolvement": {
         "required": [
+          "sequence",
           "staffRole",
           "staffUsername"
         ],
         "type": "object",
         "properties": {
+          "sequence": {
+            "type": "integer",
+            "description": "Sequence of the staff involvement for this report",
+            "format": "int32",
+            "deprecated": true
+          },
           "staffUsername": {
             "type": "string",
             "description": "Username"
+          },
+          "firstName": {
+            "type": "string",
+            "description": "First name (will become non-null in future)",
+            "nullable": true
+          },
+          "lastName": {
+            "type": "string",
+            "description": "Surname (will become non-null in future)",
+            "nullable": true
           },
           "staffRole": {
             "type": "string",
@@ -4789,6 +4838,8 @@
       },
       "AddStaffInvolvement": {
         "required": [
+          "firstName",
+          "lastName",
           "staffRole",
           "staffUsername"
         ],
@@ -4799,6 +4850,18 @@
             "minLength": 3,
             "type": "string",
             "description": "Username"
+          },
+          "firstName": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string",
+            "description": "First name"
+          },
+          "lastName": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string",
+            "description": "Surname"
           },
           "staffRole": {
             "type": "string",
@@ -4835,6 +4898,8 @@
       },
       "AddPrisonerInvolvement": {
         "required": [
+          "firstName",
+          "lastName",
           "prisonerNumber",
           "prisonerRole"
         ],
@@ -4845,6 +4910,18 @@
             "minLength": 7,
             "type": "string",
             "description": "Prisoner’s NOMIS number"
+          },
+          "firstName": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string",
+            "description": "First name"
+          },
+          "lastName": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string",
+            "description": "Surname"
           },
           "prisonerRole": {
             "type": "string",
@@ -4944,6 +5021,22 @@
             "nullable": true,
             "default": "null"
           },
+          "firstName": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string",
+            "description": "First name",
+            "nullable": true,
+            "default": "null"
+          },
+          "lastName": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string",
+            "description": "Surname",
+            "nullable": true,
+            "default": "null"
+          },
           "staffRole": {
             "type": "string",
             "description": "Their role",
@@ -4986,6 +5079,22 @@
             "minLength": 7,
             "type": "string",
             "description": "Prisoner’s NOMIS number",
+            "nullable": true,
+            "default": "null"
+          },
+          "firstName": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string",
+            "description": "First name",
+            "nullable": true,
+            "default": "null"
+          },
+          "lastName": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string",
+            "description": "Surname",
             "nullable": true,
             "default": "null"
           },

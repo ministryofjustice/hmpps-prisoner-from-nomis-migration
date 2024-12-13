@@ -149,6 +149,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
         staffInvolved = listOf(
           StaffInvolvement(
+            sequence = 1,
             staffUsername = "Dave Jones",
             staffRole = StaffInvolvement.StaffRole.ACTIVELY_INVOLVED,
             comment = "Dave was hit",
@@ -156,12 +157,14 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
         prisonersInvolved = listOf(
           PrisonerInvolvement(
+            sequence = 1,
             prisonerNumber = "A1234BC",
             prisonerRole = PrisonerInvolvement.PrisonerRole.ABSCONDER,
             outcome = PrisonerInvolvement.Outcome.PLACED_ON_REPORT,
             comment = "There were issues",
           ),
           PrisonerInvolvement(
+            sequence = 2,
             prisonerNumber = "A1234BC",
             prisonerRole = PrisonerInvolvement.PrisonerRole.ABSCONDER,
             outcome = PrisonerInvolvement.Outcome.PLACED_ON_REPORT,
@@ -169,6 +172,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
         correctionRequests = listOf(
           CorrectionRequest(
+            sequence = 1,
             reason = CorrectionRequest.Reason.MISTAKE,
             descriptionOfChange = "There was a change",
             correctionRequestedBy = "Fred Black",
