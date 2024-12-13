@@ -23,6 +23,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.Con
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.migrateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.updateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.updateContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.updatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.updatePrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 
@@ -134,6 +135,34 @@ class ContactPersonDpsApiServiceTest {
 
       dpsContactPersonServer.verify(
         postRequestedFor(urlPathEqualTo("/sync/prisoner-contact")),
+      )
+    }
+  }
+
+  @Nested
+  inner class UpdatePrisonerContact {
+    private val prisonerContactId = 12345L
+
+    @Test
+    internal fun `will pass oath2 token to contact endpoint`() = runTest {
+      dpsContactPersonServer.stubUpdatePrisonerContact(prisonerContactId)
+
+      apiService.updatePrisonerContact(prisonerContactId, updatePrisonerContactRequest())
+
+      dpsContactPersonServer.verify(
+        putRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the update sync endpoint`() = runTest {
+      dpsContactPersonServer.stubUpdatePrisonerContact(prisonerContactId)
+
+      apiService.updatePrisonerContact(prisonerContactId, updatePrisonerContactRequest())
+
+      dpsContactPersonServer.verify(
+        putRequestedFor(urlPathEqualTo("/sync/prisoner-contact/$prisonerContactId")),
       )
     }
   }

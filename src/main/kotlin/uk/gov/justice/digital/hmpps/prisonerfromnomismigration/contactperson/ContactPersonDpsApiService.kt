@@ -25,7 +25,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncPrisonerContactRestriction
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdatePrisonerContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityOrLogAndRethrowBadRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
 
 @Service
@@ -53,6 +55,14 @@ class ContactPersonDpsApiService(@Qualifier("contactPersonApiWebClient") private
     .bodyValue(prisonerContact)
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun updatePrisonerContact(prisonerContactId: Long, prisonerContact: SyncUpdatePrisonerContactRequest) {
+    webClient.put()
+      .uri("/sync/prisoner-contact/{prisonerContactId}", prisonerContactId)
+      .bodyValue(prisonerContact)
+      .retrieve()
+      .awaitBodilessEntityOrLogAndRethrowBadRequest()
+  }
 
   suspend fun createContactAddress(contactAddress: SyncCreateContactAddressRequest): SyncContactAddress = webClient.post()
     .uri("/sync/contact-address")
