@@ -37,6 +37,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncPrisonerContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncPrisonerContactRestriction
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdatePrisonerContactRequest
@@ -184,6 +185,15 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       primaryAddress = true,
       createdBy = "JANE.SAM",
       createdTime = LocalDateTime.parse("2024-01-01T12:13"),
+    )
+
+    fun updateContactAddressRequest() = SyncUpdateContactAddressRequest(
+      contactId = 1234567,
+      addressType = "MOB",
+      primaryAddress = true,
+      updatedBy = "JANE.SAM",
+      updatedTime = LocalDateTime.parse("2024-01-01T12:13"),
+      verified = false,
     )
 
     fun contactAddress() = SyncContactAddress(
@@ -398,6 +408,18 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         .willReturn(
           aResponse()
             .withStatus(201)
+            .withHeader("Content-Type", "application/json")
+            .withBody(ContactPersonDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubUpdateContactAddress(addressId: Long, response: SyncContactAddress = contactAddress()) {
+    stubFor(
+      put("/sync/contact-address/$addressId")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
             .withHeader("Content-Type", "application/json")
             .withBody(ContactPersonDpsApiExtension.objectMapper.writeValueAsString(response)),
         ),
