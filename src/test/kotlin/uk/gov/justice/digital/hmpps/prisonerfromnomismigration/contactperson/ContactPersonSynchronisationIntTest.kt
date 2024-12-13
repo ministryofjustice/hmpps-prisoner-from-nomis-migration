@@ -36,6 +36,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdatePrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
@@ -458,8 +459,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will update the contact in DPS from the NOMIS person`() {
         dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/contact/$dpsContactId")))
-        val createContactRequest: SyncUpdateContactRequest = ContactPersonDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/contact/$dpsContactId")))
-        with(createContactRequest) {
+        val updateContactRequest: SyncUpdateContactRequest = ContactPersonDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/contact/$dpsContactId")))
+        with(updateContactRequest) {
           assertThat(title).isEqualTo("MR")
           assertThat(lastName).isEqualTo("SMITH")
           assertThat(firstName).isEqualTo("JOHN")
@@ -3368,37 +3369,134 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
   @Nested
   @DisplayName("OFFENDER_CONTACT-UPDATED")
   inner class ContactUpdated {
-    private val contactId = 3456L
-    private val personId = 123456L
+    private val nomisContactId = 3456L
+    private val nomisPersonId = 123456L
+    private val dpsPrisonerContactId = 87474L
     private val bookingId = 890L
     private val offenderNo = "A1234KT"
 
-    @BeforeEach
-    fun setUp() {
-      awsSqsContactPersonOffenderEventsClient.sendMessage(
-        contactPersonQueueOffenderEventsUrl,
-        contactEvent(
-          eventType = "OFFENDER_CONTACT-UPDATED",
-          personId = personId,
-          contactId = contactId,
-          bookingId = bookingId,
-          offenderNo = offenderNo,
-        ),
-      ).also { waitForAnyProcessingToComplete() }
+    @Nested
+    inner class WhenUpdatedInDps {
+      @BeforeEach
+      fun setUp() {
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          contactEvent(
+            eventType = "OFFENDER_CONTACT-UPDATED",
+            personId = nomisPersonId,
+            contactId = nomisContactId,
+            bookingId = bookingId,
+            offenderNo = offenderNo,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not updated contact in DPS`() {
+        dpsApiMock.verify(0, putRequestedFor(urlPathMatching("/sync/prisoner-contact/.*")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-contact-synchronisation-updated-skipped"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+          },
+          isNull(),
+        )
+      }
     }
 
-    @Test
-    fun `will track telemetry`() {
-      verify(telemetryClient).trackEvent(
-        eq("contactperson-contact-synchronisation-updated-success"),
-        check {
-          assertThat(it["offenderNo"]).isEqualTo(offenderNo)
-          assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
-          assertThat(it["contactId"]).isEqualTo(contactId.toString())
-          assertThat(it["personId"]).isEqualTo(personId.toString())
-        },
-        isNull(),
-      )
+    @Nested
+    inner class WhenUpdatedInNomis {
+
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisContactId(
+          nomisContactId = nomisContactId,
+          mapping = PersonContactMappingDto(dpsId = dpsPrisonerContactId.toString(), nomisId = nomisContactId, mappingType = PersonContactMappingDto.MappingType.MIGRATED),
+        )
+        nomisApiMock.stubGetPerson(
+          contactPerson(nomisPersonId)
+            .withContact(
+              PersonContact(
+                id = nomisContactId,
+                contactType = CodeDescription("S", "Social/Family"),
+                relationshipType = CodeDescription("BRO", "Brother"),
+                active = true,
+                nextOfKin = true,
+                approvedVisitor = true,
+                emergencyContact = true,
+                expiryDate = LocalDate.parse("2025-01-01"),
+                comment = "Big brother",
+                audit = NomisAudit(
+                  createUsername = "J.SPEAK",
+                  createDatetime = "2024-09-01T13:31",
+                  modifyUserId = "T.SMITH",
+                  modifyDatetime = "2024-10-01T13:31",
+                ),
+                prisoner = ContactForPrisoner(
+                  bookingId = 76544,
+                  offenderNo = offenderNo,
+                  bookingSequence = 1,
+                  firstName = "JOHN",
+                  lastName = "SMITH",
+                ),
+                restrictions = emptyList(),
+              ),
+            ),
+        )
+        dpsApiMock.stubUpdatePrisonerContact(prisonerContactId = dpsPrisonerContactId)
+
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          contactEvent(
+            eventType = "OFFENDER_CONTACT-UPDATED",
+            personId = nomisPersonId,
+            contactId = nomisContactId,
+            bookingId = bookingId,
+            offenderNo = offenderNo,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-contact-synchronisation-updated-success"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisContactId"]).isEqualTo(nomisContactId.toString())
+            assertThat(it["dpsPrisonerContactId"]).isEqualTo(dpsPrisonerContactId.toString())
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will update the prisoner contact in DPS from the NOMIS person`() {
+        dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/prisoner-contact/$dpsPrisonerContactId")))
+        val updatePrisonerContactRequest: SyncUpdatePrisonerContactRequest = ContactPersonDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/prisoner-contact/$dpsPrisonerContactId")))
+        with(updatePrisonerContactRequest) {
+          assertThat(prisonerNumber).isEqualTo(offenderNo)
+          assertThat(expiryDate).isEqualTo(LocalDate.parse("2025-01-01"))
+          // DPS and NOMIS contact/person id are the same
+          assertThat(contactId).isEqualTo(nomisPersonId)
+          assertThat(approvedVisitor).isTrue()
+          assertThat(emergencyContact).isTrue()
+          assertThat(nextOfKin).isTrue()
+          assertThat(active).isTrue()
+          assertThat(currentTerm).isTrue()
+          assertThat(contactType).isEqualTo("S")
+          assertThat(relationshipType).isEqualTo("BRO")
+          assertThat(comments).isEqualTo("Big brother")
+          assertThat(updatedBy).isEqualTo("T.SMITH")
+          assertThat(updatedTime).isEqualTo("2024-10-01T13:31")
+        }
+      }
     }
   }
 

@@ -17,6 +17,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdatePrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
@@ -144,11 +145,32 @@ class ContactPersonSynchronisationService(
   }
   suspend fun contactUpdated(event: ContactEvent) {
     val telemetry =
-      mapOf("offenderNo" to event.offenderIdDisplay, "bookingId" to event.bookingId, "personId" to event.personId, "contactId" to event.contactId)
-    telemetryClient.trackEvent(
-      "contactperson-contact-synchronisation-updated-success",
-      telemetry,
-    )
+      mutableMapOf(
+        "offenderNo" to event.offenderIdDisplay,
+        "bookingId" to event.bookingId,
+        "nomisPersonId" to event.personId,
+        "dpsContactId" to event.personId,
+        "nomisContactId" to event.contactId,
+      )
+
+    if (event.doesOriginateInDps()) {
+      telemetryClient.trackEvent(
+        "contactperson-contact-synchronisation-updated-skipped",
+        telemetry,
+      )
+    } else {
+      val dpsPrisonerContactId = mappingApiService.getByNomisContactId(nomisContactId = event.contactId).dpsId.toLong().also {
+        telemetry["dpsPrisonerContactId"] = it
+      }
+      val nomisPerson = nomisApiService.getPerson(nomisPersonId = event.personId)
+      val nomisContact = nomisPerson.contacts.find { it.id == event.contactId } ?: throw IllegalStateException("Contact ${event.contactId} for person ${event.personId} not found in NOMIS")
+
+      dpsApiService.updatePrisonerContact(dpsPrisonerContactId, nomisContact.toDpsUpdatePrisonerContactRequest(nomisPersonId = event.personId))
+      telemetryClient.trackEvent(
+        "contactperson-contact-synchronisation-updated-success",
+        telemetry,
+      )
+    }
   }
   suspend fun contactDeleted(event: ContactEvent) {
     val telemetry =
@@ -1009,6 +1031,23 @@ fun PersonContact.toDpsCreatePrisonerContactRequest(nomisPersonId: Long) = SyncC
   expiryDate = this.expiryDate,
   createdBy = this.audit.createUsername,
   createdTime = this.audit.createDatetime.toDateTime(),
+)
+fun PersonContact.toDpsUpdatePrisonerContactRequest(nomisPersonId: Long) = SyncUpdatePrisonerContactRequest(
+  // these will be mutable in DPS but we still supply them
+  contactId = nomisPersonId,
+  prisonerNumber = this.prisoner.offenderNo,
+
+  contactType = this.contactType.code,
+  relationshipType = this.relationshipType.code,
+  active = this.active,
+  currentTerm = this.prisoner.bookingSequence == 1L,
+  nextOfKin = this.nextOfKin,
+  emergencyContact = this.emergencyContact,
+  approvedVisitor = this.approvedVisitor,
+  comments = this.comment,
+  expiryDate = this.expiryDate,
+  updatedBy = this.audit.modifyUserId,
+  updatedTime = this.audit.modifyDatetime!!.toDateTime(),
 )
 
 fun PersonAddress.toDpsCreateContactAddressRequest(nomisPersonId: Long) = SyncCreateContactAddressRequest(
