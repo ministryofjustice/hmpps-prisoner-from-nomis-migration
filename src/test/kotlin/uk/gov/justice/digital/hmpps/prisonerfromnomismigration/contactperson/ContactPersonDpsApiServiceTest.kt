@@ -21,7 +21,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.Con
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.createPrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.createPrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.migrateContactRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.updateContactAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.updateContactAddressRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.updateContactPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.updateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.updateContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiMockServer.Companion.updatePrisonerContactRequest
@@ -275,6 +277,34 @@ class ContactPersonDpsApiServiceTest {
   }
 
   @Nested
+  inner class UpdateContactPhone {
+    val contactPhoneId = 12345L
+
+    @Test
+    internal fun `will pass oath2 token to endpoint`() = runTest {
+      dpsContactPersonServer.stubUpdateContactPhone(contactPhoneId)
+
+      apiService.updateContactPhone(contactPhoneId, updateContactPhoneRequest())
+
+      dpsContactPersonServer.verify(
+        putRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the update sync endpoint`() = runTest {
+      dpsContactPersonServer.stubUpdateContactPhone(contactPhoneId)
+
+      apiService.updateContactPhone(contactPhoneId, updateContactPhoneRequest())
+
+      dpsContactPersonServer.verify(
+        putRequestedFor(urlPathEqualTo("/sync/contact-phone/$contactPhoneId")),
+      )
+    }
+  }
+
+  @Nested
   inner class CreateContactAddressPhone {
     @Test
     internal fun `will pass oath2 token to endpoint`() = runTest {
@@ -296,6 +326,34 @@ class ContactPersonDpsApiServiceTest {
 
       dpsContactPersonServer.verify(
         postRequestedFor(urlPathEqualTo("/sync/contact-address-phone")),
+      )
+    }
+  }
+
+  @Nested
+  inner class UpdateContactAddressPhone {
+    val contactAddressPhoneId = 12345L
+
+    @Test
+    internal fun `will pass oath2 token to endpoint`() = runTest {
+      dpsContactPersonServer.stubUpdateContactAddressPhone(contactAddressPhoneId)
+
+      apiService.updateContactAddressPhone(contactAddressPhoneId, updateContactAddressPhoneRequest())
+
+      dpsContactPersonServer.verify(
+        putRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the update sync endpoint`() = runTest {
+      dpsContactPersonServer.stubUpdateContactAddressPhone(contactAddressPhoneId)
+
+      apiService.updateContactAddressPhone(contactAddressPhoneId, updateContactAddressPhoneRequest())
+
+      dpsContactPersonServer.verify(
+        putRequestedFor(urlPathEqualTo("/sync/contact-address-phone/$contactAddressPhoneId")),
       )
     }
   }

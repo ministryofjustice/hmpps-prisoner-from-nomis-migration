@@ -34,7 +34,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactAddressRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdatePrisonerContactRequest
@@ -1372,31 +1374,117 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
   @Nested
   @DisplayName("PHONES_PERSON-UPDATED")
   inner class PersonPhoneUpdated {
-    private val personId = 123456L
-    private val phoneId = 76543L
+    private val nomisPhoneId = 3456L
+    private val nomisPersonId = 123456L
+    private val dpsContactPhoneId = 937373L
 
-    @BeforeEach
-    fun setUp() {
-      awsSqsContactPersonOffenderEventsClient.sendMessage(
-        contactPersonQueueOffenderEventsUrl,
-        personPhoneEvent(
-          eventType = "PHONES_PERSON-UPDATED",
-          personId = personId,
-          phoneId = phoneId,
-        ),
-      ).also { waitForAnyProcessingToComplete() }
+    @Nested
+    inner class WhenUpdateInDps {
+      @BeforeEach
+      fun setUp() {
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personPhoneEvent(
+            eventType = "PHONES_PERSON-UPDATED",
+            personId = nomisPersonId,
+            phoneId = nomisPhoneId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not update phone in DPS`() {
+        dpsApiMock.verify(0, putRequestedFor(urlPathMatching("/sync/contact-phone/.*")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-phone-synchronisation-updated-skipped"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisPhoneId"]).isEqualTo(nomisPhoneId.toString())
+          },
+          isNull(),
+        )
+      }
     }
 
-    @Test
-    fun `will track telemetry`() {
-      verify(telemetryClient).trackEvent(
-        eq("contactperson-person-phone-synchronisation-updated-success"),
-        check {
-          assertThat(it["personId"]).isEqualTo(personId.toString())
-          assertThat(it["phoneId"]).isEqualTo(phoneId.toString())
-        },
-        isNull(),
-      )
+    @Nested
+    inner class WhenUpdatedInNomis {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisPhoneId(
+          nomisPhoneId = nomisPhoneId,
+          mapping = PersonPhoneMappingDto(
+            dpsId = dpsContactPhoneId.toString(),
+            nomisId = nomisPhoneId,
+            dpsPhoneType = PersonPhoneMappingDto.DpsPhoneType.PERSON,
+            mappingType = PersonPhoneMappingDto.MappingType.NOMIS_CREATED,
+          ),
+        )
+        nomisApiMock.stubGetPerson(
+          person = contactPerson(nomisPersonId)
+            .withPhoneNumber(
+              PersonPhoneNumber(
+                phoneId = nomisPhoneId,
+                number = "07973 555 555",
+                type = CodeDescription("MOB", "Mobile"),
+                extension = "x555",
+                audit = NomisAudit(
+                  createUsername = "J.SPEAK",
+                  createDatetime = "2024-09-01T13:31",
+                  modifyUserId = "T.SWIFT",
+                  modifyDatetime = "2024-10-01T13:31",
+                ),
+              ),
+            ),
+        )
+        dpsApiMock.stubUpdateContactPhone(dpsContactPhoneId)
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personPhoneEvent(
+            eventType = "PHONES_PERSON-UPDATED",
+            personId = nomisPersonId,
+            phoneId = nomisPhoneId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will retrieve the details from NOMIS`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/persons/$nomisPersonId")))
+      }
+
+      @Test
+      fun `will update the phone in DPS from the person`() {
+        dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/contact-phone/$dpsContactPhoneId")))
+        val request: SyncUpdateContactPhoneRequest = ContactPersonDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/contact-phone/$dpsContactPhoneId")))
+        with(request) {
+          // DPS and NOMIS contact/person id are the same
+          assertThat(contactId).isEqualTo(nomisPersonId)
+          assertThat(phoneType).isEqualTo("MOB")
+          assertThat(phoneNumber).isEqualTo("07973 555 555")
+          assertThat(extNumber).isEqualTo("x555")
+          assertThat(updatedBy).isEqualTo("T.SWIFT")
+          assertThat(updatedTime).isEqualTo("2024-10-01T13:31")
+        }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-phone-synchronisation-updated-success"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisPhoneId"]).isEqualTo(nomisPhoneId.toString())
+            assertThat(it["dpsContactPhoneId"]).isEqualTo(dpsContactPhoneId.toString())
+          },
+          isNull(),
+        )
+      }
     }
   }
 
@@ -1798,32 +1886,120 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
   @Nested
   @DisplayName("PHONES_PERSON-UPDATED - address")
   inner class PersonAddressPhoneUpdated {
-    private val personId = 123456L
-    private val phoneId = 76543L
+    private val nomisPhoneId = 3456L
+    private val nomisPersonId = 123456L
+    private val nomisAddressId = 652882L
+    private val dpsContactAddressPhoneId = 937373L
 
-    @BeforeEach
-    fun setUp() {
-      awsSqsContactPersonOffenderEventsClient.sendMessage(
-        contactPersonQueueOffenderEventsUrl,
-        personPhoneEvent(
-          eventType = "PHONES_PERSON-UPDATED",
-          personId = personId,
-          phoneId = phoneId,
-          isAddress = true,
-        ),
-      ).also { waitForAnyProcessingToComplete() }
+    @Nested
+    inner class WhenUpdatedInDps {
+      @BeforeEach
+      fun setUp() {
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personAddressPhoneEvent(
+            eventType = "PHONES_PERSON-UPDATED",
+            personId = nomisPersonId,
+            phoneId = nomisPhoneId,
+            addressId = nomisAddressId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not create phone in DPS`() {
+        dpsApiMock.verify(0, putRequestedFor(urlPathMatching("/sync/contact-address-phone/.*")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-phone-synchronisation-updated-skipped"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisPhoneId"]).isEqualTo(nomisPhoneId.toString())
+          },
+          isNull(),
+        )
+      }
     }
 
-    @Test
-    fun `will track telemetry`() {
-      verify(telemetryClient).trackEvent(
-        eq("contactperson-person-address-phone-synchronisation-updated-todo"),
-        check {
-          assertThat(it["personId"]).isEqualTo(personId.toString())
-          assertThat(it["phoneId"]).isEqualTo(phoneId.toString())
-        },
-        isNull(),
-      )
+    @Nested
+    inner class WhenUpdatedInNomis {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisPhoneIdOrNull(
+          nomisPhoneId = nomisPhoneId,
+          mapping = PersonPhoneMappingDto(
+            dpsId = dpsContactAddressPhoneId.toString(),
+            nomisId = nomisPhoneId,
+            dpsPhoneType = PersonPhoneMappingDto.DpsPhoneType.ADDRESS,
+            mappingType = PersonPhoneMappingDto.MappingType.NOMIS_CREATED,
+          ),
+        )
+        nomisApiMock.stubGetPerson(
+          person = contactPerson(nomisPersonId)
+            .withAddress(
+              nomisAddressId,
+              PersonPhoneNumber(
+                phoneId = nomisPhoneId,
+                number = "07973 555 555",
+                type = CodeDescription("MOB", "Mobile"),
+                extension = "x555",
+                audit = NomisAudit(
+                  createUsername = "J.SPEAK",
+                  createDatetime = "2024-09-01T13:31",
+                  modifyUserId = "T.SWIFT",
+                  modifyDatetime = "2024-10-01T13:31",
+                ),
+              ),
+            ),
+        )
+        dpsApiMock.stubUpdateContactAddressPhone(dpsContactAddressPhoneId)
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personAddressPhoneEvent(
+            eventType = "PHONES_PERSON-UPDATED",
+            personId = nomisPersonId,
+            phoneId = nomisPhoneId,
+            addressId = nomisAddressId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will retrieve the details from NOMIS`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/persons/$nomisPersonId")))
+      }
+
+      @Test
+      fun `will update the address phone in DPS from the person`() {
+        dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/contact-address-phone/$dpsContactAddressPhoneId")))
+        val request: SyncUpdateContactAddressPhoneRequest = ContactPersonDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/contact-address-phone/$dpsContactAddressPhoneId")))
+        with(request) {
+          assertThat(phoneType).isEqualTo("MOB")
+          assertThat(phoneNumber).isEqualTo("07973 555 555")
+          assertThat(extNumber).isEqualTo("x555")
+          assertThat(updatedBy).isEqualTo("T.SWIFT")
+          assertThat(updatedTime).isEqualTo("2024-10-01T13:31")
+        }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-phone-synchronisation-updated-success"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisPhoneId"]).isEqualTo(nomisPhoneId.toString())
+            assertThat(it["nomisAddressId"]).isEqualTo(nomisAddressId.toString())
+            assertThat(it["dpsContactAddressPhoneId"]).isEqualTo(dpsContactAddressPhoneId.toString())
+          },
+          isNull(),
+        )
+      }
     }
   }
 

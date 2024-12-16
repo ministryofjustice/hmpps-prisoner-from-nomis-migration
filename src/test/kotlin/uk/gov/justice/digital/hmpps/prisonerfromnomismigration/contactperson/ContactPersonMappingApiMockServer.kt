@@ -472,6 +472,16 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
     }
   }
 
+  fun stubGetByNomisPhoneId(
+    nomisPhoneId: Long = 123456,
+    mapping: PersonPhoneMappingDto = PersonPhoneMappingDto(
+      nomisId = 123456,
+      dpsId = "654321",
+      dpsPhoneType = PersonPhoneMappingDto.DpsPhoneType.PERSON,
+      mappingType = PersonPhoneMappingDto.MappingType.MIGRATED,
+    ),
+  ) = stubGetByNomisPhoneIdOrNull(nomisPhoneId, mapping)
+
   fun stubCreateIdentifierMapping() {
     mappingApi.stubFor(
       post("/mapping/contact-person/identifier").willReturn(

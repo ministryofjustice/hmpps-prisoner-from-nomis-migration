@@ -37,7 +37,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncPrisonerContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncPrisonerContactRestriction
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactAddressRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdatePrisonerContactRequest
@@ -230,6 +232,14 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       createdTime = LocalDateTime.parse("2024-01-01T12:13"),
     )
 
+    fun updateContactPhoneRequest() = SyncUpdateContactPhoneRequest(
+      contactId = 1234567,
+      phoneType = "MOB",
+      phoneNumber = "07973 555 5555",
+      updatedBy = "JANE.SAM",
+      updatedTime = LocalDateTime.parse("2024-01-01T12:13"),
+    )
+
     fun contactPhone() = SyncContactPhone(
       contactPhoneId = 1234567,
       phoneType = "MOB",
@@ -244,6 +254,13 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       phoneNumber = "07973 555 5555",
       createdBy = "JANE.SAM",
       createdTime = LocalDateTime.parse("2024-01-01T12:13"),
+    )
+
+    fun updateContactAddressPhoneRequest() = SyncUpdateContactAddressPhoneRequest(
+      phoneType = "MOB",
+      phoneNumber = "07973 555 5555",
+      updatedBy = "JANE.SAM",
+      updatedTime = LocalDateTime.parse("2024-01-01T12:13"),
     )
 
     fun contactAddressPhone() = SyncContactAddressPhone(
@@ -447,12 +464,34 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
     )
   }
+  fun stubUpdateContactPhone(contactPhoneId: Long, response: SyncContactPhone = contactPhone()) {
+    stubFor(
+      put("/sync/contact-phone/$contactPhoneId")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(ContactPersonDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
   fun stubCreateContactAddressPhone(response: SyncContactAddressPhone = contactAddressPhone()) {
     stubFor(
       post("/sync/contact-address-phone")
         .willReturn(
           aResponse()
             .withStatus(201)
+            .withHeader("Content-Type", "application/json")
+            .withBody(ContactPersonDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+  fun stubUpdateContactAddressPhone(contactAddressPhoneId: Long, response: SyncContactAddressPhone = contactAddressPhone()) {
+    stubFor(
+      put("/sync/contact-address-phone/$contactAddressPhoneId")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
             .withHeader("Content-Type", "application/json")
             .withBody(ContactPersonDpsApiExtension.objectMapper.writeValueAsString(response)),
         ),
