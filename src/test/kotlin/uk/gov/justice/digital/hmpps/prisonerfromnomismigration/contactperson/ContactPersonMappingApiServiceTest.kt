@@ -376,6 +376,48 @@ class ContactPersonMappingApiServiceTest {
   }
 
   @Nested
+  inner class GetByNomisPhoneId {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubGetByNomisPhoneId(nomisPhoneId = 1234567)
+
+      apiService.getByNomisPhoneId(nomisPhoneId = 1234567)
+
+      mockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass NOMIS id to service`() = runTest {
+      mockServer.stubGetByNomisPhoneId(nomisPhoneId = 1234567)
+
+      apiService.getByNomisPhoneId(nomisPhoneId = 1234567)
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/mapping/contact-person/phone/nomis-phone-id/1234567")),
+      )
+    }
+
+    @Test
+    fun `will return dpsId`() = runTest {
+      mockServer.stubGetByNomisPhoneId(
+        nomisPhoneId = 1234567,
+        mapping = PersonPhoneMappingDto(
+          dpsId = "7654321",
+          nomisId = 1234567,
+          dpsPhoneType = PersonPhoneMappingDto.DpsPhoneType.PERSON,
+          mappingType = PersonPhoneMappingDto.MappingType.MIGRATED,
+        ),
+      )
+
+      val mapping = apiService.getByNomisPhoneId(nomisPhoneId = 1234567)
+
+      assertThat(mapping.dpsId).isEqualTo("7654321")
+    }
+  }
+
+  @Nested
   inner class GetByNomisIdentifierIdOrNull {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {

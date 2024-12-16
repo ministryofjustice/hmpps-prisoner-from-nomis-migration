@@ -88,6 +88,14 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
+  suspend fun getByNomisPhoneId(nomisPhoneId: Long): PersonPhoneMappingDto = webClient.get()
+    .uri(
+      "/mapping/contact-person/phone/nomis-phone-id/{nomisPhoneId}",
+      nomisPhoneId,
+    )
+    .retrieve()
+    .awaitBody()
+
   suspend fun getByNomisIdentifierIdsOrNull(nomisPersonId: Long, nomisSequenceNumber: Long): PersonIdentifierMappingDto? = webClient.get()
     .uri(
       "/mapping/contact-person/identifier/nomis-person-id/{nomisPersonId}/nomis-sequence-number/{nomisSequenceNumber}",

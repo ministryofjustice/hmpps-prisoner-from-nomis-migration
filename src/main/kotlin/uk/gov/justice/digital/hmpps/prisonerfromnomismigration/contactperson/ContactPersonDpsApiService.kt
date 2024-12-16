@@ -23,7 +23,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncPrisonerContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncPrisonerContactRestriction
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactAddressRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdatePrisonerContactRequest
@@ -91,8 +93,20 @@ class ContactPersonDpsApiService(@Qualifier("contactPersonApiWebClient") private
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
+  suspend fun updateContactPhone(contactPhoneId: Long, contactPhone: SyncUpdateContactPhoneRequest): SyncContactPhone = webClient.put()
+    .uri("/sync/contact-phone/{contactPhoneId}", contactPhoneId)
+    .bodyValue(contactPhone)
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
+
   suspend fun createContactAddressPhone(contactAddressPhone: SyncCreateContactAddressPhoneRequest): SyncContactAddressPhone = webClient.post()
     .uri("/sync/contact-address-phone")
+    .bodyValue(contactAddressPhone)
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun updateContactAddressPhone(contactAddressPhoneId: Long, contactAddressPhone: SyncUpdateContactAddressPhoneRequest): SyncContactAddressPhone = webClient.put()
+    .uri("/sync/contact-address-phone/{contactAddressPhoneId}", contactAddressPhoneId)
     .bodyValue(contactAddressPhone)
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()

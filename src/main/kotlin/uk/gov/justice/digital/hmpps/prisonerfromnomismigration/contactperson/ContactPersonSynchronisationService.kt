@@ -15,7 +15,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreateContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactAddressRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdatePrisonerContactRequest
@@ -457,15 +459,42 @@ class ContactPersonSynchronisationService(
 
   suspend fun personPhoneUpdated(event: PersonPhoneEvent) {
     val telemetry =
-      mapOf("personId" to event.personId, "phoneId" to event.phoneId)
-    if (event.isAddress) {
+      mutableMapOf<String, Any>("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisPhoneId" to event.phoneId).also {
+        if (event.isAddress && event.addressId != null) {
+          it["nomisAddressId"] = event.addressId
+        }
+      }
+
+    if (event.doesOriginateInDps()) {
       telemetryClient.trackEvent(
-        "contactperson-person-address-phone-synchronisation-updated-todo",
+        "contactperson-phone-synchronisation-updated-skipped",
         telemetry,
       )
     } else {
+      val mapping = mappingApiService.getByNomisPhoneId(nomisPhoneId = event.phoneId).also {
+        if (it.dpsPhoneType == PersonPhoneMappingDto.DpsPhoneType.PERSON) {
+          telemetry["dpsContactPhoneId"] = it.dpsId
+        } else {
+          telemetry["dpsContactAddressPhoneId"] = it.dpsId
+        }
+      }
+      val nomisPerson = nomisApiService.getPerson(nomisPersonId = event.personId)
+
+      if (event.isAddress && event.addressId != null) {
+        val nomisAddress = nomisPerson.addresses.find { it.addressId == event.addressId }
+          ?: throw IllegalStateException("Address ${event.addressId} for person ${event.personId} not found in NOMIS")
+        val nomisPhone = nomisAddress.phoneNumbers.find { it.phoneId == event.phoneId }
+          ?: throw IllegalStateException("Phone ${event.phoneId} for person ${event.personId} on address $${event.addressId} not found in NOMIS")
+
+        dpsApiService.updateContactAddressPhone(mapping.dpsId.toLong(), nomisPhone.toDpsUpdateContactAddressPhoneRequest())
+      } else {
+        val nomisPhone = nomisPerson.phoneNumbers.find { it.phoneId == event.phoneId }
+          ?: throw IllegalStateException("Phone ${event.phoneId} for person  ${event.personId}not found in NOMIS")
+
+        dpsApiService.updateContactPhone(mapping.dpsId.toLong(), nomisPhone.toDpsUpdateContactPhoneRequest(event.personId))
+      }
       telemetryClient.trackEvent(
-        "contactperson-person-phone-synchronisation-updated-success",
+        "contactperson-phone-synchronisation-updated-success",
         telemetry,
       )
     }
@@ -1122,6 +1151,14 @@ fun PersonPhoneNumber.toDpsCreateContactPhoneRequest(nomisPersonId: Long) = Sync
   phoneType = this.type.code,
   createdTime = this.audit.createDatetime.toDateTime(),
 )
+fun PersonPhoneNumber.toDpsUpdateContactPhoneRequest(nomisPersonId: Long) = SyncUpdateContactPhoneRequest(
+  contactId = nomisPersonId,
+  updatedBy = this.audit.modifyUserId!!,
+  phoneNumber = this.number,
+  extNumber = this.extension,
+  phoneType = this.type.code,
+  updatedTime = this.audit.modifyDatetime!!.toDateTime(),
+)
 fun PersonPhoneNumber.toDpsCreateContactAddressPhoneRequest(dpsAddressId: Long) = SyncCreateContactAddressPhoneRequest(
   contactAddressId = dpsAddressId,
   createdBy = this.audit.createUsername,
@@ -1129,6 +1166,13 @@ fun PersonPhoneNumber.toDpsCreateContactAddressPhoneRequest(dpsAddressId: Long) 
   extNumber = this.extension,
   phoneType = this.type.code,
   createdTime = this.audit.createDatetime.toDateTime(),
+)
+fun PersonPhoneNumber.toDpsUpdateContactAddressPhoneRequest() = SyncUpdateContactAddressPhoneRequest(
+  updatedBy = this.audit.modifyUserId!!,
+  phoneNumber = this.number,
+  extNumber = this.extension,
+  phoneType = this.type.code,
+  updatedTime = this.audit.modifyDatetime!!.toDateTime(),
 )
 fun PersonIdentifier.toDpsCreateContactIdentityRequest(nomisPersonId: Long) = SyncCreateContactIdentityRequest(
   contactId = nomisPersonId,
