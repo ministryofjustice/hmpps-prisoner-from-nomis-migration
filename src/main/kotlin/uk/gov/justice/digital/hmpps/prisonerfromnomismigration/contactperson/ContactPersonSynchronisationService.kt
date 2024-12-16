@@ -17,6 +17,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactAddressRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactEmailRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRestrictionRequest
@@ -555,11 +556,26 @@ class ContactPersonSynchronisationService(
 
   suspend fun personEmailUpdated(event: PersonInternetAddressEvent) {
     val telemetry =
-      mapOf("personId" to event.personId, "internetAddressId" to event.internetAddressId)
-    telemetryClient.trackEvent(
-      "contactperson-person-email-synchronisation-updated-success",
-      telemetry,
-    )
+      mutableMapOf<String, Any>("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisInternetAddressId" to event.internetAddressId)
+
+    if (event.doesOriginateInDps()) {
+      telemetryClient.trackEvent(
+        "contactperson-email-synchronisation-updated-skipped",
+        telemetry,
+      )
+    } else {
+      val dpsContactEmailId = mappingApiService.getByNomisEmailId(nomisInternetAddressId = event.internetAddressId).dpsId.also {
+        telemetry["dpsContactEmailId"] = it
+      }
+      val nomisPerson = nomisApiService.getPerson(nomisPersonId = event.personId)
+      val nomisAddress = nomisPerson.emailAddresses.find { it.emailAddressId == event.internetAddressId } ?: throw IllegalStateException("Email ${event.internetAddressId} for person ${event.personId} not found in NOMIS")
+      dpsApiService.updateContactEmail(dpsContactEmailId.toLong(), nomisAddress.toDpsUpdateContactEmailRequest(nomisPersonId = event.personId))
+
+      telemetryClient.trackEvent(
+        "contactperson-email-synchronisation-updated-success",
+        telemetry,
+      )
+    }
   }
 
   suspend fun personEmailDeleted(event: PersonInternetAddressEvent) {
@@ -1142,6 +1158,12 @@ fun PersonEmailAddress.toDpsCreateContactEmailRequest(nomisPersonId: Long) = Syn
   createdBy = this.audit.createUsername,
   emailAddress = this.email,
   createdTime = this.audit.createDatetime.toDateTime(),
+)
+fun PersonEmailAddress.toDpsUpdateContactEmailRequest(nomisPersonId: Long) = SyncUpdateContactEmailRequest(
+  contactId = nomisPersonId,
+  updatedBy = this.audit.modifyUserId!!,
+  emailAddress = this.email,
+  updatedTime = this.audit.modifyDatetime!!.toDateTime(),
 )
 fun PersonPhoneNumber.toDpsCreateContactPhoneRequest(nomisPersonId: Long) = SyncCreateContactPhoneRequest(
   contactId = nomisPersonId,

@@ -36,6 +36,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncCreatePrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactAddressRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactEmailRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRestrictionRequest
@@ -2342,31 +2343,105 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
   @Nested
   @DisplayName("INTERNET_ADDRESSES_PERSON-UPDATED")
   inner class PersonEmailUpdated {
-    private val personId = 123456L
-    private val internetAddressId = 76543L
+    private val nomisInternetAddressId = 3456L
+    private val nomisPersonId = 123456L
+    private val dpsContactEmailId = 937373L
 
-    @BeforeEach
-    fun setUp() {
-      awsSqsContactPersonOffenderEventsClient.sendMessage(
-        contactPersonQueueOffenderEventsUrl,
-        personInternetAddressEvent(
-          eventType = "INTERNET_ADDRESSES_PERSON-UPDATED",
-          personId = personId,
-          internetAddressId = internetAddressId,
-        ),
-      ).also { waitForAnyProcessingToComplete() }
+    @Nested
+    inner class WhenUpdatedInDps {
+      @BeforeEach
+      fun setUp() {
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personInternetAddressEvent(
+            eventType = "INTERNET_ADDRESSES_PERSON-UPDATED",
+            personId = nomisPersonId,
+            internetAddressId = nomisInternetAddressId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not update email in DPS`() {
+        dpsApiMock.verify(0, putRequestedFor(urlPathMatching("/sync/contact-email/.*")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-email-synchronisation-updated-skipped"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisInternetAddressId"]).isEqualTo(nomisInternetAddressId.toString())
+          },
+          isNull(),
+        )
+      }
     }
 
-    @Test
-    fun `will track telemetry`() {
-      verify(telemetryClient).trackEvent(
-        eq("contactperson-person-email-synchronisation-updated-success"),
-        check {
-          assertThat(it["personId"]).isEqualTo(personId.toString())
-          assertThat(it["internetAddressId"]).isEqualTo(internetAddressId.toString())
-        },
-        isNull(),
-      )
+    @Nested
+    inner class WhenUpdatedInNomis {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisEmailIdOrNull(nomisInternetAddressId = nomisInternetAddressId, mapping = PersonEmailMappingDto(dpsId = "$dpsContactEmailId", nomisId = nomisInternetAddressId, mappingType = PersonEmailMappingDto.MappingType.NOMIS_CREATED))
+        nomisApiMock.stubGetPerson(
+          person = contactPerson(nomisPersonId)
+            .withEmailAddress(
+              PersonEmailAddress(
+                emailAddressId = nomisInternetAddressId,
+                email = "test@test.com",
+                audit = NomisAudit(
+                  createUsername = "J.SPEAK",
+                  createDatetime = "2024-09-01T13:31",
+                  modifyUserId = "T.SWIFT",
+                  modifyDatetime = "2024-10-01T13:31",
+                ),
+              ),
+            ),
+        )
+        dpsApiMock.stubUpdateContactEmail(dpsContactEmailId)
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personInternetAddressEvent(
+            eventType = "INTERNET_ADDRESSES_PERSON-UPDATED",
+            personId = nomisPersonId,
+            internetAddressId = nomisInternetAddressId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will retrieve the details from NOMIS`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/persons/$nomisPersonId")))
+      }
+
+      @Test
+      fun `will update the email in DPS from the person`() {
+        dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/contact-email/$dpsContactEmailId")))
+        val request: SyncUpdateContactEmailRequest = ContactPersonDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/contact-email/$dpsContactEmailId")))
+        with(request) {
+          // DPS and NOMIS contact/person id are the same
+          assertThat(contactId).isEqualTo(nomisPersonId)
+          assertThat(emailAddress).isEqualTo("test@test.com")
+          assertThat(updatedBy).isEqualTo("T.SWIFT")
+          assertThat(updatedTime).isEqualTo("2024-10-01T13:31")
+        }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-email-synchronisation-updated-success"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisInternetAddressId"]).isEqualTo(nomisInternetAddressId.toString())
+            assertThat(it["dpsContactEmailId"]).isEqualTo(dpsContactEmailId.toString())
+          },
+          isNull(),
+        )
+      }
     }
   }
 
