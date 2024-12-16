@@ -231,7 +231,10 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     )
   }
 
-  fun stubGetLastModifiedCourtEventCharge(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+  fun stubGetLastModifiedCourtEventCharge(
+    status: HttpStatus,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
     nomisApi.stubFor(
       get(WireMock.urlPathMatching("/prisoners/\\S+/sentencing/court-event-charges/\\d+/last-modified/")).willReturn(
         aResponse()
@@ -357,7 +360,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         )
           .willReturn(
             aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-              .withBody(courtCaseResponse(caseId = it.toLong())),
+              .withBody(objectMapper.writeValueAsString(courtCaseResponse(caseId = it.toLong()))),
           ),
       )
     }
@@ -370,53 +373,101 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     courtId: String = "BATHMC",
     caseInfoNumber: String? = "caseRef1",
     caseIndentifiers: List<CaseIdentifierResponse> = emptyList(),
+  ): CourtCaseResponse = CourtCaseResponse(
+    bookingId = bookingId,
+    id = caseId,
+    offenderNo = offenderNo,
+    caseSequence = 22,
+    caseStatus = CodeDescription("A", "Active"),
+    legalCaseType = CodeDescription("A", "Adult"),
+    courtId = courtId,
+    courtEvents = listOf(
+      CourtEventResponse(
+        id = 528456562,
+        caseId = caseId,
+        offenderNo = "A3864DZ",
+        eventDateTime = "2024-02-01T10:00:00",
+        courtEventType = CodeDescription("CRT", "Court Appearance"),
+        eventStatus = CodeDescription("SCH", "Scheduled (Approved)"),
+        directionCode = CodeDescription("OUT", "Out"),
+        courtId = courtId,
+        outcomeReasonCode = CodeDescription("4506", "Adjournment"),
+        createdDateTime = "2024-02-08T14:36:16.485181",
+        createdByUsername = "PRISONER_MANAGER_API",
+        courtEventCharges = listOf(
+          CourtEventChargeResponse(
+            eventId = 528456562,
+            offencesCount = 1,
+            offenceDate = LocalDate.parse("2024-01-02"),
+            resultCode1 = CodeDescription("1081", "Detention and Training Order"),
+            resultCode1Indicator = "F",
+            mostSeriousFlag = false,
+            offenderCharge = OffenderChargeResponse(
+              id = 3934645,
+              offence = OffenceResponse(
+                offenceCode = "RR84027",
+                statuteCode = "RR84",
+                description = "Failing to stop at school crossing (horsedrawn vehicle)",
+              ),
+              offencesCount = 1,
+              offenceDate = LocalDate.parse("2024-01-02"),
+              chargeStatus = CodeDescription("A", "Active"),
+              resultCode1 = CodeDescription("1081", "Detention and Training Order"),
+              resultCode1Indicator = "F",
+              mostSeriousFlag = false,
+            ),
+          ),
+        ),
+        courtOrders = listOf(
+          CourtOrderResponse(
+            id = 1434174,
+            courtDate = LocalDate.parse("2024-02-01"),
+            issuingCourt = "ABDRCT",
+            orderType = "AUTO",
+            orderStatus = "A",
+            sentencePurposes = emptyList(),
+          ),
+        ),
+      ),
+    ),
+    offenderCharges = listOf(
+      OffenderChargeResponse(
+        id = 3934645,
+        offence = OffenceResponse(
+          offenceCode = "RR84027",
+          statuteCode = "RR84",
+          description = "Failing to stop at school crossing (horsedrawn vehicle)",
+        ),
+        offencesCount = 1,
+        offenceDate = LocalDate.parse("2024-01-02"),
+        chargeStatus = CodeDescription("A", "Active"),
+        resultCode1 = CodeDescription("1081", "Detention and Training Order"),
+        resultCode1Indicator = "F",
+        mostSeriousFlag = false,
+      ),
+    ),
+    createdDateTime = "2024-02-08T14:36:16.370572",
+    createdByUsername = "PRISONER_MANAGER_API",
+    lidsCaseNumber = 1,
+    primaryCaseInfoNumber = caseInfoNumber,
+    caseInfoNumbers = caseIndentifiers,
+  )
+
+  private fun courtCaseResponse3(
+    bookingId: Long = 2,
+    offenderNo: String = "G4803UT",
+    caseId: Long = 3,
+    courtId: String = "BATHMC",
+    caseInfoNumber: String? = "caseRef1",
+    caseIndentifiers: List<CaseIdentifierResponse> = emptyList(),
   ): String {
     // language=JSON
     return """
 {
-  "id": $caseId,
-  "offenderNo": "$offenderNo",
-  "bookingId": $bookingId,
-  "caseSequence": 22,
-  "primaryCaseInfoNumber" : "$caseInfoNumber",
-  "caseStatus": {
-    "code": "A",
-    "description": "Active"
-  },
-  "legalCaseType": {
-    "code": "A",
-    "description": "Adult"
-  },
-  "beginDate": "2024-02-01",
-  "courtId": "$courtId",
-  "lidsCaseNumber": 1,
-  "createdDateTime": "2024-02-08T14:36:16.370572",
-  "createdByUsername": "PRISONER_MANAGER_API",
+
   "courtEvents": [
     {
-      "id": 528456562,
-      "caseId": $caseId,
-      "offenderNo": "A3864DZ",
-      "eventDateTime": "2024-02-01T10:00:00",
-      "courtEventType": {
-        "code": "CRT",
-        "description": "Court Appearance"
-      },
-      "eventStatus": {
-        "code": "SCH",
-        "description": "Scheduled (Approved)"
-      },
-      "directionCode": {
-        "code": "OUT",
-        "description": "Out"
-      },
-      "courtId": "ABDRCT",
-      "outcomeReasonCode": {
-        "code": "4506",
-        "description": "Adjournment"
-      },
-      "orderRequestedFlag": false,
-      "nextEventRequestFlag": false,
+     
       "createdDateTime": "2024-02-08T14:36:16.485181",
       "createdByUsername": "PRISONER_MANAGER_API",
       "courtEventCharges": [

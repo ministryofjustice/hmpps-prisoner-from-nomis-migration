@@ -11,6 +11,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtAppearance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseIdentifierResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventResponse
@@ -65,6 +66,7 @@ fun CourtEventResponse.toDpsCourtAppearance(
 fun CourtEventResponse.toMigrationDpsCourtAppearance() = MigrationCreateCourtAppearance(
   courtCode = this.courtId,
   appearanceDate = LocalDateTime.parse(this.eventDateTime).toLocalDate(),
+  appearanceTypeUuid = this.courtEventType.toDpsAppearanceTypeId(),
   legacyData =
   CourtAppearanceLegacyData(
     eventId = this.id.toString(),
@@ -79,7 +81,7 @@ fun CourtEventResponse.toMigrationDpsCourtAppearance() = MigrationCreateCourtApp
 
 fun OffenderChargeResponse.toDpsCharge(appearanceId: String) = LegacyCreateCharge(
   offenceCode = this.offence.offenceCode,
-  offenceStartDate = this.offenceDate!!,
+  offenceStartDate = this.offenceDate,
   legacyData =
   ChargeLegacyData(
     postedDate = LocalDate.now().toString(),
@@ -93,7 +95,7 @@ fun OffenderChargeResponse.toDpsCharge(appearanceId: String) = LegacyCreateCharg
 
 fun CourtEventChargeResponse.toDpsCharge(appearanceId: String) = LegacyCreateCharge(
   offenceCode = this.offenderCharge.offence.offenceCode,
-  offenceStartDate = this.offenceDate!!,
+  offenceStartDate = this.offenceDate,
   legacyData =
   ChargeLegacyData(
     postedDate = LocalDate.now().toString(),
@@ -107,8 +109,7 @@ fun CourtEventChargeResponse.toDpsCharge(appearanceId: String) = LegacyCreateCha
 
 fun OffenderChargeResponse.toDpsMigrationCharge(chargeId: Long) = MigrationCreateCharge(
   offenceCode = this.offence.offenceCode,
-  // TODO remove temporary date when RaS have corrected the dto
-  offenceStartDate = this.offenceDate ?: LocalDate.MIN,
+  offenceStartDate = this.offenceDate,
   legacyData =
   ChargeLegacyData(
     postedDate = LocalDate.now().toString(),
@@ -128,3 +129,13 @@ fun SentenceResponse.toDpsSentence(offenderNo: String, sentenceChargeIds: List<S
 // TODO confirm that DPS are no longer using ZoneTimeDate  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
 fun CaseIdentifierResponse.toDpsCaseReference() =
   CaseReferenceLegacyData(offenderCaseReference = this.reference, updatedDate = LocalDateTime.parse(this.createDateTime))
+
+const val VIDEO_LINK_DPS_APPEARANCE_TYPE_UUID = "1da09b6e-55cb-4838-a157-ee6944f2094c"
+const val COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID = "63e8fce0-033c-46ad-9edf-391b802d547a"
+
+private fun CodeDescription.toDpsAppearanceTypeId(): UUID =
+  if (this.code.startsWith("VL")) {
+    UUID.fromString(VIDEO_LINK_DPS_APPEARANCE_TYPE_UUID)
+  } else {
+    UUID.fromString(COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID)
+  }

@@ -284,6 +284,11 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
                 "appearances[0].charges[0].legacyData.postedDate",
                 WireMock.not(WireMock.absent()),
               ),
+            ).withRequestBody(
+              WireMock.matchingJsonPath(
+                "appearances[0].appearanceTypeUuid",
+                WireMock.equalTo(COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID),
+              ),
             ),
         )
       }
