@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-12-13.3827.7d086cc"
+    "version": "2024-12-16.3861.b1b1682"
   },
   "servers": [
     {
@@ -2987,8 +2987,7 @@
           "active",
           "appearanceLifetimeUuid",
           "legacyData",
-          "offenceCode",
-          "offenceStartDate"
+          "offenceCode"
         ],
         "type": "object",
         "properties": {
@@ -3215,7 +3214,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "10:16:20.727592829"
+            "example": "10:29:23.219423024"
           },
           "courtCode": {
             "type": "string"
@@ -3377,8 +3376,7 @@
           "active",
           "chargeNOMISId",
           "legacyData",
-          "offenceCode",
-          "offenceStartDate"
+          "offenceCode"
         ],
         "type": "object",
         "properties": {
@@ -3407,6 +3405,7 @@
       "MigrationCreateCourtAppearance": {
         "required": [
           "appearanceDate",
+          "appearanceTypeUuid",
           "charges",
           "courtCode",
           "legacyData"
@@ -3419,6 +3418,10 @@
           "appearanceDate": {
             "type": "string",
             "format": "date"
+          },
+          "appearanceTypeUuid": {
+            "type": "string",
+            "format": "uuid"
           },
           "legacyData": {
             "$ref": "#/components/schemas/CourtAppearanceLegacyData"
@@ -3853,7 +3856,6 @@
           "courtCaseUuid",
           "lifetimeUuid",
           "offenceCode",
-          "offenceStartDate",
           "prisonerId"
         ],
         "type": "object",
@@ -3942,7 +3944,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "10:16:20.727592829"
+            "example": "10:29:23.219423024"
           },
           "courtId": {
             "type": "string"
@@ -3990,8 +3992,7 @@
         "required": [
           "chargeUuid",
           "lifetimeUuid",
-          "offenceCode",
-          "offenceStartDate"
+          "offenceCode"
         ],
         "type": "object",
         "properties": {
@@ -4223,7 +4224,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "10:16:20.727592829"
+            "example": "10:29:23.219423024"
           },
           "courtCode": {
             "type": "string"
@@ -4257,13 +4258,13 @@
       "PageCourtCase": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -4288,12 +4289,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
