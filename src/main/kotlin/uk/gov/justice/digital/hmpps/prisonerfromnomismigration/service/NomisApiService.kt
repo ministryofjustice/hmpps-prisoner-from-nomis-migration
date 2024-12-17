@@ -18,8 +18,6 @@ import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeIdResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjudicationChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.EndActivitiesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveActivityIdsResponse
@@ -48,89 +46,64 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     ignoreMissingRoom: Boolean,
     pageNumber: Long,
     pageSize: Long,
-  ): PageImpl<VisitId> =
-    webClient.get()
-      .uri {
-        it.path("/visits/ids")
-          .queryParam("prisonIds", prisonIds)
-          .queryParam("visitTypes", visitTypes)
-          .queryParam("fromDateTime", fromDateTime)
-          .queryParam("toDateTime", toDateTime)
-          .queryParam("ignoreMissingRoom", ignoreMissingRoom)
-          .queryParam("page", pageNumber)
-          .queryParam("size", pageSize)
-          .build()
-      }
-      .retrieve()
-      .bodyToMono(typeReference<RestResponsePage<VisitId>>())
-      .awaitSingle()
+  ): PageImpl<VisitId> = webClient.get()
+    .uri {
+      it.path("/visits/ids")
+        .queryParam("prisonIds", prisonIds)
+        .queryParam("visitTypes", visitTypes)
+        .queryParam("fromDateTime", fromDateTime)
+        .queryParam("toDateTime", toDateTime)
+        .queryParam("ignoreMissingRoom", ignoreMissingRoom)
+        .queryParam("page", pageNumber)
+        .queryParam("size", pageSize)
+        .build()
+    }
+    .retrieve()
+    .bodyToMono(typeReference<RestResponsePage<VisitId>>())
+    .awaitSingle()
 
   suspend fun getVisit(
     nomisVisitId: Long,
-  ): NomisVisit =
-    webClient.get()
-      .uri("/visits/{nomisVisitId}", nomisVisitId)
-      .retrieve()
-      .bodyToMono(NomisVisit::class.java)
-      .awaitSingle()!!
+  ): NomisVisit = webClient.get()
+    .uri("/visits/{nomisVisitId}", nomisVisitId)
+    .retrieve()
+    .bodyToMono(NomisVisit::class.java)
+    .awaitSingle()!!
 
   suspend fun getRoomUsage(
     filter: VisitsMigrationFilter,
-  ): List<VisitRoomUsageResponse> =
-    webClient.get()
-      .uri {
-        it.path("/visits/rooms/usage-count")
-          .queryParam("prisonIds", filter.prisonIds)
-          .queryParam("visitTypes", filter.visitTypes)
-          .queryParam("fromDateTime", filter.fromDateTime)
-          .queryParam("toDateTime", filter.toDateTime)
-          .build()
-      }
-      .retrieve()
-      .bodyToMono(typeReference<List<VisitRoomUsageResponse>>())
-      .awaitSingle()
-
-  suspend fun getSentencingAdjustmentIds(
-    fromDate: LocalDate?,
-    toDate: LocalDate?,
-    pageNumber: Long,
-    pageSize: Long,
-  ): PageImpl<NomisAdjustmentId> =
-    webClient.get()
-      .uri {
-        it.path("/adjustments/ids")
-          .queryParam("fromDate", fromDate)
-          .queryParam("toDate", toDate)
-          .queryParam("page", pageNumber)
-          .queryParam("size", pageSize)
-          .build()
-      }
-      .retrieve()
-      .bodyToMono(typeReference<RestResponsePage<NomisAdjustmentId>>())
-      .awaitSingle()
+  ): List<VisitRoomUsageResponse> = webClient.get()
+    .uri {
+      it.path("/visits/rooms/usage-count")
+        .queryParam("prisonIds", filter.prisonIds)
+        .queryParam("visitTypes", filter.visitTypes)
+        .queryParam("fromDateTime", filter.fromDateTime)
+        .queryParam("toDateTime", filter.toDateTime)
+        .build()
+    }
+    .retrieve()
+    .bodyToMono(typeReference<List<VisitRoomUsageResponse>>())
+    .awaitSingle()
 
   suspend fun getSentenceAdjustment(
     nomisSentenceAdjustmentId: Long,
-  ): NomisAdjustment? =
-    webClient.get()
-      .uri("/sentence-adjustments/{nomisSentenceAdjustmentId}", nomisSentenceAdjustmentId)
-      .retrieve()
-      .awaitBodyOrNullWhenNotFound()
+  ): NomisAdjustment? = webClient.get()
+    .uri("/sentence-adjustments/{nomisSentenceAdjustmentId}", nomisSentenceAdjustmentId)
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
 
   suspend fun getKeyDateAdjustment(
     nomisKeyDateAdjustmentId: Long,
-  ): NomisAdjustment? =
-    webClient.get()
-      .uri("/key-date-adjustments/{nomisKeyDateAdjustmentId}", nomisKeyDateAdjustmentId)
-      .retrieve()
-      .awaitBodyOrNullWhenNotFound()
+  ): NomisAdjustment? = webClient.get()
+    .uri("/key-date-adjustments/{nomisKeyDateAdjustmentId}", nomisKeyDateAdjustmentId)
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
 
-  suspend fun getAppointment(nomisEventId: Long): AppointmentResponse =
-    webClient.get()
-      .uri("/appointments/{nomisEventId}", nomisEventId)
-      .retrieve()
-      .bodyToMono(AppointmentResponse::class.java)
-      .awaitSingle()
+  suspend fun getAppointment(nomisEventId: Long): AppointmentResponse = webClient.get()
+    .uri("/appointments/{nomisEventId}", nomisEventId)
+    .retrieve()
+    .bodyToMono(AppointmentResponse::class.java)
+    .awaitSingle()
 
   suspend fun getAppointmentIds(
     prisonIds: List<String>,
@@ -138,58 +111,25 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     toDate: LocalDate?,
     pageNumber: Long,
     pageSize: Long,
-  ): PageImpl<AppointmentIdResponse> =
-    webClient.get()
-      .uri {
-        it.path("/appointments/ids")
-          .queryParam("prisonIds", prisonIds)
-          .queryParam("fromDate", fromDate)
-          .queryParam("toDate", toDate)
-          .queryParam("page", pageNumber)
-          .queryParam("size", pageSize)
-          .build()
-      }
-      .retrieve()
-      .bodyToMono(typeReference<RestResponsePage<AppointmentIdResponse>>())
-      .awaitSingle()
+  ): PageImpl<AppointmentIdResponse> = webClient.get()
+    .uri {
+      it.path("/appointments/ids")
+        .queryParam("prisonIds", prisonIds)
+        .queryParam("fromDate", fromDate)
+        .queryParam("toDate", toDate)
+        .queryParam("page", pageNumber)
+        .queryParam("size", pageSize)
+        .build()
+    }
+    .retrieve()
+    .bodyToMono(typeReference<RestResponsePage<AppointmentIdResponse>>())
+    .awaitSingle()
 
-  suspend fun getAdjudicationIds(
-    prisonIds: List<String>,
-    fromDate: LocalDate?,
-    toDate: LocalDate?,
-    pageNumber: Long,
-    pageSize: Long,
-  ): PageImpl<AdjudicationChargeIdResponse> =
-    webClient.get()
-      .uri {
-        it.path("/adjudications/charges/ids")
-          .queryParam("prisonIds", prisonIds)
-          .queryParam("fromDate", fromDate)
-          .queryParam("toDate", toDate)
-          .queryParam("page", pageNumber)
-          .queryParam("size", pageSize)
-          .build()
-      }
-      .retrieve()
-      .bodyToMono(typeReference<RestResponsePage<AdjudicationChargeIdResponse>>())
-      .awaitSingle()
-
-  suspend fun getAdjudicationCharge(adjudicationNumber: Long, chargeSequence: Int): AdjudicationChargeResponse =
-    webClient.get()
-      .uri(
-        "/adjudications/adjudication-number/{adjudicationNumber}/charge-sequence/{chargeSequence}",
-        adjudicationNumber,
-        chargeSequence,
-      )
-      .retrieve()
-      .awaitBody()
-
-  suspend fun getActivity(courseActivityId: Long): GetActivityResponse =
-    webClient.get()
-      .uri("/activities/{courseActivityId}", courseActivityId)
-      .retrieve()
-      .bodyToMono(GetActivityResponse::class.java)
-      .awaitSingle()
+  suspend fun getActivity(courseActivityId: Long): GetActivityResponse = webClient.get()
+    .uri("/activities/{courseActivityId}", courseActivityId)
+    .retrieve()
+    .bodyToMono(GetActivityResponse::class.java)
+    .awaitSingle()
 
   suspend fun getActivityIds(
     prisonId: String,
@@ -197,38 +137,35 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     courseActivityId: Long? = null,
     pageNumber: Long,
     pageSize: Long,
-  ): PageImpl<FindActiveActivityIdsResponse> =
-    webClient.get()
-      .uri {
-        it.path("/activities/ids")
-          .queryParam("prisonId", prisonId)
-          .queryParams(LinkedMultiValueMap<String, String>().apply { addAll("excludeProgramCode", excludeProgramCodes) })
-          .apply { courseActivityId?.run { queryParam("courseActivityId", courseActivityId) } }
-          .queryParam("page", pageNumber)
-          .queryParam("size", pageSize)
-          .build()
-      }
-      .retrieve()
-      .bodyToMono(typeReference<RestResponsePage<FindActiveActivityIdsResponse>>())
-      .onErrorResume(WebClientResponseException.BadRequest::class.java) {
-        val errorResponse = it.getResponseBodyAs(ErrorResponse::class.java) as ErrorResponse
-        Mono.error(BadRequestException(errorResponse.userMessage ?: "Received a 400 calling /activities/ids"))
-      }
-      .awaitSingle()
+  ): PageImpl<FindActiveActivityIdsResponse> = webClient.get()
+    .uri {
+      it.path("/activities/ids")
+        .queryParam("prisonId", prisonId)
+        .queryParams(LinkedMultiValueMap<String, String>().apply { addAll("excludeProgramCode", excludeProgramCodes) })
+        .apply { courseActivityId?.run { queryParam("courseActivityId", courseActivityId) } }
+        .queryParam("page", pageNumber)
+        .queryParam("size", pageSize)
+        .build()
+    }
+    .retrieve()
+    .bodyToMono(typeReference<RestResponsePage<FindActiveActivityIdsResponse>>())
+    .onErrorResume(WebClientResponseException.BadRequest::class.java) {
+      val errorResponse = it.getResponseBodyAs(ErrorResponse::class.java) as ErrorResponse
+      Mono.error(BadRequestException(errorResponse.userMessage ?: "Received a 400 calling /activities/ids"))
+    }
+    .awaitSingle()
 
-  suspend fun endActivities(ids: List<Long>) =
-    webClient.put()
-      .uri("/activities/end")
-      .body(BodyInserters.fromValue(EndActivitiesRequest(ids)))
-      .retrieve()
-      .awaitBodilessEntity()
+  suspend fun endActivities(ids: List<Long>) = webClient.put()
+    .uri("/activities/end")
+    .body(BodyInserters.fromValue(EndActivitiesRequest(ids)))
+    .retrieve()
+    .awaitBodilessEntity()
 
-  suspend fun getAllocation(allocationId: Long): GetAllocationResponse =
-    webClient.get()
-      .uri("/allocations/{allocationId}", allocationId)
-      .retrieve()
-      .bodyToMono(GetAllocationResponse::class.java)
-      .awaitSingle()
+  suspend fun getAllocation(allocationId: Long): GetAllocationResponse = webClient.get()
+    .uri("/allocations/{allocationId}", allocationId)
+    .retrieve()
+    .bodyToMono(GetAllocationResponse::class.java)
+    .awaitSingle()
 
   suspend fun getAllocationIds(
     prisonId: String,
@@ -236,48 +173,45 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     courseActivityId: Long? = null,
     pageNumber: Long,
     pageSize: Long,
-  ): PageImpl<FindActiveAllocationIdsResponse> =
-    webClient.get()
-      .uri {
-        it.path("/allocations/ids")
-          .queryParam("prisonId", prisonId)
-          .queryParams(LinkedMultiValueMap<String, String>().apply { addAll("excludeProgramCode", excludeProgramCodes) })
-          .apply { courseActivityId?.run { queryParam("courseActivityId", courseActivityId) } }
-          .queryParam("page", pageNumber)
-          .queryParam("size", pageSize)
-          .build()
-      }
-      .retrieve()
-      .bodyToMono(typeReference<RestResponsePage<FindActiveAllocationIdsResponse>>())
-      .onErrorResume(WebClientResponseException.BadRequest::class.java) {
-        val errorResponse = it.getResponseBodyAs(ErrorResponse::class.java) as ErrorResponse
-        Mono.error(BadRequestException(errorResponse.userMessage ?: "Received a 400 calling /allocations/ids"))
-      }
-      .awaitSingle()
+  ): PageImpl<FindActiveAllocationIdsResponse> = webClient.get()
+    .uri {
+      it.path("/allocations/ids")
+        .queryParam("prisonId", prisonId)
+        .queryParams(LinkedMultiValueMap<String, String>().apply { addAll("excludeProgramCode", excludeProgramCodes) })
+        .apply { courseActivityId?.run { queryParam("courseActivityId", courseActivityId) } }
+        .queryParam("page", pageNumber)
+        .queryParam("size", pageSize)
+        .build()
+    }
+    .retrieve()
+    .bodyToMono(typeReference<RestResponsePage<FindActiveAllocationIdsResponse>>())
+    .onErrorResume(WebClientResponseException.BadRequest::class.java) {
+      val errorResponse = it.getResponseBodyAs(ErrorResponse::class.java) as ErrorResponse
+      Mono.error(BadRequestException(errorResponse.userMessage ?: "Received a 400 calling /allocations/ids"))
+    }
+    .awaitSingle()
 
   // /////////////////////////////////////// Locations
 
-  suspend fun getLocation(locationId: Long): LocationResponse =
-    webClient.get()
-      .uri("/locations/{locationId}", locationId)
-      .retrieve()
-      .bodyToMono(LocationResponse::class.java)
-      .awaitSingle()
+  suspend fun getLocation(locationId: Long): LocationResponse = webClient.get()
+    .uri("/locations/{locationId}", locationId)
+    .retrieve()
+    .bodyToMono(LocationResponse::class.java)
+    .awaitSingle()
 
   suspend fun getLocationIds(
     pageNumber: Long,
     pageSize: Long,
-  ): PageImpl<LocationIdResponse> =
-    webClient.get()
-      .uri {
-        it.path("/locations/ids")
-          .queryParam("page", pageNumber)
-          .queryParam("size", pageSize)
-          .build()
-      }
-      .retrieve()
-      .bodyToMono(typeReference<RestResponsePage<LocationIdResponse>>())
-      .awaitSingle()
+  ): PageImpl<LocationIdResponse> = webClient.get()
+    .uri {
+      it.path("/locations/ids")
+        .queryParam("page", pageNumber)
+        .queryParam("size", pageSize)
+        .build()
+    }
+    .retrieve()
+    .bodyToMono(typeReference<RestResponsePage<LocationIdResponse>>())
+    .awaitSingle()
 
   // /////////////////////////////////////// General
 
@@ -294,11 +228,6 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
 
 data class VisitId(
   val visitId: Long,
-)
-
-data class NomisAdjustmentId(
-  val adjustmentId: Long,
-  val adjustmentCategory: String,
 )
 
 data class NomisVisitor(
@@ -337,6 +266,7 @@ data class NomisVisit(
 data class NomisAdjustment(
   val id: Long,
   val bookingId: Long,
+  val bookingSequence: Int,
   val offenderNo: String,
   val sentenceSequence: Long? = null,
   val adjustmentType: NomisCodeDescription,
@@ -353,6 +283,7 @@ data class NomisAdjustment(
   fun toSentencingAdjustment(): LegacyAdjustment = LegacyAdjustment(
     bookingId = bookingId,
     sentenceSequence = sentenceSequence?.toInt(),
+    currentTerm = bookingSequence == 1,
     adjustmentType = AdjustmentType.valueOf(adjustmentType.code),
     adjustmentDate = adjustmentDate,
     adjustmentFromDate = adjustmentFromDate,
@@ -363,8 +294,6 @@ data class NomisAdjustment(
     bookingReleased = hasBeenReleased,
     agencyId = prisonId,
   )
-
-  fun getAdjustmentCategory() = sentenceSequence?.let { "SENTENCE" } ?: "KEY_DATE"
 }
 
 private val simpleTimeFormat = DateTimeFormatter.ofPattern("HH:mm")

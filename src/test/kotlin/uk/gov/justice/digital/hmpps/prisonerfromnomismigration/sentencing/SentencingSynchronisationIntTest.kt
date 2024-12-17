@@ -120,6 +120,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             bookingId = BOOKING_ID,
             offenderNo = OFFENDER_NUMBER,
             sentenceSequence = SENTENCE_SEQUENCE,
+            bookingSequence = 1,
           )
           sentencingApi.stubCreateSentencingAdjustmentForSynchronisation(sentenceAdjustmentId = ADJUSTMENT_ID)
           mappingApi.stubMappingCreate(ADJUSTMENTS_CREATE_MAPPING_URL)
@@ -157,6 +158,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             sentencingApi.verify(
               postRequestedFor(urlPathEqualTo("/legacy/adjustments"))
                 .withRequestBody(matchingJsonPath("bookingId", equalTo(BOOKING_ID.toString())))
+                .withRequestBody(matchingJsonPath("currentTerm", equalTo("true")))
                 .withRequestBody(matchingJsonPath("offenderNo", equalTo(OFFENDER_NUMBER)))
                 .withRequestBody(matchingJsonPath("sentenceSequence", equalTo(SENTENCE_SEQUENCE.toString())))
                 .withRequestBody(matchingJsonPath("agencyId", equalTo("WWI"))),
@@ -961,6 +963,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             prisonId = "WWI",
             bookingId = BOOKING_ID,
             offenderNo = OFFENDER_NUMBER,
+            bookingSequence = 2,
           )
           sentencingApi.stubCreateSentencingAdjustmentForSynchronisation(sentenceAdjustmentId = ADJUSTMENT_ID)
           mappingApi.stubMappingCreate(ADJUSTMENTS_CREATE_MAPPING_URL)
@@ -997,6 +1000,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             postRequestedFor(urlPathEqualTo("/legacy/adjustments"))
               .withRequestBody(matchingJsonPath("bookingId", equalTo(BOOKING_ID.toString())))
               .withRequestBody(matchingJsonPath("offenderNo", equalTo(OFFENDER_NUMBER)))
+              .withRequestBody(matchingJsonPath("currentTerm", equalTo("false")))
               .withRequestBody(matchingJsonPath("sentenceSequence", WireMock.absent()))
               .withRequestBody(matchingJsonPath("agencyId", equalTo("WWI")))
           }

@@ -297,6 +297,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     bookingId: Long = 2,
     sentenceSequence: Long = 1,
     offenderNo: String = "G4803UT",
+    bookingSequence: Int = 1,
   ) {
     nomisApi.stubFor(
       get(
@@ -313,6 +314,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
                 bookingId = bookingId,
                 sentenceSequence = sentenceSequence,
                 offenderNo = offenderNo,
+                bookingSequence = bookingSequence,
               ),
             ),
         ),
@@ -342,6 +344,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     prisonId: String = "MDI",
     bookingId: Long = 2,
     offenderNo: String = "G4803UT",
+    bookingSequence: Int = 1,
   ) {
     nomisApi.stubFor(
       get(
@@ -356,6 +359,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
                 prisonId = prisonId,
                 bookingId = bookingId,
                 offenderNo = offenderNo,
+                bookingSequence = bookingSequence,
               ),
             ),
         ),
@@ -442,25 +446,6 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }
   }
 
-  fun stubGetActivitiesIdCountsError(badPrison: String) {
-    nomisApi.stubFor(
-      get(urlPathEqualTo("/activities/ids"))
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.BAD_REQUEST.value())
-            .withBody(
-              """{
-                "status": 400,
-                "userMessage": "Bad request: Prison with id=$badPrison does not exist"
-              }
-              """.trimIndent(),
-
-            ),
-        ),
-    )
-  }
-
   fun stubMultipleGetAllocationsIdCounts(totalElements: Long, pageSize: Long) {
     // for each page create a response for each id starting from 1 up to `totalElements`
 
@@ -484,25 +469,6 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
           ),
       )
     }
-  }
-
-  fun stubGetAllocationsIdCountsError(badPrison: String) {
-    nomisApi.stubFor(
-      get(urlPathEqualTo("/allocations/ids"))
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.BAD_REQUEST.value())
-            .withBody(
-              """{
-                "status": 400,
-                "userMessage": "Bad request: Prison with id=$badPrison does not exist"
-              }
-              """.trimIndent(),
-
-            ),
-        ),
-    )
   }
 
   fun verifyActivitiesGetIds(
@@ -559,32 +525,6 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
           ),
       )
     }
-  }
-
-  fun stubGetSuspendedAllocations() {
-    nomisApi.stubFor(
-      get(
-        urlPathEqualTo("/allocations/suspended"),
-      )
-        .withQueryParam("prisonId", equalTo("MDI"))
-        .withQueryParam("excludeProgramCode", equalTo("SAA_EDUCATION"))
-        .withQueryParam("excludeProgramCode", equalTo("SAA_INDUCTION"))
-        .willReturn(
-          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(suspendedAllocationsResponse()),
-        ),
-    )
-  }
-
-  fun verifyGetSuspendedAllocations() {
-    nomisApi.verify(
-      getRequestedFor(
-        urlPathEqualTo("/allocations/suspended"),
-      )
-        .withQueryParam("prisonId", equalTo("MDI"))
-        .withQueryParam("excludeProgramCode", equalTo("SAA_EDUCATION"))
-        .withQueryParam("excludeProgramCode", equalTo("SAA_INDUCTION")),
-    )
   }
 
   fun stubGetInitialCount(
@@ -776,11 +716,13 @@ private fun sentenceAdjustmentResponse(
   sentenceAdjustmentId: Long = 3,
   hiddenForUsers: Boolean = false,
   prisonId: String = "MDI",
+  bookingSequence: Int = 1,
 ): String {
   // language=JSON
   return """
 {
   "bookingId":$bookingId,
+  "bookingSequence":$bookingSequence,
   "id":$sentenceAdjustmentId,
   "offenderNo": "$offenderNo",
   "sentenceSequence": $sentenceSequence,
@@ -806,11 +748,13 @@ private fun keyDateAdjustmentResponse(
   keyDateAdjustmentId: Long = 3,
   offenderNo: String = "G4803UT",
   prisonId: String = "MDI",
+  bookingSequence: Int = 1,
 ): String {
   // language=JSON
   return """
 {
   "bookingId":$bookingId,
+  "bookingSequence":$bookingSequence,
   "id":$keyDateAdjustmentId,
   "offenderNo": "$offenderNo",
   "commentText":"a comment",
@@ -1008,24 +952,3 @@ private fun allocationsResponse(
     ]
 }
   """.trimIndent()
-
-private fun suspendedAllocationsResponse(): String =
-  """
-    [
-      {
-        "offenderNo": "A1234AA",
-        "courseActivityId": 12345,
-        "courseActivityDescription": "Kitchens AM"
-      },
-      {
-        "offenderNo": "B1234BB",
-        "courseActivityId": 12345,
-        "courseActivityDescription": "Kitchens AM"
-      },
-      {
-        "offenderNo": "A1234AA",
-        "courseActivityId": 12346,
-        "courseActivityDescription": "Kitchens PM"
-      }
-    ]
-  """
