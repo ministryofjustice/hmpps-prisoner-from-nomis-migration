@@ -9,3 +9,5 @@ fun TelemetryClient.trackEvent(name: String, properties: Map<String, Any>) = thi
 )
 
 fun Map<String, Any>.valuesAsStrings(): Map<String, String> = this.entries.associate { it.key to it.value.toString() }
+
+fun telemetryOf(vararg pairs: Pair<String, Any>): MutableMap<String, Any> = mutableMapOf(*pairs)
