@@ -113,6 +113,15 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
+  suspend fun getByNomisIdentifierIds(nomisPersonId: Long, nomisSequenceNumber: Long): PersonIdentifierMappingDto = webClient.get()
+    .uri(
+      "/mapping/contact-person/identifier/nomis-person-id/{nomisPersonId}/nomis-sequence-number/{nomisSequenceNumber}",
+      nomisPersonId,
+      nomisSequenceNumber,
+    )
+    .retrieve()
+    .awaitBody()
+
   suspend fun getByNomisContactRestrictionIdOrNull(nomisContactRestrictionId: Long): PersonContactRestrictionMappingDto? = webClient.get()
     .uri(
       "/mapping/contact-person/contact-restriction/nomis-contact-restriction-id/{nomisContactRestrictionId}",
