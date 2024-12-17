@@ -18,6 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactEmailRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactIdentityRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRestrictionRequest
@@ -47,6 +48,8 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.Period
 
+private fun telemetryOf(vararg pairs: Pair<String, Any>): MutableMap<String, Any> = mutableMapOf(*pairs)
+
 @Service
 class ContactPersonSynchronisationService(
   private val mappingApiService: ContactPersonMappingApiService,
@@ -60,8 +63,11 @@ class ContactPersonSynchronisationService(
   }
 
   suspend fun personRestrictionUpserted(event: PersonRestrictionEvent) {
-    val telemetry =
-      mutableMapOf<String, Any>("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisPersonRestrictionId" to event.visitorRestrictionId)
+    val telemetry = telemetryOf(
+      "nomisPersonId" to event.personId,
+      "dpsContactId" to event.personId,
+      "nomisPersonRestrictionId" to event.visitorRestrictionId,
+    )
 
     if (event.doesOriginateInDps()) {
       telemetryClient.trackEvent(
@@ -69,21 +75,26 @@ class ContactPersonSynchronisationService(
         telemetry,
       )
     } else {
-      try {
-        val nomisPerson = nomisApiService.getPerson(nomisPersonId = event.personId)
-        val nomisRestriction = nomisPerson.restrictions.find { it.id == event.visitorRestrictionId } ?: throw IllegalStateException("Restriction ${event.visitorRestrictionId} for person ${event.personId} not found in NOMIS")
+      val existingMapping = mappingApiService.getByNomisPersonRestrictionIdOrNull(nomisPersonRestrictionId = event.visitorRestrictionId)
+      val telemetryName = if (existingMapping != null) "contactperson-person-restriction-synchronisation-updated" else "contactperson-person-restriction-synchronisation-created"
 
-        mappingApiService.getByNomisPersonRestrictionIdOrNull(nomisPersonRestrictionId = event.visitorRestrictionId)?.also {
+      track(telemetryName, telemetry) {
+        val nomisPerson = nomisApiService.getPerson(nomisPersonId = event.personId)
+        val nomisRestriction = nomisPerson.restrictions.find { it.id == event.visitorRestrictionId }
+          ?: throw IllegalStateException("Restriction ${event.visitorRestrictionId} for person ${event.personId} not found in NOMIS")
+
+        existingMapping?.also {
           telemetry["dpsContactRestrictionId"] = it.dpsId
-          dpsApiService.updateContactRestriction(contactRestrictionId = it.dpsId.toLong(), nomisRestriction.toDpsUpdateContactRestrictionRequest(dpsContactId = event.personId))
-          telemetryClient.trackEvent(
-            "contactperson-person-restriction-synchronisation-updated-success",
-            telemetry,
+          dpsApiService.updateContactRestriction(
+            contactRestrictionId = it.dpsId.toLong(),
+            nomisRestriction.toDpsUpdateContactRestrictionRequest(dpsContactId = event.personId),
           )
         } ?: run {
-          val dpsContactRestriction = dpsApiService.createContactRestriction(nomisRestriction.toDpsCreateContactRestrictionRequest(dpsContactId = event.personId)).also {
-            telemetry["dpsContactRestrictionId"] = it.contactRestrictionId
-          }
+          val dpsContactRestriction =
+            dpsApiService.createContactRestriction(nomisRestriction.toDpsCreateContactRestrictionRequest(dpsContactId = event.personId))
+              .also {
+                telemetry["dpsContactRestrictionId"] = it.contactRestrictionId
+              }
           val mapping = PersonRestrictionMappingDto(
             nomisId = event.visitorRestrictionId,
             dpsId = dpsContactRestriction.contactRestrictionId.toString(),
@@ -91,15 +102,7 @@ class ContactPersonSynchronisationService(
           )
 
           tryToCreateMapping(mapping, telemetry)
-          telemetryClient.trackEvent(
-            "contactperson-person-restriction-synchronisation-created-success",
-            telemetry,
-          )
         }
-      } catch (e: Exception) {
-        telemetry["error"] = e.message.toString()
-        telemetryClient.trackEvent("contactperson-person-restriction-synchronisation-error", telemetry)
-        throw e
       }
     }
   }
@@ -113,7 +116,7 @@ class ContactPersonSynchronisationService(
   }
   suspend fun contactAdded(event: ContactEvent) {
     val telemetry =
-      mutableMapOf("offenderNo" to event.offenderIdDisplay, "bookingId" to event.bookingId, "nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisContactId" to event.contactId)
+      telemetryOf("offenderNo" to event.offenderIdDisplay, "bookingId" to event.bookingId, "nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisContactId" to event.contactId)
 
     if (event.doesOriginateInDps()) {
       telemetryClient.trackEvent(
@@ -127,29 +130,30 @@ class ContactPersonSynchronisationService(
           telemetry + ("dpsPrisonerContactId" to it.dpsId),
         )
       } ?: run {
-        nomisApiService.getPerson(nomisPersonId = event.personId).also { nomisPerson ->
-          val nomisContact = nomisPerson.contacts.find { it.id == event.contactId } ?: throw IllegalStateException("Contact ${event.contactId} for person ${event.personId} not found in NOMIS")
-          val dpsPrisonerContact = dpsApiService.createPrisonerContact(nomisContact.toDpsCreatePrisonerContactRequest(nomisPersonId = event.personId)).also {
-            telemetry["dpsPrisonerContactId"] = it.id
-          }
-          val mapping = PersonContactMappingDto(
-            nomisId = event.contactId,
-            dpsId = dpsPrisonerContact.id.toString(),
-            mappingType = PersonContactMappingDto.MappingType.NOMIS_CREATED,
-          )
+        track("contactperson-contact-synchronisation-created", telemetry) {
+          nomisApiService.getPerson(nomisPersonId = event.personId).also { nomisPerson ->
+            val nomisContact = nomisPerson.contacts.find { it.id == event.contactId }
+              ?: throw IllegalStateException("Contact ${event.contactId} for person ${event.personId} not found in NOMIS")
+            val dpsPrisonerContact =
+              dpsApiService.createPrisonerContact(nomisContact.toDpsCreatePrisonerContactRequest(nomisPersonId = event.personId))
+                .also {
+                  telemetry["dpsPrisonerContactId"] = it.id
+                }
+            val mapping = PersonContactMappingDto(
+              nomisId = event.contactId,
+              dpsId = dpsPrisonerContact.id.toString(),
+              mappingType = PersonContactMappingDto.MappingType.NOMIS_CREATED,
+            )
 
-          tryToCreateMapping(mapping, telemetry)
+            tryToCreateMapping(mapping, telemetry)
+          }
         }
-        telemetryClient.trackEvent(
-          "contactperson-contact-synchronisation-created-success",
-          telemetry,
-        )
       }
     }
   }
   suspend fun contactUpdated(event: ContactEvent) {
     val telemetry =
-      mutableMapOf(
+      telemetryOf(
         "offenderNo" to event.offenderIdDisplay,
         "bookingId" to event.bookingId,
         "nomisPersonId" to event.personId,
@@ -163,17 +167,20 @@ class ContactPersonSynchronisationService(
         telemetry,
       )
     } else {
-      val dpsPrisonerContactId = mappingApiService.getByNomisContactId(nomisContactId = event.contactId).dpsId.toLong().also {
-        telemetry["dpsPrisonerContactId"] = it
-      }
-      val nomisPerson = nomisApiService.getPerson(nomisPersonId = event.personId)
-      val nomisContact = nomisPerson.contacts.find { it.id == event.contactId } ?: throw IllegalStateException("Contact ${event.contactId} for person ${event.personId} not found in NOMIS")
+      track("contactperson-contact-synchronisation-updated", telemetry) {
+        val dpsPrisonerContactId =
+          mappingApiService.getByNomisContactId(nomisContactId = event.contactId).dpsId.toLong().also {
+            telemetry["dpsPrisonerContactId"] = it
+          }
+        val nomisPerson = nomisApiService.getPerson(nomisPersonId = event.personId)
+        val nomisContact = nomisPerson.contacts.find { it.id == event.contactId }
+          ?: throw IllegalStateException("Contact ${event.contactId} for person ${event.personId} not found in NOMIS")
 
-      dpsApiService.updatePrisonerContact(dpsPrisonerContactId, nomisContact.toDpsUpdatePrisonerContactRequest(nomisPersonId = event.personId))
-      telemetryClient.trackEvent(
-        "contactperson-contact-synchronisation-updated-success",
-        telemetry,
-      )
+        dpsApiService.updatePrisonerContact(
+          dpsPrisonerContactId,
+          nomisContact.toDpsUpdatePrisonerContactRequest(nomisPersonId = event.personId),
+        )
+      }
     }
   }
   suspend fun contactDeleted(event: ContactEvent) {
@@ -186,7 +193,7 @@ class ContactPersonSynchronisationService(
   }
   suspend fun contactRestrictionUpserted(event: ContactRestrictionEvent) {
     val telemetry =
-      mutableMapOf("offenderNo" to event.offenderIdDisplay, "nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisContactId" to event.contactPersonId, "nomisContactRestrictionId" to event.offenderPersonRestrictionId)
+      telemetryOf("offenderNo" to event.offenderIdDisplay, "nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisContactId" to event.contactPersonId, "nomisContactRestrictionId" to event.offenderPersonRestrictionId)
 
     if (event.doesOriginateInDps()) {
       telemetryClient.trackEvent(
@@ -194,19 +201,17 @@ class ContactPersonSynchronisationService(
         telemetry,
       )
     } else {
-      try {
+      val existingMapping = mappingApiService.getByNomisContactRestrictionIdOrNull(nomisContactRestrictionId = event.offenderPersonRestrictionId)
+      val telemetryName = if (existingMapping != null) "contactperson-contact-restriction-synchronisation-updated" else "contactperson-contact-restriction-synchronisation-created"
+      track(telemetryName, telemetry) {
         val nomisPerson = nomisApiService.getPerson(nomisPersonId = event.personId)
         val nomisContact = nomisPerson.contacts.find { it.id == event.contactPersonId } ?: throw IllegalStateException("Contact ${event.contactPersonId} for person ${event.personId} not found in NOMIS")
         val nomisRestriction = nomisContact.restrictions.find { it.id == event.offenderPersonRestrictionId } ?: throw IllegalStateException("Contact Restriction ${event.offenderPersonRestrictionId} for person ${event.personId} for contact ${event.contactPersonId} not found in NOMIS")
         val dpsPrisonerContactId = mappingApiService.getByNomisContactId(nomisContact.id).dpsId.toLong()
-        mappingApiService.getByNomisContactRestrictionIdOrNull(nomisContactRestrictionId = event.offenderPersonRestrictionId)?.also {
+        existingMapping?.also {
           telemetry["dpsPrisonerContactRestrictionId"] = it.dpsId
           telemetry["dpsPrisonerContactId"] = dpsPrisonerContactId
           dpsApiService.updatePrisonerContactRestriction(prisonerContactRestrictionId = it.dpsId.toLong(), nomisRestriction.toDpsUpdatePrisonerContactRestrictionRequest())
-          telemetryClient.trackEvent(
-            "contactperson-contact-restriction-synchronisation-updated-success",
-            telemetry,
-          )
         } ?: run {
           val dpsPrisonerContactRestriction = dpsApiService.createPrisonerContactRestriction(nomisRestriction.toDpsCreatePrisonerContactRestrictionRequest(dpsPrisonerContactId = dpsPrisonerContactId)).also {
             telemetry["dpsPrisonerContactRestrictionId"] = it.prisonerContactRestrictionId
@@ -219,15 +224,7 @@ class ContactPersonSynchronisationService(
           )
 
           tryToCreateMapping(mapping, telemetry)
-          telemetryClient.trackEvent(
-            "contactperson-contact-restriction-synchronisation-created-success",
-            telemetry,
-          )
         }
-      } catch (e: Exception) {
-        telemetry["error"] = e.message.toString()
-        telemetryClient.trackEvent("contactperson-contact-restriction-synchronisation-error", telemetry)
-        throw e
       }
     }
   }
@@ -242,8 +239,7 @@ class ContactPersonSynchronisationService(
     )
   }
   suspend fun personAdded(event: PersonEvent) {
-    val telemetry =
-      mutableMapOf("nomisPersonId" to event.personId)
+    val telemetry = telemetryOf("nomisPersonId" to event.personId)
     if (event.doesOriginateInDps()) {
       telemetryClient.trackEvent(
         "contactperson-person-synchronisation-created-skipped",
@@ -256,44 +252,40 @@ class ContactPersonSynchronisationService(
           telemetry + ("dpsContactId" to it.dpsId),
         )
       } ?: run {
-        nomisApiService.getPerson(nomisPersonId = event.personId).also { nomisPerson ->
-          val dpsContact = dpsApiService.createContact(nomisPerson.toDpsCreateContactRequest()).also {
-            telemetry["dpsContactId"] = it.id
-          }
-          val mapping = PersonMappingDto(
-            nomisId = event.personId,
-            dpsId = dpsContact.id.toString(),
-            mappingType = PersonMappingDto.MappingType.NOMIS_CREATED,
-          )
+        track("contactperson-person-synchronisation-created", telemetry) {
+          nomisApiService.getPerson(nomisPersonId = event.personId).also { nomisPerson ->
+            val dpsContact = dpsApiService.createContact(nomisPerson.toDpsCreateContactRequest()).also {
+              telemetry["dpsContactId"] = it.id
+            }
+            val mapping = PersonMappingDto(
+              nomisId = event.personId,
+              dpsId = dpsContact.id.toString(),
+              mappingType = PersonMappingDto.MappingType.NOMIS_CREATED,
+            )
 
-          tryToCreateMapping(mapping, telemetry)
+            tryToCreateMapping(mapping, telemetry)
+          }
         }
-        telemetryClient.trackEvent(
-          "contactperson-person-synchronisation-created-success",
-          telemetry,
-        )
       }
     }
   }
 
   suspend fun personUpdated(event: PersonEvent) {
     val telemetry =
-      mutableMapOf("nomisPersonId" to event.personId)
+      telemetryOf("nomisPersonId" to event.personId)
     if (event.doesOriginateInDps()) {
       telemetryClient.trackEvent(
         "contactperson-person-synchronisation-updated-skipped",
         telemetry,
       )
     } else {
-      val contactId = mappingApiService.getByNomisPersonId(nomisPersonId = event.personId).dpsId.toLong().also {
-        telemetry["dpsContactId"] = it
+      track("contactperson-person-synchronisation-updated", telemetry) {
+        val contactId = mappingApiService.getByNomisPersonId(nomisPersonId = event.personId).dpsId.toLong().also {
+          telemetry["dpsContactId"] = it
+        }
+        val nomisPerson = nomisApiService.getPerson(nomisPersonId = event.personId)
+        dpsApiService.updateContact(contactId, nomisPerson.toDpsUpdateContactRequest())
       }
-      val nomisPerson = nomisApiService.getPerson(nomisPersonId = event.personId)
-      dpsApiService.updateContact(contactId, nomisPerson.toDpsUpdateContactRequest())
-      telemetryClient.trackEvent(
-        "contactperson-person-synchronisation-updated-success",
-        telemetry,
-      )
     }
   }
 
@@ -308,7 +300,7 @@ class ContactPersonSynchronisationService(
 
   suspend fun personAddressAdded(event: PersonAddressEvent) {
     val telemetry =
-      mutableMapOf("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisAddressId" to event.addressId)
+      telemetryOf("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisAddressId" to event.addressId)
 
     if (event.doesOriginateInDps()) {
       telemetryClient.trackEvent(
@@ -322,46 +314,42 @@ class ContactPersonSynchronisationService(
           telemetry + ("dpsContactAddressId" to it.dpsId),
         )
       } ?: run {
-        nomisApiService.getPerson(nomisPersonId = event.personId).also { nomisPerson ->
-          val nomisAddress = nomisPerson.addresses.find { it.addressId == event.addressId } ?: throw IllegalStateException("Address ${event.addressId} for person ${event.personId} not found in NOMIS")
-          val dpsAddress = dpsApiService.createContactAddress(nomisAddress.toDpsCreateContactAddressRequest(nomisPersonId = event.personId)).also {
-            telemetry["dpsContactAddressId"] = it.contactAddressId
-          }
-          val mapping = PersonAddressMappingDto(
-            nomisId = event.addressId,
-            dpsId = dpsAddress.contactAddressId.toString(),
-            mappingType = PersonAddressMappingDto.MappingType.NOMIS_CREATED,
-          )
+        track("contactperson-address-synchronisation-created", telemetry) {
+          nomisApiService.getPerson(nomisPersonId = event.personId).also { nomisPerson ->
+            val nomisAddress = nomisPerson.addresses.find { it.addressId == event.addressId } ?: throw IllegalStateException("Address ${event.addressId} for person ${event.personId} not found in NOMIS")
+            val dpsAddress = dpsApiService.createContactAddress(nomisAddress.toDpsCreateContactAddressRequest(nomisPersonId = event.personId)).also {
+              telemetry["dpsContactAddressId"] = it.contactAddressId
+            }
+            val mapping = PersonAddressMappingDto(
+              nomisId = event.addressId,
+              dpsId = dpsAddress.contactAddressId.toString(),
+              mappingType = PersonAddressMappingDto.MappingType.NOMIS_CREATED,
+            )
 
-          tryToCreateMapping(mapping, telemetry)
+            tryToCreateMapping(mapping, telemetry)
+          }
         }
-        telemetryClient.trackEvent(
-          "contactperson-address-synchronisation-created-success",
-          telemetry,
-        )
       }
     }
   }
 
   suspend fun personAddressUpdated(event: PersonAddressEvent) {
     val telemetry =
-      mutableMapOf("nomisPersonId" to event.personId, "nomisAddressId" to event.addressId, "dpsContactId" to event.personId)
+      telemetryOf("nomisPersonId" to event.personId, "nomisAddressId" to event.addressId, "dpsContactId" to event.personId)
     if (event.doesOriginateInDps()) {
       telemetryClient.trackEvent(
-        "contactperson-person-address-synchronisation-updated-skipped",
+        "contactperson-address-synchronisation-updated-skipped",
         telemetry,
       )
     } else {
-      val dpsAddressId = mappingApiService.getByNomisAddressId(nomisAddressId = event.addressId).dpsId.toLong().also {
-        telemetry["dpsContactAddressId"] = it
+      track("contactperson-address-synchronisation-updated", telemetry) {
+        val dpsAddressId = mappingApiService.getByNomisAddressId(nomisAddressId = event.addressId).dpsId.toLong().also {
+          telemetry["dpsContactAddressId"] = it
+        }
+        val nomisPerson = nomisApiService.getPerson(nomisPersonId = event.personId)
+        val nomisAddress = nomisPerson.addresses.find { it.addressId == event.addressId } ?: throw IllegalStateException("Address ${event.addressId} for person ${event.personId} not found in NOMIS")
+        dpsApiService.updateContactAddress(dpsAddressId, nomisAddress.toDpsUpdateContactAddressRequest(nomisPersonId = event.personId))
       }
-      val nomisPerson = nomisApiService.getPerson(nomisPersonId = event.personId)
-      val nomisAddress = nomisPerson.addresses.find { it.addressId == event.addressId } ?: throw IllegalStateException("Address ${event.addressId} for person ${event.personId} not found in NOMIS")
-      dpsApiService.updateContactAddress(dpsAddressId, nomisAddress.toDpsUpdateContactAddressRequest(nomisPersonId = event.personId))
-      telemetryClient.trackEvent(
-        "contactperson-person-address-synchronisation-updated-success",
-        telemetry,
-      )
     }
   }
 
@@ -376,7 +364,7 @@ class ContactPersonSynchronisationService(
 
   suspend fun personPhoneAdded(event: PersonPhoneEvent) {
     val telemetry =
-      mutableMapOf<String, Any>("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisPhoneId" to event.phoneId)
+      telemetryOf("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisPhoneId" to event.phoneId)
 
     if (event.doesOriginateInDps()) {
       telemetryClient.trackEvent(
@@ -390,28 +378,26 @@ class ContactPersonSynchronisationService(
           telemetry + ("dpsContactPhoneId" to it.dpsId),
         )
       } ?: run {
-        nomisApiService.getPerson(nomisPersonId = event.personId).also { nomisPerson ->
-          val mapping = if (event.isAddress && event.addressId != null) {
-            createContactAddressPhone(
-              nomisPerson = nomisPerson,
-              personId = event.personId,
-              addressId = event.addressId,
-              phoneId = event.phoneId,
-              telemetry = telemetry,
-            )
-          } else {
-            createContactPhone(
-              nomisPerson = nomisPerson,
-              personId = event.personId,
-              phoneId = event.phoneId,
-              telemetry = telemetry,
-            )
+        track("contactperson-phone-synchronisation-created", telemetry) {
+          nomisApiService.getPerson(nomisPersonId = event.personId).also { nomisPerson ->
+            val mapping = if (event.isAddress && event.addressId != null) {
+              createContactAddressPhone(
+                nomisPerson = nomisPerson,
+                personId = event.personId,
+                addressId = event.addressId,
+                phoneId = event.phoneId,
+                telemetry = telemetry,
+              )
+            } else {
+              createContactPhone(
+                nomisPerson = nomisPerson,
+                personId = event.personId,
+                phoneId = event.phoneId,
+                telemetry = telemetry,
+              )
+            }
+            tryToCreateMapping(mapping, telemetry)
           }
-          tryToCreateMapping(mapping, telemetry)
-          telemetryClient.trackEvent(
-            "contactperson-phone-synchronisation-created-success",
-            telemetry,
-          )
         }
       }
     }
@@ -460,7 +446,7 @@ class ContactPersonSynchronisationService(
 
   suspend fun personPhoneUpdated(event: PersonPhoneEvent) {
     val telemetry =
-      mutableMapOf<String, Any>("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisPhoneId" to event.phoneId).also {
+      telemetryOf("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisPhoneId" to event.phoneId).also {
         if (event.isAddress && event.addressId != null) {
           it["nomisAddressId"] = event.addressId
         }
@@ -472,32 +458,30 @@ class ContactPersonSynchronisationService(
         telemetry,
       )
     } else {
-      val mapping = mappingApiService.getByNomisPhoneId(nomisPhoneId = event.phoneId).also {
-        if (it.dpsPhoneType == PersonPhoneMappingDto.DpsPhoneType.PERSON) {
-          telemetry["dpsContactPhoneId"] = it.dpsId
+      track("contactperson-phone-synchronisation-updated", telemetry) {
+        val mapping = mappingApiService.getByNomisPhoneId(nomisPhoneId = event.phoneId).also {
+          if (it.dpsPhoneType == PersonPhoneMappingDto.DpsPhoneType.PERSON) {
+            telemetry["dpsContactPhoneId"] = it.dpsId
+          } else {
+            telemetry["dpsContactAddressPhoneId"] = it.dpsId
+          }
+        }
+        val nomisPerson = nomisApiService.getPerson(nomisPersonId = event.personId)
+
+        if (event.isAddress && event.addressId != null) {
+          val nomisAddress = nomisPerson.addresses.find { it.addressId == event.addressId }
+            ?: throw IllegalStateException("Address ${event.addressId} for person ${event.personId} not found in NOMIS")
+          val nomisPhone = nomisAddress.phoneNumbers.find { it.phoneId == event.phoneId }
+            ?: throw IllegalStateException("Phone ${event.phoneId} for person ${event.personId} on address $${event.addressId} not found in NOMIS")
+
+          dpsApiService.updateContactAddressPhone(mapping.dpsId.toLong(), nomisPhone.toDpsUpdateContactAddressPhoneRequest())
         } else {
-          telemetry["dpsContactAddressPhoneId"] = it.dpsId
+          val nomisPhone = nomisPerson.phoneNumbers.find { it.phoneId == event.phoneId }
+            ?: throw IllegalStateException("Phone ${event.phoneId} for person  ${event.personId}not found in NOMIS")
+
+          dpsApiService.updateContactPhone(mapping.dpsId.toLong(), nomisPhone.toDpsUpdateContactPhoneRequest(event.personId))
         }
       }
-      val nomisPerson = nomisApiService.getPerson(nomisPersonId = event.personId)
-
-      if (event.isAddress && event.addressId != null) {
-        val nomisAddress = nomisPerson.addresses.find { it.addressId == event.addressId }
-          ?: throw IllegalStateException("Address ${event.addressId} for person ${event.personId} not found in NOMIS")
-        val nomisPhone = nomisAddress.phoneNumbers.find { it.phoneId == event.phoneId }
-          ?: throw IllegalStateException("Phone ${event.phoneId} for person ${event.personId} on address $${event.addressId} not found in NOMIS")
-
-        dpsApiService.updateContactAddressPhone(mapping.dpsId.toLong(), nomisPhone.toDpsUpdateContactAddressPhoneRequest())
-      } else {
-        val nomisPhone = nomisPerson.phoneNumbers.find { it.phoneId == event.phoneId }
-          ?: throw IllegalStateException("Phone ${event.phoneId} for person  ${event.personId}not found in NOMIS")
-
-        dpsApiService.updateContactPhone(mapping.dpsId.toLong(), nomisPhone.toDpsUpdateContactPhoneRequest(event.personId))
-      }
-      telemetryClient.trackEvent(
-        "contactperson-phone-synchronisation-updated-success",
-        telemetry,
-      )
     }
   }
 
@@ -519,7 +503,7 @@ class ContactPersonSynchronisationService(
 
   suspend fun personEmailAdded(event: PersonInternetAddressEvent) {
     val telemetry =
-      mutableMapOf("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisInternetAddressId" to event.internetAddressId)
+      telemetryOf("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisInternetAddressId" to event.internetAddressId)
 
     if (event.doesOriginateInDps()) {
       telemetryClient.trackEvent(
@@ -533,30 +517,31 @@ class ContactPersonSynchronisationService(
           telemetry + ("dpsContactEmailId" to it.dpsId),
         )
       } ?: run {
-        nomisApiService.getPerson(nomisPersonId = event.personId).also { nomisPerson ->
-          val nomisAddress = nomisPerson.emailAddresses.find { it.emailAddressId == event.internetAddressId } ?: throw IllegalStateException("Email ${event.internetAddressId} for person ${event.personId} not found in NOMIS")
-          val dpsEmail = dpsApiService.createContactEmail(nomisAddress.toDpsCreateContactEmailRequest(nomisPersonId = event.personId)).also {
-            telemetry["dpsContactEmailId"] = it.contactEmailId
-          }
-          val mapping = PersonEmailMappingDto(
-            nomisId = event.internetAddressId,
-            dpsId = dpsEmail.contactEmailId.toString(),
-            mappingType = PersonEmailMappingDto.MappingType.NOMIS_CREATED,
-          )
+        track("contactperson-email-synchronisation-created", telemetry) {
+          nomisApiService.getPerson(nomisPersonId = event.personId).also { nomisPerson ->
+            val nomisAddress = nomisPerson.emailAddresses.find { it.emailAddressId == event.internetAddressId }
+              ?: throw IllegalStateException("Email ${event.internetAddressId} for person ${event.personId} not found in NOMIS")
+            val dpsEmail =
+              dpsApiService.createContactEmail(nomisAddress.toDpsCreateContactEmailRequest(nomisPersonId = event.personId))
+                .also {
+                  telemetry["dpsContactEmailId"] = it.contactEmailId
+                }
+            val mapping = PersonEmailMappingDto(
+              nomisId = event.internetAddressId,
+              dpsId = dpsEmail.contactEmailId.toString(),
+              mappingType = PersonEmailMappingDto.MappingType.NOMIS_CREATED,
+            )
 
-          tryToCreateMapping(mapping, telemetry)
+            tryToCreateMapping(mapping, telemetry)
+          }
         }
-        telemetryClient.trackEvent(
-          "contactperson-email-synchronisation-created-success",
-          telemetry,
-        )
       }
     }
   }
 
   suspend fun personEmailUpdated(event: PersonInternetAddressEvent) {
     val telemetry =
-      mutableMapOf<String, Any>("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisInternetAddressId" to event.internetAddressId)
+      telemetryOf("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisInternetAddressId" to event.internetAddressId)
 
     if (event.doesOriginateInDps()) {
       telemetryClient.trackEvent(
@@ -564,17 +549,19 @@ class ContactPersonSynchronisationService(
         telemetry,
       )
     } else {
-      val dpsContactEmailId = mappingApiService.getByNomisEmailId(nomisInternetAddressId = event.internetAddressId).dpsId.also {
-        telemetry["dpsContactEmailId"] = it
+      track("contactperson-email-synchronisation-updated", telemetry) {
+        val dpsContactEmailId =
+          mappingApiService.getByNomisEmailId(nomisInternetAddressId = event.internetAddressId).dpsId.also {
+            telemetry["dpsContactEmailId"] = it
+          }
+        val nomisPerson = nomisApiService.getPerson(nomisPersonId = event.personId)
+        val nomisAddress = nomisPerson.emailAddresses.find { it.emailAddressId == event.internetAddressId }
+          ?: throw IllegalStateException("Email ${event.internetAddressId} for person ${event.personId} not found in NOMIS")
+        dpsApiService.updateContactEmail(
+          dpsContactEmailId.toLong(),
+          nomisAddress.toDpsUpdateContactEmailRequest(nomisPersonId = event.personId),
+        )
       }
-      val nomisPerson = nomisApiService.getPerson(nomisPersonId = event.personId)
-      val nomisAddress = nomisPerson.emailAddresses.find { it.emailAddressId == event.internetAddressId } ?: throw IllegalStateException("Email ${event.internetAddressId} for person ${event.personId} not found in NOMIS")
-      dpsApiService.updateContactEmail(dpsContactEmailId.toLong(), nomisAddress.toDpsUpdateContactEmailRequest(nomisPersonId = event.personId))
-
-      telemetryClient.trackEvent(
-        "contactperson-email-synchronisation-updated-success",
-        telemetry,
-      )
     }
   }
 
@@ -616,7 +603,7 @@ class ContactPersonSynchronisationService(
 
   suspend fun personIdentifierAdded(event: PersonIdentifierEvent) {
     val telemetry =
-      mutableMapOf("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisSequenceNumber" to event.identifierSequence)
+      telemetryOf("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisSequenceNumber" to event.identifierSequence)
 
     if (event.doesOriginateInDps()) {
       telemetryClient.trackEvent(
@@ -630,35 +617,52 @@ class ContactPersonSynchronisationService(
           telemetry + ("dpsContactIdentityId" to it.dpsId),
         )
       } ?: run {
-        nomisApiService.getPerson(nomisPersonId = event.personId).also { nomisPerson ->
-          val nomisIdentifier = nomisPerson.identifiers.find { it.sequence == event.identifierSequence } ?: throw IllegalStateException("Identifier ${event.identifierSequence} for person ${event.personId} not found in NOMIS")
-          val dpsIdentity = dpsApiService.createContactIdentity(nomisIdentifier.toDpsCreateContactIdentityRequest(nomisPersonId = event.personId)).also {
-            telemetry["dpsContactIdentityId"] = it.contactIdentityId
-          }
-          val mapping = PersonIdentifierMappingDto(
-            nomisPersonId = event.personId,
-            nomisSequenceNumber = event.identifierSequence,
-            dpsId = dpsIdentity.contactIdentityId.toString(),
-            mappingType = PersonIdentifierMappingDto.MappingType.NOMIS_CREATED,
-          )
+        track("contactperson-identifier-synchronisation-created", telemetry) {
+          nomisApiService.getPerson(nomisPersonId = event.personId).also { nomisPerson ->
+            val nomisIdentifier = nomisPerson.identifiers.find { it.sequence == event.identifierSequence } ?: throw IllegalStateException("Identifier ${event.identifierSequence} for person ${event.personId} not found in NOMIS")
+            val dpsIdentity = dpsApiService.createContactIdentity(nomisIdentifier.toDpsCreateContactIdentityRequest(nomisPersonId = event.personId)).also {
+              telemetry["dpsContactIdentityId"] = it.contactIdentityId
+            }
+            val mapping = PersonIdentifierMappingDto(
+              nomisPersonId = event.personId,
+              nomisSequenceNumber = event.identifierSequence,
+              dpsId = dpsIdentity.contactIdentityId.toString(),
+              mappingType = PersonIdentifierMappingDto.MappingType.NOMIS_CREATED,
+            )
 
-          tryToCreateMapping(mapping, telemetry)
+            tryToCreateMapping(mapping, telemetry)
+          }
         }
-        telemetryClient.trackEvent(
-          "contactperson-identifier-synchronisation-created-success",
-          telemetry,
-        )
       }
     }
   }
 
   suspend fun personIdentifierUpdated(event: PersonIdentifierEvent) {
     val telemetry =
-      mapOf("personId" to event.personId, "identifierSequence" to event.identifierSequence)
-    telemetryClient.trackEvent(
-      "contactperson-person-identifier-synchronisation-updated-success",
-      telemetry,
-    )
+      telemetryOf("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisSequenceNumber" to event.identifierSequence)
+
+    if (event.doesOriginateInDps()) {
+      telemetryClient.trackEvent(
+        "contactperson-identifier-synchronisation-updated-skipped",
+        telemetry,
+      )
+    } else {
+      track("contactperson-identifier-synchronisation-updated", telemetry) {
+        val dpsContactIdentityId = mappingApiService.getByNomisIdentifierIds(
+          nomisPersonId = event.personId,
+          nomisSequenceNumber = event.identifierSequence,
+        ).dpsId.also {
+          telemetry["dpsContactIdentityId"] = it
+        }
+        val nomisPerson = nomisApiService.getPerson(nomisPersonId = event.personId)
+        val nomisIdentifier = nomisPerson.identifiers.find { it.sequence == event.identifierSequence }
+          ?: throw IllegalStateException("Identifier ${event.identifierSequence} for person ${event.personId} not found in NOMIS")
+        dpsApiService.updateContactIdentity(
+          dpsContactIdentityId.toLong(),
+          nomisIdentifier.toDpsUpdateContactIdentityRequest(nomisPersonId = event.personId),
+        )
+      }
+    }
   }
 
   suspend fun personIdentifierDeleted(event: PersonIdentifierEvent) {
@@ -1018,6 +1022,17 @@ class ContactPersonSynchronisationService(
         )
       }
   }
+
+  private inline fun track(name: String, telemetry: MutableMap<String, Any>, transform: () -> Unit) {
+    try {
+      transform()
+      telemetryClient.trackEvent("$name-success", telemetry)
+    } catch (e: Exception) {
+      telemetry["error"] = e.message.toString()
+      telemetryClient.trackEvent("$name-error", telemetry)
+      throw e
+    }
+  }
 }
 
 fun ContactPerson.toDpsCreateContactRequest() = SyncCreateContactRequest(
@@ -1142,7 +1157,6 @@ fun PersonAddress.toDpsUpdateContactAddressRequest(nomisPersonId: Long) = SyncUp
   countyCode = this.county?.code,
   countryCode = this.country?.code,
   postcode = this.postcode,
-  // TODO - probably needs removing from DPS since NOMIS does not maintain this flag
   verified = this.validatedPAF,
   mailFlag = this.mailAddress,
   startDate = this.startDate,
@@ -1203,6 +1217,15 @@ fun PersonIdentifier.toDpsCreateContactIdentityRequest(nomisPersonId: Long) = Sy
   identityType = this.type.code,
   issuingAuthority = this.issuedAuthority,
   createdTime = this.audit.createDatetime.toDateTime(),
+)
+fun PersonIdentifier.toDpsUpdateContactIdentityRequest(nomisPersonId: Long) = SyncUpdateContactIdentityRequest(
+  contactId = nomisPersonId,
+  updatedBy = this.audit.modifyUserId!!,
+  identityValue = this.identifier,
+  identityType = this.type.code,
+  // TODO - DPS to make this optional
+  issuingAuthority = this.issuedAuthority ?: "",
+  updatedTime = this.audit.modifyDatetime!!.toDateTime(),
 )
 
 fun ContactRestriction.toDpsCreatePrisonerContactRestrictionRequest(dpsPrisonerContactId: Long) = SyncCreatePrisonerContactRestrictionRequest(

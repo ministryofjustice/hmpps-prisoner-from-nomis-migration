@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-12-13.10229.b5d853b"
+    "version": "2024-12-16.10269.805d683"
   },
   "servers": [
     {
@@ -1864,6 +1864,182 @@
         }
       }
     },
+    "/persons/{personId}/phone/{phoneId}": {
+      "put": {
+        "tags": [
+          "contact-person-resource"
+        ],
+        "summary": "Updated a person global phone",
+        "description": "Updates a person global phone in NOMIS. Requires ROLE_NOMIS_CONTACTPERSONS",
+        "operationId": "updatePersonPhone",
+        "parameters": [
+          {
+            "name": "personId",
+            "in": "path",
+            "description": "Person Id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Person Id",
+              "format": "int64",
+              "example": 12345
+            },
+            "example": 12345
+          },
+          {
+            "name": "phoneId",
+            "in": "path",
+            "description": "Phone Id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Phone Id",
+              "format": "int64",
+              "example": 35355
+            },
+            "example": 35355
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePersonPhoneRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Person Phone ID Updated"
+          },
+          "400": {
+            "description": "Invalid request data, e.g type is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_CONTACTPERSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Person or phone does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/persons/{personId}/email/{emailAddressId}": {
+      "put": {
+        "tags": [
+          "contact-person-resource"
+        ],
+        "summary": "Updates a person email",
+        "description": "Updates a person email in NOMIS. Requires ROLE_NOMIS_CONTACTPERSONS",
+        "operationId": "updatePersonEmail",
+        "parameters": [
+          {
+            "name": "personId",
+            "in": "path",
+            "description": "Person Id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Person Id",
+              "format": "int64",
+              "example": 12345
+            },
+            "example": 12345
+          },
+          {
+            "name": "emailAddressId",
+            "in": "path",
+            "description": "Email address Id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Email address Id",
+              "format": "int64",
+              "example": 76554
+            },
+            "example": 76554
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePersonEmailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Person Email ID aka InternetAddressId Update"
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_CONTACTPERSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Person or email address does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/persons/{personId}/contact/{contactId}": {
       "put": {
         "tags": [
@@ -2062,6 +2238,205 @@
           },
           "404": {
             "description": "Person or contact or restriction does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/persons/{personId}/address/{addressId}": {
+      "put": {
+        "tags": [
+          "contact-person-resource"
+        ],
+        "summary": "Updates a person address",
+        "description": "Updates a person address in NOMIS. Requires ROLE_NOMIS_CONTACTPERSONS",
+        "operationId": "updatePersonAddress",
+        "parameters": [
+          {
+            "name": "personId",
+            "in": "path",
+            "description": "Person Id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Person Id",
+              "format": "int64",
+              "example": 12345
+            },
+            "example": 12345
+          },
+          {
+            "name": "addressId",
+            "in": "path",
+            "description": "Address Id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Address Id",
+              "format": "int64",
+              "example": 47474
+            },
+            "example": 47474
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePersonAddressRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Person Address Updated"
+          },
+          "400": {
+            "description": "The request contains bad for example type code does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_CONTACTPERSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Person or address does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/persons/{personId}/address/{addressId}/phone/{phoneId}": {
+      "put": {
+        "tags": [
+          "contact-person-resource"
+        ],
+        "summary": "Updates a person address phone",
+        "description": "Updates a person phone associated with an address in NOMIS. Requires ROLE_NOMIS_CONTACTPERSONS",
+        "operationId": "updatedPersonAddressPhone",
+        "parameters": [
+          {
+            "name": "personId",
+            "in": "path",
+            "description": "Person Id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Person Id",
+              "format": "int64",
+              "example": 12345
+            },
+            "example": 12345
+          },
+          {
+            "name": "addressId",
+            "in": "path",
+            "description": "Address Id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Address Id",
+              "format": "int64",
+              "example": 56789
+            },
+            "example": 56789
+          },
+          {
+            "name": "phoneId",
+            "in": "path",
+            "description": "Phone Id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Phone Id",
+              "format": "int64",
+              "example": 585850
+            },
+            "example": 585850
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePersonPhoneRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Person Phone ID Updates"
+          },
+          "400": {
+            "description": "Invalid request data, e.g type is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_CONTACTPERSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Person or address does not exist",
             "content": {
               "application/json": {
                 "schema": {
@@ -15387,6 +15762,43 @@
         },
         "description": "Request to update a contact restriction in NOMIS for either global or against a specific relationship"
       },
+      "UpdatePersonPhoneRequest": {
+        "required": [
+          "number",
+          "typeCode"
+        ],
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "string",
+            "description": "The number",
+            "example": "0114 555 555"
+          },
+          "extension": {
+            "type": "string",
+            "description": "Extension",
+            "example": "x432"
+          },
+          "typeCode": {
+            "type": "string",
+            "description": "Phone type code",
+            "example": "MOB"
+          }
+        }
+      },
+      "UpdatePersonEmailRequest": {
+        "required": [
+          "email"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Email address",
+            "example": "test@test.justice.gov.uk"
+          }
+        }
+      },
       "UpdatePersonContactRequest": {
         "required": [
           "active",
@@ -15433,6 +15845,90 @@
           }
         },
         "description": "Request to update a contact (aka DPS prisoner contact) in NOMIS"
+      },
+      "UpdatePersonAddressRequest": {
+        "required": [
+          "mailAddress",
+          "primaryAddress"
+        ],
+        "type": "object",
+        "properties": {
+          "typeCode": {
+            "type": "string",
+            "description": "Address reference code",
+            "example": "HOME"
+          },
+          "flat": {
+            "type": "string",
+            "description": "Flat name or number",
+            "example": "Apartment 3"
+          },
+          "premise": {
+            "type": "string",
+            "description": "Premise",
+            "example": "22"
+          },
+          "street": {
+            "type": "string",
+            "description": "Street",
+            "example": "West Street"
+          },
+          "locality": {
+            "type": "string",
+            "description": "Locality",
+            "example": "Keighley"
+          },
+          "postcode": {
+            "type": "string",
+            "description": "Post code",
+            "example": "MK15 2ST"
+          },
+          "cityCode": {
+            "type": "string",
+            "description": "City reference code",
+            "example": "25343"
+          },
+          "countyCode": {
+            "type": "string",
+            "description": "County reference code",
+            "example": "S.YORKSHIRE"
+          },
+          "countryCode": {
+            "type": "string",
+            "description": "Country reference code",
+            "example": "ENG"
+          },
+          "noFixedAddress": {
+            "type": "boolean",
+            "description": "true if address not fixed. for example homeless"
+          },
+          "primaryAddress": {
+            "type": "boolean",
+            "description": "true if this is the person's primary address"
+          },
+          "mailAddress": {
+            "type": "boolean",
+            "description": "true if this is used for mail"
+          },
+          "comment": {
+            "type": "string",
+            "description": "Free format comment about the address"
+          },
+          "startDate": {
+            "type": "string",
+            "description": "Date address was valid from",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "description": "Date address was valid to",
+            "format": "date"
+          },
+          "validatedPAF": {
+            "type": "boolean",
+            "description": "true if address validated by PAF"
+          }
+        }
       },
       "UpdateNonAssociationRequest": {
         "required": [
@@ -21847,6 +22343,7 @@
       },
       "Offender": {
         "required": [
+          "firstName",
           "lastName",
           "offenderNo"
         ],

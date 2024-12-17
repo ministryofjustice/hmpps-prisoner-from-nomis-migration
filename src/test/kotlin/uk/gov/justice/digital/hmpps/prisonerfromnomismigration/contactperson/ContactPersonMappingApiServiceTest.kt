@@ -513,6 +513,49 @@ class ContactPersonMappingApiServiceTest {
   }
 
   @Nested
+  inner class GetByNomisIdentifierId {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubGetByNomisIdentifierIds(nomisPersonId = 1234567, nomisSequenceNumber = 4)
+
+      apiService.getByNomisIdentifierIds(nomisPersonId = 1234567, nomisSequenceNumber = 4)
+
+      mockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass NOMIS ids to service`() = runTest {
+      mockServer.stubGetByNomisIdentifierIds(nomisPersonId = 1234567, nomisSequenceNumber = 4)
+
+      apiService.getByNomisIdentifierIds(nomisPersonId = 1234567, nomisSequenceNumber = 4)
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/mapping/contact-person/identifier/nomis-person-id/1234567/nomis-sequence-number/4")),
+      )
+    }
+
+    @Test
+    fun `will return dpsId`() = runTest {
+      mockServer.stubGetByNomisIdentifierIds(
+        nomisPersonId = 1234567,
+        nomisSequenceNumber = 4,
+        mapping = PersonIdentifierMappingDto(
+          dpsId = "7654321",
+          nomisPersonId = 1234567,
+          nomisSequenceNumber = 4,
+          mappingType = PersonIdentifierMappingDto.MappingType.MIGRATED,
+        ),
+      )
+
+      val mapping = apiService.getByNomisIdentifierIds(nomisPersonId = 1234567, nomisSequenceNumber = 4)
+
+      assertThat(mapping.dpsId).isEqualTo("7654321")
+    }
+  }
+
+  @Nested
   inner class GetByNomisContactRestrictionIdOrNull {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {

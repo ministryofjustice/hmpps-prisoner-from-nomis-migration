@@ -568,6 +568,17 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
     }
   }
 
+  fun stubGetByNomisIdentifierIds(
+    nomisPersonId: Long = 123456,
+    nomisSequenceNumber: Long = 4,
+    mapping: PersonIdentifierMappingDto = PersonIdentifierMappingDto(
+      nomisPersonId = 123456,
+      nomisSequenceNumber = 4,
+      dpsId = "654321",
+      mappingType = PersonIdentifierMappingDto.MappingType.MIGRATED,
+    ),
+  ) = stubGetByNomisIdentifierIdsOrNull(nomisPersonId, nomisSequenceNumber, mapping)
+
   fun stubGetByNomisContactRestrictionIdOrNull(
     nomisContactRestrictionId: Long = 123456,
     mapping: PersonContactRestrictionMappingDto? = PersonContactRestrictionMappingDto(
