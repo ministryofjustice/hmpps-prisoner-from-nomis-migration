@@ -96,7 +96,6 @@ class CourtSentencingMigrationService(
       label = context.migrationId,
       mappingType = CourtCaseAllMappingDto.MappingType.MIGRATED,
     )
-    println(mapping)
     try {
       courtSentencingMappingService.createMapping(
         mapping,
