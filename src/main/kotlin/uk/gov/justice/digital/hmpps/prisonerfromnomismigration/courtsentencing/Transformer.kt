@@ -52,6 +52,7 @@ fun CourtEventResponse.toDpsCourtAppearance(
   courtCode = this.courtId,
   courtCaseUuid = dpsCaseId,
   appearanceDate = LocalDateTime.parse(this.eventDateTime).toLocalDate(),
+  appearanceTypeUuid = this.courtEventType.toDpsAppearanceTypeId(),
   legacyData =
   CourtAppearanceLegacyData(
     eventId = this.id.toString(),
