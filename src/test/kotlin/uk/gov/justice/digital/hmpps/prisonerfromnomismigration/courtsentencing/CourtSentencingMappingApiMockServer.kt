@@ -12,7 +12,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceAllMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
@@ -120,11 +120,10 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
   fun stubGetCourtAppearanceByNomisId(
     nomisCourtAppearanceId: Long = 123456,
     dpsCourtAppearanceId: String = UUID.randomUUID().toString(),
-    mapping: CourtAppearanceAllMappingDto = CourtAppearanceAllMappingDto(
+    mapping: CourtAppearanceMappingDto = CourtAppearanceMappingDto(
       nomisCourtAppearanceId = nomisCourtAppearanceId,
       dpsCourtAppearanceId = dpsCourtAppearanceId,
-      courtCharges = emptyList(),
-      mappingType = CourtAppearanceAllMappingDto.MappingType.MIGRATED,
+      mappingType = CourtAppearanceMappingDto.MappingType.MIGRATED,
     ),
   ) {
     mappingApi.stubFor(
