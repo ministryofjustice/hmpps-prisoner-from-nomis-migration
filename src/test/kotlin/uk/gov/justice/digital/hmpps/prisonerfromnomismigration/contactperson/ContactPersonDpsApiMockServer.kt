@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
@@ -504,6 +505,16 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
     )
   }
+  fun stubDeleteContactPhone(contactPhoneId: Long) {
+    stubFor(
+      delete("/sync/contact-phone/$contactPhoneId")
+        .willReturn(
+          aResponse()
+            .withStatus(204)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
   fun stubCreateContactAddressPhone(response: SyncContactAddressPhone = contactAddressPhone()) {
     stubFor(
       post("/sync/contact-address-phone")
@@ -523,6 +534,26 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withStatus(200)
             .withHeader("Content-Type", "application/json")
             .withBody(ContactPersonDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+  fun stubDeleteContactAddressPhone(contactAddressPhoneId: Long) {
+    stubFor(
+      delete("/sync/contact-address-phone/$contactAddressPhoneId")
+        .willReturn(
+          aResponse()
+            .withStatus(204)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+  fun stubDeleteContactAddressPhone(contactAddressPhoneId: Long, status: Int) {
+    stubFor(
+      delete("/sync/contact-address-phone/$contactAddressPhoneId")
+        .willReturn(
+          aResponse()
+            .withStatus(status)
+            .withHeader("Content-Type", "application/json"),
         ),
     )
   }

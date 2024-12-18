@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
@@ -333,6 +334,34 @@ class ContactPersonDpsApiServiceTest {
   }
 
   @Nested
+  inner class DeleteContactPhone {
+    val contactPhoneId = 12345L
+
+    @Test
+    internal fun `will pass oath2 token to endpoint`() = runTest {
+      dpsContactPersonServer.stubDeleteContactPhone(contactPhoneId)
+
+      apiService.deleteContactPhone(contactPhoneId)
+
+      dpsContactPersonServer.verify(
+        deleteRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the delete sync endpoint`() = runTest {
+      dpsContactPersonServer.stubDeleteContactPhone(contactPhoneId)
+
+      apiService.deleteContactPhone(contactPhoneId)
+
+      dpsContactPersonServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/contact-phone/$contactPhoneId")),
+      )
+    }
+  }
+
+  @Nested
   inner class CreateContactAddressPhone {
     @Test
     internal fun `will pass oath2 token to endpoint`() = runTest {
@@ -382,6 +411,45 @@ class ContactPersonDpsApiServiceTest {
 
       dpsContactPersonServer.verify(
         putRequestedFor(urlPathEqualTo("/sync/contact-address-phone/$contactAddressPhoneId")),
+      )
+    }
+  }
+
+  @Nested
+  inner class DeleteContactAddressPhone {
+    val contactAddressPhoneId = 12345L
+
+    @Test
+    internal fun `will pass oath2 token to endpoint`() = runTest {
+      dpsContactPersonServer.stubDeleteContactAddressPhone(contactAddressPhoneId)
+
+      apiService.deleteContactAddressPhone(contactAddressPhoneId)
+
+      dpsContactPersonServer.verify(
+        deleteRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the delete sync endpoint`() = runTest {
+      dpsContactPersonServer.stubDeleteContactAddressPhone(contactAddressPhoneId)
+
+      apiService.deleteContactAddressPhone(contactAddressPhoneId)
+
+      dpsContactPersonServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/contact-address-phone/$contactAddressPhoneId")),
+      )
+    }
+
+    @Test
+    fun `will ignore 404`() = runTest {
+      dpsContactPersonServer.stubDeleteContactAddressPhone(contactAddressPhoneId, status = 404)
+
+      apiService.deleteContactAddressPhone(contactAddressPhoneId)
+
+      dpsContactPersonServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/contact-address-phone/$contactAddressPhoneId")),
       )
     }
   }

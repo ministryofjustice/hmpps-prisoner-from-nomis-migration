@@ -486,15 +486,29 @@ class ContactPersonSynchronisationService(
 
   suspend fun personPhoneDeleted(event: PersonPhoneEvent) {
     val telemetry =
-      mapOf("personId" to event.personId, "phoneId" to event.phoneId)
-    if (event.isAddress) {
+      telemetryOf("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisPhoneId" to event.phoneId).also {
+        if (event.isAddress && event.addressId != null) {
+          it["nomisAddressId"] = event.addressId
+        }
+      }
+
+    mappingApiService.getByNomisPhoneIdOrNull(nomisPhoneId = event.phoneId)?.also {
+      if (it.dpsPhoneType == PersonPhoneMappingDto.DpsPhoneType.PERSON) {
+        telemetry["dpsContactPhoneId"] = it.dpsId
+      } else {
+        telemetry["dpsContactAddressPhoneId"] = it.dpsId
+      }
+      track("contactperson-phone-synchronisation-deleted", telemetry) {
+        if (event.isAddress) {
+          dpsApiService.deleteContactAddressPhone(it.dpsId.toLong())
+        } else {
+          dpsApiService.deleteContactPhone(it.dpsId.toLong())
+        }
+        mappingApiService.deleteByNomisPhoneId(it.nomisId)
+      }
+    } ?: run {
       telemetryClient.trackEvent(
-        "contactperson-person-address-phone-synchronisation-deleted-todo",
-        telemetry,
-      )
-    } else {
-      telemetryClient.trackEvent(
-        "contactperson-person-phone-synchronisation-deleted-success",
+        "contactperson-phone-synchronisation-deleted-ignored",
         telemetry,
       )
     }

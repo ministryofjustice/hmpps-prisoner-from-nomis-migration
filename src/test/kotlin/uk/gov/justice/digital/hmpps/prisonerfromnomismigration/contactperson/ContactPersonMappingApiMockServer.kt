@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
@@ -489,6 +490,18 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
       mappingType = PersonPhoneMappingDto.MappingType.MIGRATED,
     ),
   ) = stubGetByNomisPhoneIdOrNull(nomisPhoneId, mapping)
+
+  fun stubDeleteByNomisPhoneId(
+    nomisPhoneId: Long = 123456,
+  ) {
+    mappingApi.stubFor(
+      delete(urlEqualTo("/mapping/contact-person/phone/nomis-phone-id/$nomisPhoneId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.NO_CONTENT.value()),
+      ),
+    )
+  }
 
   fun stubCreateIdentifierMapping() {
     mappingApi.stubFor(
