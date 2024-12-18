@@ -12,11 +12,6 @@ suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitBodyOrNullWhenN
     .onErrorResume(WebClientResponseException.NotFound::class.java) { Mono.empty() }
     .awaitSingleOrNull()
 
-suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitBodyOrNullWhenNotAcceptable(): T? =
-  this.bodyToMono<T>()
-    .onErrorResume(WebClientResponseException.NotAcceptable::class.java) { Mono.empty() }
-    .awaitSingleOrNull()
-
 suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitBodyOrNullWhenUnprocessableEntity(): T? =
   this.bodyToMono<T>()
     .onErrorResume(WebClientResponseException.UnprocessableEntity::class.java) { Mono.empty() }
@@ -41,7 +36,7 @@ suspend inline fun WebClient.ResponseSpec.awaitBodilessEntityIgnoreNotFound() =
     .onErrorResume(WebClientResponseException.NotFound::class.java) {
       Mono.empty()
     }
-    .awaitSingle()
+    .awaitSingleOrNull()
 
 class DuplicateErrorResponse(
   val moreInfo: DuplicateErrorContent,
