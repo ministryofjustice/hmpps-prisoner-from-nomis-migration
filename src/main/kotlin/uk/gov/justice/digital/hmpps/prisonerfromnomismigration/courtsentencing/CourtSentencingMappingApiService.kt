@@ -14,6 +14,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceAllMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
@@ -38,7 +39,7 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
     .retrieve()
     .awaitBodilessEntity()
 
-  suspend fun getCourtAppearanceOrNullByNomisId(courtAppearanceId: Long): CourtAppearanceAllMappingDto? = webClient.get()
+  suspend fun getCourtAppearanceOrNullByNomisId(courtAppearanceId: Long): CourtAppearanceMappingDto? = webClient.get()
     .uri(
       "/mapping/court-sentencing/court-appearances/nomis-court-appearance-id/{courtAppearanceId}",
       courtAppearanceId,

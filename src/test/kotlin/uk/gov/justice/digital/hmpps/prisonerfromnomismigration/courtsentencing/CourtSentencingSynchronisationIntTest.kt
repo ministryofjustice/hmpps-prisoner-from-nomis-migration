@@ -35,7 +35,7 @@ import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.dpsCourtSentencingServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceAllMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseIdentifierResponse
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
@@ -1738,10 +1738,9 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
             nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
             dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
-            mapping = CourtAppearanceAllMappingDto(
+            mapping = CourtAppearanceMappingDto(
               nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
               dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
-              courtCharges = emptyList(),
             ),
           )
           courtSentencingMappingApiMockServer.stubDeleteCourtAppearanceMappingByDpsId(dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID)
@@ -2230,10 +2229,9 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
             nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
             dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
-            mapping = CourtAppearanceAllMappingDto(
+            mapping = CourtAppearanceMappingDto(
               nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
               dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
-              courtCharges = emptyList(),
             ),
           )
           awsSqsCourtSentencingOffenderEventsClient.sendMessage(
@@ -2306,10 +2304,9 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
             nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
             dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
-            mapping = CourtAppearanceAllMappingDto(
+            mapping = CourtAppearanceMappingDto(
               nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
               dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
-              courtCharges = emptyList(),
             ),
           )
 
@@ -2383,10 +2380,9 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
             nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
             dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
-            mapping = CourtAppearanceAllMappingDto(
+            mapping = CourtAppearanceMappingDto(
               nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
               dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
-              courtCharges = emptyList(),
             ),
           )
 
