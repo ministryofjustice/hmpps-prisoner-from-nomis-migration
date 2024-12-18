@@ -32,6 +32,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdateContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.SyncUpdatePrisonerContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityIgnoreNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityOrLogAndRethrowBadRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
 
@@ -107,6 +108,13 @@ class ContactPersonDpsApiService(@Qualifier("contactPersonApiWebClient") private
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
+  suspend fun deleteContactPhone(contactPhoneId: Long) {
+    webClient.delete()
+      .uri("/sync/contact-phone/{contactPhoneId}", contactPhoneId)
+      .retrieve()
+      .awaitBodilessEntityIgnoreNotFound()
+  }
+
   suspend fun createContactAddressPhone(contactAddressPhone: SyncCreateContactAddressPhoneRequest): SyncContactAddressPhone = webClient.post()
     .uri("/sync/contact-address-phone")
     .bodyValue(contactAddressPhone)
@@ -118,6 +126,13 @@ class ContactPersonDpsApiService(@Qualifier("contactPersonApiWebClient") private
     .bodyValue(contactAddressPhone)
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun deleteContactAddressPhone(contactAddressPhoneId: Long) {
+    webClient.delete()
+      .uri("/sync/contact-address-phone/{contactAddressPhoneId}", contactAddressPhoneId)
+      .retrieve()
+      .awaitBodilessEntityIgnoreNotFound()
+  }
 
   suspend fun createContactIdentity(contactIdentity: SyncCreateContactIdentityRequest): SyncContactIdentity = webClient.post()
     .uri("/sync/contact-identity")

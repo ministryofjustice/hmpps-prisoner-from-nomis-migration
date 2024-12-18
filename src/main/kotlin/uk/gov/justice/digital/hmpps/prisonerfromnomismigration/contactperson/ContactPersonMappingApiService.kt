@@ -6,6 +6,7 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
+import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
@@ -103,6 +104,16 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
     )
     .retrieve()
     .awaitBody()
+
+  suspend fun deleteByNomisPhoneId(nomisPhoneId: Long) {
+    webClient.delete()
+      .uri(
+        "/mapping/contact-person/phone/nomis-phone-id/{nomisPhoneId}",
+        nomisPhoneId,
+      )
+      .retrieve()
+      .awaitBodilessEntity()
+  }
 
   suspend fun getByNomisIdentifierIdsOrNull(nomisPersonId: Long, nomisSequenceNumber: Long): PersonIdentifierMappingDto? = webClient.get()
     .uri(

@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
@@ -455,6 +456,31 @@ class ContactPersonMappingApiServiceTest {
       val mapping = apiService.getByNomisPhoneId(nomisPhoneId = 1234567)
 
       assertThat(mapping.dpsId).isEqualTo("7654321")
+    }
+  }
+
+  @Nested
+  inner class DeleteByNomisPhoneId {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubDeleteByNomisPhoneId(nomisPhoneId = 1234567)
+
+      apiService.deleteByNomisPhoneId(nomisPhoneId = 1234567)
+
+      mockServer.verify(
+        deleteRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass NOMIS id to service`() = runTest {
+      mockServer.stubDeleteByNomisPhoneId(nomisPhoneId = 1234567)
+
+      apiService.deleteByNomisPhoneId(nomisPhoneId = 1234567)
+
+      mockServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/mapping/contact-person/phone/nomis-phone-id/1234567")),
+      )
     }
   }
 
