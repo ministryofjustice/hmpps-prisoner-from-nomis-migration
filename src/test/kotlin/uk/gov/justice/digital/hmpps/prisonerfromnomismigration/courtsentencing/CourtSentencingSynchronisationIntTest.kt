@@ -844,7 +844,12 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               1,
               putRequestedFor(urlPathEqualTo("/court-case/$DPS_COURT_CASE_ID/case-references/refresh"))
                 .withRequestBody(matchingJsonPath("caseReferences.size()", equalTo("2")))
-                .withRequestBody(matchingJsonPath("caseReferences[0].offenderCaseReference", equalTo(NOMIS_CASE_IDENTIFIER)))
+                .withRequestBody(
+                  matchingJsonPath(
+                    "caseReferences[0].offenderCaseReference",
+                    equalTo(NOMIS_CASE_IDENTIFIER),
+                  ),
+                )
                 .withRequestBody(matchingJsonPath("caseReferences[1].offenderCaseReference", equalTo("ref2"))),
             )
           }
@@ -1048,7 +1053,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBody(matchingJsonPath("legacyData.postedDate", WireMock.not(WireMock.absent())))
                 .withRequestBody(matchingJsonPath("courtCode", equalTo("MDI")))
                 .withRequestBody(matchingJsonPath("courtCaseUuid", equalTo(DPS_COURT_CASE_ID)))
-                .withRequestBody(matchingJsonPath("appearanceDate", equalTo("2020-01-02"))),
+                .withRequestBody(matchingJsonPath("appearanceDate", equalTo("2020-01-02")))
+                .withRequestBody(matchingJsonPath("appearanceTypeUuid", equalTo(COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID))),
             )
           }
         }
@@ -1576,7 +1582,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
               1,
-              putRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_COURT_APPEARANCE_ID")),
+              putRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_COURT_APPEARANCE_ID"))
+                .withRequestBody(matchingJsonPath("appearanceTypeUuid", equalTo(COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID))),
             )
           }
         }
