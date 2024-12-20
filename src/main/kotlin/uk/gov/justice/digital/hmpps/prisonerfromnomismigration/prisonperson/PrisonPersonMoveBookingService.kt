@@ -23,6 +23,17 @@ class PrisonPersonMoveBookingService(
   private val profileDetailsSyncService: ProfileDetailsSyncService,
 ) {
 
+  /*
+   Note that there are some edge cases not catered for here because we've never seen them happen in real life and to
+   solve them would complicate this logic even more than it already is. If they do occur we'll pick them up in the
+   reconciliation reports and maybe we'll decide to fix.
+
+   The unhandled edge cases are:
+   * from and to offender have missing details but some are entered in NOMIS
+   * from offender has details, to offender doesn't and NOMIS is not updated
+   * to offender has details, from offender doesn't and NOMIS is updated
+   More details can be found in the JIRA ticket SDIT-2344 (see attachment).
+   */
   suspend fun bookingMoved(bookingMovedEvent: PrisonerBookingMovedDomainEvent) {
     val bookingId = bookingMovedEvent.additionalInformation.bookingId
     val toOffenderNo = bookingMovedEvent.additionalInformation.movedToNomsNumber
@@ -35,20 +46,27 @@ class PrisonPersonMoveBookingService(
 
     try {
       syncFromOffenderDps(fromOffenderNo, telemetry)
-
       syncToOffenderDpsIfChanged(toOffenderNo, bookingId, telemetry)
-
-      syncToOffenderNomis(toOffenderNo, telemetry)
-
-      telemetryClient.trackEvent("prisonperson-booking-moved", telemetry.toMap())
     } catch (e: Exception) {
-      telemetry += "error" to e.message.toString()
-      telemetryClient.trackEvent(
-        "prisonperson-booking-moved-error",
-        telemetry.toMap(),
-      )
+      raiseErrorTelemetry(e, telemetry)
       throw e
     }
+
+    // Note that we don't rethrow if the sync back to NOMIS fails. The sync back to NOMIS can fail if DPS doesn't
+    // have any physical attributes, which doesn't seem to happen in real life but happens a lot in dev where people
+    // are testing move booking functionality.
+    try {
+      syncToOffenderNomis(toOffenderNo, telemetry)
+    } catch (e: Exception) {
+      raiseErrorTelemetry(e, telemetry)
+    }
+
+    telemetryClient.trackEvent("prisonperson-booking-moved", telemetry.toMap())
+  }
+
+  private fun raiseErrorTelemetry(e: Exception, telemetry: MutableMap<String, String>) {
+    telemetry["error"] = e.message.toString()
+    telemetryClient.trackEvent("prisonperson-booking-moved-error", telemetry.toMap())
   }
 
   private suspend fun syncFromOffenderDps(fromOffenderNo: String, telemetry: MutableMap<String, String>) {
