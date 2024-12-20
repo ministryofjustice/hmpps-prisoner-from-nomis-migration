@@ -615,7 +615,7 @@ class PrisonPersonMoveBookingIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
-      fun `should end up on DLQ if sync back to NOMIS fails`() {
+      fun `should NOT end up on DLQ if sync back to NOMIS fails`() {
         stubGetPhysicalAttributesMissing(fromOffenderNo)
         stubGetPhysicalAttributesMissing(toOffenderNo)
         stubGetProfileDetailsMissing(fromOffenderNo)
@@ -625,7 +625,7 @@ class PrisonPersonMoveBookingIntTest : SqsIntegrationTestBase() {
         nomisSyncApi.stubSyncPhysicalAttributes(toOffenderNo, HttpStatus.BAD_GATEWAY)
 
         sendBookingMovedEvent().also {
-          waitForDlqMessage()
+          waitForAnyProcessingToComplete("prisonperson-booking-moved-error")
         }
 
         verify(telemetryClient).trackEvent(
@@ -643,6 +643,10 @@ class PrisonPersonMoveBookingIntTest : SqsIntegrationTestBase() {
           },
           isNull(),
         )
+
+        assertThat(
+          awsSqsPrisonPersonOffenderEventDlqClient.countAllMessagesOnQueue(prisonPersonQueueOffenderEventsDlqUrl).get(),
+        ).isEqualTo(0)
       }
     }
 
