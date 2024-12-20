@@ -354,11 +354,20 @@ class ContactPersonSynchronisationService(
 
   suspend fun personAddressDeleted(event: PersonAddressEvent) {
     val telemetry =
-      mapOf("personId" to event.personId, "addressId" to event.addressId)
-    telemetryClient.trackEvent(
-      "contactperson-person-address-synchronisation-deleted-success",
-      telemetry,
-    )
+      telemetryOf("nomisPersonId" to event.personId, "nomisAddressId" to event.addressId, "dpsContactId" to event.personId)
+
+    mappingApiService.getByNomisAddressIdOrNull(nomisAddressId = event.addressId)?.also {
+      track("contactperson-address-synchronisation-deleted", telemetry) {
+        telemetry["dpsContactAddressId"] = it.dpsId
+        dpsApiService.deleteContactAddress(it.dpsId.toLong())
+        mappingApiService.deleteByNomisAddressId(event.addressId)
+      }
+    } ?: run {
+      telemetryClient.trackEvent(
+        "contactperson-address-synchronisation-deleted-ignored",
+        telemetry,
+      )
+    }
   }
 
   suspend fun personPhoneAdded(event: PersonPhoneEvent) {
@@ -580,11 +589,20 @@ class ContactPersonSynchronisationService(
 
   suspend fun personEmailDeleted(event: PersonInternetAddressEvent) {
     val telemetry =
-      mapOf("personId" to event.personId, "internetAddressId" to event.internetAddressId)
-    telemetryClient.trackEvent(
-      "contactperson-person-email-synchronisation-deleted-success",
-      telemetry,
-    )
+      telemetryOf("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisInternetAddressId" to event.internetAddressId)
+
+    mappingApiService.getByNomisEmailIdOrNull(nomisInternetAddressId = event.internetAddressId)?.also {
+      track("contactperson-email-synchronisation-deleted", telemetry) {
+        telemetry["dpsContactEmailId"] = it.dpsId
+        dpsApiService.deleteContactEmail(contactEmailId = it.dpsId.toLong())
+        mappingApiService.deleteByNomisEmailId(event.internetAddressId)
+      }
+    } ?: run {
+      telemetryClient.trackEvent(
+        "contactperson-email-synchronisation-deleted-ignored",
+        telemetry,
+      )
+    }
   }
 
   suspend fun personEmploymentAdded(event: PersonEmploymentEvent) {
@@ -680,11 +698,25 @@ class ContactPersonSynchronisationService(
 
   suspend fun personIdentifierDeleted(event: PersonIdentifierEvent) {
     val telemetry =
-      mapOf("personId" to event.personId, "identifierSequence" to event.identifierSequence)
-    telemetryClient.trackEvent(
-      "contactperson-person-identifier-synchronisation-deleted-success",
-      telemetry,
-    )
+      telemetryOf("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisSequenceNumber" to event.identifierSequence)
+
+    mappingApiService.getByNomisIdentifierIdsOrNull(
+      nomisPersonId = event.personId,
+      nomisSequenceNumber = event.identifierSequence,
+    )?.also {
+      track("contactperson-identifier-synchronisation-deleted", telemetry) {
+        telemetry["dpsContactIdentityId"] = it.dpsId
+        dpsApiService.deleteContactIdentity(
+          it.dpsId.toLong(),
+        )
+        mappingApiService.deleteByNomisIdentifierIds(event.personId, event.identifierSequence)
+      }
+    } ?: run {
+      telemetryClient.trackEvent(
+        "contactperson-identifier-synchronisation-deleted-ignored",
+        telemetry,
+      )
+    }
   }
 
   private suspend fun tryToCreateMapping(

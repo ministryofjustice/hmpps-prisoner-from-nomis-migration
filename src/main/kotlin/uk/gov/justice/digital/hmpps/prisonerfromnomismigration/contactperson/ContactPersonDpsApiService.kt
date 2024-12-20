@@ -83,6 +83,12 @@ class ContactPersonDpsApiService(@Qualifier("contactPersonApiWebClient") private
       .retrieve()
       .awaitBodilessEntityOrLogAndRethrowBadRequest()
   }
+  suspend fun deleteContactAddress(addressId: Long) {
+    webClient.delete()
+      .uri("/sync/contact-address/{addressId}", addressId)
+      .retrieve()
+      .awaitBodilessEntityIgnoreNotFound()
+  }
 
   suspend fun createContactEmail(contactEmail: SyncCreateContactEmailRequest): SyncContactEmail = webClient.post()
     .uri("/sync/contact-email")
@@ -95,6 +101,13 @@ class ContactPersonDpsApiService(@Qualifier("contactPersonApiWebClient") private
     .bodyValue(contactEmail)
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun deleteContactEmail(contactEmailId: Long) {
+    webClient.delete()
+      .uri("/sync/contact-email/{contactEmailId}", contactEmailId)
+      .retrieve()
+      .awaitBodilessEntityIgnoreNotFound()
+  }
 
   suspend fun createContactPhone(contactPhone: SyncCreateContactPhoneRequest): SyncContactPhone = webClient.post()
     .uri("/sync/contact-phone")
@@ -145,6 +158,13 @@ class ContactPersonDpsApiService(@Qualifier("contactPersonApiWebClient") private
     .bodyValue(contactIdentity)
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun deleteContactIdentity(contactIdentityId: Long) {
+    webClient.delete()
+      .uri("/sync/contact-identity/{contactIdentityId}", contactIdentityId)
+      .retrieve()
+      .awaitBodilessEntityIgnoreNotFound()
+  }
 
   suspend fun createPrisonerContactRestriction(contactRestriction: SyncCreatePrisonerContactRestrictionRequest): SyncPrisonerContactRestriction = webClient.post()
     .uri("/sync/prisoner-contact-restriction")

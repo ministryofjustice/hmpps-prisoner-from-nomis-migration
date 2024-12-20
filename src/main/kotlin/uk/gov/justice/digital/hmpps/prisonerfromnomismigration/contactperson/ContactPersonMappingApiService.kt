@@ -73,6 +73,16 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
     .retrieve()
     .awaitBody()
 
+  suspend fun deleteByNomisAddressId(nomisAddressId: Long) {
+    webClient.delete()
+      .uri(
+        "/mapping/contact-person/address/nomis-address-id/{nomisAddressId}",
+        nomisAddressId,
+      )
+      .retrieve()
+      .awaitBodilessEntity()
+  }
+
   suspend fun getByNomisEmailIdOrNull(nomisInternetAddressId: Long): PersonEmailMappingDto? = webClient.get()
     .uri(
       "/mapping/contact-person/email/nomis-internet-address-id/{nomisAddressId}",
@@ -88,6 +98,16 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
     )
     .retrieve()
     .awaitBody()
+
+  suspend fun deleteByNomisEmailId(nomisInternetAddressId: Long) {
+    webClient.delete()
+      .uri(
+        "/mapping/contact-person/email/nomis-internet-address-id/{nomisAddressId}",
+        nomisInternetAddressId,
+      )
+      .retrieve()
+      .awaitBodilessEntity()
+  }
 
   suspend fun getByNomisPhoneIdOrNull(nomisPhoneId: Long): PersonPhoneMappingDto? = webClient.get()
     .uri(
@@ -132,6 +152,17 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
     )
     .retrieve()
     .awaitBody()
+
+  suspend fun deleteByNomisIdentifierIds(nomisPersonId: Long, nomisSequenceNumber: Long) {
+    webClient.delete()
+      .uri(
+        "/mapping/contact-person/identifier/nomis-person-id/{nomisPersonId}/nomis-sequence-number/{nomisSequenceNumber}",
+        nomisPersonId,
+        nomisSequenceNumber,
+      )
+      .retrieve()
+      .awaitBodilessEntity()
+  }
 
   suspend fun getByNomisContactRestrictionIdOrNull(nomisContactRestrictionId: Long): PersonContactRestrictionMappingDto? = webClient.get()
     .uri(

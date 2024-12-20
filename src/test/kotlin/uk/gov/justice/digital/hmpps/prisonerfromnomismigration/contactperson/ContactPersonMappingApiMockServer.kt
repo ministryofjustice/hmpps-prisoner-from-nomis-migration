@@ -274,6 +274,18 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
     }
   }
 
+  fun stubDeleteByNomisAddressId(
+    nomisAddressId: Long = 123456,
+  ) {
+    mappingApi.stubFor(
+      delete(urlEqualTo("/mapping/contact-person/address/nomis-address-id/$nomisAddressId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value()),
+      ),
+    )
+  }
+
   fun stubCreateAddressMapping() {
     mappingApi.stubFor(
       post("/mapping/contact-person/address").willReturn(
@@ -356,6 +368,18 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
       mappingType = PersonEmailMappingDto.MappingType.MIGRATED,
     ),
   ) = stubGetByNomisEmailIdOrNull(nomisInternetAddressId, mapping)
+
+  fun stubDeleteByNomisEmailId(
+    nomisInternetAddressId: Long = 123456,
+  ) {
+    mappingApi.stubFor(
+      delete(urlEqualTo("/mapping/contact-person/email/nomis-internet-address-id/$nomisInternetAddressId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value()),
+      ),
+    )
+  }
 
   fun stubCreateEmailMapping() {
     mappingApi.stubFor(
@@ -619,6 +643,19 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
         ),
       )
     }
+  }
+
+  fun stubDeleteByNomisIdentifierIds(
+    nomisPersonId: Long = 123456,
+    nomisSequenceNumber: Long = 4,
+  ) {
+    mappingApi.stubFor(
+      delete(urlEqualTo("/mapping/contact-person/identifier/nomis-person-id/$nomisPersonId/nomis-sequence-number/$nomisSequenceNumber")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.NO_CONTENT.value()),
+      ),
+    )
   }
 
   fun stubCreateContactRestrictionMapping() {

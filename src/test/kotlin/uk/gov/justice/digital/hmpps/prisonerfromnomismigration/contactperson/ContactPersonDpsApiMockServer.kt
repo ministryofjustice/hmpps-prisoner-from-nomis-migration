@@ -461,6 +461,16 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
     )
   }
+  fun stubDeleteContactAddress(addressId: Long, status: Int = 204) {
+    stubFor(
+      delete("/sync/contact-address/$addressId")
+        .willReturn(
+          aResponse()
+            .withStatus(status)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
   fun stubCreateContactEmail(response: SyncContactEmail = contactEmail()) {
     stubFor(
       post("/sync/contact-email")
@@ -480,6 +490,17 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withStatus(200)
             .withHeader("Content-Type", "application/json")
             .withBody(ContactPersonDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubDeleteContactEmail(contactEmailId: Long, status: Int = 204) {
+    stubFor(
+      delete("/sync/contact-email/$contactEmailId")
+        .willReturn(
+          aResponse()
+            .withStatus(status)
+            .withHeader("Content-Type", "application/json"),
         ),
     )
   }
@@ -576,6 +597,16 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withStatus(200)
             .withHeader("Content-Type", "application/json")
             .withBody(ContactPersonDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+  fun stubDeleteContactIdentity(contactIdentityId: Long, status: Int = 204) {
+    stubFor(
+      delete("/sync/contact-identity/$contactIdentityId")
+        .willReturn(
+          aResponse()
+            .withStatus(status)
+            .withHeader("Content-Type", "application/json"),
         ),
     )
   }

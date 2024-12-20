@@ -228,6 +228,45 @@ class ContactPersonDpsApiServiceTest {
   }
 
   @Nested
+  inner class DeleteContactAddress {
+    private val contactAddressId = 12345L
+
+    @Test
+    internal fun `will pass oath2 token to endpoint`() = runTest {
+      dpsContactPersonServer.stubDeleteContactAddress(contactAddressId)
+
+      apiService.deleteContactAddress(contactAddressId)
+
+      dpsContactPersonServer.verify(
+        deleteRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the delete sync endpoint`() = runTest {
+      dpsContactPersonServer.stubDeleteContactAddress(contactAddressId)
+
+      apiService.deleteContactAddress(contactAddressId)
+
+      dpsContactPersonServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/contact-address/$contactAddressId")),
+      )
+    }
+
+    @Test
+    fun `will ignore 404`() = runTest {
+      dpsContactPersonServer.stubDeleteContactAddress(contactAddressId, status = 404)
+
+      apiService.deleteContactAddress(contactAddressId)
+
+      dpsContactPersonServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/contact-address/$contactAddressId")),
+      )
+    }
+  }
+
+  @Nested
   inner class CreateContactEmail {
     @Test
     internal fun `will pass oath2 token to endpoint`() = runTest {
@@ -275,6 +314,45 @@ class ContactPersonDpsApiServiceTest {
 
       dpsContactPersonServer.verify(
         putRequestedFor(urlPathEqualTo("/sync/contact-email/123456")),
+      )
+    }
+  }
+
+  @Nested
+  inner class DeleteContactEmail {
+    private val contactEmailId = 12345L
+
+    @Test
+    internal fun `will pass oath2 token to endpoint`() = runTest {
+      dpsContactPersonServer.stubDeleteContactEmail(contactEmailId)
+
+      apiService.deleteContactEmail(contactEmailId)
+
+      dpsContactPersonServer.verify(
+        deleteRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the delete sync endpoint`() = runTest {
+      dpsContactPersonServer.stubDeleteContactEmail(contactEmailId)
+
+      apiService.deleteContactEmail(contactEmailId)
+
+      dpsContactPersonServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/contact-email/$contactEmailId")),
+      )
+    }
+
+    @Test
+    fun `will ignore 404`() = runTest {
+      dpsContactPersonServer.stubDeleteContactEmail(contactEmailId, status = 404)
+
+      apiService.deleteContactEmail(contactEmailId)
+
+      dpsContactPersonServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/contact-email/$contactEmailId")),
       )
     }
   }
@@ -502,6 +580,45 @@ class ContactPersonDpsApiServiceTest {
 
       dpsContactPersonServer.verify(
         putRequestedFor(urlPathEqualTo("/sync/contact-identity/123456")),
+      )
+    }
+  }
+
+  @Nested
+  inner class DeleteContactIdentity {
+    private val contactIdentityId = 12345L
+
+    @Test
+    internal fun `will pass oath2 token to endpoint`() = runTest {
+      dpsContactPersonServer.stubDeleteContactIdentity(contactIdentityId)
+
+      apiService.deleteContactIdentity(contactIdentityId)
+
+      dpsContactPersonServer.verify(
+        deleteRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the delete sync endpoint`() = runTest {
+      dpsContactPersonServer.stubDeleteContactIdentity(contactIdentityId)
+
+      apiService.deleteContactIdentity(contactIdentityId)
+
+      dpsContactPersonServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/contact-identity/$contactIdentityId")),
+      )
+    }
+
+    @Test
+    fun `will ignore 404`() = runTest {
+      dpsContactPersonServer.stubDeleteContactIdentity(contactIdentityId, status = 404)
+
+      apiService.deleteContactIdentity(contactIdentityId)
+
+      dpsContactPersonServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/contact-identity/$contactIdentityId")),
       )
     }
   }

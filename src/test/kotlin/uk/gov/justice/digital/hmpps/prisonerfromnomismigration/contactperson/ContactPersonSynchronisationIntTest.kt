@@ -1022,31 +1022,91 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
   @Nested
   @DisplayName("ADDRESSES_PERSON-DELETED")
   inner class PersonAddressDeleted {
-    private val personId = 123456L
-    private val addressId = 76543L
 
-    @BeforeEach
-    fun setUp() {
-      awsSqsContactPersonOffenderEventsClient.sendMessage(
-        contactPersonQueueOffenderEventsUrl,
-        personAddressEvent(
-          eventType = "ADDRESSES_PERSON-DELETED",
-          personId = personId,
-          addressId = addressId,
-        ),
-      ).also { waitForAnyProcessingToComplete() }
+    private val nomisAddressId = 3456L
+    private val nomisPersonId = 123456L
+    private val dpsContactAddressId = 937373L
+
+    @Nested
+    inner class WhenMappingExists {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisAddressIdOrNull(
+          nomisAddressId = nomisAddressId,
+          mapping = PersonAddressMappingDto(
+            dpsId = "$dpsContactAddressId",
+            nomisId = nomisAddressId,
+            mappingType = PersonAddressMappingDto.MappingType.NOMIS_CREATED,
+          ),
+        )
+        dpsApiMock.stubDeleteContactAddress(dpsContactAddressId)
+        mappingApiMock.stubDeleteByNomisAddressId(nomisAddressId)
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personAddressEvent(
+            eventType = "ADDRESSES_PERSON-DELETED",
+            personId = nomisPersonId,
+            addressId = nomisAddressId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-address-synchronisation-deleted-success"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisAddressId"]).isEqualTo(nomisAddressId.toString())
+            assertThat(it["dpsContactAddressId"]).isEqualTo(dpsContactAddressId.toString())
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will delete the address in DPS`() {
+        dpsApiMock.verify(deleteRequestedFor(urlPathEqualTo("/sync/contact-address/$dpsContactAddressId")))
+      }
+
+      @Test
+      fun `will delete the address mapping`() {
+        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/contact-person/address/nomis-address-id/$nomisAddressId")))
+      }
     }
 
-    @Test
-    fun `will track telemetry`() {
-      verify(telemetryClient).trackEvent(
-        eq("contactperson-person-address-synchronisation-deleted-success"),
-        check {
-          assertThat(it["personId"]).isEqualTo(personId.toString())
-          assertThat(it["addressId"]).isEqualTo(addressId.toString())
-        },
-        isNull(),
-      )
+    @Nested
+    inner class WhenMappingDoesNotExist {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisAddressIdOrNull(
+          nomisAddressId = nomisAddressId,
+          mapping = null,
+        )
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personAddressEvent(
+            eventType = "ADDRESSES_PERSON-DELETED",
+            personId = nomisPersonId,
+            addressId = nomisAddressId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-address-synchronisation-deleted-ignored"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisAddressId"]).isEqualTo(nomisAddressId.toString())
+          },
+          isNull(),
+        )
+      }
     }
   }
 
@@ -2574,31 +2634,91 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
   @Nested
   @DisplayName("INTERNET_ADDRESSES_PERSON-DELETED")
   inner class PersonEmailDeleted {
-    private val personId = 123456L
-    private val internetAddressId = 76543L
 
-    @BeforeEach
-    fun setUp() {
-      awsSqsContactPersonOffenderEventsClient.sendMessage(
-        contactPersonQueueOffenderEventsUrl,
-        personInternetAddressEvent(
-          eventType = "INTERNET_ADDRESSES_PERSON-DELETED",
-          personId = personId,
-          internetAddressId = internetAddressId,
-        ),
-      ).also { waitForAnyProcessingToComplete() }
+    private val nomisInternetAddressId = 3456L
+    private val nomisPersonId = 123456L
+    private val dpsContactEmailId = 937373L
+
+    @Nested
+    inner class WhenMappingExists {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisEmailIdOrNull(
+          nomisInternetAddressId = nomisInternetAddressId,
+          mapping = PersonEmailMappingDto(
+            dpsId = "$dpsContactEmailId",
+            nomisId = nomisInternetAddressId,
+            mappingType = PersonEmailMappingDto.MappingType.NOMIS_CREATED,
+          ),
+        )
+        dpsApiMock.stubDeleteContactEmail(dpsContactEmailId)
+        mappingApiMock.stubDeleteByNomisEmailId(nomisInternetAddressId)
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personInternetAddressEvent(
+            eventType = "INTERNET_ADDRESSES_PERSON-DELETED",
+            personId = nomisPersonId,
+            internetAddressId = nomisInternetAddressId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-email-synchronisation-deleted-success"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisInternetAddressId"]).isEqualTo(nomisInternetAddressId.toString())
+            assertThat(it["dpsContactEmailId"]).isEqualTo(dpsContactEmailId.toString())
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will delete the email in DPS`() {
+        dpsApiMock.verify(deleteRequestedFor(urlPathEqualTo("/sync/contact-email/$dpsContactEmailId")))
+      }
+
+      @Test
+      fun `will delete the email mapping`() {
+        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/contact-person/email/nomis-internet-address-id/$nomisInternetAddressId")))
+      }
     }
 
-    @Test
-    fun `will track telemetry`() {
-      verify(telemetryClient).trackEvent(
-        eq("contactperson-person-email-synchronisation-deleted-success"),
-        check {
-          assertThat(it["personId"]).isEqualTo(personId.toString())
-          assertThat(it["internetAddressId"]).isEqualTo(internetAddressId.toString())
-        },
-        isNull(),
-      )
+    @Nested
+    inner class WhenMappingDoesNotExist {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisEmailIdOrNull(
+          nomisInternetAddressId = nomisInternetAddressId,
+          mapping = null,
+        )
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personInternetAddressEvent(
+            eventType = "INTERNET_ADDRESSES_PERSON-DELETED",
+            personId = nomisPersonId,
+            internetAddressId = nomisInternetAddressId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-email-synchronisation-deleted-ignored"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisInternetAddressId"]).isEqualTo(nomisInternetAddressId.toString())
+          },
+          isNull(),
+        )
+      }
     }
   }
 
@@ -3145,31 +3265,95 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
   @Nested
   @DisplayName("PERSON_IDENTIFIERS-DELETED")
   inner class PersonIdentifierDeleted {
-    private val personId = 123456L
-    private val identifierSequence = 76543L
+    private val nomisSequenceNumber = 4L
+    private val nomisPersonId = 123456L
+    private val dpsContactIdentityId = 937373L
 
-    @BeforeEach
-    fun setUp() {
-      awsSqsContactPersonOffenderEventsClient.sendMessage(
-        contactPersonQueueOffenderEventsUrl,
-        personIdentifierEvent(
-          eventType = "PERSON_IDENTIFIERS-DELETED",
-          personId = personId,
-          identifierSequence = identifierSequence,
-        ),
-      ).also { waitForAnyProcessingToComplete() }
+    @Nested
+    inner class WhenMappingExists {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisIdentifierIds(
+          nomisPersonId = nomisPersonId,
+          nomisSequenceNumber = nomisSequenceNumber,
+          mapping = PersonIdentifierMappingDto(
+            dpsId = dpsContactIdentityId.toString(),
+            nomisSequenceNumber = nomisSequenceNumber,
+            nomisPersonId = nomisPersonId,
+            mappingType = PersonIdentifierMappingDto.MappingType.NOMIS_CREATED,
+          ),
+        )
+        mappingApiMock.stubDeleteByNomisIdentifierIds(
+          nomisPersonId = nomisPersonId,
+          nomisSequenceNumber = nomisSequenceNumber,
+        )
+
+        dpsApiMock.stubDeleteContactIdentity(contactIdentityId = dpsContactIdentityId)
+
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personIdentifierEvent(
+            eventType = "PERSON_IDENTIFIERS-DELETED",
+            personId = nomisPersonId,
+            identifierSequence = nomisSequenceNumber,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will delete identifier in DPS`() {
+        dpsApiMock.verify(deleteRequestedFor(urlPathEqualTo("/sync/contact-identity/$dpsContactIdentityId")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-identifier-synchronisation-deleted-success"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisSequenceNumber"]).isEqualTo(nomisSequenceNumber.toString())
+            assertThat(it["dpsContactIdentityId"]).isEqualTo(dpsContactIdentityId.toString())
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will delete the identifier mapping`() {
+        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/contact-person/identifier/nomis-person-id/$nomisPersonId/nomis-sequence-number/$nomisSequenceNumber")))
+      }
     }
 
-    @Test
-    fun `will track telemetry`() {
-      verify(telemetryClient).trackEvent(
-        eq("contactperson-person-identifier-synchronisation-deleted-success"),
-        check {
-          assertThat(it["personId"]).isEqualTo(personId.toString())
-          assertThat(it["identifierSequence"]).isEqualTo(identifierSequence.toString())
-        },
-        isNull(),
-      )
+    @Nested
+    inner class WhenMappingDoesNotExist {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisIdentifierIdsOrNull(nomisPersonId = nomisPersonId, nomisSequenceNumber = nomisSequenceNumber, mapping = null)
+        mappingApiMock.stubDeleteByNomisIdentifierIds(nomisPersonId = nomisPersonId, nomisSequenceNumber = nomisSequenceNumber)
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personIdentifierEvent(
+            eventType = "PERSON_IDENTIFIERS-DELETED",
+            personId = nomisPersonId,
+            identifierSequence = nomisSequenceNumber,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-identifier-synchronisation-deleted-ignored"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisSequenceNumber"]).isEqualTo(nomisSequenceNumber.toString())
+          },
+          isNull(),
+        )
+      }
     }
   }
 
