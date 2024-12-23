@@ -131,6 +131,31 @@ class ContactPersonMappingApiServiceTest {
   }
 
   @Nested
+  inner class DeleteByNomisPersonId {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubDeleteByNomisPersonId(nomisPersonId = 1234567)
+
+      apiService.deleteByNomisPersonId(nomisPersonId = 1234567)
+
+      mockServer.verify(
+        deleteRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass NOMIS id to service`() = runTest {
+      mockServer.stubDeleteByNomisPersonId(nomisPersonId = 1234567)
+
+      apiService.deleteByNomisPersonId(nomisPersonId = 1234567)
+
+      mockServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/mapping/contact-person/person/nomis-person-id/1234567")),
+      )
+    }
+  }
+
+  @Nested
   inner class GetByNomisContactIdOrNull {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
@@ -219,6 +244,31 @@ class ContactPersonMappingApiServiceTest {
       val mapping = apiService.getByNomisContactId(nomisContactId = 1234567)
 
       assertThat(mapping.dpsId).isEqualTo("7654321")
+    }
+  }
+
+  @Nested
+  inner class DeleteByNomisContactId {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubDeleteByNomisContactId(nomisContactId = 1234567)
+
+      apiService.deleteByNomisContactId(nomisContactId = 1234567)
+
+      mockServer.verify(
+        deleteRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass NOMIS id to service`() = runTest {
+      mockServer.stubDeleteByNomisContactId(nomisContactId = 1234567)
+
+      apiService.deleteByNomisContactId(nomisContactId = 1234567)
+
+      mockServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/mapping/contact-person/contact/nomis-contact-id/1234567")),
+      )
     }
   }
 
@@ -708,6 +758,31 @@ class ContactPersonMappingApiServiceTest {
   }
 
   @Nested
+  inner class DeleteByNomisContactRestrictionId {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubDeleteByNomisContactRestrictionId(nomisContactRestrictionId = 1234567)
+
+      apiService.deleteByNomisContactRestrictionId(nomisContactRestrictionId = 1234567)
+
+      mockServer.verify(
+        deleteRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass NOMIS id to service`() = runTest {
+      mockServer.stubDeleteByNomisContactRestrictionId(nomisContactRestrictionId = 1234567)
+
+      apiService.deleteByNomisContactRestrictionId(nomisContactRestrictionId = 1234567)
+
+      mockServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/mapping/contact-person/contact-restriction/nomis-contact-restriction-id/1234567")),
+      )
+    }
+  }
+
+  @Nested
   inner class GetByNomisPersonRestrictionIdOrNull {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
@@ -755,6 +830,31 @@ class ContactPersonMappingApiServiceTest {
       )
 
       assertThat(apiService.getByNomisPersonRestrictionIdOrNull(nomisPersonRestrictionId = 1234567)).isNull()
+    }
+  }
+
+  @Nested
+  inner class DeleteByNomisPersonRestrictionId {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubDeleteByNomisPersonRestrictionId(nomisPersonRestrictionId = 1234567)
+
+      apiService.deleteByNomisPersonRestrictionId(nomisPersonRestrictionId = 1234567)
+
+      mockServer.verify(
+        deleteRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass NOMIS id to service`() = runTest {
+      mockServer.stubDeleteByNomisPersonRestrictionId(nomisPersonRestrictionId = 1234567)
+
+      apiService.deleteByNomisPersonRestrictionId(nomisPersonRestrictionId = 1234567)
+
+      mockServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/mapping/contact-person/person-restriction/nomis-person-restriction-id/1234567")),
+      )
     }
   }
 

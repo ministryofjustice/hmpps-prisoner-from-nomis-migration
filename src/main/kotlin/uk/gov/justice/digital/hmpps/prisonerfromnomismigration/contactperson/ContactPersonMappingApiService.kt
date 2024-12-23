@@ -41,6 +41,16 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
     .retrieve()
     .awaitBody()
 
+  suspend fun deleteByNomisPersonId(nomisPersonId: Long) {
+    webClient.delete()
+      .uri(
+        "/mapping/contact-person/person/nomis-person-id/{nomisPersonId}",
+        nomisPersonId,
+      )
+      .retrieve()
+      .awaitBodilessEntity()
+  }
+
   suspend fun getByNomisContactIdOrNull(nomisContactId: Long): PersonContactMappingDto? = webClient.get()
     .uri(
       "/mapping/contact-person/contact/nomis-contact-id/{nomisContactId}",
@@ -56,6 +66,16 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
     )
     .retrieve()
     .awaitBody()
+
+  suspend fun deleteByNomisContactId(nomisContactId: Long) {
+    webClient.delete()
+      .uri(
+        "/mapping/contact-person/contact/nomis-contact-id/{nomisContactId}",
+        nomisContactId,
+      )
+      .retrieve()
+      .awaitBodilessEntity()
+  }
 
   suspend fun getByNomisAddressIdOrNull(nomisAddressId: Long): PersonAddressMappingDto? = webClient.get()
     .uri(
@@ -172,6 +192,16 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
+  suspend fun deleteByNomisContactRestrictionId(nomisContactRestrictionId: Long) {
+    webClient.delete()
+      .uri(
+        "/mapping/contact-person/contact-restriction/nomis-contact-restriction-id/{nomisContactRestrictionId}",
+        nomisContactRestrictionId,
+      )
+      .retrieve()
+      .awaitBodilessEntity()
+  }
+
   suspend fun getByNomisPersonRestrictionIdOrNull(nomisPersonRestrictionId: Long): PersonRestrictionMappingDto? = webClient.get()
     .uri(
       "/mapping/contact-person/person-restriction/nomis-person-restriction-id/{nomisPersonRestrictionId}",
@@ -179,6 +209,16 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
     )
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
+
+  suspend fun deleteByNomisPersonRestrictionId(nomisPersonRestrictionId: Long) {
+    webClient.delete()
+      .uri(
+        "/mapping/contact-person/person-restriction/nomis-person-restriction-id/{nomisPersonRestrictionId}",
+        nomisPersonRestrictionId,
+      )
+      .retrieve()
+      .awaitBodilessEntity()
+  }
 
   suspend fun createMappingsForMigration(mappings: ContactPersonMappingsDto): CreateMappingResult<PersonMappingDto> = webClient.post()
     .uri("/mapping/contact-person/migrate")

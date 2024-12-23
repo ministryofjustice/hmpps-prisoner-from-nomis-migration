@@ -56,6 +56,13 @@ class ContactPersonDpsApiService(@Qualifier("contactPersonApiWebClient") private
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
+  suspend fun deleteContact(contactId: Long) {
+    webClient.delete()
+      .uri("/sync/contact/{contactId}", contactId)
+      .retrieve()
+      .awaitBodilessEntityIgnoreNotFound()
+  }
+
   suspend fun createPrisonerContact(prisonerContact: SyncCreatePrisonerContactRequest): SyncPrisonerContact = webClient.post()
     .uri("/sync/prisoner-contact")
     .bodyValue(prisonerContact)
@@ -68,6 +75,13 @@ class ContactPersonDpsApiService(@Qualifier("contactPersonApiWebClient") private
       .bodyValue(prisonerContact)
       .retrieve()
       .awaitBodilessEntityOrLogAndRethrowBadRequest()
+  }
+
+  suspend fun deletePrisonerContact(prisonerContactId: Long) {
+    webClient.delete()
+      .uri("/sync/prisoner-contact/{prisonerContactId}", prisonerContactId)
+      .retrieve()
+      .awaitBodilessEntityIgnoreNotFound()
   }
 
   suspend fun createContactAddress(contactAddress: SyncCreateContactAddressRequest): SyncContactAddress = webClient.post()
@@ -178,6 +192,13 @@ class ContactPersonDpsApiService(@Qualifier("contactPersonApiWebClient") private
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
+  suspend fun deletePrisonerContactRestriction(prisonerContactRestrictionId: Long) {
+    webClient.delete()
+      .uri("/sync/prisoner-contact-restriction/{prisonerContactRestrictionId}", prisonerContactRestrictionId)
+      .retrieve()
+      .awaitBodilessEntityIgnoreNotFound()
+  }
+
   suspend fun createContactRestriction(contactRestriction: SyncCreateContactRestrictionRequest): SyncContactRestriction = webClient.post()
     .uri("/sync/contact-restriction")
     .bodyValue(contactRestriction)
@@ -189,4 +210,11 @@ class ContactPersonDpsApiService(@Qualifier("contactPersonApiWebClient") private
     .bodyValue(contactRestriction)
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun deleteContactRestriction(contactRestrictionId: Long) {
+    webClient.delete()
+      .uri("/sync/contact-restriction/{contactRestrictionId}", contactRestrictionId)
+      .retrieve()
+      .awaitBodilessEntityIgnoreNotFound()
+  }
 }
