@@ -13,6 +13,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCourtAppearance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCourtCase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyUpdateCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityIgnoreNotFound
@@ -97,7 +98,15 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .retrieve()
       .awaitBodilessEntity()
 
-  suspend fun updateCourtCharge(chargeId: String, charge: LegacyCreateCharge) =
+  suspend fun updateCourtCharge(chargeId: String, appearanceId: String, charge: LegacyUpdateCharge) =
+    webClient
+      .put()
+      .uri("/legacy/charge/{chargeId}/appearance/{appearanceId}", chargeId, appearanceId)
+      .bodyValue(charge)
+      .retrieve()
+      .awaitBodilessEntity()
+
+  suspend fun updateChargeOffence(chargeId: String, charge: LegacyUpdateWholeCharge) =
     webClient
       .put()
       .uri("/legacy/charge/{chargeId}", chargeId)
@@ -138,6 +147,11 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .awaitBodilessEntity()
   }
 }
+
+// TODO remove when DPS API is updated
+data class LegacyUpdateWholeCharge(
+  val offenceCode: String,
+)
 
 data class CreateSentenceRequest(
 

@@ -1926,6 +1926,7 @@ internal fun sentenceAdjustmentResponse(
   ),
   hasBeenReleased = false,
   prisonId = prisonId,
+  bookingSequence = 1,
 )
 
 internal fun keyDateAdjustmentResponse(
@@ -1948,4 +1949,5 @@ internal fun keyDateAdjustmentResponse(
   ),
   hasBeenReleased = false,
   prisonId = prisonId,
+  bookingSequence = 1,
 )
