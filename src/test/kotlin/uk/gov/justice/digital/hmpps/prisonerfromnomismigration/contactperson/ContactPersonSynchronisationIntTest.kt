@@ -3722,31 +3722,79 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
   @Nested
   @DisplayName("VISITOR_RESTRICTION-DELETED")
   inner class PersonRestrictionDeleted {
-    private val restrictionId = 9876L
-    private val personId = 123456L
+    private val nomisPersonRestrictionId = 3456L
+    private val nomisPersonId = 123456L
+    private val dpsContactRestrictionId = 937373L
 
-    @BeforeEach
-    fun setUp() {
-      awsSqsContactPersonOffenderEventsClient.sendMessage(
-        contactPersonQueueOffenderEventsUrl,
-        personRestrictionEvent(
-          eventType = "VISITOR_RESTRICTION-DELETED",
-          personId = personId,
-          restrictionId = restrictionId,
-        ),
-      ).also { waitForAnyProcessingToComplete() }
+    @Nested
+    inner class WhenMappingDoesExist {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisPersonRestrictionIdOrNull(nomisPersonRestrictionId = nomisPersonRestrictionId, mapping = PersonRestrictionMappingDto(dpsId = "$dpsContactRestrictionId", nomisId = nomisPersonRestrictionId, mappingType = PersonRestrictionMappingDto.MappingType.NOMIS_CREATED))
+        dpsApiMock.stubDeleteContactRestriction(dpsContactRestrictionId)
+        mappingApiMock.stubDeleteByNomisPersonRestrictionId(nomisPersonRestrictionId)
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personRestrictionEvent(
+            eventType = "VISITOR_RESTRICTION-DELETED",
+            personId = nomisPersonId,
+            restrictionId = nomisPersonRestrictionId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will delete the restriction from DPS`() {
+        dpsApiMock.verify(deleteRequestedFor(urlPathEqualTo("/sync/contact-restriction/$dpsContactRestrictionId")))
+      }
+
+      @Test
+      fun `will delete the restriction mapping`() {
+        mappingApiMock.verify(deleteRequestedFor(urlPathEqualTo("/mapping/contact-person/person-restriction/nomis-person-restriction-id/$nomisPersonRestrictionId")))
+      }
+
+      @Test
+      fun `will track telemetry for delete success`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-person-restriction-synchronisation-deleted-success"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisPersonRestrictionId"]).isEqualTo(nomisPersonRestrictionId.toString())
+            assertThat(it["dpsContactRestrictionId"]).isEqualTo(dpsContactRestrictionId.toString())
+          },
+          isNull(),
+        )
+      }
     }
 
-    @Test
-    fun `will track telemetry`() {
-      verify(telemetryClient).trackEvent(
-        eq("contactperson-person-restriction-synchronisation-deleted-success"),
-        check {
-          assertThat(it["personRestrictionId"]).isEqualTo(restrictionId.toString())
-          assertThat(it["personId"]).isEqualTo(personId.toString())
-        },
-        isNull(),
-      )
+    @Nested
+    inner class WhenMappingDoesNotExist {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisPersonRestrictionIdOrNull(nomisPersonRestrictionId = nomisPersonRestrictionId, mapping = null)
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          personRestrictionEvent(
+            eventType = "VISITOR_RESTRICTION-DELETED",
+            personId = nomisPersonId,
+            restrictionId = nomisPersonRestrictionId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry ignoring the delete`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-person-restriction-synchronisation-deleted-ignored"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisPersonRestrictionId"]).isEqualTo(nomisPersonRestrictionId.toString())
+          },
+          isNull(),
+        )
+      }
     }
   }
 
@@ -4699,37 +4747,91 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
   @Nested
   @DisplayName("PERSON_RESTRICTION-DELETED")
   inner class ContactRestrictionDeleted {
-    private val restrictionId = 9876L
-    private val personId = 123456L
-    private val contactId = 3456L
+    private val nomisContactRestrictionId = 3456L
+    private val nomisPersonId = 123456L
+    private val nomisContactId = 652882L
+    private val dpsPrisonerContactRestrictionId = 937373L
     private val offenderNo = "A1234KT"
 
-    @BeforeEach
-    fun setUp() {
-      awsSqsContactPersonOffenderEventsClient.sendMessage(
-        contactPersonQueueOffenderEventsUrl,
-        contactRestrictionEvent(
-          eventType = "PERSON_RESTRICTION-DELETED",
-          personId = personId,
-          restrictionId = restrictionId,
-          contactId = contactId,
-          offenderNo = offenderNo,
-        ),
-      ).also { waitForAnyProcessingToComplete() }
+    @Nested
+    inner class WhenMappingExists {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisContactRestrictionIdOrNull(
+          nomisContactRestrictionId = nomisContactRestrictionId,
+          mapping = PersonContactRestrictionMappingDto(
+            dpsId = "$dpsPrisonerContactRestrictionId",
+            nomisId = nomisContactRestrictionId,
+            mappingType = PersonContactRestrictionMappingDto.MappingType.NOMIS_CREATED,
+          ),
+        )
+        dpsApiMock.stubDeletePrisonerContactRestriction(dpsPrisonerContactRestrictionId)
+        mappingApiMock.stubDeleteByNomisContactRestrictionId(nomisContactRestrictionId)
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          contactRestrictionEvent(
+            eventType = "PERSON_RESTRICTION-DELETED",
+            personId = nomisPersonId,
+            restrictionId = nomisContactRestrictionId,
+            contactId = nomisContactId,
+            offenderNo = offenderNo,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-contact-restriction-synchronisation-deleted-success"),
+          check {
+            assertThat(it["nomisContactRestrictionId"]).isEqualTo(nomisContactRestrictionId.toString())
+            assertThat(it["dpsPrisonerContactRestrictionId"]).isEqualTo(dpsPrisonerContactRestrictionId.toString())
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisContactId"]).isEqualTo(nomisContactId.toString())
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+          },
+          isNull(),
+        )
+      }
     }
 
-    @Test
-    fun `will track telemetry`() {
-      verify(telemetryClient).trackEvent(
-        eq("contactperson-contact-restriction-synchronisation-deleted-success"),
-        check {
-          assertThat(it["contactRestrictionId"]).isEqualTo(restrictionId.toString())
-          assertThat(it["personId"]).isEqualTo(personId.toString())
-          assertThat(it["contactId"]).isEqualTo(contactId.toString())
-          assertThat(it["offenderNo"]).isEqualTo(offenderNo)
-        },
-        isNull(),
-      )
+    @Nested
+    inner class WhenMappingDoesNotExists {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisContactRestrictionIdOrNull(
+          nomisContactRestrictionId = nomisContactRestrictionId,
+          mapping = null,
+        )
+        awsSqsContactPersonOffenderEventsClient.sendMessage(
+          contactPersonQueueOffenderEventsUrl,
+          contactRestrictionEvent(
+            eventType = "PERSON_RESTRICTION-DELETED",
+            personId = nomisPersonId,
+            restrictionId = nomisContactRestrictionId,
+            contactId = nomisContactId,
+            offenderNo = offenderNo,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry for delete gnore`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-contact-restriction-synchronisation-deleted-ignored"),
+          check {
+            assertThat(it["nomisContactRestrictionId"]).isEqualTo(nomisContactRestrictionId.toString())
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisContactId"]).isEqualTo(nomisContactId.toString())
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+          },
+          isNull(),
+        )
+      }
     }
   }
 }

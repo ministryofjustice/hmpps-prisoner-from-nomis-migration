@@ -106,12 +106,23 @@ class ContactPersonSynchronisationService(
     }
   }
   suspend fun personRestrictionDeleted(event: PersonRestrictionEvent) {
-    val telemetry =
-      mapOf("personRestrictionId" to event.visitorRestrictionId, "personId" to event.personId)
-    telemetryClient.trackEvent(
-      "contactperson-person-restriction-synchronisation-deleted-success",
-      telemetry,
+    val telemetry = telemetryOf(
+      "nomisPersonId" to event.personId,
+      "dpsContactId" to event.personId,
+      "nomisPersonRestrictionId" to event.visitorRestrictionId,
     )
+    mappingApiService.getByNomisPersonRestrictionIdOrNull(nomisPersonRestrictionId = event.visitorRestrictionId)?.also {
+      track("contactperson-person-restriction-synchronisation-deleted", telemetry) {
+        telemetry["dpsContactRestrictionId"] = it.dpsId
+        dpsApiService.deleteContactRestriction(it.dpsId.toLong())
+        mappingApiService.deleteByNomisPersonRestrictionId(event.visitorRestrictionId)
+      }
+    } ?: run {
+      telemetryClient.trackEvent(
+        "contactperson-person-restriction-synchronisation-deleted-ignored",
+        telemetry,
+      )
+    }
   }
   suspend fun contactAdded(event: ContactEvent) {
     val telemetry =
@@ -230,12 +241,20 @@ class ContactPersonSynchronisationService(
 
   suspend fun contactRestrictionDeleted(event: ContactRestrictionEvent) {
     val telemetry =
-      mapOf("offenderNo" to event.offenderIdDisplay, "contactRestrictionId" to event.offenderPersonRestrictionId, "personId" to event.personId, "contactId" to event.contactPersonId)
-    telemetryClient.trackEvent(
-      // TODO - created or updated
-      "contactperson-contact-restriction-synchronisation-deleted-success",
-      telemetry,
-    )
+      telemetryOf("offenderNo" to event.offenderIdDisplay, "nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisContactId" to event.contactPersonId, "nomisContactRestrictionId" to event.offenderPersonRestrictionId)
+
+    mappingApiService.getByNomisContactRestrictionIdOrNull(nomisContactRestrictionId = event.offenderPersonRestrictionId)?.also {
+      track("contactperson-contact-restriction-synchronisation-deleted", telemetry) {
+        telemetry["dpsPrisonerContactRestrictionId"] = it.dpsId
+        dpsApiService.deletePrisonerContactRestriction(it.dpsId.toLong())
+        mappingApiService.deleteByNomisContactRestrictionId(event.offenderPersonRestrictionId)
+      }
+    } ?: run {
+      telemetryClient.trackEvent(
+        "contactperson-contact-restriction-synchronisation-deleted-ignored",
+        telemetry,
+      )
+    }
   }
   suspend fun personAdded(event: PersonEvent) {
     val telemetry = telemetryOf("nomisPersonId" to event.personId)
