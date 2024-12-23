@@ -9,6 +9,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiExtension.Companion.dpsContactPersonServer
@@ -120,6 +121,41 @@ class ContactPersonDpsApiServiceTest {
   }
 
   @Nested
+  inner class DeleteContact {
+    private val contactId = 12345L
+
+    @Test
+    internal fun `will pass oath2 token to contact endpoint`() = runTest {
+      dpsContactPersonServer.stubDeleteContact(contactId)
+
+      apiService.deleteContact(contactId)
+
+      dpsContactPersonServer.verify(
+        deleteRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the delete sync endpoint`() = runTest {
+      dpsContactPersonServer.stubDeleteContact(contactId)
+
+      apiService.deleteContact(contactId)
+
+      dpsContactPersonServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/contact/$contactId")),
+      )
+    }
+
+    @Test
+    fun `will not throw exception when there is a  404`() = runTest {
+      dpsContactPersonServer.stubDeleteContact(contactId, status = 404)
+
+      assertDoesNotThrow { apiService.deleteContact(contactId) }
+    }
+  }
+
+  @Nested
   inner class CreatePrisonerContact {
     @Test
     internal fun `will pass oath2 token to prisoner contact endpoint`() = runTest {
@@ -170,6 +206,41 @@ class ContactPersonDpsApiServiceTest {
       dpsContactPersonServer.verify(
         putRequestedFor(urlPathEqualTo("/sync/prisoner-contact/$prisonerContactId")),
       )
+    }
+  }
+
+  @Nested
+  inner class DeletePrisonerContact {
+    private val prisonerContactId = 12345L
+
+    @Test
+    internal fun `will pass oath2 token to contact endpoint`() = runTest {
+      dpsContactPersonServer.stubDeletePrisonerContact(prisonerContactId)
+
+      apiService.deletePrisonerContact(prisonerContactId)
+
+      dpsContactPersonServer.verify(
+        deleteRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the delete sync endpoint`() = runTest {
+      dpsContactPersonServer.stubDeletePrisonerContact(prisonerContactId)
+
+      apiService.deletePrisonerContact(prisonerContactId)
+
+      dpsContactPersonServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/prisoner-contact/$prisonerContactId")),
+      )
+    }
+
+    @Test
+    fun `will not throw exception when there is a 404`() = runTest {
+      dpsContactPersonServer.stubDeletePrisonerContact(prisonerContactId, status = 404)
+
+      assertDoesNotThrow { apiService.deletePrisonerContact(prisonerContactId) }
     }
   }
 
@@ -437,6 +508,13 @@ class ContactPersonDpsApiServiceTest {
         deleteRequestedFor(urlPathEqualTo("/sync/contact-phone/$contactPhoneId")),
       )
     }
+
+    @Test
+    fun `will not throw exception when there is a 404`() = runTest {
+      dpsContactPersonServer.stubDeleteContactPhone(contactPhoneId, 404)
+
+      assertDoesNotThrow { apiService.deleteContactPhone(contactPhoneId) }
+    }
   }
 
   @Nested
@@ -678,6 +756,41 @@ class ContactPersonDpsApiServiceTest {
   }
 
   @Nested
+  inner class DeletePrisonerContactRestriction {
+    private val prisonerContactRestrictionId = 12345L
+
+    @Test
+    internal fun `will pass oath2 token to prisoner contact restriction endpoint`() = runTest {
+      dpsContactPersonServer.stubDeletePrisonerContactRestriction(prisonerContactRestrictionId)
+
+      apiService.deletePrisonerContactRestriction(prisonerContactRestrictionId)
+
+      dpsContactPersonServer.verify(
+        deleteRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the delete sync endpoint`() = runTest {
+      dpsContactPersonServer.stubDeletePrisonerContactRestriction(prisonerContactRestrictionId)
+
+      apiService.deletePrisonerContactRestriction(prisonerContactRestrictionId)
+
+      dpsContactPersonServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/prisoner-contact-restriction/$prisonerContactRestrictionId")),
+      )
+    }
+
+    @Test
+    fun `will not throw exception when there is a  404`() = runTest {
+      dpsContactPersonServer.stubDeletePrisonerContactRestriction(prisonerContactRestrictionId, status = 404)
+
+      assertDoesNotThrow { apiService.deletePrisonerContactRestriction(prisonerContactRestrictionId) }
+    }
+  }
+
+  @Nested
   inner class CreateContactRestriction {
     @Test
     internal fun `will pass oath2 token to  contact endpoint`() = runTest {
@@ -728,6 +841,41 @@ class ContactPersonDpsApiServiceTest {
       dpsContactPersonServer.verify(
         putRequestedFor(urlPathEqualTo("/sync/contact-restriction/$contactRestrictionId")),
       )
+    }
+  }
+
+  @Nested
+  inner class DeleteContactRestriction {
+    private val contactRestrictionId = 1234L
+
+    @Test
+    internal fun `will pass oath2 token to contact restriction endpoint`() = runTest {
+      dpsContactPersonServer.stubDeleteContactRestriction(contactRestrictionId)
+
+      apiService.deleteContactRestriction(contactRestrictionId)
+
+      dpsContactPersonServer.verify(
+        deleteRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the delete sync endpoint`() = runTest {
+      dpsContactPersonServer.stubDeleteContactRestriction(contactRestrictionId)
+
+      apiService.deleteContactRestriction(contactRestrictionId)
+
+      dpsContactPersonServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/contact-restriction/$contactRestrictionId")),
+      )
+    }
+
+    @Test
+    fun `will not throw exception when there is a  404`() = runTest {
+      dpsContactPersonServer.stubDeleteContactRestriction(contactRestrictionId, status = 404)
+
+      assertDoesNotThrow { apiService.deleteContactRestriction(contactRestrictionId) }
     }
   }
 }

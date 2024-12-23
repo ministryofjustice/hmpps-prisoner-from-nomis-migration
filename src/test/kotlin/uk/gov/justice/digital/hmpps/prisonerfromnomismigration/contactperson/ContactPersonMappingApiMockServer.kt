@@ -68,6 +68,18 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
     ),
   ) = stubGetByNomisPersonIdOrNull(nomisPersonId, mapping)
 
+  fun stubDeleteByNomisPersonId(
+    nomisPersonId: Long = 123456,
+  ) {
+    mappingApi.stubFor(
+      delete(urlEqualTo("/mapping/contact-person/person/nomis-person-id/$nomisPersonId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.NO_CONTENT.value()),
+      ),
+    )
+  }
+
   fun stubCreateMappingsForMigration() {
     mappingApi.stubFor(
       post("/mapping/contact-person/migrate").willReturn(
@@ -177,6 +189,18 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
       mappingType = PersonContactMappingDto.MappingType.MIGRATED,
     ),
   ) = stubGetByNomisContactIdOrNull(nomisContactId, mapping)
+
+  fun stubDeleteByNomisContactId(
+    nomisContactId: Long = 123456,
+  ) {
+    mappingApi.stubFor(
+      delete(urlEqualTo("/mapping/contact-person/contact/nomis-contact-id/$nomisContactId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.NO_CONTENT.value()),
+      ),
+    )
+  }
 
   fun stubCreateContactMapping() {
     mappingApi.stubFor(
@@ -645,6 +669,18 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
     }
   }
 
+  fun stubDeleteByNomisContactRestrictionId(
+    nomisContactRestrictionId: Long = 123456,
+  ) {
+    mappingApi.stubFor(
+      delete(urlEqualTo("/mapping/contact-person/contact-restriction/nomis-contact-restriction-id/$nomisContactRestrictionId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.NO_CONTENT.value()),
+      ),
+    )
+  }
+
   fun stubDeleteByNomisIdentifierIds(
     nomisPersonId: Long = 123456,
     nomisSequenceNumber: Long = 4,
@@ -732,6 +768,18 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
         ),
       )
     }
+  }
+
+  fun stubDeleteByNomisPersonRestrictionId(
+    nomisPersonRestrictionId: Long = 123456,
+  ) {
+    mappingApi.stubFor(
+      delete(urlEqualTo("/mapping/contact-person/person-restriction/nomis-person-restriction-id/$nomisPersonRestrictionId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.NO_CONTENT.value()),
+      ),
+    )
   }
 
   fun stubCreatePersonRestrictionMapping() {
