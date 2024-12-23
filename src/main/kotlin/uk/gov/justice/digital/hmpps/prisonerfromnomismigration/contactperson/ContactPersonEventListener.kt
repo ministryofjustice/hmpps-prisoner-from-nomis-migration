@@ -112,7 +112,7 @@ data class ContactEvent(
 
 data class ContactRestrictionEvent(
   val offenderPersonRestrictionId: Long,
-  val offenderIdDisplay: String,
+  val offenderIdDisplay: String?,
   val personId: Long,
   val contactPersonId: Long,
   override val auditModuleName: String,

@@ -218,7 +218,7 @@ class ContactPersonSynchronisationService(
 
   suspend fun contactRestrictionUpserted(event: ContactRestrictionEvent) {
     val telemetry =
-      telemetryOf("offenderNo" to event.offenderIdDisplay, "nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisContactId" to event.contactPersonId, "nomisContactRestrictionId" to event.offenderPersonRestrictionId)
+      telemetryOf("offenderNo" to (event.offenderIdDisplay ?: "unknown"), "nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisContactId" to event.contactPersonId, "nomisContactRestrictionId" to event.offenderPersonRestrictionId)
 
     if (event.doesOriginateInDps()) {
       telemetryClient.trackEvent(
@@ -256,7 +256,7 @@ class ContactPersonSynchronisationService(
 
   suspend fun contactRestrictionDeleted(event: ContactRestrictionEvent) {
     val telemetry =
-      telemetryOf("offenderNo" to event.offenderIdDisplay, "nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisContactId" to event.contactPersonId, "nomisContactRestrictionId" to event.offenderPersonRestrictionId)
+      telemetryOf("offenderNo" to (event.offenderIdDisplay ?: "unknown"), "nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisContactId" to event.contactPersonId, "nomisContactRestrictionId" to event.offenderPersonRestrictionId)
 
     mappingApiService.getByNomisContactRestrictionIdOrNull(nomisContactRestrictionId = event.offenderPersonRestrictionId)?.also {
       track("contactperson-contact-restriction-synchronisation-deleted", telemetry) {
