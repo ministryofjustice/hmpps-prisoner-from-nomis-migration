@@ -615,14 +615,16 @@ class CourtSentencingSynchronisationService(
     // we are only interested in offence code changes as these are the only changes that are not picked up by CEC updates
     if (event.offenceCodeChange) {
       if (event.auditModuleName == "DPS_SYNCHRONISATION") {
-        telemetryClient.trackEvent("court-charge-synchronisation-updated-skipped", telemetry)
+        telemetryClient.trackEvent(
+          "court-charge-synchronisation-updated-skipped",
+          telemetry + ("reason" to "Change originates from DPS"),
+        )
       } else {
         mappingApiService.getOffenderChargeOrNullByNomisId(event.chargeId)?.let { chargeMapping ->
           nomisApiService.getOffenderCharge(
             offenderNo = event.offenderIdDisplay,
             offenderChargeId = event.chargeId,
           ).let { nomisOffenderCharge ->
-
             dpsApiService.updateChargeOffence(
               chargeId = chargeMapping.dpsCourtChargeId,
               charge = LegacyUpdateWholeCharge(
@@ -642,6 +644,11 @@ class CourtSentencingSynchronisationService(
           throw IllegalStateException("Received OFFENDER_CHARGES_UPDATED for charge ${event.chargeId} has never been mapped")
         }
       }
+    } else {
+      telemetryClient.trackEvent(
+        "court-charge-synchronisation-updated-skipped",
+        telemetry + ("reason" to "OFFENDER_CHARGES-UPDATED change is not an offence code change"),
+      )
     }
   }
 

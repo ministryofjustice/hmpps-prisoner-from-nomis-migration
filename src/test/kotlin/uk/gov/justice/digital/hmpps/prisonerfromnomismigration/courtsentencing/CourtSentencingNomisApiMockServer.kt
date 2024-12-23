@@ -174,9 +174,10 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
   fun stubGetOffenderCharge(
     offenderNo: String = "A3864DZ",
     offenderChargeId: Long = 3,
+    offence: OffenceResponse = OffenceResponse(offenceCode = "RI64006", statuteCode = "RI64", description = "Offender description"),
     response: OffenderChargeResponse = OffenderChargeResponse(
       id = offenderChargeId,
-      offence = OffenceResponse(offenceCode = "RI64006", statuteCode = "RI64", description = "Offender description"),
+      offence = offence,
       mostSeriousFlag = true,
       offenceDate = LocalDate.now(),
       plea = CodeDescription("NG", "Not Guilty"),
