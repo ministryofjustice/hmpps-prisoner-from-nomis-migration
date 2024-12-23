@@ -203,7 +203,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     )
   }
 
-  fun stubGetLastModifiedCourtEventCharge(
+  fun stubGetCourtEventCharge(
     offenderNo: String = "A3864DZ",
     offenderChargeId: Long = 3,
     courtAppearanceId: Long = 3,
@@ -222,7 +222,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     ),
   ) {
     nomisApi.stubFor(
-      get(urlEqualTo("/prisoners/$offenderNo/sentencing/court-event-charges/$offenderChargeId/last-modified")).willReturn(
+      get(urlEqualTo("/prisoners/$offenderNo/sentencing/court-appearances/$courtAppearanceId/charges/$offenderChargeId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())

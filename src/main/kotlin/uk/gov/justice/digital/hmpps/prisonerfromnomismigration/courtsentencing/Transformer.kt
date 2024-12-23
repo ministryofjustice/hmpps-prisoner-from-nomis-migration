@@ -7,6 +7,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCourtAppearance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCourtCase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyUpdateCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtAppearance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCase
@@ -94,8 +95,7 @@ fun OffenderChargeResponse.toDpsCharge(appearanceId: String) = LegacyCreateCharg
   appearanceLifetimeUuid = UUID.fromString(appearanceId),
 )
 
-fun CourtEventChargeResponse.toDpsCharge(appearanceId: String) = LegacyCreateCharge(
-  offenceCode = this.offenderCharge.offence.offenceCode,
+fun CourtEventChargeResponse.toDpsCharge() = LegacyUpdateCharge(
   offenceStartDate = this.offenceDate,
   legacyData =
   ChargeLegacyData(
@@ -105,7 +105,6 @@ fun CourtEventChargeResponse.toDpsCharge(appearanceId: String) = LegacyCreateCha
   ),
   offenceEndDate = this.offenceEndDate,
   active = this.offenderCharge.chargeStatus?.code == "A",
-  appearanceLifetimeUuid = UUID.fromString(appearanceId),
 )
 
 fun OffenderChargeResponse.toDpsMigrationCharge(chargeId: Long) = MigrationCreateCharge(

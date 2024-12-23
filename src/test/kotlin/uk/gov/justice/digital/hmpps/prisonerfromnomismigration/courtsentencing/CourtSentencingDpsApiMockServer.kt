@@ -240,6 +240,20 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubPutAppearanceChargeForUpdate(
+    chargeId: String = UUID.randomUUID().toString(),
+    appearanceId: String = UUID.randomUUID().toString(),
+  ) {
+    stubFor(
+      put("/legacy/charge/$chargeId/appearance/$appearanceId")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
   fun stubPostSentenceForCreate(
     sentenceId: String = UUID.randomUUID().toString(),
     response: CreateSentenceResponse = CreateSentenceResponse(
