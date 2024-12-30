@@ -55,7 +55,13 @@ class CaseNotesMergeIntTest : SqsIntegrationTestBase() {
           caseNoteTemplate(
             caseNoteId = 102,
             bookingId = 1,
-            text = "text 2",
+            // there can be duplicate case notes
+            text = "text 2 dupe",
+          ),
+          caseNoteTemplate(
+            caseNoteId = 192,
+            bookingId = 1,
+            text = "text 2 dupe",
           ),
           caseNoteTemplate(
             caseNoteId = 103,
@@ -99,6 +105,7 @@ class CaseNotesMergeIntTest : SqsIntegrationTestBase() {
             nomisBookingId = 1,
             mappingType = CaseNoteMappingDto.MappingType.MIGRATED,
           ),
+          // no mapping for 192
           CaseNoteMappingDto(
             dpsCaseNoteId = "00001111-2222-3333-4444-000000003",
             nomisCaseNoteId = 103,

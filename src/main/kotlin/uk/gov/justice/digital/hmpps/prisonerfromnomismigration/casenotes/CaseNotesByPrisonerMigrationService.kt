@@ -69,39 +69,55 @@ class CaseNotesByPrisonerMigrationService(
       "migrationType" to "CASENOTES",
     )
     try {
-      val nomisCaseNotes = caseNotesNomisService.getCaseNotesForPrisonerOrNull(offenderNo)
-        ?: PrisonerCaseNotesResponse(emptyList())
+      val prisonerCaseNotesResponse = (
+        caseNotesNomisService.getCaseNotesForPrisonerOrNull(offenderNo)
+          ?: PrisonerCaseNotesResponse(emptyList())
+        )
+      val nomisCaseNotes = prisonerCaseNotesResponse
+        .caseNotes
+        .deDuplicate()
+      val numberOfDupes = prisonerCaseNotesResponse.caseNotes.size - nomisCaseNotes.size
+      telemetry["numberOfDupes"] = numberOfDupes.toString()
+
+      // Edge cases: there could be exact duplicates of case notes, and/or merged case note copies.
+      // If a particular case note has n duplicates (ie there are n in all), only one of them will be migrated, but there will
+      // in general be n * m identical MERGE copies, where m is the number of merges that have occurred.
+      // The merge copies will be mapped to the one that is migrated.
+      // This is ok as a change in DPS will be reflected in all the copies.
 
       val originalNomisIdToCopiesMap = mutableMapOf<Long, MutableList<CaseNoteResponse>>()
       val copiedNomisIdSet = mutableSetOf<Long>()
 
       // look for the originals of the merge copies under another booking id
 
-      nomisCaseNotes.caseNotes
+      nomisCaseNotes
         .filter { it.auditModuleName == "MERGE" }
         .forEach { mergeCopiedCaseNote ->
-          val originals = nomisCaseNotes.caseNotes.filter {
-            isMergeDuplicate(it, mergeCopiedCaseNote)
+          val originals = nomisCaseNotes.filter {
+            isMergeCopy(it, mergeCopiedCaseNote)
           }
           if (originals.isEmpty()) {
+            // There are 8226 of these (as at dec 2024), they are treated as not merged but ordinary case notes
             log.warn("No original found for offenderNo: $offenderNo, merged case note ${mergeCopiedCaseNote.caseNoteId}")
+          } else if (originals.size > 1) {
+            // Should not be possible given that duplicates were filtered out
+            throw IllegalStateException("${originals.size} originals found for offenderNo: $offenderNo, merged case note ${mergeCopiedCaseNote.caseNoteId}")
           } else {
             copiedNomisIdSet.add(mergeCopiedCaseNote.caseNoteId)
           }
-          if (originals.size > 1) {
-            log.warn("More than 1 originals found for offenderNo: $offenderNo, merged case note ${mergeCopiedCaseNote.caseNoteId}")
-          }
-          originals.forEach { o ->
-            originalNomisIdToCopiesMap.getOrPut(o.caseNoteId) { mutableListOf() }
-              .add(mergeCopiedCaseNote)
-          }
+
+          originals.firstOrNull()
+            ?.let {
+              originalNomisIdToCopiesMap.getOrPut(it.caseNoteId) { mutableListOf() }
+                .add(mergeCopiedCaseNote)
+            }
         }
 
-      val caseNotesToMigrate = nomisCaseNotes.caseNotes
+      val caseNotesToMigrate = nomisCaseNotes
         .filterNot { copiedNomisIdSet.contains(it.caseNoteId) }
         .map { it.toDPSCreateCaseNote(offenderNo) }
 
-      val bookingIdMap: Map<Long, Long> = nomisCaseNotes.caseNotes.associate { it.caseNoteId to it.bookingId }
+      val bookingIdMap: Map<Long, Long> = nomisCaseNotes.associate { it.caseNoteId to it.bookingId }
 
       caseNotesDpsService.migrateCaseNotes(offenderNo, caseNotesToMigrate)
         .also { migrationResultList ->
@@ -187,7 +203,7 @@ class CaseNotesByPrisonerMigrationService(
     if (result.isError) {
       val duplicateErrorDetails = (result.errorResponse!!).moreInfo
       telemetryClient.trackEvent(
-        "nomis-migration-casenotes-duplicate",
+        "casenotes-migration-duplicate-error",
         mapOf<String, String>(
           "offenderNo" to context.body.offenderNo,
           "migrationId" to context.migrationId,
@@ -217,13 +233,37 @@ data class CaseNoteMigrationMapping(
   val offenderNo: String,
 )
 
-fun isMergeDuplicate(
+/**
+ * Filter out duplicates from the list of case notes
+ * This is where e.g. the user has entered identical case note details twice or more.
+ * These duplicates will not be migrated
+ */
+fun List<CaseNoteResponse>.deDuplicate(): List<CaseNoteResponse> =
+  distinctBy { caseNote ->
+    listOf(
+      caseNote.creationDateTime,
+      caseNote.caseNoteText,
+      caseNote.occurrenceDateTime,
+      caseNote.caseNoteType,
+      caseNote.caseNoteSubType,
+      caseNote.authorStaffId,
+      // Do not conflate merge copy case notes
+      if (caseNote.auditModuleName == "MERGE") {
+        caseNote.caseNoteId
+      } else {
+        0
+      },
+    )
+  }
+
+fun isMergeCopy(
   response: CaseNoteResponse,
   mergeCopiedCaseNote: CaseNoteResponse,
 ): Boolean = response.creationDateTime == mergeCopiedCaseNote.creationDateTime &&
   response.caseNoteText == mergeCopiedCaseNote.caseNoteText &&
   response.bookingId != mergeCopiedCaseNote.bookingId &&
   response.auditModuleName != "MERGE" &&
-  response.caseNoteType == mergeCopiedCaseNote.caseNoteType && response.caseNoteSubType == mergeCopiedCaseNote.caseNoteSubType &&
+  response.caseNoteType == mergeCopiedCaseNote.caseNoteType &&
+  response.caseNoteSubType == mergeCopiedCaseNote.caseNoteSubType &&
   response.occurrenceDateTime == mergeCopiedCaseNote.occurrenceDateTime &&
   response.authorStaffId == mergeCopiedCaseNote.authorStaffId

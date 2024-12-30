@@ -287,10 +287,12 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
           listOf(
             caseNoteTemplate(1, 1, "text 1"),
             caseNoteTemplate(2, 1, "text 2"),
-            caseNoteTemplate(3, 1, "text 3"),
+            caseNoteTemplate(3, 1, "text dupe"),
+            caseNoteTemplate(4, 1, "text dupe"),
             caseNoteTemplate(11, 2, "text 1", "MERGE"),
             caseNoteTemplate(12, 2, "text 2", "MERGE"),
-            caseNoteTemplate(13, 2, "text 3", "MERGE"),
+            caseNoteTemplate(13, 2, "text dupe", "MERGE"),
+            caseNoteTemplate(14, 2, "text dupe", "MERGE"),
           ),
         )
         caseNotesApi.stubMigrateCaseNotes(
@@ -309,7 +311,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
-      fun `will POST 3 casenotes, not merge copies, to DPS for the prisoner`() {
+      fun `will POST 3 casenotes, not merge copies or dupes, to DPS for the prisoner`() {
         caseNotesApi.verify(
           postRequestedFor(urlPathEqualTo("/migrate/case-notes/$OFFENDER_NUMBER1"))
             .withRequestBodyJsonPath("$.size()", "3")
@@ -318,12 +320,12 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
             .withRequestBodyJsonPath("$[1].legacyId", "2")
             .withRequestBodyJsonPath("$[1].text", equalTo("text 2"))
             .withRequestBodyJsonPath("$[2].legacyId", "3")
-            .withRequestBodyJsonPath("$[2].text", equalTo("text 3")),
+            .withRequestBodyJsonPath("$[2].text", equalTo("text dupe")),
         )
       }
 
       @Test
-      fun `will POST 6 mappings for casenotes originally created for the prisoner and for merges`() {
+      fun `will POST 7 mappings for casenotes originally created for the prisoner and for merges`() {
         caseNotesMappingApiMockServer.verify(
           postRequestedFor(urlPathEqualTo("/mapping/casenotes/$OFFENDER_NUMBER1/all"))
             .withRequestBodyJsonPath("$.mappings.size()", "3")
@@ -343,7 +345,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
         )
         caseNotesMappingApiMockServer.verify(
           postRequestedFor(urlPathEqualTo("/mapping/casenotes/batch"))
-            .withRequestBodyJsonPath("$.size()", "3")
+            .withRequestBodyJsonPath("$.size()", "4")
             .withRequestBodyJsonPath(
               "$[?(@.nomisCaseNoteId == '11' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000001')].nomisBookingId",
               "2",
@@ -354,6 +356,10 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
             )
             .withRequestBodyJsonPath(
               "$[?(@.nomisCaseNoteId == '13' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000003')].nomisBookingId",
+              "2",
+            )
+            .withRequestBodyJsonPath(
+              "$[?(@.nomisCaseNoteId == '14' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000003')].nomisBookingId",
               "2",
             ),
         )
@@ -382,6 +388,10 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
             caseNoteTemplate(16, 3, "text 6", "MERGE"),
             caseNoteTemplate(17, 3, "text 7", "MERGE"),
             caseNoteTemplate(18, 3, "text 8", "MERGE"),
+            // Duplicates which should be ignored:
+            caseNoteTemplate(102, 9, "text 2"),
+            caseNoteTemplate(103, 9, "text 3"),
+            caseNoteTemplate(101, 9, "text 6"),
           ),
         )
         caseNotesApi.stubMigrateCaseNotes(
