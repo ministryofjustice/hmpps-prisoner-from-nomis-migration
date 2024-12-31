@@ -198,17 +198,15 @@ class CaseNotesSynchronisationService(
     /*
 
 Some of the current booking's case notes have audit_module_name = 'MERGE'
-
 Work out the old booking id as being that which has copies of these case notes
-
 The affected existing mappings are those for the old prisoner and booking id for which just the prisoner is corrected .
-
-Also add new mappings for the new booking id for the copied case notes, which point to the same DPS CNs as the unaffected existing mappings
+Also add new mappings for the new booking id for the copied case notes, which point to the same DPS CNs as the unaffected existing mappings.
 
      */
     val (nomsNumber, removedNomsNumber, bookingId) = prisonerMergeEvent.additionalInformation
     try {
-      val nomisCaseNotes = nomisApiService.getCaseNotesForPrisoner(nomsNumber).caseNotes
+      val nomisCaseNotes = nomisApiService.getCaseNotesForPrisoner(nomsNumber)
+        .caseNotes
       val freshlyMergedNomisCaseNotes = nomisCaseNotes
         .filter {
           isMergeCaseNoteRecentlyCreated(it, prisonerMergeEvent)
@@ -237,7 +235,7 @@ Also add new mappings for the new booking id for the copied case notes, which po
 
       val newToOldMap = freshlyMergedNomisCaseNotes
         .associate { newCaseNote ->
-          newCaseNote.caseNoteId to nomisCaseNotes.first { old -> isMergeDuplicate(old, newCaseNote) }
+          newCaseNote.caseNoteId to nomisCaseNotes.first { old -> isMergeCopy(old, newCaseNote) }
         }
 
       caseNotesMappingService.updateMappingsByNomisId(removedNomsNumber, nomsNumber)
@@ -285,6 +283,7 @@ Also add new mappings for the new booking id for the copied case notes, which po
           "offenderNo" to nomsNumber,
           "removedOffenderNo" to removedNomsNumber,
           "bookingId" to bookingId,
+          "newMappingsCount" to newMappings.size,
         ),
       )
     } catch (e: Exception) {

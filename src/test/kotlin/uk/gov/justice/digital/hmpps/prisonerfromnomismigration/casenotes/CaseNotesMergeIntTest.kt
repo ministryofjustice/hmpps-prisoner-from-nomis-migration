@@ -55,12 +55,23 @@ class CaseNotesMergeIntTest : SqsIntegrationTestBase() {
           caseNoteTemplate(
             caseNoteId = 102,
             bookingId = 1,
-            text = "text 2",
+            // there can be duplicate case notes
+            text = "text 2 dupe",
+          ),
+          caseNoteTemplate(
+            caseNoteId = 192,
+            bookingId = 1,
+            text = "text 2 dupe",
           ),
           caseNoteTemplate(
             caseNoteId = 103,
             bookingId = 2,
             text = "text 3",
+          ),
+          caseNoteTemplate(
+            caseNoteId = 193,
+            bookingId = 2,
+            text = "text 3 dupe",
           ),
           caseNoteTemplate(
             caseNoteId = 104,
@@ -71,6 +82,13 @@ class CaseNotesMergeIntTest : SqsIntegrationTestBase() {
             caseNoteId = 111,
             bookingId = 1,
             text = "text 3",
+            auditModuleName = "MERGE",
+            createdDatetime = aMomentAgo,
+          ),
+          caseNoteTemplate(
+            caseNoteId = 191,
+            bookingId = 1,
+            text = "text 3 dupe",
             auditModuleName = "MERGE",
             createdDatetime = aMomentAgo,
           ),
@@ -100,8 +118,22 @@ class CaseNotesMergeIntTest : SqsIntegrationTestBase() {
             mappingType = CaseNoteMappingDto.MappingType.MIGRATED,
           ),
           CaseNoteMappingDto(
+            dpsCaseNoteId = "00001111-2222-3333-4444-000000002",
+            nomisCaseNoteId = 192,
+            offenderNo = survivorOffenderNo,
+            nomisBookingId = 1,
+            mappingType = CaseNoteMappingDto.MappingType.MIGRATED,
+          ),
+          CaseNoteMappingDto(
             dpsCaseNoteId = "00001111-2222-3333-4444-000000003",
             nomisCaseNoteId = 103,
+            offenderNo = removedOffenderNo,
+            nomisBookingId = 2,
+            mappingType = CaseNoteMappingDto.MappingType.MIGRATED,
+          ),
+          CaseNoteMappingDto(
+            dpsCaseNoteId = "00001111-2222-3333-4444-000000003",
+            nomisCaseNoteId = 193,
             offenderNo = removedOffenderNo,
             nomisBookingId = 2,
             mappingType = CaseNoteMappingDto.MappingType.MIGRATED,
@@ -159,16 +191,22 @@ class CaseNotesMergeIntTest : SqsIntegrationTestBase() {
       await untilAsserted {
         caseNotesMappingApiMockServer.verify(
           postRequestedFor(urlPathEqualTo("/mapping/casenotes/batch"))
+            .withRequestBodyJsonPath("$.size()", "3")
             .withRequestBodyJsonPath("[0].dpsCaseNoteId", "00001111-2222-3333-4444-000000003")
             .withRequestBodyJsonPath("[0].nomisCaseNoteId", 111)
             .withRequestBodyJsonPath("[0].offenderNo", survivorOffenderNo)
             .withRequestBodyJsonPath("[0].nomisBookingId", 1)
             .withRequestBodyJsonPath("[0].mappingType", "NOMIS_CREATED")
-            .withRequestBodyJsonPath("[1].dpsCaseNoteId", "00001111-2222-3333-4444-000000004")
-            .withRequestBodyJsonPath("[1].nomisCaseNoteId", 112)
+            .withRequestBodyJsonPath("[1].dpsCaseNoteId", "00001111-2222-3333-4444-000000003")
+            .withRequestBodyJsonPath("[1].nomisCaseNoteId", 191)
             .withRequestBodyJsonPath("[1].offenderNo", survivorOffenderNo)
             .withRequestBodyJsonPath("[1].nomisBookingId", 1)
-            .withRequestBodyJsonPath("[1].mappingType", "NOMIS_CREATED"),
+            .withRequestBodyJsonPath("[1].mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("[2].dpsCaseNoteId", "00001111-2222-3333-4444-000000004")
+            .withRequestBodyJsonPath("[2].nomisCaseNoteId", 112)
+            .withRequestBodyJsonPath("[2].offenderNo", survivorOffenderNo)
+            .withRequestBodyJsonPath("[2].nomisBookingId", 1)
+            .withRequestBodyJsonPath("[2].mappingType", "NOMIS_CREATED"),
         )
       }
     }
