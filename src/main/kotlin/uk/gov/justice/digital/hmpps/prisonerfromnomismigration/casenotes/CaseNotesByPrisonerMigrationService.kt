@@ -7,6 +7,7 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.MigrateCaseNoteRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
@@ -73,51 +74,26 @@ class CaseNotesByPrisonerMigrationService(
         caseNotesNomisService.getCaseNotesForPrisonerOrNull(offenderNo)
           ?: PrisonerCaseNotesResponse(emptyList())
         )
-      val nomisCaseNotes = prisonerCaseNotesResponse
-        .caseNotes
-        .deDuplicate()
-      val numberOfDupes = prisonerCaseNotesResponse.caseNotes.size - nomisCaseNotes.size
-      telemetry["numberOfDupes"] = numberOfDupes.toString()
 
-      // Edge cases: there could be exact duplicates of case notes, and/or merged case note copies.
-      // If a particular case note has n duplicates (ie there are n in all), only one of them will be migrated, but there will
-      // in general be n * m identical MERGE copies, where m is the number of merges that have occurred.
-      // The merge copies will be mapped to the one that is migrated.
-      // This is ok as a change in DPS will be reflected in all the copies.
+      val caseNotesToMigrate = mutableListOf<MigrateCaseNoteRequest>()
 
-      val originalNomisIdToCopiesMap = mutableMapOf<Long, MutableList<CaseNoteResponse>>()
-      val copiedNomisIdSet = mutableSetOf<Long>()
-
-      // look for the originals of the merge copies under another booking id
-
-      nomisCaseNotes
-        .filter { it.auditModuleName == "MERGE" }
-        .forEach { mergeCopiedCaseNote ->
-          val originals = nomisCaseNotes.filter {
-            isMergeCopy(it, mergeCopiedCaseNote)
-          }
-          if (originals.isEmpty()) {
-            // There are 8226 of these (as at dec 2024), they are treated as not merged but ordinary case notes
-            log.warn("No original found for offenderNo: $offenderNo, merged case note ${mergeCopiedCaseNote.caseNoteId}")
-          } else if (originals.size > 1) {
-            // Should not be possible given that duplicates were filtered out
-            throw IllegalStateException("${originals.size} originals found for offenderNo: $offenderNo, merged case note ${mergeCopiedCaseNote.caseNoteId}")
-          } else {
-            copiedNomisIdSet.add(mergeCopiedCaseNote.caseNoteId)
-          }
-
-          originals.firstOrNull()
-            ?.let {
-              originalNomisIdToCopiesMap.getOrPut(it.caseNoteId) { mutableListOf() }
-                .add(mergeCopiedCaseNote)
-            }
+      val nomisCaseNotesGroups = prisonerCaseNotesResponse.caseNotes
+        .groupBy { caseNote ->
+          listOf(
+            caseNote.creationDateTime,
+            caseNote.caseNoteText,
+            caseNote.occurrenceDateTime,
+            caseNote.caseNoteType,
+            caseNote.caseNoteSubType,
+            caseNote.authorStaffId,
+          )
         }
-
-      val caseNotesToMigrate = nomisCaseNotes
-        .filterNot { copiedNomisIdSet.contains(it.caseNoteId) }
-        .map { it.toDPSCreateCaseNote(offenderNo) }
-
-      val bookingIdMap: Map<Long, Long> = nomisCaseNotes.associate { it.caseNoteId to it.bookingId }
+        .mapKeys {
+          val caseNote = it.value.first()
+          val caseNoteToMigrate = caseNote.toDPSCreateCaseNote(offenderNo)
+          caseNotesToMigrate.add(caseNoteToMigrate)
+          caseNote.caseNoteId
+        }
 
       caseNotesDpsService.migrateCaseNotes(offenderNo, caseNotesToMigrate)
         .also { migrationResultList ->
@@ -128,39 +104,26 @@ class CaseNotesByPrisonerMigrationService(
               mappingType = PrisonerCaseNoteMappingsDto.MappingType.MIGRATED,
               mappings = migrationResultList.map { migrationResult ->
                 CaseNoteMappingIdDto(
-                  nomisBookingId = bookingIdMap[migrationResult.legacyId] ?: 0,
+                  nomisBookingId = nomisCaseNotesGroups[migrationResult.legacyId]?.first()?.bookingId ?: 0,
                   nomisCaseNoteId = migrationResult.legacyId,
                   dpsCaseNoteId = migrationResult.id.toString(),
                 )
+              } + migrationResultList.flatMap { migrationResult ->
+                nomisCaseNotesGroups[migrationResult.legacyId]
+                  ?.drop(1)
+                  ?.map { caseNote ->
+                    CaseNoteMappingIdDto(
+                      nomisBookingId = caseNote.bookingId,
+                      nomisCaseNoteId = caseNote.caseNoteId,
+                      dpsCaseNoteId = migrationResult.id.toString(),
+                    )
+                  } ?: emptyList()
               },
             ),
             context = context,
           )
-
-          if (originalNomisIdToCopiesMap.isNotEmpty()) {
-            // Additional mappings for dps uuids to nomis case notes which are copies (MERGE)
-            caseNotesMappingService.createMappings(
-              migrationResultList
-                .filter { m -> originalNomisIdToCopiesMap.containsKey(m.legacyId) }
-                .flatMap { original ->
-                  originalNomisIdToCopiesMap[original.legacyId]!!
-                    .map { mergeCopiedCaseNote ->
-                      CaseNoteMappingDto(
-                        nomisBookingId = mergeCopiedCaseNote.bookingId,
-                        nomisCaseNoteId = mergeCopiedCaseNote.caseNoteId,
-                        dpsCaseNoteId = original.id.toString(),
-                        offenderNo = offenderNo,
-                        mappingType = CaseNoteMappingDto.MappingType.MIGRATED,
-                        label = context.migrationId,
-                      )
-                    }
-                },
-              object : ParameterizedTypeReference<DuplicateErrorResponse<CaseNoteMappingDto>>() {},
-            ).also {
-              checkForDuplicateError(it, context)
-            }
-          }
-          telemetry["caseNoteCount"] = migrationResultList.size.toString()
+          telemetry["nomisCaseNoteCount"] = prisonerCaseNotesResponse.caseNotes.size.toString()
+          telemetry["dpsCaseNoteCount"] = migrationResultList.size.toString()
           telemetryClient.trackEvent("casenotes-migration-entity-migrated", telemetry)
         }
     } catch (e: Exception) {

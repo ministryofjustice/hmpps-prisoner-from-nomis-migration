@@ -207,7 +207,6 @@ Also add new mappings for the new booking id for the copied case notes, which po
     try {
       val nomisCaseNotes = nomisApiService.getCaseNotesForPrisoner(nomsNumber)
         .caseNotes
-        .deDuplicate()
       val freshlyMergedNomisCaseNotes = nomisCaseNotes
         .filter {
           isMergeCaseNoteRecentlyCreated(it, prisonerMergeEvent)
@@ -284,6 +283,7 @@ Also add new mappings for the new booking id for the copied case notes, which po
           "offenderNo" to nomsNumber,
           "removedOffenderNo" to removedNomsNumber,
           "bookingId" to bookingId,
+          "newMappingsCount" to newMappings.size,
         ),
       )
     } catch (e: Exception) {

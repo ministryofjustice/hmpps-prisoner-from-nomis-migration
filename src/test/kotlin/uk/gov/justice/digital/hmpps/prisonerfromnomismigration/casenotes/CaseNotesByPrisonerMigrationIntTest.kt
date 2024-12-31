@@ -306,7 +306,6 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
 
         caseNotesMappingApiMockServer.stubGetMappings(listOf())
         caseNotesMappingApiMockServer.stubPostMappingsByPrisoner(OFFENDER_NUMBER1)
-        caseNotesMappingApiMockServer.stubPostMappingsBatch()
         migrationResult = performMigration()
       }
 
@@ -325,10 +324,10 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
-      fun `will POST 7 mappings for casenotes originally created for the prisoner and for merges`() {
+      fun `will POST 8 mappings for casenotes originally created for the prisoner and for merges`() {
         caseNotesMappingApiMockServer.verify(
           postRequestedFor(urlPathEqualTo("/mapping/casenotes/$OFFENDER_NUMBER1/all"))
-            .withRequestBodyJsonPath("$.mappings.size()", "3")
+            .withRequestBodyJsonPath("$.mappings.size()", "8")
             // the mappings are shuffled by the map they were in so we can't predict the order
             .withRequestBodyJsonPath(
               "$.mappings[?(@.nomisCaseNoteId == '1' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000001')].nomisBookingId",
@@ -341,25 +340,25 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
             .withRequestBodyJsonPath(
               "$.mappings[?(@.nomisCaseNoteId == '3' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000003')].nomisBookingId",
               "1",
-            ),
-        )
-        caseNotesMappingApiMockServer.verify(
-          postRequestedFor(urlPathEqualTo("/mapping/casenotes/batch"))
-            .withRequestBodyJsonPath("$.size()", "4")
+            )
             .withRequestBodyJsonPath(
-              "$[?(@.nomisCaseNoteId == '11' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000001')].nomisBookingId",
+              "$.mappings[?(@.nomisCaseNoteId == '4' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000003')].nomisBookingId",
+              "1",
+            )
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '11' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000001')].nomisBookingId",
               "2",
             )
             .withRequestBodyJsonPath(
-              "$[?(@.nomisCaseNoteId == '12' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000002')].nomisBookingId",
+              "$.mappings[?(@.nomisCaseNoteId == '12' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000002')].nomisBookingId",
               "2",
             )
             .withRequestBodyJsonPath(
-              "$[?(@.nomisCaseNoteId == '13' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000003')].nomisBookingId",
+              "$.mappings[?(@.nomisCaseNoteId == '13' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000003')].nomisBookingId",
               "2",
             )
             .withRequestBodyJsonPath(
-              "$[?(@.nomisCaseNoteId == '14' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000003')].nomisBookingId",
+              "$.mappings[?(@.nomisCaseNoteId == '14' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000003')].nomisBookingId",
               "2",
             ),
         )
@@ -388,7 +387,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
             caseNoteTemplate(16, 3, "text 6", "MERGE"),
             caseNoteTemplate(17, 3, "text 7", "MERGE"),
             caseNoteTemplate(18, 3, "text 8", "MERGE"),
-            // Duplicates which should be ignored:
+            // Duplicates:
             caseNoteTemplate(102, 9, "text 2"),
             caseNoteTemplate(103, 9, "text 3"),
             caseNoteTemplate(101, 9, "text 6"),
@@ -408,7 +407,6 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
 
         caseNotesMappingApiMockServer.stubGetMappings(listOf())
         caseNotesMappingApiMockServer.stubPostMappingsByPrisoner(OFFENDER_NUMBER1)
-        caseNotesMappingApiMockServer.stubPostMappingsBatch()
         migrationResult = performMigration()
       }
 
@@ -427,10 +425,10 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
-      fun `will POST 12 mappings for casenotes originally created for the prisoner and for merges`() {
+      fun `will POST 15 mappings for casenotes originally created for the prisoner and for merges`() {
         caseNotesMappingApiMockServer.verify(
           postRequestedFor(urlPathEqualTo("/mapping/casenotes/$OFFENDER_NUMBER1/all"))
-            .withRequestBodyJsonPath("$.mappings.size()", "6")
+            .withRequestBodyJsonPath("$.mappings.size()", "15")
             // the mappings are shuffled by the map they were in so we can't predict the order
             .withRequestBodyJsonPath(
               "$.mappings[?(@.nomisCaseNoteId == '1' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000001')].nomisBookingId",
@@ -455,34 +453,42 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
             .withRequestBodyJsonPath(
               "$.mappings[?(@.nomisCaseNoteId == '8' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000008')].nomisBookingId",
               "2",
-            ),
-        )
-        caseNotesMappingApiMockServer.verify(
-          postRequestedFor(urlPathEqualTo("/mapping/casenotes/batch"))
-            .withRequestBodyJsonPath("$.size()", "6")
+            )
             .withRequestBodyJsonPath(
-              "$[?(@.nomisCaseNoteId == '11' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000001')].nomisBookingId",
+              "$.mappings[?(@.nomisCaseNoteId == '11' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000001')].nomisBookingId",
               "3",
             )
             .withRequestBodyJsonPath(
-              "$[?(@.nomisCaseNoteId == '12' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000002')].nomisBookingId",
+              "$.mappings[?(@.nomisCaseNoteId == '12' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000002')].nomisBookingId",
               "3",
             )
             .withRequestBodyJsonPath(
-              "$[?(@.nomisCaseNoteId == '13' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000003')].nomisBookingId",
+              "$.mappings[?(@.nomisCaseNoteId == '13' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000003')].nomisBookingId",
               "3",
             )
             .withRequestBodyJsonPath(
-              "$[?(@.nomisCaseNoteId == '16' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000006')].nomisBookingId",
+              "$.mappings[?(@.nomisCaseNoteId == '16' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000006')].nomisBookingId",
               "3",
             )
             .withRequestBodyJsonPath(
-              "$[?(@.nomisCaseNoteId == '17' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000007')].nomisBookingId",
+              "$.mappings[?(@.nomisCaseNoteId == '17' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000007')].nomisBookingId",
               "3",
             )
             .withRequestBodyJsonPath(
-              "$[?(@.nomisCaseNoteId == '18' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000008')].nomisBookingId",
+              "$.mappings[?(@.nomisCaseNoteId == '18' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000008')].nomisBookingId",
               "3",
+            )
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '102' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000002')].nomisBookingId",
+              "9",
+            )
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '103' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000003')].nomisBookingId",
+              "9",
+            )
+            .withRequestBodyJsonPath(
+              "$.mappings[?(@.nomisCaseNoteId == '101' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000006')].nomisBookingId",
+              "9",
             ),
         )
       }
@@ -527,7 +533,6 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
         )
         caseNotesMappingApiMockServer.stubGetMappings(listOf())
         caseNotesMappingApiMockServer.stubPostMappingsByPrisoner(OFFENDER_NUMBER1)
-        caseNotesMappingApiMockServer.stubPostMappingsBatch()
         migrationResult = performMigration()
       }
 
@@ -549,7 +554,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
       fun `will POST 12 mappings for casenotes originally created for the prisoner and for merges`() {
         caseNotesMappingApiMockServer.verify(
           postRequestedFor(urlPathEqualTo("/mapping/casenotes/$OFFENDER_NUMBER1/all"))
-            .withRequestBodyJsonPath("$.mappings.size()", "6")
+            .withRequestBodyJsonPath("$.mappings.size()", "12")
             // the mappings are shuffled by the map they were in so we can't predict the order
             .withRequestBodyJsonPath(
               "$.mappings[?(@.nomisCaseNoteId == '1' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000001')].nomisBookingId",
@@ -574,33 +579,29 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
             .withRequestBodyJsonPath(
               "$.mappings[?(@.nomisCaseNoteId == '12' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000012')].nomisBookingId",
               "3",
-            ),
-        )
-        caseNotesMappingApiMockServer.verify(
-          postRequestedFor(urlPathEqualTo("/mapping/casenotes/batch"))
-            .withRequestBodyJsonPath("$.size()", "6")
+            )
             .withRequestBodyJsonPath(
-              "[?(@.nomisCaseNoteId == '8' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000001')].nomisBookingId",
+              "$.mappings[?(@.nomisCaseNoteId == '8' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000001')].nomisBookingId",
               "2",
             )
             .withRequestBodyJsonPath(
-              "[?(@.nomisCaseNoteId == '9' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000002')].nomisBookingId",
+              "$.mappings[?(@.nomisCaseNoteId == '9' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000002')].nomisBookingId",
               "2",
             )
             .withRequestBodyJsonPath(
-              "[?(@.nomisCaseNoteId == '13' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000001')].nomisBookingId",
+              "$.mappings[?(@.nomisCaseNoteId == '13' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000001')].nomisBookingId",
               "3",
             )
             .withRequestBodyJsonPath(
-              "[?(@.nomisCaseNoteId == '14' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000002')].nomisBookingId",
+              "$.mappings[?(@.nomisCaseNoteId == '14' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000002')].nomisBookingId",
               "3",
             )
             .withRequestBodyJsonPath(
-              "[?(@.nomisCaseNoteId == '15' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000006')].nomisBookingId",
+              "$.mappings[?(@.nomisCaseNoteId == '15' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000006')].nomisBookingId",
               "3",
             )
             .withRequestBodyJsonPath(
-              "[?(@.nomisCaseNoteId == '16' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000007')].nomisBookingId",
+              "$.mappings[?(@.nomisCaseNoteId == '16' && @.dpsCaseNoteId == '00000000-0000-0000-0000-000000000007')].nomisBookingId",
               "3",
             ),
         )
