@@ -466,6 +466,23 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
                       createDatetime = "2022-02-02T10:23",
                     ),
                   ),
+                  ContactRestriction(
+                    id = 161,
+                    type = CodeDescription("CCTV", "CCTV"),
+                    effectiveDate = LocalDate.parse("2023-01-01"),
+                    expiryDate = LocalDate.parse("2026-01-01"),
+                    enteredStaff = ContactRestrictionEnteredStaff(
+                      staffId = 87675,
+                      username = "ADJUA.SMITH",
+                    ),
+                    comment = "Banned for life!",
+                    audit = NomisAudit(
+                      modifyUserId = null,
+                      modifyDatetime = null,
+                      createUsername = "ADJUA.BEEK",
+                      createDatetime = "2022-02-04T10:23",
+                    ),
+                  ),
                 ),
                 audit = NomisAudit(
                   modifyUserId = "ADJUA.MENSAH",
@@ -730,11 +747,10 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(comment).isEqualTo("Banned for life!")
           assertThat(effectiveDate).isEqualTo(LocalDate.parse("2023-01-01"))
           assertThat(expiryDate).isEqualTo(LocalDate.parse("2026-01-01"))
-          // DPS Might put this back in again
-//          assertThat(staffUsername).isEqualTo("ADJUA.SMITH")
           assertThat(createUsername).isEqualTo("ADJUA.BEEK")
           assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:23"))
-          assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
+          // will use entered by for modified since entered by will be last real person who modified
+          assertThat(modifyUsername).isEqualTo("ADJUA.SMITH")
           assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-02-02T10:23"))
         }
         with(person.restrictions[1]) {
@@ -743,9 +759,8 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(comment).isNull()
           assertThat(effectiveDate).isEqualTo(LocalDate.parse("2023-01-01"))
           assertThat(expiryDate).isNull()
-          // DPS Might put this back in again
-//          assertThat(staffUsername).isEqualTo("ADJUA.SMITH")
-          assertThat(createUsername).isEqualTo("ADJUA.BEEK")
+          // will use entered by for created since there has been no modifications so entered by will be the real person who created restriction
+          assertThat(createUsername).isEqualTo("ADJUA.SMITH")
           assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:23"))
           assertThat(modifyUsername).isNull()
           assertThat(modifyDateTime).isNull()
@@ -798,19 +813,25 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
         val person = dpsRequests.find { it.personId == 1000L } ?: throw AssertionError("Request not found")
         assertThat(person.contacts).hasSize(2)
         val contact = person.contacts[0]
-        assertThat(contact.restrictions).hasSize(1)
+        assertThat(contact.restrictions).hasSize(2)
         with(contact.restrictions[0]) {
           assertThat(id).isEqualTo(160)
           assertThat(restrictionType.code).isEqualTo("BAN")
           assertThat(comment).isEqualTo("Banned for life!")
           assertThat(startDate).isEqualTo(LocalDate.parse("2023-01-01"))
           assertThat(expiryDate).isEqualTo(LocalDate.parse("2026-01-01"))
-          // DPS Might put this back in again
-//          assertThat(staffUsername).isEqualTo("ADJUA.SMITH")
+          // will use entered by for modified since entered by will be last real person who modified
           assertThat(createUsername).isEqualTo("ADJUA.BEEK")
           assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:23"))
-          assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
+          assertThat(modifyUsername).isEqualTo("ADJUA.SMITH")
           assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-02-02T10:23"))
+        }
+        with(contact.restrictions[1]) {
+          // will use entered by for created since there has been no modifications so entered by will be the real person who created restriction
+          assertThat(createUsername).isEqualTo("ADJUA.SMITH")
+          assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-04T10:23"))
+          assertThat(modifyUsername).isNull()
+          assertThat(modifyDateTime).isNull()
         }
       }
 
@@ -937,9 +958,11 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will create mappings for nomis contact restrictions to dps contact prisoner restrictions`() {
         with(mappingRequests.find { it.personMapping.nomisId == 1000L }?.personContactRestrictionMapping ?: throw AssertionError("Request not found")) {
-          assertThat(this).hasSize(1)
+          assertThat(this).hasSize(2)
           assertThat(this[0].nomisId).isEqualTo(160L)
           assertThat(this[0].dpsId).isEqualTo("1600")
+          assertThat(this[1].nomisId).isEqualTo(161L)
+          assertThat(this[1].dpsId).isEqualTo("1610")
         }
         with(mappingRequests.find { it.personMapping.nomisId == 2000L }?.personContactRestrictionMapping ?: throw AssertionError("Request not found")) {
           assertThat(this).isEmpty()
