@@ -29,6 +29,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonSimpleMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactPerson
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
@@ -271,11 +272,17 @@ fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateC
           expiryDate = restriction.expiryDate,
           comment = restriction.comment,
           createDateTime = restriction.audit.createDatetime.toDateTime(),
-          createUsername = restriction.audit.createUsername,
+          createUsername = if (restriction.audit.hasBeenModified()) {
+            restriction.audit.createUsername
+          } else {
+            restriction.enteredStaff.username
+          },
           modifyDateTime = restriction.audit.modifyDatetime.toDateTime(),
-          modifyUsername = restriction.audit.modifyUserId,
-          // DPS Might put this back in again
-          // staffUsername = restriction.enteredStaff.username,
+          modifyUsername = if (restriction.audit.hasBeenModified()) {
+            restriction.enteredStaff.username
+          } else {
+            restriction.audit.modifyUserId
+          },
         )
       },
     )
@@ -287,12 +294,18 @@ fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateC
       effectiveDate = it.effectiveDate,
       expiryDate = it.expiryDate,
       comment = it.comment,
-      // DPS Might put this back in again
-      // staffUsername = it.enteredStaff.username,
       createDateTime = it.audit.createDatetime.toDateTime(),
-      createUsername = it.audit.createUsername,
+      createUsername = if (it.audit.hasBeenModified()) {
+        it.audit.createUsername
+      } else {
+        it.enteredStaff.username
+      },
       modifyDateTime = it.audit.modifyDatetime.toDateTime(),
-      modifyUsername = it.audit.modifyUserId,
+      modifyUsername = if (it.audit.hasBeenModified()) {
+        it.enteredStaff.username
+      } else {
+        it.audit.modifyUserId
+      },
     )
   },
   createDateTime = this.audit.createDatetime.toDateTime(),
@@ -300,7 +313,7 @@ fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateC
   modifyDateTime = this.audit.modifyDatetime.toDateTime(),
   modifyUsername = this.audit.modifyUserId,
 )
-
+private fun NomisAudit.hasBeenModified() = this.modifyUserId != null
 private fun IdPair.toContactPersonSimpleMappingIdDto() = ContactPersonSimpleMappingIdDto(dpsId = this.dpsId.toString(), nomisId = this.nomisId)
 private fun IdPair.toContactPersonSequenceMappingIdDto(personId: Long) = ContactPersonSequenceMappingIdDto(dpsId = this.dpsId.toString(), nomisSequenceNumber = this.nomisId, nomisPersonId = personId)
 private fun IdPair.toContactPersonPhoneMappingIdDto(phoneType: ContactPersonPhoneMappingIdDto.DpsPhoneType) = ContactPersonPhoneMappingIdDto(dpsId = this.dpsId.toString(), dpsPhoneType = phoneType, nomisId = this.nomisId)
