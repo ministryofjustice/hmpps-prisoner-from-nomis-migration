@@ -420,3 +420,16 @@ private fun CaseNotesEvent.toTelemetryProperties(
   )
 
 private fun CaseNoteResponse.isSourcedFromDPS() = auditModuleName == "DPS_SYNCHRONISATION"
+
+private fun isMergeCopy(
+  response: CaseNoteResponse,
+  mergeCopiedCaseNote: CaseNoteResponse,
+): Boolean = response.creationDateTime == mergeCopiedCaseNote.creationDateTime &&
+  response.caseNoteText == mergeCopiedCaseNote.caseNoteText &&
+  response.bookingId != mergeCopiedCaseNote.bookingId &&
+  response.auditModuleName != "MERGE" &&
+  response.caseNoteType == mergeCopiedCaseNote.caseNoteType &&
+  response.caseNoteSubType == mergeCopiedCaseNote.caseNoteSubType &&
+  response.occurrenceDateTime == mergeCopiedCaseNote.occurrenceDateTime &&
+  response.authorStaffId == mergeCopiedCaseNote.authorStaffId &&
+  response.amendments.size == mergeCopiedCaseNote.amendments.size
