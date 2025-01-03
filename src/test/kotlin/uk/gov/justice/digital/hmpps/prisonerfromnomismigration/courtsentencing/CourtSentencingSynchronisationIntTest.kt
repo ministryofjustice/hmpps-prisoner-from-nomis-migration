@@ -1053,7 +1053,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBody(matchingJsonPath("legacyData.caseId", equalTo(NOMIS_COURT_CASE_ID.toString())))
                 .withRequestBody(matchingJsonPath("legacyData.outcomeDescription", equalTo("Adjournment")))
                 .withRequestBody(matchingJsonPath("legacyData.postedDate", not(WireMock.absent())))
-                .withRequestBody(matchingJsonPath("legacyData.appearanceTime", equalTo("00:00")))
+                .withRequestBody(matchingJsonPath("legacyData.appearanceTime", equalTo("09:00")))
                 .withRequestBody(matchingJsonPath("courtCode", equalTo("MDI")))
                 .withRequestBody(matchingJsonPath("courtCaseUuid", equalTo(DPS_COURT_CASE_ID)))
                 .withRequestBody(matchingJsonPath("appearanceDate", equalTo("2020-01-02")))
