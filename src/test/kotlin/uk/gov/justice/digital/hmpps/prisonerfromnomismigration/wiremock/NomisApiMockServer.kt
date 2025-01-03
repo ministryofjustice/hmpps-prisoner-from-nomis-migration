@@ -17,7 +17,6 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
@@ -286,102 +285,6 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
           ),
       )
     }
-  }
-
-  // //////////////////////////////////// Sentencing //////////////////////////////////////
-
-  fun stubGetSentenceAdjustment(
-    adjustmentId: Long,
-    hiddenForUsers: Boolean = false,
-    prisonId: String = "MDI",
-    bookingId: Long = 2,
-    sentenceSequence: Long = 1,
-    offenderNo: String = "G4803UT",
-    bookingSequence: Int = 1,
-  ) {
-    nomisApi.stubFor(
-      get(
-        urlPathEqualTo("/sentence-adjustments/$adjustmentId"),
-      )
-        .willReturn(
-          aResponse().withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.OK.value())
-            .withBody(
-              sentenceAdjustmentResponse(
-                sentenceAdjustmentId = adjustmentId,
-                hiddenForUsers = hiddenForUsers,
-                prisonId = prisonId,
-                bookingId = bookingId,
-                sentenceSequence = sentenceSequence,
-                offenderNo = offenderNo,
-                bookingSequence = bookingSequence,
-              ),
-            ),
-        ),
-    )
-  }
-
-  fun stubGetSentenceAdjustment(
-    adjustmentId: Long,
-    status: HttpStatus,
-    error: ErrorResponse = ErrorResponse(status = status.value()),
-  ) {
-    nomisApi.stubFor(
-      get(
-        urlPathEqualTo("/sentence-adjustments/$adjustmentId"),
-      )
-        .willReturn(
-          aResponse()
-            .withStatus(status.value())
-            .withHeader("Content-Type", "application/json")
-            .withBody(objectMapper.writeValueAsString(error)),
-        ),
-    )
-  }
-
-  fun stubGetKeyDateAdjustment(
-    adjustmentId: Long,
-    prisonId: String = "MDI",
-    bookingId: Long = 2,
-    offenderNo: String = "G4803UT",
-    bookingSequence: Int = 1,
-  ) {
-    nomisApi.stubFor(
-      get(
-        urlPathEqualTo("/key-date-adjustments/$adjustmentId"),
-      )
-        .willReturn(
-          aResponse().withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.OK.value())
-            .withBody(
-              keyDateAdjustmentResponse(
-                keyDateAdjustmentId = adjustmentId,
-                prisonId = prisonId,
-                bookingId = bookingId,
-                offenderNo = offenderNo,
-                bookingSequence = bookingSequence,
-              ),
-            ),
-        ),
-    )
-  }
-
-  fun stubGetKeyDateAdjustment(
-    adjustmentId: Long,
-    status: HttpStatus,
-    error: ErrorResponse = ErrorResponse(status = status.value()),
-  ) {
-    nomisApi.stubFor(
-      get(
-        urlPathEqualTo("/key-date-adjustments/$adjustmentId"),
-      )
-        .willReturn(
-          aResponse()
-            .withStatus(status.value())
-            .withHeader("Content-Type", "application/json")
-            .withBody(objectMapper.writeValueAsString(error)),
-        ),
-    )
   }
 
   fun stubMultipleGetAppointmentIdCounts(totalElements: Long, pageSize: Long) {
@@ -707,70 +610,6 @@ fun allocationsIdsPagedResponse(
 ): String {
   val content = ids.map { """{ "allocationId": $it }""" }.joinToString { it }
   return pageContent(content, pageSize, pageNumber, totalElements, ids.size)
-}
-
-private fun sentenceAdjustmentResponse(
-  bookingId: Long = 2,
-  sentenceSequence: Long = 1,
-  offenderNo: String = "G4803UT",
-  sentenceAdjustmentId: Long = 3,
-  hiddenForUsers: Boolean = false,
-  prisonId: String = "MDI",
-  bookingSequence: Int = 1,
-): String {
-  // language=JSON
-  return """
-{
-  "bookingId":$bookingId,
-  "bookingSequence":$bookingSequence,
-  "id":$sentenceAdjustmentId,
-  "offenderNo": "$offenderNo",
-  "sentenceSequence": $sentenceSequence,
-  "commentText":"a comment",
-  "adjustmentDate":"2021-10-06",
-  "adjustmentFromDate":"2021-10-07",
-  "active":true,
-  "hiddenFromUsers":$hiddenForUsers,
-  "adjustmentDays":8,
-  "adjustmentType": {
-    "code": "RST",
-    "description": "RST Desc"
-  },
-  "hasBeenReleased": false,
-  "prisonId": "$prisonId"
-  }
-   
-  """.trimIndent()
-}
-
-private fun keyDateAdjustmentResponse(
-  bookingId: Long = 2,
-  keyDateAdjustmentId: Long = 3,
-  offenderNo: String = "G4803UT",
-  prisonId: String = "MDI",
-  bookingSequence: Int = 1,
-): String {
-  // language=JSON
-  return """
-{
-  "bookingId":$bookingId,
-  "bookingSequence":$bookingSequence,
-  "id":$keyDateAdjustmentId,
-  "offenderNo": "$offenderNo",
-  "commentText":"a comment",
-  "adjustmentDate":"2021-10-06",
-  "adjustmentFromDate":"2021-10-07",
-  "active":true,
-  "adjustmentDays":8,
-  "adjustmentType": {
-    "code": "ADA",
-    "description": "Additional days"
-  },
-  "hasBeenReleased": false,
-  "prisonId": "$prisonId"
-}
-   
-  """.trimIndent()
 }
 
 private fun locationResponse(id: Long = 1234, parentLocationId: Long = 5678): String =

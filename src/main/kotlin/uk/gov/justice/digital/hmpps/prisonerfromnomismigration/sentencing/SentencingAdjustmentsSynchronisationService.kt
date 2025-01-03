@@ -14,14 +14,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.S
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustmentsSynchronisationService.MappingResponse.MAPPING_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustmentsSynchronisationService.MappingResponse.MAPPING_FAILED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 
 @Service
 class SentencingAdjustmentsSynchronisationService(
   private val sentencingAdjustmentsMappingService: SentencingAdjustmentsMappingService,
-  private val nomisApiService: NomisApiService,
   private val sentencingAdjustmentsNomisApiService: SentencingAdjustmentsNomisApiService,
   private val sentencingService: SentencingService,
   private val telemetryClient: TelemetryClient,
@@ -39,7 +37,7 @@ class SentencingAdjustmentsSynchronisationService(
       )
       return
     }
-    nomisApiService.getSentenceAdjustment(event.adjustmentId)?.takeUnless { it.hiddenFromUsers }
+    sentencingAdjustmentsNomisApiService.getSentenceAdjustment(event.adjustmentId)?.takeUnless { it.hiddenFromUsers }
       ?.also { nomisAdjustment ->
         sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMapping(
           nomisAdjustmentId = event.adjustmentId,
@@ -95,7 +93,7 @@ class SentencingAdjustmentsSynchronisationService(
       )
       return
     }
-    nomisApiService.getKeyDateAdjustment(event.adjustmentId)?.also { nomisAdjustment ->
+    sentencingAdjustmentsNomisApiService.getKeyDateAdjustment(event.adjustmentId)?.also { nomisAdjustment ->
       sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMapping(
         nomisAdjustmentId = event.adjustmentId,
         nomisAdjustmentCategory = "KEY-DATE",
