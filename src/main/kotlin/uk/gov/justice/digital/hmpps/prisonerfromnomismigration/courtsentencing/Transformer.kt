@@ -62,6 +62,7 @@ fun CourtEventResponse.toDpsCourtAppearance(
     outcomeDescription = this.outcomeReasonCode?.description,
     nomisOutcomeCode = this.outcomeReasonCode?.code,
     nextEventDateTime = this.nextEventDateTime?.let { LocalDateTime.parse(this.nextEventDateTime) },
+    appearanceTime = LocalDateTime.parse(this.eventDateTime).toLocalTime().toString(),
   ),
 )
 
@@ -77,6 +78,7 @@ fun CourtEventResponse.toMigrationDpsCourtAppearance() = MigrationCreateCourtApp
     outcomeDescription = this.outcomeReasonCode?.description,
     nomisOutcomeCode = this.outcomeReasonCode?.code,
     nextEventDateTime = this.nextEventDateTime?.let { LocalDateTime.parse(this.nextEventDateTime) },
+    appearanceTime = LocalDateTime.parse(this.eventDateTime).toLocalTime().toString(),
   ),
   charges = this.courtEventCharges.map { charge -> charge.offenderCharge.toDpsMigrationCharge(chargeId = charge.offenderCharge.id) },
 )

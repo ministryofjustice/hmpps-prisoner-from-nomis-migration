@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-12-20.3940.92c74e7"
+    "version": "2025-01-03.4039.c9e66da"
   },
   "servers": [
     {
@@ -2992,6 +2992,10 @@
           "nextEventDateTime": {
             "type": "string",
             "format": "date-time"
+          },
+          "appearanceTime": {
+            "type": "string",
+            "example": "11:59:14.132474957"
           }
         }
       },
@@ -3272,7 +3276,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "15:01:46.189458941"
+            "example": "11:59:14.132474957"
           },
           "courtCode": {
             "type": "string"
@@ -3982,6 +3986,7 @@
       "LegacyCourtAppearance": {
         "required": [
           "appearanceDate",
+          "appearanceTime",
           "charges",
           "courtCaseUuid",
           "courtCode",
@@ -4010,6 +4015,10 @@
             "type": "string",
             "format": "date"
           },
+          "appearanceTime": {
+            "type": "string",
+            "example": "11:59:14.132474957"
+          },
           "charges": {
             "type": "array",
             "items": {
@@ -4034,7 +4043,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "15:01:46.189458941"
+            "example": "11:59:14.132474957"
           },
           "courtId": {
             "type": "string"
@@ -4314,7 +4323,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "15:01:46.189458941"
+            "example": "11:59:14.132474957"
           },
           "courtCode": {
             "type": "string"
