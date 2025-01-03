@@ -251,6 +251,12 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
             )
             .withRequestBody(
               WireMock.matchingJsonPath(
+                "appearances[0].legacyData.appearanceTime",
+                WireMock.equalTo("12:00"),
+              ),
+            )
+            .withRequestBody(
+              WireMock.matchingJsonPath(
                 "appearances[0].legacyData.postedDate",
                 WireMock.not(WireMock.absent()),
               ),
@@ -930,12 +936,24 @@ fun dpsCourtCaseCreateResponseWithTwoAppearancesAndTwoCharges(): MigrationCreate
   val courtCaseUUID: String = DPS_COURT_CASE_ID
   val courtChargesIds: List<MigrationCreateChargeResponse> =
     listOf(
-      MigrationCreateChargeResponse(lifetimeChargeUuid = UUID.fromString(DPS_CHARGE_2_ID), chargeNOMISId = NOMIS_CHARGE_2_ID.toString()),
-      MigrationCreateChargeResponse(lifetimeChargeUuid = UUID.fromString(DPS_CHARGE_1_ID), chargeNOMISId = NOMIS_CHARGE_1_ID.toString()),
+      MigrationCreateChargeResponse(
+        lifetimeChargeUuid = UUID.fromString(DPS_CHARGE_2_ID),
+        chargeNOMISId = NOMIS_CHARGE_2_ID.toString(),
+      ),
+      MigrationCreateChargeResponse(
+        lifetimeChargeUuid = UUID.fromString(DPS_CHARGE_1_ID),
+        chargeNOMISId = NOMIS_CHARGE_1_ID.toString(),
+      ),
     )
   val courtAppearancesIds: List<MigrationCreateCourtAppearanceResponse> = listOf(
-    MigrationCreateCourtAppearanceResponse(lifetimeUuid = UUID.fromString(DPS_APPEARANCE_2_ID), eventId = NOMIS_APPEARANCE_2_ID.toString()),
-    MigrationCreateCourtAppearanceResponse(lifetimeUuid = UUID.fromString(DPS_APPEARANCE_1_ID), eventId = NOMIS_APPEARANCE_1_ID.toString()),
+    MigrationCreateCourtAppearanceResponse(
+      lifetimeUuid = UUID.fromString(DPS_APPEARANCE_2_ID),
+      eventId = NOMIS_APPEARANCE_2_ID.toString(),
+    ),
+    MigrationCreateCourtAppearanceResponse(
+      lifetimeUuid = UUID.fromString(DPS_APPEARANCE_1_ID),
+      eventId = NOMIS_APPEARANCE_1_ID.toString(),
+    ),
   )
   return MigrationCreateCourtCaseResponse(
     courtCaseUuid = courtCaseUUID,
@@ -952,7 +970,7 @@ fun buildCourtEventResponseCourtEventResponse(
   offenderNo: String = OFFENDER_NO,
   courtCaseId: Long = NOMIS_CASE_ID,
   courtId: String = "DER",
-  eventDateTime: String = "2020-01-01T00:00:00",
+  eventDateTime: String = "2020-01-01T12:00:00",
   nextEventDateTime: String = "2020-02-01T00:00:00",
   courtEventCharges: List<CourtEventChargeResponse> = listOf(
     CourtEventChargeResponse(

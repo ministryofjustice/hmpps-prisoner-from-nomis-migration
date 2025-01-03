@@ -7,6 +7,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
+import com.github.tomakehurst.wiremock.client.WireMock.not
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
@@ -1012,7 +1013,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           courtCaseId = NOMIS_COURT_CASE_ID,
           offenderNo = OFFENDER_ID_DISPLAY,
           courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
-          eventDateTime = "2020-01-02T00:00:00",
+          eventDateTime = "2020-01-02T09:00:00",
           courtId = "MDI",
         )
       }
@@ -1051,7 +1052,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBody(matchingJsonPath("legacyData.nomisOutcomeCode", equalTo("4506")))
                 .withRequestBody(matchingJsonPath("legacyData.caseId", equalTo(NOMIS_COURT_CASE_ID.toString())))
                 .withRequestBody(matchingJsonPath("legacyData.outcomeDescription", equalTo("Adjournment")))
-                .withRequestBody(matchingJsonPath("legacyData.postedDate", WireMock.not(WireMock.absent())))
+                .withRequestBody(matchingJsonPath("legacyData.postedDate", not(WireMock.absent())))
+                .withRequestBody(matchingJsonPath("legacyData.appearanceTime", equalTo("00:00")))
                 .withRequestBody(matchingJsonPath("courtCode", equalTo("MDI")))
                 .withRequestBody(matchingJsonPath("courtCaseUuid", equalTo(DPS_COURT_CASE_ID)))
                 .withRequestBody(matchingJsonPath("appearanceDate", equalTo("2020-01-02")))
@@ -1510,6 +1512,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
           offenderNo = OFFENDER_ID_DISPLAY,
           courtCaseId = NOMIS_COURT_CASE_ID,
+          eventDateTime = "2020-01-02T09:00:00",
         )
       }
 
@@ -1593,6 +1596,12 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                   matchingJsonPath(
                     "appearanceTypeUuid",
                     equalTo(COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID),
+                  ),
+                )
+                .withRequestBody(
+                  matchingJsonPath(
+                    "legacyData.appearanceTime",
+                    equalTo("09:00"),
                   ),
                 ),
             )
@@ -2785,7 +2794,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     }
 
     @Nested
-    @DisplayName("When offender charge was updated in NOMIS")
+    @DisplayName("When offender charge was updated in NOMIS with an offence code change")
     inner class NomisUpdated {
 
       @BeforeEach
@@ -2811,6 +2820,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             courtSentencingQueueOffenderEventsUrl,
             offenderChargeEvent(
               eventType = "OFFENDER_CHARGES-UPDATED",
+              offenceCodeChange = "true",
             ),
           )
         }
@@ -2860,6 +2870,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             courtSentencingQueueOffenderEventsUrl,
             offenderChargeEvent(
               eventType = "OFFENDER_CHARGES-UPDATED",
+              offenceCodeChange = "true",
             ),
           )
         }
