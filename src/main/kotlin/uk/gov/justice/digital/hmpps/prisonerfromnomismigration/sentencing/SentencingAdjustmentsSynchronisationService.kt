@@ -39,7 +39,7 @@ class SentencingAdjustmentsSynchronisationService(
     }
     sentencingAdjustmentsNomisApiService.getSentenceAdjustment(event.adjustmentId)?.takeUnless { it.hiddenFromUsers }
       ?.also { nomisAdjustment ->
-        sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMapping(
+        sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMappingOrNull(
           nomisAdjustmentId = event.adjustmentId,
           nomisAdjustmentCategory = "SENTENCE",
         )?.let {
@@ -67,7 +67,7 @@ class SentencingAdjustmentsSynchronisationService(
   }
 
   suspend fun synchroniseSentenceAdjustmentDelete(event: SentenceAdjustmentOffenderEvent) {
-    sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMapping(
+    sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMappingOrNull(
       nomisAdjustmentId = event.adjustmentId,
       nomisAdjustmentCategory = "SENTENCE",
     )?.let {
@@ -94,7 +94,7 @@ class SentencingAdjustmentsSynchronisationService(
       return
     }
     sentencingAdjustmentsNomisApiService.getKeyDateAdjustment(event.adjustmentId)?.also { nomisAdjustment ->
-      sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMapping(
+      sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMappingOrNull(
         nomisAdjustmentId = event.adjustmentId,
         nomisAdjustmentCategory = "KEY-DATE",
       )?.let {
@@ -122,7 +122,7 @@ class SentencingAdjustmentsSynchronisationService(
   }
 
   suspend fun synchroniseKeyDateAdjustmentDelete(event: KeyDateAdjustmentOffenderEvent) {
-    sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMapping(
+    sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMappingOrNull(
       nomisAdjustmentId = event.adjustmentId,
       nomisAdjustmentCategory = "KEY-DATE",
     )?.let {
@@ -308,12 +308,12 @@ class SentencingAdjustmentsSynchronisationService(
   }
 
   private suspend fun doesNotExist(adjustment: SentenceAdjustmentResponse) =
-    sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMapping(
+    sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMappingOrNull(
       nomisAdjustmentId = adjustment.id,
       nomisAdjustmentCategory = "SENTENCE",
     ) == null
   private suspend fun doesNotExist(adjustment: KeyDateAdjustmentResponse) =
-    sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMapping(
+    sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMappingOrNull(
       nomisAdjustmentId = adjustment.id,
       nomisAdjustmentCategory = "KEY-DATE",
     ) == null
