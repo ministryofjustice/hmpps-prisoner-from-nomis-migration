@@ -10,25 +10,34 @@ import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 
 @Service
-class SentencingAdjustmentsMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) :
-  MigrationMapping<SentencingAdjustmentNomisMapping>(domainUrl = "/mapping/sentencing/adjustments", webClient) {
+class SentencingAdjustmentsMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<SentencingAdjustmentNomisMapping>(domainUrl = "/mapping/sentencing/adjustments", webClient) {
+  suspend fun findNomisSentencingAdjustmentMappingOrNull(
+    nomisAdjustmentId: Long,
+    nomisAdjustmentCategory: String,
+  ): SentencingAdjustmentNomisMapping? = webClient.get()
+    .uri(
+      "/mapping/sentencing/adjustments/nomis-adjustment-category/{nomisAdjustmentCategory}/nomis-adjustment-id/{nomisAdjustmentId}",
+      nomisAdjustmentCategory,
+      nomisAdjustmentId,
+    )
+    .retrieve()
+    .bodyToMono(SentencingAdjustmentNomisMapping::class.java)
+    .onErrorResume(WebClientResponseException.NotFound::class.java) {
+      Mono.empty()
+    }
+    .awaitSingleOrNull()
+
   suspend fun findNomisSentencingAdjustmentMapping(
     nomisAdjustmentId: Long,
     nomisAdjustmentCategory: String,
-  ): SentencingAdjustmentNomisMapping? {
-    return webClient.get()
-      .uri(
-        "/mapping/sentencing/adjustments/nomis-adjustment-category/{nomisAdjustmentCategory}/nomis-adjustment-id/{nomisAdjustmentId}",
-        nomisAdjustmentCategory,
-        nomisAdjustmentId,
-      )
-      .retrieve()
-      .bodyToMono(SentencingAdjustmentNomisMapping::class.java)
-      .onErrorResume(WebClientResponseException.NotFound::class.java) {
-        Mono.empty()
-      }
-      .awaitSingleOrNull()
-  }
+  ): SentencingAdjustmentNomisMapping = webClient.get()
+    .uri(
+      "/mapping/sentencing/adjustments/nomis-adjustment-category/{nomisAdjustmentCategory}/nomis-adjustment-id/{nomisAdjustmentId}",
+      nomisAdjustmentCategory,
+      nomisAdjustmentId,
+    )
+    .retrieve()
+    .awaitBody()
 
   suspend fun deleteNomisSentenceAdjustmentMapping(
     adjustmentId: String,
