@@ -16,7 +16,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Migrati
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerCaseNoteMappingsDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerCaseNotesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
@@ -86,6 +85,7 @@ class CaseNotesByPrisonerMigrationService(
             caseNote.caseNoteType,
             caseNote.caseNoteSubType,
             caseNote.authorStaffId,
+            caseNote.amendments,
           )
         }
         .mapKeys {
@@ -195,38 +195,3 @@ data class CaseNoteMigrationMapping(
   val prisonerMappings: PrisonerCaseNoteMappingsDto,
   val offenderNo: String,
 )
-
-/**
- * Filter out duplicates from the list of case notes
- * This is where e.g. the user has entered identical case note details twice or more.
- * These duplicates will not be migrated
- */
-fun List<CaseNoteResponse>.deDuplicate(): List<CaseNoteResponse> =
-  distinctBy { caseNote ->
-    listOf(
-      caseNote.creationDateTime,
-      caseNote.caseNoteText,
-      caseNote.occurrenceDateTime,
-      caseNote.caseNoteType,
-      caseNote.caseNoteSubType,
-      caseNote.authorStaffId,
-      // Do not conflate merge copy case notes
-      if (caseNote.auditModuleName == "MERGE") {
-        caseNote.caseNoteId
-      } else {
-        0
-      },
-    )
-  }
-
-fun isMergeCopy(
-  response: CaseNoteResponse,
-  mergeCopiedCaseNote: CaseNoteResponse,
-): Boolean = response.creationDateTime == mergeCopiedCaseNote.creationDateTime &&
-  response.caseNoteText == mergeCopiedCaseNote.caseNoteText &&
-  response.bookingId != mergeCopiedCaseNote.bookingId &&
-  response.auditModuleName != "MERGE" &&
-  response.caseNoteType == mergeCopiedCaseNote.caseNoteType &&
-  response.caseNoteSubType == mergeCopiedCaseNote.caseNoteSubType &&
-  response.occurrenceDateTime == mergeCopiedCaseNote.occurrenceDateTime &&
-  response.authorStaffId == mergeCopiedCaseNote.authorStaffId
