@@ -1,12 +1,15 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing
 
 import com.github.tomakehurst.wiremock.client.WireMock
+import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
+import com.github.tomakehurst.wiremock.client.WireMock.patchRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -29,7 +32,7 @@ internal class SentencingServiceTest {
   private lateinit var sentencingService: SentencingService
 
   @Nested
-  @DisplayName("POST /legacy/adjustments")
+  @DisplayName("POST /legacy/adjustments/{adjustmentId}")
   inner class CreateAdjustmentForSynchronisation {
     @BeforeEach
     internal fun setUp() {
@@ -79,7 +82,7 @@ internal class SentencingServiceTest {
   }
 
   @Nested
-  @DisplayName("PUT /legacy/adjustments")
+  @DisplayName("PUT /legacy/adjustments/{adjustmentId}")
   inner class UpdateAdjustmentForSynchronisation {
     @BeforeEach
     internal fun setUp() {
@@ -130,7 +133,7 @@ internal class SentencingServiceTest {
   }
 
   @Nested
-  @DisplayName("DELETE /legacy/adjustments")
+  @DisplayName("DELETE /legacy/adjustments/{adjustmentId}")
   inner class DeleteAdjustmentForSynchronisation {
     @Nested
     inner class AdjustmentExists {
@@ -168,6 +171,45 @@ internal class SentencingServiceTest {
           )
         }
       }
+    }
+  }
+
+  @Nested
+  @DisplayName("PATCH /legacy/adjustments/{adjustmentId}/current-term")
+  inner class PatchAdjustmentForSynchronisation {
+    @BeforeEach
+    internal fun setUp() = runTest {
+      sentencingApi.stubPatchSentencingAdjustmentCurrentTerm(adjustmentId = ADJUSTMENT_ID)
+      sentencingService.patchSentencingAdjustmentCurrentTerm(
+        ADJUSTMENT_ID,
+        LegacyAdjustment(
+          bookingId = 1234,
+          sentenceSequence = 2,
+          adjustmentType = RX,
+          adjustmentDays = 99,
+          active = true,
+          offenderNo = "G4803UT",
+          bookingReleased = false,
+          // This is the only field that will be read by DPS
+          currentTerm = true,
+        ),
+      )
+    }
+
+    @Test
+    fun `should call api with OAuth2 token`() {
+      sentencingApi.verify(
+        patchRequestedFor(urlEqualTo("/legacy/adjustments/$ADJUSTMENT_ID/current-term"))
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will pass currentTerm to the api`() {
+      sentencingApi.verify(
+        patchRequestedFor(anyUrl())
+          .withRequestBody(WireMock.matchingJsonPath("currentTerm", equalTo("true"))),
+      )
     }
   }
 }

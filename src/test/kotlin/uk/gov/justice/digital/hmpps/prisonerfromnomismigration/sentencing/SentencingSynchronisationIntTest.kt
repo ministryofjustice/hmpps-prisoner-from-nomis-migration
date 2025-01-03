@@ -40,7 +40,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingA
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.KEYDATE_ADJUSTMENTS_GET_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.SENTENCE_ADJUSTMENTS_GET_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.SentencingApiExtension.Companion.sentencingApi
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.time.LocalDate
@@ -53,7 +52,7 @@ private const val SENTENCE_SEQUENCE = 1L
 
 class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
   @Autowired
-  private lateinit var sentencingAdjustmentsNomisApi: SentencingAdjustmentsNomisApiMockServer
+  private lateinit var nomisApi: SentencingAdjustmentsNomisApiMockServer
 
   @Nested
   @DisplayName("SENTENCE_ADJUSTMENT_UPSERTED")
@@ -1677,7 +1676,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
-        sentencingAdjustmentsNomisApi.stubGetAllByBookingId(
+        nomisApi.stubGetAllByBookingId(
           bookingId = bookingId,
           sentenceAdjustments = emptyList(),
           keyDateAdjustments = emptyList(),
@@ -1716,7 +1715,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
-        sentencingAdjustmentsNomisApi.stubGetAllByBookingId(
+        nomisApi.stubGetAllByBookingId(
           bookingId = bookingId,
           sentenceAdjustments = listOf(
             sentenceAdjustmentResponse(bookingId = bookingId, sentenceAdjustmentId = 1001),
@@ -1787,7 +1786,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
-        sentencingAdjustmentsNomisApi.stubGetAllByBookingId(
+        nomisApi.stubGetAllByBookingId(
           bookingId = bookingId,
           sentenceAdjustments = listOf(
             sentenceAdjustmentResponse(bookingId = bookingId, sentenceAdjustmentId = 1001),

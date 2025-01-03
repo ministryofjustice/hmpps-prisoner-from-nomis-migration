@@ -17,7 +17,6 @@ import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.EndActivitiesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveActivityIdsResponse
@@ -27,8 +26,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.G
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.LocationIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.LocationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.model.LegacyAdjustment
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.model.LegacyAdjustment.AdjustmentType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomUsageResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationFilter
 import java.time.LocalDate
@@ -84,20 +81,6 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     .retrieve()
     .bodyToMono(typeReference<List<VisitRoomUsageResponse>>())
     .awaitSingle()
-
-  suspend fun getSentenceAdjustment(
-    nomisSentenceAdjustmentId: Long,
-  ): NomisAdjustment? = webClient.get()
-    .uri("/sentence-adjustments/{nomisSentenceAdjustmentId}", nomisSentenceAdjustmentId)
-    .retrieve()
-    .awaitBodyOrNullWhenNotFound()
-
-  suspend fun getKeyDateAdjustment(
-    nomisKeyDateAdjustmentId: Long,
-  ): NomisAdjustment? = webClient.get()
-    .uri("/key-date-adjustments/{nomisKeyDateAdjustmentId}", nomisKeyDateAdjustmentId)
-    .retrieve()
-    .awaitBodyOrNullWhenNotFound()
 
   suspend fun getAppointment(nomisEventId: Long): AppointmentResponse = webClient.get()
     .uri("/appointments/{nomisEventId}", nomisEventId)
@@ -262,39 +245,6 @@ data class NomisVisit(
   val whenCreated: LocalDateTime,
   val whenUpdated: LocalDateTime? = null,
 )
-
-data class NomisAdjustment(
-  val id: Long,
-  val bookingId: Long,
-  val bookingSequence: Int,
-  val offenderNo: String,
-  val sentenceSequence: Long? = null,
-  val adjustmentType: NomisCodeDescription,
-  val adjustmentDate: LocalDate?,
-  val adjustmentFromDate: LocalDate?,
-  val adjustmentToDate: LocalDate?,
-  val adjustmentDays: Long,
-  val comment: String?,
-  val active: Boolean,
-  val hiddenFromUsers: Boolean,
-  val hasBeenReleased: Boolean,
-  val prisonId: String,
-) {
-  fun toSentencingAdjustment(): LegacyAdjustment = LegacyAdjustment(
-    bookingId = bookingId,
-    sentenceSequence = sentenceSequence?.toInt(),
-    currentTerm = bookingSequence == 1,
-    adjustmentType = AdjustmentType.valueOf(adjustmentType.code),
-    adjustmentDate = adjustmentDate,
-    adjustmentFromDate = adjustmentFromDate,
-    adjustmentDays = adjustmentDays.toInt(),
-    comment = comment,
-    active = active,
-    offenderNo = offenderNo,
-    bookingReleased = hasBeenReleased,
-    agencyId = prisonId,
-  )
-}
 
 private val simpleTimeFormat = DateTimeFormatter.ofPattern("HH:mm")
 

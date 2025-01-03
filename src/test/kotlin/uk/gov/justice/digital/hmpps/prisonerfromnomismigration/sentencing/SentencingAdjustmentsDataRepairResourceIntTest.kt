@@ -17,12 +17,11 @@ import org.springframework.http.HttpStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.SentencingApiExtension.Companion.sentencingApi
 
 class SentencingAdjustmentsDataRepairResourceIntTest : SqsIntegrationTestBase() {
   @Autowired
-  private lateinit var sentencingAdjustmentsNomisApi: SentencingAdjustmentsNomisApiMockServer
+  private lateinit var nomisApi: SentencingAdjustmentsNomisApiMockServer
 
   @DisplayName("POST /prisoners/booking-id/{bookingId}/merge/sentencing-adjustments/repair")
   @Nested
@@ -59,7 +58,7 @@ class SentencingAdjustmentsDataRepairResourceIntTest : SqsIntegrationTestBase() 
     inner class HappyPath {
       @BeforeEach
       fun setUp() {
-        sentencingAdjustmentsNomisApi.stubGetAllByBookingId(
+        nomisApi.stubGetAllByBookingId(
           bookingId = bookingId,
           sentenceAdjustments = listOf(
             sentenceAdjustmentResponse(bookingId = bookingId, sentenceAdjustmentId = 1001),
