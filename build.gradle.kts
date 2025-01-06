@@ -71,6 +71,7 @@ tasks {
       "buildCourtSentencingApiModel",
       "buildPrisonPersonApiModel",
       "buildContactPersonApiModel",
+      "buildCorePersonApiModel",
     )
     compilerOptions.jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
   }
@@ -89,6 +90,7 @@ tasks {
       "buildCourtSentencingApiModel",
       "buildPrisonPersonApiModel",
       "buildContactPersonApiModel",
+      "buildCorePersonApiModel",
     )
   }
   withType<KtLintFormatTask> {
@@ -106,6 +108,7 @@ tasks {
       "buildCourtSentencingApiModel",
       "buildPrisonPersonApiModel",
       "buildContactPersonApiModel",
+      "buildCorePersonApiModel",
     )
   }
 }
@@ -246,10 +249,22 @@ tasks.register("buildContactPersonApiModel", GenerateTask::class) {
   globalProperties.set(mapOf("models" to ""))
 }
 
+tasks.register("buildCorePersonApiModel", GenerateTask::class) {
+  generatorName.set("kotlin")
+  skipValidateSpec.set(true)
+  inputSpec.set("openapi-specs/core-person-api-docs.json")
+  outputDir.set("$buildDirectory/generated/coreperson")
+  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model")
+  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.api")
+  configOptions.set(configValues)
+  globalProperties.set(mapOf("models" to ""))
+}
+
 val generatedProjectDirs =
   listOf(
     "activities", "incidents", "csip", "locations", "casenotes",
-    "nomissync", "mappings", "sentencingadjustments", "alerts", "courtsentencing", "prisonperson", "contactperson",
+    "nomissync", "mappings", "sentencingadjustments", "alerts", "courtsentencing",
+    "prisonperson", "contactperson", "coreperson",
   )
 
 kotlin {
