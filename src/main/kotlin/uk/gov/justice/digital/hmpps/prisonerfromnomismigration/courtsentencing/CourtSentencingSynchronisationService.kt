@@ -111,7 +111,6 @@ class CourtSentencingSynchronisationService(
           mappingApiService.getCourtCaseOrNullByNomisId(nomisCourtAppearance.caseId!!)?.let { courtCaseMapping ->
             telemetry["nomisCourtCaseId"] = courtCaseMapping.nomisCourtCaseId.toString()
             telemetry["dpsCourtCaseId"] = courtCaseMapping.dpsCourtCaseId
-            // TODO wire up caseref from list of identifiers when implemented
             dpsApiService.createCourtAppearance(
               nomisCourtAppearance.toDpsCourtAppearance(dpsCaseId = courtCaseMapping.dpsCourtCaseId),
             ).run {
@@ -122,12 +121,12 @@ class CourtSentencingSynchronisationService(
                 telemetry,
               ).also { mappingCreateResult ->
                 if (mappingCreateResult == MappingResponse.MAPPING_FAILED) telemetry["mapping"] = "initial-failure"
-                telemetryClient.trackEvent(
-                  "court-appearance-synchronisation-created-success",
-                  telemetry,
-                )
               }
             }
+            telemetryClient.trackEvent(
+              "court-appearance-synchronisation-created-success",
+              telemetry,
+            )
           } ?: let {
             telemetryClient.trackEvent(
               "court-appearance-synchronisation-created-failed",
