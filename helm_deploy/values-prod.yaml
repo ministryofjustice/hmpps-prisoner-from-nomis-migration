@@ -130,4 +130,7 @@ generic-prometheus-alerts:
       - "syscon-devs-prod-migration_contactperson_dlq"
       - "syscon-devs-prod-prisoner_from_nomis_contactperson_queue"
       - "syscon-devs-prod-prisoner_from_nomis_contactperson_dl_queue"
+    coreperson:
+      - "syscon-devs-prod-migration_coreperson_queue"
+      - "syscon-devs-prod-migration_coreperson_dlq"
 
