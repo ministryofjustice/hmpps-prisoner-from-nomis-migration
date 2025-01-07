@@ -24,6 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NotFoundException
 import java.math.BigDecimal
+import kotlin.math.max
 
 @Service
 class ActivitiesMigrationService(
@@ -152,7 +153,7 @@ private fun GetActivityResponse.toActivityMigrateRequest(): ActivityMigrateReque
     prisonCode = prisonId,
     startDate = startDate,
     endDate = endDate,
-    capacity = capacity,
+    capacity = max(1, capacity),
     description = description,
     payPerSession = ActivityMigrateRequest.PayPerSession.valueOf(payPerSession),
     runsOnBankHoliday = !excludeBankHolidays,

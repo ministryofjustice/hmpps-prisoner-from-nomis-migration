@@ -517,6 +517,19 @@ class ActivitiesMigrationServiceTest {
     }
 
     @Test
+    internal fun `will default capacity 1 if zero in NOMIS`(): Unit = runBlocking {
+      whenever(nomisApiService.getActivity(any())).thenReturn(nomisActivityResponse(capacity = 0))
+
+      service.migrateNomisEntity(migrationContext())
+
+      verify(activitiesApiService).migrateActivity(
+        check {
+          assertThat(it.capacity).isEqualTo(1)
+        },
+      )
+    }
+
+    @Test
     internal fun `will map rules for all slots`(): Unit = runBlocking {
       whenever(nomisApiService.getActivity(any())).thenReturn(
         nomisActivityResponse(
@@ -845,13 +858,14 @@ class ActivitiesMigrationServiceTest {
           slot = "PM",
         ),
       ),
+      capacity: Int = 10,
     ) = GetActivityResponse(
       courseActivityId = 123,
       programCode = "SOME_PROGRAM",
       prisonId = "BXI",
       startDate = yesterday,
       endDate = tomorrow,
-      capacity = 10,
+      capacity = capacity,
       description = "Some activity",
       payPerSession = "H",
       minimumIncentiveLevel = "BAS",
