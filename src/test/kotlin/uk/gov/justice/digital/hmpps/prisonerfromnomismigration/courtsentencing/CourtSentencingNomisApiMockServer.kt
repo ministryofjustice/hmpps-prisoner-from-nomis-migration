@@ -215,6 +215,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         offence = OffenceResponse(offenceCode = "RI64006", statuteCode = "RI64", description = "Offender description"),
         mostSeriousFlag = true,
         offenceDate = LocalDate.now(),
+        resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1002", description = "Imprisonment", dispositionCode = "F"),
         plea = CodeDescription("NG", "Not Guilty"),
       ),
       mostSeriousFlag = true,
