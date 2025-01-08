@@ -222,6 +222,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       offenceDate = LocalDate.now(),
       plea = CodeDescription("NG", "Not Guilty"),
       eventId = courtAppearanceId,
+      resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1002", description = "Imprisonment", dispositionCode = "F"),
     ),
   ) {
     nomisApi.stubFor(
