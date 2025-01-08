@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2025-01-03.4039.c9e66da"
+    "version": "2025-01-08.4168.f2c3f89"
   },
   "servers": [
     {
@@ -2995,7 +2995,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "11:59:14.132474957"
+            "example": "14:29:51.427340352"
           }
         }
       },
@@ -3050,12 +3050,14 @@
           },
           "outcomeDescription": {
             "type": "string"
+          },
+          "outcomeDispositionCode": {
+            "type": "string"
           }
         }
       },
       "LegacyUpdateCharge": {
         "required": [
-          "active",
           "legacyData"
         ],
         "type": "object",
@@ -3067,9 +3069,6 @@
           "offenceEndDate": {
             "type": "string",
             "format": "date"
-          },
-          "active": {
-            "type": "boolean"
           },
           "legacyData": {
             "$ref": "#/components/schemas/ChargeLegacyData"
@@ -3170,6 +3169,7 @@
           "appearanceDate",
           "charges",
           "courtCode",
+          "prisonId",
           "warrantType"
         ],
         "type": "object",
@@ -3227,6 +3227,9 @@
           },
           "legacyData": {
             "$ref": "#/components/schemas/CourtAppearanceLegacyData"
+          },
+          "prisonId": {
+            "type": "string"
           }
         }
       },
@@ -3276,7 +3279,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "11:59:14.132474957"
+            "example": "14:29:51.427340352"
           },
           "courtCode": {
             "type": "string"
@@ -3329,6 +3332,7 @@
       "CreateSentence": {
         "required": [
           "periodLengths",
+          "prisonId",
           "sentenceServeType",
           "sentenceTypeId"
         ],
@@ -3367,6 +3371,9 @@
           },
           "fineAmount": {
             "$ref": "#/components/schemas/CreateFineAmount"
+          },
+          "prisonId": {
+            "type": "string"
           }
         }
       },
@@ -3435,7 +3442,6 @@
       },
       "MigrationCreateCharge": {
         "required": [
-          "active",
           "chargeNOMISId",
           "legacyData",
           "offenceCode"
@@ -3455,9 +3461,6 @@
           "offenceEndDate": {
             "type": "string",
             "format": "date"
-          },
-          "active": {
-            "type": "boolean"
           },
           "legacyData": {
             "$ref": "#/components/schemas/ChargeLegacyData"
@@ -3601,7 +3604,6 @@
       },
       "LegacyCreateCharge": {
         "required": [
-          "active",
           "appearanceLifetimeUuid",
           "legacyData",
           "offenceCode"
@@ -3622,9 +3624,6 @@
           "offenceEndDate": {
             "type": "string",
             "format": "date"
-          },
-          "active": {
-            "type": "boolean"
           },
           "legacyData": {
             "$ref": "#/components/schemas/ChargeLegacyData"
@@ -4017,7 +4016,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "11:59:14.132474957"
+            "example": "14:29:51.427340352"
           },
           "charges": {
             "type": "array",
@@ -4043,7 +4042,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "11:59:14.132474957"
+            "example": "14:29:51.427340352"
           },
           "courtId": {
             "type": "string"
@@ -4323,7 +4322,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "11:59:14.132474957"
+            "example": "14:29:51.427340352"
           },
           "courtCode": {
             "type": "string"
@@ -4414,12 +4413,12 @@
             "type": "integer",
             "format": "int32"
           },
-          "paged": {
-            "type": "boolean"
-          },
           "pageNumber": {
             "type": "integer",
             "format": "int32"
+          },
+          "paged": {
+            "type": "boolean"
           },
           "unpaged": {
             "type": "boolean"

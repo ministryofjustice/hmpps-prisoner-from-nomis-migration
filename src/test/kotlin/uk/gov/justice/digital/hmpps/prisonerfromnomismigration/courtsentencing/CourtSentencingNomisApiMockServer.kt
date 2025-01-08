@@ -16,6 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtOrderResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenceResultCodeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SentenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SentenceTermResponse
@@ -143,7 +144,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       createdDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
       createdByUsername = "Q1251T",
       courtEventType = CodeDescription("CRT", "Court Appearance"),
-      outcomeReasonCode = CodeDescription("4506", "Adjournment"),
+      outcomeReasonCode = OffenceResultCodeResponse(chargeStatus = "A", code = "4506", description = "Adjournment", dispositionCode = "I"),
       eventStatus = CodeDescription("SCH", "Scheduled (Approved)"),
       eventDateTime = eventDateTime,
       courtOrders = emptyList(),
@@ -267,26 +268,24 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         id = 101,
         chargeStatus = CodeDescription("A", "Active"),
         offenceDate = LocalDate.of(2024, 1, 1),
-        resultCode1 = CodeDescription("1002", "Imprisonment"),
+        resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1002", description = "Imprisonment", dispositionCode = "F"),
         offence = OffenceResponse(
           offenceCode = "AN16094",
           statuteCode = "AN16",
           description = "Act as organiser of flying    without applying for / obtaining permission of CAA",
         ),
-        resultCode1Indicator = "F",
         mostSeriousFlag = false,
       ),
       OffenderChargeResponse(
         id = 102,
         chargeStatus = CodeDescription("A", "Active"),
         offenceDate = LocalDate.of(2024, 4, 1),
-        resultCode1 = CodeDescription("1002", "Imprisonment"),
+        resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1002", description = "Imprisonment", dispositionCode = "F"),
         offence = OffenceResponse(
           offenceCode = "AN10020",
           statuteCode = "AN10",
           description = "Act in a way likely to cause annoyance / nuisance / injury to others within a Controlled Area of AWE Burghfield",
         ),
-        resultCode1Indicator = "F",
         mostSeriousFlag = true,
       ),
     ),
@@ -392,7 +391,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         eventStatus = CodeDescription("SCH", "Scheduled (Approved)"),
         directionCode = CodeDescription("OUT", "Out"),
         courtId = courtId,
-        outcomeReasonCode = CodeDescription("4506", "Adjournment"),
+        outcomeReasonCode = OffenceResultCodeResponse(chargeStatus = "A", code = "4506", description = "Adjournment", dispositionCode = "I"),
         createdDateTime = "2024-02-08T14:36:16.485181",
         createdByUsername = "PRISONER_MANAGER_API",
         courtEventCharges = listOf(
@@ -400,8 +399,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
             eventId = 528456562,
             offencesCount = 1,
             offenceDate = LocalDate.parse("2024-01-02"),
-            resultCode1 = CodeDescription("1081", "Detention and Training Order"),
-            resultCode1Indicator = "F",
+            resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1081", description = "Detention and Training Order", dispositionCode = "F"),
             mostSeriousFlag = false,
             offenderCharge = OffenderChargeResponse(
               id = 3934645,
@@ -413,8 +411,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
               offencesCount = 1,
               offenceDate = LocalDate.parse("2024-01-02"),
               chargeStatus = CodeDescription("A", "Active"),
-              resultCode1 = CodeDescription("1081", "Detention and Training Order"),
-              resultCode1Indicator = "F",
+              resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1081", description = "Detention and Training Order", dispositionCode = "F"),
               mostSeriousFlag = false,
             ),
           ),
@@ -442,8 +439,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         offencesCount = 1,
         offenceDate = LocalDate.parse("2024-01-02"),
         chargeStatus = CodeDescription("A", "Active"),
-        resultCode1 = CodeDescription("1081", "Detention and Training Order"),
-        resultCode1Indicator = "F",
+        resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1081", description = "Detention and Training Order", dispositionCode = "F"),
         mostSeriousFlag = false,
       ),
     ),
