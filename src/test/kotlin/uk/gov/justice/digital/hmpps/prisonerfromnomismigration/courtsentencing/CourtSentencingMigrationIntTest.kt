@@ -1007,7 +1007,7 @@ fun buildCourtEventResponseCourtEventResponse(
     createdDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
     createdByUsername = "Q1251T",
     courtEventType = CodeDescription("CRT", "Court Appearance"),
-    outcomeReasonCode = OffenceResultCodeResponse(chargeStatus = "A", code = "4506", description = "Adjournmemt", dispositionCode = "I"),
+    outcomeReasonCode = OffenceResultCodeResponse(chargeStatus = "A", code = "4506", description = "Adjournment", dispositionCode = "I"),
     eventStatus = CodeDescription("SCH", "Scheduled (Approved)"),
     eventDateTime = eventDateTime,
     courtOrders = emptyList(),
