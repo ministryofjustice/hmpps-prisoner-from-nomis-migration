@@ -800,12 +800,7 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
           caseNotesMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
           awsSqsCaseNoteOffenderEventsClient.sendMessage(
             caseNotesQueueOffenderEventsUrl,
-            caseNoteEvent(
-              eventType = "OFFENDER_CASE_NOTES-DELETED",
-              bookingId = BOOKING_ID,
-              caseNoteId = NOMIS_CASE_NOTE_ID,
-              offenderNo = OFFENDER_ID_DISPLAY,
-            ),
+            caseNoteDeleteEvent(),
           )
         }
 
@@ -815,7 +810,6 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
             verify(telemetryClient, atLeastOnce()).trackEvent(
               eq("casenotes-deleted-synchronisation-skipped"),
               check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
                 assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
                 assertThat(it["nomisCaseNoteId"]).isEqualTo(NOMIS_CASE_NOTE_ID.toString())
               },
@@ -856,12 +850,7 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
           caseNotesMappingApiMockServer.stubDeleteMapping()
           awsSqsCaseNoteOffenderEventsClient.sendMessage(
             caseNotesQueueOffenderEventsUrl,
-            caseNoteEvent(
-              eventType = "OFFENDER_CASE_NOTES-DELETED",
-              bookingId = BOOKING_ID,
-              caseNoteId = NOMIS_CASE_NOTE_ID,
-              offenderNo = OFFENDER_ID_DISPLAY,
-            ),
+            caseNoteDeleteEvent(),
           )
         }
 
@@ -891,7 +880,6 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
             verify(telemetryClient).trackEvent(
               eq("casenotes-synchronisation-deleted-success"),
               check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
                 assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
                 assertThat(it["nomisCaseNoteId"]).isEqualTo(NOMIS_CASE_NOTE_ID.toString())
                 assertThat(it["dpsCaseNoteId"]).isEqualTo(DPS_CASE_NOTE_ID)
@@ -942,12 +930,7 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
 
           awsSqsCaseNoteOffenderEventsClient.sendMessage(
             caseNotesQueueOffenderEventsUrl,
-            caseNoteEvent(
-              eventType = "OFFENDER_CASE_NOTES-DELETED",
-              bookingId = BOOKING_ID,
-              caseNoteId = NOMIS_CASE_NOTE_ID,
-              offenderNo = OFFENDER_ID_DISPLAY,
-            ),
+            caseNoteDeleteEvent(),
           )
         }
 
@@ -987,7 +970,6 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
             verify(telemetryClient).trackEvent(
               eq("casenotes-synchronisation-deleted-success"),
               check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
                 assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
                 assertThat(it["nomisCaseNoteId"]).isEqualTo(NOMIS_CASE_NOTE_ID.toString())
                 assertThat(it["dpsCaseNoteId"]).isEqualTo(DPS_CASE_NOTE_ID)
@@ -997,7 +979,6 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
             verify(telemetryClient).trackEvent(
               eq("casenotes-synchronisation-deleted-related-success"),
               check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
                 assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
                 assertThat(it["nomisCaseNoteId"]).isEqualTo(NOMIS_CASE_NOTE_ID2.toString())
                 assertThat(it["dpsCaseNoteId"]).isEqualTo(DPS_CASE_NOTE_ID)
@@ -1040,12 +1021,7 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
 
           awsSqsCaseNoteOffenderEventsClient.sendMessage(
             caseNotesQueueOffenderEventsUrl,
-            caseNoteEvent(
-              eventType = "OFFENDER_CASE_NOTES-DELETED",
-              bookingId = BOOKING_ID,
-              caseNoteId = NOMIS_CASE_NOTE_ID,
-              offenderNo = OFFENDER_ID_DISPLAY,
-            ),
+            caseNoteDeleteEvent(),
           )
         }
 
@@ -1108,12 +1084,7 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
 
           awsSqsCaseNoteOffenderEventsClient.sendMessage(
             caseNotesQueueOffenderEventsUrl,
-            caseNoteEvent(
-              eventType = "OFFENDER_CASE_NOTES-DELETED",
-              bookingId = BOOKING_ID,
-              caseNoteId = NOMIS_CASE_NOTE_ID,
-              offenderNo = OFFENDER_ID_DISPLAY,
-            ),
+            caseNoteDeleteEvent(),
           )
         }
 
@@ -1123,7 +1094,6 @@ class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
             verify(telemetryClient).trackEvent(
               eq("casenotes-synchronisation-deleted-failed"),
               check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
                 assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
                 assertThat(it["nomisCaseNoteId"]).isEqualTo(NOMIS_CASE_NOTE_ID.toString())
                 assertThat(it["error"]).isEqualTo("500 Internal Server Error from DELETE http://localhost:8096/sync/case-notes/$DPS_CASE_NOTE_ID")
@@ -1154,6 +1124,23 @@ fun caseNoteEvent(
     }
 }
 """.trimIndent()
+
+fun caseNoteDeleteEvent(
+  bookingId: Long = BOOKING_ID,
+  caseNoteId: Long = NOMIS_CASE_NOTE_ID,
+) = """{
+    "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
+    "Message": "{\"eventType\":\"OFFENDER_CASE_NOTES-DELETED\",\"eventDatetime\":\"2024-07-10T15:00:25.489964\",\"bookingId\": \"$bookingId\",\"caseNoteId\": \"$caseNoteId\",\"caseNoteType\":\"PRISON\",\"caseNoteSubType\":\"RELEASE\",\"recordDeleted\":true }",
+    "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
+    "MessageAttributes": {
+      "eventType": {"Type": "String", "Value": "OFFENDER_CASE_NOTES-DELETED"}, 
+      "id": {"Type": "String", "Value": "8b07cbd9-0820-0a0f-c32f-a9429b618e0b"}, 
+      "contentType": {"Type": "String", "Value": "text/plain;charset=UTF-8"}, 
+      "timestamp": {"Type": "Number.java.lang.Long", "Value": "1571666478344"}
+    }
+}
+""".trimIndent()
+// // "{\"eventType\":\"OFFENDER_CASE_NOTES-DELETED\",\"eventDatetime\":\"2025-01-08T08:21:34\",\"bookingId\":2981341,\"recordDeleted\":true,\"caseNoteId\":115082013,\"caseNoteType\":\"PRISON\",\"caseNoteSubType\":\"RELEASE\"}",
 
 private fun caseNote(bookingId: Long = 123456, caseNoteId: Long = 3) = CaseNoteResponse(
   bookingId = bookingId,

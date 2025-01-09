@@ -30,6 +30,7 @@ import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiExtension.Companion.caseNotesApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteAmendment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse.SourceSystem
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
@@ -1024,7 +1025,7 @@ fun caseNoteTemplate(
   authorStaffId = 123456L,
   authorFirstName = "First",
   authorLastName = "Last",
-  amendments = emptyList(),
+  amendments = listOf(CaseNoteAmendment("$text amend", "me", "2021-02-03T04:05:07", CaseNoteAmendment.SourceSystem.NOMIS)),
   createdDatetime = createdDatetime,
   creationDateTime = "2023-04-05T06:07:08",
   createdUsername = "John",

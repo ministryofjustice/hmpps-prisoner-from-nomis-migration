@@ -46,7 +46,7 @@ class CaseNotesSynchronisationService(
     }
 
     try {
-      caseNotesService.upsertCaseNote(nomisCaseNote.toDPSSyncCaseNote(event.offenderIdDisplay)).apply {
+      caseNotesService.upsertCaseNote(nomisCaseNote.toDPSSyncCaseNote(event.offenderIdDisplay!!)).apply {
         tryToCreateCaseNoteMapping(
           event,
           this.id.toString(),
@@ -112,7 +112,7 @@ class CaseNotesSynchronisationService(
       ?.also { mapping ->
         caseNotesService.upsertCaseNote(
           nomisCaseNote.toDPSSyncCaseNote(
-            event.offenderIdDisplay,
+            event.offenderIdDisplay!!,
             UUID.fromString(mapping.dpsCaseNoteId),
           ),
         )
@@ -143,7 +143,7 @@ class CaseNotesSynchronisationService(
           "casenotes-synchronisation-updated-related-success",
           mapOf(
             "nomisCaseNoteId" to otherNomisCaseNote.nomisCaseNoteId.toString(),
-            "offenderNo" to event.offenderIdDisplay,
+            "offenderNo" to event.offenderIdDisplay.toString(),
             "bookingId" to otherNomisCaseNote.nomisBookingId.toString(),
             "dpsCaseNoteId" to mapping.dpsCaseNoteId,
           ),
@@ -162,7 +162,6 @@ class CaseNotesSynchronisationService(
               telemetryClient.trackEvent(
                 "casenotes-synchronisation-deleted-related-success",
                 mapOf(
-                  "offenderNo" to event.offenderIdDisplay,
                   "dpsCaseNoteId" to mapping.dpsCaseNoteId,
                   "nomisCaseNoteId" to it.nomisCaseNoteId.toString(),
                   "bookingId" to it.nomisBookingId.toString(),
@@ -358,7 +357,7 @@ Also add new mappings for the new booking id for the copied case notes, which po
       dpsCaseNoteId = caseNoteId,
       nomisCaseNoteId = event.caseNoteId,
       nomisBookingId = event.bookingId ?: 0,
-      offenderNo = event.offenderIdDisplay,
+      offenderNo = event.offenderIdDisplay!!,
       mappingType = NOMIS_CREATED,
     )
     try {
@@ -413,7 +412,7 @@ private fun CaseNotesEvent.toTelemetryProperties(
   mappingFailed: Boolean? = null,
 ) = mapOf(
   "nomisCaseNoteId" to this.caseNoteId.toString(),
-  "offenderNo" to this.offenderIdDisplay,
+  "offenderNo" to this.offenderIdDisplay.toString(),
   "bookingId" to this.bookingId.toString(),
 ) + (dpsCaseNoteId?.let { mapOf("dpsCaseNoteId" to it) } ?: emptyMap()) + (
   if (mappingFailed == true) mapOf("mapping" to "initial-failure") else emptyMap()
