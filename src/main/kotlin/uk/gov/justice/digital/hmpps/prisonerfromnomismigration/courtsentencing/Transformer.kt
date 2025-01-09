@@ -91,9 +91,9 @@ fun OffenderChargeResponse.toDpsCharge(appearanceId: String) = LegacyCreateCharg
     postedDate = LocalDate.now().toString(),
     outcomeDescription = this.resultCode1?.description,
     nomisOutcomeCode = this.resultCode1?.code,
+    outcomeDispositionCode = this.resultCode1?.dispositionCode,
   ),
   offenceEndDate = this.offenceEndDate,
-  active = this.chargeStatus?.code == "A",
   appearanceLifetimeUuid = UUID.fromString(appearanceId),
 )
 
@@ -104,9 +104,9 @@ fun CourtEventChargeResponse.toDpsCharge() = LegacyUpdateCharge(
     postedDate = LocalDate.now().toString(),
     outcomeDescription = this.resultCode1?.description,
     nomisOutcomeCode = this.resultCode1?.code,
+    outcomeDispositionCode = this.resultCode1?.dispositionCode,
   ),
   offenceEndDate = this.offenceEndDate,
-  active = this.offenderCharge.chargeStatus?.code == "A",
 )
 
 fun OffenderChargeResponse.toDpsMigrationCharge(chargeId: Long) = MigrationCreateCharge(
@@ -117,10 +117,10 @@ fun OffenderChargeResponse.toDpsMigrationCharge(chargeId: Long) = MigrationCreat
     postedDate = LocalDate.now().toString(),
     outcomeDescription = this.resultCode1?.description,
     nomisOutcomeCode = this.resultCode1?.code,
+    outcomeDispositionCode = this.resultCode1?.dispositionCode,
   ),
   offenceEndDate = this.offenceEndDate,
   chargeNOMISId = chargeId.toString(),
-  active = true,
 )
 
 fun SentenceResponse.toDpsSentence(offenderNo: String, sentenceChargeIds: List<String>) = CreateSentenceRequest(

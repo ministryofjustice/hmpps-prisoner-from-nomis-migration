@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-12-20.10354.09a9ee9"
+    "version": "2025-01-08.10500.8a2372a"
   },
   "servers": [
     {
@@ -13843,6 +13843,72 @@
         }
       }
     },
+    "/core-person/{prisonNumber}": {
+      "get": {
+        "tags": [
+          "core-person-resource"
+        ],
+        "summary": "Get an offender by prison number",
+        "description": "Retrieves an offender. Requires ROLE_NOMIS_CORE_PERSON",
+        "operationId": "getOffender",
+        "parameters": [
+          {
+            "name": "prisonNumber",
+            "in": "path",
+            "description": "Prison number aka noms id / offender id display",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Prison number aka noms id / offender id display",
+              "example": "A1234BC"
+            },
+            "example": "A1234BC"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Core person information returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorePerson"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_CORE_PERSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Offender does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/bookings/{bookingId}/identifying-marks": {
       "get": {
         "tags": [
@@ -13899,6 +13965,89 @@
           },
           "404": {
             "description": "Prisoner does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bookings/ids/latest-from-id": {
+      "get": {
+        "tags": [
+          "bookings-resource"
+        ],
+        "summary": "Gets the identifiers for all latest bookings.",
+        "description": "Gets the specified number of latest bookings starting after the given id number.\n      Clients can iterate through all bookings by calling this endpoint using the id from the last call (omit for first call).\n      Iteration ends when the returned prisonerIds list has size less than the requested page size.\n      Requires role SYNCHRONISATION_REPORTING.",
+        "operationId": "getAllLatestBookingsFromId",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "query",
+            "description": "If supplied get offenders starting after this id",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "If supplied get offenders starting after this id",
+              "format": "int64",
+              "example": 1555999,
+              "default": 0
+            },
+            "example": 1555999
+          },
+          {
+            "name": "activeOnly",
+            "in": "query",
+            "description": "If supplied only return bookings that are still active",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "If supplied only return bookings that are still active",
+              "example": true,
+              "default": false
+            },
+            "example": true
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Number of bookings to get",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "Number of bookings to get",
+              "format": "int32",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "list of prisoner ids containing bookingId and offenderNo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingIdsWithLast"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint when role SYNCHRONISATION_REPORTING not present",
             "content": {
               "application/json": {
                 "schema": {
@@ -19010,6 +19159,7 @@
           "caseNoteSubType",
           "caseNoteText",
           "caseNoteType",
+          "creationDateTime",
           "occurrenceDateTime"
         ],
         "type": "object",
@@ -19025,7 +19175,13 @@
           "occurrenceDateTime": {
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
             "type": "string",
-            "description": "Date case note occurred",
+            "description": "Date and time case note occurred",
+            "example": "2021-07-05T10:35:17"
+          },
+          "creationDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "Date and time case note was created",
             "example": "2021-07-05T10:35:17"
           },
           "authorUsername": {
@@ -21871,6 +22027,30 @@
         },
         "description": "Offence"
       },
+      "OffenceResultCodeResponse": {
+        "required": [
+          "chargeStatus",
+          "code",
+          "description",
+          "dispositionCode"
+        ],
+        "type": "object",
+        "properties": {
+          "chargeStatus": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "dispositionCode": {
+            "type": "string"
+          }
+        },
+        "description": "Offence Result Code"
+      },
       "OffenderChargeResponse": {
         "required": [
           "id",
@@ -21920,16 +22100,10 @@
             "$ref": "#/components/schemas/CodeDescription"
           },
           "resultCode1": {
-            "$ref": "#/components/schemas/CodeDescription"
+            "$ref": "#/components/schemas/OffenceResultCodeResponse"
           },
           "resultCode2": {
-            "$ref": "#/components/schemas/CodeDescription"
-          },
-          "resultCode1Indicator": {
-            "type": "string"
-          },
-          "resultCode2Indicator": {
-            "type": "string"
+            "$ref": "#/components/schemas/OffenceResultCodeResponse"
           },
           "mostSeriousFlag": {
             "type": "boolean"
@@ -22133,16 +22307,10 @@
             "type": "string"
           },
           "resultCode1": {
-            "$ref": "#/components/schemas/CodeDescription"
+            "$ref": "#/components/schemas/OffenceResultCodeResponse"
           },
           "resultCode2": {
-            "$ref": "#/components/schemas/CodeDescription"
-          },
-          "resultCode1Indicator": {
-            "type": "string"
-          },
-          "resultCode2Indicator": {
-            "type": "string"
+            "$ref": "#/components/schemas/OffenceResultCodeResponse"
           },
           "mostSeriousFlag": {
             "type": "boolean"
@@ -22197,7 +22365,7 @@
             "type": "string"
           },
           "outcomeReasonCode": {
-            "$ref": "#/components/schemas/CodeDescription"
+            "$ref": "#/components/schemas/OffenceResultCodeResponse"
           },
           "commentText": {
             "type": "string"
@@ -26164,6 +26332,115 @@
           }
         }
       },
+      "Alias": {
+        "required": [
+          "firstName",
+          "lastName",
+          "offenderId"
+        ],
+        "type": "object",
+        "properties": {
+          "offenderId": {
+            "type": "integer",
+            "description": "The offender id",
+            "format": "int64"
+          },
+          "title": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "firstName": {
+            "type": "string",
+            "description": "First name of the person"
+          },
+          "middleName1": {
+            "type": "string",
+            "description": "Middle name of the person"
+          },
+          "middleName2": {
+            "type": "string",
+            "description": "Second middle name of the person"
+          },
+          "lastName": {
+            "type": "string",
+            "description": "Surname name of the person"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "description": "Date of birth of the person",
+            "format": "date"
+          },
+          "race": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "sex": {
+            "$ref": "#/components/schemas/CodeDescription"
+          }
+        },
+        "description": "The data held in NOMIS for an offender alias"
+      },
+      "CorePerson": {
+        "required": [
+          "aliases",
+          "firstName",
+          "lastName",
+          "offenderId",
+          "prisonNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "prisonNumber": {
+            "type": "string",
+            "description": "The prison number"
+          },
+          "offenderId": {
+            "type": "integer",
+            "description": "The offender id. This will change if a different alias is made current",
+            "format": "int64"
+          },
+          "title": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "firstName": {
+            "type": "string",
+            "description": "First name of the person"
+          },
+          "middleName1": {
+            "type": "string",
+            "description": "Middle name of the person"
+          },
+          "middleName2": {
+            "type": "string",
+            "description": "Second middle name of the person"
+          },
+          "lastName": {
+            "type": "string",
+            "description": "Surname name of the person"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "description": "Date of birth of the person",
+            "format": "date"
+          },
+          "birthPlace": {
+            "type": "string",
+            "description": "Birth place of the person"
+          },
+          "race": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "sex": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "aliases": {
+            "type": "array",
+            "description": "List of aliases for the person. These are the other offender records.",
+            "items": {
+              "$ref": "#/components/schemas/Alias"
+            }
+          }
+        },
+        "description": "The data held in NOMIS for an offender"
+      },
       "BookingIdentifyingMarksResponse": {
         "required": [
           "bookingId",
@@ -26289,6 +26566,25 @@
           }
         },
         "description": "Identifying marks"
+      },
+      "BookingIdsWithLast": {
+        "required": [
+          "lastBookingId",
+          "prisonerIds"
+        ],
+        "type": "object",
+        "properties": {
+          "prisonerIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PrisonerIds"
+            }
+          },
+          "lastBookingId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
       },
       "AttendanceReconciliationResponse": {
         "required": [

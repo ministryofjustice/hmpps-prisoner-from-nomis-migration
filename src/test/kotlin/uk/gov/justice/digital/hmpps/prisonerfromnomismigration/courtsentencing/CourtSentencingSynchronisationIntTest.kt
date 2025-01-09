@@ -2634,7 +2634,9 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
               1,
-              putRequestedFor(urlPathEqualTo("/legacy/charge/$DPS_CHARGE_ID/appearance/$DPS_COURT_APPEARANCE_ID")),
+              putRequestedFor(urlPathEqualTo("/legacy/charge/$DPS_CHARGE_ID/appearance/$DPS_COURT_APPEARANCE_ID"))
+                .withRequestBody(matchingJsonPath("legacyData.outcomeDispositionCode", equalTo("F")))
+                .withRequestBody(matchingJsonPath("legacyData.outcomeDescription", equalTo("Imprisonment"))),
             )
           }
         }
@@ -2802,7 +2804,11 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         courtSentencingNomisApiMockServer.stubGetOffenderCharge(
           offenderChargeId = NOMIS_OFFENDER_CHARGE_ID,
           offenderNo = OFFENDER_ID_DISPLAY,
-          offence = OffenceResponse(offenceCode = "TTT4006", statuteCode = "TI64", description = "Offender description"),
+          offence = OffenceResponse(
+            offenceCode = "TTT4006",
+            statuteCode = "TI64",
+            description = "Offender description",
+          ),
         )
       }
 
@@ -2880,7 +2886,12 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
               1,
-              putRequestedFor(urlPathEqualTo("/legacy/charge/$DPS_CHARGE_ID")).withRequestBody(matchingJsonPath("offenceCode", equalTo("TTT4006"))),
+              putRequestedFor(urlPathEqualTo("/legacy/charge/$DPS_CHARGE_ID")).withRequestBody(
+                matchingJsonPath(
+                  "offenceCode",
+                  equalTo("TTT4006"),
+                ),
+              ),
             )
           }
         }

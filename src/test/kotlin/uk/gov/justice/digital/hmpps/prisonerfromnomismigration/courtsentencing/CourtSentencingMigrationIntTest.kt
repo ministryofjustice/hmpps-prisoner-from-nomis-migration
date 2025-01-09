@@ -38,6 +38,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenceResultCodeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
@@ -277,6 +278,12 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
               WireMock.matchingJsonPath(
                 "appearances[0].charges[0].legacyData.outcomeDescription",
                 WireMock.equalTo("Detention and Training Order"),
+              ),
+            )
+            .withRequestBody(
+              WireMock.matchingJsonPath(
+                "appearances[0].charges[0].legacyData.outcomeDispositionCode",
+                WireMock.equalTo("F"),
               ),
             )
             .withRequestBody(
@@ -984,16 +991,10 @@ fun buildCourtEventResponseCourtEventResponse(
         ),
         mostSeriousFlag = false,
         offenceDate = LocalDate.parse("2024-01-02"),
-        resultCode1 = CodeDescription(
-          code = "1081",
-          description = "Detention and Training Order",
-        ),
+        resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1081", description = "Detention and Training Order", dispositionCode = "F"),
       ),
       mostSeriousFlag = false,
-      resultCode1 = CodeDescription(
-        code = "1081",
-        description = "Detention and Training Order",
-      ),
+      resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1081", description = "Detention and Training Order", dispositionCode = "F"),
     ),
   ),
 ): CourtEventResponse =
@@ -1006,7 +1007,7 @@ fun buildCourtEventResponseCourtEventResponse(
     createdDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
     createdByUsername = "Q1251T",
     courtEventType = CodeDescription("CRT", "Court Appearance"),
-    outcomeReasonCode = CodeDescription("4506", "Adjournment"),
+    outcomeReasonCode = OffenceResultCodeResponse(chargeStatus = "A", code = "4506", description = "Adjournment", dispositionCode = "I"),
     eventStatus = CodeDescription("SCH", "Scheduled (Approved)"),
     eventDateTime = eventDateTime,
     courtOrders = emptyList(),
