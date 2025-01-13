@@ -67,18 +67,38 @@ class CourtSentencingMigrationService(
           courtCaseId = nomisCaseId,
         )
 
-      courtSentencingDpsService.createCourtCaseMigration(nomisCourtCase.toMigrationDpsCourtCase()).also { dpsCourtCaseCreateResponse ->
-        createCourtCaseMapping(nomisCourtCase = nomisCourtCase, dpsCourtCaseCreateResponse = dpsCourtCaseCreateResponse, context)
+      if (nomisCourtCase.combinedCaseId != null) {
+        log.info("Will not migrate the court case since it is the locked down part of a linked case, NOMIS caseId is $nomisCaseId")
         telemetryClient.trackEvent(
-          "court-sentencing-migration-entity-migrated",
+          "court-sentencing-migration-entity-skipped",
           mapOf(
             "nomisCourtCaseId" to nomisCaseId.toString(),
-            "dpsCourtCaseId" to dpsCourtCaseCreateResponse.courtCaseUuid,
+            "linkedCaseId" to nomisCourtCase.combinedCaseId.toString(),
+            "reason" to "linked case",
             "offenderNo" to nomisCourtCase.offenderNo,
             "migrationId" to context.migrationId,
           ),
           null,
         )
+      } else {
+        courtSentencingDpsService.createCourtCaseMigration(nomisCourtCase.toMigrationDpsCourtCase())
+          .also { dpsCourtCaseCreateResponse ->
+            createCourtCaseMapping(
+              nomisCourtCase = nomisCourtCase,
+              dpsCourtCaseCreateResponse = dpsCourtCaseCreateResponse,
+              context,
+            )
+            telemetryClient.trackEvent(
+              "court-sentencing-migration-entity-migrated",
+              mapOf(
+                "nomisCourtCaseId" to nomisCaseId.toString(),
+                "dpsCourtCaseId" to dpsCourtCaseCreateResponse.courtCaseUuid,
+                "offenderNo" to nomisCourtCase.offenderNo,
+                "migrationId" to context.migrationId,
+              ),
+              null,
+            )
+          }
       }
     }
   }

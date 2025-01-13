@@ -402,6 +402,45 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Test
+    internal fun `will skip locked down linked cases`() {
+      nomisApi.stubGetInitialCount(
+        NomisApiExtension.COURT_CASES_ID_URL,
+        1,
+      ) { courtSentencingNomisApiMockServer.courtCaseIdsPagedResponse(it) }
+      courtSentencingNomisApiMockServer.stubMultipleGetCourtCaseIdCounts(totalElements = 1, pageSize = 10)
+      courtSentencingNomisApiMockServer.stubGetCourtCaseForMigration(
+        bookingId = 3,
+        caseId = NOMIS_CASE_ID,
+        combinedCaseId = 2,
+        offenderNo = OFFENDER_NO,
+      )
+      courtSentencingMappingApiMockServer.stubGetByNomisId(HttpStatus.NOT_FOUND)
+
+      courtSentencingMappingApiMockServer.stubCourtCaseMappingByMigrationId(count = 1)
+
+      webTestClient.performMigration(
+        """
+          {
+            "fromDate": "2020-01-01",
+            "toDate": "2020-01-02"
+          }
+        """.trimIndent(),
+      )
+
+      verify(telemetryClient).trackEvent(
+        eq("court-sentencing-migration-entity-skipped"),
+        check {
+          assertThat(it["reason"]).isEqualTo("linked case")
+          assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_CASE_ID.toString())
+          assertThat(it["offenderNo"]).isEqualTo(OFFENDER_NO)
+          assertThat(it["linkedCaseId"]).isEqualTo("2")
+          assertThat(it["migrationId"]).isNotNull
+        },
+        isNull(),
+      )
+    }
+
+    @Test
     internal fun `will add analytical events for starting, ending and each migrated record`() {
       nomisApi.stubGetInitialCount(
         NomisApiExtension.COURT_CASES_ID_URL,
@@ -991,10 +1030,20 @@ fun buildCourtEventResponseCourtEventResponse(
         ),
         mostSeriousFlag = false,
         offenceDate = LocalDate.parse("2024-01-02"),
-        resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1081", description = "Detention and Training Order", dispositionCode = "F"),
+        resultCode1 = OffenceResultCodeResponse(
+          chargeStatus = "A",
+          code = "1081",
+          description = "Detention and Training Order",
+          dispositionCode = "F",
+        ),
       ),
       mostSeriousFlag = false,
-      resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1081", description = "Detention and Training Order", dispositionCode = "F"),
+      resultCode1 = OffenceResultCodeResponse(
+        chargeStatus = "A",
+        code = "1081",
+        description = "Detention and Training Order",
+        dispositionCode = "F",
+      ),
     ),
   ),
 ): CourtEventResponse =
@@ -1007,7 +1056,12 @@ fun buildCourtEventResponseCourtEventResponse(
     createdDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
     createdByUsername = "Q1251T",
     courtEventType = CodeDescription("CRT", "Court Appearance"),
-    outcomeReasonCode = OffenceResultCodeResponse(chargeStatus = "A", code = "4506", description = "Adjournment", dispositionCode = "I"),
+    outcomeReasonCode = OffenceResultCodeResponse(
+      chargeStatus = "A",
+      code = "4506",
+      description = "Adjournment",
+      dispositionCode = "I",
+    ),
     eventStatus = CodeDescription("SCH", "Scheduled (Approved)"),
     eventDateTime = eventDateTime,
     courtOrders = emptyList(),
