@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2025-01-08.10500.8a2372a"
+    "version": "2025-01-13.10556.3fb140c"
   },
   "servers": [
     {
@@ -13843,6 +13843,73 @@
         }
       }
     },
+    "/corporates/{corporateId}": {
+      "get": {
+        "tags": [
+          "corporate-resource"
+        ],
+        "summary": "Get a corporate by corporateId Id",
+        "description": "Retrieves a corporate and details. Requires ROLE_NOMIS_CONTACTPERSONS",
+        "operationId": "getCorporateById",
+        "parameters": [
+          {
+            "name": "corporateId",
+            "in": "path",
+            "description": "Corporate Id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Corporate Id",
+              "format": "int64",
+              "example": 12345
+            },
+            "example": 12345
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Corporate Information Returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporateOrganisation"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_CONTACTPERSONS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Corporate does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/core-person/{prisonNumber}": {
       "get": {
         "tags": [
@@ -21470,14 +21537,14 @@
             "type": "integer",
             "format": "int32"
           },
-          "paged": {
+          "unpaged": {
             "type": "boolean"
           },
           "pageNumber": {
             "type": "integer",
             "format": "int32"
           },
-          "unpaged": {
+          "paged": {
             "type": "boolean"
           }
         }
@@ -26332,8 +26399,29 @@
           }
         }
       },
+      "CorporateOrganisation": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Unique NOMIS Id of corporate",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string",
+            "description": "The corporate name",
+            "example": "Boots"
+          }
+        },
+        "description": "The data held in NOMIS about a corporate entity"
+      },
       "Alias": {
         "required": [
+          "audit",
           "firstName",
           "lastName",
           "offenderId"
@@ -26374,16 +26462,24 @@
           },
           "sex": {
             "$ref": "#/components/schemas/CodeDescription"
+          },
+          "audit": {
+            "$ref": "#/components/schemas/NomisAudit"
           }
         },
         "description": "The data held in NOMIS for an offender alias"
       },
       "CorePerson": {
         "required": [
+          "addresses",
           "aliases",
+          "audit",
+          "emailAddresses",
           "firstName",
+          "identifiers",
           "lastName",
           "offenderId",
+          "phoneNumbers",
           "prisonNumber"
         ],
         "type": "object",
@@ -26437,9 +26533,224 @@
             "items": {
               "$ref": "#/components/schemas/Alias"
             }
+          },
+          "identifiers": {
+            "type": "array",
+            "description": "List of identifiers for the person.",
+            "items": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          "addresses": {
+            "type": "array",
+            "description": "List of addresses for the person",
+            "items": {
+              "$ref": "#/components/schemas/OffenderAddress"
+            }
+          },
+          "phoneNumbers": {
+            "type": "array",
+            "description": "List of phone numbers for the person",
+            "items": {
+              "$ref": "#/components/schemas/OffenderPhoneNumber"
+            }
+          },
+          "emailAddresses": {
+            "type": "array",
+            "description": "List of email addresses for the person",
+            "items": {
+              "$ref": "#/components/schemas/OffenderEmailAddress"
+            }
+          },
+          "audit": {
+            "$ref": "#/components/schemas/NomisAudit"
           }
         },
         "description": "The data held in NOMIS for an offender"
+      },
+      "Identifier": {
+        "required": [
+          "identifier",
+          "offenderId",
+          "sequence",
+          "type",
+          "verified"
+        ],
+        "type": "object",
+        "properties": {
+          "sequence": {
+            "type": "integer",
+            "description": "Unique NOMIS sequence for this identifier for this person",
+            "format": "int64"
+          },
+          "offenderId": {
+            "type": "integer",
+            "description": "The offender id",
+            "format": "int64"
+          },
+          "type": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "identifier": {
+            "type": "string",
+            "description": "The identifier value",
+            "example": "NE121212T"
+          },
+          "issuedAuthority": {
+            "type": "string",
+            "description": "The issued authority",
+            "example": "Police"
+          },
+          "issuedDate": {
+            "type": "string",
+            "description": "The issued date",
+            "format": "date"
+          },
+          "verified": {
+            "type": "boolean",
+            "description": "Verified"
+          }
+        },
+        "description": "The data held in NOMIS for an offender's identifiers"
+      },
+      "OffenderAddress": {
+        "required": [
+          "addressId",
+          "mailAddress",
+          "phoneNumbers",
+          "primaryAddress",
+          "validatedPAF"
+        ],
+        "type": "object",
+        "properties": {
+          "addressId": {
+            "type": "integer",
+            "description": "Unique NOMIS Id of number",
+            "format": "int64"
+          },
+          "type": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "flat": {
+            "type": "string",
+            "description": "Flat name or number",
+            "example": "Apartment 3"
+          },
+          "premise": {
+            "type": "string",
+            "description": "Premise",
+            "example": "22"
+          },
+          "street": {
+            "type": "string",
+            "description": "Street",
+            "example": "West Street"
+          },
+          "locality": {
+            "type": "string",
+            "description": "Locality",
+            "example": "Keighley"
+          },
+          "postcode": {
+            "type": "string",
+            "description": "Post code",
+            "example": "MK15 2ST"
+          },
+          "city": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "county": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "country": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "phoneNumbers": {
+            "type": "array",
+            "description": "List of phone numbers for the address",
+            "items": {
+              "$ref": "#/components/schemas/OffenderPhoneNumber"
+            }
+          },
+          "validatedPAF": {
+            "type": "boolean",
+            "description": "true if address validated by Post Office Address file??"
+          },
+          "noFixedAddress": {
+            "type": "boolean",
+            "description": "true if address not fixed. for example homeless"
+          },
+          "primaryAddress": {
+            "type": "boolean",
+            "description": "true if this is the person's primary address"
+          },
+          "mailAddress": {
+            "type": "boolean",
+            "description": "true if this is used for mail"
+          },
+          "comment": {
+            "type": "string",
+            "description": "Free format comment about the address"
+          },
+          "startDate": {
+            "type": "string",
+            "description": "Date address was valid from",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "description": "Date address was valid to",
+            "format": "date"
+          }
+        },
+        "description": "The data held in NOMIS about a address number"
+      },
+      "OffenderEmailAddress": {
+        "required": [
+          "email",
+          "emailAddressId"
+        ],
+        "type": "object",
+        "properties": {
+          "emailAddressId": {
+            "type": "integer",
+            "description": "Unique NOMIS Id of email address",
+            "format": "int64"
+          },
+          "email": {
+            "type": "string",
+            "description": "The email address",
+            "example": "john.smith@internet.co.uk"
+          }
+        },
+        "description": "The data held in NOMIS about a email address"
+      },
+      "OffenderPhoneNumber": {
+        "required": [
+          "number",
+          "phoneId",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "phoneId": {
+            "type": "integer",
+            "description": "Unique NOMIS Id of number",
+            "format": "int64"
+          },
+          "number": {
+            "type": "string",
+            "description": "The number"
+          },
+          "extension": {
+            "type": "string",
+            "description": "Extension"
+          },
+          "type": {
+            "$ref": "#/components/schemas/CodeDescription"
+          }
+        },
+        "description": "The data held in NOMIS about a phone number"
       },
       "BookingIdentifyingMarksResponse": {
         "required": [
@@ -26810,6 +27121,7 @@
       },
       "GetAllocationResponse": {
         "required": [
+          "activityStartDate",
           "bookingId",
           "courseActivityId",
           "exclusions",
@@ -26893,6 +27205,12 @@
             "items": {
               "$ref": "#/components/schemas/ScheduleRulesResponse"
             }
+          },
+          "activityStartDate": {
+            "type": "string",
+            "description": "The start date of the activity",
+            "format": "date",
+            "example": "2023-03-12"
           }
         },
         "description": "Allocation to an activity"
