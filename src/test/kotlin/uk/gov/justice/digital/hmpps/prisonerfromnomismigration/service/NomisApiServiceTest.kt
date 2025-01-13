@@ -841,7 +841,8 @@ internal class NomisApiServiceTest {
                       "sunday": true,
                       "slotCategoryCode": "PM"
                     }
-                  ]
+                  ],
+                  "activityStartDate": "2023-03-12"
                 }
               """.trimIndent(),
             ),
@@ -883,6 +884,7 @@ internal class NomisApiServiceTest {
         assertThat(scheduleRules[1].startTime).isEqualTo("13:00")
         assertThat(scheduleRules[1].endTime).isEqualTo("16:30")
         assertThat(scheduleRules[1].monday).isTrue()
+        assertThat(activityStartDate).isEqualTo("2023-03-12")
       }
     }
 

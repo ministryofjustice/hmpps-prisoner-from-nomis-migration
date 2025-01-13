@@ -788,6 +788,7 @@ private fun allocationsResponse(
             "sunday": false,
             "slotCategoryCode": "PM"
         }
-    ]
+    ],
+    "activityStartDate": "2020-04-11"
 }
   """.trimIndent()
