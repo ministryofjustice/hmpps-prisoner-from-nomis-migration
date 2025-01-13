@@ -477,7 +477,7 @@ class AllocationsMigrationServiceTest {
           scheduleRules = listOf(
             ScheduleRulesResponse("10:00", "12:00", true, true, true, true, true, false, false, slotCategoryCode = "AM"),
           ),
-          activityStartDate = yesterday,
+          activityStartDate = today,
         ),
 
       )
@@ -523,7 +523,8 @@ class AllocationsMigrationServiceTest {
           assertThat(it.prisonCode).isEqualTo("BXI")
           assertThat(it.activityId).isEqualTo(789)
           assertThat(it.splitRegimeActivityId).isEqualTo(890)
-          assertThat(it.startDate).isEqualTo(yesterday)
+          // This must be activity start date if after allocation start date
+          assertThat(it.startDate).isEqualTo(today)
           assertThat(it.endDate).isEqualTo(tomorrow)
           assertThat(it.prisonerNumber).isEqualTo("A1234AA")
           assertThat(it.bookingId).isEqualTo(4321)
@@ -534,7 +535,6 @@ class AllocationsMigrationServiceTest {
           assertThat(it.exclusions).containsExactlyInAnyOrder(
             aSlot(timeSlot = Slot.TimeSlot.AM, monday = true, tuesday = true, daysOfWeek = setOf(MONDAY, TUESDAY)),
           )
-          assertThat(it.startDate).isEqualTo(yesterday)
         },
       )
     }
