@@ -81,6 +81,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     caseInfoNumber: String? = "caseRef1",
     caseIndentifiers: List<CaseIdentifierResponse> = emptyList(),
     courtEvents: List<CourtEventResponse> = emptyList(),
+    combinedCaseId: Long? = null,
     response: CourtCaseResponse = CourtCaseResponse(
       bookingId = bookingId,
       id = caseId,
@@ -96,6 +97,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       lidsCaseNumber = 1,
       primaryCaseInfoNumber = "caseRef1",
       caseInfoNumbers = caseIndentifiers,
+      combinedCaseId = combinedCaseId,
     ),
   ) {
     nomisApi.stubFor(
