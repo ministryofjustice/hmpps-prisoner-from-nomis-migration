@@ -159,7 +159,7 @@ private fun GetAllocationResponse.toAllocationMigrateRequest(activityId: Long, s
     splitRegimeActivityId = splitRegimeActivityId,
     prisonerNumber = nomisId,
     bookingId = bookingId,
-    startDate = startDate,
+    startDate = maxOf(startDate, activityStartDate),
     endDate = endDate,
     suspendedFlag = suspended,
     endComment = endComment,
