@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2025-01-13.10556.3fb140c"
+    "version": "2025-01-15.10806.3de6690"
   },
   "servers": [
     {
@@ -11407,7 +11407,7 @@
           "prisoners-resource"
         ],
         "summary": "Gets the identifier for all prisoners.",
-        "description": "Requires role SYNCHRONISATION_REPORTING, NOMIS_ALERTS or NOMIS_PRISON_PERSON.",
+        "description": "Requires role SYNCHRONISATION_REPORTING, NOMIS_ALERTS, NOMIS_PRISON_PERSON or NOMIS_CORE_PERSON.",
         "operationId": "getAllPrisoners",
         "parameters": [
           {
@@ -13899,6 +13899,80 @@
           },
           "404": {
             "description": "Corporate does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/corporates/ids": {
+      "get": {
+        "tags": [
+          "corporate-resource"
+        ],
+        "summary": "Get all Ids",
+        "description": "Retrieves all corporate Ids - typically for a migration. Requires ROLE_NOMIS_CONTACTPERSONS",
+        "operationId": "getCorporateIds",
+        "parameters": [
+          {
+            "name": "pageRequest",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          },
+          {
+            "name": "fromDate",
+            "in": "query",
+            "description": "Filter results by corporate that were created on or after the given date",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2021-11-03"
+          },
+          {
+            "name": "toDate",
+            "in": "query",
+            "description": "Filter results by corporate that were created on or before the given date",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2021-11-03"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Page of corporate Ids",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageCorporateOrganisationIdResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_CONTACTPERSONS",
             "content": {
               "application/json": {
                 "schema": {
@@ -21537,14 +21611,14 @@
             "type": "integer",
             "format": "int32"
           },
-          "unpaged": {
+          "paged": {
             "type": "boolean"
           },
           "pageNumber": {
             "type": "integer",
             "format": "int32"
           },
-          "paged": {
+          "unpaged": {
             "type": "boolean"
           }
         }
@@ -26399,10 +26473,154 @@
           }
         }
       },
+      "CorporateAddress": {
+        "required": [
+          "audit",
+          "id",
+          "isServices",
+          "mailAddress",
+          "phoneNumbers",
+          "primaryAddress",
+          "validatedPAF"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Unique NOMIS Id of number",
+            "format": "int64"
+          },
+          "type": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "flat": {
+            "type": "string",
+            "description": "Flat name or number",
+            "example": "Apartment 3"
+          },
+          "premise": {
+            "type": "string",
+            "description": "Premise",
+            "example": "22"
+          },
+          "street": {
+            "type": "string",
+            "description": "Street",
+            "example": "West Street"
+          },
+          "locality": {
+            "type": "string",
+            "description": "Locality",
+            "example": "Keighley"
+          },
+          "postcode": {
+            "type": "string",
+            "description": "Post code",
+            "example": "MK15 2ST"
+          },
+          "city": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "county": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "country": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "phoneNumbers": {
+            "type": "array",
+            "description": "List of phone numbers for the address",
+            "items": {
+              "$ref": "#/components/schemas/CorporatePhoneNumber"
+            }
+          },
+          "validatedPAF": {
+            "type": "boolean",
+            "description": "true if address validated by Post Office Address file??"
+          },
+          "noFixedAddress": {
+            "type": "boolean",
+            "description": "true if address not fixed. for example homeless"
+          },
+          "primaryAddress": {
+            "type": "boolean",
+            "description": "true if this is the corporate's primary address"
+          },
+          "mailAddress": {
+            "type": "boolean",
+            "description": "true if this is used for mail"
+          },
+          "comment": {
+            "type": "string",
+            "description": "Free format comment about the address"
+          },
+          "startDate": {
+            "type": "string",
+            "description": "Date address was valid from",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "description": "Date address was valid to",
+            "format": "date"
+          },
+          "isServices": {
+            "type": "boolean",
+            "description": "True if this is a service organisation"
+          },
+          "businessHours": {
+            "type": "string",
+            "description": "Business hours"
+          },
+          "contactPersonName": {
+            "type": "string",
+            "description": "Contact person"
+          },
+          "audit": {
+            "$ref": "#/components/schemas/NomisAudit"
+          }
+        },
+        "description": "The data held in NOMIS about an address"
+      },
+      "CorporateInternetAddress": {
+        "required": [
+          "audit",
+          "id",
+          "internetAddress",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Unique NOMIS Id of internet address",
+            "format": "int64"
+          },
+          "internetAddress": {
+            "type": "string",
+            "description": "The internet address",
+            "example": "john.smith@internet.co.uk"
+          },
+          "type": {
+            "type": "string",
+            "description": "Type of address"
+          },
+          "audit": {
+            "$ref": "#/components/schemas/NomisAudit"
+          }
+        },
+        "description": "The data held in NOMIS about a internet address"
+      },
       "CorporateOrganisation": {
         "required": [
+          "active",
+          "addresses",
+          "audit",
           "id",
-          "name"
+          "internetAddresses",
+          "name",
+          "phoneNumbers",
+          "types"
         ],
         "type": "object",
         "properties": {
@@ -26415,16 +26633,177 @@
             "type": "string",
             "description": "The corporate name",
             "example": "Boots"
+          },
+          "caseload": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "comment": {
+            "type": "string",
+            "description": "User comment"
+          },
+          "programmeNumber": {
+            "type": "string",
+            "description": "Programme number"
+          },
+          "vatNumber": {
+            "type": "string",
+            "description": "VAT number"
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Is active"
+          },
+          "expiryDate": {
+            "type": "string",
+            "description": "Date made inactive",
+            "format": "date"
+          },
+          "types": {
+            "type": "array",
+            "description": "List of types this organisation is associated with, for instance ACCOM - Accommodation Provider",
+            "items": {
+              "$ref": "#/components/schemas/CorporateOrganisationType"
+            }
+          },
+          "phoneNumbers": {
+            "type": "array",
+            "description": "List of phone numbers for the corporate",
+            "items": {
+              "$ref": "#/components/schemas/CorporatePhoneNumber"
+            }
+          },
+          "addresses": {
+            "type": "array",
+            "description": "List of addresses for the corporate",
+            "items": {
+              "$ref": "#/components/schemas/CorporateAddress"
+            }
+          },
+          "internetAddresses": {
+            "type": "array",
+            "description": "List of internet addresses for the corporate",
+            "items": {
+              "$ref": "#/components/schemas/CorporateInternetAddress"
+            }
+          },
+          "audit": {
+            "$ref": "#/components/schemas/NomisAudit"
           }
         },
         "description": "The data held in NOMIS about a corporate entity"
       },
-      "Alias": {
+      "CorporateOrganisationType": {
         "required": [
           "audit",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "audit": {
+            "$ref": "#/components/schemas/NomisAudit"
+          }
+        },
+        "description": "The data held in NOMIS about a corporate entity"
+      },
+      "CorporatePhoneNumber": {
+        "required": [
+          "audit",
+          "id",
+          "number",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Unique NOMIS Id of number",
+            "format": "int64"
+          },
+          "number": {
+            "type": "string",
+            "description": "The number"
+          },
+          "extension": {
+            "type": "string",
+            "description": "Extension"
+          },
+          "type": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "audit": {
+            "$ref": "#/components/schemas/NomisAudit"
+          }
+        },
+        "description": "The data held in NOMIS about a phone number"
+      },
+      "CorporateOrganisationIdResponse": {
+        "required": [
+          "corporateId"
+        ],
+        "type": "object",
+        "properties": {
+          "corporateId": {
+            "type": "integer",
+            "description": "The corporate Id",
+            "format": "int64"
+          }
+        }
+      },
+      "PageCorporateOrganisationIdResponse": {
+        "type": "object",
+        "properties": {
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CorporateOrganisationIdResponse"
+            }
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CoreOffender": {
+        "required": [
           "firstName",
           "lastName",
-          "offenderId"
+          "offenderId",
+          "workingName"
         ],
         "type": "object",
         "properties": {
@@ -26457,30 +26836,42 @@
             "description": "Date of birth of the person",
             "format": "date"
           },
-          "race": {
+          "birthPlace": {
+            "type": "string",
+            "description": "Birth place of the person"
+          },
+          "birthCountry": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "ethnicity": {
             "$ref": "#/components/schemas/CodeDescription"
           },
           "sex": {
             "$ref": "#/components/schemas/CodeDescription"
           },
-          "audit": {
-            "$ref": "#/components/schemas/NomisAudit"
+          "workingName": {
+            "type": "boolean",
+            "description": "The offender record associated with the current booking"
           }
         },
-        "description": "The data held in NOMIS for an offender alias"
+        "description": "The data held in NOMIS for an offender."
       },
       "CorePerson": {
         "required": [
+          "activeFlag",
           "addresses",
-          "aliases",
-          "audit",
+          "beliefs",
+          "disabilities",
           "emailAddresses",
-          "firstName",
           "identifiers",
-          "lastName",
-          "offenderId",
+          "interestsToImmigration",
+          "nationalities",
+          "nationalityDetails",
+          "offenders",
           "phoneNumbers",
-          "prisonNumber"
+          "prisonNumber",
+          "sentenceStartDates",
+          "sexualOrientations"
         ],
         "type": "object",
         "properties": {
@@ -26488,57 +26879,36 @@
             "type": "string",
             "description": "The prison number"
           },
-          "offenderId": {
-            "type": "integer",
-            "description": "The offender id. This will change if a different alias is made current",
-            "format": "int64"
-          },
-          "title": {
-            "$ref": "#/components/schemas/CodeDescription"
-          },
-          "firstName": {
+          "inOutStatus": {
             "type": "string",
-            "description": "First name of the person"
+            "description": "In/Out Status",
+            "example": "IN, OUT, TRN"
           },
-          "middleName1": {
-            "type": "string",
-            "description": "Middle name of the person"
+          "activeFlag": {
+            "type": "boolean",
+            "description": "Indicates that the person is currently in prison"
           },
-          "middleName2": {
-            "type": "string",
-            "description": "Second middle name of the person"
-          },
-          "lastName": {
-            "type": "string",
-            "description": "Surname name of the person"
-          },
-          "dateOfBirth": {
-            "type": "string",
-            "description": "Date of birth of the person",
-            "format": "date"
-          },
-          "birthPlace": {
-            "type": "string",
-            "description": "Birth place of the person"
-          },
-          "race": {
-            "$ref": "#/components/schemas/CodeDescription"
-          },
-          "sex": {
-            "$ref": "#/components/schemas/CodeDescription"
-          },
-          "aliases": {
+          "offenders": {
             "type": "array",
-            "description": "List of aliases for the person. These are the other offender records.",
+            "description": "List of offender records for the person",
             "items": {
-              "$ref": "#/components/schemas/Alias"
+              "$ref": "#/components/schemas/CoreOffender"
             }
           },
           "identifiers": {
             "type": "array",
-            "description": "List of identifiers for the person.",
+            "description": "List of identifiers for the person",
             "items": {
               "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          "sentenceStartDates": {
+            "type": "array",
+            "description": "List of distinct sentence start dates",
+            "items": {
+              "type": "string",
+              "description": "List of distinct sentence start dates",
+              "format": "date"
             }
           },
           "addresses": {
@@ -26562,8 +26932,47 @@
               "$ref": "#/components/schemas/OffenderEmailAddress"
             }
           },
-          "audit": {
-            "$ref": "#/components/schemas/NomisAudit"
+          "nationalities": {
+            "type": "array",
+            "description": "List of nationalities for the person",
+            "items": {
+              "$ref": "#/components/schemas/OffenderNationality"
+            }
+          },
+          "nationalityDetails": {
+            "type": "array",
+            "description": "List of nationality details for the person",
+            "items": {
+              "$ref": "#/components/schemas/OffenderNationalityDetails"
+            }
+          },
+          "sexualOrientations": {
+            "type": "array",
+            "description": "List of sexual orientations for the person",
+            "items": {
+              "$ref": "#/components/schemas/OffenderSexualOrientation"
+            }
+          },
+          "disabilities": {
+            "type": "array",
+            "description": "List of disabilities for the person",
+            "items": {
+              "$ref": "#/components/schemas/OffenderDisability"
+            }
+          },
+          "interestsToImmigration": {
+            "type": "array",
+            "description": "List of disabilities for the person",
+            "items": {
+              "$ref": "#/components/schemas/OffenderInterestToImmigration"
+            }
+          },
+          "beliefs": {
+            "type": "array",
+            "description": "Current belief and history of all beliefs for the person",
+            "items": {
+              "$ref": "#/components/schemas/OffenderBelief"
+            }
           }
         },
         "description": "The data held in NOMIS for an offender"
@@ -26705,6 +27114,74 @@
         },
         "description": "The data held in NOMIS about a address number"
       },
+      "OffenderBelief": {
+        "required": [
+          "audit",
+          "belief",
+          "beliefId",
+          "startDate",
+          "verified"
+        ],
+        "type": "object",
+        "properties": {
+          "beliefId": {
+            "type": "integer",
+            "description": "Offender belief id",
+            "format": "int64",
+            "example": 1123456
+          },
+          "belief": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "startDate": {
+            "type": "string",
+            "description": "Date the belief started",
+            "format": "date",
+            "example": "2024-01-01"
+          },
+          "endDate": {
+            "type": "string",
+            "description": "Date the belief ended",
+            "format": "date",
+            "example": "2024-12-12"
+          },
+          "changeReason": {
+            "type": "boolean",
+            "description": "Was a reason given for change of belief?"
+          },
+          "comments": {
+            "type": "string",
+            "description": "Comments describing reason for change of belief"
+          },
+          "verified": {
+            "type": "boolean",
+            "description": "Verified flag"
+          },
+          "audit": {
+            "$ref": "#/components/schemas/NomisAudit"
+          }
+        },
+        "description": "Offender beliefs"
+      },
+      "OffenderDisability": {
+        "required": [
+          "bookingId"
+        ],
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "integer",
+            "description": "The booking's unique identifier",
+            "format": "int64",
+            "example": 1234567
+          },
+          "disability": {
+            "type": "boolean",
+            "description": "The value of the profile info"
+          }
+        },
+        "description": "Disability details held against a booking"
+      },
       "OffenderEmailAddress": {
         "required": [
           "email",
@@ -26724,6 +27201,62 @@
           }
         },
         "description": "The data held in NOMIS about a email address"
+      },
+      "OffenderInterestToImmigration": {
+        "required": [
+          "bookingId"
+        ],
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "integer",
+            "description": "The booking's unique identifier",
+            "format": "int64",
+            "example": 1234567
+          },
+          "interestToImmigration": {
+            "type": "boolean",
+            "description": "The value of the profile info"
+          }
+        },
+        "description": "Interest to immigration details held against a booking"
+      },
+      "OffenderNationality": {
+        "required": [
+          "bookingId"
+        ],
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "integer",
+            "description": "The booking's unique identifier",
+            "format": "int64",
+            "example": 1234567
+          },
+          "nationality": {
+            "$ref": "#/components/schemas/CodeDescription"
+          }
+        },
+        "description": "Nationality details held against a booking"
+      },
+      "OffenderNationalityDetails": {
+        "required": [
+          "bookingId"
+        ],
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "integer",
+            "description": "The booking's unique identifier",
+            "format": "int64",
+            "example": 1234567
+          },
+          "details": {
+            "type": "string",
+            "description": "Details on the nationality"
+          }
+        },
+        "description": "Further nationality details held against a booking"
       },
       "OffenderPhoneNumber": {
         "required": [
@@ -26751,6 +27284,24 @@
           }
         },
         "description": "The data held in NOMIS about a phone number"
+      },
+      "OffenderSexualOrientation": {
+        "required": [
+          "bookingId"
+        ],
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "integer",
+            "description": "The booking's unique identifier",
+            "format": "int64",
+            "example": 1234567
+          },
+          "sexualOrientation": {
+            "$ref": "#/components/schemas/CodeDescription"
+          }
+        },
+        "description": "Sexual orientation details held against a booking"
       },
       "BookingIdentifyingMarksResponse": {
         "required": [
