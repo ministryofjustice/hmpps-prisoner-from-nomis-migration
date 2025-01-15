@@ -33,6 +33,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.N
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
+import java.time.LocalDate
 
 @Service
 class ContactPersonMigrationService(
@@ -151,7 +152,7 @@ fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateC
   lastName = this.lastName,
   firstName = this.firstName,
   middleName = this.middleName,
-  dateOfBirth = this.dateOfBirth,
+  dateOfBirth = this.dateOfBirth.toString(),
   gender = this.gender?.toCodedValue(),
   title = this.title?.toCodedValue(),
   language = this.language?.toCodedValue(),
@@ -185,7 +186,7 @@ fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateC
       county = it.county?.toCodedValue(),
       country = it.country?.toCodedValue(),
       validatedPAF = it.validatedPAF,
-      noFixedAddress = it.noFixedAddress,
+      noFixedAddress = it.noFixedAddress ?: false,
       primaryAddress = it.primaryAddress,
       mailAddress = it.mailAddress,
       comment = it.comment,
@@ -319,3 +320,4 @@ private fun IdPair.toContactPersonSequenceMappingIdDto(personId: Long) = Contact
 private fun IdPair.toContactPersonPhoneMappingIdDto(phoneType: ContactPersonPhoneMappingIdDto.DpsPhoneType) = ContactPersonPhoneMappingIdDto(dpsId = this.dpsId.toString(), dpsPhoneType = phoneType, nomisId = this.nomisId)
 private fun CodeDescription.toCodedValue() = CodedValue(code = this.code, description = this.description)
 private fun String?.toDateTime() = this?.let { java.time.LocalDateTime.parse(it) }
+private fun LocalDate?.toString() = this?.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)

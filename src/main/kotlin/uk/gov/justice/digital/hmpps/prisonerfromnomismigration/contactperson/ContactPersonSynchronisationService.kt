@@ -47,7 +47,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Synchroni
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.Period
 
 @Service
 class ContactPersonSynchronisationService(
@@ -1127,8 +1126,7 @@ fun ContactPerson.toDpsCreateContactRequest() = SyncCreateContactRequest(
   lastName = this.lastName,
   firstName = this.firstName,
   middleName = this.middleName,
-  dateOfBirth = this.dateOfBirth,
-  estimatedIsOverEighteen = this.dateOfBirth.asEstimatedOver18ForCreate(),
+  dateOfBirth = this.dateOfBirth.toString(),
   isStaff = this.isStaff == true,
   staff = this.isStaff == true,
   remitter = this.isRemitter == true,
@@ -1147,7 +1145,6 @@ fun ContactPerson.toDpsUpdateContactRequest() = SyncUpdateContactRequest(
   firstName = this.firstName,
   middleName = this.middleName,
   dateOfBirth = this.dateOfBirth,
-  estimatedIsOverEighteen = this.dateOfBirth.asEstimatedOver18ForUpdate(),
   isStaff = this.isStaff == true,
   staff = this.isStaff == true,
   remitter = this.isRemitter == true,
@@ -1161,22 +1158,6 @@ fun ContactPerson.toDpsUpdateContactRequest() = SyncUpdateContactRequest(
   updatedBy = this.audit.modifyUserId!!,
   updatedTime = this.audit.modifyDatetime!!.toDateTime(),
 )
-
-fun LocalDate?.asEstimatedOver18ForUpdate() = this?.let {
-  if (Period.between(this, LocalDate.now()).years >= 18L) {
-    SyncUpdateContactRequest.EstimatedIsOverEighteen.YES
-  } else {
-    SyncUpdateContactRequest.EstimatedIsOverEighteen.NO
-  }
-} ?: SyncUpdateContactRequest.EstimatedIsOverEighteen.DO_NOT_KNOW
-
-fun LocalDate?.asEstimatedOver18ForCreate() = this?.let {
-  if (Period.between(this, LocalDate.now()).years >= 18L) {
-    SyncCreateContactRequest.EstimatedIsOverEighteen.YES
-  } else {
-    SyncCreateContactRequest.EstimatedIsOverEighteen.NO
-  }
-} ?: SyncCreateContactRequest.EstimatedIsOverEighteen.DO_NOT_KNOW
 
 fun PersonContact.toDpsCreatePrisonerContactRequest(nomisPersonId: Long) = SyncCreatePrisonerContactRequest(
   contactId = nomisPersonId,
@@ -1359,4 +1340,5 @@ fun ContactRestriction.toDpsUpdatePrisonerContactRestrictionRequest() = SyncUpda
 )
 
 private fun String.toDateTime() = this.let { LocalDateTime.parse(it) }
+private fun LocalDate?.toString() = this?.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
 private fun EventAudited.doesOriginateInDps() = this.auditModuleName == "DPS_SYNCHRONISATION"
