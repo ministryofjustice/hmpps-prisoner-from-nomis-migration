@@ -67,6 +67,13 @@ contactperson:
      count: 1
    page:
      size: 10
+corporate:
+   complete-check:
+     delay-seconds: 0
+     retry-seconds: 0
+     count: 1
+   page:
+     size: 10
 spring:
   r2dbc:
     url: r2dbc:postgresql://localhost:5432/migration
