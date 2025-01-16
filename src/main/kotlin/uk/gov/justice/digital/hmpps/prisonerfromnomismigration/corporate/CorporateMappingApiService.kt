@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import reactor.core.publisher.Mono
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
@@ -25,4 +26,12 @@ class CorporateMappingApiService(@Qualifier("mappingApiWebClient") webClient: We
       Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CorporateMappingDto>>() {})))
     }
     .awaitFirstOrDefault(CreateMappingResult())
+
+  suspend fun getByNomisCorporateIdOrNull(nomisCorporateId: Long): CorporateMappingDto? = webClient.get()
+    .uri(
+      "/mapping/corporate/corporate/nomis-corporate-id/{nomisCorporateId}",
+      nomisCorporateId,
+    )
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
 }

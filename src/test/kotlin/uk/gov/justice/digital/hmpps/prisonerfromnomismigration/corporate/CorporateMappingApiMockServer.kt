@@ -5,11 +5,14 @@ import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
+import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.time.LocalDateTime
@@ -66,6 +69,35 @@ class CorporateMappingApiMockServer(private val objectMapper: ObjectMapper) {
           ),
       ),
     )
+  }
+
+  fun stubGetByNomisCorporateIdOrNull(
+    nomisCorporateId: Long = 123456,
+    mapping: CorporateMappingDto? = CorporateMappingDto(
+      nomisId = 123456,
+      dpsId = "123456",
+      mappingType = CorporateMappingDto.MappingType.MIGRATED,
+    ),
+  ) {
+    mapping?.apply {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/corporate/corporate/nomis-corporate-id/$nomisCorporateId")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(objectMapper.writeValueAsString(mapping)),
+        ),
+      )
+    } ?: run {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/corporate/corporate/nomis-corporate-id/$nomisCorporateId")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NOT_FOUND.value())
+            .withBody(objectMapper.writeValueAsString(ErrorResponse(status = 404))),
+        ),
+      )
+    }
   }
 
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)

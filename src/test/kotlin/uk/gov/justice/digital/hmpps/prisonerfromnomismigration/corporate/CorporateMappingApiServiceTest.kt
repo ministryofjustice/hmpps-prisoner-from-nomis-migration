@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.corporate
 
+import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
@@ -136,6 +137,57 @@ class CorporateMappingApiServiceTest {
       mockServer.verify(
         getRequestedFor(urlPathEqualTo("/mapping/corporate/corporate/migration-id/2020-01-01T10%3A00")),
       )
+    }
+  }
+
+  @Nested
+  inner class GetByNomisCorporateIdOrNull {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubGetByNomisCorporateIdOrNull(nomisCorporateId = 1234567)
+
+      apiService.getByNomisCorporateIdOrNull(nomisCorporateId = 1234567)
+
+      mockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass NOMIS id to service`() = runTest {
+      mockServer.stubGetByNomisCorporateIdOrNull()
+
+      apiService.getByNomisCorporateIdOrNull(nomisCorporateId = 1234567)
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/mapping/corporate/corporate/nomis-corporate-id/1234567")),
+      )
+    }
+
+    @Test
+    fun `will return dpsId when mapping exists`() = runTest {
+      mockServer.stubGetByNomisCorporateIdOrNull(
+        nomisCorporateId = 1234567,
+        mapping = CorporateMappingDto(
+          dpsId = "1234567",
+          nomisId = 1234567,
+          mappingType = CorporateMappingDto.MappingType.MIGRATED,
+        ),
+      )
+
+      val mapping = apiService.getByNomisCorporateIdOrNull(nomisCorporateId = 1234567)
+
+      assertThat(mapping?.dpsId).isEqualTo("1234567")
+    }
+
+    @Test
+    fun `will return null if mapping does not exist`() = runTest {
+      mockServer.stubGetByNomisCorporateIdOrNull(
+        nomisCorporateId = 1234567,
+        mapping = null,
+      )
+
+      assertThat(apiService.getByNomisCorporateIdOrNull(nomisCorporateId = 1234567)).isNull()
     }
   }
 }
