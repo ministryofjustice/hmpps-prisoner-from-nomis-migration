@@ -169,6 +169,11 @@ contactperson:
     delay-seconds: 180
     count: 9
 
+corporate:
+  complete-check:
+    delay-seconds: 180
+    count: 9
+
 
 azure:
   application-insights:
@@ -210,6 +215,8 @@ hmpps.sqs:
     migrationcourtsentencing:
       propagateTracing: false
     migrationcontactperson:
+      propagateTracing: false
+    migrationcorporate:
       propagateTracing: false
     migrationcoreperson:
       propagateTracing: false
