@@ -1870,11 +1870,6 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class NomisCreated {
       @BeforeEach
       fun setUp() {
-        courtSentencingNomisApiMockServer.stubGetOffenderCharge(
-          offenderNo = OFFENDER_ID_DISPLAY,
-          offenderChargeId = NOMIS_OFFENDER_CHARGE_ID,
-        )
-
         courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
           nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
           dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
@@ -1886,6 +1881,11 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class NoMapping {
         @BeforeEach
         fun setUp() {
+          courtSentencingNomisApiMockServer.stubGetOffenderCharge(
+            offenderNo = OFFENDER_ID_DISPLAY,
+            offenderChargeId = NOMIS_OFFENDER_CHARGE_ID,
+          )
+
           courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(status = NOT_FOUND)
 
           dpsCourtSentencingServer.stubPostCourtChargeForCreate(
@@ -1906,8 +1906,12 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create a court charge and associate with an appearance in DPS`() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
-              postRequestedFor(urlPathEqualTo("/legacy/charge")),
-              // TODO assert once DPS team have defined their dto
+              postRequestedFor(urlPathEqualTo("/legacy/charge"))
+                .withRequestBody(matchingJsonPath("appearanceLifetimeUuid", equalTo(DPS_COURT_APPEARANCE_ID)))
+                .withRequestBody(matchingJsonPath("offenceCode", equalTo("RI64006")))
+                .withRequestBody(matchingJsonPath("offenceStartDate", equalTo("2024-04-04")))
+                .withRequestBody(matchingJsonPath("legacyData.nomisOutcomeCode", equalTo("1002")))
+                .withRequestBody(matchingJsonPath("legacyData.outcomeDispositionCode", equalTo("F"))),
             )
           }
         }
@@ -1955,6 +1959,12 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class MappingExists {
         @BeforeEach
         fun setUp() {
+          courtSentencingNomisApiMockServer.stubGetCourtEventCharge(
+            offenderNo = OFFENDER_ID_DISPLAY,
+            offenderChargeId = NOMIS_OFFENDER_CHARGE_ID,
+            courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+          )
+
           courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
             nomisCourtChargeId = NOMIS_OFFENDER_CHARGE_ID,
             dpsCourtChargeId = DPS_CHARGE_ID,
@@ -1976,8 +1986,10 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `the existing offender charge is added to the appearance on DPS rather than created`() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
-              putRequestedFor(urlPathEqualTo("/legacy/court-appearance/${DPS_COURT_APPEARANCE_ID}/charge/$DPS_CHARGE_ID")),
-              // TODO assert once DPS team have defined their dto
+              putRequestedFor(urlPathEqualTo("/legacy/court-appearance/${DPS_COURT_APPEARANCE_ID}/charge/$DPS_CHARGE_ID"))
+                .withRequestBody(matchingJsonPath("offenceStartDate", equalTo("2024-03-03")))
+                .withRequestBody(matchingJsonPath("legacyData.nomisOutcomeCode", equalTo("1002")))
+                .withRequestBody(matchingJsonPath("legacyData.outcomeDispositionCode", equalTo("F"))),
             )
           }
         }
@@ -2016,6 +2028,11 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class MappingFail {
         @BeforeEach
         fun setUp() {
+          courtSentencingNomisApiMockServer.stubGetOffenderCharge(
+            offenderNo = OFFENDER_ID_DISPLAY,
+            offenderChargeId = NOMIS_OFFENDER_CHARGE_ID,
+          )
+
           courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(status = NOT_FOUND)
 
           dpsCourtSentencingServer.stubPostCourtChargeForCreate(

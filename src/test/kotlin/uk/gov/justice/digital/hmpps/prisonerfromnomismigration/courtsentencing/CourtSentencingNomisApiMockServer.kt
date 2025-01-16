@@ -182,8 +182,9 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       id = offenderChargeId,
       offence = offence,
       mostSeriousFlag = true,
-      offenceDate = LocalDate.now(),
+      offenceDate = LocalDate.of(2024, 4, 4),
       plea = CodeDescription("NG", "Not Guilty"),
+      resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1002", description = "Imprisonment", dispositionCode = "F"),
     ),
   ) {
     nomisApi.stubFor(
@@ -211,17 +212,18 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     offenderNo: String = "A3864DZ",
     offenderChargeId: Long = 3,
     courtAppearanceId: Long = 3,
-    response: CourtEventChargeResponse = CourtEventChargeResponse(
-      offenderCharge = OffenderChargeResponse(
-        id = offenderChargeId,
-        offence = OffenceResponse(offenceCode = "RI64006", statuteCode = "RI64", description = "Offender description"),
-        mostSeriousFlag = true,
-        offenceDate = LocalDate.now(),
-        resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1002", description = "Imprisonment", dispositionCode = "F"),
-        plea = CodeDescription("NG", "Not Guilty"),
-      ),
+    offenderCharge: OffenderChargeResponse = OffenderChargeResponse(
+      id = offenderChargeId,
+      offence = OffenceResponse(offenceCode = "RI64006", statuteCode = "RI64", description = "Offender description"),
       mostSeriousFlag = true,
-      offenceDate = LocalDate.now(),
+      offenceDate = LocalDate.of(2024, 2, 2),
+      resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1002", description = "Imprisonment", dispositionCode = "F"),
+      plea = CodeDescription("NG", "Not Guilty"),
+    ),
+    response: CourtEventChargeResponse = CourtEventChargeResponse(
+      offenderCharge = offenderCharge,
+      mostSeriousFlag = true,
+      offenceDate = LocalDate.of(2024, 3, 3),
       plea = CodeDescription("NG", "Not Guilty"),
       eventId = courtAppearanceId,
       resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1002", description = "Imprisonment", dispositionCode = "F"),
