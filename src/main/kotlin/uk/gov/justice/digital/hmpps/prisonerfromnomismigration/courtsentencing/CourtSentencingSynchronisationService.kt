@@ -447,7 +447,7 @@ class CourtSentencingSynchronisationService(
   }
 
   // New Court event charge.
-  // is it a new underlying offender charge? 2 DPS endpoints - create charge or just apply to appearance
+  // is it a new underlying offender charge? 2 DPS endpoints - create charge or apply new version to appearance
   suspend fun nomisCourtChargeInserted(event: CourtEventChargeEvent) {
     val telemetry =
       mutableMapOf(
@@ -456,28 +456,33 @@ class CourtSentencingSynchronisationService(
         "offenderNo" to event.offenderIdDisplay,
         "nomisBookingId" to event.bookingId.toString(),
       )
-    // TODO ROUTER UPDATE from SP how to handle
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent("court-charge-synchronisation-created-skipped", telemetry)
     } else {
       // Check court appearance is mapped and throw exception to retry if not
       mappingApiService.getCourtAppearanceOrNullByNomisId(event.eventId)?.let { courtAppearanceMapping ->
         telemetry["dpsCourtAppearanceId"] = courtAppearanceMapping.dpsCourtAppearanceId
-        val nomisOffenderCharge =
-          nomisApiService.getOffenderCharge(
-            offenderNo = event.offenderIdDisplay,
-            offenderChargeId = event.chargeId,
-          )
-
         mappingApiService.getOffenderChargeOrNullByNomisId(event.chargeId)?.let { mapping ->
           // mapping means this is an existing offender charge to be applied to the appearance
           telemetry["dpsChargeId"] = mapping.dpsCourtChargeId
           telemetry["existingDpsCharge"] = "true"
+          val nomisCourtEventCharge =
+            nomisApiService.getCourtEventCharge(
+              offenderNo = event.offenderIdDisplay,
+              offenderChargeId = event.chargeId,
+              eventId = event.eventId,
+            )
           dpsApiService.associateExistingCourtCharge(
             courtAppearanceMapping.dpsCourtAppearanceId,
             mapping.dpsCourtChargeId,
+            nomisCourtEventCharge.toDpsCharge(),
           )
         } ?: let {
+          val nomisOffenderCharge =
+            nomisApiService.getOffenderCharge(
+              offenderNo = event.offenderIdDisplay,
+              offenderChargeId = event.chargeId,
+            )
           // no mapping means this is a new offender charge to be created and applied to the appearance
           telemetry["existingDpsCharge"] = "false"
           dpsApiService.addNewCourtCharge(
