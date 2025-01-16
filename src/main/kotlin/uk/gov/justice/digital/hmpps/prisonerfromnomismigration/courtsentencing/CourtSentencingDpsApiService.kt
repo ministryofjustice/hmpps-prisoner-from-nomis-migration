@@ -74,10 +74,11 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .retrieve()
       .awaitBodilessEntityIgnoreNotFound()
 
-  suspend fun associateExistingCourtCharge(courtAppearanceId: String, chargeId: String) =
+  suspend fun associateExistingCourtCharge(courtAppearanceId: String, chargeId: String, charge: LegacyUpdateCharge) =
     webClient
       .put()
       .uri("/legacy/court-appearance/{courtAppearanceId}/charge/{chargeId}", courtAppearanceId, chargeId)
+      .bodyValue(charge)
       .retrieve()
       .awaitBodilessEntity()
 
