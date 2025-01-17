@@ -34,8 +34,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateInternetAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisationIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporatePhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
@@ -44,6 +48,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.Duration
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -256,10 +261,120 @@ class CorporateMigrationIntTest : SqsIntegrationTestBase() {
             vatNumber = "G1234",
             programmeNumber = "1",
             comment = "Nice place to work",
-            types = emptyList(),
-            addresses = emptyList(),
-            phoneNumbers = emptyList(),
-            internetAddresses = emptyList(),
+            types = listOf(
+              CorporateOrganisationType(
+                type = CodeDescription("DOCTOR", "Doctor"),
+                audit = NomisAudit(
+                  modifyUserId = "ADJUA.MENSAH",
+                  modifyDatetime = "2024-02-02T10:23",
+                  createUsername = "ADJUA.BEEK",
+                  createDatetime = "2022-02-02T10:23",
+                ),
+              ),
+            ),
+            addresses = listOf(
+              CorporateAddress(
+                id = 101,
+                phoneNumbers = listOf(
+                  CorporatePhoneNumber(
+                    id = 101,
+                    number = "0113 555 5555",
+                    type = CodeDescription("HOM", "Home"),
+                    audit = NomisAudit(
+                      modifyUserId = "ADJUA.MENSAH",
+                      modifyDatetime = "2024-04-02T10:23",
+                      createUsername = "ADJUA.BEEK",
+                      createDatetime = "2022-04-02T10:23",
+                    ),
+                    extension = "ext 5555",
+                  ),
+                ),
+                validatedPAF = true,
+                primaryAddress = true,
+                mailAddress = true,
+                audit = NomisAudit(
+                  modifyUserId = "ADJUA.MENSAH",
+                  modifyDatetime = "2024-03-02T10:23",
+                  createUsername = "ADJUA.BEEK",
+                  createDatetime = "2022-03-02T10:23",
+                ),
+                type = CodeDescription("HOME", "Home"),
+                flat = "Flat 1B",
+                premise = "Pudding Court",
+                street = "High Mound",
+                locality = "Broomhill",
+                postcode = "S1 5GG",
+                city = CodeDescription("25343", "Sheffield"),
+                county = CodeDescription("S.YORKSHIRE", "South Yorkshire"),
+                country = CodeDescription("ENG", "England"),
+                noFixedAddress = true,
+                comment = "Use this address",
+                startDate = LocalDate.parse("1987-01-01"),
+                endDate = LocalDate.parse("2024-02-01"),
+                isServices = true,
+                contactPersonName = "MICKY MIKES",
+                businessHours = "10-5pm daily",
+              ),
+              CorporateAddress(
+                id = 102,
+                phoneNumbers = emptyList(),
+                validatedPAF = false,
+                primaryAddress = false,
+                mailAddress = false,
+                isServices = false,
+                audit = NomisAudit(
+                  createUsername = "ADJUA.BEEK",
+                  createDatetime = "2022-03-02T10:23",
+                ),
+              ),
+            ),
+            phoneNumbers = listOf(
+              CorporatePhoneNumber(
+                id = 10,
+                number = "0114 555 5555",
+                type = CodeDescription("MOB", "Mobile"),
+                audit = NomisAudit(
+                  modifyUserId = "ADJUA.MENSAH",
+                  modifyDatetime = "2024-02-02T10:23",
+                  createUsername = "ADJUA.BEEK",
+                  createDatetime = "2022-02-02T10:23",
+                ),
+                extension = "ext 5555",
+              ),
+              CorporatePhoneNumber(
+                id = 11,
+                number = "0114 1111 1111111",
+                type = CodeDescription("FAX", "Fax"),
+                audit = NomisAudit(
+                  createUsername = "ADJUA.BEEK",
+                  createDatetime = "2022-02-02T10:23",
+                ),
+              ),
+            ),
+            internetAddresses = listOf(
+              CorporateInternetAddress(
+                id = 130,
+                internetAddress = "test@test.justice.gov.uk",
+                type = "EMAIL",
+                audit = NomisAudit(
+                  modifyUserId = "ADJUA.MENSAH",
+                  modifyDatetime = "2024-02-02T10:23",
+                  createUsername = "ADJUA.BEEK",
+                  createDatetime = "2022-02-02T10:23",
+                ),
+              ),
+              CorporateInternetAddress(
+                id = 230,
+                internetAddress = "www.place.justice.gov.uk",
+                type = "WEB",
+                audit = NomisAudit(
+                  modifyUserId = "ADJUA.MENSAH",
+                  modifyDatetime = "2024-02-02T10:23",
+                  createUsername = "ADJUA.BEEK",
+                  createDatetime = "2022-02-02T10:23",
+                ),
+              ),
+            ),
             audit = NomisAudit(
               modifyUserId = "ADJUA.MENSAH",
               modifyDatetime = "2024-01-02T10:23",
@@ -319,6 +434,184 @@ class CorporateMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-01-02T10:23"))
           assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
           assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-01-02T10:23"))
+        }
+      }
+
+      @Test
+      fun `will send global phone numbers to DPS`() {
+        with(dpsRequests.find { it.nomisCorporateId == 1000L } ?: throw AssertionError("Request not found")) {
+          assertThat(phoneNumbers).hasSize(2)
+          with(phoneNumbers[0]) {
+            assertThat(nomisPhoneId).isEqualTo(10)
+            assertThat(number).isEqualTo("0114 555 5555")
+            assertThat(type).isEqualTo("MOB")
+            assertThat(createUsername).isEqualTo("ADJUA.BEEK")
+            assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:23"))
+            assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
+            assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-02-02T10:23"))
+            assertThat(extension).isEqualTo("ext 5555")
+          }
+          with(phoneNumbers[1]) {
+            assertThat(nomisPhoneId).isEqualTo(11)
+            assertThat(number).isEqualTo("0114 1111 1111111")
+            assertThat(type).isEqualTo("FAX")
+            assertThat(createUsername).isEqualTo("ADJUA.BEEK")
+            assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:23"))
+            assertThat(modifyUsername).isNull()
+            assertThat(modifyDateTime).isNull()
+            assertThat(extension).isNull()
+          }
+        }
+      }
+
+      @Test
+      fun `will create mappings for nomis global phone numbers`() {
+        with(mappingRequests.find { it.corporateMapping.nomisId == 1000L }?.corporatePhoneMapping ?: throw AssertionError("Request not found")) {
+          assertThat(this).hasSize(2)
+          assertThat(this[0].nomisId).isEqualTo(10L)
+          assertThat(this[0].dpsId).isEqualTo("100")
+          assertThat(this[1].nomisId).isEqualTo(11L)
+          assertThat(this[1].dpsId).isEqualTo("110")
+        }
+        with(mappingRequests.find { it.corporateMapping.nomisId == 2000L }?.corporatePhoneMapping ?: throw AssertionError("Request not found")) {
+          assertThat(this).isEmpty()
+        }
+      }
+
+      @Test
+      fun `will send addresses to DPS`() {
+        val corporateOrganisation = dpsRequests.find { it.nomisCorporateId == 1000L } ?: throw AssertionError("Request not found")
+        assertThat(corporateOrganisation.addresses).hasSize(2)
+        with(corporateOrganisation.addresses[0]) {
+          assertThat(nomisAddressId).isEqualTo(101)
+          assertThat(type).isEqualTo("HOME")
+          assertThat(flat).isEqualTo("Flat 1B")
+          assertThat(premise).isEqualTo("Pudding Court")
+          assertThat(street).isEqualTo("High Mound")
+          assertThat(locality).isEqualTo("Broomhill")
+          assertThat(county).isEqualTo("S.YORKSHIRE")
+          assertThat(country).isEqualTo("ENG")
+          assertThat(noFixedAddress).isTrue()
+          assertThat(mailAddress).isTrue()
+          assertThat(comment).isEqualTo("Use this address")
+          assertThat(startDate).isEqualTo(LocalDate.parse("1987-01-01"))
+          assertThat(endDate).isEqualTo(LocalDate.parse("2024-02-01"))
+          assertThat(postCode).isEqualTo("S1 5GG")
+          assertThat(serviceAddress).isTrue()
+          assertThat(contactPersonName).isEqualTo("MICKY MIKES")
+          assertThat(businessHours).isEqualTo("10-5pm daily")
+          assertThat(createUsername).isEqualTo("ADJUA.BEEK")
+          assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-03-02T10:23"))
+          assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
+          assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-03-02T10:23"))
+        }
+        with(corporateOrganisation.addresses[1]) {
+          assertThat(nomisAddressId).isEqualTo(102)
+          assertThat(type).isNull()
+          assertThat(flat).isNull()
+          assertThat(premise).isNull()
+          assertThat(street).isNull()
+          assertThat(locality).isNull()
+          assertThat(county).isNull()
+          assertThat(country).isNull()
+          assertThat(noFixedAddress).isFalse()
+          assertThat(mailAddress).isFalse()
+          assertThat(comment).isNull()
+          assertThat(startDate).isNull()
+          assertThat(endDate).isNull()
+          assertThat(postCode).isNull()
+          assertThat(serviceAddress).isFalse()
+          assertThat(contactPersonName).isNull()
+          assertThat(businessHours).isNull()
+          assertThat(createUsername).isEqualTo("ADJUA.BEEK")
+          assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-03-02T10:23"))
+          assertThat(modifyUsername).isNull()
+          assertThat(modifyDateTime).isNull()
+          assertThat(phoneNumbers).isEmpty()
+        }
+      }
+
+      @Test
+      fun `will create mappings for nomis addresses to dps address`() {
+        with(mappingRequests.find { it.corporateMapping.nomisId == 1000L }?.corporateAddressMapping ?: throw AssertionError("Request not found")) {
+          assertThat(this).hasSize(2)
+          assertThat(this[0].nomisId).isEqualTo(101L)
+          assertThat(this[0].dpsId).isEqualTo("1010")
+          assertThat(this[1].nomisId).isEqualTo(102L)
+          assertThat(this[1].dpsId).isEqualTo("1020")
+        }
+        with(mappingRequests.find { it.corporateMapping.nomisId == 2000L }?.corporateAddressMapping ?: throw AssertionError("Request not found")) {
+          assertThat(this).isEmpty()
+        }
+      }
+
+      @Test
+      fun `will send address phone numbers to DPS`() {
+        val person = dpsRequests.find { it.nomisCorporateId == 1000L } ?: throw AssertionError("Request not found")
+        val firstAddress = person.addresses[0]
+        assertThat(firstAddress.phoneNumbers).hasSize(1)
+        with(firstAddress.phoneNumbers[0]) {
+          assertThat(nomisPhoneId).isEqualTo(101)
+          assertThat(number).isEqualTo("0113 555 5555")
+          assertThat(type).isEqualTo("HOM")
+          assertThat(createUsername).isEqualTo("ADJUA.BEEK")
+          assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-04-02T10:23"))
+          assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
+          assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-04-02T10:23"))
+          assertThat(extension).isEqualTo("ext 5555")
+        }
+      }
+
+      @Test
+      fun `will create mappings for nomis address phone numbers`() {
+        with(mappingRequests.find { it.corporateMapping.nomisId == 1000L }?.corporateAddressPhoneMapping ?: throw AssertionError("Request not found")) {
+          assertThat(this).hasSize(1)
+          assertThat(this[0].nomisId).isEqualTo(101L)
+          assertThat(this[0].dpsId).isEqualTo("1010")
+        }
+        with(mappingRequests.find { it.corporateMapping.nomisId == 2000L }?.corporateAddressPhoneMapping ?: throw AssertionError("Request not found")) {
+          assertThat(this).isEmpty()
+        }
+      }
+
+      @Test
+      fun `will send email addresses to DPS`() {
+        val corporateOrganisation = dpsRequests.find { it.nomisCorporateId == 1000L } ?: throw AssertionError("Request not found")
+        assertThat(corporateOrganisation.emailAddresses).hasSize(1)
+        with(corporateOrganisation.emailAddresses[0]) {
+          assertThat(nomisEmailAddressId).isEqualTo(130)
+          assertThat(email).isEqualTo("test@test.justice.gov.uk")
+          assertThat(createUsername).isEqualTo("ADJUA.BEEK")
+          assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:23"))
+          assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
+          assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-02-02T10:23"))
+        }
+      }
+
+      @Test
+      fun `will send web addresses to DPS`() {
+        val corporateOrganisation = dpsRequests.find { it.nomisCorporateId == 1000L } ?: throw AssertionError("Request not found")
+        assertThat(corporateOrganisation.webAddresses).hasSize(1)
+        with(corporateOrganisation.webAddresses[0]) {
+          assertThat(nomisWebAddressId).isEqualTo(230)
+          assertThat(webAddress).isEqualTo("www.place.justice.gov.uk")
+          assertThat(createUsername).isEqualTo("ADJUA.BEEK")
+          assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:23"))
+          assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
+          assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-02-02T10:23"))
+        }
+      }
+
+      @Test
+      fun `will send organisation types to DPS`() {
+        val corporateOrganisation = dpsRequests.find { it.nomisCorporateId == 1000L } ?: throw AssertionError("Request not found")
+        assertThat(corporateOrganisation.organisationTypes).hasSize(1)
+        with(corporateOrganisation.organisationTypes[0]) {
+          assertThat(type).isEqualTo("DOCTOR")
+          assertThat(createUsername).isEqualTo("ADJUA.BEEK")
+          assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:23"))
+          assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
+          assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-02-02T10:23"))
         }
       }
     }

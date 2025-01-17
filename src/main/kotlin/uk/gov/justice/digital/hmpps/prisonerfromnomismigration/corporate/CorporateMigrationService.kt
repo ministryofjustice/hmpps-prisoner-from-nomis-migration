@@ -6,8 +6,13 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.IdPair
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateOrganisationAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateOrganisationEmailAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateOrganisationPhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateOrganisationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateOrganisationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateOrganisationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateOrganisationWebAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
@@ -60,7 +65,10 @@ class CorporateMigrationService(
       log.info("Will not migrate the nomis corporate=$nomisCorporateId since it was already mapped to DPS organisation ${this.dpsId} during migration ${this.label}")
     } ?: run {
       val corporateOrganisation = nomisApiService.getCorporateOrganisation(nomisCorporateId = context.body.corporateId)
-      val mapping = dpsApiService.migrateOrganisation(corporateOrganisation.toDpsMigrateOrganisationRequest()).toCorporateMappingsDto(context.migrationId)
+      val mapping = dpsApiService.migrateOrganisation(corporateOrganisation.toDpsMigrateOrganisationRequest()).toCorporateMappingsDto(context.migrationId).also {
+        // while DPS build their API - lets log everything we send - TODO - remove once API is there
+        log.debug("Created DPS migrate organisation request: {}", it)
+      }
       createMappingOrOnFailureDo(context, mapping) {
         queueService.sendMessage(
           MigrationMessageType.RETRY_MIGRATION_MAPPING,
@@ -121,12 +129,87 @@ fun CorporateOrganisation.toDpsMigrateOrganisationRequest(): MigrateOrganisation
   vatNumber = vatNumber,
   programmeNumber = programmeNumber,
   comments = comment,
-  // TODO
-  organisationTypes = emptyList(),
-  phoneNumbers = emptyList(),
-  addresses = emptyList(),
-  emailAddresses = emptyList(),
-  webAddresses = emptyList(),
+  organisationTypes = types.map { organisationType ->
+    MigrateOrganisationType(
+      type = organisationType.type.code,
+      createDateTime = organisationType.audit.createDatetime.toDateTime(),
+      createUsername = organisationType.audit.createUsername,
+      modifyDateTime = organisationType.audit.modifyDatetime.toDateTime(),
+      modifyUsername = organisationType.audit.modifyUserId,
+    )
+  },
+  phoneNumbers = phoneNumbers.map { phone ->
+    MigrateOrganisationPhoneNumber(
+      nomisPhoneId = phone.id,
+      number = phone.number,
+      extension = phone.extension,
+      type = phone.type.code,
+      createDateTime = phone.audit.createDatetime.toDateTime(),
+      createUsername = phone.audit.createUsername,
+      modifyDateTime = phone.audit.modifyDatetime.toDateTime(),
+      modifyUsername = phone.audit.modifyUserId,
+    )
+  },
+
+  addresses = this.addresses.map {
+    MigrateOrganisationAddress(
+      nomisAddressId = it.id,
+      type = it.type?.code,
+      flat = it.flat,
+      premise = it.premise,
+      street = it.street,
+      locality = it.locality,
+      postCode = it.postcode,
+      city = it.city?.code,
+      county = it.county?.code,
+      country = it.country?.code,
+      noFixedAddress = it.noFixedAddress ?: false,
+      primaryAddress = it.primaryAddress,
+      mailAddress = it.mailAddress,
+      comment = it.comment,
+      startDate = it.startDate,
+      endDate = it.endDate,
+      serviceAddress = it.isServices,
+      contactPersonName = it.contactPersonName,
+      businessHours = it.businessHours,
+      phoneNumbers = it.phoneNumbers.map { phone ->
+        MigrateOrganisationPhoneNumber(
+          nomisPhoneId = phone.id,
+          number = phone.number,
+          extension = phone.extension,
+          type = phone.type.code,
+          createDateTime = phone.audit.createDatetime.toDateTime(),
+          createUsername = phone.audit.createUsername,
+          modifyDateTime = phone.audit.modifyDatetime.toDateTime(),
+          modifyUsername = phone.audit.modifyUserId,
+        )
+      },
+      createDateTime = it.audit.createDatetime.toDateTime(),
+      createUsername = it.audit.createUsername,
+      modifyDateTime = it.audit.modifyDatetime.toDateTime(),
+      modifyUsername = it.audit.modifyUserId,
+    )
+  },
+  emailAddresses = this.internetAddresses.filter { it.type == "EMAIL" }.map {
+    MigrateOrganisationEmailAddress(
+      nomisEmailAddressId = it.id,
+      email = it.internetAddress,
+      createDateTime = it.audit.createDatetime.toDateTime(),
+      createUsername = it.audit.createUsername,
+      modifyDateTime = it.audit.modifyDatetime.toDateTime(),
+      modifyUsername = it.audit.modifyUserId,
+    )
+  },
+  webAddresses = this.internetAddresses.filter { it.type == "WEB" }.map {
+    MigrateOrganisationWebAddress(
+      nomisWebAddressId = it.id,
+      webAddress = it.internetAddress,
+      createDateTime = it.audit.createDatetime.toDateTime(),
+      createUsername = it.audit.createUsername,
+      modifyDateTime = it.audit.modifyDatetime.toDateTime(),
+      modifyUsername = it.audit.modifyUserId,
+    )
+  },
   createDateTime = this.audit.createDatetime.toDateTime(),
   createUsername = this.audit.createUsername,
   modifyDateTime = this.audit.modifyDatetime.toDateTime(),
@@ -138,7 +221,7 @@ private fun MigrateOrganisationResponse.toCorporateMappingsDto(migrationId: Stri
   label = migrationId,
   corporateMapping = organisation.toCorporateMappingIdDto(),
   corporateAddressMapping = addresses.map { it.address.toCorporateMappingIdDto() },
-  corporateAddressPhoneMapping = addresses.map { it.address.toCorporateMappingIdDto() },
+  corporateAddressPhoneMapping = addresses.flatMap { address -> address.phoneNumbers.map { it.toCorporateMappingIdDto() } },
   corporatePhoneMapping = phoneNumbers.map { it.toCorporateMappingIdDto() },
   corporateEmailMapping = emailAddresses.map { it.toCorporateMappingIdDto() },
   corporateWebMapping = webAddresses.map { it.toCorporateMappingIdDto() },
