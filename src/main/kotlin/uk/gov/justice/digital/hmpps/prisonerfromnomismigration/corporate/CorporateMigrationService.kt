@@ -1,11 +1,19 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.corporate
 
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.IdPair
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateOrganisationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateOrganisationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisationIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
@@ -14,6 +22,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 class CorporateMigrationService(
   val mappingApiService: CorporateMappingApiService,
   val nomisApiService: CorporateNomisApiService,
+  val dpsApiService: CorporateDpsApiService,
   @Value("\${corporate.page.size:1000}") pageSize: Long,
   @Value("\${corporate.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${corporate.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
@@ -28,6 +37,9 @@ class CorporateMigrationService(
   completeCheckRetrySeconds = completeCheckRetrySeconds,
   completeCheckScheduledRetrySeconds = completeCheckScheduledRetrySeconds,
 ) {
+  private companion object {
+    val log: Logger = LoggerFactory.getLogger(this::class.java)
+  }
 
   override suspend fun getIds(
     migrationFilter: CorporateMigrationFilter,
@@ -41,6 +53,24 @@ class CorporateMigrationService(
   )
 
   override suspend fun migrateNomisEntity(context: MigrationContext<CorporateOrganisationIdResponse>) {
+    val nomisCorporateId = context.body.corporateId
+    val alreadyMigratedMapping = mappingApiService.getByNomisCorporateIdOrNull(nomisCorporateId)
+
+    alreadyMigratedMapping?.run {
+      log.info("Will not migrate the nomis corporate=$nomisCorporateId since it was already mapped to DPS organisation ${this.dpsId} during migration ${this.label}")
+    } ?: run {
+      val corporateOrganisation = nomisApiService.getCorporateOrganisation(nomisCorporateId = context.body.corporateId)
+      val mapping = dpsApiService.migrateOrganisation(corporateOrganisation.toDpsMigrateOrganisationRequest()).toCorporateMappingsDto(context.migrationId)
+      createMappingOrOnFailureDo(context, mapping) {
+        queueService.sendMessage(
+          MigrationMessageType.RETRY_MIGRATION_MAPPING,
+          MigrationContext(
+            context = context,
+            body = mapping,
+          ),
+        )
+      }
+    }
   }
 
   override suspend fun retryCreateMapping(context: MigrationContext<CorporateMappingsDto>) = createMappingOrOnFailureDo(context, context.body) {
@@ -82,3 +112,28 @@ class CorporateMigrationService(
     }
   }
 }
+
+fun CorporateOrganisation.toDpsMigrateOrganisationRequest(): MigrateOrganisationRequest = MigrateOrganisationRequest(
+  nomisCorporateId = id,
+  organisationName = name,
+  active = active,
+  // TODO
+  organisationTypes = emptyList(),
+  phoneNumbers = emptyList(),
+  addresses = emptyList(),
+  emailAddresses = emptyList(),
+  webAddresses = emptyList(),
+)
+
+private fun MigrateOrganisationResponse.toCorporateMappingsDto(migrationId: String) = CorporateMappingsDto(
+  mappingType = CorporateMappingsDto.MappingType.MIGRATED,
+  label = migrationId,
+  corporateMapping = organisation.toCorporateMappingIdDto(),
+  corporateAddressMapping = addresses.map { it.address.toCorporateMappingIdDto() },
+  corporateAddressPhoneMapping = addresses.map { it.address.toCorporateMappingIdDto() },
+  corporatePhoneMapping = phoneNumbers.map { it.toCorporateMappingIdDto() },
+  corporateEmailMapping = emailAddresses.map { it.toCorporateMappingIdDto() },
+  corporateWebMapping = webAddresses.map { it.toCorporateMappingIdDto() },
+)
+
+private fun IdPair.toCorporateMappingIdDto() = CorporateMappingIdDto(dpsId = this.dpsId.toString(), nomisId = this.nomisId)
