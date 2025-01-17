@@ -2,6 +2,8 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.corporate
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
+import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.stereotype.Component
@@ -36,7 +38,7 @@ class CorporateDpsApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubMigrateContact(response: MigrateOrganisationResponse = migrateOrganisationResponse()) {
+  fun stubMigrateOrganisation(response: MigrateOrganisationResponse = migrateOrganisationResponse()) {
     dpsContactPersonServer.stubFor(
       post("/migrate/organisation")
         .willReturn(
@@ -45,6 +47,18 @@ class CorporateDpsApiMockServer(private val objectMapper: ObjectMapper) {
             .withHeader("Content-Type", "application/json")
             .withBody(objectMapper.writeValueAsString(response)),
         ),
+    )
+  }
+
+  fun stubMigrateOrganisation(nomisCorporateId: Long, response: MigrateOrganisationResponse = migrateOrganisationResponse()) {
+    dpsContactPersonServer.stubFor(
+      post("/migrate/organisation")
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader("Content-Type", "application/json")
+            .withBody(objectMapper.writeValueAsString(response)),
+        ).withRequestBody(matchingJsonPath("$.nomisCorporateId", equalTo(nomisCorporateId.toString()))),
     )
   }
 

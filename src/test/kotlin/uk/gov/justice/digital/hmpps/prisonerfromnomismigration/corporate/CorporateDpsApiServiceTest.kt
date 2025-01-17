@@ -25,7 +25,7 @@ class CorporateDpsApiServiceTest {
   inner class MigrateContact {
     @Test
     internal fun `will pass oath2 token to contact endpoint`() = runTest {
-      dpsCorporateServer.stubMigrateContact()
+      dpsCorporateServer.stubMigrateOrganisation()
 
       apiService.migrateOrganisation(migrateOrganisationRequest())
 
@@ -37,7 +37,7 @@ class CorporateDpsApiServiceTest {
 
     @Test
     fun `will call the migrate endpoint`() = runTest {
-      dpsCorporateServer.stubMigrateContact()
+      dpsCorporateServer.stubMigrateOrganisation()
 
       apiService.migrateOrganisation(migrateOrganisationRequest())
 

@@ -1,6 +1,10 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.corporate
 
+import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.runBlocking
+import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
@@ -17,13 +21,19 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.IdPair
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.corporate.CorporateDpsApiMockServer.Companion.migrateOrganisationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisationIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -34,6 +44,9 @@ class CorporateMigrationIntTest : SqsIntegrationTestBase() {
 
   @Autowired
   private lateinit var mappingApiMock: CorporateMappingApiMockServer
+
+  @Autowired
+  private lateinit var dpsApiMock: CorporateDpsApiMockServer
 
   @Autowired
   private lateinit var migrationHistoryRepository: MigrationHistoryRepository
@@ -81,18 +94,129 @@ class CorporateMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Nested
+    inner class EverythingAlreadyMigrated {
+      private lateinit var migrationResult: MigrationResult
+
+      @BeforeEach
+      fun setUp() {
+        nomisApiMock.stubGetCorporateOrganisationIdsToMigrate(content = listOf(CorporateOrganisationIdResponse(1000), CorporateOrganisationIdResponse(2000)))
+        mappingApiMock.stubGetByNomisCorporateIdOrNull(
+          nomisCorporateId = 1000,
+          mapping = CorporateMappingDto(
+            dpsId = "10000",
+            nomisId = 1000,
+            mappingType = CorporateMappingDto.MappingType.MIGRATED,
+            label = "2020-01-01T00:00:00",
+          ),
+        )
+        mappingApiMock.stubGetByNomisCorporateIdOrNull(
+          nomisCorporateId = 2000,
+          mapping = CorporateMappingDto(
+            dpsId = "20000",
+            nomisId = 2000,
+            mappingType = CorporateMappingDto.MappingType.MIGRATED,
+            label = "2020-01-01T00:00:00",
+          ),
+        )
+        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 0)
+        migrationResult = performMigration()
+      }
+
+      @Test
+      fun `will not bother retrieving any corporate details`() {
+        nomisApiMock.verify(0, getRequestedFor(urlPathEqualTo("/corporates/1000")))
+        nomisApiMock.verify(0, getRequestedFor(urlPathEqualTo("/corporates/2000")))
+      }
+
+      @Test
+      fun `will mark migration as complete`() {
+        webTestClient.get().uri("/migrate/corporate/history/${migrationResult.migrationId}")
+          .headers(setAuthorisation(roles = listOf("MIGRATE_CONTACTPERSON")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.migrationId").isEqualTo(migrationResult.migrationId)
+          .jsonPath("$.status").isEqualTo("COMPLETED")
+      }
+    }
+
+    @Nested
     inner class HappyPath {
       private lateinit var migrationResult: MigrationResult
 
       @BeforeEach
       fun setUp() {
         nomisApiMock.stubGetCorporateOrganisationIdsToMigrate(content = listOf(CorporateOrganisationIdResponse(1000), CorporateOrganisationIdResponse(2000)))
+        mappingApiMock.stubGetByNomisCorporateIdOrNull(
+          nomisCorporateId = 1000,
+          mapping = null,
+        )
+        mappingApiMock.stubGetByNomisCorporateIdOrNull(
+          nomisCorporateId = 2000,
+          mapping = null,
+        )
+        nomisApiMock.stubGetCorporateOrganisation(1000, corporateOrganisation().copy(id = 1000, name = "Boots"))
+        nomisApiMock.stubGetCorporateOrganisation(2000, corporateOrganisation().copy(id = 2000, name = "Police"))
+        dpsApiMock.stubMigrateOrganisation(nomisCorporateId = 1000L, migrateOrganisationResponse().copy(organisation = IdPair(nomisId = 1000, dpsId = 10_000, elementType = IdPair.ElementType.ORGANISATION)))
+        dpsApiMock.stubMigrateOrganisation(nomisCorporateId = 2000L, migrateOrganisationResponse().copy(organisation = IdPair(nomisId = 2000, dpsId = 20_000, elementType = IdPair.ElementType.ORGANISATION)))
+        mappingApiMock.stubCreateMappingsForMigration()
         mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 2)
         migrationResult = performMigration()
       }
 
       @Test
-      fun `will record the number of prisoners migrated`() {
+      fun `will get the count of the number corporates to migrate`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/corporates/ids")))
+      }
+
+      @Test
+      fun `will get details for each corporate`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/corporates/1000")))
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/corporates/2000")))
+      }
+
+      @Test
+      fun `will create mapping for each corporate and children`() {
+        mappingApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/corporate/migrate"))
+            .withRequestBodyJsonPath("mappingType", "MIGRATED")
+            .withRequestBodyJsonPath("label", migrationResult.migrationId)
+            .withRequestBodyJsonPath("corporateMapping.dpsId", "10000")
+            .withRequestBodyJsonPath("corporateMapping.nomisId", "1000"),
+        )
+        mappingApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/corporate/migrate"))
+            .withRequestBodyJsonPath("mappingType", "MIGRATED")
+            .withRequestBodyJsonPath("label", migrationResult.migrationId)
+            .withRequestBodyJsonPath("corporateMapping.dpsId", "20000")
+            .withRequestBodyJsonPath("corporateMapping.nomisId", "2000"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for each corporate migrated`() {
+        verify(telemetryClient).trackEvent(
+          eq("corporate-migration-entity-migrated"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisId"]).isEqualTo("1000")
+            assertThat(it["dpsId"]).isEqualTo("10000")
+          },
+          isNull(),
+        )
+
+        verify(telemetryClient).trackEvent(
+          eq("corporate-migration-entity-migrated"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisId"]).isEqualTo("2000")
+            assertThat(it["dpsId"]).isEqualTo("20000")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will record the number of corporates migrated`() {
         webTestClient.get().uri("/migrate/corporate/history/${migrationResult.migrationId}")
           .headers(setAuthorisation(roles = listOf("MIGRATE_CONTACTPERSON")))
           .header("Content-Type", "application/json")
@@ -102,6 +226,142 @@ class CorporateMigrationIntTest : SqsIntegrationTestBase() {
           .jsonPath("$.migrationId").isEqualTo(migrationResult.migrationId)
           .jsonPath("$.status").isEqualTo("COMPLETED")
           .jsonPath("$.recordsMigrated").isEqualTo("2")
+      }
+    }
+
+    @Nested
+    inner class MappingErrorRecovery {
+      private lateinit var migrationResult: MigrationResult
+
+      @BeforeEach
+      fun setUp() {
+        nomisApiMock.stubGetCorporateOrganisationIdsToMigrate(content = listOf(CorporateOrganisationIdResponse(1000)))
+        mappingApiMock.stubGetByNomisCorporateIdOrNull(nomisCorporateId = 1000, mapping = null)
+        nomisApiMock.stubGetCorporateOrganisation(1000, corporateOrganisation().copy(id = 1000))
+        dpsApiMock.stubMigrateOrganisation(migrateOrganisationResponse().copy(organisation = IdPair(nomisId = 1000, dpsId = 10_000, elementType = IdPair.ElementType.ORGANISATION)))
+        mappingApiMock.stubCreateMappingsForMigrationFailureFollowedBySuccess()
+        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 1)
+        migrationResult = performMigration()
+      }
+
+      @Test
+      fun `will get details for corporate only once`() {
+        nomisApiMock.verify(1, getRequestedFor(urlPathEqualTo("/corporates/1000")))
+      }
+
+      @Test
+      fun `will attempt create mapping twice before succeeding`() {
+        mappingApiMock.verify(
+          2,
+          postRequestedFor(urlPathEqualTo("/mapping/corporate/migrate"))
+            .withRequestBodyJsonPath("mappingType", "MIGRATED")
+            .withRequestBodyJsonPath("label", migrationResult.migrationId)
+            .withRequestBodyJsonPath("corporateMapping.dpsId", "10000")
+            .withRequestBodyJsonPath("corporateMapping.nomisId", "1000"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for each corporate migrated`() {
+        verify(telemetryClient).trackEvent(
+          eq("corporate-migration-entity-migrated"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisId"]).isEqualTo("1000")
+            assertThat(it["dpsId"]).isEqualTo("10000")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will record the number of corporates migrated`() {
+        webTestClient.get().uri("/migrate/contactperson/history/${migrationResult.migrationId}")
+          .headers(setAuthorisation(roles = listOf("MIGRATE_CONTACTPERSON")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.migrationId").isEqualTo(migrationResult.migrationId)
+          .jsonPath("$.status").isEqualTo("COMPLETED")
+          .jsonPath("$.recordsMigrated").isEqualTo("1")
+      }
+    }
+
+    @Nested
+    inner class DuplicateMappingErrorHandling {
+      private lateinit var migrationResult: MigrationResult
+
+      @BeforeEach
+      fun setUp() {
+        nomisApiMock.stubGetCorporateOrganisationIdsToMigrate(content = listOf(CorporateOrganisationIdResponse(1000)))
+        mappingApiMock.stubGetByNomisCorporateIdOrNull(nomisCorporateId = 1000, mapping = null)
+        nomisApiMock.stubGetCorporateOrganisation(1000, corporateOrganisation().copy(id = 1000))
+        dpsApiMock.stubMigrateOrganisation(migrateOrganisationResponse().copy(organisation = IdPair(nomisId = 1000, dpsId = 10_000, elementType = IdPair.ElementType.ORGANISATION)))
+        mappingApiMock.stubCreateMappingsForMigration(
+          error = DuplicateMappingErrorResponse(
+            moreInfo = DuplicateErrorContentObject(
+              duplicate = CorporateMappingDto(
+                dpsId = "1000",
+                nomisId = 100,
+                mappingType = CorporateMappingDto.MappingType.MIGRATED,
+              ),
+              existing = CorporateMappingDto(
+                dpsId = "999",
+                nomisId = 100,
+                mappingType = CorporateMappingDto.MappingType.MIGRATED,
+              ),
+            ),
+            errorCode = 1409,
+            status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+            userMessage = "Duplicate mapping",
+          ),
+        )
+        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 0)
+        migrationResult = performMigration()
+      }
+
+      @Test
+      fun `will get details for corporate only once`() {
+        nomisApiMock.verify(1, getRequestedFor(urlPathEqualTo("/corporates/1000")))
+      }
+
+      @Test
+      fun `will attempt create mapping once before failing`() {
+        mappingApiMock.verify(
+          1,
+          postRequestedFor(urlPathEqualTo("/mapping/corporate/migrate"))
+            .withRequestBodyJsonPath("mappingType", "MIGRATED")
+            .withRequestBodyJsonPath("label", migrationResult.migrationId)
+            .withRequestBodyJsonPath("corporateMapping.dpsId", "10000")
+            .withRequestBodyJsonPath("corporateMapping.nomisId", "1000"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for each corporate migrated`() {
+        verify(telemetryClient).trackEvent(
+          eq("nomis-migration-corporate-duplicate"),
+          org.mockito.kotlin.check {
+            assertThat(it["duplicateNomisId"]).isEqualTo("100")
+            assertThat(it["duplicateDpsId"]).isEqualTo("1000")
+            assertThat(it["existingNomisId"]).isEqualTo("100")
+            assertThat(it["existingDpsId"]).isEqualTo("999")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will record the number of corporates migrated`() {
+        webTestClient.get().uri("/migrate/corporate/history/${migrationResult.migrationId}")
+          .headers(setAuthorisation(roles = listOf("MIGRATE_CONTACTPERSON")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.migrationId").isEqualTo(migrationResult.migrationId)
+          .jsonPath("$.status").isEqualTo("COMPLETED")
+          .jsonPath("$.recordsMigrated").isEqualTo("0")
       }
     }
   }

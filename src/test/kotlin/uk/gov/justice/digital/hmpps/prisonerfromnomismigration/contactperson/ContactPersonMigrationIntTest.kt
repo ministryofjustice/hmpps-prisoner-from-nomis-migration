@@ -76,7 +76,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
 
   @Nested
   @DisplayName("POST /migrate/contactperson")
-  inner class MigrateAlerts {
+  inner class MigrateContactPersons {
     @BeforeEach
     internal fun deleteHistoryRecords() {
       runBlocking {
@@ -233,7 +233,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
-      fun `will record the number of prisoners migrated`() {
+      fun `will record the number of persons migrated`() {
         webTestClient.get().uri("/migrate/contactperson/history/${migrationResult.migrationId}")
           .headers(setAuthorisation(roles = listOf("MIGRATE_CONTACTPERSON")))
           .header("Content-Type", "application/json")
@@ -1015,7 +1015,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
-      fun `will record the number of prisoners migrated`() {
+      fun `will record the number of persons migrated`() {
         webTestClient.get().uri("/migrate/contactperson/history/${migrationResult.migrationId}")
           .headers(setAuthorisation(roles = listOf("MIGRATE_CONTACTPERSON")))
           .header("Content-Type", "application/json")
@@ -1093,7 +1093,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
-      fun `will record the number of prisoners migrated`() {
+      fun `will record the number of persons migrated`() {
         webTestClient.get().uri("/migrate/contactperson/history/${migrationResult.migrationId}")
           .headers(setAuthorisation(roles = listOf("MIGRATE_CONTACTPERSON")))
           .header("Content-Type", "application/json")
