@@ -117,12 +117,20 @@ fun CorporateOrganisation.toDpsMigrateOrganisationRequest(): MigrateOrganisation
   nomisCorporateId = id,
   organisationName = name,
   active = active,
+  caseloadId = caseload?.code,
+  vatNumber = vatNumber,
+  programmeNumber = programmeNumber,
+  comments = comment,
   // TODO
   organisationTypes = emptyList(),
   phoneNumbers = emptyList(),
   addresses = emptyList(),
   emailAddresses = emptyList(),
   webAddresses = emptyList(),
+  createDateTime = this.audit.createDatetime.toDateTime(),
+  createUsername = this.audit.createUsername,
+  modifyDateTime = this.audit.modifyDatetime.toDateTime(),
+  modifyUsername = this.audit.modifyUserId,
 )
 
 private fun MigrateOrganisationResponse.toCorporateMappingsDto(migrationId: String) = CorporateMappingsDto(
@@ -137,3 +145,4 @@ private fun MigrateOrganisationResponse.toCorporateMappingsDto(migrationId: Stri
 )
 
 private fun IdPair.toCorporateMappingIdDto() = CorporateMappingIdDto(dpsId = this.dpsId.toString(), nomisId = this.nomisId)
+private fun String?.toDateTime() = this?.let { java.time.LocalDateTime.parse(it) }
