@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension
@@ -87,6 +88,7 @@ class HealthCheckTest : SqsIntegrationTestBase() {
     SentencingApiExtension.sentencingApi.stubHealthPing(status)
     ActivitiesApiExtension.activitiesApi.stubHealthPing(status)
     IncidentsApiExtension.incidentsApi.stubHealthPing(status)
+    CorePersonCprApiExtension.cprCorePersonServer.stubHealthPing(status)
     CSIPDpsApiExtension.csipDpsApi.stubHealthPing(status)
     LocationsApiExtension.locationsApi.stubHealthPing(status)
     AlertsDpsApiExtension.dpsAlertsServer.stubHealthPing(status)
