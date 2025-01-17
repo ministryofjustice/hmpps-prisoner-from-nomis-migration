@@ -54,7 +54,7 @@ class CorePersonNomisApiServiceTest {
 
       val corePerson = apiService.getCorePerson(nomisPrisonNumber = "A12345BC")
 
-      assertThat(corePerson.offenders[0].lastName).isEqualTo("SMITH")
+      assertThat(corePerson.offenders[0].lastName).isEqualTo("Smith")
     }
 
     @Test

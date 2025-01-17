@@ -68,7 +68,7 @@ data class MockCprAddress(
   val postcode: String? = null,
   val county: String? = null,
   val country: String? = null,
-  val noFixedAddress: Boolean? = false,
+  val noFixedAddress: Boolean = false,
   val startDate: java.time.LocalDate? = null,
   val endDate: java.time.LocalDate? = null,
   val comment: String? = null,
@@ -80,5 +80,4 @@ data class MockCprPhoneNumber(
   val phoneNumber: String? = null,
   val phoneType: String? = null,
   val phoneExtension: String? = null,
-
 )

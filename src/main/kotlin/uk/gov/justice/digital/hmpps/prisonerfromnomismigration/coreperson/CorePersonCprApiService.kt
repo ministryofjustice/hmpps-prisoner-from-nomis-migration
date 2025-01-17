@@ -7,7 +7,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBody
 
 @Service
 class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val webClient: WebClient) {
-  suspend fun migrateCore(core: MigrateCorePersonRequest): MigrateCorePersonResponse = webClient.post()
+  suspend fun migrateCorePerson(core: MigrateCorePersonRequest): MigrateCorePersonResponse = webClient.post()
     .uri("/syscon-sync")
     .bodyValue(core)
     .retrieve()

@@ -48,7 +48,7 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
   companion object {
     private const val WIREMOCK_PORT = 8099
 
-    fun migrateCoreRequest() = MigrateCorePersonRequest(
+    fun migrateCorePersonRequest() = MigrateCorePersonRequest(
       nomisPrisonNumber = "A1234BC",
       lastName = "KOFI",
       firstName = "KWEKU",
@@ -57,7 +57,7 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
       // TODO add additional child mappings
     )
 
-    fun migrateCorePersonResponse(request: MigrateCorePersonRequest = migrateCoreRequest()) = MigrateCorePersonResponse(
+    fun migrateCorePersonResponse(request: MigrateCorePersonRequest = migrateCorePersonRequest()) = MigrateCorePersonResponse(
       nomisPrisonNumber = request.nomisPrisonNumber,
       cprId = "CPR-" + request.nomisPrisonNumber,
       addressIds = request.addresses.map { IdPair(nomisId = it.nomisAddressId, cprId = "CPR-" + it.nomisAddressId) },

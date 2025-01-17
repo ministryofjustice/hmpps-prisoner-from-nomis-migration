@@ -28,10 +28,7 @@ class CorePersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
           .withBody(
-            objectMapper.writeValueAsString(
-              corePerson(prisonNumber = prisonNumber),
-
-            ),
+            objectMapper.writeValueAsString(corePerson),
           ),
       ),
     )

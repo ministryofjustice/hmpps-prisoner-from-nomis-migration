@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension.Companion.cprCorePersonServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiMockServer.Companion.migrateCoreRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiMockServer.Companion.migrateCorePersonRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 
 @SpringAPIServiceTest
@@ -25,7 +25,7 @@ class CorePersonCprApiServiceTest {
     internal fun `will pass oath2 token to core endpoint`() = runTest {
       cprCorePersonServer.stubMigrateCorePerson()
 
-      apiService.migrateCore(migrateCoreRequest())
+      apiService.migrateCorePerson(migrateCorePersonRequest())
 
       cprCorePersonServer.verify(
         postRequestedFor(anyUrl())
@@ -37,7 +37,7 @@ class CorePersonCprApiServiceTest {
     fun `will call the migrate endpoint`() = runTest {
       cprCorePersonServer.stubMigrateCorePerson()
 
-      apiService.migrateCore(migrateCoreRequest())
+      apiService.migrateCorePerson(migrateCorePersonRequest())
 
       cprCorePersonServer.verify(
         postRequestedFor(urlPathEqualTo("/syscon-sync")),
