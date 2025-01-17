@@ -919,7 +919,7 @@ internal class NomisApiServiceTest {
   inner class GetPrisonerIds {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
-      nomisApi.stubGetPrisonIds()
+      nomisApi.stubGetPrisonerIds()
 
       nomisService.getPrisonerIds(
         pageNumber = 0,
@@ -933,7 +933,7 @@ internal class NomisApiServiceTest {
 
     @Test
     internal fun `will pass page params to service`() = runTest {
-      nomisApi.stubGetPrisonIds()
+      nomisApi.stubGetPrisonerIds()
 
       nomisService.getPrisonerIds(
         pageNumber = 5,
@@ -949,7 +949,7 @@ internal class NomisApiServiceTest {
 
     @Test
     fun `will return a page of alerts`() = runTest {
-      nomisApi.stubGetPrisonIds(totalElements = 10, firstOffenderNo = "A0001KT")
+      nomisApi.stubGetPrisonerIds(totalElements = 10, firstOffenderNo = "A0001KT")
 
       val prisonerIds = nomisService.getPrisonerIds(
         pageNumber = 5,
