@@ -63,4 +63,5 @@ class CorporateDpsApiMockServer(private val objectMapper: ObjectMapper) {
   }
 
   fun verify(pattern: RequestPatternBuilder) = dpsContactPersonServer.verify(pattern)
+  fun resetAll() = dpsContactPersonServer.resetAll()
 }
