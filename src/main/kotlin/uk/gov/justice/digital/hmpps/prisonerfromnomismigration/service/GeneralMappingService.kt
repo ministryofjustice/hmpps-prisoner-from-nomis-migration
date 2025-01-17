@@ -6,6 +6,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.Alloca
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.AppointmentsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonMappingApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.corporate.CorporateMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingService
@@ -20,8 +21,9 @@ class GeneralMappingService(
   private val visitMappingService: VisitMappingService,
   private val activityMappingService: ActivitiesMappingService,
   private val allocationsMappingService: AllocationsMappingService,
-  private val incidentsMappingService: IncidentsMappingService,
+  private val corePersonMappingApiService: CorePersonMappingApiService,
   private val csipMappingService: CSIPMappingService,
+  private val incidentsMappingService: IncidentsMappingService,
   private val locationsMappingService: LocationsMappingService,
   private val caseNotesMappingService: CaseNotesMappingApiService,
   private val prisonPersonMappingService: PrisonPersonMappingApiService,
@@ -35,8 +37,9 @@ class GeneralMappingService(
       MigrationType.VISITS -> visitMappingService.getMigrationCount(migrationId)
       MigrationType.ACTIVITIES -> activityMappingService.getMigrationCount(migrationId)
       MigrationType.ALLOCATIONS -> allocationsMappingService.getMigrationCount(migrationId)
-      MigrationType.INCIDENTS -> incidentsMappingService.getMigrationCount(migrationId)
+      MigrationType.CORE_PERSON -> corePersonMappingApiService.getMigrationCount(migrationId)
       MigrationType.CSIP -> csipMappingService.getMigrationCount(migrationId)
+      MigrationType.INCIDENTS -> incidentsMappingService.getMigrationCount(migrationId)
       MigrationType.LOCATIONS -> locationsMappingService.getMigrationCount(migrationId)
       MigrationType.CASENOTES -> caseNotesMappingService.getMigrationCount(migrationId)
       MigrationType.PRISONPERSON -> prisonPersonMappingService.getMigrationCount(migrationId)

@@ -51,7 +51,7 @@ class PhysicalAttributesMigrationIntTest : SqsIntegrationTestBase() {
     private lateinit var migrationResult: MigrationResult
 
     private fun stubMigrationDependencies(entities: Int = 2) {
-      nomisApi.stubGetPrisonIds(totalElements = entities.toLong(), pageSize = 10, firstOffenderNo = "A0001KT")
+      nomisApi.stubGetPrisonerIds(totalElements = entities.toLong(), pageSize = 10, firstOffenderNo = "A0001KT")
       (1L..entities)
         .map { "A000${it}KT" }
         .forEachIndexed { index, offenderNo ->
@@ -145,7 +145,7 @@ class PhysicalAttributesMigrationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
-        nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, firstOffenderNo = "A0001KT")
+        nomisApi.stubGetPrisonerIds(totalElements = 1, pageSize = 10, firstOffenderNo = "A0001KT")
         dpsApi.stubMigratePhysicalAttributes("A0001KT", PhysicalAttributesMigrationResponse(listOf(1, 2, 3, 4)))
         physicalAttributesNomisApi.stubGetPhysicalAttributes("A0001KT", multiBookingMultiPhysicalAttributes("A0001KT"))
         prisonPersonMappingApi.stubPutMapping()

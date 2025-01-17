@@ -99,7 +99,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
-        nomisApi.stubGetPrisonIds(totalElements = 2, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
+        nomisApi.stubGetPrisonerIds(totalElements = 2, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
         caseNotesNomisApiMockServer.stubGetCaseNotesForPrisoner(offenderNo = OFFENDER_NUMBER1, currentCaseNoteCount = 1)
         caseNotesNomisApiMockServer.stubGetCaseNotesForPrisoner(
           offenderNo = OFFENDER_NUMBER2,
@@ -211,7 +211,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
     inner class ErrorRecovery {
       @BeforeEach
       fun setUp() {
-        nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
+        nomisApi.stubGetPrisonerIds(totalElements = 1, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
         caseNotesNomisApiMockServer.stubGetCaseNotesForPrisoner(offenderNo = OFFENDER_NUMBER1, currentCaseNoteCount = 1)
         caseNotesApi.stubMigrateCaseNotes(OFFENDER_NUMBER1, listOf(1L to "00000000-0000-0000-0000-000000000001"))
         caseNotesMappingApiMockServer.stubPostMappingsByPrisonerFailureFollowedBySuccess(OFFENDER_NUMBER1)
@@ -236,7 +236,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
     inner class ErrorDpsFailure {
       @BeforeEach
       fun setUp() {
-        nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
+        nomisApi.stubGetPrisonerIds(totalElements = 1, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
         caseNotesNomisApiMockServer.stubGetCaseNotesForPrisoner(offenderNo = OFFENDER_NUMBER1, currentCaseNoteCount = 1)
         caseNotesApi.stubMigrateCaseNotesFailure(OFFENDER_NUMBER1)
         performMigration()
@@ -282,7 +282,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
-        nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
+        nomisApi.stubGetPrisonerIds(totalElements = 1, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
         caseNotesNomisApiMockServer.stubGetCaseNotesForPrisoner(
           offenderNo = OFFENDER_NUMBER1,
           listOf(
@@ -372,7 +372,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
-        nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
+        nomisApi.stubGetPrisonerIds(totalElements = 1, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
         caseNotesNomisApiMockServer.stubGetCaseNotesForPrisoner(
           offenderNo = OFFENDER_NUMBER1,
           listOf(
@@ -501,7 +501,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
-        nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
+        nomisApi.stubGetPrisonerIds(totalElements = 1, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
         caseNotesNomisApiMockServer.stubGetCaseNotesForPrisoner(
           offenderNo = OFFENDER_NUMBER1,
           listOf(
@@ -952,7 +952,7 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `will terminate a running migration`() {
-      nomisApi.stubGetPrisonIds(totalElements = 2, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
+      nomisApi.stubGetPrisonerIds(totalElements = 2, pageSize = 10, firstOffenderNo = OFFENDER_NUMBER1)
       caseNotesNomisApiMockServer.stubGetCaseNotesForPrisoner(offenderNo = OFFENDER_NUMBER1, currentCaseNoteCount = 1)
       caseNotesNomisApiMockServer.stubGetCaseNotesForPrisoner(offenderNo = OFFENDER_NUMBER1, currentCaseNoteCount = 1)
 

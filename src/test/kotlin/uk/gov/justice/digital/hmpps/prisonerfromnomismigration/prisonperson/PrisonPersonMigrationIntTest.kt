@@ -64,7 +64,7 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
     private lateinit var migrationResult: MigrationResult
 
     private fun stubMigrationDependencies(entities: Int = 2) {
-      nomisApi.stubGetPrisonIds(totalElements = entities.toLong(), pageSize = 10, firstOffenderNo = "A0001KT")
+      nomisApi.stubGetPrisonerIds(totalElements = entities.toLong(), pageSize = 10, firstOffenderNo = "A0001KT")
       (1L..entities)
         .map { "A000${it}KT" }
         .forEachIndexed { index, offenderNo ->
@@ -110,7 +110,7 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
     inner class Errors {
       @Test
       fun `will put message on DLQ if call to NOMIS fails`() {
-        nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, firstOffenderNo = "A0001KT")
+        nomisApi.stubGetPrisonerIds(totalElements = 1, pageSize = 10, firstOffenderNo = "A0001KT")
         physicalAttributesNomisApi.stubGetPhysicalAttributes("A0001KT", INTERNAL_SERVER_ERROR)
 
         migrationResult = webTestClient.performMigration()
@@ -139,7 +139,7 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will put message on DLQ if call to DPS fails`() {
-        nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, firstOffenderNo = "A0001KT")
+        nomisApi.stubGetPrisonerIds(totalElements = 1, pageSize = 10, firstOffenderNo = "A0001KT")
         physicalAttributesNomisApi.stubGetPhysicalAttributes("A0001KT")
         dpsApi.stubMigratePhysicalAttributes(HttpStatus.BAD_REQUEST)
 
@@ -169,7 +169,7 @@ class PrisonPersonMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will retry if call to mapping service fails`() {
-        nomisApi.stubGetPrisonIds(totalElements = 1, pageSize = 10, firstOffenderNo = "A0001KT")
+        nomisApi.stubGetPrisonerIds(totalElements = 1, pageSize = 10, firstOffenderNo = "A0001KT")
         physicalAttributesNomisApi.stubGetPhysicalAttributes("A0001KT")
         dpsApi.stubMigratePhysicalAttributes("A0001KT", PhysicalAttributesMigrationResponse(listOf(1L)))
         prisonPersonMappingApi.stubPutMappingFailureFollowedBySuccess()
