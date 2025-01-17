@@ -9,10 +9,12 @@ import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
@@ -21,18 +23,25 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiExtension.Companion.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.IdPair
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateOrganisationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.corporate.CorporateDpsApiMockServer.Companion.migrateOrganisationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisationIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.Duration
 import java.time.LocalDateTime
@@ -226,6 +235,91 @@ class CorporateMigrationIntTest : SqsIntegrationTestBase() {
           .jsonPath("$.migrationId").isEqualTo(migrationResult.migrationId)
           .jsonPath("$.status").isEqualTo("COMPLETED")
           .jsonPath("$.recordsMigrated").isEqualTo("2")
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPathNomisToDPSMapping {
+      private lateinit var dpsRequests: List<MigrateOrganisationRequest>
+      private lateinit var mappingRequests: List<CorporateMappingsDto>
+      private lateinit var migrationResult: MigrationResult
+
+      @BeforeAll
+      fun setUp() {
+        stubMigrateCorporates(
+          CorporateOrganisation(
+            id = 1000,
+            name = "BOOTS",
+            active = true,
+            caseload = CodeDescription("LEI", "Leeds"),
+            vatNumber = "G1234",
+            programmeNumber = "1",
+            comment = "Nice place to work",
+            types = emptyList(),
+            addresses = emptyList(),
+            phoneNumbers = emptyList(),
+            internetAddresses = emptyList(),
+            audit = NomisAudit(
+              modifyUserId = "ADJUA.MENSAH",
+              modifyDatetime = "2024-01-02T10:23",
+              createUsername = "ADJUA.BEEK",
+              createDatetime = "2022-01-02T10:23",
+            ),
+          ),
+          CorporateOrganisation(
+            id = 2000,
+            name = "POLICE",
+            active = true,
+            types = emptyList(),
+            addresses = emptyList(),
+            phoneNumbers = emptyList(),
+            internetAddresses = emptyList(),
+            audit = NomisAudit(
+              modifyUserId = "ADJUA.MENSAH",
+              modifyDatetime = "2024-01-02T10:23",
+              createUsername = "ADJUA.BEEK",
+              createDatetime = "2022-01-02T10:23",
+            ),
+          ),
+        )
+        migrationResult = performMigration()
+        dpsRequests = getRequestBodies(postRequestedFor(urlPathEqualTo("/migrate/organisation")))
+        mappingRequests = MappingApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/mapping/corporate/migrate")))
+      }
+
+      @Test
+      fun `will send optional core corporate data to DPS`() {
+        with(dpsRequests.find { it.nomisCorporateId == 1000L } ?: throw AssertionError("Request not found")) {
+          assertThat(nomisCorporateId).isEqualTo(1000L)
+          assertThat(active).isTrue()
+          assertThat(organisationName).isEqualTo("BOOTS")
+          assertThat(programmeNumber).isEqualTo("1")
+          assertThat(caseloadId).isEqualTo("LEI")
+          assertThat(vatNumber).isEqualTo("G1234")
+          assertThat(comments).isEqualTo("Nice place to work")
+          assertThat(createUsername).isEqualTo("ADJUA.BEEK")
+          assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-01-02T10:23"))
+          assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
+          assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-01-02T10:23"))
+        }
+      }
+
+      @Test
+      fun `will send mandatory core corporate data to DPS`() {
+        with(dpsRequests.find { it.nomisCorporateId == 2000L } ?: throw AssertionError("Request not found")) {
+          assertThat(nomisCorporateId).isEqualTo(2000L)
+          assertThat(organisationName).isEqualTo("POLICE")
+          assertThat(active).isTrue()
+          assertThat(caseloadId).isNull()
+          assertThat(vatNumber).isNull()
+          assertThat(comments).isNull()
+          assertThat(programmeNumber).isNull()
+          assertThat(createUsername).isEqualTo("ADJUA.BEEK")
+          assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2022-01-02T10:23"))
+          assertThat(modifyUsername).isEqualTo("ADJUA.MENSAH")
+          assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-01-02T10:23"))
+        }
       }
     }
 
@@ -751,5 +845,18 @@ class CorporateMigrationIntTest : SqsIntegrationTestBase() {
       any(),
       isNull(),
     )
+  }
+
+  private fun stubMigrateCorporates(vararg nomisCorporateOrganisations: CorporateOrganisation) {
+    dpsApiMock.resetAll()
+    mappingApiMock.resetAll()
+    nomisApiMock.stubGetCorporateOrganisationIdsToMigrate(content = nomisCorporateOrganisations.map { CorporateOrganisationIdResponse(it.id) })
+    nomisCorporateOrganisations.forEach {
+      mappingApiMock.stubGetByNomisCorporateIdOrNull(nomisCorporateId = it.id, mapping = null)
+      nomisApiMock.stubGetCorporateOrganisation(it.id, it)
+      dpsApiMock.stubMigrateOrganisation(nomisCorporateId = it.id, migrateOrganisationResponse(it.toDpsMigrateOrganisationRequest()))
+    }
+    mappingApiMock.stubCreateMappingsForMigration()
+    mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = nomisCorporateOrganisations.size)
   }
 }
