@@ -78,3 +78,6 @@ hmpps.sqs:
     eventcontactperson:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    eventcorporate:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
