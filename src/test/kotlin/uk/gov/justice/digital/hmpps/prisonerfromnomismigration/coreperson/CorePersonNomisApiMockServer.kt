@@ -11,9 +11,17 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CoreOffender
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorePerson
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Identifier
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderAddressUsage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderBelief
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderDisability
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderEmailAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderInterestToImmigration
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderNationality
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderPhoneNumber
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderSexualOrientation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.LocalDate
 
@@ -56,14 +64,15 @@ class CorePersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
 
 fun corePerson(prisonNumber: String = "A1234BC"): CorePerson = CorePerson(
   prisonNumber = prisonNumber,
-
+  activeFlag = true,
+  inOutStatus = "OUT",
   offenders = listOf(
     CoreOffender(
       offenderId = 1,
+      title = CodeDescription(code = "MR", description = "Mr"),
       firstName = "JOHN",
       lastName = "SMITH",
       workingName = true,
-      title = CodeDescription(code = "MR", description = "Mr"),
       middleName1 = "FRED",
       middleName2 = "JAMES",
       dateOfBirth = LocalDate.parse("1980-01-01"),
@@ -71,8 +80,19 @@ fun corePerson(prisonNumber: String = "A1234BC"): CorePerson = CorePerson(
       birthCountry = CodeDescription(code = "ENG", description = "England"),
       ethnicity = CodeDescription(code = "BLACK", description = "Black"),
       sex = CodeDescription(code = "M", description = "Male"),
+      identifiers = listOf(
+        Identifier(
+          sequence = 1,
+          type = CodeDescription("PNC", "PNC Number"),
+          identifier = "20/0071818T",
+          issuedAuthority = "Met Police",
+          issuedDate = LocalDate.parse("2020-01-01"),
+          verified = true,
+        ),
+      ),
     ),
   ),
+  sentenceStartDates = listOf(LocalDate.parse("1980-01-01")),
   phoneNumbers = listOf(
     OffenderPhoneNumber(
       phoneId = 1,
@@ -92,27 +112,76 @@ fun corePerson(prisonNumber: String = "A1234BC"): CorePerson = CorePerson(
           extension = "1234",
         ),
       ),
-      validatedPAF = false,
+      validatedPAF = true,
       primaryAddress = true,
       mailAddress = true,
-      usages = listOf(
-        OffenderAddressUsage(
-          addressId = 1,
-          usage = CodeDescription(code = "HOME", description = "Home"),
-          active = true,
-        ),
-      ),
+      usages = listOf(OffenderAddressUsage(addressId = 201, usage = CodeDescription("HOME", "Home"), active = true)),
+      flat = "Flat 1B",
+      premise = "Pudding Court",
+      street = "High Mound",
+      locality = "Broomhill",
+      postcode = "S1 5GG",
+      city = CodeDescription("25343", "Sheffield"),
+      county = CodeDescription("S.YORKSHIRE", "South Yorkshire"),
+      country = CodeDescription("ENG", "England"),
+      noFixedAddress = true,
+      comment = "Use this address",
+      startDate = LocalDate.parse("1987-01-01"),
+      endDate = LocalDate.parse("2024-02-01"),
     ),
   ),
-  activeFlag = true,
-  identifiers = emptyList(),
-  sentenceStartDates = emptyList(),
-  emailAddresses = emptyList(),
-  nationalities = emptyList(),
+  emailAddresses = listOf(
+    OffenderEmailAddress(
+      emailAddressId = 130,
+      email = "test@test.justice.gov.uk",
+    ),
+  ),
+  nationalities = listOf(
+    OffenderNationality(
+      bookingId = 1125444,
+      nationality = CodeDescription("BRIT", "British"),
+      startDateTime = "2016-08-18T19:58:23",
+      latestBooking = true,
+    ),
+  ),
   nationalityDetails = emptyList(),
-  sexualOrientations = emptyList(),
-  disabilities = emptyList(),
-  interestsToImmigration = emptyList(),
-  beliefs = emptyList(),
-  inOutStatus = "OUT",
+  sexualOrientations = listOf(
+    OffenderSexualOrientation(
+      bookingId = 1125444,
+      sexualOrientation = CodeDescription("HET", "Heterosexual"),
+      startDateTime = "2016-08-19T19:58:23",
+      latestBooking = true,
+    ),
+  ),
+  disabilities = listOf(
+    OffenderDisability(
+      bookingId = 1125444,
+      disability = true,
+      startDateTime = "2016-08-19T19:58:23",
+      latestBooking = true,
+    ),
+  ),
+  interestsToImmigration = listOf(
+    OffenderInterestToImmigration(
+      bookingId = 1125444,
+      startDateTime = "2016-08-19T19:58:23",
+      interestToImmigration = true,
+      latestBooking = true,
+    ),
+  ),
+  beliefs = listOf(
+    OffenderBelief(
+      beliefId = 2,
+      belief = CodeDescription("DRU", "Druid"),
+      startDate = LocalDate.parse("2016-08-02"),
+      verified = true,
+      audit = NomisAudit(
+        createDatetime = "2016-08-01",
+        createUsername = "KOFEADDY",
+        createDisplayName = "KOFE ADDY",
+      ),
+      changeReason = true,
+      comments = "No longer believes in Zoroastrianism",
+    ),
+  ),
 )

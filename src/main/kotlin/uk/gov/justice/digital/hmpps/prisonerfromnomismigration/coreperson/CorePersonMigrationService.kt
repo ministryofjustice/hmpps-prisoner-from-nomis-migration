@@ -114,8 +114,9 @@ private fun MigrateCorePersonResponse.toCorePersonMappingsDto(migrationId: Strin
   addressMappings = addressIds.map { it.toCorePersonSimpleMappingIdDto() },
   phoneMappings = phoneIds.map { it.toCorePersonPhoneMappingIdDto(CorePersonPhoneMappingIdDto.CprPhoneType.CORE_PERSON) },
   emailMappings = emailAddressIds.map { it.toCorePersonSimpleMappingIdDto() },
+  // TODO set other mappings beliefs etc
 )
 
 private fun MigrateCorePersonResponse.toCorePersonMappingIdDto() = CorePersonMappingIdDto(cprId = this.cprId, nomisPrisonNumber = this.nomisPrisonNumber)
-private fun IdPair.toCorePersonSimpleMappingIdDto() = CorePersonSimpleMappingIdDto(cprId = this.cprId.toString(), nomisId = this.nomisId)
-private fun IdPair.toCorePersonPhoneMappingIdDto(phoneType: CorePersonPhoneMappingIdDto.CprPhoneType) = CorePersonPhoneMappingIdDto(cprId = this.cprId.toString(), cprPhoneType = phoneType, nomisId = this.nomisId)
+private fun IdPair.toCorePersonSimpleMappingIdDto() = CorePersonSimpleMappingIdDto(cprId = this.cprId, nomisId = this.nomisId)
+private fun IdPair.toCorePersonPhoneMappingIdDto(phoneType: CorePersonPhoneMappingIdDto.CprPhoneType) = CorePersonPhoneMappingIdDto(cprId = this.cprId, cprPhoneType = phoneType, nomisId = this.nomisId)

@@ -8,6 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
+import java.time.LocalDate
 
 /**
  * This represents the possible interface for the CorePerson api service.
@@ -41,15 +42,13 @@ data class IdPair(
 
 data class MigrateCorePersonRequest(
   val nomisPrisonNumber: String,
-  val firstName: String,
-  val middleName1: String? = null,
-  val middleName2: String? = null,
-  val lastName: String,
   val activeFlag: Boolean,
   val inOutStatus: String? = null,
+  val offenders: List<MockCprOffender>,
   val addresses: List<MockCprAddress> = emptyList(),
   val phoneNumbers: List<MockCprPhoneNumber> = emptyList(),
   val emailAddresses: List<MockCprEmailAddress> = emptyList(),
+  val religions: List<MockCprBelief> = emptyList(),
 )
 
 data class MigrateCorePersonResponse(
@@ -59,7 +58,21 @@ data class MigrateCorePersonResponse(
   val phoneIds: List<IdPair> = emptyList(),
   val emailAddressIds: List<IdPair> = emptyList(),
 )
-
+data class MockCprOffender(
+  val nomisOffenderId: Long,
+  val title: String? = null,
+  val firstName: String,
+  val middleName1: String? = null,
+  val middleName2: String? = null,
+  val lastName: String,
+  val dateOfBirth: LocalDate? = null,
+  val birthPlace: String? = null,
+  val birthCountry: String? = null,
+  val race: String? = null,
+  // The offender record associated with the current booking */
+  val workingName: Boolean,
+  val sex: String? = null,
+)
 data class MockCprAddress(
   val nomisAddressId: Long,
   val isPrimary: Boolean,
@@ -73,8 +86,8 @@ data class MockCprAddress(
   val county: String? = null,
   val country: String? = null,
   val noFixedAddress: Boolean = false,
-  val startDate: java.time.LocalDate? = null,
-  val endDate: java.time.LocalDate? = null,
+  val startDate: LocalDate? = null,
+  val endDate: LocalDate? = null,
   val comment: String? = null,
   val mail: Boolean? = false,
 )
@@ -82,7 +95,6 @@ data class MockCprAddressUsage(
   val usage: String,
   val active: Boolean,
 )
-
 data class MockCprPhoneNumber(
   val nomisPhoneId: Long,
   val phoneNumber: String? = null,
@@ -92,4 +104,14 @@ data class MockCprPhoneNumber(
 data class MockCprEmailAddress(
   val nomisEmailAddressId: Long,
   val emailAddress: String? = null,
+)
+data class MockCprBelief(
+  val nomisBeliefId: Long,
+  val religion: String,
+  val startDate: LocalDate,
+  val endDate: LocalDate? = null,
+  val changeReason: Boolean? = null,
+  val comment: String? = null,
+  val createdByDisplayName: String? = null,
+  val updatedDisplayName: String? = null,
 )
