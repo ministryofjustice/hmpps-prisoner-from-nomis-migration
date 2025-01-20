@@ -92,22 +92,21 @@ class CourtSentencingSynchronisationService(
         "offenderNo" to event.offenderIdDisplay,
         "nomisBookingId" to event.bookingId.toString(),
       )
-    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
-      telemetryClient.trackEvent("court-appearance-synchronisation-created-skipped", telemetry)
-    } else {
-      val nomisCourtAppearance =
-        nomisApiService.getCourtAppearance(
-          offenderNo = event.offenderIdDisplay,
-          courtAppearanceId = event.eventId,
-        )
-      mappingApiService.getCourtAppearanceOrNullByNomisId(event.eventId)?.let { mapping ->
-        telemetryClient.trackEvent(
-          "court-appearance-synchronisation-created-ignored",
-          telemetry + ("dpsCourtAppearanceId" to mapping.dpsCourtAppearanceId) + ("reason" to "appearance already mapped"),
-        )
-      } ?: let {
-        // only dealing with appearances associated with a court case, COURT_EVENTS are created by movements also
-        if (isAppearancePartOfACourtCase(nomisCourtAppearance)) {
+    if (isAppearancePartOfACourtCase(event)) {
+      if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+        telemetryClient.trackEvent("court-appearance-synchronisation-created-skipped", telemetry)
+      } else {
+        val nomisCourtAppearance =
+          nomisApiService.getCourtAppearance(
+            offenderNo = event.offenderIdDisplay,
+            courtAppearanceId = event.eventId,
+          )
+        mappingApiService.getCourtAppearanceOrNullByNomisId(event.eventId)?.let { mapping ->
+          telemetryClient.trackEvent(
+            "court-appearance-synchronisation-created-ignored",
+            telemetry + ("dpsCourtAppearanceId" to mapping.dpsCourtAppearanceId) + ("reason" to "appearance already mapped"),
+          )
+        } ?: let {
           mappingApiService.getCourtCaseOrNullByNomisId(nomisCourtAppearance.caseId!!)?.let { courtCaseMapping ->
             telemetry["nomisCourtCaseId"] = courtCaseMapping.nomisCourtCaseId.toString()
             telemetry["dpsCourtCaseId"] = courtCaseMapping.dpsCourtCaseId
@@ -134,18 +133,18 @@ class CourtSentencingSynchronisationService(
             )
             throw ParentEntityNotFoundRetry("Received COURT_EVENTS_INSERTED for court case ${nomisCourtAppearance.caseId} that has never been created/mapped")
           }
-        } else {
-          telemetryClient.trackEvent(
-            "court-appearance-synchronisation-created-ignored",
-            telemetry + ("reason" to "appearance not associated with a court case, for example generated as part of a movement"),
-          )
         }
       }
+    } else {
+      telemetryClient.trackEvent(
+        "court-appearance-synchronisation-created-ignored",
+        telemetry + ("reason" to "appearance not associated with a court case, for example generated as part of a movement"),
+      )
     }
   }
 
-  private suspend fun isAppearancePartOfACourtCase(nomisAppearance: CourtEventResponse) =
-    nomisAppearance.caseId?.let { true } ?: false
+  private suspend fun isAppearancePartOfACourtCase(appearanceEvent: CourtAppearanceEvent) =
+    appearanceEvent.caseId?.let { true } ?: false
 
   suspend fun nomisCourtCaseUpdated(event: CourtCaseEvent) {
     val telemetry =
@@ -380,23 +379,22 @@ class CourtSentencingSynchronisationService(
         "nomisCourtAppearanceId" to event.eventId.toString(),
         "offenderNo" to event.offenderIdDisplay,
       )
-    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
-      telemetryClient.trackEvent("court-appearance-synchronisation-updated-skipped", telemetry)
-    } else {
-      val mapping = mappingApiService.getCourtAppearanceOrNullByNomisId(event.eventId)
-      if (mapping == null) {
-        telemetryClient.trackEvent(
-          "court-appearance-synchronisation-updated-failed",
-          telemetry,
-        )
-        throw IllegalStateException("Received COURT_EVENTS-UPDATED for court appearance that has never been created")
+    if (isAppearancePartOfACourtCase(event)) {
+      if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+        telemetryClient.trackEvent("court-appearance-synchronisation-updated-skipped", telemetry)
       } else {
-        val nomisCourtAppearance = nomisApiService.getCourtAppearance(
-          offenderNo = event.offenderIdDisplay,
-          courtAppearanceId = event.eventId,
-        )
-        // only dealing with appearances associated with a court case, COURT_EVENTS are created by movements also
-        if (isAppearancePartOfACourtCase(nomisCourtAppearance)) {
+        val mapping = mappingApiService.getCourtAppearanceOrNullByNomisId(event.eventId)
+        if (mapping == null) {
+          telemetryClient.trackEvent(
+            "court-appearance-synchronisation-updated-failed",
+            telemetry,
+          )
+          throw IllegalStateException("Received COURT_EVENTS-UPDATED for court appearance that has never been created")
+        } else {
+          val nomisCourtAppearance = nomisApiService.getCourtAppearance(
+            offenderNo = event.offenderIdDisplay,
+            courtAppearanceId = event.eventId,
+          )
           mappingApiService.getCourtCaseOrNullByNomisId(nomisCourtAppearance.caseId!!)?.let { courtCaseMapping ->
             dpsApiService.updateCourtAppearance(
               courtAppearanceId = mapping.dpsCourtAppearanceId,
@@ -413,13 +411,13 @@ class CourtSentencingSynchronisationService(
             )
             throw IllegalStateException("Received COURT_EVENTS_UPDATED with court case ${nomisCourtAppearance.caseId} that has never been created/mapped")
           }
-        } else {
-          telemetryClient.trackEvent(
-            "court-appearance-synchronisation-updated-ignored",
-            telemetry + ("reason" to "appearance not associated with a court case, for example generated as part of a movement"),
-          )
         }
       }
+    } else {
+      telemetryClient.trackEvent(
+        "court-appearance-synchronisation-updated-ignored",
+        telemetry + ("reason" to "appearance not associated with a court case, for example generated as part of a movement"),
+      )
     }
   }
 
