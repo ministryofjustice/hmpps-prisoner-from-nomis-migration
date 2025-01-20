@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2025-01-15.10806.3de6690"
+    "version": "2025-01-17.10845.223ba5c"
   },
   "servers": [
     {
@@ -27028,6 +27028,7 @@
           "mailAddress",
           "phoneNumbers",
           "primaryAddress",
+          "usages",
           "validatedPAF"
         ],
         "type": "object",
@@ -27036,9 +27037,6 @@
             "type": "integer",
             "description": "Unique NOMIS Id of number",
             "format": "int64"
-          },
-          "type": {
-            "$ref": "#/components/schemas/CodeDescription"
           },
           "flat": {
             "type": "string",
@@ -27110,9 +27108,40 @@
             "type": "string",
             "description": "Date address was valid to",
             "format": "date"
+          },
+          "usages": {
+            "type": "array",
+            "description": "Usages for the address, also known as types",
+            "items": {
+              "$ref": "#/components/schemas/OffenderAddressUsage"
+            }
           }
         },
         "description": "The data held in NOMIS about a address number"
+      },
+      "OffenderAddressUsage": {
+        "required": [
+          "active",
+          "addressId",
+          "usage"
+        ],
+        "type": "object",
+        "properties": {
+          "addressId": {
+            "type": "integer",
+            "description": "Offender belief id",
+            "format": "int64",
+            "example": 1123456
+          },
+          "usage": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Whether the address usage is active"
+          }
+        },
+        "description": "Offender address usage"
       },
       "OffenderBelief": {
         "required": [
@@ -27165,7 +27194,10 @@
       },
       "OffenderDisability": {
         "required": [
-          "bookingId"
+          "bookingId",
+          "disability",
+          "latestBooking",
+          "startDateTime"
         ],
         "type": "object",
         "properties": {
@@ -27178,6 +27210,23 @@
           "disability": {
             "type": "boolean",
             "description": "The value of the profile info"
+          },
+          "startDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The start date of the booking",
+            "example": "2021-07-05T10:35:17"
+          },
+          "endDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The end date of the booking, or null if the booking is still active",
+            "example": "2021-07-05T10:35:17"
+          },
+          "latestBooking": {
+            "type": "boolean",
+            "description": "Whether this is the latest booking or not. Note that latest does not imply active.",
+            "example": true
           }
         },
         "description": "Disability details held against a booking"
@@ -27204,7 +27253,10 @@
       },
       "OffenderInterestToImmigration": {
         "required": [
-          "bookingId"
+          "bookingId",
+          "interestToImmigration",
+          "latestBooking",
+          "startDateTime"
         ],
         "type": "object",
         "properties": {
@@ -27217,13 +27269,33 @@
           "interestToImmigration": {
             "type": "boolean",
             "description": "The value of the profile info"
+          },
+          "startDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The start date of the booking",
+            "example": "2021-07-05T10:35:17"
+          },
+          "endDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The end date of the booking, or null if the booking is still active",
+            "example": "2021-07-05T10:35:17"
+          },
+          "latestBooking": {
+            "type": "boolean",
+            "description": "Whether this is the latest booking or not. Note that latest does not imply active.",
+            "example": true
           }
         },
         "description": "Interest to immigration details held against a booking"
       },
       "OffenderNationality": {
         "required": [
-          "bookingId"
+          "bookingId",
+          "latestBooking",
+          "nationality",
+          "startDateTime"
         ],
         "type": "object",
         "properties": {
@@ -27235,13 +27307,33 @@
           },
           "nationality": {
             "$ref": "#/components/schemas/CodeDescription"
+          },
+          "startDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The start date of the booking",
+            "example": "2021-07-05T10:35:17"
+          },
+          "endDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The end date of the booking, or null if the booking is still active",
+            "example": "2021-07-05T10:35:17"
+          },
+          "latestBooking": {
+            "type": "boolean",
+            "description": "Whether this is the latest booking or not. Note that latest does not imply active.",
+            "example": true
           }
         },
         "description": "Nationality details held against a booking"
       },
       "OffenderNationalityDetails": {
         "required": [
-          "bookingId"
+          "bookingId",
+          "details",
+          "latestBooking",
+          "startDateTime"
         ],
         "type": "object",
         "properties": {
@@ -27254,6 +27346,23 @@
           "details": {
             "type": "string",
             "description": "Details on the nationality"
+          },
+          "startDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The start date of the booking",
+            "example": "2021-07-05T10:35:17"
+          },
+          "endDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The end date of the booking, or null if the booking is still active",
+            "example": "2021-07-05T10:35:17"
+          },
+          "latestBooking": {
+            "type": "boolean",
+            "description": "Whether this is the latest booking or not. Note that latest does not imply active.",
+            "example": true
           }
         },
         "description": "Further nationality details held against a booking"
@@ -27287,7 +27396,10 @@
       },
       "OffenderSexualOrientation": {
         "required": [
-          "bookingId"
+          "bookingId",
+          "latestBooking",
+          "sexualOrientation",
+          "startDateTime"
         ],
         "type": "object",
         "properties": {
@@ -27299,6 +27411,23 @@
           },
           "sexualOrientation": {
             "$ref": "#/components/schemas/CodeDescription"
+          },
+          "startDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The start date of the booking",
+            "example": "2021-07-05T10:35:17"
+          },
+          "endDateTime": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$",
+            "type": "string",
+            "description": "The end date of the booking, or null if the booking is still active",
+            "example": "2021-07-05T10:35:17"
+          },
+          "latestBooking": {
+            "type": "boolean",
+            "description": "Whether this is the latest booking or not. Note that latest does not imply active.",
+            "example": true
           }
         },
         "description": "Sexual orientation details held against a booking"
