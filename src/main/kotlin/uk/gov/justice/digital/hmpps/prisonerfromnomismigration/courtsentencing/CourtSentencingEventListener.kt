@@ -97,6 +97,7 @@ data class CourtCaseEvent(
 
 data class CourtAppearanceEvent(
   val eventId: Long,
+  val caseId: Long?,
   val offenderIdDisplay: String,
   val bookingId: Long,
   val auditModuleName: String?,

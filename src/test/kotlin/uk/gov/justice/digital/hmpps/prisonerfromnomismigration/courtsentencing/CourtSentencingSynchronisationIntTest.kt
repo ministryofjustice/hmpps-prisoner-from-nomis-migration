@@ -1118,7 +1118,16 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             courtSentencingQueueOffenderEventsUrl,
             courtAppearanceEvent(
               eventType = "COURT_EVENTS-INSERTED",
+              courtCaseId = null,
             ),
+          )
+        }
+
+        @Test
+        fun `will not retrieve the court appearance from nomis`() {
+          courtSentencingNomisApiMockServer.verify(
+            0,
+            getRequestedFor(anyUrl()),
           )
         }
 
@@ -1630,19 +1639,11 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class NoAssociatedCourtCase {
         @BeforeEach
         fun setUp() {
-          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
-            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
-            dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
-          )
-          courtSentencingNomisApiMockServer.stubGetCourtAppearance(
-            courtCaseId = null,
-            offenderNo = OFFENDER_ID_DISPLAY,
-            courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
-          )
           awsSqsCourtSentencingOffenderEventsClient.sendMessage(
             courtSentencingQueueOffenderEventsUrl,
             courtAppearanceEvent(
               eventType = "COURT_EVENTS-UPDATED",
+              courtCaseId = null,
             ),
           )
         }
@@ -2976,11 +2977,12 @@ fun courtAppearanceEvent(
   eventType: String,
   bookingId: Long = NOMIS_BOOKING_ID,
   courtAppearanceId: Long = NOMIS_COURT_APPEARANCE_ID,
+  courtCaseId: Long? = NOMIS_COURT_CASE_ID,
   offenderNo: String = OFFENDER_ID_DISPLAY,
   auditModule: String = "DPS",
 ) = """{
     "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
-    "Message": "{\"eventId\":\"$courtAppearanceId\",\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"bookingId\": \"$bookingId\",\"offenderIdDisplay\": \"$offenderNo\",\"nomisEventType\":\"COURT_EVENT\",\"auditModuleName\":\"$auditModule\" }",
+    "Message": "{\"eventId\":\"$courtAppearanceId\",${courtCaseId.let {"""\"caseId\":\"$courtCaseId\","""}}\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"bookingId\": \"$bookingId\",\"offenderIdDisplay\": \"$offenderNo\",\"nomisEventType\":\"COURT_EVENT\",\"auditModuleName\":\"$auditModule\" }",
     "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
     "MessageAttributes": {
       "eventType": {"Type": "String", "Value": "$eventType"}, 
