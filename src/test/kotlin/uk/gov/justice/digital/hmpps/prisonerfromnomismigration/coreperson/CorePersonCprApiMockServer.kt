@@ -50,10 +50,15 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
     fun migrateCorePersonRequest() = MigrateCorePersonRequest(
       nomisPrisonNumber = "A1234BC",
-      lastName = "KOFI",
       firstName = "KWEKU",
+      middleName1 = "FRED",
+      middleName2 = "JAMES",
+      lastName = "KOFI",
+      activeFlag = true,
+      inOutStatus = "OUT",
       phoneNumbers = emptyList(),
       addresses = emptyList(),
+      emailAddresses = emptyList(),
       // TODO add additional child mappings
     )
 
@@ -62,6 +67,7 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
       cprId = "CPR-" + request.nomisPrisonNumber,
       addressIds = request.addresses.map { IdPair(nomisId = it.nomisAddressId, cprId = "CPR-" + it.nomisAddressId) },
       phoneIds = request.phoneNumbers.map { IdPair(nomisId = it.nomisPhoneId, cprId = "CPR-" + it.nomisPhoneId) },
+      emailAddressIds = request.emailAddresses.map { IdPair(nomisId = it.nomisEmailAddressId, cprId = "CPR-" + it.nomisEmailAddressId) },
       // TODO add additional children
     )
   }

@@ -12,7 +12,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonPhoneMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonSimpleMappingIdDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorePerson
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
@@ -115,43 +114,6 @@ private fun MigrateCorePersonResponse.toCorePersonMappingsDto(migrationId: Strin
   addressMappings = addressIds.map { it.toCorePersonSimpleMappingIdDto() },
   phoneMappings = phoneIds.map { it.toCorePersonPhoneMappingIdDto(CorePersonPhoneMappingIdDto.CprPhoneType.CORE_PERSON) },
   emailMappings = emailAddressIds.map { it.toCorePersonSimpleMappingIdDto() },
-)
-
-// This method is subject to change
-fun CorePerson.toMigrateCorePersonRequest(): MigrateCorePersonRequest = MigrateCorePersonRequest(
-  nomisPrisonNumber = this.prisonNumber,
-  firstName = this.offenders[0].firstName,
-  lastName = this.offenders[0].lastName,
-  addresses = this.addresses.map {
-    MockCprAddress(
-      nomisAddressId = it.addressId,
-      flat = it.flat,
-      premise = it.premise,
-      street = it.street,
-      locality = it.locality,
-      postcode = it.postcode,
-      town = it.city?.description,
-      county = it.county?.code,
-      country = it.country?.code,
-      noFixedAddress = it.noFixedAddress ?: false,
-      isPrimary = it.primaryAddress,
-      type = it.type?.code,
-      mail = it.mailAddress,
-      comment = it.comment,
-      startDate = it.startDate,
-      endDate = it.endDate,
-    )
-  },
-  phoneNumbers = this.phoneNumbers.map {
-    MockCprPhoneNumber(
-      nomisPhoneId = it.phoneId,
-      phoneNumber = it.number,
-      phoneType = it.type.code,
-      phoneExtension = it.extension,
-    )
-    // TODO add email
-    // emailAddresses = this.emailAddresses.map { it.email },
-  },
 )
 
 private fun MigrateCorePersonResponse.toCorePersonMappingIdDto() = CorePersonMappingIdDto(cprId = this.cprId, nomisPrisonNumber = this.nomisPrisonNumber)

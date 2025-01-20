@@ -37,6 +37,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CoreOffender
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorePerson
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderAddressUsage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderEmailAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderPhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
@@ -327,7 +328,7 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
                 validatedPAF = true,
                 primaryAddress = true,
                 mailAddress = true,
-                type = CodeDescription("HOME", "Home"),
+                usages = listOf(OffenderAddressUsage(addressId = 201, usage = CodeDescription("HOME", "Home"), active = true)),
                 flat = "Flat 1B",
                 premise = "Pudding Court",
                 street = "High Mound",
@@ -343,10 +344,11 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
               ),
               OffenderAddress(
                 addressId = 102,
-                phoneNumbers = emptyList(),
                 validatedPAF = false,
                 primaryAddress = false,
                 mailAddress = false,
+                phoneNumbers = emptyList(),
+                usages = emptyList(),
               ),
             ),
             emailAddresses = listOf(
@@ -358,7 +360,7 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
           ),
           CorePerson(
             prisonNumber = "A0002BC",
-            activeFlag = true,
+            activeFlag = false,
             identifiers = emptyList(),
             sentenceStartDates = listOf(LocalDate.parse("1981-02-02")),
             nationalities = emptyList(),
@@ -367,21 +369,12 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
             disabilities = emptyList(),
             interestsToImmigration = emptyList(),
             beliefs = emptyList(),
-            inOutStatus = "IN",
             offenders = listOf(
               CoreOffender(
                 offenderId = 1,
                 firstName = "KWAME",
                 lastName = "KOBE",
                 workingName = true,
-                title = CodeDescription(code = "MR", description = "Mr"),
-                middleName1 = "FRED",
-                middleName2 = "JAMES",
-                dateOfBirth = LocalDate.parse("1980-01-01"),
-                birthPlace = "LONDON",
-                birthCountry = CodeDescription(code = "ENG", description = "England"),
-                ethnicity = CodeDescription(code = "BLACK", description = "Black"),
-                sex = CodeDescription(code = "M", description = "Male"),
               ),
             ),
             phoneNumbers = emptyList(),
@@ -401,7 +394,11 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
         with(cprRequests.find { it.nomisPrisonNumber == "A0001BC" } ?: throw AssertionError("Request not found")) {
           assertThat(nomisPrisonNumber).isEqualTo("A0001BC")
           assertThat(firstName).isEqualTo("JOHN")
+          assertThat(middleName1).isEqualTo("FRED")
+          assertThat(middleName2).isEqualTo("JAMES")
           assertThat(lastName).isEqualTo("SMITH")
+          assertThat(activeFlag).isEqualTo(true)
+          assertThat(inOutStatus).isEqualTo("IN")
           // TODO Add more fields as CPR request is updated
         }
       }
@@ -411,9 +408,15 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
         with(cprRequests.find { it.nomisPrisonNumber == "A0002BC" } ?: throw AssertionError("Request not found")) {
           assertThat(nomisPrisonNumber).isEqualTo("A0002BC")
           assertThat(firstName).isEqualTo("KWAME")
+          assertThat(middleName1).isNull()
+          assertThat(middleName2).isNull()
           assertThat(lastName).isEqualTo("KOBE")
+          assertThat(activeFlag).isFalse()
+          assertThat(inOutStatus).isNull()
+
           assertThat(phoneNumbers).isEmpty()
           assertThat(addresses).isEmpty()
+          assertThat(emailAddresses).isEmpty()
           // TODO Add more fields as CPR request is updated
         }
       }
@@ -444,7 +447,7 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
         with(corePerson.addresses[0]) {
           assertThat(nomisAddressId).isEqualTo(101)
           assertThat(isPrimary).isTrue()
-          assertThat(type).isEqualTo("HOME")
+          assertThat(usages[0].usage).isEqualTo("HOME")
           assertThat(flat).isEqualTo("Flat 1B")
           assertThat(premise).isEqualTo("Pudding Court")
           assertThat(street).isEqualTo("High Mound")
@@ -462,7 +465,7 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
         with(corePerson.addresses[1]) {
           assertThat(nomisAddressId).isEqualTo(102)
           assertThat(isPrimary).isFalse()
-          assertThat(type).isNull()
+          assertThat(usages).isEmpty()
           assertThat(flat).isNull()
           assertThat(premise).isNull()
           assertThat(street).isNull()
@@ -478,19 +481,18 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(endDate).isNull()
         }
       }
-/*
 
-    // TODO Add email addresses to CPR request
-    @Test
+      @Test
       fun `will send email addresses to CPR`() {
         val corePerson = cprRequests.find { it.nomisPrisonNumber == "A0001BC" } ?: throw AssertionError("Request not found")
         assertThat(corePerson.emailAddresses).hasSize(1)
         with(corePerson.emailAddresses[0]) {
-          assertThat(emailAddressId).isEqualTo(130)
-          assertThat(email).isEqualTo("test@test.justice.gov.uk")
+          assertThat(nomisEmailAddressId).isEqualTo(130)
+          assertThat(emailAddress).isEqualTo("test@test.justice.gov.uk")
         }
       }
-*/
+
+      // TODO Add tests for other children added to CPR request
 
       @Test
       fun `will create mappings for nomis person to cpr core person`() {

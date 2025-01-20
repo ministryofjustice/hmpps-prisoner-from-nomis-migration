@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CoreOffender
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorePerson
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderAddressUsage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderPhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.LocalDate
@@ -94,6 +95,13 @@ fun corePerson(prisonNumber: String = "A1234BC"): CorePerson = CorePerson(
       validatedPAF = false,
       primaryAddress = true,
       mailAddress = true,
+      usages = listOf(
+        OffenderAddressUsage(
+          addressId = 1,
+          usage = CodeDescription(code = "HOME", description = "Home"),
+          active = true,
+        ),
+      ),
     ),
   ),
   activeFlag = true,

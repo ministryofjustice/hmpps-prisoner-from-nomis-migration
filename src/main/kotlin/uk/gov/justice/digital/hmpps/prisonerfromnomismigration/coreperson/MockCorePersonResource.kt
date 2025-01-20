@@ -34,13 +34,22 @@ class MockCorePersonResource {
   }
 }
 
+data class IdPair(
+  val nomisId: Long,
+  val cprId: String,
+)
+
 data class MigrateCorePersonRequest(
   val nomisPrisonNumber: String,
   val firstName: String,
+  val middleName1: String? = null,
+  val middleName2: String? = null,
   val lastName: String,
+  val activeFlag: Boolean,
+  val inOutStatus: String? = null,
   val addresses: List<MockCprAddress> = emptyList(),
   val phoneNumbers: List<MockCprPhoneNumber> = emptyList(),
-  // TODO val emailAddresses: List<Email> = emptyList(),
+  val emailAddresses: List<MockCprEmailAddress> = emptyList(),
 )
 
 data class MigrateCorePersonResponse(
@@ -51,15 +60,10 @@ data class MigrateCorePersonResponse(
   val emailAddressIds: List<IdPair> = emptyList(),
 )
 
-data class IdPair(
-  val nomisId: Long,
-  val cprId: String,
-)
-
 data class MockCprAddress(
   val nomisAddressId: Long,
   val isPrimary: Boolean,
-  val type: String? = null,
+  val usages: List<MockCprAddressUsage> = emptyList(),
   val flat: String? = null,
   val premise: String? = null,
   val street: String? = null,
@@ -74,10 +78,18 @@ data class MockCprAddress(
   val comment: String? = null,
   val mail: Boolean? = false,
 )
+data class MockCprAddressUsage(
+  val usage: String,
+  val active: Boolean,
+)
 
 data class MockCprPhoneNumber(
   val nomisPhoneId: Long,
   val phoneNumber: String? = null,
   val phoneType: String? = null,
   val phoneExtension: String? = null,
+)
+data class MockCprEmailAddress(
+  val nomisEmailAddressId: Long,
+  val emailAddress: String? = null,
 )
