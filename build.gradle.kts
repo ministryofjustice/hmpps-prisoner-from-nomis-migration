@@ -55,61 +55,128 @@ kotlin {
   jvmToolchain(21)
 }
 
+data class ModelConfiguration(val name: String, val input: String, val output: String, val packageName: String)
+
+val models = listOf(
+  // https://activities-api-dev.prison.service.justice.gov.uk/v3/api-docs
+  ModelConfiguration(
+    name = "buildActivityApiModel",
+    input = "activities-api-docs.json",
+    output = "activities",
+    packageName = "activities",
+  ),
+  // https://alerts-api-dev.hmpps.service.justice.gov.uk/v3/api-docs
+  ModelConfiguration(
+    name = "buildAlertsApiModel",
+    input = "alerts-api-docs.json",
+    output = "alerts",
+    packageName = "alerts",
+  ),
+  // https://casenotes-api-dev.prison.service.justice.gov.uk/v3/api-docs
+  ModelConfiguration(
+    name = "buildCaseNotesApiModel",
+    input = "casenotes-api-docs.json",
+    output = "casenotes",
+    packageName = "casenotes",
+  ),
+  // https://contacts-api-dev.hmpps.service.justice.gov.uk/v3/api-docs
+  ModelConfiguration(
+    name = "buildContactPersonApiModel",
+    input = "contact-person-api-docs.json",
+    output = "contactperson",
+    packageName = "contactperson",
+  ),
+  // https://hmpps-person-record-dev.hmpps.service.justice.gov.uk/v3/api-docs
+  ModelConfiguration(
+    name = "buildCorePersonApiModel",
+    input = "core-person-api-docs.json",
+    output = "coreperson",
+    packageName = "coreperson",
+  ),
+  // https://remand-and-sentencing-api-dev.hmpps.service.justice.gov.uk/v3/api-docs
+  ModelConfiguration(
+    name = "buildCourtSentencingApiModel",
+    input = "court-sentencing-api-docs.json",
+    output = "courtsentencing",
+    packageName = "courtsentencing",
+  ),
+  // https://csip-api-dev.prison.service.justice.gov.uk/v3/api-docs
+  ModelConfiguration(
+    name = "buildCsipApiModel",
+    input = "csip-api-docs.json",
+    output = "csip",
+    packageName = "csip",
+  ),
+  // https://incidents-api-dev.prison.service.justice.gov.uk/v3/api-docs
+  ModelConfiguration(
+    name = "buildIncidentsApiModel",
+    input = "incidents-api-docs.json",
+    output = "incidents",
+    packageName = "incidents",
+  ),
+  // https://locations-api-dev.prison.service.justice.gov.uk/v3/api-docs
+  ModelConfiguration(
+    name = "buildLocationsApiModel",
+    input = "locations-api-docs.json",
+    output = "locations",
+    packageName = "locations",
+  ),
+  // https://nomis-prisoner-api-dev.prison.service.justice.gov.uk/v3/api-docs
+  ModelConfiguration(
+    name = "buildNomisSyncApiModel",
+    input = "nomis-sync-api-docs.json",
+    output = "nomissync",
+    packageName = "nomissync",
+  ),
+  // https://nomis-sync-prisoner-mapping-dev.hmpps.service.justice.gov.uk/v3/api-docs
+  ModelConfiguration(
+    name = "buildMappingServiceApiModel",
+    input = "nomis-mapping-service-api-docs.json",
+    output = "mappings",
+    packageName = "nomismappings",
+  ),
+  // https://prison-person-api-dev.prison.service.justice.gov.uk/v3/api-docs
+  ModelConfiguration(
+    name = "buildPrisonPersonApiModel",
+    input = "prison-person-api-docs.json",
+    output = "prisonperson",
+    packageName = "prisonperson",
+  ),
+  // https://adjustments-api-dev.hmpps.service.justice.gov.uk/v3/api-docs
+  ModelConfiguration(
+    name = "buildSentencingAdjustmentsApiModel",
+    input = "sentencing-adjustments-api-docs.json",
+    output = "sentencingadjustments",
+    packageName = "sentencing.adjustments",
+  ),
+)
+
 tasks {
   withType<KotlinCompile> {
-    //  dependsOn("buildSentencingApiModel")
-    dependsOn(
-      "buildActivityApiModel",
-      "buildNomisSyncApiModel",
-      "buildIncidentsApiModel",
-      "buildCsipApiModel",
-      "buildLocationsApiModel",
-      "buildCaseNotesApiModel",
-      "buildMappingServiceApiModel",
-      "buildSentencingAdjustmentsApiModel",
-      "buildAlertsApiModel",
-      "buildCourtSentencingApiModel",
-      "buildPrisonPersonApiModel",
-      "buildContactPersonApiModel",
-      "buildCorePersonApiModel",
-    )
+    dependsOn(models.map { it.name })
     compilerOptions.jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
   }
   withType<KtLintCheckTask> {
     // Under gradle 8 we must declare the dependency here, even if we're not going to be linting the model
-    mustRunAfter(
-      "buildActivityApiModel",
-      "buildNomisSyncApiModel",
-      "buildIncidentsApiModel",
-      "buildCsipApiModel",
-      "buildLocationsApiModel",
-      "buildCaseNotesApiModel",
-      "buildMappingServiceApiModel",
-      "buildSentencingAdjustmentsApiModel",
-      "buildAlertsApiModel",
-      "buildCourtSentencingApiModel",
-      "buildPrisonPersonApiModel",
-      "buildContactPersonApiModel",
-      "buildCorePersonApiModel",
-    )
+    mustRunAfter(models.map { it.name })
   }
   withType<KtLintFormatTask> {
     // Under gradle 8 we must declare the dependency here, even if we're not going to be linting the model
-    mustRunAfter(
-      "buildActivityApiModel",
-      "buildNomisSyncApiModel",
-      "buildIncidentsApiModel",
-      "buildCsipApiModel",
-      "buildLocationsApiModel",
-      "buildCaseNotesApiModel",
-      "buildMappingServiceApiModel",
-      "buildSentencingAdjustmentsApiModel",
-      "buildAlertsApiModel",
-      "buildCourtSentencingApiModel",
-      "buildPrisonPersonApiModel",
-      "buildContactPersonApiModel",
-      "buildCorePersonApiModel",
-    )
+    mustRunAfter(models.map { it.name })
+  }
+}
+models.forEach {
+  tasks.register(it.name, GenerateTask::class) {
+    generatorName.set("kotlin")
+    skipValidateSpec.set(true)
+    inputSpec.set("openapi-specs/${it.input}")
+    outputDir.set("$buildDirectory/generated/${it.output}")
+    modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.${it.packageName}.model")
+    apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.${it.packageName}.api")
+    configOptions.set(configValues)
+    globalProperties.set(mapOf("models" to ""))
+    generateModelTests.set(false)
+    generateModelDocumentation.set(false)
   }
 }
 
@@ -120,155 +187,8 @@ val configValues = mapOf(
   "enumPropertyNaming" to "original",
 )
 
-tasks.register("buildActivityApiModel", GenerateTask::class) {
-  generatorName.set("kotlin")
-  skipValidateSpec.set(true)
-  inputSpec.set("openapi-specs/activities-api-docs.json")
-  // remoteInputSpec.set("https://activities-api-dev.prison.service.justice.gov.uk/v3/api-docs")
-  outputDir.set("$buildDirectory/generated/activities")
-  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model")
-  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.api")
-  configOptions.set(configValues)
-  globalProperties.set(mapOf("models" to ""))
-}
-
-tasks.register("buildNomisSyncApiModel", GenerateTask::class) {
-  generatorName.set("kotlin")
-  inputSpec.set("openapi-specs/nomis-sync-api-docs.json")
-  // remoteInputSpec.set("https://prisoner-to-nomis-update-dev.hmpps.service.justice.gov.uk/v3/api-docs")
-  outputDir.set("$buildDirectory/generated/nomissync")
-  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model")
-  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.api")
-  configOptions.set(configValues)
-  globalProperties.set(mapOf("models" to ""))
-}
-
-tasks.register("buildMappingServiceApiModel", GenerateTask::class) {
-  generatorName.set("kotlin")
-  inputSpec.set("openapi-specs/nomis-mapping-service-api-docs.json")
-  outputDir.set("$buildDirectory/generated/mappings")
-  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model")
-  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api")
-  configOptions.set(configValues)
-  globalProperties.set(mapOf("models" to ""))
-}
-
-tasks.register("buildIncidentsApiModel", GenerateTask::class) {
-  generatorName.set("kotlin")
-  skipValidateSpec.set(true)
-  inputSpec.set("openapi-specs/incidents-api-docs.json")
-  outputDir.set("$buildDirectory/generated/incidents")
-  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model")
-  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.api")
-  configOptions.set(configValues)
-  globalProperties.set(mapOf("models" to ""))
-}
-
-tasks.register("buildCsipApiModel", GenerateTask::class) {
-  generatorName.set("kotlin")
-  inputSpec.set("openapi-specs/csip-api-docs.json")
-  outputDir.set("$buildDirectory/generated/csip")
-  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model")
-  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.api")
-  configOptions.set(configValues)
-  globalProperties.set(mapOf("models" to ""))
-}
-
-tasks.register("buildLocationsApiModel", GenerateTask::class) {
-  generatorName.set("kotlin")
-  inputSpec.set("openapi-specs/locations-api-docs.json")
-  outputDir.set("$buildDirectory/generated/locations")
-  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model")
-  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.api")
-  configOptions.set(configValues)
-  globalProperties.set(mapOf("models" to ""))
-}
-
-tasks.register("buildCaseNotesApiModel", GenerateTask::class) {
-  generatorName.set("kotlin")
-  inputSpec.set("openapi-specs/casenotes-api-docs.json")
-  outputDir.set("$buildDirectory/generated/casenotes")
-  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model")
-  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.api")
-  configOptions.set(configValues)
-  globalProperties.set(mapOf("models" to ""))
-}
-
-tasks.register("buildSentencingAdjustmentsApiModel", GenerateTask::class) {
-  generatorName.set("kotlin")
-  skipValidateSpec.set(true)
-  inputSpec.set("openapi-specs/sentencing-adjustments-api-docs.json")
-  outputDir.set("$buildDirectory/generated/sentencingadjustments")
-  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.model")
-  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.api")
-  configOptions.set(configValues)
-  globalProperties.set(mapOf("models" to ""))
-}
-
-tasks.register("buildAlertsApiModel", GenerateTask::class) {
-  generatorName.set("kotlin")
-  skipValidateSpec.set(true)
-  inputSpec.set("openapi-specs/alerts-api-docs.json")
-  outputDir.set("$buildDirectory/generated/alerts")
-  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model")
-  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.api")
-  configOptions.set(configValues)
-  globalProperties.set(mapOf("models" to ""))
-}
-
-tasks.register("buildCourtSentencingApiModel", GenerateTask::class) {
-  generatorName.set("kotlin")
-  skipValidateSpec.set(true)
-  inputSpec.set("openapi-specs/court-sentencing-api-docs.json")
-  outputDir.set("$buildDirectory/generated/courtsentencing")
-  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model")
-  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.api")
-  configOptions.set(configValues)
-  globalProperties.set(mapOf("models" to ""))
-}
-
-tasks.register("buildPrisonPersonApiModel", GenerateTask::class) {
-  generatorName.set("kotlin")
-  skipValidateSpec.set(true)
-  inputSpec.set("openapi-specs/prison-person-api-docs.json")
-  outputDir.set("$buildDirectory/generated/prisonperson")
-  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model")
-  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.api")
-  configOptions.set(configValues)
-  globalProperties.set(mapOf("models" to ""))
-}
-
-tasks.register("buildContactPersonApiModel", GenerateTask::class) {
-  generatorName.set("kotlin")
-  skipValidateSpec.set(true)
-  inputSpec.set("openapi-specs/contact-person-api-docs.json")
-  outputDir.set("$buildDirectory/generated/contactperson")
-  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model")
-  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.api")
-  configOptions.set(configValues)
-  globalProperties.set(mapOf("models" to ""))
-}
-
-tasks.register("buildCorePersonApiModel", GenerateTask::class) {
-  generatorName.set("kotlin")
-  skipValidateSpec.set(true)
-  inputSpec.set("openapi-specs/core-person-api-docs.json")
-  outputDir.set("$buildDirectory/generated/coreperson")
-  modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model")
-  apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.api")
-  configOptions.set(configValues)
-  globalProperties.set(mapOf("models" to ""))
-}
-
-val generatedProjectDirs =
-  listOf(
-    "activities", "incidents", "csip", "locations", "casenotes",
-    "nomissync", "mappings", "sentencingadjustments", "alerts", "courtsentencing",
-    "prisonperson", "contactperson", "coreperson",
-  )
-
 kotlin {
-  generatedProjectDirs.forEach { generatedProject ->
+  models.map { it.output }.forEach { generatedProject ->
     sourceSets["main"].apply {
       kotlin.srcDir("$buildDirectory/generated/$generatedProject/src/main/kotlin")
     }
@@ -276,7 +196,7 @@ kotlin {
 }
 
 configure<KtlintExtension> {
-  generatedProjectDirs.forEach { generatedProject ->
+  models.map { it.output }.forEach { generatedProject ->
     filter {
       exclude {
         it.file.path.contains("$buildDirectory/generated/$generatedProject/src/main/")
