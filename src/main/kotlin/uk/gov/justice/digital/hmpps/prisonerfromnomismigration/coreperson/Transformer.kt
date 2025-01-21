@@ -5,7 +5,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Identifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderBelief
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderDisability
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderInterestToImmigration
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderNationality
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderNationalityDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderPhoneNumber
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderSexualOrientation
+import java.time.LocalDateTime
 
 // This method is subject to change once the CPR endpoint is available
 fun CorePerson.toMigrateCorePersonRequest(): MigrateCorePersonRequest = MigrateCorePersonRequest(
@@ -17,12 +23,17 @@ fun CorePerson.toMigrateCorePersonRequest(): MigrateCorePersonRequest = MigrateC
   phoneNumbers = phoneNumbers.map { it.toCprPhoneNumber() },
   emailAddresses = emailAddresses.map { MockCprEmailAddress(it.emailAddressId, it.email) },
   religions = beliefs.map { it.toCprBelief() },
-  // TODO add other lists/mappings
+  sentenceStartDates = sentenceStartDates,
+  nationalities = nationalities.map { it.toCprNationality() },
+  nationalityDetails = nationalityDetails.map { it.toCprNationalityDetails() },
+  sexualOrientations = sexualOrientations.map { it.toCprSexualOrientation() },
+  disabilities = disabilities.map { it.toCprDisability() },
+  interestsToImmigration = interestsToImmigration.map { it.toCprInterestToImmigration() },
 )
 
 fun CoreOffender.toMockCprOffender() = MockCprOffender(
   nomisOffenderId = offenderId,
-  title = title?.description,
+  title = title?.code,
   firstName = firstName,
   middleName1 = middleName1,
   middleName2 = middleName2,
@@ -52,16 +63,18 @@ fun OffenderAddress.toCprAddress() =
     street = street,
     locality = locality,
     postcode = postcode,
-    town = city?.description,
+    town = city?.code,
     county = county?.code,
     country = country?.code,
-    noFixedAddress = noFixedAddress ?: false,
+    noFixedAddress = noFixedAddress,
     isPrimary = primaryAddress,
-    usages = usages.map { addrUsage -> MockCprAddressUsage(addrUsage.usage.code, addrUsage.active) },
     mail = mailAddress,
     comment = comment,
     startDate = startDate,
     endDate = endDate,
+    validatedPAF = validatedPAF,
+    usages = usages.map { addrUsage -> MockCprAddressUsage(addrUsage.usage.code, addrUsage.active) },
+    phoneNumbers = phoneNumbers.map { it.toCprPhoneNumber() },
   )
 
 fun OffenderPhoneNumber.toCprPhoneNumber() =
@@ -73,7 +86,7 @@ fun OffenderPhoneNumber.toCprPhoneNumber() =
   )
 fun OffenderBelief.toCprBelief() = MockCprBelief(
   nomisBeliefId = beliefId,
-  religion = belief.description,
+  religion = belief.code,
   startDate = startDate,
   endDate = endDate,
   changeReason = changeReason,
@@ -81,3 +94,40 @@ fun OffenderBelief.toCprBelief() = MockCprBelief(
   createdByDisplayName = audit.createDisplayName,
   updatedDisplayName = audit.modifyDisplayName,
 )
+fun OffenderNationality.toCprNationality() = MockCprNationality(
+  nomisBookingId = bookingId,
+  nationality = nationality.code,
+  startDateTime = startDateTime.toDateTime()!!,
+  endDateTime = endDateTime.toDateTime(),
+  latestBooking = latestBooking,
+)
+fun OffenderNationalityDetails.toCprNationalityDetails() = MockCprNationalityDetails(
+  nomisBookingId = bookingId,
+  details = details,
+  startDateTime = startDateTime.toDateTime()!!,
+  endDateTime = endDateTime.toDateTime(),
+  latestBooking = latestBooking,
+)
+fun OffenderSexualOrientation.toCprSexualOrientation() = MockCprSexualOrientation(
+  nomisBookingId = bookingId,
+  sexualOrientation = sexualOrientation.code,
+  startDateTime = startDateTime.toDateTime()!!,
+  endDateTime = endDateTime.toDateTime(),
+  latestBooking = latestBooking,
+)
+fun OffenderDisability.toCprDisability() = MockCprDisability(
+  nomisBookingId = bookingId,
+  disability = disability,
+  startDateTime = startDateTime.toDateTime()!!,
+  endDateTime = endDateTime.toDateTime(),
+  latestBooking = latestBooking,
+)
+fun OffenderInterestToImmigration.toCprInterestToImmigration() = MockCprInterestToImmigration(
+  nomisBookingId = bookingId,
+  interestToImmigration = interestToImmigration,
+  startDateTime = startDateTime.toDateTime()!!,
+  endDateTime = endDateTime.toDateTime(),
+  latestBooking = latestBooking,
+)
+
+private fun String?.toDateTime() = this?.let { LocalDateTime.parse(it) }

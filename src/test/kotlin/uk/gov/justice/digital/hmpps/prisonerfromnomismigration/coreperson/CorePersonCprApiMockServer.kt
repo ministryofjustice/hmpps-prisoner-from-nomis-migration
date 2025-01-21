@@ -15,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
+import java.time.LocalDate
 
 class CorePersonCprApiExtension :
   BeforeAllCallback,
@@ -63,10 +64,16 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
           identifiers = emptyList(),
         ),
       ),
+      sentenceStartDates = listOf(LocalDate.parse("1980-01-01")),
       phoneNumbers = emptyList(),
       addresses = emptyList(),
       emailAddresses = emptyList(),
-      // TODO add additional child mappings
+      religions = emptyList(),
+      nationalities = emptyList(),
+      nationalityDetails = emptyList(),
+      sexualOrientations = emptyList(),
+      disabilities = emptyList(),
+      interestsToImmigration = emptyList(),
     )
 
     fun migrateCorePersonResponse(request: MigrateCorePersonRequest = migrateCorePersonRequest()) = MigrateCorePersonResponse(

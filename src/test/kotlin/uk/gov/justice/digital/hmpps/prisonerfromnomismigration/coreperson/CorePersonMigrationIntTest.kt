@@ -342,18 +342,6 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
             addresses = listOf(
               OffenderAddress(
                 addressId = 101,
-                phoneNumbers = listOf(
-                  OffenderPhoneNumber(
-                    phoneId = 101,
-                    number = "0113 555 5555",
-                    type = CodeDescription("HOM", "Home"),
-                    extension = "ext 5555",
-                  ),
-                ),
-                validatedPAF = true,
-                primaryAddress = true,
-                mailAddress = true,
-                usages = listOf(OffenderAddressUsage(addressId = 201, usage = CodeDescription("HOME", "Home"), active = true)),
                 flat = "Flat 1B",
                 premise = "Pudding Court",
                 street = "High Mound",
@@ -362,10 +350,22 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
                 city = CodeDescription("25343", "Sheffield"),
                 county = CodeDescription("S.YORKSHIRE", "South Yorkshire"),
                 country = CodeDescription("ENG", "England"),
-                noFixedAddress = true,
+                noFixedAddress = false,
                 comment = "Use this address",
                 startDate = LocalDate.parse("1987-01-01"),
                 endDate = LocalDate.parse("2024-02-01"),
+                validatedPAF = true,
+                primaryAddress = true,
+                mailAddress = true,
+                usages = listOf(OffenderAddressUsage(addressId = 201, usage = CodeDescription("HOME", "Home"), active = true)),
+                phoneNumbers = listOf(
+                  OffenderPhoneNumber(
+                    phoneId = 101,
+                    number = "0113 555 5555",
+                    type = CodeDescription("WORK", "Work"),
+                    extension = "ext 5555",
+                  ),
+                ),
               ),
               OffenderAddress(
                 addressId = 102,
@@ -496,7 +496,7 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
           CorePerson(
             prisonNumber = "A0002BC",
             activeFlag = false,
-            sentenceStartDates = listOf(LocalDate.parse("1981-02-02")),
+            sentenceStartDates = emptyList(),
             nationalities = emptyList(),
             nationalityDetails = emptyList(),
             sexualOrientations = emptyList(),
@@ -528,6 +528,8 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
       fun `will send optional core person data to CPR`() {
         with(cprRequests.find { it.nomisPrisonNumber == "A0001BC" } ?: throw AssertionError("Request not found")) {
           assertThat(nomisPrisonNumber).isEqualTo("A0001BC")
+          assertThat(sentenceStartDates.size).isEqualTo(1)
+          assertThat(sentenceStartDates[0]).isEqualTo(LocalDate.parse("1980-01-01"))
           assertThat(activeFlag).isEqualTo(true)
           assertThat(inOutStatus).isEqualTo("IN")
           // TODO Add more fields as CPR request is updated
@@ -538,6 +540,7 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
       fun `will send mandatory core person data to CPR`() {
         with(cprRequests.find { it.nomisPrisonNumber == "A0002BC" } ?: throw AssertionError("Request not found")) {
           assertThat(nomisPrisonNumber).isEqualTo("A0002BC")
+          assertThat(sentenceStartDates).isEmpty()
           assertThat(activeFlag).isFalse()
           assertThat(inOutStatus).isNull()
 
@@ -559,7 +562,7 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(offenders).hasSize(2)
           with(offenders[0]) {
             assertThat(nomisOffenderId).isEqualTo(1)
-            assertThat(title).isEqualTo("Mr")
+            assertThat(title).isEqualTo("MR")
             assertThat(firstName).isEqualTo("JOHN")
             assertThat(middleName1).isEqualTo("FRED")
             assertThat(middleName2).isEqualTo("JAMES")
@@ -649,11 +652,11 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(premise).isEqualTo("Pudding Court")
           assertThat(street).isEqualTo("High Mound")
           assertThat(locality).isEqualTo("Broomhill")
-          assertThat(town).isEqualTo("Sheffield")
+          assertThat(town).isEqualTo("25343")
           assertThat(county).isEqualTo("S.YORKSHIRE")
           assertThat(country).isEqualTo("ENG")
           assertThat(postcode).isEqualTo("S1 5GG")
-          assertThat(noFixedAddress).isTrue()
+          assertThat(noFixedAddress).isFalse()
           assertThat(mail).isTrue()
           assertThat(comment).isEqualTo("Use this address")
           assertThat(startDate).isEqualTo(LocalDate.parse("1987-01-01"))
@@ -671,7 +674,7 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(county).isNull()
           assertThat(country).isNull()
           assertThat(postcode).isNull()
-          assertThat(noFixedAddress).isFalse()
+          assertThat(noFixedAddress).isNull()
           assertThat(mail).isFalse()
           assertThat(comment).isNull()
           assertThat(startDate).isNull()
@@ -696,7 +699,7 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
         assertThat(corePerson.religions).hasSize(2)
         with(corePerson.religions[0]) {
           assertThat(nomisBeliefId).isEqualTo(2)
-          assertThat(religion).isEqualTo("Druid")
+          assertThat(religion).isEqualTo("DRU")
           assertThat(startDate).isEqualTo("2016-08-02")
           assertThat(endDate).isNull()
           assertThat(changeReason).isTrue()
@@ -706,7 +709,7 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
         }
         with(corePerson.religions[1]) {
           assertThat(nomisBeliefId).isEqualTo(1)
-          assertThat(religion).isEqualTo("Zoroastrian")
+          assertThat(religion).isEqualTo("ZORO")
           assertThat(startDate).isEqualTo("2016-06-01")
           assertThat(endDate).isEqualTo("2016-08-02")
           assertThat(changeReason).isTrue()
@@ -716,12 +719,113 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
         }
       }
 
-      // TODO Add tests for other children added to CPR request
+      @Test
+      fun `will send nationalities to CPR`() {
+        val corePerson =
+          cprRequests.find { it.nomisPrisonNumber == "A0001BC" } ?: throw AssertionError("Request not found")
+        assertThat(corePerson.nationalities).hasSize(2)
+        with(corePerson.nationalities[0]) {
+          assertThat(nomisBookingId).isEqualTo(1125444)
+          assertThat(nationality).isEqualTo("BRIT")
+          assertThat(startDateTime).isEqualTo("2016-08-18T19:58:23")
+          assertThat(endDateTime).isNull()
+          assertThat(latestBooking).isTrue()
+        }
+        with(corePerson.nationalities[1]) {
+          assertThat(nomisBookingId).isEqualTo(914459)
+          assertThat(nationality).isEqualTo("MG")
+          assertThat(startDateTime).isEqualTo("2012-01-11T16:45:02")
+          assertThat(endDateTime).isEqualTo("2014-09-05T10:55:00")
+          assertThat(latestBooking).isFalse()
+        }
+      }
+
+      @Test
+      fun `will send nationality details to CPR`() {
+        val corePerson =
+          cprRequests.find { it.nomisPrisonNumber == "A0001BC" } ?: throw AssertionError("Request not found")
+        assertThat(corePerson.nationalityDetails).hasSize(2)
+        with(corePerson.nationalityDetails[0]) {
+          assertThat(nomisBookingId).isEqualTo(1125444)
+          assertThat(details).isEqualTo("ROTL 23/01/2023")
+          assertThat(startDateTime).isEqualTo("2016-08-19T19:58:23")
+          assertThat(endDateTime).isNull()
+          assertThat(latestBooking).isTrue()
+        }
+        with(corePerson.nationalityDetails[1]) {
+          assertThat(nomisBookingId).isEqualTo(914459)
+          assertThat(details).isEqualTo("Claims to be from Madagascar")
+          assertThat(startDateTime).isEqualTo("2012-01-12T16:45:02")
+          assertThat(endDateTime).isEqualTo("2014-09-05T10:55:00")
+          assertThat(latestBooking).isFalse()
+        }
+      }
+
+      @Test
+      fun `will send sexualOrientations to CPR`() {
+        val corePerson =
+          cprRequests.find { it.nomisPrisonNumber == "A0001BC" } ?: throw AssertionError("Request not found")
+        assertThat(corePerson.sexualOrientations).hasSize(2)
+        with(corePerson.sexualOrientations[0]) {
+          assertThat(nomisBookingId).isEqualTo(1125444)
+          assertThat(sexualOrientation).isEqualTo("HET")
+          assertThat(startDateTime).isEqualTo("2016-08-19T19:58:23")
+          assertThat(endDateTime).isNull()
+          assertThat(latestBooking).isTrue()
+        }
+        with(corePerson.sexualOrientations[1]) {
+          assertThat(nomisBookingId).isEqualTo(914459)
+          assertThat(sexualOrientation).isEqualTo("ND")
+          assertThat(startDateTime).isEqualTo("2012-01-12T16:45:02")
+          assertThat(endDateTime).isEqualTo("2014-09-05T10:55:00")
+          assertThat(latestBooking).isFalse()
+        }
+      }
+
+      @Test
+      fun `will send disabilities to CPR`() {
+        val corePerson =
+          cprRequests.find { it.nomisPrisonNumber == "A0001BC" } ?: throw AssertionError("Request not found")
+        assertThat(corePerson.disabilities).hasSize(2)
+        with(corePerson.disabilities[0]) {
+          assertThat(nomisBookingId).isEqualTo(1125444)
+          assertThat(disability).isTrue()
+          assertThat(startDateTime).isEqualTo("2016-08-19T19:58:23")
+          assertThat(endDateTime).isNull()
+          assertThat(latestBooking).isTrue()
+        }
+        with(corePerson.disabilities[1]) {
+          assertThat(nomisBookingId).isEqualTo(914459)
+          assertThat(disability).isFalse()
+          assertThat(startDateTime).isEqualTo("2012-01-12T16:45:02")
+          assertThat(endDateTime).isEqualTo("2014-09-05T10:55:00")
+          assertThat(latestBooking).isFalse()
+        }
+      }
+
+      @Test
+      fun `will send interests to immigration to CPR`() {
+        val corePerson =
+          cprRequests.find { it.nomisPrisonNumber == "A0001BC" } ?: throw AssertionError("Request not found")
+        assertThat(corePerson.interestsToImmigration).hasSize(2)
+        with(corePerson.interestsToImmigration[0]) {
+          assertThat(nomisBookingId).isEqualTo(1125444)
+          assertThat(interestToImmigration).isTrue()
+          assertThat(startDateTime).isEqualTo("2016-08-19T19:58:23")
+          assertThat(endDateTime).isNull()
+          assertThat(latestBooking).isTrue()
+        }
+        with(corePerson.interestsToImmigration[1]) {
+          assertThat(nomisBookingId).isEqualTo(914459)
+          assertThat(interestToImmigration).isFalse()
+          assertThat(startDateTime).isEqualTo("2012-01-12T16:45:02")
+          assertThat(endDateTime).isEqualTo("2014-09-05T10:55:00")
+          assertThat(latestBooking).isFalse()
+        }
+      }
 
       @Test
       fun `will create mappings for nomis person to cpr core person`() {
-        // mock will return a cprId which is CPR-A0001BC
-
         with(mappingRequests.find { it.personMapping.nomisPrisonNumber == "A0001BC" } ?: throw AssertionError("Request not found")) {
           assertThat(mappingType).isEqualTo(CorePersonMappingsDto.MappingType.MIGRATED)
           assertThat(label).isEqualTo(migrationResult.migrationId)
@@ -769,7 +873,6 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
         }
       }
 
-      /* TODO Add in
       @Test
       fun `will create mappings for nomis emails to cpr emails`() {
         with(mappingRequests.find { it.personMapping.nomisPrisonNumber == "A0001BC" }?.emailMappings ?: throw AssertionError("Request not found")) {
@@ -781,7 +884,6 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(this).isEmpty()
         }
       }
-       */
     }
 
     @Nested
