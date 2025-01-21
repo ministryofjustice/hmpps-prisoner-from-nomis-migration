@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2025-01-17.10845.223ba5c"
+    "version": "2025-01-21.10868.300f79d"
   },
   "servers": [
     {
@@ -12215,6 +12215,74 @@
         }
       }
     },
+    "/non-associations/booking/{bookingId}": {
+      "get": {
+        "tags": [
+          "non-association-resource"
+        ],
+        "summary": "Get non-associations by booking ID",
+        "description": "Get non-associations for the given booking ID. Requires role NOMIS_NON_ASSOCIATIONS",
+        "operationId": "getByBookingId",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "description": "Booking ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 12345
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of non-associations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NonAssociationIdResponse"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No non-associations found for the given booking ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden, requires role NOMIS_NON_ASSOCIATIONS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/locations/{id}": {
       "get": {
         "tags": [
@@ -21554,13 +21622,13 @@
       "PageVisitIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -22071,13 +22139,13 @@
       "PageQuestionnaireIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -23909,13 +23977,13 @@
       "PagePrisonerIds": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -23976,13 +24044,13 @@
       "PagePrisonerId": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -25007,13 +25075,13 @@
       "PagePersonIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -25160,13 +25228,13 @@
       "PageNonAssociationIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -25415,13 +25483,13 @@
       "PageLocationIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -26014,13 +26082,13 @@
       "PageIncidentIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -26134,13 +26202,13 @@
       "PageIncentiveIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -26370,13 +26438,13 @@
       "PageCSIPIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -26430,13 +26498,13 @@
       "PageCourtCaseIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -26755,13 +26823,13 @@
       "PageCorporateOrganisationIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -26801,6 +26869,7 @@
       "CoreOffender": {
         "required": [
           "firstName",
+          "identifiers",
           "lastName",
           "offenderId",
           "workingName"
@@ -26817,28 +26886,28 @@
           },
           "firstName": {
             "type": "string",
-            "description": "First name of the person"
+            "description": "First name of this offender record"
           },
           "middleName1": {
             "type": "string",
-            "description": "Middle name of the person"
+            "description": "Middle name of this offender record"
           },
           "middleName2": {
             "type": "string",
-            "description": "Second middle name of the person"
+            "description": "Second middle name of this offender record"
           },
           "lastName": {
             "type": "string",
-            "description": "Surname name of the person"
+            "description": "Surname name of this offender record"
           },
           "dateOfBirth": {
             "type": "string",
-            "description": "Date of birth of the person",
+            "description": "Date of birth of this offender record",
             "format": "date"
           },
           "birthPlace": {
             "type": "string",
-            "description": "Birth place of the person"
+            "description": "Birth place of this offender record"
           },
           "birthCountry": {
             "$ref": "#/components/schemas/CodeDescription"
@@ -26849,9 +26918,19 @@
           "sex": {
             "$ref": "#/components/schemas/CodeDescription"
           },
+          "nameType": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
           "workingName": {
             "type": "boolean",
             "description": "The offender record associated with the current booking"
+          },
+          "identifiers": {
+            "type": "array",
+            "description": "List of identifiers for the offender",
+            "items": {
+              "$ref": "#/components/schemas/Identifier"
+            }
           }
         },
         "description": "The data held in NOMIS for an offender."
@@ -26863,7 +26942,6 @@
           "beliefs",
           "disabilities",
           "emailAddresses",
-          "identifiers",
           "interestsToImmigration",
           "nationalities",
           "nationalityDetails",
@@ -26893,13 +26971,6 @@
             "description": "List of offender records for the person",
             "items": {
               "$ref": "#/components/schemas/CoreOffender"
-            }
-          },
-          "identifiers": {
-            "type": "array",
-            "description": "List of identifiers for the person",
-            "items": {
-              "$ref": "#/components/schemas/Identifier"
             }
           },
           "sentenceStartDates": {
@@ -26980,7 +27051,6 @@
       "Identifier": {
         "required": [
           "identifier",
-          "offenderId",
           "sequence",
           "type",
           "verified"
@@ -26990,11 +27060,6 @@
           "sequence": {
             "type": "integer",
             "description": "Unique NOMIS sequence for this identifier for this person",
-            "format": "int64"
-          },
-          "offenderId": {
-            "type": "integer",
-            "description": "The offender id",
             "format": "int64"
           },
           "type": {
@@ -27727,13 +27792,13 @@
       "PageAppointmentIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -28074,13 +28139,13 @@
       "PageFindActiveAllocationIdsResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -28139,13 +28204,13 @@
       "PageAdjustmentIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -28210,13 +28275,13 @@
       "PageAdjudicationChargeIdResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -28536,13 +28601,13 @@
       "PageFindActiveActivityIdsResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"

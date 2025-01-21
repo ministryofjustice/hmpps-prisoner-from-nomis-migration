@@ -36,10 +36,18 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CoreOffender
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorePerson
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Identifier
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderAddressUsage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderBelief
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderDisability
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderEmailAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderInterestToImmigration
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderNationality
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderNationalityDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderPhoneNumber
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderSexualOrientation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
@@ -276,31 +284,48 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
           CorePerson(
             prisonNumber = "A0001BC",
             activeFlag = true,
-            identifiers = emptyList(),
-            sentenceStartDates = listOf(LocalDate.parse("1980-01-01")),
-            nationalities = emptyList(),
-            nationalityDetails = emptyList(),
-            sexualOrientations = emptyList(),
-            disabilities = emptyList(),
-            interestsToImmigration = emptyList(),
-            beliefs = emptyList(),
             inOutStatus = "IN",
             offenders = listOf(
               CoreOffender(
                 offenderId = 1,
-                firstName = "JOHN",
-                lastName = "SMITH",
-                workingName = true,
                 title = CodeDescription(code = "MR", description = "Mr"),
+                firstName = "JOHN",
                 middleName1 = "FRED",
                 middleName2 = "JAMES",
+                lastName = "SMITH",
+                workingName = true,
                 dateOfBirth = LocalDate.parse("1980-01-01"),
                 birthPlace = "LONDON",
                 birthCountry = CodeDescription(code = "ENG", description = "England"),
                 ethnicity = CodeDescription(code = "BLACK", description = "Black"),
                 sex = CodeDescription(code = "M", description = "Male"),
+                nameType = CodeDescription(code = "MAID", description = "Maiden"),
+                identifiers = listOf(
+                  Identifier(
+                    sequence = 1,
+                    type = CodeDescription("PNC", "PNC Number"),
+                    identifier = "20/0071818T",
+                    issuedAuthority = "Met Police",
+                    issuedDate = LocalDate.parse("2020-01-01"),
+                    verified = true,
+                  ),
+                  Identifier(
+                    sequence = 2,
+                    type = CodeDescription("CID", "CID Number"),
+                    identifier = "ABWERJKL",
+                    verified = false,
+                  ),
+                ),
+              ),
+              CoreOffender(
+                offenderId = 2,
+                firstName = "JIM",
+                lastName = "SMITH",
+                workingName = false,
+                identifiers = emptyList(),
               ),
             ),
+            sentenceStartDates = listOf(LocalDate.parse("1980-01-01")),
             phoneNumbers = listOf(
               OffenderPhoneNumber(
                 phoneId = 10,
@@ -357,11 +382,120 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
                 email = "test@test.justice.gov.uk",
               ),
             ),
+
+            nationalities = listOf(
+              OffenderNationality(
+                bookingId = 1125444,
+                nationality = CodeDescription("BRIT", "British"),
+                startDateTime = "2016-08-18T19:58:23",
+                latestBooking = true,
+              ),
+              OffenderNationality(
+                bookingId = 914459,
+                nationality = CodeDescription("MG", "Malagasy"),
+                startDateTime = "2012-01-11T16:45:02",
+                endDateTime = "2014-09-05T10:55:00",
+                latestBooking = false,
+              ),
+            ),
+            nationalityDetails = listOf(
+              OffenderNationalityDetails(
+                bookingId = 1125444,
+                details = "ROTL 23/01/2023",
+                startDateTime = "2016-08-19T19:58:23",
+                latestBooking = true,
+              ),
+              OffenderNationalityDetails(
+                bookingId = 914459,
+                details = "Claims to be from Madagascar",
+                startDateTime = "2012-01-12T16:45:02",
+                endDateTime = "2014-09-05T10:55:00",
+                latestBooking = false,
+              ),
+            ),
+            sexualOrientations = listOf(
+              OffenderSexualOrientation(
+                bookingId = 1125444,
+                sexualOrientation = CodeDescription("HET", "Heterosexual"),
+                startDateTime = "2016-08-19T19:58:23",
+                latestBooking = true,
+              ),
+              OffenderSexualOrientation(
+                bookingId = 914459,
+                sexualOrientation = CodeDescription("ND", "Not disclosed"),
+                startDateTime = "2012-01-12T16:45:02",
+                endDateTime = "2014-09-05T10:55:00",
+                latestBooking = false,
+              ),
+            ),
+            disabilities = listOf(
+              OffenderDisability(
+                bookingId = 1125444,
+                disability = true,
+                startDateTime = "2016-08-19T19:58:23",
+                latestBooking = true,
+              ),
+              OffenderDisability(
+                bookingId = 914459,
+                disability = false,
+                startDateTime = "2012-01-12T16:45:02",
+                endDateTime = "2014-09-05T10:55:00",
+                latestBooking = false,
+              ),
+            ),
+            interestsToImmigration = listOf(
+              OffenderInterestToImmigration(
+                bookingId = 1125444,
+                startDateTime = "2016-08-19T19:58:23",
+                interestToImmigration = true,
+                latestBooking = true,
+              ),
+              OffenderInterestToImmigration(
+                bookingId = 914459,
+                startDateTime = "2012-01-12T16:45:02",
+                endDateTime = "2014-09-05T10:55:00",
+                interestToImmigration = false,
+                latestBooking = false,
+
+              ),
+            ),
+            beliefs = listOf(
+              OffenderBelief(
+                beliefId = 2,
+                belief = CodeDescription("DRU", "Druid"),
+                startDate = LocalDate.parse("2016-08-02"),
+                verified = true,
+                audit = NomisAudit(
+                  createDatetime = "2016-08-01",
+                  createUsername = "KOFEADDY",
+                  createDisplayName = "KOFE ADDY",
+                ),
+                changeReason = true,
+                comments = "No longer believes in Zoroastrianism",
+              ),
+              OffenderBelief(
+                beliefId = 1,
+                belief = CodeDescription("ZORO", "Zoroastrian"),
+                startDate = LocalDate.parse("2016-06-01"),
+                endDate = LocalDate.parse("2016-08-02"),
+                verified = true,
+                audit = NomisAudit(
+                  createDatetime = "2016-08-01",
+                  createUsername = "KOFEADDY",
+                  createDisplayName = "KOFE ADDY",
+                  modifyUserId = "JIMADM`",
+                  modifyDisplayName = "Jimmy Admin",
+                  modifyDatetime = "2016-08-02T10:55:00",
+                ),
+                changeReason = true,
+                comments = "New believer",
+              ),
+            ),
           ),
+
           CorePerson(
             prisonNumber = "A0002BC",
             activeFlag = false,
-            identifiers = emptyList(),
             sentenceStartDates = listOf(LocalDate.parse("1981-02-02")),
             nationalities = emptyList(),
             nationalityDetails = emptyList(),
@@ -371,10 +505,11 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
             beliefs = emptyList(),
             offenders = listOf(
               CoreOffender(
-                offenderId = 1,
+                offenderId = 3,
                 firstName = "KWAME",
                 lastName = "KOBE",
                 workingName = true,
+                identifiers = emptyList(),
               ),
             ),
             phoneNumbers = emptyList(),
@@ -393,10 +528,6 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
       fun `will send optional core person data to CPR`() {
         with(cprRequests.find { it.nomisPrisonNumber == "A0001BC" } ?: throw AssertionError("Request not found")) {
           assertThat(nomisPrisonNumber).isEqualTo("A0001BC")
-          assertThat(firstName).isEqualTo("JOHN")
-          assertThat(middleName1).isEqualTo("FRED")
-          assertThat(middleName2).isEqualTo("JAMES")
-          assertThat(lastName).isEqualTo("SMITH")
           assertThat(activeFlag).isEqualTo(true)
           assertThat(inOutStatus).isEqualTo("IN")
           // TODO Add more fields as CPR request is updated
@@ -407,17 +538,83 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
       fun `will send mandatory core person data to CPR`() {
         with(cprRequests.find { it.nomisPrisonNumber == "A0002BC" } ?: throw AssertionError("Request not found")) {
           assertThat(nomisPrisonNumber).isEqualTo("A0002BC")
-          assertThat(firstName).isEqualTo("KWAME")
-          assertThat(middleName1).isNull()
-          assertThat(middleName2).isNull()
-          assertThat(lastName).isEqualTo("KOBE")
           assertThat(activeFlag).isFalse()
           assertThat(inOutStatus).isNull()
 
+          assertThat(offenders.size).isEqualTo(1)
+          assertThat(offenders[0].firstName).isEqualTo("KWAME")
+          assertThat(offenders[0].middleName1).isNull()
+          assertThat(offenders[0].middleName2).isNull()
+          assertThat(offenders[0].lastName).isEqualTo("KOBE")
           assertThat(phoneNumbers).isEmpty()
           assertThat(addresses).isEmpty()
           assertThat(emailAddresses).isEmpty()
           // TODO Add more fields as CPR request is updated
+        }
+      }
+
+      @Test
+      fun `will send offender details to CPR`() {
+        with(cprRequests.find { it.nomisPrisonNumber == "A0001BC" } ?: throw AssertionError("Request not found")) {
+          assertThat(offenders).hasSize(2)
+          with(offenders[0]) {
+            assertThat(nomisOffenderId).isEqualTo(1)
+            assertThat(title).isEqualTo("Mr")
+            assertThat(firstName).isEqualTo("JOHN")
+            assertThat(middleName1).isEqualTo("FRED")
+            assertThat(middleName2).isEqualTo("JAMES")
+            assertThat(lastName).isEqualTo("SMITH")
+            assertThat(dateOfBirth).isEqualTo(LocalDate.parse("1980-01-01"))
+            assertThat(birthPlace).isEqualTo("LONDON")
+            assertThat(birthCountry).isEqualTo("ENG")
+            assertThat(race).isEqualTo("BLACK")
+            assertThat(sex).isEqualTo("M")
+            assertThat(nameType).isEqualTo("MAID")
+            assertThat(workingName).isTrue()
+          }
+          with(offenders[1]) {
+            assertThat(nomisOffenderId).isEqualTo(2)
+            assertThat(title).isNull()
+            assertThat(firstName).isEqualTo("JIM")
+            assertThat(middleName1).isNull()
+            assertThat(middleName2).isNull()
+            assertThat(lastName).isEqualTo("SMITH")
+            assertThat(workingName).isFalse()
+            assertThat(dateOfBirth).isNull()
+            assertThat(birthPlace).isNull()
+            assertThat(birthCountry).isNull()
+            assertThat(race).isNull()
+            assertThat(sex).isNull()
+            assertThat(nameType).isNull()
+            assertThat(workingName).isFalse()
+          }
+        }
+      }
+
+      @Test
+      fun `will send offender identifier details to CPR`() {
+        with(cprRequests.find { it.nomisPrisonNumber == "A0001BC" } ?: throw AssertionError("Request not found")) {
+          assertThat(offenders).hasSize(2)
+          with(offenders[0]) {
+            assertThat(identifiers).hasSize(2)
+            with(this.identifiers[0]) {
+              assertThat(nomisSequence).isEqualTo(1)
+              assertThat(type).isEqualTo("PNC")
+              assertThat(identifier).isEqualTo("20/0071818T")
+              assertThat(issuedBy).isEqualTo("Met Police")
+              assertThat(issuedDate).isEqualTo(LocalDate.parse("2020-01-01"))
+              assertThat(verified).isTrue()
+            }
+            with(this.identifiers[1]) {
+              assertThat(nomisSequence).isEqualTo(2)
+              assertThat(type).isEqualTo("CID")
+              assertThat(identifier).isEqualTo("ABWERJKL")
+              assertThat(issuedBy).isNull()
+              assertThat(issuedDate).isNull()
+              assertThat(verified).isFalse()
+            }
+          }
+          assertThat(offenders[1].identifiers).hasSize(0)
         }
       }
 
@@ -492,6 +689,33 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
         }
       }
 
+      @Test
+      fun `will send religion details to CPR`() {
+        val corePerson =
+          cprRequests.find { it.nomisPrisonNumber == "A0001BC" } ?: throw AssertionError("Request not found")
+        assertThat(corePerson.religions).hasSize(2)
+        with(corePerson.religions[0]) {
+          assertThat(nomisBeliefId).isEqualTo(2)
+          assertThat(religion).isEqualTo("Druid")
+          assertThat(startDate).isEqualTo("2016-08-02")
+          assertThat(endDate).isNull()
+          assertThat(changeReason).isTrue()
+          assertThat(comment).isEqualTo("No longer believes in Zoroastrianism")
+          assertThat(createdByDisplayName).isEqualTo("KOFE ADDY")
+          assertThat(updatedDisplayName).isNull()
+        }
+        with(corePerson.religions[1]) {
+          assertThat(nomisBeliefId).isEqualTo(1)
+          assertThat(religion).isEqualTo("Zoroastrian")
+          assertThat(startDate).isEqualTo("2016-06-01")
+          assertThat(endDate).isEqualTo("2016-08-02")
+          assertThat(changeReason).isTrue()
+          assertThat(comment).isEqualTo("New believer")
+          assertThat(createdByDisplayName).isEqualTo("KOFE ADDY")
+          assertThat(updatedDisplayName).isEqualTo("Jimmy Admin")
+        }
+      }
+
       // TODO Add tests for other children added to CPR request
 
       @Test
@@ -511,6 +735,9 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(personMapping.cprId).isEqualTo("CPR-A0002BC")
         }
       }
+
+      // TODO Add tests for Offender Mappings
+      // TODO Add tests for Religion/Belief Mappings
 
       @Test
       fun `will create mappings for nomis addresses to cpr address`() {
