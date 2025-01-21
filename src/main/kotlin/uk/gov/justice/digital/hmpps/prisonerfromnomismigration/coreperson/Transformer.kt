@@ -2,20 +2,21 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CoreOffender
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorePerson
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Identifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderBelief
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderPhoneNumber
 
 // This method is subject to change once the CPR endpoint is available
 fun CorePerson.toMigrateCorePersonRequest(): MigrateCorePersonRequest = MigrateCorePersonRequest(
-  nomisPrisonNumber = this.prisonNumber,
-  offenders = this.offenders.map { it.toMockCprOffender() },
-  activeFlag = this.activeFlag,
-  inOutStatus = this.inOutStatus,
-  addresses = this.addresses.map { it.toCprAddress() },
-  phoneNumbers = this.phoneNumbers.map { it.toCprPhoneNumber() },
-  emailAddresses = this.emailAddresses.map { MockCprEmailAddress(it.emailAddressId, it.email) },
-  religions = this.beliefs.map { it.toCprBelief() },
+  nomisPrisonNumber = prisonNumber,
+  activeFlag = activeFlag,
+  inOutStatus = inOutStatus,
+  offenders = offenders.map { it.toMockCprOffender() },
+  addresses = addresses.map { it.toCprAddress() },
+  phoneNumbers = phoneNumbers.map { it.toCprPhoneNumber() },
+  emailAddresses = emailAddresses.map { MockCprEmailAddress(it.emailAddressId, it.email) },
+  religions = beliefs.map { it.toCprBelief() },
   // TODO add other lists/mappings
 )
 
@@ -32,8 +33,17 @@ fun CoreOffender.toMockCprOffender() = MockCprOffender(
   race = ethnicity?.code,
   sex = sex?.code,
   workingName = workingName,
+  nameType = nameType?.code,
+  identifiers = identifiers.map { it.toMockCprIdentifier() },
 )
-
+fun Identifier.toMockCprIdentifier() = MockCprIdentifier(
+  nomisSequence = sequence,
+  identifier = identifier,
+  type = type.code,
+  issuedBy = issuedAuthority,
+  issuedDate = issuedDate,
+  verified = verified,
+)
 fun OffenderAddress.toCprAddress() =
   MockCprAddress(
     nomisAddressId = addressId,

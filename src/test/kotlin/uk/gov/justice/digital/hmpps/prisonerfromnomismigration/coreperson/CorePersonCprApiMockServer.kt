@@ -60,6 +60,7 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
           middleName2 = "JAMES",
           lastName = "KOFI",
           workingName = true,
+          identifiers = emptyList(),
         ),
       ),
       phoneNumbers = emptyList(),

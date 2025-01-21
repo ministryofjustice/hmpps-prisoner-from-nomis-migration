@@ -80,6 +80,7 @@ fun corePerson(prisonNumber: String = "A1234BC"): CorePerson = CorePerson(
       birthCountry = CodeDescription(code = "ENG", description = "England"),
       ethnicity = CodeDescription(code = "BLACK", description = "Black"),
       sex = CodeDescription(code = "M", description = "Male"),
+      nameType = CodeDescription(code = "MAID", description = "Maiden"),
       identifiers = listOf(
         Identifier(
           sequence = 1,

@@ -299,15 +299,8 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
                 birthCountry = CodeDescription(code = "ENG", description = "England"),
                 ethnicity = CodeDescription(code = "BLACK", description = "Black"),
                 sex = CodeDescription(code = "M", description = "Male"),
+                nameType = CodeDescription(code = "MAID", description = "Maiden"),
                 identifiers = listOf(
-                  Identifier(
-                    sequence = 2,
-                    type = CodeDescription("PNC", "PNC Number"),
-                    identifier = "20/0071818T",
-                    issuedAuthority = "Met Police",
-                    issuedDate = LocalDate.parse("2020-01-01"),
-                    verified = true,
-                  ),
                   Identifier(
                     sequence = 1,
                     type = CodeDescription("PNC", "PNC Number"),
@@ -315,6 +308,12 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
                     issuedAuthority = "Met Police",
                     issuedDate = LocalDate.parse("2020-01-01"),
                     verified = true,
+                  ),
+                  Identifier(
+                    sequence = 2,
+                    type = CodeDescription("CID", "CID Number"),
+                    identifier = "ABWERJKL",
+                    verified = false,
                   ),
                 ),
               ),
@@ -570,6 +569,7 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
             assertThat(birthCountry).isEqualTo("ENG")
             assertThat(race).isEqualTo("BLACK")
             assertThat(sex).isEqualTo("M")
+            assertThat(nameType).isEqualTo("MAID")
             assertThat(workingName).isTrue()
           }
           with(offenders[1]) {
@@ -585,8 +585,36 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
             assertThat(birthCountry).isNull()
             assertThat(race).isNull()
             assertThat(sex).isNull()
+            assertThat(nameType).isNull()
             assertThat(workingName).isFalse()
           }
+        }
+      }
+
+      @Test
+      fun `will send offender identifier details to CPR`() {
+        with(cprRequests.find { it.nomisPrisonNumber == "A0001BC" } ?: throw AssertionError("Request not found")) {
+          assertThat(offenders).hasSize(2)
+          with(offenders[0]) {
+            assertThat(identifiers).hasSize(2)
+            with(this.identifiers[0]) {
+              assertThat(nomisSequence).isEqualTo(1)
+              assertThat(type).isEqualTo("PNC")
+              assertThat(identifier).isEqualTo("20/0071818T")
+              assertThat(issuedBy).isEqualTo("Met Police")
+              assertThat(issuedDate).isEqualTo(LocalDate.parse("2020-01-01"))
+              assertThat(verified).isTrue()
+            }
+            with(this.identifiers[1]) {
+              assertThat(nomisSequence).isEqualTo(2)
+              assertThat(type).isEqualTo("CID")
+              assertThat(identifier).isEqualTo("ABWERJKL")
+              assertThat(issuedBy).isNull()
+              assertThat(issuedDate).isNull()
+              assertThat(verified).isFalse()
+            }
+          }
+          assertThat(offenders[1].identifiers).hasSize(0)
         }
       }
 
@@ -687,6 +715,7 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(updatedDisplayName).isEqualTo("Jimmy Admin")
         }
       }
+
       // TODO Add tests for other children added to CPR request
 
       @Test

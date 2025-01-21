@@ -72,6 +72,17 @@ data class MockCprOffender(
   // The offender record associated with the current booking */
   val workingName: Boolean,
   val sex: String? = null,
+  val nameType: String? = null,
+  val identifiers: List<MockCprIdentifier>,
+)
+
+data class MockCprIdentifier(
+  val nomisSequence: Long,
+  val type: String,
+  val identifier: String,
+  val issuedBy: String? = null,
+  val issuedDate: LocalDate? = null,
+  val verified: Boolean? = null,
 )
 data class MockCprAddress(
   val nomisAddressId: Long,
