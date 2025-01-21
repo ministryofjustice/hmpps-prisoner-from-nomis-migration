@@ -168,6 +168,10 @@ generic-service:
       HMPPS_SQS_QUEUES_EVENTCONTACTPERSON_QUEUE_NAME: "sqs_name"
     prison-events-contactperson-dl-queue:
       HMPPS_SQS_QUEUES_EVENTCONTACTPERSON_DLQ_NAME: "sqs_name"
+    prison-events-corporate-queue:
+      HMPPS_SQS_QUEUES_EVENTCORPORATE_QUEUE_NAME: "sqs_name"
+    prison-events-corporate-dl-queue:
+      HMPPS_SQS_QUEUES_EVENTCORPORATE_DLQ_NAME: "sqs_name"
     rds-database:
       SPRING_FLYWAY_USER: "database_username"
       SPRING_FLYWAY_PASSWORD: "database_password"

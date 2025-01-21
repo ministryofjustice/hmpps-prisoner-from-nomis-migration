@@ -107,6 +107,8 @@ generic-prometheus-alerts:
       - "syscon-devs-preprod-migration_corporate_dlq"
       - "syscon-devs-preprod-prisoner_from_nomis_contactperson_queue"
       - "syscon-devs-preprod-prisoner_from_nomis_contactperson_dl_queue"
+      - "syscon-devs-preprod-prisoner_from_nomis_corporate_queue"
+      - "syscon-devs-preprod-prisoner_from_nomis_corporate_dl_queue"
     coreperson:
       - "syscon-devs-preprod-migration_coreperson_queue"
       - "syscon-devs-preprod-migration_coreperson_dlq"
