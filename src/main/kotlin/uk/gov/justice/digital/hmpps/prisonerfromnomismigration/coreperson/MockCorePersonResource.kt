@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 /**
  * This represents the possible interface for the CorePerson api service.
@@ -40,6 +41,14 @@ data class IdPair(
   val cprId: String,
 )
 
+data class MigrateCorePersonResponse(
+  val cprId: String,
+  val nomisPrisonNumber: String,
+  val addressIds: List<IdPair> = emptyList(),
+  val phoneIds: List<IdPair> = emptyList(),
+  val emailAddressIds: List<IdPair> = emptyList(),
+)
+
 data class MigrateCorePersonRequest(
   val nomisPrisonNumber: String,
   val activeFlag: Boolean,
@@ -49,15 +58,14 @@ data class MigrateCorePersonRequest(
   val phoneNumbers: List<MockCprPhoneNumber> = emptyList(),
   val emailAddresses: List<MockCprEmailAddress> = emptyList(),
   val religions: List<MockCprBelief> = emptyList(),
+  val sentenceStartDates: List<LocalDate>,
+  val nationalities: List<MockCprNationality>,
+  val nationalityDetails: List<MockCprNationalityDetails>,
+  val sexualOrientations: List<MockCprSexualOrientation>,
+  val disabilities: List<MockCprDisability>,
+  val interestsToImmigration: List<MockCprInterestToImmigration>,
 )
 
-data class MigrateCorePersonResponse(
-  val cprId: String,
-  val nomisPrisonNumber: String,
-  val addressIds: List<IdPair> = emptyList(),
-  val phoneIds: List<IdPair> = emptyList(),
-  val emailAddressIds: List<IdPair> = emptyList(),
-)
 data class MockCprOffender(
   val nomisOffenderId: Long,
   val title: String? = null,
@@ -86,8 +94,6 @@ data class MockCprIdentifier(
 )
 data class MockCprAddress(
   val nomisAddressId: Long,
-  val isPrimary: Boolean,
-  val usages: List<MockCprAddressUsage> = emptyList(),
   val flat: String? = null,
   val premise: String? = null,
   val street: String? = null,
@@ -96,11 +102,15 @@ data class MockCprAddress(
   val postcode: String? = null,
   val county: String? = null,
   val country: String? = null,
-  val noFixedAddress: Boolean = false,
   val startDate: LocalDate? = null,
   val endDate: LocalDate? = null,
   val comment: String? = null,
+  val isPrimary: Boolean,
+  val validatedPAF: Boolean,
+  val noFixedAddress: Boolean? = null,
   val mail: Boolean? = false,
+  val usages: List<MockCprAddressUsage>,
+  val phoneNumbers: List<MockCprPhoneNumber>,
 )
 data class MockCprAddressUsage(
   val usage: String,
@@ -125,4 +135,39 @@ data class MockCprBelief(
   val comment: String? = null,
   val createdByDisplayName: String? = null,
   val updatedDisplayName: String? = null,
+)
+data class MockCprNationality(
+  val nomisBookingId: Long,
+  val nationality: String,
+  val startDateTime: LocalDateTime,
+  val endDateTime: LocalDateTime? = null,
+  val latestBooking: Boolean? = null,
+)
+data class MockCprNationalityDetails(
+  val nomisBookingId: Long,
+  val details: String,
+  val startDateTime: LocalDateTime,
+  val endDateTime: LocalDateTime? = null,
+  val latestBooking: Boolean? = null,
+)
+data class MockCprSexualOrientation(
+  val nomisBookingId: Long,
+  val sexualOrientation: String,
+  val startDateTime: LocalDateTime,
+  val endDateTime: LocalDateTime? = null,
+  val latestBooking: Boolean? = null,
+)
+data class MockCprDisability(
+  val nomisBookingId: Long,
+  val disability: Boolean,
+  val startDateTime: LocalDateTime,
+  val endDateTime: LocalDateTime? = null,
+  val latestBooking: Boolean? = null,
+)
+data class MockCprInterestToImmigration(
+  val nomisBookingId: Long,
+  val interestToImmigration: Boolean,
+  val startDateTime: LocalDateTime,
+  val endDateTime: LocalDateTime? = null,
+  val latestBooking: Boolean? = null,
 )
