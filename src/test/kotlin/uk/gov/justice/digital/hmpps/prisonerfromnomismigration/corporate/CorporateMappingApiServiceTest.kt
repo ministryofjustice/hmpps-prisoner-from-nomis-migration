@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingDto.MappingType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingsDto
@@ -135,8 +136,82 @@ class CorporateMappingApiServiceTest {
       apiService.getMigrationDetails(migrationId = "2020-01-01T10:00")
 
       mockServer.verify(
-        getRequestedFor(urlPathEqualTo("/mapping/corporate/corporate/migration-id/2020-01-01T10%3A00")),
+        getRequestedFor(urlPathEqualTo("/mapping/corporate/organisation/migration-id/2020-01-01T10%3A00")),
       )
+    }
+  }
+
+  @Nested
+  inner class CreateCorporateMapping {
+    @Test
+    internal fun `will pass oath2 token to create corporate mapping endpoint`() = runTest {
+      mockServer.stubCreateCorporateMapping()
+
+      apiService.createCorporateMapping(
+        CorporateMappingDto(
+          mappingType = NOMIS_CREATED,
+          nomisId = 1234567,
+          dpsId = "1234567",
+        ),
+      )
+
+      mockServer.verify(
+        postRequestedFor(urlPathEqualTo("/mapping/corporate/organisation")).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will return success when OK response`() = runTest {
+      mockServer.stubCreateCorporateMapping()
+
+      val result = apiService.createCorporateMapping(
+        CorporateMappingDto(
+          mappingType = NOMIS_CREATED,
+          nomisId = 1234567,
+          dpsId = "1234567",
+        ),
+      )
+
+      assertThat(result.isError).isFalse()
+    }
+
+    @Test
+    fun `will return error when 409 conflict`() = runTest {
+      val nomisId = 1234567890L
+      val dpsId = "1234567890"
+      val existingDpsId = "1234567890"
+
+      mockServer.stubCreateCorporateMapping(
+        error = DuplicateMappingErrorResponse(
+          moreInfo = DuplicateErrorContentObject(
+            duplicate = CorporateMappingDto(
+              dpsId = dpsId,
+              nomisId = nomisId,
+              mappingType = NOMIS_CREATED,
+            ),
+            existing = CorporateMappingDto(
+              dpsId = existingDpsId,
+              nomisId = nomisId,
+              mappingType = NOMIS_CREATED,
+            ),
+          ),
+          errorCode = 1409,
+          status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+          userMessage = "Duplicate mapping",
+        ),
+      )
+
+      val result = apiService.createCorporateMapping(
+        CorporateMappingDto(
+          mappingType = NOMIS_CREATED,
+          nomisId = 1234567,
+          dpsId = "1234567",
+        ),
+      )
+
+      assertThat(result.isError).isTrue()
+      assertThat(result.errorResponse!!.moreInfo.duplicate.dpsId).isEqualTo(dpsId)
+      assertThat(result.errorResponse!!.moreInfo.existing.dpsId).isEqualTo(existingDpsId)
     }
   }
 
@@ -160,7 +235,7 @@ class CorporateMappingApiServiceTest {
       apiService.getByNomisCorporateIdOrNull(nomisCorporateId = 1234567)
 
       mockServer.verify(
-        getRequestedFor(urlPathEqualTo("/mapping/corporate/corporate/nomis-corporate-id/1234567")),
+        getRequestedFor(urlPathEqualTo("/mapping/corporate/organisation/nomis-corporate-id/1234567")),
       )
     }
 
@@ -171,7 +246,7 @@ class CorporateMappingApiServiceTest {
         mapping = CorporateMappingDto(
           dpsId = "1234567",
           nomisId = 1234567,
-          mappingType = CorporateMappingDto.MappingType.MIGRATED,
+          mappingType = MappingType.MIGRATED,
         ),
       )
 

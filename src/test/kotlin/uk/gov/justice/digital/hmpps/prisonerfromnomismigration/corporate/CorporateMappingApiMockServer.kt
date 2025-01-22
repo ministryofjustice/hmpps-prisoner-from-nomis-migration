@@ -43,10 +43,9 @@ class CorporateMappingApiMockServer(private val objectMapper: ObjectMapper) {
       ),
     )
   }
-
   fun stubGetMigrationDetails(migrationId: String = "2020-01-01T11:10:00", count: Int = 1) {
     mappingApi.stubFor(
-      get(urlPathMatching("/mapping/corporate/corporate/migration-id/$migrationId")).willReturn(
+      get(urlPathMatching("/mapping/corporate/organisation/migration-id/$migrationId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody(
@@ -71,6 +70,27 @@ class CorporateMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
+  fun stubCreateCorporateMapping() {
+    mappingApi.stubFor(
+      post("/mapping/corporate/organisation").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
+  fun stubCreateCorporateMapping(error: DuplicateMappingErrorResponse) {
+    mappingApi.stubFor(
+      post("/mapping/corporate/organisation").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(409)
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
   fun stubGetByNomisCorporateIdOrNull(
     nomisCorporateId: Long = 123456,
     mapping: CorporateMappingDto? = CorporateMappingDto(
@@ -81,7 +101,7 @@ class CorporateMappingApiMockServer(private val objectMapper: ObjectMapper) {
   ) {
     mapping?.apply {
       mappingApi.stubFor(
-        get(urlEqualTo("/mapping/corporate/corporate/nomis-corporate-id/$nomisCorporateId")).willReturn(
+        get(urlEqualTo("/mapping/corporate/organisation/nomis-corporate-id/$nomisCorporateId")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
@@ -90,7 +110,7 @@ class CorporateMappingApiMockServer(private val objectMapper: ObjectMapper) {
       )
     } ?: run {
       mappingApi.stubFor(
-        get(urlEqualTo("/mapping/corporate/corporate/nomis-corporate-id/$nomisCorporateId")).willReturn(
+        get(urlEqualTo("/mapping/corporate/organisation/nomis-corporate-id/$nomisCorporateId")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())

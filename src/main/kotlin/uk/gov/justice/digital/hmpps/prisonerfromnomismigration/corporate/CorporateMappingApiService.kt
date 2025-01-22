@@ -15,7 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingsDto
 
 @Service
-class CorporateMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<CorporateMappingsDto>(domainUrl = "/mapping/corporate/corporate", webClient) {
+class CorporateMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<CorporateMappingsDto>(domainUrl = "/mapping/corporate/organisation", webClient) {
   suspend fun createMappingsForMigration(mappings: CorporateMappingsDto): CreateMappingResult<CorporateMappingDto> = webClient.post()
     .uri("/mapping/corporate/migrate")
     .bodyValue(mappings)
@@ -27,9 +27,20 @@ class CorporateMappingApiService(@Qualifier("mappingApiWebClient") webClient: We
     }
     .awaitFirstOrDefault(CreateMappingResult())
 
+  suspend fun createCorporateMapping(mappings: CorporateMappingDto): CreateMappingResult<CorporateMappingDto> = webClient.post()
+    .uri("/mapping/corporate/organisation")
+    .bodyValue(mappings)
+    .retrieve()
+    .bodyToMono(Unit::class.java)
+    .map { CreateMappingResult<CorporateMappingDto>() }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CorporateMappingDto>>() {})))
+    }
+    .awaitFirstOrDefault(CreateMappingResult())
+
   suspend fun getByNomisCorporateIdOrNull(nomisCorporateId: Long): CorporateMappingDto? = webClient.get()
     .uri(
-      "/mapping/corporate/corporate/nomis-corporate-id/{nomisCorporateId}",
+      "/mapping/corporate/organisation/nomis-corporate-id/{nomisCorporateId}",
       nomisCorporateId,
     )
     .retrieve()
