@@ -4,8 +4,6 @@ import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.bodyToMono
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.ActivityCategory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.ActivityMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.ActivityMigrateResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AllocationMigrateRequest
@@ -29,12 +27,4 @@ class ActivitiesApiService(@Qualifier("activitiesApiWebClient") private val webC
       .retrieve()
       .bodyToMono(AllocationMigrateResponse::class.java)
       .awaitSingle()!!
-
-  suspend fun getActivityCategories(): List<String> =
-    webClient.get()
-      .uri("/activity-categories")
-      .retrieve()
-      .bodyToMono<List<ActivityCategory>>()
-      .awaitSingle()
-      .map { it.code }
 }

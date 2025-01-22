@@ -377,14 +377,12 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun verifyActivitiesGetIds(
     url: String,
     prisonId: String,
-    excludeProgramCodes: List<String> = listOf(),
     courseActivityId: Long? = null,
   ) {
     val request = getRequestedFor(
       urlPathEqualTo(url),
     )
       .withQueryParam("prisonId", equalTo(prisonId))
-      .apply { excludeProgramCodes.forEach { withQueryParam("excludeProgramCode", equalTo(it)) } }
       .apply { courseActivityId?.run { withQueryParam("courseActivityId", equalTo(courseActivityId.toString())) } }
     nomisApi.verify(
       request,

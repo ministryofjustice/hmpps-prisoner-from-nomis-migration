@@ -405,7 +405,6 @@ internal class NomisApiServiceTest {
       runBlocking {
         nomisService.getActivityIds(
           prisonId = "BXI",
-          excludeProgramCodes = listOf("PROGRAM1", "PROGRAM2"),
           pageNumber = 0,
           pageSize = 3,
         )
@@ -423,7 +422,6 @@ internal class NomisApiServiceTest {
       runBlocking {
         nomisService.getActivityIds(
           prisonId = "BXI",
-          excludeProgramCodes = listOf("PROGRAM1", "PROGRAM2"),
           courseActivityId = 123,
           pageNumber = 0,
           pageSize = 3,
@@ -431,7 +429,7 @@ internal class NomisApiServiceTest {
       }
       nomisApi.verify(
         getRequestedFor(
-          urlEqualTo("/activities/ids?prisonId=BXI&excludeProgramCode=PROGRAM1&excludeProgramCode=PROGRAM2&courseActivityId=123&page=0&size=3"),
+          urlEqualTo("/activities/ids?prisonId=BXI&courseActivityId=123&page=0&size=3"),
         ),
       )
     }
@@ -452,7 +450,6 @@ internal class NomisApiServiceTest {
       val activities = runBlocking {
         nomisService.getActivityIds(
           prisonId = "BXI",
-          excludeProgramCodes = listOf("PROGRAM1", "PROGRAM2"),
           pageNumber = 0,
           pageSize = 3,
         )
@@ -682,7 +679,6 @@ internal class NomisApiServiceTest {
       runBlocking {
         nomisService.getAllocationIds(
           prisonId = "BXI",
-          excludeProgramCodes = listOf("PROGRAM1", "PROGRAM2"),
           pageNumber = 0,
           pageSize = 3,
         )
@@ -700,7 +696,6 @@ internal class NomisApiServiceTest {
       runBlocking {
         nomisService.getAllocationIds(
           prisonId = "BXI",
-          excludeProgramCodes = listOf("PROGRAM1", "PROGRAM2"),
           courseActivityId = 123,
           pageNumber = 0,
           pageSize = 3,
@@ -708,7 +703,7 @@ internal class NomisApiServiceTest {
       }
       nomisApi.verify(
         getRequestedFor(
-          urlEqualTo("/allocations/ids?prisonId=BXI&excludeProgramCode=PROGRAM1&excludeProgramCode=PROGRAM2&courseActivityId=123&page=0&size=3"),
+          urlEqualTo("/allocations/ids?prisonId=BXI&courseActivityId=123&page=0&size=3"),
         ),
       )
     }
@@ -729,7 +724,6 @@ internal class NomisApiServiceTest {
       val allocations = runBlocking {
         nomisService.getAllocationIds(
           prisonId = "BXI",
-          excludeProgramCodes = listOf("PROGRAM1", "PROGRAM2"),
           pageNumber = 0,
           pageSize = 3,
         )

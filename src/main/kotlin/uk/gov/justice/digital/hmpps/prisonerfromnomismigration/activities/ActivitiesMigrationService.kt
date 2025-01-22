@@ -53,7 +53,6 @@ class ActivitiesMigrationService(
   ): PageImpl<FindActiveActivityIdsResponse> =
     nomisApiService.getActivityIds(
       prisonId = migrationFilter.prisonId,
-      excludeProgramCodes = activitiesApiService.getActivityCategories(),
       courseActivityId = migrationFilter.courseActivityId,
       pageNumber = pageNumber,
       pageSize = pageSize,
