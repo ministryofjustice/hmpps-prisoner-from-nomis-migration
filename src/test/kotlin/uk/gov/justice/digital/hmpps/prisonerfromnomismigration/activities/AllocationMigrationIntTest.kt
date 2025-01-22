@@ -122,7 +122,7 @@ class AllocationMigrationIntTest : SqsIntegrationTestBase() {
       webTestClient.performMigration()
 
       // check filter values passed to get allocation ids call
-      nomisApi.verifyActivitiesGetIds("/allocations/ids", "BXI", listOf("SAA_EDUCATION", "SAA_INDUCTION"))
+      nomisApi.verifyActivitiesGetIds("/allocations/ids", "BXI")
 
       // all mappings should be created
       assertThat(mappingApi.createMappingCount(MappingApiExtension.ALLOCATIONS_CREATE_MAPPING_URL)).isEqualTo(7)
@@ -144,7 +144,6 @@ class AllocationMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.verifyActivitiesGetIds(
         "/allocations/ids",
         "BXI",
-        listOf("SAA_EDUCATION", "SAA_INDUCTION"),
         courseActivityId = 1,
       )
 

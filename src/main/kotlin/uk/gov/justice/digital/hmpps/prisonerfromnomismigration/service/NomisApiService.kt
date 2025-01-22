@@ -8,7 +8,6 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
-import org.springframework.util.LinkedMultiValueMap
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
@@ -116,7 +115,6 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
 
   suspend fun getActivityIds(
     prisonId: String,
-    excludeProgramCodes: List<String>,
     courseActivityId: Long? = null,
     pageNumber: Long,
     pageSize: Long,
@@ -124,7 +122,6 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     .uri {
       it.path("/activities/ids")
         .queryParam("prisonId", prisonId)
-        .queryParams(LinkedMultiValueMap<String, String>().apply { addAll("excludeProgramCode", excludeProgramCodes) })
         .apply { courseActivityId?.run { queryParam("courseActivityId", courseActivityId) } }
         .queryParam("page", pageNumber)
         .queryParam("size", pageSize)
@@ -152,7 +149,6 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
 
   suspend fun getAllocationIds(
     prisonId: String,
-    excludeProgramCodes: List<String>,
     courseActivityId: Long? = null,
     pageNumber: Long,
     pageSize: Long,
@@ -160,7 +156,6 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     .uri {
       it.path("/allocations/ids")
         .queryParam("prisonId", prisonId)
-        .queryParams(LinkedMultiValueMap<String, String>().apply { addAll("excludeProgramCode", excludeProgramCodes) })
         .apply { courseActivityId?.run { queryParam("courseActivityId", courseActivityId) } }
         .queryParam("page", pageNumber)
         .queryParam("size", pageSize)

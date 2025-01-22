@@ -3,8 +3,6 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.equalToJson
-import com.github.tomakehurst.wiremock.client.WireMock.get
-import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
@@ -368,49 +366,6 @@ internal class ActivitiesApiServiceTest {
       assertThatThrownBy {
         runBlocking {
           activitiesApiService.migrateAllocation(migrateAllocationRequest())
-        }
-      }.isInstanceOf(InternalServerError::class.java)
-    }
-  }
-
-  @Nested
-  inner class GetActivityCategories {
-    @BeforeEach
-    internal fun setUp() {
-      activitiesApi.stubGetActivityCategories()
-    }
-
-    @Test
-    internal fun `should supply authentication token`(): Unit = runBlocking {
-      activitiesApiService.getActivityCategories()
-
-      activitiesApi.verify(
-        getRequestedFor(urlEqualTo("/activity-categories"))
-          .withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    internal fun `should return activity categories`(): Unit = runBlocking {
-      val response = activitiesApiService.getActivityCategories()
-
-      assertThat(response).containsExactlyInAnyOrder("SAA_EDUCATION", "SAA_INDUCTION")
-    }
-
-    @Test
-    internal fun `should throw exception for any error`() {
-      activitiesApi.stubFor(
-        get(urlPathMatching("/activity-categories")).willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
-            .withBody("""{"message":"Tea"}"""),
-        ),
-      )
-
-      assertThatThrownBy {
-        runBlocking {
-          activitiesApiService.getActivityCategories()
         }
       }.isInstanceOf(InternalServerError::class.java)
     }
