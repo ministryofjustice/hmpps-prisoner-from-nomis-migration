@@ -30,7 +30,7 @@ class CorporateEventListener(
       when (sqsMessage.Type) {
         "Notification" -> {
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
-          if (eventFeatureSwitch.isEnabled(eventType, "contactperson")) {
+          if (eventFeatureSwitch.isEnabled(eventType, "corporate")) {
             when (eventType) {
               "CORPORATE-INSERTED" -> log.debug("Received $eventType")
               "CORPORATE-UPDATED" -> log.debug("Received $eventType")
