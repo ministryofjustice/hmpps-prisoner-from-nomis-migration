@@ -9,6 +9,82 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEven
 class CorePersonSynchronisationService(
   private val telemetryClient: TelemetryClient,
 ) {
+  val eventProfileTypes = setOf("NAT", "NATIO", "SEXO", "DISABILITY", "IMM")
+
+  suspend fun offenderAdded(event: OffenderEvent) {
+    val telemetry = telemetryOf(
+      "nomisPrisonNumber" to event.offenderIdDisplay,
+      "nomisOffenderId" to event.offenderId,
+    )
+    telemetryClient.trackEvent("coreperson-offender-synchronisation-added-notimplemented", telemetry)
+  }
+
+  suspend fun offenderUpdated(event: OffenderEvent) {
+    val telemetry = telemetryOf(
+      "nomisPrisonNumber" to event.offenderIdDisplay,
+      "nomisOffenderId" to event.offenderId,
+    )
+    telemetryClient.trackEvent("coreperson-offender-synchronisation-updated-notimplemented", telemetry)
+  }
+
+  suspend fun offenderDeleted(event: OffenderEvent) {
+    val telemetry = telemetryOf(
+      "nomisPrisonNumber" to event.offenderIdDisplay,
+      "nomisOffenderId" to event.offenderId,
+    )
+    telemetryClient.trackEvent("coreperson-offender-synchronisation-deleted-notimplemented", telemetry)
+  }
+
+  suspend fun offenderBookingAdded(event: OffenderBookingEvent) {
+    val telemetry = telemetryOf(
+      "nomisOffenderId" to event.offenderId,
+      "nomisBookingId" to event.bookingId,
+    )
+    telemetryClient.trackEvent("coreperson-booking-synchronisation-added-notimplemented", telemetry)
+  }
+
+  suspend fun offenderBookingUpdated(event: OffenderBookingEvent) {
+    val telemetry = telemetryOf(
+      "nomisOffenderId" to event.offenderId,
+      "nomisBookingId" to event.bookingId,
+    )
+    telemetryClient.trackEvent("coreperson-booking-synchronisation-updated-notimplemented", telemetry)
+  }
+
+  suspend fun offenderBookingReassigned(event: OffenderBookingReassignedEvent) {
+    val telemetry = telemetryOf(
+      "nomisOffenderId" to event.offenderId,
+      "nomisPreviousOffenderId" to event.previousOffenderId,
+      "nomisBookingId" to event.bookingId,
+    )
+    // Might need to send out event for old offender id as well
+    telemetryClient.trackEvent("coreperson-booking-synchronisation-reassigned-notimplemented", telemetry)
+  }
+
+  suspend fun offenderSentenceAdded(event: OffenderSentenceEvent) {
+    val telemetry = telemetryOf(
+      "nomisPrisonNumber" to event.offenderIdDisplay,
+      "nomisBookingId" to event.bookingId,
+    )
+    telemetryClient.trackEvent("coreperson-sentence-synchronisation-added-notimplemented", telemetry)
+  }
+
+  suspend fun offenderSentenceUpdated(event: OffenderSentenceEvent) {
+    val telemetry = telemetryOf(
+      "nomisPrisonNumber" to event.offenderIdDisplay,
+      "nomisBookingId" to event.bookingId,
+    )
+    telemetryClient.trackEvent("coreperson-sentence-synchronisation-updated-notimplemented", telemetry)
+  }
+
+  suspend fun offenderSentenceDeleted(event: OffenderSentenceEvent) {
+    val telemetry = telemetryOf(
+      "nomisPrisonNumber" to event.offenderIdDisplay,
+      "nomisBookingId" to event.bookingId,
+    )
+    telemetryClient.trackEvent("coreperson-sentence-synchronisation-deleted-notimplemented", telemetry)
+  }
+
   suspend fun offenderAddressAdded(event: OffenderAddressEvent) {
     val telemetry = telemetryOf(
       "nomisOffenderId" to event.ownerId,
@@ -136,5 +212,16 @@ class CorePersonSynchronisationService(
       "nomisAddressUsage" to event.addressUsage,
     )
     telemetryClient.trackEvent("coreperson-addressusage-synchronisation-deleted-notimplemented", telemetry)
+  }
+
+  fun offenderPhysicalDetailsChanged(event: OffenderProfileDetailsEvent) {
+    if (eventProfileTypes.contains(event.profileType)) {
+      val telemetry = telemetryOf(
+        "nomisPrisonNumber" to event.offenderIdDisplay,
+        "nomisBookingId" to event.bookingId,
+        "nomisProfileType" to event.profileType,
+      )
+      telemetryClient.trackEvent("coreperson-profiledetails-synchronisation-changed-notimplemented", telemetry)
+    }
   }
 }

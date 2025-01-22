@@ -31,15 +31,28 @@ class CorePersonEventListener(
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
           if (eventFeatureSwitch.isEnabled(eventType, "coreperson")) {
             when (eventType) {
-//              "OFFENDER_INSERTED" ->service.offenderAdded(sqsMessage.Message.fromJson())
-//              "OFFENDER_UPDATED" -> service.offenderUpdated(sqsMessage.Message.fromJson())
-//              "OFFENDER_DELETED" -> service.offenderDeleted(sqsMessage.Message.fromJson())
-//              "OFFENDER_IDENTIFIER-INSERTED" ->service.offenderIdentifierAdded(sqsMessage.Message.fromJson())
+              "OFFENDER-INSERTED" -> service.offenderAdded(sqsMessage.Message.fromJson())
+              "OFFENDER-UPDATED" -> service.offenderUpdated(sqsMessage.Message.fromJson())
+              "OFFENDER-DELETED" -> service.offenderDeleted(sqsMessage.Message.fromJson())
+
+              "OFFENDER_BOOKING-INSERTED" -> service.offenderBookingAdded(sqsMessage.Message.fromJson())
+              "OFFENDER_BOOKING-CHANGED" -> service.offenderBookingUpdated(sqsMessage.Message.fromJson())
+              "OFFENDER_BOOKING-REASSIGNED" -> service.offenderBookingReassigned(sqsMessage.Message.fromJson())
+
+              "OFFENDER_SENTENCES-INSERTED" -> service.offenderSentenceAdded(sqsMessage.Message.fromJson())
+              "OFFENDER_SENTENCES-UPDATED" -> service.offenderSentenceUpdated(sqsMessage.Message.fromJson())
+              "OFFENDER_SENTENCES-DELETED" -> service.offenderSentenceDeleted(sqsMessage.Message.fromJson())
+
+              // TODO: Awaiting SDIT-2482 to be completed for audit module name and sequence number
+//              "OFFENDER_IDENTIFIER-INSERTED" -> service.offenderIdentifierAdded(sqsMessage.Message.fromJson())
 //              "OFFENDER_IDENTIFIER-UPDATED" -> service.offenderIdentifierUpdated(sqsMessage.Message.fromJson())
 //              "OFFENDER_IDENTIFIER-DELETED" -> service.offenderIdentifierDeleted(sqsMessage.Message.fromJson())
-              "OFFENDER_ADDRESS-INSERTED" -> service.offenderAddressAdded(sqsMessage.Message.fromJson())
-              "OFFENDER_ADDRESS-UPDATED" -> service.offenderAddressUpdated(sqsMessage.Message.fromJson())
-              "OFFENDER_ADDRESS-DELETED" -> service.offenderAddressDeleted(sqsMessage.Message.fromJson())
+
+              // TODO: Awaiting SDIT-2483 to be completed for new events
+              "ADDRESSES_OFFENDER-INSERTED" -> service.offenderAddressAdded(sqsMessage.Message.fromJson())
+              "ADDRESSES_OFFENDER-UPDATED" -> service.offenderAddressUpdated(sqsMessage.Message.fromJson())
+              "ADDRESSES_OFFENDER-DELETED" -> service.offenderAddressDeleted(sqsMessage.Message.fromJson())
+
               "OFFENDER_ADDRESS_PHONE-INSERTED" -> service.offenderAddressPhoneAdded(sqsMessage.Message.fromJson())
               "OFFENDER_ADDRESS_PHONE-UPDATED" -> service.offenderAddressPhoneUpdated(sqsMessage.Message.fromJson())
               "OFFENDER_ADDRESS_PHONE-DELETED" -> service.offenderAddressPhoneDeleted(sqsMessage.Message.fromJson())
@@ -49,9 +62,19 @@ class CorePersonEventListener(
               "OFFENDER_EMAIL-INSERTED" -> service.offenderEmailAdded(sqsMessage.Message.fromJson())
               "OFFENDER_EMAIL-UPDATED" -> service.offenderEmailUpdated(sqsMessage.Message.fromJson())
               "OFFENDER_EMAIL-DELETED" -> service.offenderEmailDeleted(sqsMessage.Message.fromJson())
-              "ADDRESS_USAGE-INSERTED" -> service.addressUsageAdded(sqsMessage.Message.fromJson())
-              "ADDRESS_USAGE-UPDATED" -> service.addressUsageUpdated(sqsMessage.Message.fromJson())
-              "ADDRESS_USAGE-DELETED" -> service.addressUsageDeleted(sqsMessage.Message.fromJson())
+
+              // TODO: Awaiting SDIT-2421 to be completed for new trigger on offender beliefs
+//              "OFFENDER_BELIEF-INSERTED" -> service.offenderBeliefAdded(sqsMessage.Message.fromJson())
+//              "OFFENDER_BELIEF-UPDATED" -> service.offenderBeliefUpdated(sqsMessage.Message.fromJson())
+//              "OFFENDER_BELIEF-DELETED" -> service.offenderBeliefDeleted(sqsMessage.Message.fromJson())
+
+              // TODO: Ignore for now - core person haven't mapped address usage
+              // If needed then a JIRA is required to add in audit module name - maybe new trigger
+//              "ADDRESS_USAGE-INSERTED" -> service.addressUsageAdded(sqsMessage.Message.fromJson())
+//              "ADDRESS_USAGE-UPDATED" -> service.addressUsageUpdated(sqsMessage.Message.fromJson())
+//              "ADDRESS_USAGE-DELETED" -> service.addressUsageDeleted(sqsMessage.Message.fromJson())
+
+              "OFFENDER_PHYSICAL_DETAILS-CHANGED" -> service.offenderPhysicalDetailsChanged(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
@@ -102,3 +125,38 @@ data class AddressUsageEvent(
   val addressUsage: String,
   override val auditModuleName: String,
 ) : EventAudited
+
+data class OffenderIdentifierEvent(
+  val offenderIdDisplay: String,
+  val offenderId: Long,
+  val phoneId: Long,
+  override val auditModuleName: String,
+) : EventAudited
+
+data class OffenderSentenceEvent(
+  val offenderIdDisplay: String,
+  val bookingId: Long,
+  override val auditModuleName: String,
+) : EventAudited
+
+data class OffenderEvent(
+  val offenderIdDisplay: String,
+  val offenderId: Long,
+)
+
+data class OffenderBookingEvent(
+  val offenderId: Long,
+  val bookingId: Long,
+)
+
+data class OffenderBookingReassignedEvent(
+  val offenderId: Long,
+  val previousOffenderId: Long,
+  val bookingId: Long,
+)
+
+data class OffenderProfileDetailsEvent(
+  val offenderIdDisplay: String,
+  val bookingId: Long,
+  val profileType: String,
+)
