@@ -44,26 +44,26 @@ data class IdPair(
 data class MigrateCorePersonResponse(
   val cprId: String,
   val nomisPrisonNumber: String,
-  val addressIds: List<IdPair> = emptyList(),
-  val phoneIds: List<IdPair> = emptyList(),
-  val emailAddressIds: List<IdPair> = emptyList(),
+  val addressIds: List<IdPair>? = null,
+  val phoneIds: List<IdPair>? = null,
+  val emailAddressIds: List<IdPair>? = null,
 )
 
 data class MigrateCorePersonRequest(
   val nomisPrisonNumber: String,
   val activeFlag: Boolean,
   val inOutStatus: String? = null,
-  val offenders: List<MockCprOffender>,
-  val addresses: List<MockCprAddress> = emptyList(),
-  val phoneNumbers: List<MockCprPhoneNumber> = emptyList(),
-  val emailAddresses: List<MockCprEmailAddress> = emptyList(),
-  val religions: List<MockCprBelief> = emptyList(),
-  val sentenceStartDates: List<LocalDate>,
-  val nationalities: List<MockCprNationality>,
-  val nationalityDetails: List<MockCprNationalityDetails>,
-  val sexualOrientations: List<MockCprSexualOrientation>,
-  val disabilities: List<MockCprDisability>,
-  val interestsToImmigration: List<MockCprInterestToImmigration>,
+  val offenders: List<MockCprOffender>? = null,
+  val addresses: List<MockCprAddress>? = null,
+  val phoneNumbers: List<MockCprPhoneNumber>? = null,
+  val emailAddresses: List<MockCprEmailAddress>? = null,
+  val religions: List<MockCprBelief>? = null,
+  val sentenceStartDates: List<LocalDate>? = null,
+  val nationalities: List<MockCprNationality>? = null,
+  val nationalityDetails: List<MockCprNationalityDetails>? = null,
+  val sexualOrientations: List<MockCprSexualOrientation>? = null,
+  val disabilities: List<MockCprDisability>? = null,
+  val interestsToImmigration: List<MockCprInterestToImmigration>? = null,
 )
 
 data class MockCprOffender(
@@ -81,6 +81,7 @@ data class MockCprOffender(
   val workingName: Boolean,
   val sex: String? = null,
   val nameType: String? = null,
+  val createDate: LocalDate? = null,
   val identifiers: List<MockCprIdentifier>,
 )
 
@@ -109,8 +110,8 @@ data class MockCprAddress(
   val validatedPAF: Boolean,
   val noFixedAddress: Boolean? = null,
   val mail: Boolean? = false,
-  val usages: List<MockCprAddressUsage>,
-  val phoneNumbers: List<MockCprPhoneNumber>,
+  val usages: List<MockCprAddressUsage>? = null,
+  val phoneNumbers: List<MockCprPhoneNumber>? = null,
 )
 data class MockCprAddressUsage(
   val usage: String,

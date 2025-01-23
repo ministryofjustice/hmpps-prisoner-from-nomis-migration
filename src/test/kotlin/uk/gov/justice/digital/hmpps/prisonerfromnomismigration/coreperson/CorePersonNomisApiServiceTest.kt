@@ -50,11 +50,11 @@ class CorePersonNomisApiServiceTest {
 
     @Test
     fun `will return the core person`() = runTest {
-      mockServer.stubGetCorePerson(prisonNumber = "A12345BC", corePerson = corePerson().copy(offenders = listOf(corePerson().offenders[0].copy(lastName = "Smith"))))
+      mockServer.stubGetCorePerson(prisonNumber = "A12345BC", corePerson = corePerson().copy(offenders = listOf(corePerson().offenders!![0].copy(lastName = "Smith"))))
 
       val corePerson = apiService.getCorePerson(nomisPrisonNumber = "A12345BC")
 
-      assertThat(corePerson.offenders[0].lastName).isEqualTo("Smith")
+      assertThat(corePerson.offenders!![0].lastName).isEqualTo("Smith")
     }
 
     @Test
